@@ -14,16 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import argparse
 import xml.etree.ElementTree as ET
+from zipfile import ZipFile
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 DELIMITER = '\n'
 HR = '==============={0}===================='
 
 def parseXML(args):
-  
+    if args.verbose:
+        print(HR.format("Parsing KML"))
     tree = ET.parse(args.input)
     root = tree.getroot()
     coords = []
@@ -76,9 +79,16 @@ def _main():
         print(f"Input File:\t\t{args.input}")
         print(f"Drone Platform:\t\t{args.platform}")
         print(f"Output File:\t\t{args.output}")
-        print(HR.format("Parsing KML"))
 
-    out = parseXML(args)
+    _, extension = os.path.splitext(args.input)
+    if extension == '.kmz':
+        print(HR.format("Extracting KMZ"))
+        with ZipFile(args.input) as kmz:
+            with kmz.open('doc.kml') as kml:
+                args.input = kml
+                out = parseXML(args)
+    else:
+        out = parseXML(args)
     with open(args.output, mode='w', encoding='utf-8') as f:
         f.write(out)
     if args.verbose:
