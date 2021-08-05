@@ -1,0 +1,42 @@
+.map-h2 {
+    text-transform: uppercase;
+    font-size: 1rem;
+    padding: 20px;
+    padding-left: 10px;
+    text-align: center;
+  }
+  
+  .google-map {
+    width: 100%;
+    height: 60vh;
+  }
+  
+  .pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    background-color: rgba(0, 0, 0, 0.671);
+    border: 2px solid #fff;
+    border-radius: 100%;
+    user-select: none;
+    transform: translate(-50%, -50%);
+  }
+  
+  .pin-text {
+    font-size: 1.3em;
+    width: 200px;
+  }
+  
+  @media screen and (min-width: 799px) {
+    .google-map {
+      height: 80vh;
+    }
+  
+    .map-h2 {
+      font-size: 1.3rem;
+      font-weight: 400;
+    }
+
+  }

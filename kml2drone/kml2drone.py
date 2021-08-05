@@ -44,20 +44,45 @@ def parseXML(args):
         longN,latN,altitudeN
     </coordinates>
     '''
+    
+    #create the header for the command file
+    if args.platform == 'anafi':
+        out += 'import olympe' + DELIMITER
+        out += 'from olympe.messages.ardrone3.Piloting import TakeOff, Landing, MoveTo' + DELIMITER
+        out += 'if __name__ == "__main__":' + DELIMITER
+        out += '\tIP = 192.168.42.1' + DELIMITER #eventually IP will be specified depending on what drone is chosen
+        out += '\tdrone = olympe.Drone(IP)' + DELIMITER
+        out += '\tdrone.connect()' + DELIMITER
+        out += '\tdrone(TakeOff()).wait().success()' + DELIMITER
+    elif args.platform == 'dji':
+        raise Exception(f'Mappings not implemented for {args.platform}.')
+    else:
+        raise Exception('Unsupported drone platfrom specified')
+
     for c in coords:
         for line in c.text.strip().split('\n'):
             stripped = line.strip()
 
             if args.platform ==  'anafi':
                 #perform anafi specific mapping
-                out+= stripped
-                out += DELIMITER
+                lng,lat,alt = stripped.split(',')
+                #drone will face target GPS loc and move to it
+                out += '\tdrone(moveTo({0}, {1}, 10.0, 1, 0.0, 2.0, 1.0, 10.0)).wait().success'.format(lat, lng) + DELIMITER
             elif args.platform == 'dji':
                 #perform dji specific mapping
                 raise Exception(f'Mappings not implemented for {args.platform}.') 
             else:
                 raise Exception('Unsupported drone platform specified.') 
-        
+    
+    #create the footer for the command file
+    if args.platform == 'anafi':
+        out += '\tdrone(Landing()).wait().success()' + DELIMITER
+        out += '\tdrone.disconnect()' + DELIMITER
+    elif args.platform == 'dji':
+        raise Exception(f'Mappings not implemented for {args.platform}.')
+    else:
+        raise Exception('Unsupported drone platfrom specified')
+
     return out
 
 def _main():

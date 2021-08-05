@@ -1,0 +1,5 @@
+Flask==1.1.2
+Flask-Cors==3.0.10
+Flask-SocketIO==5.0.1
+gunicorn==20.1.0
+gevent==21.1.2

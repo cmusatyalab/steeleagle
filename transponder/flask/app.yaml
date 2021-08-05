@@ -1,0 +1,9 @@
+runtime: python
+env: flex
+runtime_config:
+  python_version: 3.6
+entrypoint: gunicorn -b :8080 -k gevent -w 1 api:app
+manual_scaling:
+  instances: 1
+network:
+  session_affinity: true
