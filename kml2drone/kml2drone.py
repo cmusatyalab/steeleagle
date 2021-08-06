@@ -17,6 +17,7 @@
 import os
 import sys
 import argparse
+import py_compile
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
@@ -24,7 +25,64 @@ KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 DELIMITER = '\n'
 HR = '==============={0}===================='
 
-def parseXML(args):
+def addEpilogue(platform):
+    # Add platform specific commands for the end of the flight plan
+    # e.g. move to base, initiate landing, etc
+    epilogue = ''
+    if platform == 'anafi':
+        epilogue += '\tdrone(Landing()).wait().success()' + DELIMITER
+        epilogue += '\tdrone.disconnect()' + DELIMITER
+    elif platform == 'dji':
+        raise Exception(f'Mappings not implemented for {platform}.')
+    else:
+        raise Exception('Unsupported drone platfrom specified')
+    return epilogue
+
+def addPreamble(platform):
+    # Add platform specific commands for the beginning of the flight plan
+    # e.g. load libraries, connect to drone, takeoff etc
+    preamble = ''
+    if platform == 'anafi':
+        preamble += 'import olympe' + DELIMITER
+        preamble += 'from olympe.messages.ardrone3.Piloting import TakeOff, Landing, MoveTo' + DELIMITER
+        preamble += 'from olympe.enums.ardrone3.Piloting import MoveTo_Orientation_mode as mode' + DELIMITER
+        preamble += 'if __name__ == "__main__":' + DELIMITER
+        
+        #eventually IP will be specified depending on what drone is chosen
+        preamble += '\tIP = "192.168.42.1"' + DELIMITER 
+        preamble += '\tdrone = olympe.Drone(IP)' + DELIMITER
+        preamble += '\tdrone.connect()' + DELIMITER
+        preamble += '\tdrone(TakeOff()).wait().success()' + DELIMITER
+    elif platform == 'dji':
+        raise Exception(f'Mappings not implemented for {platform}.')
+    else:
+        raise Exception('Unsupported drone platfrom specified')
+    return preamble
+
+def generateOlympeScript(args, coords):
+    out = addPreamble(args.platform)
+    for lng, lat, alt in parseCoordinates(coords):
+        print(f"Long: {lng}, Lat: {lat}, Alt: {alt}")
+        out += '\tdrone(moveTo({0}, {1}, {2}, mode.orientation_mode.to_target, 0.0)).wait().success'.format(lat, lng, 6.0) + DELIMITER
+    out += addEpilogue(args.platform)
+    return out
+
+def parseCoordinates(coords):
+    '''
+    <coordinates>
+        long0,lat0,altitude0
+        ...
+        longN,latN,altitudeN
+    </coordinates>
+    '''
+    for c in coords:
+        for line in c.text.strip().split('\n'):
+            stripped = line.strip()
+            lng,lat,alt = stripped.split(',')
+            yield lng, lat, alt
+
+
+def parseKML(args):
     if args.verbose:
         print(HR.format("Parsing KML"))
     tree = ET.parse(args.input)
@@ -37,47 +95,9 @@ def parseXML(args):
                 print(f"Processing placemark named {child.text.strip()}...")
             for coord in child.iter(KML_NAMESPACE+'coordinates'):
                 coords.append(coord)
-    '''
-    <coordinates>
-        long0,lat0,altitude0
-        ...
-        longN,latN,altitudeN
-    </coordinates>
-    '''
-    
-    #create the header for the command file
-    if args.platform == 'anafi':
-        out += 'import olympe' + DELIMITER
-        out += 'from olympe.messages.ardrone3.Piloting import TakeOff, Landing, MoveTo' + DELIMITER
-        out += 'if __name__ == "__main__":' + DELIMITER
-        out += '\tIP = 192.168.42.1' + DELIMITER #eventually IP will be specified depending on what drone is chosen
-        out += '\tdrone = olympe.Drone(IP)' + DELIMITER
-        out += '\tdrone.connect()' + DELIMITER
-        out += '\tdrone(TakeOff()).wait().success()' + DELIMITER
-    elif args.platform == 'dji':
-        raise Exception(f'Mappings not implemented for {args.platform}.')
-    else:
-        raise Exception('Unsupported drone platfrom specified')
 
-    for c in coords:
-        for line in c.text.strip().split('\n'):
-            stripped = line.strip()
-
-            if args.platform ==  'anafi':
-                #perform anafi specific mapping
-                lng,lat,alt = stripped.split(',')
-                #drone will face target GPS loc and move to it
-                out += '\tdrone(moveTo({0}, {1}, 10.0, 1, 0.0, 2.0, 1.0, 10.0)).wait().success'.format(lat, lng) + DELIMITER
-            elif args.platform == 'dji':
-                #perform dji specific mapping
-                raise Exception(f'Mappings not implemented for {args.platform}.') 
-            else:
-                raise Exception('Unsupported drone platform specified.') 
-    
-    #create the footer for the command file
     if args.platform == 'anafi':
-        out += '\tdrone(Landing()).wait().success()' + DELIMITER
-        out += '\tdrone.disconnect()' + DELIMITER
+        out = generateOlympeScript(args, coords)
     elif args.platform == 'dji':
         raise Exception(f'Mappings not implemented for {args.platform}.')
     else:
@@ -111,11 +131,16 @@ def _main():
         with ZipFile(args.input) as kmz:
             with kmz.open('doc.kml') as kml:
                 args.input = kml
-                out = parseXML(args)
+                out = parseKML(args)
     else:
-        out = parseXML(args)
+        out = parseKML(args)
+
     with open(args.output, mode='w', encoding='utf-8') as f:
         f.write(out)
+
+    if args.platform == 'anafi':
+        #compile to find syntax errrors in python script
+        py_compile.compile(args.output, doraise=True)
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))
         print(out)
