@@ -1,0 +1,19 @@
+#/usr/bin/python3
+import olympe
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing, MoveTo
+from olympe.enums.ardrone3.Piloting import MoveTo_Orientation_mode as mode
+if __name__ == "__main__":
+        
+    #eventually IP will be specified depending on what drone is chosen
+    IP = "192.168.42.1" 
+    drone = olympe.Drone(IP)
+    drone.connect()
+    drone(TakeOff()).wait().success()
+    {% for c in coords %}
+    drone(
+        moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
+        >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE', _policy='wait')
+    ).wait().success()
+    {% endfor %}
+    drone(Landing()).wait().success()
+    drone.disconnect()

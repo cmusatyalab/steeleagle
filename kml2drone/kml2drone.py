@@ -20,51 +20,17 @@ import argparse
 import py_compile
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
+import jinja2
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
-DELIMITER = '\n'
 HR = '==============={0}===================='
-
-def addEpilogue(platform):
-    # Add platform specific commands for the end of the flight plan
-    # e.g. move to base, initiate landing, etc
-    epilogue = ''
-    if platform == 'anafi':
-        epilogue += '\tdrone(Landing()).wait().success()' + DELIMITER
-        epilogue += '\tdrone.disconnect()' + DELIMITER
-    elif platform == 'dji':
-        raise Exception(f'Mappings not implemented for {platform}.')
-    else:
-        raise Exception('Unsupported drone platfrom specified')
-    return epilogue
-
-def addPreamble(platform):
-    # Add platform specific commands for the beginning of the flight plan
-    # e.g. load libraries, connect to drone, takeoff etc
-    preamble = ''
-    if platform == 'anafi':
-        preamble += 'import olympe' + DELIMITER
-        preamble += 'from olympe.messages.ardrone3.Piloting import TakeOff, Landing, MoveTo' + DELIMITER
-        preamble += 'from olympe.enums.ardrone3.Piloting import MoveTo_Orientation_mode as mode' + DELIMITER
-        preamble += 'if __name__ == "__main__":' + DELIMITER
-        
-        #eventually IP will be specified depending on what drone is chosen
-        preamble += '\tIP = "192.168.42.1"' + DELIMITER 
-        preamble += '\tdrone = olympe.Drone(IP)' + DELIMITER
-        preamble += '\tdrone.connect()' + DELIMITER
-        preamble += '\tdrone(TakeOff()).wait().success()' + DELIMITER
-    elif platform == 'dji':
-        raise Exception(f'Mappings not implemented for {platform}.')
-    else:
-        raise Exception('Unsupported drone platfrom specified')
-    return preamble
+FIXED_ALTITUDE = 6.0 #meters
 
 def generateOlympeScript(args, coords):
-    out = addPreamble(args.platform)
-    for lng, lat, alt in parseCoordinates(coords):
-        print(f"Long: {lng}, Lat: {lat}, Alt: {alt}")
-        out += '\tdrone(moveTo({0}, {1}, {2}, mode.orientation_mode.to_target, 0.0)).wait().success'.format(lat, lng, 6.0) + DELIMITER
-    out += addEpilogue(args.platform)
+
+    env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
+    template = env.get_template("anafi.py.jinja2")
+    out = template.render(coords=parseCoordinates(coords))
     return out
 
 def parseCoordinates(coords):
@@ -79,12 +45,10 @@ def parseCoordinates(coords):
         for line in c.text.strip().split('\n'):
             stripped = line.strip()
             lng,lat,alt = stripped.split(',')
-            yield lng, lat, alt
-
+            yield {'lng': lng, 'lat': lat, 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt}
 
 def parseKML(args):
-    if args.verbose:
-        print(HR.format("Parsing KML"))
+    print(HR.format("Parsing KML"))
     tree = ET.parse(args.input)
     root = tree.getroot()
     coords = []
@@ -111,7 +75,7 @@ def _main():
     parser.add_argument('input', help='kml/kmz file to convert')
     parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
         help='Drone platform to convert to  [default: Anafi (Olympe)]')
-    parser.add_argument('-o', '--output', default='drone.txt', 
+    parser.add_argument('-o', '--output', default='flightplan.py',
         help='Filename for generated drone instructions [default: drone.txt]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
@@ -141,6 +105,7 @@ def _main():
     if args.platform == 'anafi':
         #compile to find syntax errrors in python script
         py_compile.compile(args.output, doraise=True)
+        print(HR.format(f"Script {args.output} compiled"))
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))
         print(out)
