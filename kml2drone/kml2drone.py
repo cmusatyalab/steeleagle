@@ -29,7 +29,7 @@ FIXED_ALTITUDE = 6.0 #meters
 def generateOlympeScript(args, coords):
 
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
-    template = env.get_template("anafi.py.jinja2")
+    template = env.get_template(args.template)
     out = template.render(coords=parseCoordinates(coords))
     return out
 
@@ -79,6 +79,8 @@ def _main():
         help='Filename for generated drone instructions [default: drone.txt]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
+    parser.add_argument('-t', '--template', default='anafi.py.jinja2',
+        help='Specify a jinja2 template [default: anafi.py.jinja2]')
 
     if len(sys.argv) == 1:
         parser.print_help()
