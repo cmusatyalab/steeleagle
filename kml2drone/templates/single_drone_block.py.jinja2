@@ -12,13 +12,13 @@ if __name__ == "__main__":
     drone.connect()
     drone(TakeOff()).wait().success()
     drone(
-    {% for c in coords %}
+    {%- for c in coords -%}
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
         >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
-        {% if loop.nextitem is defined %}
+        {%- if loop.nextitem is defined %}
         >>
-        {% endif %}
-    {% endfor %}
+        {%- endif -%}
+    {%- endfor -%}
     ).wait().success()
     drone(Landing()).wait().success()
     drone.disconnect()
