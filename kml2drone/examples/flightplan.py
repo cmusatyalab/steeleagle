@@ -7,7 +7,7 @@ from olympe.messages.ardrone3.PilotingState import FlyingStateChanged, moveToCha
 if __name__ == "__main__":
         
     #eventually IP will be specified depending on what drone is chosen
-    IP = "10.202.0.1" 
+    IP = "192.168.42.1" 
     drone = olympe.Drone(IP)
     drone.connect()
     drone(TakeOff()).wait().success()
