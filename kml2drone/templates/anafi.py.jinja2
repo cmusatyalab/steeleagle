@@ -2,15 +2,47 @@
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing, moveTo
 import olympe.enums.move as mode
-from olympe.messages.ardrone3.PilotingState import FlyingStateChanged, moveToChanged
+from olympe.messages.ardrone3.PilotingState import SpeedChanged, GpsLocationChanged, FlyingStateChanged, moveToChanged
+
+import threading
+import requests
+import math
+import time
+
+broadcasting = True
+
+# Transponder thread which will update the drone's location on the map.
+def transponder_thread(drone, tag):
+    while (broadcasting):
+        airspeed = 0
+        try:
+            speed = drone.get_state(SpeedChanged)
+            airspeed = math.sqrt(speed["speedX"]**2 + speed["speedY"]**2 + speed["speedZ"]**2)
+        except:
+            pass
+        try:
+            loc = drone.get_state(GpsLocationChanged)
+            state = drone.get_state(FlyingStateChanged)
+            payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name}, "droneid": tag}
+            r = requests.post("http://transponder.pgh.cloudapp.azurelel.cs.cmu.edu:8080/update", json=payload)
+            time.sleep(0.1)
+        except Exception as e:
+            # This means the data is not available just yet. Olympe will raise a runtime error if any of the
+            # get_state() calls fail.
+            print(e)
+    # Delete the drone to cleanup.
+    r = requests.post("http://transponder.pgh.cloudapp.azurelel.cs.cmu.edu:8080/delete", json={"droneid": tag})
 
 if __name__ == "__main__":
         
     #eventually IP will be specified depending on what drone is chosen
-    IP = "192.168.42.1" 
+    #IP = "192.168.42.1" #default anafi WiFi address
+    IP = "10.202.0.1" #default virtual drone for Sphinx
     drone = olympe.Drone(IP)
     drone.connect()
+    transponder = threading.Thread(target=transponder_thread, args=(drone, 'Anafi',))
     drone(TakeOff()).wait().success()
+    transponder.start()
     {% for c in coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
@@ -18,4 +50,6 @@ if __name__ == "__main__":
     ).wait().success()
     {% endfor %}
     drone(Landing()).wait().success()
+    broadcasting = False
+    transponder.join()
     drone.disconnect()
