@@ -5,10 +5,12 @@ import './map.css'
 
 const LocationPin = ({tag, alt, spd, state}) => (
     <div className="pin">
-        <p className="pin-text">Tag: {tag}</p>
-	<p className="pin-text">Altitude: {alt}</p>
-	<p className="pin-text">Airspeed: {spd}</p>
-	<p className="pin-text">State: {state}</p>
+        <p className="pin-text">
+            Tag: {tag}<br/>
+            Altitude: {alt}<br/>
+            Airspeed: {spd}<br/>
+            State: {state}<br/>
+        </p>
     </div>
 )
 
@@ -27,7 +29,7 @@ function Map() {
     const socketRef = useRef();
 
     useEffect(() => {
-        socketRef.current = io.connect('https://drone-transponder.ue.r.appspot.com');
+        socketRef.current = io.connect('https://transponder.pgh.cloudapp.azurelel.cs.cmu.edu:8080');
         socketRef.current.on("update_drone_data", data => {
             updateDrones(JSON.parse(data)['drones']);
         });
