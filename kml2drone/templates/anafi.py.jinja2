@@ -12,7 +12,7 @@ import time
 broadcasting = True
 
 plan = [] 
-{% for c in coords1 %}
+{% for c in coords %}
 plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
 {% endfor %}
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     transponder = threading.Thread(target=transponder_thread, args=(drone, 'Anafi',))
     drone(TakeOff()).wait().success()
     transponder.start()
-    {% for c in coords2 %}
+    {% for c in coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
         >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
