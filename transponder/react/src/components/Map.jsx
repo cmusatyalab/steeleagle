@@ -24,8 +24,9 @@ const defaultZoom = 1;
 
 function Map() {
     // Keep track of the drones in flight
-    const [drones, setDrones] = useState([])
-
+    const [drones, setDrones] = useState([]);
+    const [mapObj, setMapObj] = useState(null);
+    const [mapsApi, setMapsApi] = useState(null);
     const socketRef = useRef();
 
     useEffect(() => {
@@ -40,22 +41,19 @@ function Map() {
     const updateDrones = (newDrones) => {
         setDrones(newDrones);
     }
-
-    const renderPolylines = (map, maps) => {
-	for (const drone of drones) {
-	    const {tag, lat, lng, alt, spd, state, plan} = drone 
-            let nonGeodesicPolyline = new maps.Polyline({
-	      path: plan,
-              geodesic: false,
-              strokeColor: '#e4e4e4',
-              strokeOpacity: 0.8,
-              strokeWeight: 3
-            })
-	    nonGeodesicPolyline.setMap(map)
-	}
-    }
     
     const renderLocationPins = () => {
+	for (var i = 0; i < drones.length; i++) {
+	    const {tag, lat, lng, alt, spd, state, plan} = drones[i];
+            let nonGeodesicPolyline = new mapsApi.Polyline({
+	      path: plan,
+              geodesic: false,
+              strokeColor: '#2596be',
+              strokeOpacity: 0.8,
+              strokeWeight: 3
+            });
+	    nonGeodesicPolyline.setMap(mapObj);
+	}
         return drones.map((drone, index) => {
             const {tag, lat, lng, alt, spd, state, plan} = drone
             return (
@@ -71,6 +69,11 @@ function Map() {
         })
     }
 
+    const setMaps = (map, maps) => {
+	setMapObj(map);
+	setMapsApi(maps);
+    }
+
     return (
         <div className="map">
             <h2 className="map-h2">Drone Locator</h2>
@@ -79,7 +82,8 @@ function Map() {
                 bootstrapURLKeys={{ key: 'AIzaSyBpyDWnlZ29cIBES0R17rkp3woN3RF5txU' }}
                 defaultCenter={defaultLocation}
                 defaultZoom={defaultZoom}
-	    	onGoogleApiLoaded={({map, maps}) => renderPolylines(map, maps)}>
+	        yesIWantToUseGoogleMapApiInternals
+	    	onGoogleApiLoaded={({map, maps}) => setMaps(map, maps)}>
                     {renderLocationPins()}
                 </GoogleMapReact>
             </div>

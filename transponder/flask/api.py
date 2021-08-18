@@ -53,9 +53,5 @@ def delete_drone():
     socketio.emit('update_drone_data', json.dumps(message), broadcast=True)
     return "Drone deleted."
 
-@app.route('/<droneid>', methods = ["GET"])
-def get_drone_data(droneid):
-    return drone_data[droneid]
-
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0')

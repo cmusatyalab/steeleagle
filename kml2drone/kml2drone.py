@@ -30,7 +30,7 @@ def generateOlympeScript(args, coords):
 
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
-    out = template.render(coords=parseCoordinates(coords))
+    out = template.render(coords1=parseCoordinates(coords), coords2=parseCoordinates(coords))
     return out
 
 def parseCoordinates(coords):

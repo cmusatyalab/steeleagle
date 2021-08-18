@@ -11,6 +11,11 @@ import time
 
 broadcasting = True
 
+plan = [] 
+{% for c in coords1 %}
+plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
+{% endfor %}
+
 # Transponder thread which will update the drone's location on the map.
 def transponder_thread(drone, tag):
     while (broadcasting):
@@ -23,7 +28,7 @@ def transponder_thread(drone, tag):
         try:
             loc = drone.get_state(GpsLocationChanged)
             state = drone.get_state(FlyingStateChanged)
-            payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name}, "droneid": tag}
+            payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name, "plan": plan}, "droneid": tag}
             r = requests.post("http://transponder.pgh.cloudapp.azurelel.cs.cmu.edu:8080/update", json=payload)
             time.sleep(0.1)
         except Exception as e:
@@ -43,7 +48,7 @@ if __name__ == "__main__":
     transponder = threading.Thread(target=transponder_thread, args=(drone, 'Anafi',))
     drone(TakeOff()).wait().success()
     transponder.start()
-    {% for c in coords %}
+    {% for c in coords2 %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
         >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
