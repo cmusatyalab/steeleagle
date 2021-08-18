@@ -40,10 +40,24 @@ function Map() {
     const updateDrones = (newDrones) => {
         setDrones(newDrones);
     }
+
+    const renderPolylines = (map, maps) => {
+	for (const drone of drones) {
+	    const {tag, lat, lng, alt, spd, state, plan} = drone 
+            let nonGeodesicPolyline = new maps.Polyline({
+	      path: plan,
+              geodesic: false,
+              strokeColor: '#e4e4e4',
+              strokeOpacity: 0.8,
+              strokeWeight: 3
+            })
+	    nonGeodesicPolyline.setMap(map)
+	}
+    }
     
     const renderLocationPins = () => {
         return drones.map((drone, index) => {
-            const {tag, lat, lng, alt, spd, state} = drone
+            const {tag, lat, lng, alt, spd, state, plan} = drone
             return (
                 <LocationPin
                     lat={lat}
@@ -64,9 +78,9 @@ function Map() {
                 <GoogleMapReact
                 bootstrapURLKeys={{ key: 'AIzaSyBpyDWnlZ29cIBES0R17rkp3woN3RF5txU' }}
                 defaultCenter={defaultLocation}
-                defaultZoom={defaultZoom}>
+                defaultZoom={defaultZoom}
+	    	onGoogleApiLoaded={({map, maps}) => renderPolylines(map, maps)}>
                     {renderLocationPins()}
-                
                 </GoogleMapReact>
             </div>
         </div>
