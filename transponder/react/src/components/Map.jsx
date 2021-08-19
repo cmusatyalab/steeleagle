@@ -3,6 +3,7 @@ import GoogleMapReact from 'google-map-react'
 import io from "socket.io-client"
 import './map.css'
 
+
 const LocationPin = ({tag, alt, spd, state}) => (
     <div className="pin">
         <p className="pin-text">
@@ -42,7 +43,6 @@ function Map() {
         setDrones(newDrones);
     }
     
-    List<mapsApi.PatternItem> pattern = Arrays.asList(new Dot());
     const renderLocationPins = () => {
 	for (var i = 0; i < drones.length; i++) {
 	    const {tag, lat, lng, alt, spd, state, plan} = drones[i];
@@ -53,7 +53,6 @@ function Map() {
               strokeOpacity: 0.8,
               strokeWeight: 3
             });
-        nonGeodesicPolyline.setPattern(pattern);
 	    nonGeodesicPolyline.setMap(mapObj);
 	}
         return drones.map((drone, index) => {
