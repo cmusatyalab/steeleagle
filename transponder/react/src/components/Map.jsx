@@ -43,6 +43,12 @@ function Map() {
         setDrones(newDrones);
     }
     
+    var lineSymbol = {
+        path: 'M 0,-1 0,1',
+        strokeOpacity: 1,
+        scale: 4
+      };
+
     const renderLocationPins = () => {
 	for (var i = 0; i < drones.length; i++) {
 	    const {tag, lat, lng, alt, spd, state, plan} = drones[i];
@@ -50,8 +56,13 @@ function Map() {
 	      path: plan,
               geodesic: false,
               strokeColor: '#2596be',
-              strokeOpacity: 0.8,
-              strokeWeight: 3
+              strokeWeight: 3,
+              strokeOpacity: 0,
+              icons: [{
+                icon: lineSymbol,
+                offset: '0',
+                repeat: '20px'
+              }],
             });
 	    nonGeodesicPolyline.setMap(mapObj);
 	}
