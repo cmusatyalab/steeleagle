@@ -16,11 +16,11 @@ const LocationPin = ({tag, alt, spd, state}) => (
 )
 
 const defaultLocation = {
-    lat: 0.0,
-    lng: 0.0,
+    lat: 40.41651, 
+    lng: -79.94887,
 }
 
-const defaultZoom = 1;
+const defaultZoom = 12;
 
 
 function Map() {
