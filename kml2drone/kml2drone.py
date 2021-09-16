@@ -30,7 +30,7 @@ def generateOlympeScript(args, coords):
 
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
-    out = template.render(coords=list(parseCoordinates(coords)))
+    out = template.render(coords=list(parseCoordinates(coords)), dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
     return out
 
 def parseCoordinates(coords):
@@ -76,11 +76,15 @@ def _main():
     parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
         help='Drone platform to convert to  [default: Anafi (Olympe)]')
     parser.add_argument('-o', '--output', default='flightplan.py',
-        help='Filename for generated drone instructions [default: drone.txt]')
+        help='Filename for generated drone instructions [default: flightplan.py]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
-    parser.add_argument('-t', '--template', default='anafi.py.jinja2',
+    parser.add_argument('-t', '--template', default='/anafi/base.py.jinja2',
         help='Specify a jinja2 template [default: anafi.py.jinja2]')
+    parser.add_argument('-da', '--dashboard_address', default='transponder.pgh.cloudapp.azurelel.cs.cmu.edu',
+        help='Specify address of dashboard to send heartbeat to [default: transponder.pgh.cloudapp.azurelel.cs.cmu.edu]')
+    parser.add_argument('-dp', '--dashboard_port', default='8080',
+        help='Specify dashboard port [default: 8080]')
 
     if len(sys.argv) == 1:
         parser.print_help()
