@@ -1,0 +1,18 @@
+ {% macro MoveTo(coords) -%}   
+    {% for c in coords %}
+    drone(
+        moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
+        >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
+    ).wait().success()
+    {% endfor %}
+{%- endmacro %}
+
+
+{% macro TransponderThreadStart() -%}  
+    transponder = threading.Thread(target=transponder_thread, args=(drone, {{drone_name|default('SteelEagle1')}},))
+    transponder.start()
+{%- endmacro %}
+
+{% macro TransponderThreadStop() -%}  
+    transponder.join()
+{%- endmacro %}

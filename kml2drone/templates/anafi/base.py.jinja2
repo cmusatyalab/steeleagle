@@ -1,0 +1,21 @@
+#/usr/bin/python3
+{% include "./anafi/imports.py.jinja2" %}
+{% include "./anafi/globals.py.jinja2" %}
+{% include "./anafi/transponder.py.jinja2" %}
+{% import './anafi/macros.py.jinja2' as macros %}
+
+if __name__ == "__main__":
+        
+    #eventually IP will be specified depending on what drone is chosen
+    IP = {{ drone_ip|default("'192.168.42.1'")}}
+    drone = olympe.Drone(IP)
+    drone.connect()
+    {{ macros.TransponderThreadStart() }}
+    drone(TakeOff()).wait().success()
+
+    {{ macros.MoveTo(coords) }}
+
+    drone(Landing()).wait().success()
+    broadcasting = False
+    {{ macros.TransponderThreadStop() }}
+    drone.disconnect()
