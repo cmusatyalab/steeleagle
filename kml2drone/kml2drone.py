@@ -80,7 +80,7 @@ def _main():
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
     parser.add_argument('-t', '--template', default='/anafi/base.py.jinja2',
-        help='Specify a jinja2 template [default: anafi.py.jinja2]')
+        help='Specify a jinja2 template [default: /anafi/base.py.jinja2]')
     parser.add_argument('-da', '--dashboard_address', default='transponder.pgh.cloudapp.azurelel.cs.cmu.edu',
         help='Specify address of dashboard to send heartbeat to [default: transponder.pgh.cloudapp.azurelel.cs.cmu.edu]')
     parser.add_argument('-dp', '--dashboard_port', default='8080',
