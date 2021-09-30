@@ -26,11 +26,62 @@ KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
 FIXED_ALTITUDE = 6.0 #meters
 
-def generateOlympeScript(args, coords):
+
+def TakePhotosAlongPath(mode="SINGLE", gimbal_pitch=0, drone_rotation=0):
+    pass
+
+#Representation of a point/line/polygon from MyMaps
+class Placemark:
+
+    def __init__(self):
+        self.name = ""
+        self.task = "" #from the <description> field
+        self.coords = []
+
+    def parseCoordinates(self, coords):
+        '''
+        <coordinates>
+            long0,lat0,altitude0
+            ...
+            longN,latN,altitudeN
+        </coordinates>
+        '''
+        for line in coords.text.strip().split('\n'):
+            stripped = line.strip()
+            lng,lat,alt = stripped.split(',')
+            self.coords.append({'lng': lng, 'lat': lat, 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt})
+
+    def print(self):
+        print(self.name)
+        print(self.task)
+        print(self.coords)
+
+    def validate(self):
+        if self.task == "":
+            print("WARNING: {} has no task specification. If it is not referenced by another placemark's task, it will be ignored.".format(self.name))
+        else:
+            try:
+                eval(self.task)
+            except NameError:
+                print("ERROR: The task specified in the description of {} is not found".format(self.name))
+                print(self.task)
+                exit(-1)
+            except SyntaxError:
+                print("ERROR: Syntax error in the task specification of {}".format(self.name))
+                print(self.task)
+                exit(-1)
+            except Exception as e:
+                print("ERROR: Unknown error validating task specification for {}".format(self.name))
+                print(self.task)
+                exit(-1)
+
+
+
+def generateOlympeScript(args, placemarks):
 
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
-    out = template.render(coords=list(parseCoordinates(coords)), dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
+    out = template.render(placemarks=placemarks, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
     return out
 
 def parseCoordinates(coords):
@@ -51,17 +102,26 @@ def parseKML(args):
     print(HR.format("Parsing KML"))
     tree = ET.parse(args.input)
     root = tree.getroot()
-    coords = []
+    placemarks = {}
     out = ""
     for placemark in root.iter(KML_NAMESPACE+'Placemark'):
+        p = Placemark()
         for child in placemark:
-            if args.verbose and child.tag == KML_NAMESPACE+'name':
-                print(f"Processing placemark named {child.text.strip()}...")
+            if child.tag == KML_NAMESPACE+'name':
+                p.name = child.text.strip()
+                if args.verbose:
+                    print(f"Processing {child.text.strip()} placemark...")
+            elif child.tag == KML_NAMESPACE+'description':
+                p.task = child.text.strip()
             for coord in child.iter(KML_NAMESPACE+'coordinates'):
-                coords.append(coord)
+                p.parseCoordinates(coord)
+
+        placemarks[p.name] = p
+    for k,v in placemarks.items():
+        v.validate()
 
     if args.platform == 'anafi':
-        out = generateOlympeScript(args, coords)
+        out = generateOlympeScript(args, placemarks)
     elif args.platform == 'dji':
         raise Exception(f'Mappings not implemented for {args.platform}.')
     else:
