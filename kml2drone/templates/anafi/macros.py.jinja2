@@ -1,4 +1,4 @@
-  {% macro MoveTo(coords) -%}
+{% macro MoveTo(coords) -%}
     {% for c in coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
