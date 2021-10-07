@@ -1,8 +1,9 @@
 #/usr/bin/python3
 {% include "./anafi/imports.py.jinja2" %}
-{% include "./anafi/globals.py.jinja2" %}
 {% include "./anafi/transponder.py.jinja2" %}
-{% import './anafi/macros.py.jinja2' as macros %}
+{% import './anafi/macros.py.jinja2' as macros with context%}
+
+
 
 if __name__ == "__main__":
         
@@ -13,7 +14,15 @@ if __name__ == "__main__":
     {{ macros.TransponderThreadStart() }}
     drone(TakeOff()).wait().success()
 
-    {{ macros.MoveTo(coords) }}
+    {% for k,v in placemarks.items() %}
+    #####{{v.name}}/{{v.task}} START#####
+    {%- if v.task == "TakePhotosAlongPath" %}
+    {{ macros.TakePhotosAlongPath(**v.kwargs) }}
+    {% elif v.task == "SetNewHome" %}
+    {{ macros.SetNewHome(**v.kwargs) }}
+    {% endif -%}
+    #####{{v.name}}/{{v.task}} END#####
+    {% endfor %}
 
     drone(Landing()).wait().success()
     broadcasting = False

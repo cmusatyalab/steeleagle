@@ -21,13 +21,17 @@ import py_compile
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 import jinja2
+import yaml
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
 FIXED_ALTITUDE = 6.0 #meters
 
+# Stubs for Jinja Macros
+def TakePhotosAlongPath(self):
+    pass
 
-def TakePhotosAlongPath(mode="SINGLE", gimbal_pitch=0, drone_rotation=0):
+def SetNewHome(self):
     pass
 
 #Representation of a point/line/polygon from MyMaps
@@ -35,7 +39,9 @@ class Placemark:
 
     def __init__(self):
         self.name = ""
-        self.task = "" #from the <description> field
+        self.description = ""
+        self.task = ""
+        self.kwargs = {}
         self.coords = []
 
     def parseCoordinates(self, coords):
@@ -49,54 +55,39 @@ class Placemark:
         for line in coords.text.strip().split('\n'):
             stripped = line.strip()
             lng,lat,alt = stripped.split(',')
-            self.coords.append({'lng': lng, 'lat': lat, 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt})
+            self.coords.append({'lng': float(lng), 'lat': float(lat), 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt})
 
     def print(self):
         print(self.name)
-        print(self.task)
-        print(self.coords)
+        print(self.description)
 
     def validate(self):
-        if self.task == "":
+        if self.description == "":
             print("WARNING: {} has no task specification. If it is not referenced by another placemark's task, it will be ignored.".format(self.name))
         else:
             try:
-                eval(self.task)
+                for k, v in self.description.items():
+                    self.task = k
+                    self.kwargs = v
+                    self.kwargs['coords'] = self.coords #add the coordinates to the list of args
+                eval("{}({})".format(self.task,self.kwargs))
             except NameError:
                 print("ERROR: The task specified in the description of {} is not found".format(self.name))
                 print(self.task)
                 exit(-1)
             except SyntaxError:
                 print("ERROR: Syntax error in the task specification of {}".format(self.name))
-                print(self.task)
+                print(self.descripo)
                 exit(-1)
             except Exception as e:
-                print("ERROR: Unknown error validating task specification for {}".format(self.name))
-                print(self.task)
+                print(f"ERROR: Unknown error validating task specification for {self.name} [{self.description}]")
                 exit(-1)
 
-
-
 def generateOlympeScript(args, placemarks):
-
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
     out = template.render(placemarks=placemarks, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
     return out
-
-def parseCoordinates(coords):
-    '''
-    <coordinates>
-        long0,lat0,altitude0
-        ...
-        longN,latN,altitudeN
-    </coordinates>
-    '''
-    for c in coords:
-        for line in c.text.strip().split('\n'):
-            stripped = line.strip()
-            lng,lat,alt = stripped.split(',')
-            yield {'lng': lng, 'lat': lat, 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt}
 
 def parseKML(args):
     print(HR.format("Parsing KML"))
@@ -112,7 +103,7 @@ def parseKML(args):
                 if args.verbose:
                     print(f"Processing {child.text.strip()} placemark...")
             elif child.tag == KML_NAMESPACE+'description':
-                p.task = child.text.strip()
+                p.description = yaml.load(child.text.strip().replace("<br>", "\n"))
             for coord in child.iter(KML_NAMESPACE+'coordinates'):
                 p.parseCoordinates(coord)
 

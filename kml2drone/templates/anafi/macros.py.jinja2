@@ -1,4 +1,4 @@
- {% macro MoveTo(coords) -%}   
+  {% macro MoveTo(coords) -%}
     {% for c in coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
@@ -9,10 +9,62 @@
 
 
 {% macro TransponderThreadStart() -%}  
-    transponder = threading.Thread(target=transponder_thread, args=(drone, {{drone_name|default('SteelEagle1')}},))
+    transponder = threading.Thread(target=transponder_thread, args=(drone, {{drone_name|default('"SteelEagle1"')}},))
     transponder.start()
 {%- endmacro %}
 
 {% macro TransponderThreadStop() -%}  
     transponder.join()
+{%- endmacro %}
+
+{% macro EnablePhotoMode() -%}
+    drone(set_camera_mode(0, camera.camera_mode.photo)).wait().success()
+    drone(set_photo_mode(0,
+            camera.photo_mode.single,
+            camera.photo_format.full_frame,
+            camera.photo_file_format.jpeg,
+            camera.burst_value.burst_14_over_4s,
+            camera.bracketing_preset.preset_1ev,
+            0.0)).wait().success()
+{%- endmacro %}
+
+
+{% macro ChangeHeadingByOffset(heading_offset_radians) -%}
+    drone(moveBy(0.0, 0.0, 0.0, {{heading_offset_radians}}* math.pi/180)).wait().success()
+{%- endmacro %}
+
+{% macro GimbalSetTarget(pitch) -%}
+    drone(set_target(
+            gimbal_id=0,
+            control_mode="position",
+            yaw_frame_of_reference="none",
+            yaw=0.0,
+            pitch_frame_of_reference="absolute",
+            pitch={{pitch}},
+            roll_frame_of_reference="none",
+            roll=0.0,
+        )
+        >> attitude(pitch_absolute=pitch, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
+{%- endmacro %}
+
+{% macro TakeSinglePhoto() -%}
+    drone(take_photo(0)).wait().success()
+{%- endmacro %}
+
+{% macro TakePhotosAlongPath() -%}
+    {{EnablePhotoMode()}}
+    {% for c in kwargs.coords %}
+    drone(
+        moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
+        >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
+    ).wait().success()
+    {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
+    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    {{TakeSinglePhoto()}}
+    {% endfor %}
+{%- endmacro %}
+
+
+{% macro SetNewHome() -%}
+   #drone.SetHome({{kwargs}}) #but it is deprecated?
 {%- endmacro %}
