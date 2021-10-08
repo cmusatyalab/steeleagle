@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
     {% for k,v in placemarks.items() %}
     #####{{v.name}}/{{v.task}} START#####
+    #####{{v.kwargs}}#####
     {%- if v.task == "TakePhotosAlongPath" %}
     {{ macros.TakePhotosAlongPath(**v.kwargs) }}
     {% elif v.task == "SetNewHome" %}
