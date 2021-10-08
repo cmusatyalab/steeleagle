@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 import jinja2
 import yaml
+import jsonschema
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
@@ -61,6 +62,14 @@ class Placemark:
         print(self.name)
         print(self.description)
 
+    def get_defaults(self):
+        defaults = {}
+        if self.task == "TakePhotosAlongPath":
+            defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
+        elif self.task == "SetNewHome":
+            defaults = {}
+        return(defaults)
+
     def validate(self):
         if self.description == "":
             print("WARNING: {} has no task specification. If it is not referenced by another placemark's task, it will be ignored.".format(self.name))
@@ -70,17 +79,18 @@ class Placemark:
                     self.task = k
                     self.kwargs = v
                     self.kwargs['coords'] = self.coords #add the coordinates to the list of args
+                    self.kwargs = {**self.get_defaults(), **self.kwargs}  #merge default args
                 eval("{}({})".format(self.task,self.kwargs))
             except NameError:
-                print("ERROR: The task specified in the description of {} is not found".format(self.name))
+                print(f"ERROR: The task, {self.task} specified in the description of {self.name} is not found")
                 print(self.task)
                 exit(-1)
             except SyntaxError:
-                print("ERROR: Syntax error in the task specification of {}".format(self.name))
-                print(self.descripo)
+                print(f"ERROR: Syntax error in the task specification of {self.name}")
+                print(self.description)
                 exit(-1)
             except Exception as e:
-                print(f"ERROR: Unknown error validating task specification for {self.name} [{self.description}]")
+                print(f"ERROR: Unknown error validating task specification for {self.name} [{e}]")
                 exit(-1)
 
 def generateOlympeScript(args, placemarks):
