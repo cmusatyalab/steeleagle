@@ -29,11 +29,46 @@ HR = '==============={0}===================='
 FIXED_ALTITUDE = 6.0 #meters
 
 # Stubs for Jinja Macros
-def TakePhotosAlongPath(self):
-    pass
+class TakePhotosAlongPath:
+    def __init__(self):
+        self.schema = {
+                    "title": "TakePhotosAlongPath",
+                    "description": "Instruct drone to take photos at the coordinates specified by the path",
+                    "properties": {
+                        "mode": {
+                        "description": "Photo Mode",
+                        "type": "string",
+                        "enum": ["SINGLE", "BURST", "TIME", "GPS"]
+                        },
+                        "interval": {
+                        "description": "Interval between photos (in seconds or meters)",
+                        "type": "number",
+                        "minimum": 1
+                        },
+                        "gimbal_pitch": {
+                        "description": "The angle of the gimbal",
+                        "type": "number",
+                        "minimum": -90,
+                        "maximim": 90
+                        },
+                        "drone_rotation": {
+                        "description": "The heading offset to rotate the drone to ",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 360
+                        },
+                    },
+                    "required": [ "mode" ]
+                }
+        self.defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
 
-def SetNewHome(self):
-    pass
+class SetNewHome:
+    def __init__(self):
+        self.schema = {
+                    "title": "SetNewHome",
+                    "description": "Set the return to home point to the coordinates",
+                }
+        self.defaults = {}
 
 #Representation of a point/line/polygon from MyMaps
 class Placemark:
@@ -62,14 +97,6 @@ class Placemark:
         print(self.name)
         print(self.description)
 
-    def get_defaults(self):
-        defaults = {}
-        if self.task == "TakePhotosAlongPath":
-            defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
-        elif self.task == "SetNewHome":
-            defaults = {}
-        return(defaults)
-
     def validate(self):
         if self.description == "":
             print("WARNING: {} has no task specification. If it is not referenced by another placemark's task, it will be ignored.".format(self.name))
@@ -78,16 +105,15 @@ class Placemark:
                 for k, v in self.description.items():
                     self.task = k
                     self.kwargs = v
+                    obj = eval("{}()".format(self.task))
                     self.kwargs['coords'] = self.coords #add the coordinates to the list of args
-                    self.kwargs = {**self.get_defaults(), **self.kwargs}  #merge default args
-                eval("{}({})".format(self.task,self.kwargs))
+                    self.kwargs = {**obj.defaults, **self.kwargs}  #merge default args
+                    jsonschema.validate(self.kwargs, obj.schema)
             except NameError:
-                print(f"ERROR: The task, {self.task} specified in the description of {self.name} is not found")
-                print(self.task)
+                print(f"ERROR: The task ({self.task}) specified in the description of {self.name} is not found")
                 exit(-1)
-            except SyntaxError:
-                print(f"ERROR: Syntax error in the task specification of {self.name}")
-                print(self.description)
+            except SyntaxError as e:
+                print(f"ERROR: Syntax error in the task specification of {self.name} [{e}]")
                 exit(-1)
             except Exception as e:
                 print(f"ERROR: Unknown error validating task specification for {self.name} [{e}]")
