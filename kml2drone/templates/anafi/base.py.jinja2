@@ -8,7 +8,7 @@
 if __name__ == "__main__":
         
     #eventually IP will be specified depending on what drone is chosen
-    IP = {{ drone_ip|default("'192.168.42.1'")}}
+    IP = "{{ drone_ip|default('192.168.42.1')}}"
     drone = olympe.Drone(IP)
     drone.connect()
     {{ macros.TransponderThreadStart() }}

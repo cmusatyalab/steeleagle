@@ -122,7 +122,13 @@ class Placemark:
 def generateOlympeScript(args, placemarks):
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
-    out = template.render(placemarks=placemarks, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
+    if args.sim:
+        ip = "10.202.0.1"
+    elif args.skycontroller:
+        ip = "192.168.53.1"
+    else:
+        ip = "192.168.42.1"
+    out = template.render(placemarks=placemarks, drone_ip=ip, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
     return out
 
 def parseKML(args):
@@ -172,6 +178,10 @@ def _main():
         help='Specify address of dashboard to send heartbeat to [default: transponder.pgh.cloudapp.azurelel.cs.cmu.edu]')
     parser.add_argument('-dp', '--dashboard_port', default='8080',
         help='Specify dashboard port [default: 8080]')
+    parser.add_argument('-s', '--sim', action='store_true', 
+        help='Connect to  simulated drone at 10.202.0.1 [default: Direct connection to drone at 192.168.42.1]')
+    parser.add_argument('-c', '--controller', action='store_true', 
+        help='Connect to drone via SkyController at 192.168.53.1 [default: Direct connection to drone at 192.168.42.1]')
 
     if len(sys.argv) == 1:
         parser.print_help()
