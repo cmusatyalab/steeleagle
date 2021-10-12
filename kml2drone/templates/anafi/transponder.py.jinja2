@@ -1,8 +1,10 @@
 broadcasting = True
 
 plan = [] 
-{% for c in coords %}
+{% for k,v in placemarks.items() -%}
+{% for c in v.coords %}
 plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
+{%- endfor %}
 {% endfor %}
 
 # Transponder thread which will update the drone's location on the map.

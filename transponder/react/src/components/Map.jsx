@@ -31,7 +31,7 @@ function Map() {
     const socketRef = useRef();
 
     useEffect(() => {
-        socketRef.current = io.connect('http://transponder.pgh.cloudapp.azurelel.cs.cmu.edu:8080');
+        socketRef.current = io.connect('http://steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu:8080');
         socketRef.current.on("update_drone_data", data => {
             updateDrones(JSON.parse(data)['drones']);
         });
