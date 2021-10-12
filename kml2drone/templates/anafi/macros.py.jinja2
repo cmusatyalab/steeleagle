@@ -44,7 +44,7 @@
             roll_frame_of_reference="none",
             roll=0.0,
         )
-        >> attitude(pitch_absolute=pitch, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
+        >> attitude(pitch_absolute={{pitch}}, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
 {%- endmacro %}
 
 {% macro TakeSinglePhoto() -%}
