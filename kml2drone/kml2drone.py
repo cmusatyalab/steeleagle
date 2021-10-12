@@ -124,7 +124,7 @@ def generateOlympeScript(args, placemarks):
     template = env.get_template(args.template)
     if args.sim:
         ip = "10.202.0.1"
-    elif args.skycontroller:
+    elif args.controller:
         ip = "192.168.53.1"
     else:
         ip = "192.168.42.1"
