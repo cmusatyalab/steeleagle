@@ -91,7 +91,7 @@ function Map() {
             <h2 className="map-h2">Drone Locator</h2>
             <div className="google-map">
                 <GoogleMapReact
-                bootstrapURLKeys={{ key: 'AIzaSyBpyDWnlZ29cIBES0R17rkp3woN3RF5txU' }}
+                bootstrapURLKeys={{ key: 'AIzaSyApnLUQeyT4AEfpEa6rL5THv0XyHxOFmaY' }}
                 defaultCenter={defaultLocation}
                 defaultZoom={defaultZoom}
 	        yesIWantToUseGoogleMapApiInternals
