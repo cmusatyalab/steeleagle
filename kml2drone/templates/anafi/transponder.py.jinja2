@@ -23,10 +23,14 @@ def transponder_thread(drone, tag):
             payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name, "plan": plan}, "droneid": tag}
             r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/update", json=payload)
             time.sleep(1)
-        except Exception as e:
+        except ConnectionError:
+            #if we can't connect to the dashboard, stop trying to post
+            broadcasting = False
+        except RuntimeError:
             # This means the data is not available just yet. Olympe will raise a runtime error if any of the
             # get_state() calls fail.
+            pass
+        except Exception as e:
             print(e)
-            broadcasting = False
     # Delete the drone to cleanup.
     r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/delete", json={"droneid": tag})
