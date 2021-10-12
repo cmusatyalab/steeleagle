@@ -7,6 +7,7 @@ plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
 
 # Transponder thread which will update the drone's location on the map.
 def transponder_thread(drone, tag):
+    global broadcasting
     while (broadcasting):
         airspeed = 0
         try:
@@ -24,5 +25,6 @@ def transponder_thread(drone, tag):
             # This means the data is not available just yet. Olympe will raise a runtime error if any of the
             # get_state() calls fail.
             print(e)
+            broadcasting = False
     # Delete the drone to cleanup.
     r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/delete", json={"droneid": tag})
