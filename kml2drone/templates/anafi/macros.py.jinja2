@@ -19,6 +19,14 @@
 
 {% macro EnablePhotoMode() -%}
     drone(set_camera_mode(0, camera.camera_mode.photo)).wait().success()
+{%- endmacro %}
+
+{% macro DisablePhotoMode() -%}
+    drone(set_camera_mode(0, camera.camera_mode.recording)).wait().success()
+{%- endmacro %}
+
+{% macro SetPhotoMode(mode) -%}
+    {% if mode == 'SINGLE' %}
     drone(set_photo_mode(0,
             camera.photo_mode.single,
             camera.photo_format.full_frame,
@@ -26,8 +34,16 @@
             camera.burst_value.burst_14_over_4s,
             camera.bracketing_preset.preset_1ev,
             0.0)).wait().success()
+    {% elif mode == 'BURST' %}
+    drone(set_photo_mode(0,
+        camera.photo_mode.burst,
+        camera.photo_format.full_frame,
+        camera.photo_file_format.jpeg,
+        camera.burst_value.burst_14_over_4s,
+        camera.bracketing_preset.preset_1ev,
+        0.0)).wait().success()
+    {% endif %}
 {%- endmacro %}
-
 
 {% macro ChangeHeadingByOffset(heading_offset_radians) -%}
     drone(moveBy(0.0, 0.0, 0.0, {{heading_offset_radians}}* math.pi/180)).wait().success()
@@ -52,7 +68,6 @@
 {%- endmacro %}
 
 {% macro TakePhotosAlongPath() -%}
-    {{EnablePhotoMode()}}
     {% for c in kwargs.coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
@@ -60,7 +75,10 @@
     ).wait().success()
     {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
     {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    {{EnablePhotoMode()}}
+    {{SetPhotoMode(kwargs.mode)}}
     {{TakeSinglePhoto()}}
+    {{DisablePhotoMode()}}
     {% endfor %}
 {%- endmacro %}
 
