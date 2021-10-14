@@ -21,6 +21,8 @@ if __name__ == "__main__":
     {{ macros.TakePhotosAlongPath(**v.kwargs) }}
     {% elif v.task == "SetNewHome" %}
     {{ macros.SetNewHome(**v.kwargs) }}
+    {% elif v.task == "MoveTo" %}
+    {{ macros.MoveTo(**v.kwargs) }}
     {% endif -%}
     #####{{v.name}}/{{v.task}} END#####
     {% endfor %}

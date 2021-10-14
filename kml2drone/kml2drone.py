@@ -23,52 +23,11 @@ from zipfile import ZipFile
 import jinja2
 import yaml
 import jsonschema
+import task_stubs
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
-FIXED_ALTITUDE = 6.0 #meters
-
-# Stubs for Jinja Macros
-class TakePhotosAlongPath:
-    def __init__(self):
-        self.schema = {
-                    "title": "TakePhotosAlongPath",
-                    "description": "Instruct drone to take photos at the coordinates specified by the path",
-                    "properties": {
-                        "mode": {
-                        "description": "Photo Mode",
-                        "type": "string",
-                        "enum": ["SINGLE", "BURST", "TIME", "GPS"]
-                        },
-                        "interval": {
-                        "description": "Interval between photos (in seconds or meters)",
-                        "type": "number",
-                        "minimum": 1
-                        },
-                        "gimbal_pitch": {
-                        "description": "The angle of the gimbal",
-                        "type": "number",
-                        "minimum": -90,
-                        "maximim": 90
-                        },
-                        "drone_rotation": {
-                        "description": "The heading offset to rotate the drone to ",
-                        "type": "number",
-                        "minimum": 0,
-                        "maximum": 360
-                        },
-                    },
-                    "required": [ "mode" ]
-                }
-        self.defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
-
-class SetNewHome:
-    def __init__(self):
-        self.schema = {
-                    "title": "SetNewHome",
-                    "description": "Set the return to home point to the coordinates",
-                }
-        self.defaults = {}
+FIXED_ALTITUDE = 15.0 #meters
 
 #Representation of a point/line/polygon from MyMaps
 class Placemark:
@@ -105,7 +64,7 @@ class Placemark:
                 for k, v in self.description.items():
                     self.task = k
                     self.kwargs = v
-                    obj = eval("{}()".format(self.task))
+                    obj = eval("task_stubs.{}()".format(self.task))
                     self.kwargs['coords'] = self.coords #add the coordinates to the list of args
                     self.kwargs = {**obj.defaults, **self.kwargs}  #merge default args
                     jsonschema.validate(self.kwargs, obj.schema)
