@@ -17,11 +17,11 @@ if __name__ == "__main__":
     {% for k,v in placemarks.items() %}
     #####{{v.name}}/{{v.task}} START#####
     #####{{v.kwargs}}#####
-    {%- if v.task == "TakePhotosAlongPath" %}
+    {%- if v.task == "heimdall_TakePhotosAlongPath" %}
     {{ macros.TakePhotosAlongPath(**v.kwargs) }}
-    {% elif v.task == "SetNewHome" %}
+    {% elif v.task == "heimdall_SetNewHome" %}
     {{ macros.SetNewHome(**v.kwargs) }}
-    {% elif v.task == "MoveTo" %}
+    {% elif v.task == "heimdall_MoveTo" %}
     {{ macros.MoveTo(**v.kwargs) }}
     {% endif -%}
     #####{{v.name}}/{{v.task}} END#####

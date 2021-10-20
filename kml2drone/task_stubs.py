@@ -23,7 +23,7 @@
  for validation and a python dict that holds any
  default values
 """
-class TakePhotosAlongPath:
+class heimdall_TakePhotosAlongPath:
     def __init__(self):
         self.schema = {
                     "title": "TakePhotosAlongPath",
@@ -43,7 +43,8 @@ class TakePhotosAlongPath:
                         "description": "The angle of the gimbal",
                         "type": "number",
                         "minimum": -90,
-                        "maximim": 90
+                        "maximum": 90,
+                        "default": 90
                         },
                         "drone_rotation": {
                         "description": "The heading offset to rotate the drone to ",
@@ -56,7 +57,7 @@ class TakePhotosAlongPath:
                 }
         self.defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
 
-class SetNewHome:
+class heimdall_SetNewHome:
     def __init__(self):
         self.schema = {
                     "title": "SetNewHome",
@@ -64,7 +65,7 @@ class SetNewHome:
                 }
         self.defaults = {}
 
-class MoveTo:
+class heimdall_MoveTo:
     def __init__(self):
         self.schema = {
                     "title": "MoveTo",
