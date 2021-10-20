@@ -104,7 +104,7 @@ def parseKML(args):
                 if args.verbose:
                     print(f"Processing {child.text.strip()} placemark...")
             elif child.tag == KML_NAMESPACE+'description':
-                p.description = yaml.load(child.text.strip().replace("<br>", "\n"))
+                p.description = yaml.load(child.text.strip().replace("<br>", "\n"), Loader=yaml.FullLoader)
             for coord in child.iter(KML_NAMESPACE+'coordinates'):
                 p.parseCoordinates(coord)
 
