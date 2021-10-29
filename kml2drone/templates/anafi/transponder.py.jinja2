@@ -6,10 +6,12 @@ plan = []
 plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
 {%- endfor %}
 {% endfor %}
+current_loc = {'latitude': 40.4136589, 'longitude': -79.9495332, 'altitude': 10} #use global current_loc to access
 
 # Transponder thread which will update the drone's location on the map.
 def transponder_thread(drone, tag):
     global broadcasting
+    global current_loc
     while (broadcasting):
         airspeed = 0
         try:
@@ -22,7 +24,8 @@ def transponder_thread(drone, tag):
             state = drone.get_state(FlyingStateChanged)
             payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name, "plan": plan}, "droneid": tag}
             r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/update", json=payload)
-            time.sleep(1)
+            current_loc = loc
+            time.sleep(0.2)
         except ConnectionError:
             #if we can't connect to the dashboard, stop trying to post
             broadcasting = False

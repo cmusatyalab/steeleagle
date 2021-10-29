@@ -1,9 +1,12 @@
 #/usr/bin/python3
 {% include "./anafi/imports.py.jinja2" %}
 {% include "./anafi/transponder.py.jinja2" %}
+
+{% include "./anafi/streaming.py.jinja2" %}
+
 {% import './anafi/macros.py.jinja2' as macros with context%}
 
-
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
         
@@ -11,23 +14,25 @@ if __name__ == "__main__":
     IP = "{{ drone_ip|default('192.168.42.1')}}"
     drone = olympe.Drone(IP)
     drone.connect()
-    {{ macros.TransponderThreadStart() }}
+
     drone(TakeOff()).wait().success()
+    {{ macros.TransponderThreadStart() }}
 
     {% for k,v in placemarks.items() %}
     #####{{v.name}}/{{v.task}} START#####
     #####{{v.kwargs}}#####
     {%- if v.task == "heimdall_TakePhotosAlongPath" %}
     {{ macros.TakePhotosAlongPath(**v.kwargs) }}
-    {% elif v.task == "heimdall_SetNewHome" %}
+    {% elif v.task == "SetNewHome" %}
     {{ macros.SetNewHome(**v.kwargs) }}
-    {% elif v.task == "heimdall_MoveTo" %}
+    {% elif v.task == "MoveTo" %}
     {{ macros.MoveTo(**v.kwargs) }}
+    {% elif v.task == "heimdall_DetectObjectsAlongPath" %}
+    {{ macros.DetectObjectsAlongPath(**v.kwargs) }}
     {% endif -%}
     #####{{v.name}}/{{v.task}} END#####
     {% endfor %}
 
-    drone(Landing()).wait().success()
     broadcasting = False
     {{ macros.TransponderThreadStop() }}
     drone.disconnect()

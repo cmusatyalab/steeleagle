@@ -7,6 +7,14 @@
     {% endfor %}
 {%- endmacro %}
 
+{% macro StreamingThreadStart(sample_rate) -%}
+    streamer = OlympeStreaming(drone, {{sample_rate}})
+    streamer.start()
+{%- endmacro %}
+
+{% macro StreamingThreadStop() -%}
+    streamer.stop()
+{%- endmacro %}
 
 {% macro TransponderThreadStart() -%}  
     transponder = threading.Thread(target=transponder_thread, args=(drone, {{drone_name|default('"SteelEagle1"')}},))
@@ -85,4 +93,17 @@
 
 {% macro SetNewHome() -%}
    #drone.SetHome({{kwargs}}) #but it is deprecated?
+{%- endmacro %}
+
+{% macro DetectObjectsAlongPath() -%}
+    {{StreamingThreadStart(kwargs.sample_rate)}}
+    {% for c in kwargs.coords %}
+    drone(
+        moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
+        >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
+    ).wait().success()
+    {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
+    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    {% endfor %}
+    {{StreamingThreadStop()}}
 {%- endmacro %}

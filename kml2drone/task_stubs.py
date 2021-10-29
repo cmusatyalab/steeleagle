@@ -57,7 +57,7 @@ class heimdall_TakePhotosAlongPath:
                 }
         self.defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
 
-class heimdall_SetNewHome:
+class SetNewHome:
     def __init__(self):
         self.schema = {
                     "title": "SetNewHome",
@@ -65,10 +65,39 @@ class heimdall_SetNewHome:
                 }
         self.defaults = {}
 
-class heimdall_MoveTo:
+class MoveTo:
     def __init__(self):
         self.schema = {
                     "title": "MoveTo",
                     "description": "Fly to coordinates specified by placemark",
                 }
         self.defaults = {}
+
+class heimdall_DetectObjectsAlongPath:
+    def __init__(self):
+        self.schema = {
+                    "title": "DetectObjectsAlongPath",
+                    "description": "Instruct drone to detect objects along the specified path",
+                    "properties": {
+                        "gimbal_pitch": {
+                        "description": "The angle of the gimbal",
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90,
+                        "default": 90
+                        },
+                        "drone_rotation": {
+                        "description": "The heading offset to rotate the drone to ",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 360
+                        },
+                        "sample_rate": {
+                        "description": "The number of frames to evaluate per second",
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 30
+                        },
+                    }
+                }
+        self.defaults = {'gimbal_pitch': -90.0, 'drone_rotation': 0.0, 'sample_rate': 2}

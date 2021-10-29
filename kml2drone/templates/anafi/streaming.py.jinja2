@@ -1,0 +1,116 @@
+class OlympeStreaming(threading.Thread):
+
+    def __init__(self, drone, sample_rate=2):
+        self.drone = drone
+        self.frame_queue = queue.Queue()
+        self.flush_queue_lock = threading.Lock()
+        self.frame_num = 0 
+        self.sample_rate = sample_rate
+        super().__init__()
+        super().start()
+
+    def start(self):
+        # Connect the the drone
+        #self.drone.connect()
+        self.context = zmq.Context()
+
+        #  Socket to talk to server
+        print("Publishing images for OpenScout client's ZmqAdapter..")
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.bind('tcp://*:5555')
+
+
+        # Setup your callback functions to do some live video processing
+        self.drone.set_streaming_callbacks(
+            raw_cb=self.yuv_frame_cb,
+            h264_cb=self.h264_frame_cb,
+            start_cb=self.start_cb,
+            end_cb=self.end_cb,
+            flush_raw_cb=self.flush_cb,
+        )
+        # Start video streaming
+        self.drone.start_video_streaming()
+
+    def stop(self):
+        # Properly stop the video stream and disconnect
+        self.drone.stop_video_streaming()
+        self.drone.disconnect()
+
+    def yuv_frame_cb(self, yuv_frame):
+        """
+        This function will be called by Olympe for each decoded YUV frame.
+            :type yuv_frame: olympe.VideoFrame
+        """
+        yuv_frame.ref()
+        self.frame_queue.put_nowait(yuv_frame)
+
+    def flush_cb(self):
+        with self.flush_queue_lock:
+            while not self.frame_queue.empty():
+                self.frame_queue.get_nowait().unref()
+        return True
+
+    def start_cb(self):
+        pass
+
+    def end_cb(self):
+        pass
+
+    def h264_frame_cb(self, h264_frame):
+        pass
+
+    def send_array(self, A, flags=0, copy=True, track=False):
+        """send a numpy array with metadata"""
+        global current_loc
+        md = dict(
+            dtype = str(A.dtype),
+            shape = A.shape,
+            location = current_loc
+        )
+        self.socket.send_json(md, flags|zmq.SNDMORE)
+        return self.socket.send(A, flags, copy=copy, track=track)
+
+    def send_yuv_frame_to_server(self, yuv_frame):
+        # the VideoFrame.info() dictionary contains some useful information
+        # such as the video resolution
+        info = yuv_frame.info()
+        height, width = info["yuv"]["height"], info["yuv"]["width"]
+
+        # yuv_frame.vmeta() returns a dictionary that contains additional
+        # metadata from the drone (GPS coordinates, battery percentage, ...)
+
+        # convert pdraw YUV flag to OpenCV YUV flag
+        cv2_cvt_color_flag = {
+            olympe.PDRAW_YUV_FORMAT_I420: cv2.COLOR_YUV2BGR_I420,
+            olympe.PDRAW_YUV_FORMAT_NV12: cv2.COLOR_YUV2BGR_NV12,
+        }[info["yuv"]["format"]]
+
+        # yuv_frame.as_ndarray() is a 2D numpy array with the proper "shape"
+        # i.e (3 * height / 2, width) because it's a YUV I420 or NV12 frame
+
+        # Use OpenCV to convert the yuv frame to RGB
+        cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+
+        if self.frame_num % (30 / self.sample_rate) == 0:
+            print(f"Publishing frame {self.frame_num} to OpenScout client...")
+            self.send_array(cv2frame)
+        self.frame_num += 1
+
+    def run(self):
+        main_thread = next(
+            filter(lambda t: t.name == "MainThread", threading.enumerate())
+        )
+        while main_thread.is_alive():
+            with self.flush_queue_lock:
+                try:
+                    yuv_frame = self.frame_queue.get(timeout=0.01)
+                except queue.Empty:
+                    continue
+                try:
+                    self.send_yuv_frame_to_server(yuv_frame)
+                except Exception as e:
+                    print(e)
+                finally:
+                    # Don't forget to unref the yuv frame. We don't want to
+                    # starve the video buffer pool
+                    yuv_frame.unref()
