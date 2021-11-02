@@ -122,7 +122,7 @@ def parseKML(args):
     return out
 
 def _main():
-    parser = argparse.ArgumentParser(prog='kml2drone', 
+    parser = argparse.ArgumentParser(prog='hermes', 
         description='Convert kml/kmz file to drone-specific instructions.')
     parser.add_argument('input', help='kml/kmz file to convert')
     parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
@@ -146,7 +146,7 @@ def _main():
         parser.print_help()
     args = parser.parse_args()
     if(args.verbose):
-        print(HR.format("kml2drone"))
+        print(HR.format("hermes"))
         print(f"Input File:\t\t{args.input}")
         print(f"Drone Platform:\t\t{args.platform}")
         print(f"Output File:\t\t{args.output}")
