@@ -44,7 +44,7 @@ class heimdall_TakePhotosAlongPath:
                         "type": "number",
                         "minimum": -90,
                         "maximum": 90,
-                        "default": 90
+                        "default": -90
                         },
                         "drone_rotation": {
                         "description": "The heading offset to rotate the drone to ",
@@ -55,7 +55,7 @@ class heimdall_TakePhotosAlongPath:
                     },
                     "required": [ "mode" ]
                 }
-        self.defaults = {'mode': 'BURST', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
+        self.defaults = {'mode': 'SINGLE', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
 
 class SetNewHome:
     def __init__(self):
@@ -73,6 +73,14 @@ class MoveTo:
                 }
         self.defaults = {}
 
+class Land:
+    def __init__(self):
+        self.schema = {
+                    "title": "Land",
+                    "description": "Instruct the drone to initiate landing at this point",
+                }
+        self.defaults = {}
+
 class heimdall_DetectObjectsAlongPath:
     def __init__(self):
         self.schema = {
@@ -84,10 +92,10 @@ class heimdall_DetectObjectsAlongPath:
                         "type": "number",
                         "minimum": -90,
                         "maximum": 90,
-                        "default": 90
+                        "default": -45
                         },
                         "drone_rotation": {
-                        "description": "The heading offset to rotate the drone to ",
+                        "description": "The heading offset to rotate the drone to at each vertex (in degrees) ",
                         "type": "number",
                         "minimum": 0,
                         "maximum": 360
@@ -100,4 +108,4 @@ class heimdall_DetectObjectsAlongPath:
                         },
                     }
                 }
-        self.defaults = {'gimbal_pitch': -90.0, 'drone_rotation': 0.0, 'sample_rate': 2}
+        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2}
