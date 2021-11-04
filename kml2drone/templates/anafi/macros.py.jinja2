@@ -107,3 +107,8 @@
     {% endfor %}
     {{StreamingThreadStop()}}
 {%- endmacro %}
+
+{% macro Land() -%}
+    {{MoveTo(kwargs.coords)}}
+    drone(Landing()).wait().success()
+{%- endmacro %}

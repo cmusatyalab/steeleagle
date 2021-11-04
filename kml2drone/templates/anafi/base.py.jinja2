@@ -29,7 +29,6 @@ if __name__ == "__main__":
     IP = "{{ drone_ip|default('192.168.42.1')}}"
     drone = olympe.Drone(IP)
     drone.connect()
-
     drone(TakeOff()).wait().success()
     {{ macros.TransponderThreadStart() }}
 
@@ -44,6 +43,8 @@ if __name__ == "__main__":
     {{ macros.MoveTo(**v.kwargs) }}
     {% elif v.task == "heimdall_DetectObjectsAlongPath" %}
     {{ macros.DetectObjectsAlongPath(**v.kwargs) }}
+    {% elif v.task == "Land" %}
+    {{ macros.Land(**v.kwargs) }}
     {% endif -%}
     #####{{v.name}}/{{v.task}} END#####
     {% endfor %}
