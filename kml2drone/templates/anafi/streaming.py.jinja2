@@ -1,17 +1,16 @@
 class OlympeStreaming(threading.Thread):
-
     def __init__(self, drone, sample_rate=2):
         self.drone = drone
         self.frame_queue = queue.Queue()
         self.flush_queue_lock = threading.Lock()
         self.frame_num = 0 
         self.sample_rate = sample_rate
+        self.renderer = None
         super().__init__()
         super().start()
 
+
     def start(self):
-        # Connect the the drone
-        #self.drone.connect()
         self.context = zmq.Context()
 
         #  Socket to talk to server
@@ -21,7 +20,7 @@ class OlympeStreaming(threading.Thread):
 
 
         # Setup your callback functions to do some live video processing
-        self.drone.set_streaming_callbacks(
+        self.drone.streaming.set_callbacks(
             raw_cb=self.yuv_frame_cb,
             h264_cb=self.h264_frame_cb,
             start_cb=self.start_cb,
@@ -29,12 +28,14 @@ class OlympeStreaming(threading.Thread):
             flush_raw_cb=self.flush_cb,
         )
         # Start video streaming
-        self.drone.start_video_streaming()
+        self.drone.streaming.start()
+        #self.renderer = PdrawRenderer(pdraw=self.drone.streaming)
 
     def stop(self):
+        if self.renderer is not None:
+            self.renderer.stop()
         # Properly stop the video stream and disconnect
-        self.drone.stop_video_streaming()
-        self.drone.disconnect()
+        self.drone.streaming.stop()
 
     def yuv_frame_cb(self, yuv_frame):
         """
@@ -44,7 +45,9 @@ class OlympeStreaming(threading.Thread):
         yuv_frame.ref()
         self.frame_queue.put_nowait(yuv_frame)
 
-    def flush_cb(self):
+    def flush_cb(self, stream):
+        if stream["vdef_format"] != olympe.VDEF_I420:
+            return True
         with self.flush_queue_lock:
             while not self.frame_queue.empty():
                 self.frame_queue.get_nowait().unref()
@@ -74,23 +77,25 @@ class OlympeStreaming(threading.Thread):
         # the VideoFrame.info() dictionary contains some useful information
         # such as the video resolution
         info = yuv_frame.info()
-        height, width = info["yuv"]["height"], info["yuv"]["width"]
+
+        height, width = (  # noqa
+            info["raw"]["frame"]["info"]["height"],
+            info["raw"]["frame"]["info"]["width"],
+        )
 
         # yuv_frame.vmeta() returns a dictionary that contains additional
         # metadata from the drone (GPS coordinates, battery percentage, ...)
-
         # convert pdraw YUV flag to OpenCV YUV flag
         cv2_cvt_color_flag = {
-            olympe.PDRAW_YUV_FORMAT_I420: cv2.COLOR_YUV2BGR_I420,
-            olympe.PDRAW_YUV_FORMAT_NV12: cv2.COLOR_YUV2BGR_NV12,
-        }[info["yuv"]["format"]]
+            olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
+            olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
+        }[yuv_frame.format()]
 
         # yuv_frame.as_ndarray() is a 2D numpy array with the proper "shape"
         # i.e (3 * height / 2, width) because it's a YUV I420 or NV12 frame
 
         # Use OpenCV to convert the yuv frame to RGB
         cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
-
         if self.frame_num % (30 / self.sample_rate) == 0:
             print(f"Publishing frame {self.frame_num} to OpenScout client...")
             self.send_array(cv2frame)
