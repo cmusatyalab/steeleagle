@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 #    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN pip3 install --upgrade pip
-RUN python3 -m pip install jupyter ipython jinja2 zmq
+RUN python3 -m pip install jupyter ipython jinja2 zmq opencv-python
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 #install Olympe
