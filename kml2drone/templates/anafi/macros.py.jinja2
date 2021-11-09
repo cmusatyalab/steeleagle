@@ -97,13 +97,14 @@
 
 {% macro DetectObjectsAlongPath() -%}
     {{StreamingThreadStart(kwargs.sample_rate)}}
+    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
     {% for c in kwargs.coords %}
     drone(
         moveTo({{c.lat}}, {{c.lng}}, {{c.alt}}, mode.orientation_mode.to_target, 0.0)
         >> moveToChanged(latitude={{c.lat}}, longitude={{c.lng}}, altitude={{c.alt}}, orientation_mode=mode.orientation_mode.to_target, status='DONE')
     ).wait().success()
     {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
-    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    time.sleep({{kwargs.hover_delay}})
     {% endfor %}
     {{StreamingThreadStop()}}
 {%- endmacro %}

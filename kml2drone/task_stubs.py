@@ -106,6 +106,12 @@ class heimdall_DetectObjectsAlongPath:
                         "minimum": 1,
                         "maximum": 30
                         },
+                        "hover_delay": {
+                        "description": "The number of seconds to hover at each vertex before moving to the next",
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 10
+                        },
                     }
                 }
-        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2}
+        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 4}
