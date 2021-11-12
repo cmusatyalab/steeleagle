@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+import os
+import json
+import json_schema_for_humans.generate as jsfh
+
 """
  Stubs for Jinja Macros
  These stubs are used to validate the tasks
@@ -26,31 +31,35 @@
 class heimdall_TakePhotosAlongPath:
     def __init__(self):
         self.schema = {
-                    "title": "TakePhotosAlongPath",
+                    "title": "heimdall_TakePhotosAlongPath",
                     "description": "Instruct drone to take photos at the coordinates specified by the path",
+                    "examples": ["heimdall_TakePhotosAlongPath: {mode: 'SINGLE', interval: 10, gimbal_pitch: -45.0}"],
                     "properties": {
                         "mode": {
                         "description": "Photo Mode",
                         "type": "string",
-                        "enum": ["SINGLE", "BURST", "TIME", "GPS"]
+                        "enum": ["SINGLE", "BURST", "TIME", "GPS"],
+                        "default": "SINGLE"
                         },
                         "interval": {
                         "description": "Interval between photos (in seconds or meters)",
                         "type": "number",
-                        "minimum": 1
+                        "minimum": 1,
+                        "default": 5
                         },
                         "gimbal_pitch": {
                         "description": "The angle of the gimbal",
                         "type": "number",
-                        "minimum": -90,
-                        "maximum": 90,
-                        "default": -90
+                        "minimum": -90.0,
+                        "maximum": 90.0,
+                        "default": -90.0
                         },
                         "drone_rotation": {
                         "description": "The heading offset to rotate the drone to ",
                         "type": "number",
-                        "minimum": 0,
-                        "maximum": 360
+                        "minimum": 0.0,
+                        "maximum": 360.0,
+                        "default": 0.0
                         },
                     },
                     "required": [ "mode" ]
@@ -70,6 +79,7 @@ class MoveTo:
         self.schema = {
                     "title": "MoveTo",
                     "description": "Fly to coordinates specified by placemark",
+                    "examples": ["MoveTo: {}"]
                 }
         self.defaults = {}
 
@@ -78,40 +88,69 @@ class Land:
         self.schema = {
                     "title": "Land",
                     "description": "Instruct the drone to initiate landing at this point",
+                    "examples": ["Land: {}"]
                 }
         self.defaults = {}
 
 class heimdall_DetectObjectsAlongPath:
-    def __init__(self):
+     def __init__(self):
         self.schema = {
-                    "title": "DetectObjectsAlongPath",
-                    "description": "Instruct drone to detect objects along the specified path",
+                    "title": "heimdall_DetectObjectsAlongPath",
+                    "description": "Instruct drone to detect objects along the specified path using the specified pitch, rotation, sampling rate, and detection  model",
+                    "examples": ["heimdall_DetectObjectsAlongPath: {model: 'coco', sample_rate: 3, hover_delay: 10}"],
                     "properties": {
                         "gimbal_pitch": {
                         "description": "The angle of the gimbal",
                         "type": "number",
-                        "minimum": -90,
-                        "maximum": 90,
-                        "default": -45
+                        "minimum": -90.0,
+                        "maximum": 90.0,
+                        "default": -45.0
                         },
                         "drone_rotation": {
                         "description": "The heading offset to rotate the drone to at each vertex (in degrees) ",
                         "type": "number",
-                        "minimum": 0,
-                        "maximum": 360
+                        "minimum": 0.0,
+                        "maximum": 360.0,
+                        "default": 0.0
                         },
                         "sample_rate": {
-                        "description": "The number of frames to evaluate per second",
+                        "description": "The number of frames to evaluate (via OpenScout client) per second",
                         "type": "number",
                         "minimum": 1,
-                        "maximum": 30
+                        "maximum": 30,
+                        "default": 2
                         },
                         "hover_delay": {
                         "description": "The number of seconds to hover at each vertex before moving to the next",
                         "type": "number",
                         "minimum": 1,
-                        "maximum": 10
+                        "maximum": 10,
+                        "default": 5
+                        },
+                        "model": {
+                        "description": "Name of the object detection model to evaluate frames against (default = 'coco')",
+                        "type": "string",
+                        "default": "coco"
                         },
                     }
                 }
-        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 4}
+        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 5, 'model': 'coco'}
+
+def _main():
+    #get all class stubs in this module into a dict
+    current_module = sys.modules[__name__]
+    a = dict([(name, cls) for name, cls in current_module.__dict__.items() if isinstance(cls, type)])
+
+    for k,v in a.items():
+        #create an instance of each class
+        obj = eval("{}()".format(k))
+        #save schema to file
+        with open(f'./task_docs/{k}.schema', 'w+') as outfile:
+            json.dump(obj.schema, outfile)
+        #generate doc
+        jsfh.generate_from_filename(f'./task_docs/{k}.schema', f'./task_docs/{k}.html', expand_buttons=True, default_from_description=True)
+        #clean up .schema files
+        os.remove(f'./task_docs/{k}.schema')
+
+if __name__ == "__main__":
+    _main()
