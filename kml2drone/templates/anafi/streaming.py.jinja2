@@ -1,10 +1,11 @@
 class OlympeStreaming(threading.Thread):
-    def __init__(self, drone, sample_rate=2):
+    def __init__(self, drone, sample_rate=2, model='coco'):
         self.drone = drone
         self.frame_queue = queue.Queue()
         self.flush_queue_lock = threading.Lock()
         self.frame_num = 0 
         self.sample_rate = sample_rate
+        self.model = model
         self.renderer = None
         super().__init__()
         super().start()
@@ -36,6 +37,7 @@ class OlympeStreaming(threading.Thread):
             self.renderer.stop()
         # Properly stop the video stream and disconnect
         self.drone.streaming.stop()
+        self.context.destroy()
 
     def yuv_frame_cb(self, yuv_frame):
         """
@@ -68,7 +70,8 @@ class OlympeStreaming(threading.Thread):
         md = dict(
             dtype = str(A.dtype),
             shape = A.shape,
-            location = current_loc
+            location = current_loc,
+            model = self.model
         )
         self.socket.send_json(md, flags|zmq.SNDMORE)
         return self.socket.send(A, flags, copy=copy, track=track)

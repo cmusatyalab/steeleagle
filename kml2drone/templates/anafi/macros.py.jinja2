@@ -7,8 +7,8 @@
     {% endfor %}
 {%- endmacro %}
 
-{% macro StreamingThreadStart(sample_rate) -%}
-    streamer = OlympeStreaming(drone, {{sample_rate}})
+{% macro StreamingThreadStart(sample_rate, model) -%}
+    streamer = OlympeStreaming(drone, {{sample_rate}}, '{{model}}')
     streamer.start()
 {%- endmacro %}
 
@@ -96,7 +96,7 @@
 {%- endmacro %}
 
 {% macro DetectObjectsAlongPath() -%}
-    {{StreamingThreadStart(kwargs.sample_rate)}}
+    {{StreamingThreadStart(kwargs.sample_rate, kwargs.model)}}
     {{GimbalSetTarget(kwargs.gimbal_pitch)}}
     {% for c in kwargs.coords %}
     drone(
