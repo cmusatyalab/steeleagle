@@ -70,7 +70,8 @@ class SetNewHome:
     def __init__(self):
         self.schema = {
                     "title": "SetNewHome",
-                    "description": "Set the return to home point to the coordinates",
+                    "description": "<span class='badge badge-danger'>Deprecated</span> Set the return to home point to the coordinates",
+                    "examples": ["SetNewHome: {}"]
                 }
         self.defaults = {}
 
@@ -130,6 +131,7 @@ class heimdall_DetectObjectsAlongPath:
                         "model": {
                         "description": "Name of the object detection model to evaluate frames against (default = 'coco')",
                         "type": "string",
+                        "enum": ["coco", "oidv4"],
                         "default": "coco"
                         },
                     }
@@ -148,7 +150,9 @@ def _main():
         with open(f'./task_docs/{k}.schema', 'w+') as outfile:
             json.dump(obj.schema, outfile)
         #generate doc
-        jsfh.generate_from_filename(f'./task_docs/{k}.schema', f'./task_docs/{k}.html', expand_buttons=True, default_from_description=True)
+        from json_schema_for_humans.generation_configuration import GenerationConfiguration
+        config = GenerationConfiguration(expand_buttons=True, default_from_description=False, footer_show_time=False, description_is_markdown=True)
+        jsfh.generate_from_filename(f'./task_docs/{k}.schema', f'./task_docs/{k}.html', config=config)
         #clean up .schema files
         os.remove(f'./task_docs/{k}.schema')
 
