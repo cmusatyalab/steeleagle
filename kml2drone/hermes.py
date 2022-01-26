@@ -24,10 +24,13 @@ import jinja2
 import yaml
 import jsonschema
 import task_stubs
+import requests
+import json
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
 FIXED_ALTITUDE = 15.0 #meters
+start = None
 
 #Representation of a point/line/polygon from MyMaps
 class Placemark:
@@ -87,10 +90,31 @@ def generateOlympeScript(args, placemarks):
         ip = "192.168.53.1"
     else:
         ip = "192.168.42.1"
-    out = template.render(placemarks=placemarks, drone_ip=ip, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port)
+    out = template.render(placemarks=placemarks, drone_ip=ip, dashboard_address=args.dashboard_address, dashboard_port=args.dashboard_port, sim=args.sim, sample=args.sample)
+    return out
+
+def generateWorldFile(args):
+    global start
+
+    # Get up-to-date weather data using WeatherAPI!
+    key = ''
+    with open('weatherapi.key', 'r') as keyfile:
+        key = keyfile.read()
+    if len(key) > 0:
+        response = requests.get('http://api.weatherapi.com/v1/current.json', params={'q' : "{0},{1}".format(start['lat'], start['lng']), 'key' : key})
+        data = response.json()
+        current_weather = data['current']
+    else:
+        raise Exception('Weather API key not found!')
+    
+    env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
+    template = env.get_template(args.world_template)
+    out = template.render(start=start, wind_speed=(current_weather['wind_mph'] * 0.44704), wind_deg=current_weather['wind_degree'])
     return out
 
 def parseKML(args):
+    global start
+
     print(HR.format("Parsing KML"))
     tree = ET.parse(args.input)
     root = tree.getroot()
@@ -107,8 +131,9 @@ def parseKML(args):
                 p.description = yaml.load(child.text.strip().replace("<br>", "\n"), Loader=yaml.FullLoader)
             for coord in child.iter(KML_NAMESPACE+'coordinates'):
                 p.parseCoordinates(coord)
-
         placemarks[p.name] = p
+        if start is None:
+            start = p.coords[0]
     for k,v in placemarks.items():
         v.validate()
 
@@ -118,6 +143,13 @@ def parseKML(args):
         raise Exception(f'Mappings not implemented for {args.platform}.')
     else:
         raise Exception('Unsupported drone platfrom specified')
+
+    # Write the world file with the correct starting pose!
+    if args.sim:
+        world = generateWorldFile(args)
+        with open(args.world_output, mode='w', encoding='utf-8') as f:
+            f.write(world)
+        print(HR.format("Wrote Simulated World File"))
 
     return out
 
@@ -133,12 +165,18 @@ def _main():
         help='Write output to console as well [default: False]')
     parser.add_argument('-t', '--template', default='/anafi/base.py.jinja2',
         help='Specify a jinja2 template [default: /anafi/base.py.jinja2]')
+    parser.add_argument('-w', '--world_template', default='/anafi/empty.world.jinja2',
+        help='Specify a jinja2 template [default: /anafi/empty.world.jinja2]')
+    parser.add_argument('-wo', '--world_output', default='sim.world',
+        help='Specify a world output file [default: sim.world]')
     parser.add_argument('-da', '--dashboard_address', default='steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu',
         help='Specify address of dashboard to send heartbeat to [default: steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu]')
     parser.add_argument('-dp', '--dashboard_port', default='8080',
         help='Specify dashboard port [default: 8080]')
     parser.add_argument('-s', '--sim', action='store_true', 
         help='Connect to  simulated drone at 10.202.0.1 [default: Direct connection to drone at 192.168.42.1]')
+    parser.add_argument('-sa', '--sample', action='store_true', default=0.2,
+        help='Sample rate for transponder/log file')
     parser.add_argument('-c', '--controller', action='store_true', 
         help='Connect to drone via SkyController at 192.168.53.1 [default: Direct connection to drone at 192.168.42.1]')
 

@@ -15,7 +15,11 @@
 # limitations under the License.
 
 {% include "./anafi/imports.py.jinja2" %}
+{%- if sim == False %}
 {% include "./anafi/transponder.py.jinja2" %}
+{% else %}
+{% include "./anafi/logger.py.jinja2" %}
+{% endif -%}
 
 {% include "./anafi/streaming.py.jinja2" %}
 

@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<sdf version="1.5">
+  <world name="default">
+    <gui>
+      <camera name="user_camera">
+        <pose>-8.89 -14.33 12.97 0.0 0.58 0.84</pose>
+        <track_visual>
+          <static>true</static>
+          <use_model_frame>true</use_model_frame>
+          <xyz>-3 0 1</xyz>
+          <inherit_yaw>true</inherit_yaw>
+        </track_visual>
+      </camera>
+    </gui>
+    <spherical_coordinates>
+	    <latitude_deg>{{ start.lat }}</latitude_deg>
+	    <longitude_deg>{{ start.lng }}</longitude_deg>
+    </spherical_coordinates>
+    <physics type="ode">
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <max_contacts>20</max_contacts>
+      <gravity>0 0 -9.81</gravity>
+      <magnetic_field>0.1062e-6 20.8038e-6 -43.2881e-6</magnetic_field>
+      <ode>
+        <solver>
+          <type>world</type>
+          <min_step_size>0.0001</min_step_size>
+          <iters>50</iters>
+          <precon_iters>0</precon_iters>
+          <sor>1.4</sor>
+          <use_dynamic_moi_rescaling>1</use_dynamic_moi_rescaling>
+        </solver>
+        <constraints>
+          <cfm>0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+    <atmosphere type="adiabatic">
+      <temperature>298.15</temperature>
+      <pressure>101325</pressure>
+      <temperature_gradient>-0.0065</temperature_gradient>
+    </atmosphere>
+    <!--*****************-->
+    <!--Drone description-->
+    <!--*****************-->
+    <plugin name="fwman" filename="libsphinx_fwman.so">
+      <spawn_point name="default">
+        <pose>0 0 0.2 0 0 0</pose>
+      </spawn_point>
+    </plugin>
+    <!--*****************-->
+    <!--Wind description-->
+    <!--*****************-->
+    <plugin name="wind" filename="libsphinx_wind.so">
+      <!-- Wind mean speed in m/s. -->
+      <magnitude_mean>{{ wind_speed }}</magnitude_mean>
+      <!-- Wind mean direction in decimal degrees. -->
+      <direction_mean>{{ wind_deg }}</direction_mean>
+      <!-- Wind mean elevation in decimal degrees. -->
+      <elevation_mean>0.0</elevation_mean>
+      <!-- Lowpass filter time characteristics in seconds.
+              A value of 0 seconds deactivate the filter. -->
+      <magnitude_time_for_rise>0.0</magnitude_time_for_rise>
+      <direction_time_for_rise>0.0</direction_time_for_rise>
+      <elevation_time_for_rise>0.0</elevation_time_for_rise>
+    </plugin>
+    <!--*****************-->
+    <!--Scene description-->
+    <!--*****************-->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+  </world>
+</sdf>

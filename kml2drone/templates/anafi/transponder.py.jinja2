@@ -25,7 +25,7 @@ def transponder_thread(drone, tag):
             payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name, "plan": plan}, "droneid": tag}
             r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/update", json=payload)
             current_loc = loc
-            time.sleep(0.2)
+            time.sleep({{ sample }})
         except ConnectionError:
             #if we can't connect to the dashboard, stop trying to post
             broadcasting = False

@@ -1,3 +1,4 @@
 ./transponder/flask/templates/index.html
 ./transponder/react/package-lock.json
+./kml2drone/weatherapi.key
 *.code-workspace
