@@ -1,0 +1,52 @@
+{% macro MoveTo(c) -%}
+    drone.moveTo({{c.lat}}, {{c.lng}}, {{c.alt}})
+{%- endmacro %}
+
+{% macro StreamingThreadStart(sample_rate) -%}
+    drone.startStreaming(sample_rate)
+{%- endmacro %}
+
+{% macro StreamingThreadStop() -%}
+    drone.stopStreaming()
+{%- endmacro %}
+
+{% macro ChangeHeadingByOffset(heading_offset_radians) -%}
+    drone.rotateBy({{heading_offset_radians}})
+{%- endmacro %}
+
+{% macro GimbalSetTarget(yaw, pitch, roll) -%}
+    drone.setGimbalPose({{yaw}}, {{pitch}}, {{roll}})
+{%- endmacro %}
+
+{% macro TakeSinglePhoto() -%}
+    drone.takePhoto()
+{%- endmacro %}
+
+{% macro TakePhotosAlongPath() -%}
+    {% for c in kwargs.coords %}
+    {{MoveTo(c)}}
+    {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
+    {{GimbalSetTarget(0.0, kwargs.gimbal_pitch, 0.0)}}
+    {{TakeSinglePhoto()}}
+    {% endfor %}
+{%- endmacro %}
+
+
+{% macro SetNewHome() -%}
+    drone.setHome()
+{%- endmacro %}
+
+{% macro DetectObjectsAlongPath() -%}
+    {{StreamingThreadStart(kwargs.sample_rate, kwargs.model)}}
+    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    {% for c in kwargs.coords %}
+    {{MoveTo(c)}}
+    {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
+    time.sleep({{kwargs.hover_delay}})
+    {% endfor %}
+    {{StreamingThreadStop()}}
+{%- endmacro %}
+
+{% macro Land() -%}
+    drone.land()
+{%- endmacro %}

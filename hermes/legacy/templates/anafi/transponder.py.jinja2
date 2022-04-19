@@ -1,0 +1,39 @@
+broadcasting = True
+
+plan = [] 
+{% for k,v in placemarks.items() -%}
+{% for c in v.coords %}
+plan.append({'lat': {{c.lat}}, 'lng': {{c.lng}}})
+{%- endfor %}
+{% endfor %}
+current_loc = {'latitude': 40.4136589, 'longitude': -79.9495332, 'altitude': 10} #use global current_loc to access
+
+# Transponder thread which will update the drone's location on the map.
+def transponder_thread(drone, tag):
+    global broadcasting
+    global current_loc
+    while (broadcasting):
+        airspeed = 0
+        try:
+            speed = drone.get_state(SpeedChanged)
+            airspeed = math.sqrt(speed["speedX"]**2 + speed["speedY"]**2 + speed["speedZ"]**2)
+        except:
+            pass
+        try:
+            loc = drone.get_state(GpsLocationChanged)
+            state = drone.get_state(FlyingStateChanged)
+            payload = {"data": {"tag": tag, "lat": loc["latitude"], "lng": loc["longitude"], "alt": loc["altitude"], "spd": airspeed, "state": state["state"].name, "plan": plan}, "droneid": tag}
+            r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/update", json=payload)
+            current_loc = loc
+            time.sleep({{ sample }})
+        except ConnectionError:
+            #if we can't connect to the dashboard, stop trying to post
+            broadcasting = False
+        except RuntimeError:
+            # This means the data is not available just yet. Olympe will raise a runtime error if any of the
+            # get_state() calls fail.
+            pass
+        except Exception as e:
+            print(e)
+    # Delete the drone to cleanup.
+    r = requests.post("http://{{dashboard_address}}:{{dashboard_port}}/delete", json={"droneid": tag})
