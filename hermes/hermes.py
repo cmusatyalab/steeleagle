@@ -164,12 +164,12 @@ def _main():
     parser.add_argument('input', help='kml/kmz file to convert')
     parser.add_argument('-p', '--platform', choices=['olympe', 'dji'], default='olympe',
         help='Drone platform to convert to  [default: Olympe]')
-    parser.add_argument('-o', '--output', default='flightplan.py',
-        help='Filename for generated drone instructions [default: flightplan.py]')
+    parser.add_argument('-o', '--output', default='./src/edu/cmu/cs/dronebrain/FlightScript.java',
+        help='Filename for generated drone instructions [default: ./src/edu/cmu/cs/dronebrain/FlightScript.java]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
-    parser.add_argument('-t', '--template', default='base.py.jinja2',
-        help='Specify a jinja2 template [default: base.py.jinja2]')
+    parser.add_argument('-t', '--template', default='base.java.jinja2',
+        help='Specify a jinja2 template [default: base.java.jinja2]')
     parser.add_argument('-w', '--world_template', default='empty.world.jinja2',
         help='Specify a jinja2 template [default: empty.world.jinja2]')
     parser.add_argument('-wo', '--world_output', default='sim.world',
