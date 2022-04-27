@@ -21,9 +21,12 @@ import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.RemoteControl
 import com.parrot.drone.groundsdk.device.instrument.BatteryInfo
 import com.parrot.drone.groundsdk.device.instrument.Gps
+import com.parrot.drone.groundsdk.device.peripheral.MainGimbal
+import com.parrot.drone.groundsdk.device.peripheral.gimbal.Gimbal
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
+import com.parrot.drone.groundsdk.internal.device.peripheral.gimbal.GimbalCore
 import java.io.BufferedReader
 import java.io.DataInputStream
 import java.io.DataOutputStream
