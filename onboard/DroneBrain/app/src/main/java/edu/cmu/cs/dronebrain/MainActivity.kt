@@ -19,12 +19,21 @@ import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.RemoteControl
 import com.parrot.drone.groundsdk.device.instrument.BatteryInfo
 import com.parrot.drone.groundsdk.device.instrument.Gps
+import com.parrot.drone.groundsdk.device.peripheral.MainGimbal
+import com.parrot.drone.groundsdk.device.peripheral.gimbal.Gimbal
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
 import dalvik.system.DexClassLoader
 import edu.cmu.cs.dronebrain.interfaces.FlightScript
 import java.io.*
+import com.parrot.drone.groundsdk.internal.device.peripheral.gimbal.GimbalCore
+import java.io.BufferedReader
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.InputStreamReader
+import java.lang.Exception
+
 import java.net.HttpURLConnection
 import java.net.URL
 

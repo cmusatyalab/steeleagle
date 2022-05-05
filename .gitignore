@@ -2,3 +2,4 @@
 ./transponder/react/package-lock.json
 ./kml2drone/weatherapi.key
 *.code-workspace
+*.vimrc
