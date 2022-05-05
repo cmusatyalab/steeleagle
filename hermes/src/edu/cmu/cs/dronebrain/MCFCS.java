@@ -19,13 +19,19 @@ package edu.cmu.cs.dronebrain;
 import java.lang.Thread;
 import edu.cmu.cs.dronebrain.interfaces.Cloudlet;
 import edu.cmu.cs.dronebrain.interfaces.Drone;
+import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 
-public class FlightScript {
+public class MCFCS extends FlightScript{
 
     private Drone drone;
     private Cloudlet cloudlet;
 
-    public FlightScript(Drone d, Cloudlet c) {
+    public MCFCS() {
+        drone = null;
+        cloudlet = null;
+    }
+
+    public MCFCS(Drone d, Cloudlet c) {
         drone = d;
         cloudlet = c;
      }

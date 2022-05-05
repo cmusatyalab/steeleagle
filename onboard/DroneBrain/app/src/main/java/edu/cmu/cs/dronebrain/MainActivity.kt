@@ -1,13 +1,11 @@
 package edu.cmu.cs.dronebrain
 
 import android.app.Activity
-import android.os.Bundle
-import edu.cmu.cs.dronebrain.databinding.ActivityMainBinding
-
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
 import android.util.Log
@@ -24,11 +22,9 @@ import com.parrot.drone.groundsdk.device.instrument.Gps
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
-import java.io.BufferedReader
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStreamReader
-import java.lang.Exception
+import dalvik.system.DexClassLoader
+import edu.cmu.cs.dronebrain.interfaces.FlightScript
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -85,6 +81,48 @@ class MainActivity : Activity() {
     /** URL connection to transponder over LTE **/
     private lateinit var con: HttpURLConnection
 
+    val TAG = "TAG"
+
+    fun download(url: String?, dex: File?) {
+        var bis: BufferedInputStream? = null
+        var bos: BufferedOutputStream? = null
+        try {
+            val urlObject = URL(url)
+            val httpConn = urlObject.openConnection() as HttpURLConnection
+            val responseCode = httpConn.responseCode
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw RuntimeException("Download didn't work, http status: $responseCode")
+            }
+            bis = BufferedInputStream(httpConn.inputStream)
+            bos = BufferedOutputStream(FileOutputStream(dex))
+            copy(bis, bos)
+        } catch (e: IOException) {
+            throw RuntimeException(e)
+        } finally {
+            closeQuietly(bos!!, bis!!)
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun copy(src: BufferedInputStream, dst: OutputStream) {
+        var len: Int
+        val buf = ByteArray(8 * 1024)
+        while (src.read(buf, 0, 8 * 1024).also { len = it } > 0) {
+            dst.write(buf, 0, len)
+        }
+    }
+
+    private fun closeQuietly(vararg cls: Closeable) {
+        for (cl in cls) {
+            if (cl != null) {
+                try {
+                    cl.close()
+                } catch (ignored: IOException) {
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -126,6 +164,27 @@ class MainActivity : Activity() {
             } // Be sure to override other options in NetworkCallback() too...
         }
         )
+
+        val f = File(getDir("dex", MODE_PRIVATE), "classes.dex")
+        download("http://cloudlet040.elijah.cs.cmu.edu/classes.dex", f)
+
+        val classLoader = DexClassLoader(
+            f.absolutePath, getDir("outdex", MODE_PRIVATE).absolutePath, null,
+            classLoader
+        )
+
+        try {
+            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MCFCS")
+            Log.i(TAG, clazz.toString())
+            Log.i(TAG, clazz.canonicalName)
+            //Constructor cons = clazz.getConstructor((Drone.class, Cloudlet.class))
+            //Constructor cons = clazz.getConstructor((Drone.class, Cloudlet.class))
+            val inst = clazz.newInstance() as FlightScript
+            Log.i(TAG, inst.toString())
+            inst.run()
+        } catch (e: java.lang.Exception) {
+            Log.e(TAG, e.toString())
+        }
     }
 
     override fun onStart() {
