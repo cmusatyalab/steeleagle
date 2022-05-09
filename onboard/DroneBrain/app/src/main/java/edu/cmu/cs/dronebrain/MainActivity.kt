@@ -101,7 +101,7 @@ class MainActivity : Activity() {
         } catch (e: IOException) {
             throw RuntimeException(e)
         } finally {
-            closeQuietly(bos!!, bis!!)
+            //closeQuietly(bos!!, bis!!)
         }
     }
 
@@ -128,16 +128,6 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val file = File("/sdcard/mcfcs.jar")
-        val loader = DexClassLoader(file.absolutePath, codeCacheDir.absolutePath, null, classLoader)
-        // val classLoader = PathClassLoader("/sdcard/classes.dex", classLoader)
-        try {
-            val clazz = loader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
-            Log.d("Class Fields", clazz.fields.toString())
-        } catch (E : Exception) {
-            Log.d("Exception", E.toString())
-        }
 
         val policy = ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
@@ -186,10 +176,11 @@ class MainActivity : Activity() {
         )
 
         try {
-            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
+            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MS")
             Log.i(TAG, clazz.toString())
             Log.i(TAG, clazz.canonicalName)
             val inst = clazz.newInstance() as FlightScript
+            Log.i(TAG, inst.toString())
             Log.i(TAG, inst.toString())
             val drone = getDrone(inst.platform) // Get the corresponding drone
             val cloudlet = getCloudlet() // Get the corresponding cloudlet
