@@ -1,3 +1,1 @@
-package edu.cmu.cs.dronebrain.interfaces;
-
-public enum Platform  {ANAFI}
+../../../../../../../onboard/DroneBrain/app/src/main/java/edu/cmu/cs/dronebrain/interfaces/Platform.java
