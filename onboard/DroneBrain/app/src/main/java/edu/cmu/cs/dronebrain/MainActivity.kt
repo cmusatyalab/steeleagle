@@ -1,6 +1,9 @@
 package edu.cmu.cs.dronebrain
 
 import android.app.Activity
+import android.content.Context
+import android.os.Bundle
+import edu.cmu.cs.dronebrain.databinding.ActivityMainBinding
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -28,28 +31,13 @@ import dalvik.system.DexClassLoader
 import edu.cmu.cs.dronebrain.interfaces.FlightScript
 import java.io.*
 import com.parrot.drone.groundsdk.internal.device.peripheral.gimbal.GimbalCore
-import java.io.BufferedReader
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStreamReader
 import java.lang.Exception
 
 import java.net.HttpURLConnection
 import java.net.URL
-
-/*
-class MainActivity : Activity() {
-
-    private lateinit var binding: ActivityMainBinding
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-    }
-}*/
+import dalvik.system.DexClassLoader
+import dalvik.system.PathClassLoader
+import java.io.*
 
 class MainActivity : Activity() {
 
@@ -135,6 +123,16 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val file = File("/sdcard/mcfcs.jar")
+        val classLoader = DexClassLoader(file.absolutePath, codeCacheDir.absolutePath, null, classLoader)
+        // val classLoader = PathClassLoader("/sdcard/classes.dex", classLoader)
+        try {
+            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
+            Log.d("Class Fields", clazz.fields.toString())
+        } catch (E : Exception) {
+            Log.d("Exception", E.toString())
+        }
 
         val policy = ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
