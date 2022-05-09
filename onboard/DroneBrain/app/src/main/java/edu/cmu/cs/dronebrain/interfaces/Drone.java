@@ -1,7 +1,7 @@
 package edu.cmu.cs.dronebrain.interfaces;
 
 public interface Drone {
-    void connect(FlightScript.Platform p);
+    void connect();
     void disconnect();
     void takeOff();
     void land();

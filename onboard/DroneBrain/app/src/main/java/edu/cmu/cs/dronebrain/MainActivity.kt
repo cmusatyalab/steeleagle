@@ -1,9 +1,6 @@
 package edu.cmu.cs.dronebrain
 
 import android.app.Activity
-import android.content.Context
-import android.os.Bundle
-import edu.cmu.cs.dronebrain.databinding.ActivityMainBinding
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -22,22 +19,17 @@ import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.RemoteControl
 import com.parrot.drone.groundsdk.device.instrument.BatteryInfo
 import com.parrot.drone.groundsdk.device.instrument.Gps
-import com.parrot.drone.groundsdk.device.peripheral.MainGimbal
-import com.parrot.drone.groundsdk.device.peripheral.gimbal.Gimbal
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
 import dalvik.system.DexClassLoader
+import edu.cmu.cs.dronebrain.impl.ParrotAnafi
+import edu.cmu.cs.dronebrain.impl.DebugCloudlet
 import edu.cmu.cs.dronebrain.interfaces.FlightScript
+import edu.cmu.cs.dronebrain.interfaces.Platform
 import java.io.*
-import com.parrot.drone.groundsdk.internal.device.peripheral.gimbal.GimbalCore
-import java.lang.Exception
-
 import java.net.HttpURLConnection
 import java.net.URL
-import dalvik.system.DexClassLoader
-import dalvik.system.PathClassLoader
-import java.io.*
 
 class MainActivity : Activity() {
 
@@ -79,6 +71,19 @@ class MainActivity : Activity() {
     private lateinit var con: HttpURLConnection
 
     val TAG = "TAG"
+
+    @Throws(Exception::class)
+    fun getDrone(platform: Platform) : edu.cmu.cs.dronebrain.interfaces.Drone? {
+        return if (platform == Platform.ANAFI) {
+            ParrotAnafi()
+        } else {
+            throw Exception("Unsupported drone platfrom")
+        }
+    }
+
+    fun getCloudlet() : edu.cmu.cs.dronebrain.interfaces.Cloudlet {
+        return DebugCloudlet()
+    }
 
     fun download(url: String?, dex: File?) {
         var bis: BufferedInputStream? = null
@@ -125,10 +130,10 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
 
         val file = File("/sdcard/mcfcs.jar")
-        val classLoader = DexClassLoader(file.absolutePath, codeCacheDir.absolutePath, null, classLoader)
+        val loader = DexClassLoader(file.absolutePath, codeCacheDir.absolutePath, null, classLoader)
         // val classLoader = PathClassLoader("/sdcard/classes.dex", classLoader)
         try {
-            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
+            val clazz = loader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
             Log.d("Class Fields", clazz.fields.toString())
         } catch (E : Exception) {
             Log.d("Exception", E.toString())
@@ -181,14 +186,14 @@ class MainActivity : Activity() {
         )
 
         try {
-            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MCFCS")
+            val clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.FlightScript")
             Log.i(TAG, clazz.toString())
             Log.i(TAG, clazz.canonicalName)
-            //Constructor cons = clazz.getConstructor((Drone.class, Cloudlet.class))
-            //Constructor cons = clazz.getConstructor((Drone.class, Cloudlet.class))
             val inst = clazz.newInstance() as FlightScript
             Log.i(TAG, inst.toString())
-            inst.run()
+            val drone = getDrone(inst.platform) // Get the corresponding drone
+            val cloudlet = getCloudlet() // Get the corresponding cloudlet
+            inst.run(drone, cloudlet);
         } catch (e: java.lang.Exception) {
             Log.e(TAG, e.toString())
         }
