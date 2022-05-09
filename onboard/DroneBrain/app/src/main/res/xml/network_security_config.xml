@@ -3,5 +3,6 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu</domain>
         <domain includeSubdomains="true">192.168.42.1</domain>
+        <domain includeSubdomains="true">cloudlet040.elijah.cs.cmu.edu</domain>
     </domain-config>
 </network-security-config>

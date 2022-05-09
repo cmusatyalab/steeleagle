@@ -23,8 +23,8 @@ import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
 import dalvik.system.DexClassLoader
-import edu.cmu.cs.dronebrain.impl.ParrotAnafi
 import edu.cmu.cs.dronebrain.impl.DebugCloudlet
+import edu.cmu.cs.dronebrain.impl.ParrotAnafi
 import edu.cmu.cs.dronebrain.interfaces.FlightScript
 import edu.cmu.cs.dronebrain.interfaces.Platform
 import java.io.*
@@ -98,10 +98,10 @@ class MainActivity : Activity() {
             bis = BufferedInputStream(httpConn.inputStream)
             bos = BufferedOutputStream(FileOutputStream(dex))
             copy(bis, bos)
+            bis.close()
+            bos.close()
         } catch (e: IOException) {
             throw RuntimeException(e)
-        } finally {
-            //closeQuietly(bos!!, bis!!)
         }
     }
 
