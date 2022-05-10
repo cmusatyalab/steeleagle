@@ -13,44 +13,12 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="33dp"
-            android:background="?android:attr/listDivider" />
-
-        <TextView
-            android:id="@+id/droneStateTxt"
+        <ImageView
+            android:id="@+id/imageView3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textAlignment="center" />
-
-        <TextView
-            android:id="@+id/droneBatteryTxt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textAlignment="center" />
-
-        <TextView
-            android:id="@+id/rcStateTxt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textAlignment="center" />
-
-        <TextView
-            android:id="@+id/rcBatteryTxt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textAlignment="center" />
-
-        <Button
-            android:id="@+id/takeOffLandBt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Take Off" />
+            android:scaleX="0.5"
+            android:scaleY="0.5"
+            android:src="@drawable/drone" />
     </LinearLayout>
 </androidx.wear.widget.BoxInsetLayout>
