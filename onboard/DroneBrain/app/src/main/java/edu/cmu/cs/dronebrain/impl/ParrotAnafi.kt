@@ -1,19 +1,21 @@
 package edu.cmu.cs.dronebrain.impl
 
-import android.app.Activity
 import android.util.Log
+import com.parrot.drone.groundsdk.GroundSdk
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
+import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
 import edu.cmu.cs.dronebrain.MainActivity
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
+import java.util.concurrent.CountDownLatch
 
 class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
     /* Variable for storing GroundSDK object **/
-    private var groundSdk : ManagedGroundSdk? = null
+    private var groundSdk : GroundSdk? = null
     /* Variable for storing the drone object **/
     private var drone : Drone? = null
     /* Variable for storing piloting interface **/
@@ -23,25 +25,48 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     private var TAG : String = "ParrotAnafi"
 
     init {
-        groundSdk = ManagedGroundSdk.obtainSession(mainActivity)
+        groundSdk = GroundSdk.newSession(mainActivity.applicationContext, null);
     }
 
     @Throws(Exception::class)
     override fun connect() {
-        /* Start the AutoConnection process **/
-        groundSdk!!.getFacility(AutoConnection::class.java) {
+        Log.d(TAG, "Connect called")
+        groundSdk?.resume();
+        val countDownLatch = CountDownLatch(1)
+        /** Start the AutoConnection process **/
+        groundSdk?.getFacility(AutoConnection::class.java) {
             // Called when the auto connection facility is available and when it changes.
             it?.let {
-                /* Start auto connection. **/
+                /** Start auto connection. **/
                 if (it.status != AutoConnection.Status.STARTED) {
                     it.start()
                 }
-                /* Set the drone variable **/
+                /** Set the drone variable **/
                 drone = it.drone
-                pilotingItfRef = drone?.getPilotingItf(ManualCopterPilotingItf::class.java) {}
+                pilotingItfRef = drone?.getPilotingItf(ManualCopterPilotingItf::class.java) {
+                    it?.let {
+                        when (it.state) {
+                            Activable.State.UNAVAILABLE -> {
+                                // Piloting interface is unavailable.
+                            }
+                            Activable.State.IDLE -> {
+                                it.activate()
+                            }
+                            Activable.State.ACTIVE -> {
+                                when {
+                                    it.canTakeOff() -> {
+                                        countDownLatch.countDown()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 Log.d(TAG, "Connected to drone")
             }
         }
+        countDownLatch.await()
+        Log.d(TAG, "Got to end of connect.")
     }
 
     @Throws(Exception::class)
@@ -51,10 +76,13 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
     @Throws(Exception::class)
     override fun takeOff() {
+        Log.d(TAG, "Takeoff called")
         pilotingItfRef?.get()?.let { itf ->
-            /* Do the action according to the interface capabilities **/
+            /** Do the action according to the interface capabilities **/
+            Log.d(TAG, "Can the drone take off? " + itf.canTakeOff())
             if (itf.canTakeOff()) {
-                /* Take off **/
+                /** Take off **/
+                Log.d(TAG, "Drone is taking off!")
                 itf.takeOff()
             }
         }
@@ -62,10 +90,12 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
     @Throws(Exception::class)
     override fun land() {
+        Log.d(TAG, "Landing called")
         pilotingItfRef?.get()?.let { itf ->
-            /* Do the action according to the interface capabilities **/
+            /** Do the action according to the interface capabilities **/
+            Log.d(TAG, "Can the drone land? " + itf.canLand())
             if (itf.canLand()) {
-                /* Land **/
+                /** Land **/
                 itf.land()
             }
         }

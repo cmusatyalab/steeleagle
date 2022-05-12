@@ -7,6 +7,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -16,8 +17,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.CountDownLatch;
 
 import dalvik.system.DexClassLoader;
 import edu.cmu.cs.dronebrain.impl.DebugCloudlet;
@@ -32,6 +33,12 @@ public class MainActivity extends Activity {
 
     /** LTE network object **/
     private Network LTEnetwork = null;
+    /** Currently executing FlightScript **/
+    private FlightScript MS = null;
+    /** Current drone object **/
+    private DroneItf drone = null;
+    /** Current cloudlet object **/
+    private CloudletItf cloudlet = null;
 
     /** Log tag **/
     String TAG = "DroneBrain";
@@ -41,6 +48,10 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         /** Create LTE network binding **/
         ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest.Builder req = new NetworkRequest.Builder();
@@ -50,9 +61,15 @@ public class MainActivity extends Activity {
                     public void onAvailable(Network network) {
                         /** Assign LTE network object **/
                         LTEnetwork = network;
+                        countDownLatch.countDown();
                     }
                 }
         );
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -62,26 +79,37 @@ public class MainActivity extends Activity {
         /** Download flight plan **/
         File f = new File(getDir("dex", MODE_PRIVATE), "classes.dex");
         try {
+            Log.d(TAG, "Starting flight plan download");
             download("http://cloudlet040.elijah.cs.cmu.edu/classes.dex", f);
             /** Read data from flight plan **/
             DexClassLoader classLoader = new DexClassLoader(
                     f.getAbsolutePath(), getDir("outdex", MODE_PRIVATE).getAbsolutePath(),
                     null, getClassLoader());
-
-            try {
-                Class clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MS");
-                Log.i(TAG, clazz.toString());
-                FlightScript inst = (FlightScript)clazz.newInstance();
-                Log.i(TAG, inst.toString());
-                /** Execute flight plan **/
-                DroneItf drone = getDrone(inst.platform); // Get the corresponding drone
-                CloudletItf cloudlet = getCloudlet(); // Get the corresponding cloudlet
-                inst.run(drone, cloudlet);
-            } catch (Exception e) {
-                Log.e(TAG, e.toString());
-            }
+            Class clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MS");
+            Log.i(TAG, clazz.toString());
+            MS = (FlightScript)clazz.newInstance();
+            drone = getDrone(MS.platform); // Get the corresponding drone
+            cloudlet = getCloudlet(); // Get the corresponding cloudlet
         } catch (Exception e) {
-            Log.e(TAG, "Download failed!");
+            Log.e(TAG, "Download failed! " + e.toString());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        try {
+            /** Execute flight plan **/
+            Log.d(TAG, "Executing flight plan!");
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MS.run(drone, cloudlet);
+                }
+            }).start();
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
         }
     }
 
@@ -103,7 +131,7 @@ public class MainActivity extends Activity {
         BufferedOutputStream bos;
         try {
             URL urlObject = new URL(url);
-            HttpURLConnection httpConn = (HttpURLConnection) urlObject.openConnection();
+            HttpURLConnection httpConn = (HttpURLConnection) LTEnetwork.openConnection(urlObject);
             int responseCode = httpConn.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new RuntimeException("Download didn't work, http status: " + responseCode);
