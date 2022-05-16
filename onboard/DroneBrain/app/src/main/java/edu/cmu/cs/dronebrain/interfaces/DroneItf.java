@@ -7,7 +7,7 @@ public interface DroneItf {
     void land() throws Exception;
     void setHome(Double lat, Double lng) throws Exception;
     void moveTo(Double lat, Double lng, Double alt) throws Exception;
-    void moveBy(Integer x, Integer y, Integer z) throws Exception; //x,y,z in meters
+    void moveBy(Double x, Double y, Double z) throws Exception; //x,y,z in meters
     void startStreaming(Integer sample_rate) throws Exception;
     void rotateBy(Double theta) throws Exception;
     void rotateTo(Double theta) throws Exception;
@@ -16,6 +16,7 @@ public interface DroneItf {
     void getVideoFrame() throws Exception;
     void getStatus() throws Exception;
     void cancel() throws Exception;
+    void kill() throws Exception;
 }
 
 
