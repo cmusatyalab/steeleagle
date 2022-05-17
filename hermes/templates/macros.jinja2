@@ -2,8 +2,9 @@
     drone.moveTo({{c.lat}}, {{c.lng}}, {{c.alt}});
 {%- endmacro %}
 
-{% macro StreamingThreadStart(sample_rate) -%}
-    drone.startStreaming(sample_rate);
+{% macro StreamingThreadStart(sample_rate, model) -%}
+    drone.startStreaming({{sample_rate}});
+    cloudlet.sendFrame(drone.getVideoFrame());
 {%- endmacro %}
 
 {% macro StreamingThreadStop() -%}
@@ -38,7 +39,7 @@
 
 {% macro DetectObjectsAlongPath() -%}
     {{StreamingThreadStart(kwargs.sample_rate, kwargs.model)}}
-    {{GimbalSetTarget(kwargs.gimbal_pitch)}}
+    {{GimbalSetTarget(0.0, kwargs.gimbal_pitch, 0.0)}}
     {% for c in kwargs.coords %}
     {{MoveTo(c)}}
     {{ChangeHeadingByOffset(kwargs.drone_rotation)}}
