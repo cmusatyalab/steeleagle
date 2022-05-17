@@ -85,7 +85,7 @@ def generateScript(args, placemarks):
     env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
     template = env.get_template(args.template)
     kws = {}
-    if args.platform == 'olympe':
+    if args.platform == 'anafi':
         if args.sim:
             ip = "10.202.0.1"
         elif args.controller:
@@ -162,10 +162,10 @@ def _main():
     parser = argparse.ArgumentParser(prog='hermes', 
         description='Convert kml/kmz file to drone-specific instructions.')
     parser.add_argument('input', help='kml/kmz file to convert')
-    parser.add_argument('-p', '--platform', choices=['olympe', 'dji'], default='olympe',
-        help='Drone platform to convert to  [default: Olympe]')
-    parser.add_argument('-o', '--output', default='./src/edu/cmu/cs/dronebrain/FlightScript.java',
-        help='Filename for generated drone instructions [default: ./src/edu/cmu/cs/dronebrain/FlightScript.java]')
+    parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
+        help='Drone platform to convert to  [default: Anafi]')
+    parser.add_argument('-o', '--output', default='./src/edu/cmu/cs/dronebrain/MS.java',
+        help='Filename for generated drone instructions [default: ./src/edu/cmu/cs/dronebrain/MS.java]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
     parser.add_argument('-t', '--template', default='base.java.jinja2',
@@ -207,8 +207,9 @@ def _main():
     with open(args.output, mode='w', encoding='utf-8') as f:
         f.write(out)
     
-    py_compile.compile(args.output, doraise=True)
-    print(HR.format(f"Script {args.output} compiled successfully!"))
+    #py_compile.compile(args.output, doraise=True)
+    #TODO: run java2dex instead subprocess.run?
+    #print(HR.format(f"Script {args.output} compiled successfully!"))
 
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))
