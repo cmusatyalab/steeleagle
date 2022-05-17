@@ -9,6 +9,6 @@ d8="$2"
 sdk="$3"
 #class="$4"
 
-"${javac}" edu/cmu/cs/dronebrain/MCFCS.java
-"${d8}" edu/cmu/cs/dronebrain/MCFCS.class --lib "${sdk}"
+"${javac}" -verbose edu/cmu/cs/dronebrain/MS.java
+"${d8}" edu/cmu/cs/dronebrain/MS.class --lib "${sdk}"
 
