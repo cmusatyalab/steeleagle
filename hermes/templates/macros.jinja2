@@ -48,5 +48,8 @@
 {%- endmacro %}
 
 {% macro Land() -%}
+    {% for c in kwargs.coords %}
+    {{MoveTo(c)}}
+    {% endfor %}
     drone.land();
 {%- endmacro %}
