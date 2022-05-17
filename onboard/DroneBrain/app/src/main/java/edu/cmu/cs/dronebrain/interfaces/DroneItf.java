@@ -16,7 +16,7 @@ public interface DroneItf {
     void rotateTo(Double theta) throws Exception;
     void setGimbalPose(Double yaw_theta, Double pitch_theta, Double roll_theta) throws Exception;
     void takePhoto() throws Exception;
-    Bitmap getVideoFrame() throws Exception;
+    byte[] getVideoFrame() throws Exception;
     void getStatus() throws Exception;
     void cancel() throws Exception;
     void kill() throws Exception;

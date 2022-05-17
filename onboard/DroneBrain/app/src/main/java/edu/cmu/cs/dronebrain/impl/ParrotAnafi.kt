@@ -21,6 +21,7 @@ import edu.cmu.cs.dronebrain.MainActivity
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
 class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
@@ -267,6 +268,24 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
         liveStream = null
     }
 
+    /** Helper function for transforming Bitmap to byte array **/
+    fun Bitmap.convertToByteArray(): ByteArray = ByteBuffer.allocate(byteCount).apply {
+        copyPixelsToBuffer(this)
+        rewind()
+    }.array()
+
+    @Throws(Exception::class)
+    override fun getVideoFrame(): ByteArray? {
+        var frame: Bitmap? = null
+        var countDownLatch = CountDownLatch(1)
+        streamView?.capture {
+            frame = it
+            countDownLatch.countDown()
+        }
+        countDownLatch.await()
+        return frame?.convertToByteArray()
+    }
+
     @Throws(Exception::class)
     override fun rotateBy(theta: Double) {
         var directive = GuidedPilotingItf.RelativeMoveDirective(0.0, 0.0, 0.0, theta, null)
@@ -301,18 +320,6 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
             countDownLatch.countDown()
         }
         countDownLatch.await()
-    }
-
-    @Throws(Exception::class)
-    override fun getVideoFrame(): Bitmap? {
-        var frame: Bitmap? = null
-        var countDownLatch = CountDownLatch(1)
-        streamView?.capture {
-            frame = it
-            countDownLatch.countDown()
-        }
-        countDownLatch.await()
-        return frame
     }
 
     @Throws(Exception::class)

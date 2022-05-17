@@ -10,7 +10,7 @@ public class DebugCloudlet implements CloudletItf {
     String TAG = "DebugCloudlet";
 
     @Override
-    public void sendFrame(Bitmap frame) {
+    public void sendFrame(byte[] frame) {
         Log.d(TAG, "Writing frame!");
     }
 }
