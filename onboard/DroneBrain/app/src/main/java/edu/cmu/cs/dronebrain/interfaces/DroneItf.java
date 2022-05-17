@@ -1,7 +1,5 @@
 package edu.cmu.cs.dronebrain.interfaces;
 
-import android.graphics.Bitmap;
-
 public interface DroneItf {
     void connect() throws Exception;
     void disconnect() throws Exception;
