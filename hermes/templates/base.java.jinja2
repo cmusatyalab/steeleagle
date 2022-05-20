@@ -24,11 +24,19 @@ import edu.cmu.cs.dronebrain.interfaces.Platform;
 
 public class MS extends FlightScript {
     
-    public MS() {
+    public MS(DroneItf d, CloudletItf c) {
         platform = Platform.ANAFI;
+        drone = d;
+        cloudlet = c;
+        try {
+            drone.init();
+            cloudlet.init();
+        } catch( Exception e) {
+            System.println(e.toString());
+        }
     }
 
-    public void run(DroneItf drone, CloudletItf cloudlet) {
+    public void run() {
         try {
             drone.connect();
             drone.takeOff();
