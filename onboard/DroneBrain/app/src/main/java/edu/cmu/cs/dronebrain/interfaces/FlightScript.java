@@ -7,4 +7,6 @@ public abstract class FlightScript {
     protected DroneItf drone;
     protected CloudletItf cloudlet;
     public abstract void run();
+    public abstract void setDrone(DroneItf d);
+    public abstract void setCloudlet(CloudletItf c);
 }
