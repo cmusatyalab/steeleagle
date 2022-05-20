@@ -1,6 +1,7 @@
 package edu.cmu.cs.dronebrain.impl
 
 import android.graphics.Bitmap
+import android.os.Looper
 import android.util.Log
 import com.parrot.drone.groundsdk.GroundSdk
 import com.parrot.drone.groundsdk.ManagedGroundSdk
@@ -15,7 +16,9 @@ import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
+import com.parrot.drone.groundsdk.internal.stream.YUVSink
 import com.parrot.drone.groundsdk.stream.GsdkStreamView
+import com.parrot.drone.groundsdk.stream.Stream
 import com.parrot.drone.groundsdk.value.EnumSetting
 import edu.cmu.cs.dronebrain.MainActivity
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
@@ -44,8 +47,36 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     private var liveStreamRef: Ref<CameraLive>? = null
     /** Current drone live stream. **/
     private var liveStream: CameraLive? = null
-    /** Video stream view. **/
-    private lateinit var streamView: GsdkStreamView
+    /** Stream sink **/
+    private var sink: Stream.Sink? = null
+    /** Active frame reference **/
+    private var frame: YUVSink.Frame? = null
+
+    /** Callback for the stream **/
+    class SinkCallback(p : ParrotAnafi) : YUVSink.Callback {
+
+        /** Logging tag **/
+        private var TAG : String = "SinkCallback"
+        /** Reference to parent drone **/
+        private var parent : ParrotAnafi? = null
+
+        init {
+            parent = p
+        }
+
+        override fun onStart(sink: YUVSink) {
+            // Nothing to do here.
+        }
+
+        override fun onFrame(sink: YUVSink, f: YUVSink.Frame) {
+            Log.d(TAG, "Received a frame!")
+            parent?.setVideoFrame(f)
+        }
+
+        override fun onStop(sink: YUVSink) {
+            parent?.releaseVideoFrame()
+        }
+    }
 
     /** Kill switch for the drone **/
     private var cancel: Boolean = false
@@ -231,16 +262,14 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
                                 // Set the live stream as the stream
                                 // to be render by the stream view.
-                                streamView.setStream(liveStream)
+                                var sinkCallback = SinkCallback(this)
+                                sink = liveStream.openSink(YUVSink.config(Looper.getMainLooper(), sinkCallback))
                             }
 
                             // Play the live stream.
                             if (liveStream.playState() != CameraLive.PlayState.PLAYING) {
                                 liveStream.play()
                             }
-                        } else {
-                            // Stop rendering the stream
-                            streamView.setStream(null)
                         }
                         // Keep the live stream to know if it is a new one or not.
                         this.liveStream = liveStream
@@ -250,8 +279,6 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
                 // Stop monitoring the live stream
                 liveStreamRef?.close()
                 liveStreamRef = null
-                // Stop rendering the stream
-                streamView.setStream(null)
             }
         }
     }
@@ -274,16 +301,23 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
         rewind()
     }.array()
 
+    /** Helper function for setting current stream frame **/
+    fun setVideoFrame(f : YUVSink.Frame) {
+        releaseVideoFrame()
+        frame = f
+    }
+
+    /** Healper function for releasing the current video frame **/
+    fun releaseVideoFrame() {
+        frame?.release()
+        frame = null
+    }
+
     @Throws(Exception::class)
     override fun getVideoFrame(): ByteArray? {
-        var frame: Bitmap? = null
-        var countDownLatch = CountDownLatch(1)
-        streamView?.capture {
-            frame = it
-            countDownLatch.countDown()
-        }
-        countDownLatch.await()
-        return frame?.convertToByteArray()
+        frame?.nativePtr()
+        TODO("This doesn't work yet")
+        return null
     }
 
     @Throws(Exception::class)
