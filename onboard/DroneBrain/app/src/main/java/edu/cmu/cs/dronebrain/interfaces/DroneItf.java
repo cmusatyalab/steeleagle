@@ -1,6 +1,7 @@
 package edu.cmu.cs.dronebrain.interfaces;
 
 public interface DroneItf {
+    void init() throws Exception;
     void connect() throws Exception;
     void disconnect() throws Exception;
     void takeOff() throws Exception;

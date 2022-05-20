@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package cnc;
+
+option java_package = "edu.cmu.cs.steeleagle";
+option java_outer_classname = "Protos";
+
+message Location {
+  string name = 1;
+  double latitude = 2;
+  double longitude = 3;
+}
+
+message Command {
+  string for_drone_id = 1;
+  string script_url = 2;
+  bool halt = 3;
+}
+
+message Extras {
+    bool registering = 1;
+    string drone_id = 2;
+    string commander_id = 3;
+    Command cmd = 4;
+    Location location = 5;
+}
