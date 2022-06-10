@@ -11,6 +11,9 @@ import android.os.StrictMode;
 import android.util.Log;
 import android.view.WindowManager;
 
+import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -20,6 +23,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import dalvik.system.DexClassLoader;
 import edu.cmu.cs.dronebrain.impl.DebugCloudlet;
@@ -28,6 +32,10 @@ import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Platform;
+import edu.cmu.cs.gabriel.client.comm.ServerComm;
+import edu.cmu.cs.gabriel.client.results.ErrorType;
+import edu.cmu.cs.gabriel.protocol.Protos;
+import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
 public class MainActivity extends Activity {
@@ -40,9 +48,21 @@ public class MainActivity extends Activity {
     private DroneItf drone = null;
     /** Current cloudlet object **/
     private CloudletItf cloudlet = null;
-
+    /** For Gabriel client connection **/
+    private ServerComm serverComm = null;
     /** Log tag **/
     String TAG = "DroneBrain";
+    String SOURCE = "command";
+
+
+    // Based on
+    // https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/java/java_message.cc#L1387
+    private static Any pack(Extras engineFields) {
+        return Any.newBuilder()
+                .setTypeUrl("type.googleapis.com/cnc.Extras")
+                .setValue(engineFields.toByteString())
+                .build();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +72,30 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
+        Consumer<Protos.ResultWrapper> consumer = resultWrapper -> {
+            Protos.ResultWrapper.Result result = resultWrapper.getResults(0);
+            ByteString r = result.getPayload();
+
+        };
+
+        Consumer<ErrorType> onDisconnect = errorType -> {
+            Log.e(TAG, "Disconnect Error:" + errorType.name());
+            finish();
+        };
+
+        serverComm = ServerComm.createServerComm(
+                consumer, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
+
+        serverComm.sendSupplier(() -> {
+           // ByteString jpegByteString = yuvToJpegConverter.convertToJpeg(image);
+            String p = "payload";
+
+            return Protos.InputFrame.newBuilder()
+                    .setPayloadType(Protos.PayloadType.TEXT)
+                    .addPayloads(ByteString.copyFromUtf8(p))
+                    .build();
+        }, SOURCE, false);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         /** Create LTE network binding **/
@@ -107,7 +151,7 @@ public class MainActivity extends Activity {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MS.run(drone, cloudlet);
+                    MS.run();
                 }
             }).start();
         } catch (Exception e) {
