@@ -103,6 +103,10 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
         }
     }
 
+    override fun init() {
+        TODO("Not yet implemented")
+    }
+
     @Throws(Exception::class)
     override fun connect() {
         Log.d(TAG, "Connect called")
