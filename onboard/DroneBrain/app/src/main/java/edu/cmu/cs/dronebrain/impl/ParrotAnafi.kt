@@ -27,10 +27,8 @@ import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 
-class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
+class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
-    /** MainActivity variable **/
-    private var activity : MainActivity
     /** Variable for storing GroundSDK object **/
     private var groundSdk : ManagedGroundSdk? = null
     /** Variable for storing the drone object **/
@@ -59,7 +57,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     private var TAG : String = "ParrotAnafi"
 
     init {
-        activity = mainActivity
+        groundSdk = sdk
     }
 
     suspend fun wait_to_complete_manual_flight() {
@@ -78,7 +76,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     }
 
     override fun init() {
-        groundSdk = ManagedGroundSdk.obtainSession(activity)
+
     }
 
     @Throws(Exception::class)
@@ -87,7 +85,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
         groundSdk?.resume();
         // Wait until all connections have been established
         val countDownLatch = CountDownLatch(2)
-        // Start the AutoConnection process **/
+        // Start the AutoConnection process
         groundSdk?.getFacility(AutoConnection::class.java) {
             // Called when the auto connection facility is available and when it changes.
             it?.let {
@@ -95,7 +93,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
                 if (it.status != AutoConnection.Status.STARTED) {
                     it.start()
                 }
-                // Set the drone variable and get a reference to the piloting interface. **/
+                // Set the drone variable and get a reference to the piloting interface.
                 drone = it.drone
                 pilotingItfRef = drone?.getPilotingItf(ManualCopterPilotingItf::class.java) {
                     it?.let {
@@ -338,19 +336,40 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
     @Throws(Exception::class)
     override fun getName(): String? {
-        return drone?.name
+        var name : String = "Unnamed"
+        if (drone?.name != null)
+            name = drone!!.name
+        return name
     }
 
     override fun getLat(): Double? {
-        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.latitude
+        var lat : Double = 0.0
+        drone?.getInstrument(Gps::class.java) {
+            if (it?.lastKnownLocation()?.latitude != null) {
+                lat = it.lastKnownLocation()!!.latitude
+            }
+        }
+        return lat
     }
 
     override fun getLon(): Double? {
-        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.longitude
+        var lon : Double = 0.0
+        drone?.getInstrument(Gps::class.java) {
+            if (it?.lastKnownLocation()?.longitude != null) {
+                lon = it.lastKnownLocation()!!.longitude
+            }
+        }
+        return lon
     }
 
     override fun getAlt(): Double? {
-        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.altitude
+        var alt : Double = 0.0
+        drone?.getInstrument(Gps::class.java) {
+            if (it?.lastKnownLocation()?.altitude != null) {
+                alt = it?.lastKnownLocation()!!.altitude
+            }
+        }
+        return alt
     }
 
     @Throws(Exception::class)

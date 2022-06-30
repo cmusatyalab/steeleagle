@@ -19,6 +19,8 @@ import android.webkit.URLUtil;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.parrot.drone.groundsdk.GroundSdk;
+import com.parrot.drone.groundsdk.ManagedGroundSdk;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -48,6 +50,7 @@ import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
 public class MainActivity extends Activity implements Consumer<ResultWrapper> {
+    private ManagedGroundSdk sdk = null;
     /** Connectivity Manager to retrieve network infos **/
     private ConnectivityManager cm = null;
     /** LTE network object **/
@@ -115,7 +118,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                         executeFlightScript();
                 }
             }
-        }  catch (InvalidProtocolBufferException e) {
+        } catch (InvalidProtocolBufferException e) {
             Log.e(TAG, "Protobuf Error", e);
         } catch (Exception e) {
             e.printStackTrace();
@@ -135,6 +138,8 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
+        sdk = ManagedGroundSdk.obtainSession(this);
 
         Consumer<ErrorType> onDisconnect = errorType -> {
             Log.e(TAG, "Disconnect Error:" + errorType.name());
@@ -185,14 +190,13 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                         lb.setLatitude(drone.getLat());
                         lb.setLongitude(drone.getLon());
                         extrasBuilder.setLocation(lb);
-                        extrasBuilder.setDroneId(drone.getName());
-
                     } else {
                         lb.setLatitude(0);
                         lb.setLongitude(0);
                         extrasBuilder.setLocation(lb);
-                        extrasBuilder.setDroneId(Build.ID);
                     }
+
+                    extrasBuilder.setDroneId(Build.ID);
 
                     if(heartbeatsSent < 2) {
                         extrasBuilder.setRegistering(true);
@@ -228,9 +232,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             MS = (FlightScript)clazz.newInstance();
             Log.d(TAG, "Getting drone and cloudlet...");
             drone = getDrone(MS.platform); // Get the corresponding drone
-            Log.d(TAG, "Getting drone");
             cloudlet = getCloudlet(); // Get the corresponding cloudlet
-            Log.d(TAG, "Getting cloudlet");
             success = true;
         } catch (Exception e) {
             Log.e(TAG, "Download failed! " + e.toString());
@@ -242,6 +244,8 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         try {
             /** Execute flight plan **/
             Log.d(TAG, "Executing flight plan!");
+            MS.setDrone(drone);
+            MS.setCloudlet(cloudlet);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -269,7 +273,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     private DroneItf getDrone(Platform platform) throws Exception {
         if (platform == Platform.ANAFI) {
-            return new ParrotAnafi(this);
+            return new ParrotAnafi(sdk);
         } else {
             throw new Exception("Unsupported platform: " + platform.name());
         }
