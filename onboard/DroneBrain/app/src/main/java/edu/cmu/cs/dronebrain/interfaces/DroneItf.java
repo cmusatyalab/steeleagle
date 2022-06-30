@@ -17,6 +17,10 @@ public interface DroneItf {
     void takePhoto() throws Exception;
     byte[] getVideoFrame() throws Exception;
     void getStatus() throws Exception;
+    String getName() throws Exception;
+    Double getLat() throws Exception;
+    Double getLon() throws Exception;
+    Double getAlt() throws Exception;
     void cancel() throws Exception;
     void kill() throws Exception;
 }
