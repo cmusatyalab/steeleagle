@@ -1,13 +1,15 @@
 package edu.cmu.cs.dronebrain.impl
 
 import android.graphics.Bitmap
-import android.os.Looper
+import android.location.Location
 import android.util.Log
 import com.parrot.drone.groundsdk.GroundSdk
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
+import com.parrot.drone.groundsdk.device.instrument.Gps
+import com.parrot.drone.groundsdk.device.peripheral.Copilot
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
 import com.parrot.drone.groundsdk.device.peripheral.StreamServer
 import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
@@ -16,9 +18,7 @@ import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
-import com.parrot.drone.groundsdk.internal.stream.YUVSink
 import com.parrot.drone.groundsdk.stream.GsdkStreamView
-import com.parrot.drone.groundsdk.stream.Stream
 import com.parrot.drone.groundsdk.value.EnumSetting
 import edu.cmu.cs.dronebrain.MainActivity
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
@@ -29,6 +29,8 @@ import java.util.concurrent.CountDownLatch
 
 class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
+    /** MainActivity variable **/
+    private var activity : MainActivity
     /** Variable for storing GroundSDK object **/
     private var groundSdk : ManagedGroundSdk? = null
     /** Variable for storing the drone object **/
@@ -47,36 +49,8 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     private var liveStreamRef: Ref<CameraLive>? = null
     /** Current drone live stream. **/
     private var liveStream: CameraLive? = null
-    /** Stream sink **/
-    private var sink: Stream.Sink? = null
-    /** Active frame reference **/
-    private var frame: YUVSink.Frame? = null
-
-    /** Callback for the stream **/
-    class SinkCallback(p : ParrotAnafi) : YUVSink.Callback {
-
-        /** Logging tag **/
-        private var TAG : String = "SinkCallback"
-        /** Reference to parent drone **/
-        private var parent : ParrotAnafi? = null
-
-        init {
-            parent = p
-        }
-
-        override fun onStart(sink: YUVSink) {
-            // Nothing to do here.
-        }
-
-        override fun onFrame(sink: YUVSink, f: YUVSink.Frame) {
-            Log.d(TAG, "Received a frame!")
-            parent?.setVideoFrame(f)
-        }
-
-        override fun onStop(sink: YUVSink) {
-            parent?.releaseVideoFrame()
-        }
-    }
+    /** Video stream view. **/
+    private lateinit var streamView: GsdkStreamView
 
     /** Kill switch for the drone **/
     private var cancel: Boolean = false
@@ -85,7 +59,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     private var TAG : String = "ParrotAnafi"
 
     init {
-        groundSdk = ManagedGroundSdk.obtainSession(mainActivity)
+        activity = mainActivity
     }
 
     suspend fun wait_to_complete_manual_flight() {
@@ -104,7 +78,7 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     }
 
     override fun init() {
-        TODO("Not yet implemented")
+        groundSdk = ManagedGroundSdk.obtainSession(activity)
     }
 
     @Throws(Exception::class)
@@ -266,14 +240,16 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
                                 // Set the live stream as the stream
                                 // to be render by the stream view.
-                                var sinkCallback = SinkCallback(this)
-                                sink = liveStream.openSink(YUVSink.config(Looper.getMainLooper(), sinkCallback))
+                                streamView.setStream(liveStream)
                             }
 
                             // Play the live stream.
                             if (liveStream.playState() != CameraLive.PlayState.PLAYING) {
                                 liveStream.play()
                             }
+                        } else {
+                            // Stop rendering the stream
+                            streamView.setStream(null)
                         }
                         // Keep the live stream to know if it is a new one or not.
                         this.liveStream = liveStream
@@ -283,6 +259,8 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
                 // Stop monitoring the live stream
                 liveStreamRef?.close()
                 liveStreamRef = null
+                // Stop rendering the stream
+                streamView.setStream(null)
             }
         }
     }
@@ -305,23 +283,16 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
         rewind()
     }.array()
 
-    /** Helper function for setting current stream frame **/
-    fun setVideoFrame(f : YUVSink.Frame) {
-        releaseVideoFrame()
-        frame = f
-    }
-
-    /** Healper function for releasing the current video frame **/
-    fun releaseVideoFrame() {
-        frame?.release()
-        frame = null
-    }
-
     @Throws(Exception::class)
     override fun getVideoFrame(): ByteArray? {
-        frame?.nativePtr()
-        TODO("This doesn't work yet")
-        return null
+        var frame: Bitmap? = null
+        var countDownLatch = CountDownLatch(1)
+        streamView?.capture {
+            frame = it
+            countDownLatch.countDown()
+        }
+        countDownLatch.await()
+        return frame?.convertToByteArray()
     }
 
     @Throws(Exception::class)
@@ -366,6 +337,23 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     }
 
     @Throws(Exception::class)
+    override fun getName(): String? {
+        return drone?.name
+    }
+
+    override fun getLat(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.latitude
+    }
+
+    override fun getLon(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.longitude
+    }
+
+    override fun getAlt(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.altitude
+    }
+
+    @Throws(Exception::class)
     override fun cancel() {
         Log.d(TAG, "Cancelling previous action...")
         cancel = true
@@ -376,6 +364,10 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
 
     @Throws(Exception::class)
     override fun kill() {
-        TODO("Not yet implemented")
+        pilotingItfRef?.get()?.let { itf ->
+            itf.hover()
+        }
+        drone?.getPeripheral(Copilot::class.java)?.source()?.value = Copilot.Source.REMOTE_CONTROL
+        groundSdk?.disconnectDrone(drone!!.uid)
     }
 }

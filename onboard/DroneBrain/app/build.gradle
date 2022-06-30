@@ -24,6 +24,12 @@ android {
                 srcDir '../protos'
             }
         }
+        wearos {
+            proto {
+                // In addition to the default 'src/main/proto'
+                srcDir '../protos'
+            }
+        }
     }
     buildTypes {
 
