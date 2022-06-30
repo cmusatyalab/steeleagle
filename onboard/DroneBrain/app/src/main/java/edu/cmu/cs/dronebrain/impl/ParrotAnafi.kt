@@ -1,12 +1,14 @@
 package edu.cmu.cs.dronebrain.impl
 
 import android.graphics.Bitmap
+import android.location.Location
 import android.util.Log
 import com.parrot.drone.groundsdk.GroundSdk
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
+import com.parrot.drone.groundsdk.device.instrument.Gps
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
 import com.parrot.drone.groundsdk.device.peripheral.StreamServer
 import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
@@ -329,6 +331,23 @@ class ParrotAnafi(mainActivity: MainActivity) : DroneItf {
     @Throws(Exception::class)
     override fun getStatus() {
 
+    }
+
+    @Throws(Exception::class)
+    override fun getName(): String? {
+        return drone?.name
+    }
+
+    override fun getLat(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.latitude
+    }
+
+    override fun getLon(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.longitude
+    }
+
+    override fun getAlt(): Double? {
+        return drone?.getInstrument(Gps::class.java)?.lastKnownLocation()?.altitude
     }
 
     @Throws(Exception::class)

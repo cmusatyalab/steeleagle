@@ -2,17 +2,23 @@ package edu.cmu.cs.dronebrain;
 
 import android.app.Activity;
 import android.content.Context;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.WindowManager;
+import android.webkit.URLUtil;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -34,12 +40,16 @@ import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Platform;
 import edu.cmu.cs.gabriel.client.comm.ServerComm;
 import edu.cmu.cs.gabriel.client.results.ErrorType;
-import edu.cmu.cs.gabriel.protocol.Protos;
+import edu.cmu.cs.gabriel.protocol.Protos.InputFrame;
+import edu.cmu.cs.gabriel.protocol.Protos.ResultWrapper;
+import edu.cmu.cs.gabriel.protocol.Protos.PayloadType;
+import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
-public class MainActivity extends Activity {
-
+public class MainActivity extends Activity implements Consumer<ResultWrapper>{
+    /** Connectivity Manager to retrieve network infos **/
+    private ConnectivityManager cm = null;
     /** LTE network object **/
     private Network LTEnetwork = null;
     /** Currently executing FlightScript **/
@@ -50,6 +60,10 @@ public class MainActivity extends Activity {
     private CloudletItf cloudlet = null;
     /** For Gabriel client connection **/
     private ServerComm serverComm = null;
+    /** Script URL send from commander **/
+    private String scriptUrl = null;
+    private Handler loopHandler = null;
+    private int heartbeatsSent = 0;
     /** Log tag **/
     String TAG = "DroneBrain";
     String SOURCE = "command";
@@ -64,6 +78,55 @@ public class MainActivity extends Activity {
                 .build();
     }
 
+    public String getWifiSSID() {
+        WifiManager wm = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if(wm != null) {
+            return wm.getConnectionInfo().getSSID();
+        } else {
+            return "";
+        }
+    }
+
+    @Override
+    public void accept(ResultWrapper resultWrapper) {
+        if (resultWrapper.getResultsCount() != 1) {
+            Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output.");
+            return;
+        }
+
+        ResultWrapper.Result result = resultWrapper.getResults(0);
+        try {
+            Extras extras = Extras.parseFrom(resultWrapper.getExtras().getValue());
+            ByteString r = result.getPayload();
+            if(extras.hasCmd()) {
+                Protos.Command cmd = extras.getCmd();
+                if(cmd.getHalt()) {
+                    Log.i(TAG, "Killswitch signaled from commander.");
+                    if (drone != null)
+                        drone.kill();
+
+                }
+
+                if( URLUtil.isValidUrl(cmd.getScriptUrl())) {
+                    Log.i(TAG, "Flight script sent by commander.");
+                    scriptUrl = cmd.getScriptUrl();
+                    Log.i(TAG, scriptUrl);
+                    if(retrieveFlightScript())
+                        executeFlightScript();
+                }
+            }
+        }  catch (InvalidProtocolBufferException e) {
+            Log.e(TAG, "Protobuf Error", e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (result.getPayloadType() != PayloadType.TEXT) {
+            Log.e(TAG, "Got result of type " + result.getPayloadType().name());
+            return;
+        }
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,33 +136,20 @@ public class MainActivity extends Activity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
-        Consumer<Protos.ResultWrapper> consumer = resultWrapper -> {
-            Protos.ResultWrapper.Result result = resultWrapper.getResults(0);
-            ByteString r = result.getPayload();
-
-        };
-
         Consumer<ErrorType> onDisconnect = errorType -> {
             Log.e(TAG, "Disconnect Error:" + errorType.name());
             finish();
         };
 
         serverComm = ServerComm.createServerComm(
-                consumer, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
+                this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
 
-        serverComm.sendSupplier(() -> {
-           // ByteString jpegByteString = yuvToJpegConverter.convertToJpeg(image);
-            String p = "payload";
-
-            return Protos.InputFrame.newBuilder()
-                    .setPayloadType(Protos.PayloadType.TEXT)
-                    .addPayloads(ByteString.copyFromUtf8(p))
-                    .build();
-        }, SOURCE, false);
+        loopHandler = new Handler();
+        loopHandler.postDelayed(gabrielLoop, 1000);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         /** Create LTE network binding **/
-        ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest.Builder req = new NetworkRequest.Builder();
         req.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
         cm.requestNetwork(req.build(), new ConnectivityManager.NetworkCallback() {
@@ -118,15 +168,57 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onStart(){
-        super.onStart();
+    private Runnable gabrielLoop = new Runnable() {
 
+        @Override
+        public void run() {
+            heartbeatsSent++;
+            serverComm.sendSupplier(() -> {
+                String p = "heartbeat";
+
+                Extras extras;
+                Extras.Builder extrasBuilder = Extras.newBuilder();
+                Protos.Location.Builder lb = Protos.Location.newBuilder();
+                Location l = null;
+                try {
+                    if(drone != null) {
+                        lb.setLatitude(drone.getLat());
+                        lb.setLongitude(drone.getLon());
+                        extrasBuilder.setLocation(lb);
+                        extrasBuilder.setDroneId(drone.getName());
+
+                    } else {
+                        lb.setLatitude(0);
+                        lb.setLongitude(0);
+                        extrasBuilder.setLocation(lb);
+                        extrasBuilder.setDroneId(Build.ID);
+                    }
+
+                    if(heartbeatsSent < 2) {
+                        extrasBuilder.setRegistering(true);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                extras = extrasBuilder.build();
+
+                return InputFrame.newBuilder()
+                        .setPayloadType(PayloadType.TEXT)
+                        .addPayloads(ByteString.copyFromUtf8(p))
+                        .setExtras(pack(extras))
+                        .build();
+            }, SOURCE, false);
+            loopHandler.postDelayed(this, 1000);
+        }
+    };
+
+    protected boolean retrieveFlightScript() {
+        boolean success = false;
         /** Download flight plan **/
         File f = new File(getDir("dex", MODE_PRIVATE), "classes.dex");
         try {
             Log.d(TAG, "Starting flight plan download");
-            download("http://cloudlet040.elijah.cs.cmu.edu/classes.dex", f);
+            download(scriptUrl, f);
             /** Read data from flight plan **/
             DexClassLoader classLoader = new DexClassLoader(
                     f.getAbsolutePath(), getDir("outdex", MODE_PRIVATE).getAbsolutePath(),
@@ -136,15 +228,14 @@ public class MainActivity extends Activity {
             MS = (FlightScript)clazz.newInstance();
             drone = getDrone(MS.platform); // Get the corresponding drone
             cloudlet = getCloudlet(); // Get the corresponding cloudlet
+            success = true;
         } catch (Exception e) {
             Log.e(TAG, "Download failed! " + e.toString());
         }
+        return success;
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
+    protected void executeFlightScript() {
         try {
             /** Execute flight plan **/
             Log.d(TAG, "Executing flight plan!");
@@ -157,6 +248,20 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             Log.e(TAG, e.toString());
         }
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+
     }
 
     private DroneItf getDrone(Platform platform) throws Exception {
