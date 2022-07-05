@@ -30,13 +30,20 @@ public class MS extends FlightScript {
 
     public void setDrone(DroneItf d) {
         drone = d;
-        drone.init();
+        try {
+            drone.init();
+        } catch(Exception e) {
+            
+        }
     }
-
 
     public void setCloudlet(CloudletItf c) {
         cloudlet = c;
-        cloudlet.init();
+        try {
+            cloudlet.init();
+        } catch(Exception e) {
+
+        }
     }
 
     public void run() {
