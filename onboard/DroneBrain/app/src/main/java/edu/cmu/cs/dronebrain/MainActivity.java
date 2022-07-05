@@ -107,7 +107,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     Log.i(TAG, "Killswitch signaled from commander.");
                     if (drone != null)
                         drone.kill();
-
                 }
 
                 if( URLUtil.isValidUrl(cmd.getScriptUrl())) {
@@ -267,8 +266,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onResume() {
         super.onResume();
-
-
+        heartbeatsSent = 0;
     }
 
     private DroneItf getDrone(Platform platform) throws Exception {

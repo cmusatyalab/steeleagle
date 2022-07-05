@@ -383,10 +383,11 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun kill() {
+        cancel = true
         pilotingItfRef?.get()?.let { itf ->
             itf.hover()
+            Log.d(TAG, "Hovering")
         }
-        drone?.getPeripheral(Copilot::class.java)?.source()?.value = Copilot.Source.REMOTE_CONTROL
         groundSdk?.disconnectDrone(drone!!.uid)
     }
 }
