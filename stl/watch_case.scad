@@ -25,12 +25,15 @@ module thread_chamfer(rot, tilt, od, watch, floor) {
     cube([10, 4, watch]);
 }
 
+function outer_diameter(watch_diameter, arm_length=6, arm_width=24) =
+    let (x = watch_diameter + arm_length)
+    let (y = arm_width + 1)
+    sqrt(x*x + y*y);
+
 
 module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thread_depth=1) {
     id = watch_diameter + 2;
-    //od = id + 2 * wall_thickness;
-    band_arm_extra = watch_diameter + 8.7;
-    od = sqrt((band_arm_extra/2)*(band_arm_extra/2) + (19/2)*(19/2))*2;
+    od = outer_diameter(watch_diameter);
     td = od + 2 * thread_depth;
     height = watch_thickness + floor_thickness;
 
@@ -44,10 +47,10 @@ module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thre
         );
 
         // openings for watch-band arms
-        translate([18/2, -(td+2)/2, -1])
+        translate([19/2, -(td+2)/2, -1])
         cube([7, td+2, height+2]);
         rotate([0, 0, 180])
-        translate([18/2, -(td+2)/2, -1])
+        translate([19/2, -(td+2)/2, -1])
         cube([7, td+2, height+2]);
 
         // clear space for watch buttons
@@ -76,15 +79,13 @@ module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thre
 }
 
 module watch_cap(watch_diameter=44, watch_thickness=10, thread_depth=1) {
-    id = watch_diameter + 2;
-    //od = id + 2 * wall_thickness;
-    band_arm_extra = watch_diameter + 8.7;
-    od = sqrt((band_arm_extra/2)*(band_arm_extra/2) + (19/2)*(19/2))*2;
+    od = outer_diameter(watch_diameter);
     td = od + 2 * thread_depth;
+    wall = 1;
 
     difference () {
         generic_bottle_cap(
-            wall=1,
+            wall=wall,
             texture="knurled",
             height=watch_thickness,
             thread_od=td,
@@ -92,8 +93,9 @@ module watch_cap(watch_diameter=44, watch_thickness=10, thread_depth=1) {
             tolerance=0.2
         );
 
+        // punch hole for watch face
         translate([0, 0, -1])
-        cylinder(h=3, d=watch_diameter);
+        cylinder(h=wall+2, d=watch_diameter);
     }
 }
 
