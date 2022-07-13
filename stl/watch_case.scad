@@ -17,20 +17,22 @@ watch_diameter = 40;
 watch_thickness = 10;
 //watch_thickness = 9.8;
 
-module thread_chamfer(rot, tilt, od, watch, wall) {
+module thread_chamfer(rot, tilt, od, watch, floor) {
     rotate([0, 0, rot])
     translate([0, od/2, 0])
     rotate([0, 0, tilt])
-    translate([-5, 0, wall])
+    translate([-5, 0, floor])
     cube([10, 4, watch]);
 }
 
 
-module watch_case(watch_diameter=44, watch_thickness=10, wall_thickness=3, thread_depth=1) {
+module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thread_depth=1) {
     id = watch_diameter + 2;
-    od = id + 2 * wall_thickness;
+    //od = id + 2 * wall_thickness;
+    band_arm_extra = watch_diameter + 8.7;
+    od = sqrt((band_arm_extra/2)*(band_arm_extra/2) + (19/2)*(19/2))*2;
     td = od + 2 * thread_depth;
-    height = watch_thickness + wall_thickness;
+    height = watch_thickness + floor_thickness;
 
     difference () {
         generic_bottle_neck(
@@ -65,17 +67,19 @@ module watch_case(watch_diameter=44, watch_thickness=10, wall_thickness=3, threa
         }
 
         // clip pointy bits off threads
-        thread_chamfer(rot=42, tilt=-25, od=od, watch=watch_thickness, wall=wall_thickness);
-        thread_chamfer(rot=222, tilt=-25, od=od, watch=watch_thickness, wall=wall_thickness);
-        thread_chamfer(rot=-42, tilt=25, od=od, watch=watch_thickness, wall=wall_thickness);
-        thread_chamfer(rot=-222, tilt=25, od=od, watch=watch_thickness, wall=wall_thickness);
+        thread_chamfer(rot=42, tilt=-25, od=od, watch=watch_thickness, floor=floor_thickness);
+        thread_chamfer(rot=222, tilt=-25, od=od, watch=watch_thickness, floor=floor_thickness);
+        thread_chamfer(rot=-42, tilt=25, od=od, watch=watch_thickness, floor=floor_thickness);
+        thread_chamfer(rot=-222, tilt=25, od=od, watch=watch_thickness, floor=floor_thickness);
     }
-    cylinder(h=wall_thickness, d=od);
+    cylinder(h=floor_thickness, d=od);
 }
 
-module watch_cap(watch_diameter=44, watch_thickness=10, wall_thickness=3, thread_depth=1) {
+module watch_cap(watch_diameter=44, watch_thickness=10, thread_depth=1) {
     id = watch_diameter + 2;
-    od = id + 2 * wall_thickness;
+    //od = id + 2 * wall_thickness;
+    band_arm_extra = watch_diameter + 8.7;
+    od = sqrt((band_arm_extra/2)*(band_arm_extra/2) + (19/2)*(19/2))*2;
     td = od + 2 * thread_depth;
 
     difference () {
