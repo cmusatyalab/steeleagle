@@ -41,6 +41,17 @@ module collar(hole_radius=7.5) {
     };
 }
 
+module gap(battery_width, clip_width, collar_width, wall_thickness, offset) {
+    gap_width = (battery_width - clip_width) / 2 + 1;
+    translate([offset*(gap_width-2+clip_width)/2, battery_height/2+(wall_thickness+2), collar_width/2])
+    rotate([90, 0, 0])
+    union() {
+        cylinder(h=wall_thickness+4, d=gap_width);
+        translate([-gap_width/2, 0, 0])
+        cube([gap_width, collar_width, wall_thickness+4]);
+    }
+}
+
 module collar_with_fanhole(hole_width=15) {
     hole_radius = hole_width/2;
     difference() {
@@ -53,9 +64,10 @@ module collar_with_fanhole(hole_width=15) {
             translate([hole_radius+3, 0, 0])
             cylinder(50, hole_radius, hole_radius);
         };
+        gap(battery_width, clip_width, collar_width, wall_thickness, -1);
+        gap(battery_width, clip_width, collar_width, wall_thickness, 1);
     };
 }
-        
 
 module neck() {
     linear_extrude(neck_length+collar_width+6) {
@@ -89,8 +101,8 @@ module clip(r=3) {
 }
 
 //example();
-//collar_with_fanhole();
-collar();
+//collar();
+collar_with_fanhole();
 neck();
 clip();
 //example();
