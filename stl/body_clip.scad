@@ -1,14 +1,6 @@
 $fa = 1;
 $fs = 0.4;
 
-battery_width = 45;
-battery_height = 50;
-collar_width = 28;
-clip_width = 30;
-clip_depth = 7;
-neck_length = 37.6;
-wall_thickness = 4;
-
 module example() {
     color(c=[0, 0, 1, 0.5])
     translate([0, 30, -27.9])
@@ -41,7 +33,7 @@ module collar(battery_width, battery_height, collar_width, wall_thickness) {
     };
 }
 
-module neck(battery_width, battery_height, collar_width, clip_width, neck_length, wall_thickness) {
+module neck(battery_width, battery_height, neck_length, collar_width, clip_width, wall_thickness) {
     linear_extrude(neck_length+collar_width+6) {
         offset(r=1) offset(delta=-1)
         difference() {
@@ -52,7 +44,7 @@ module neck(battery_width, battery_height, collar_width, clip_width, neck_length
     }
 }
 
-module clip(battery_height, collar_width, clip_width, clip_depth, neck_length, wall_thickness, r=3) {
+module clip(battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness, r=3) {
     //color("#0f0")
     translate([0, battery_height/2+wall_thickness, neck_length+collar_width+r])
     rotate([90, 0, 0])
@@ -93,20 +85,21 @@ module hole(wall_thickness, hole_width, hole_length=36) {
 }
 
 module drone_body_mount(
-    battery_width=battery_width,
-    battery_height=battery_height,
-    clip_width=clip_width,
-    clip_depth=clip_depth,
-    collar_width=collar_width,
-    neck_length=neck_length,
-    wall_thickness=wall_thickness,
-    hole_width=15
+    battery_width,
+    battery_height,
+    neck_length,
+    clip_width=30,
+    clip_depth=7,
+    collar_width=28,
+    wall_thickness=4,
+    hole_width=15,
+    holes="minimal"
 ) {
     difference() {
         union() {
             collar(battery_width, battery_height, collar_width, wall_thickness);
-            neck(battery_width, battery_height, collar_width, clip_width, neck_length, wall_thickness);
-            clip(battery_height, collar_width, clip_width, clip_depth, neck_length, wall_thickness);
+            neck(battery_width, battery_height, neck_length, collar_width, clip_width, wall_thickness);
+            clip(battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness);
         }
 
         // fan hole
@@ -115,27 +108,40 @@ module drone_body_mount(
         hole(wall_thickness, hole_width);
 
         // hole in neck
-        translate([0, battery_height/2+3, collar_width])
-        rotate([90, 90, 0])
-        hole(wall_thickness, hole_width, hole_length=neck_length);
+        if (holes=="neck" || holes=="everywhere") {
+            translate([0, battery_height/2+3, collar_width])
+            rotate([90, 90, 0])
+            hole(wall_thickness, hole_width, hole_length=neck_length);
+        }
 
         // gaps next to neck
         gap(battery_width, clip_width, collar_width, wall_thickness, -1);
         gap(battery_width, clip_width, collar_width, wall_thickness, 1);
 
         // side holes
-        translate([battery_width/2+2, 0, collar_width/2])
-        rotate([90, 0, 90])
-        hole(wall_thickness, hole_width);
+        if (holes=="side" || holes=="everywhere") {
+            translate([battery_width/2+2, 0, collar_width/2])
+            rotate([90, 0, 90])
+            hole(wall_thickness, hole_width);
 
-        translate([-battery_width/2-2, 0, collar_width/2])
-        rotate([90, 0, 90])
-        hole(wall_thickness, hole_width);
+            translate([-battery_width/2-2, 0, collar_width/2])
+            rotate([90, 0, 90])
+            hole(wall_thickness, hole_width);
+        }
     };
 }
 
 //example();
 
-drone_body_mount();
+battery_width = 45;
+battery_height = 50;
+neck_length = 37.7;
+
+/*
+    holes="neck"
+    holes="sides"
+    holes="everywhere"
+*/
+//drone_body_mount(battery_width=battery_width, battery_height=battery_height, neck_length=neck_length, holes="everywhere");
 
 //example();
