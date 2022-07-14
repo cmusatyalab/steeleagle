@@ -16,7 +16,7 @@ module example() {
     import("body_clip.stl");
 }
 
-module battery_shape() {
+module battery_shape(battery_width, battery_height) {
     offset(r=2) {
         square([battery_width-4, battery_height-4], center=true);
         intersection() {
@@ -28,59 +28,31 @@ module battery_shape() {
     }
 }
 
-module collar(hole_radius=7.5) {
+module collar(battery_width, battery_height, collar_width, wall_thickness) {
     linear_extrude(collar_width) {
         intersection() {
             square([battery_width+wall_thickness*2, battery_height+wall_thickness*2+2], center=true);
             difference() {
                 offset(r=wall_thickness)
-                battery_shape();
-                battery_shape();
+                battery_shape(battery_width, battery_height);
+                battery_shape(battery_width, battery_height);
             };
         };
     };
 }
 
-module gap(battery_width, clip_width, collar_width, wall_thickness, offset) {
-    gap_width = (battery_width - clip_width) / 2 + 1;
-    translate([offset*(gap_width-2+clip_width)/2, battery_height/2+(wall_thickness+2), collar_width/2])
-    rotate([90, 0, 0])
-    union() {
-        cylinder(h=wall_thickness+4, d=gap_width);
-        translate([-gap_width/2, 0, 0])
-        cube([gap_width, collar_width, wall_thickness+4]);
-    }
-}
-
-module collar_with_fanhole(hole_width=15) {
-    hole_radius = hole_width/2;
-    difference() {
-        collar();
-        translate([0, 0, collar_width/2-0.5])
-        rotate([90, 0, 0])
-        hull() {
-            translate([-3-hole_radius, 0, 0])
-            cylinder(50, hole_radius, hole_radius);
-            translate([hole_radius+3, 0, 0])
-            cylinder(50, hole_radius, hole_radius);
-        };
-        gap(battery_width, clip_width, collar_width, wall_thickness, -1);
-        gap(battery_width, clip_width, collar_width, wall_thickness, 1);
-    };
-}
-
-module neck() {
+module neck(battery_width, battery_height, collar_width, clip_width, neck_length, wall_thickness) {
     linear_extrude(neck_length+collar_width+6) {
         offset(r=1) offset(delta=-1)
         difference() {
             translate([-clip_width/2, battery_height/2, 0])
-            square([clip_width,wall_thickness+1]);
-            battery_shape();
+            square([clip_width, wall_thickness+1]);
+            battery_shape(battery_width, battery_height);
         }
     }
 }
 
-module clip(r=3) {
+module clip(battery_height, collar_width, clip_width, clip_depth, neck_length, wall_thickness, r=3) {
     //color("#0f0")
     translate([0, battery_height/2+wall_thickness, neck_length+collar_width+r])
     rotate([90, 0, 0])
@@ -100,50 +72,70 @@ module clip(r=3) {
     }
 }
 
-//example();
-//collar();
-collar_with_fanhole();
-neck();
-clip();
-//example();
-
-module stretched_hole_mask(hole_width=15, hole_length=30) {
-    r=hole_width/2;
-    s=hole_length-hole_width;
-    translate([0, 0, 2])
-    difference() {
-        union() { 
-            translate([-s/2, 0, 0])
-            cylinder(h=4, r=r, center=true);
-            translate([s/2, 0, 0])
-            cylinder(h=4, r=r, center=true);
-            cube([s, hole_width, 4], center=true);
-            
-            translate([-s/2, 0, -1.5])
-            cylinder(h=3, r=r+2, center=true);
-            translate([s/2, 0, -1.5])
-            cylinder(h=3, r=r+2, center=true);
-            translate([0, 0, -1.5])
-            cube([s, hole_width+4, 3], center=true);
-        }
-   
-        translate([-s/2, 0, 0])
-        rotate([0, 0, 90])
-        rotate_extrude(angle=180)
-          translate([r+2, 0, 0])
-          circle(2);
-        translate([s/2, 0, 0])
-        rotate([0, 0, -90])
-        rotate_extrude(angle=180)
-          translate([r+2, 0, 0])
-          circle(2);
-        translate([0, -(r+2), 0])
-        rotate([0, 90, 0])
-        cylinder(h=s+2, r=2, center=true);
-        translate([0, r+2, 0])
-        rotate([0, 90, 0])
-        cylinder(h=s+2, r=2, center=true);
+module gap(battery_width, clip_width, collar_width, wall_thickness, offset) {
+    gap_width = (battery_width - clip_width) / 2;
+    translate([offset*(gap_width+clip_width)/2, battery_height/2+(wall_thickness+2), collar_width/2])
+    rotate([90, 0, 0])
+    union() {
+        cylinder(h=wall_thickness+4, d=gap_width);
+        translate([-gap_width/2, 0, 0])
+        cube([gap_width, collar_width, wall_thickness+4]);
     }
 }
 
-//stretched_hole_mask();
+module hole(wall_thickness, hole_width, hole_length=36) {
+    coff=(hole_length-hole_width)/2;
+    translate([-coff, 0, 0])
+    cylinder(h=wall_thickness+4, d=hole_width, center=true);
+    translate([coff, 0, 0])
+    cylinder(h=wall_thickness+4, d=hole_width, center=true);
+    cube([hole_length-hole_width, hole_width, wall_thickness+4], center=true);
+}
+
+module drone_body_mount(
+    battery_width=battery_width,
+    battery_height=battery_height,
+    clip_width=clip_width,
+    clip_depth=clip_depth,
+    collar_width=collar_width,
+    neck_length=neck_length,
+    wall_thickness=wall_thickness,
+    hole_width=15
+) {
+    difference() {
+        union() {
+            collar(battery_width, battery_height, collar_width, wall_thickness);
+            neck(battery_width, battery_height, collar_width, clip_width, neck_length, wall_thickness);
+            clip(battery_height, collar_width, clip_width, clip_depth, neck_length, wall_thickness);
+        }
+
+        // fan hole
+        translate([0, -battery_height/2-2, collar_width/2])
+        rotate([90, 0, 0])
+        hole(wall_thickness, hole_width);
+
+        // hole in neck
+        translate([0, battery_height/2+3, collar_width])
+        rotate([90, 90, 0])
+        hole(wall_thickness, hole_width, hole_length=neck_length);
+
+        // gaps next to neck
+        gap(battery_width, clip_width, collar_width, wall_thickness, -1);
+        gap(battery_width, clip_width, collar_width, wall_thickness, 1);
+
+        // side holes
+        translate([battery_width/2+2, 0, collar_width/2])
+        rotate([90, 0, 90])
+        hole(wall_thickness, hole_width);
+
+        translate([-battery_width/2-2, 0, collar_width/2])
+        rotate([90, 0, 90])
+        hole(wall_thickness, hole_width);
+    };
+}
+
+//example();
+
+drone_body_mount();
+
+//example();
