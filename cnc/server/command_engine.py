@@ -85,39 +85,41 @@ class DroneCommandEngine(cognitive_engine.Engine):
         result.payload_type = gabriel_pb2.PayloadType.TEXT
 
         #if it is a drone client...
-        if extras.drone_id is not '':
+        if extras.drone_id is not "":
             if extras.registering:
                 d = DroneClient(extras.drone_id, time.time())
                 self.drones[d.id] = d #Add the drone to our list of connected drones
                 logger.info(f"Drone [{d.id}] connected.")
                 result.payload = "Registration successful!".encode(encoding="utf-8")
             else:
-                self.drones[extras.drone_id].heartbeat = time.time()
-                if extras.drone_id in self.drones:
-                    #check if there is a script to send or if we need to signal a halt
-                    if self.drones[extras.drone_id].sent_halt:
-                        from_commander = cnc_pb2.Extras()
-                        from_commander.cmd.halt = True
-                        result_wrapper.extras.Pack(from_commander)
-                        result.payload = "!Halt sent!".encode(encoding="utf-8")
-                        logger.debug(f'Instructing drone {extras.drone_id} to halt and enable manual control...')
-                        self.drones[extras.drone_id].sent_halt = False
-                    elif self.drones[extras.drone_id].script_url != '':
-                        url = self.drones[extras.drone_id].script_url
-                        from_commander = cnc_pb2.Extras()
-                        if validators.url(url, public=True) == True:
-                            from_commander.cmd.script_url = url
+                try:
+                    self.drones[extras.drone_id].heartbeat = time.time()
+                    if extras.drone_id in self.drones:
+                        #check if there is a script to send or if we need to signal a halt
+                        if self.drones[extras.drone_id].sent_halt:
+                            from_commander = cnc_pb2.Extras()
+                            from_commander.cmd.halt = True
                             result_wrapper.extras.Pack(from_commander)
-                            result.payload = "Script URL sent.".encode(encoding="utf-8")
-                            logger.debug(f'Directing {extras.drone_id} to to run flight script at {url}...')
-                            self.drones[extras.drone_id].script_url = ''
+                            result.payload = "!Halt sent!".encode(encoding="utf-8")
+                            logger.debug(f'Instructing drone {extras.drone_id} to halt and enable manual control...')
+                            self.drones[extras.drone_id].sent_halt = False
+                        elif self.drones[extras.drone_id].script_url != '':
+                            url = self.drones[extras.drone_id].script_url
+                            from_commander = cnc_pb2.Extras()
+                            if validators.url(url, public=True) == True:
+                                from_commander.cmd.script_url = url
+                                result_wrapper.extras.Pack(from_commander)
+                                result.payload = "Script URL sent.".encode(encoding="utf-8")
+                                logger.debug(f'Directing {extras.drone_id} to to run flight script at {url}...')
+                                self.drones[extras.drone_id].script_url = ''
+                            else:
+                                logger.error(f"Invalid URL [{url}] given as flight script.")
                         else:
-                            logger.error(f"Invalid URL [{url}] given as flight script.")
-                    else:
-                        result.payload = "No command.".encode(encoding="utf-8")
-                    
+                            result.payload = "No command.".encode(encoding="utf-8")
+                except KeyError:
+                    logger.error(f'Sorry, drone [{extras.drone_id}]  has not registered yet!')
         #if it is a commander client...
-        elif extras.commander_id is not None:
+        elif extras.commander_id is not "":
             commander = extras.commander_id
             if extras.cmd is not None:
                 try:
