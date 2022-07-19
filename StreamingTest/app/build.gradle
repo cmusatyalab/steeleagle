@@ -56,8 +56,8 @@ dependencies {
     implementation group: 'org.bytedeco', name: 'javacpp', version: '1.5.7'
     implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-arm64'
     implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-x86_64'
-    implementation group: 'org.bytedeco', name: 'opencv', version: '4.5.5-1.5.7', classifier: 'android-arm64'
-    implementation group: 'org.bytedeco', name: 'opencv', version: '4.5.5-1.5.7', classifier: 'android-x86_64'
+   // implementation group: 'org.bytedeco', name: 'opencv', version: '4.5.5-1.5.7', classifier: 'android-arm64'
+   // implementation group: 'org.bytedeco', name: 'opencv', version: '4.5.5-1.5.7', classifier: 'android-x86_64'
 
 
     // JAVACV libs

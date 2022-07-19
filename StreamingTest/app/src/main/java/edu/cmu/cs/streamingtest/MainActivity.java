@@ -163,8 +163,8 @@ public class MainActivity extends Activity {
                 try {
                     Long start = System.currentTimeMillis();
                     //wrapper.grabImage(false);
-                    //wrapper.grabImage();
-                    wrapper.grabKeyFrame();
+                    wrapper.grabImage();
+                    //wrapper.grabKeyFrame();
                     Log.d("PERF", "[GRAB IMAGE]: " + (System.currentTimeMillis() - start));
                 } catch (Exception e) {
                     Log.d("GrabException", e.getMessage());
@@ -179,9 +179,9 @@ public class MainActivity extends Activity {
 
         new Thread(() -> {
             try {
-                VideoCapture cap = new VideoCapture("rtsp://192.168.42.1/live");
+                //VideoCapture cap = new VideoCapture("rtsp://192.168.42.1/live");
                 DataOutputStream daos = new DataOutputStream(socket.getOutputStream());
-                Mat frame = new Mat();
+               // Mat frame = new Mat();
                 while (true) {
                     Long start = System.currentTimeMillis();
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -194,11 +194,11 @@ public class MainActivity extends Activity {
                     Long chk1 = System.currentTimeMillis() - start;
 
                     start = System.currentTimeMillis();
-                    //Bitmap bmp = converter.convert(wrapper.getImage());
+                    Bitmap bmp = converter.convert(wrapper.getImage());
                     Long chk2 = System.currentTimeMillis() - start;
 
                     start = System.currentTimeMillis();
-                    //bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
                     Long chk3 = System.currentTimeMillis() - start;
 
                     start = System.currentTimeMillis();
