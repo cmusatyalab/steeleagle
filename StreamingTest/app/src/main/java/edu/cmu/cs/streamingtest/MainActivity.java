@@ -74,7 +74,7 @@ public class MainActivity extends Activity {
         //grabber = new FFmpegFrameGrabber("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4");
         grabber.setOption("rtsp_transport", "udp");
         //grabber.setOption("skip_frame", "nokey");
-        grabber.setOption("buffer_size", "6000000");
+        grabber.setOption("buffer_size", "4000000");
         //grabber.setVideoOption("fps", "1,realtime");
         //grabber.setVideoCodec(AV_CODEC_ID_RAWVIDEO);
         grabber.setImageWidth(width);
@@ -182,7 +182,13 @@ public class MainActivity extends Activity {
                 //VideoCapture cap = new VideoCapture("rtsp://192.168.42.1/live");
                 DataOutputStream daos = new DataOutputStream(socket.getOutputStream());
                // Mat frame = new Mat();
+                Integer counter = 0;
                 while (true) {
+                    if (counter % 10 != 0) {
+                        Thread.sleep(100);
+                        counter++;
+                        continue;
+                    }
                     Long start = System.currentTimeMillis();
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     /*
@@ -217,6 +223,8 @@ public class MainActivity extends Activity {
 
                     Log.d("PERF", "[Checkpoint 1]: " + chk1 + ", [Checkpoint 2]: " + chk2 + ", [Checkpoint 3]: "
                             + chk3 + ", [Checkpoint 4]: " + chk4 + ", [Checkpoint 5]: " + chk5 + ", [Checkpoint 6]: " + chk6);
+
+                    counter++;
                 }
             } catch (Exception e) {
                 Log.d("GrabException", e.getMessage());
