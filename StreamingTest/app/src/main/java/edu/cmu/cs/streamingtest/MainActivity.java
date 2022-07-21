@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
 
     // Private members
     private FFmpegFrameGrabber grabber = null;
-    private GrabberWrapper wrapper = null;
+    private PacketGrabberWrapper wrapper = null;
     private AndroidFrameConverter converter = null;
     private TextView view = null;
     private ImageView imageView = null;
@@ -156,75 +156,13 @@ public class MainActivity extends Activity {
             view.setText(e.getMessage());
         }
 
-        wrapper = new GrabberWrapper(grabber, width, height);
-
-        new Thread(() -> {
-            while (true) {
-                try {
-                    Long start = System.currentTimeMillis();
-                    //wrapper.grabImage(false);
-                    wrapper.grabImage();
-                    //wrapper.grabKeyFrame();
-                    Log.d("PERF", "[GRAB IMAGE]: " + (System.currentTimeMillis() - start));
-                } catch (Exception e) {
-                    Log.d("GrabException", e.getMessage());
-                }
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
+        // Thread for reading and grabbing packets then sending them over the network.
         new Thread(() -> {
             try {
-                //VideoCapture cap = new VideoCapture("rtsp://192.168.42.1/live");
                 DataOutputStream daos = new DataOutputStream(socket.getOutputStream());
-               // Mat frame = new Mat();
-                Integer counter = 0;
+                wrapper = new PacketGrabberWrapper(grabber, daos);
                 while (true) {
-                    if (counter % 10 != 0) {
-                        Thread.sleep(100);
-                        counter++;
-                        continue;
-                    }
-                    Long start = System.currentTimeMillis();
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    /*
-                    ByteBuffer imageBuff = wrapper.getImageBuff();
-                    daos.writeInt(imageBuff.capacity());
-                    daos.write(imageBuff.array());
-                    daos.flush();
-                     */
-                    Long chk1 = System.currentTimeMillis() - start;
-
-                    start = System.currentTimeMillis();
-                    Bitmap bmp = converter.convert(wrapper.getImage());
-                    Long chk2 = System.currentTimeMillis() - start;
-
-                    start = System.currentTimeMillis();
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-                    Long chk3 = System.currentTimeMillis() - start;
-
-                    start = System.currentTimeMillis();
-                    byte[] bytes = baos.toByteArray();
-                    Long chk4 = System.currentTimeMillis() - start;
-
-                    start = System.currentTimeMillis();
-                    daos.writeInt(bytes.length);
-                    daos.write(bytes, 0, bytes.length);
-                    Long chk5 = System.currentTimeMillis() - start;
-
-                    start = System.currentTimeMillis();
-                    daos.flush();
-                    baos.close();
-                    Long chk6 = System.currentTimeMillis() - start;
-
-                    Log.d("PERF", "[Checkpoint 1]: " + chk1 + ", [Checkpoint 2]: " + chk2 + ", [Checkpoint 3]: "
-                            + chk3 + ", [Checkpoint 4]: " + chk4 + ", [Checkpoint 5]: " + chk5 + ", [Checkpoint 6]: " + chk6);
-
-                    counter++;
+                    wrapper.grabPacket();
                 }
             } catch (Exception e) {
                 Log.d("GrabException", e.getMessage());

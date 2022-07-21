@@ -1312,7 +1312,6 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     if ((ret = av_read_frame(oc, pkt)) < 0) {
                         if (doVideo && video_st != null) {
                             // The video codec may have buffered some frames
-                            Log.d("GRAB", "Resetting packet");
                             pkt.stream_index(video_st.index());
                             pkt.flags(AV_PKT_FLAG_KEY);
                             pkt.data(null);
