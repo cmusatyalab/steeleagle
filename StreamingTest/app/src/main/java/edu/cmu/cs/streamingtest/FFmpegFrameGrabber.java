@@ -447,7 +447,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
         } else {
             if (samples_frame == null || samples_frame.nb_samples() == 0) {
                 try {
-                    grabFrame(true, false, false, false, false);
+                    grabFrame(true, false, false, false, false, false, false);
                     frameGrabbed = true;
                 } catch (Exception e) {
                     return 0.0;
@@ -701,7 +701,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     long maxSeekSteps = 0;
                     long count = 0;
                     Frame seekFrame = null;
-                    seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false);
+                    seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false, false);
                     if (seekFrame == null) return;
 
                     initialSeekPosition = seekFrame.timestamp;
@@ -725,7 +725,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     double delta = 0.0; //for the timestamp correction
                     count = 0;
                     while(count < maxSeekSteps) {
-                        seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false);
+                        seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false, false);
                         if (seekFrame == null) return; //is it better to throw NullPointerException?
 
                         count++;
@@ -1237,22 +1237,25 @@ public class FFmpegFrameGrabber extends FrameGrabber {
         }
     }
 
+    public Frame grabWithSkip(boolean skip, boolean reset) throws Exception {
+        return grabFrame(false, true, true, false, false, skip, reset);
+    }
     public Frame grab() throws Exception {
-        return grabFrame(true, true, true, false, true);
+        return grabFrame(true, true, true, false, true, false, false);
     }
     public Frame grabImage() throws Exception {
-        return grabFrame(false, true, true, false, false);
+        return grabFrame(false, true, true, false, false, false, false);
     }
     public Frame grabSamples() throws Exception {
-        return grabFrame(true, false, true, false, false);
+        return grabFrame(true, false, true, false, false, false, false);
     }
     public Frame grabKeyFrame() throws Exception {
-        return grabFrame(false, true, true, true, false);
+        return grabFrame(false, true, true, true, false, false, false);
     }
     public Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames) throws Exception {
-        return grabFrame(doAudio, doVideo, doProcessing, keyFrames, true);
+        return grabFrame(doAudio, doVideo, doProcessing, keyFrames, true, false, false);
     }
-    public synchronized Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames, boolean doData) throws Exception {
+    public synchronized Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames, boolean doData, boolean skipPreDecode, boolean resetStream) throws Exception {
         try (PointerScope scope = new PointerScope()) {
 
             if (oc == null || oc.isNull()) {
@@ -1272,7 +1275,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                 if (doProcessing) {
                     processImage();
                 }
-                Log.d("GRAB", "Returning!!!");
+                //Log.d("GRAB", "Returning!!!");
                 frame.keyFrame = picture.pict_type() == AV_PICTURE_TYPE_I;
                 return frame;
             } else if (doAudio && audioFrameGrabbed) {
@@ -1304,20 +1307,21 @@ public class FFmpegFrameGrabber extends FrameGrabber {
             while (!done) {
                 int ret = 0;
                 if (readPacket) {
-                    if (pkt.stream_index() != -1) {
+                    if (pkt.stream_index() != -1 || skipPreDecode) {
                         // Free the packet that was allocated by av_read_frame
-                        Log.d("GRAB", "Freeing packet");
+                        //Log.d("GRAB", "Freeing packet");
                         av_packet_unref(pkt);
                     }
                     if ((ret = av_read_frame(oc, pkt)) < 0) {
                         if (doVideo && video_st != null) {
                             // The video codec may have buffered some frames
+                            //Log.d("GRAB", "Resetting packet");
                             pkt.stream_index(video_st.index());
                             pkt.flags(AV_PKT_FLAG_KEY);
                             pkt.data(null);
                             pkt.size(0);
                         } else {
-                            Log.d("GRAB", "Resetting stream");
+                            //Log.d("GRAB", "Resetting stream");
                             pkt.stream_index(-1);
                             return null;
                         }
@@ -1326,13 +1330,17 @@ public class FFmpegFrameGrabber extends FrameGrabber {
 
                 frame.streamIndex = pkt.stream_index();
 
-                Log.d("GRAB", "Start capture IF branch");
+                //Log.d("GRAB", "Start capture IF branch");
                 // Is this a packet from the video stream?
                 if (doVideo && video_st != null && frame.streamIndex == video_st.index()
                         && (!keyFrames || pkt.flags() == AV_PKT_FLAG_KEY)) {
+                    if (skipPreDecode) {
+                        pkt.stream_index(-1);
+                        return null;
+                    }
                     // Decode video frame
                     if (readPacket) {
-                        Log.d("GRAB", "Sending packed to AVCODEC!");
+                        //Log.d("GRAB", "Sending packet to AVCODEC!");
                         ret = avcodec_send_packet(video_c, pkt);
                         if (pkt.data() == null && pkt.size() == 0) {
                             pkt.stream_index(-1);
@@ -1347,27 +1355,27 @@ public class FFmpegFrameGrabber extends FrameGrabber {
 
                     // Did we get a video frame?
                     while (!done) {
-                        Log.d("GRAB", "Got a video frame!");
+                        //Log.d("GRAB", "Got a video frame!");
                         ret = avcodec_receive_frame(video_c, picture);
                         if (ret == AVERROR_EAGAIN() || ret == AVERROR_EOF()) {
                             if (pkt.data() == null && pkt.size() == 0) {
                                 return null;
                             } else {
-                                Log.d("GRAB", "Read the packet correctly.");
+                                //Log.d("GRAB", "Read the packet correctly.");
                                 readPacket = true;
                                 break;
                             }
                         } else if (ret < 0) {
                             // Ignore errors to emulate the behavior of the old API
                             // throw new Exception("avcodec_receive_frame() error " + ret + ": Error during video decoding.");
-                            Log.d("GRAB", "avcodec_receive_frame() error " + ret + ": Error during video decoding.");
+                            //Log.d("GRAB", "avcodec_receive_frame() error " + ret + ": Error during video decoding.");
                             readPacket = true;
                             break;
                         }
 
-                        Log.d("GRAB", "Got to keyframe IF branch.");
+                        //Log.d("GRAB", "Got to keyframe IF branch.");
                         if (!keyFrames || picture.pict_type() == AV_PICTURE_TYPE_I) {
-                            Log.d("GRAB", "Got a keyframe!");
+                            //Log.d("GRAB", "Got a keyframe!");
                             long pts = picture.best_effort_timestamp();
                             AVRational time_base = video_st.time_base();
                             timestamp = 1000000L * pts * time_base.num() / time_base.den();
@@ -1425,7 +1433,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                 } else if (readPacket && doData
                         && frame.streamIndex > -1 && frame.streamIndex < streams.length
                         && streams[frame.streamIndex] != AVMEDIA_TYPE_VIDEO && streams[frame.streamIndex] != AVMEDIA_TYPE_AUDIO) {
-                    Log.d("GRAB", "In final checking stage");
+                    //Log.d("GRAB", "In final checking stage");
                     // Export the stream byte data for non audio / video frames
                     frame.data = pkt.data().position(0).capacity(pkt.size()).asByteBuffer();
                     frame.opaque = pkt;
@@ -1441,7 +1449,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     readPacket = true;
                 }
             }
-            Log.d("GRAB", "Returning frame!!!");
+            //Log.d("GRAB", "Returning frame!!!");
             return frame;
 
         }
