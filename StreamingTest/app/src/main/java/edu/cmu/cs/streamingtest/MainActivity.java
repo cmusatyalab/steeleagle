@@ -79,7 +79,7 @@ public class MainActivity extends Activity {
         //grabber = new FFmpegFrameGrabber("rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4");
         grabber.setOption("rtsp_transport", "udp");
         //grabber.setOption("skip_frame", "nokey");
-        grabber.setOption("buffer_size", "10000000");
+        grabber.setOption("buffer_size", "4000000");
         //grabber.setVideoOption("threads", "1");
         //grabber.setVideoOption("preset", "ultrafast");
         grabber.setVideoOption("tune", "fastdecode");
