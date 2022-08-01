@@ -86,6 +86,14 @@ dependencies {
     implementation 'edu.cmu.cs.gabriel:client:2.4.1'
     implementation 'edu.cmu.cs.gabriel:protocol:2.0.1'
     implementation 'edu.cmu.cs.gabriel:camera:2.4.1'
+
+    // Parrot Anafi GroundSDK
     implementation 'com.parrot.drone.groundsdk:groundsdk:7.2.0'
     runtimeOnly 'com.parrot.drone.groundsdk:arsdkengine:7.2.0'
+    // Parrot Anafi Streaming
+    implementation group: 'org.bytedeco', name: 'javacv', version: "1.5.7"
+    implementation group: 'org.bytedeco', name: 'javacpp', version: '1.5.7'
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-arm'
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-arm64'
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-x86_64'
 }

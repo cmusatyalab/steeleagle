@@ -9,7 +9,7 @@ public interface DroneItf {
     void setHome(Double lat, Double lng) throws Exception;
     void moveTo(Double lat, Double lng, Double alt) throws Exception;
     void moveBy(Double x, Double y, Double z) throws Exception; //x,y,z in meters
-    void startStreaming(Integer sample_rate) throws Exception;
+    void startStreaming(Integer sample_rate, Integer resolution) throws Exception;
     void stopStreaming() throws Exception;
     void rotateBy(Double theta) throws Exception;
     void rotateTo(Double theta) throws Exception;

@@ -101,27 +101,6 @@ def generateScript(args, placemarks):
     out = template.render(placemarks=placemarks, platform=args.platform, drone_args=kws)
     return out
 
-def generateWorldFile(args):
-    global start
-
-    # Get up-to-date weather data using WeatherAPI!
-    key = ''
-    with open('weatherapi.key', 'r') as keyfile:
-        key = keyfile.read()
-    if len(key) > 0:
-        response = requests.get('http://api.weatherapi.com/v1/current.json', params={'q' : "{0},{1}".format(start['lat'], start['lng']), 'key' : key})
-        data = response.json()
-        current_weather = data['current']
-    else:
-        raise Exception('Weather API key not found!')
-    
-    env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
-    template = env.get_template(args.world_template)
-    #out = template.render(start=start, wind_speed=(current_weather['wind_mph'] * 0.44704), wind_deg=current_weather['wind_degree'])
-    # TODO: Fix wind in simulator so we can actually use the API call.
-    out = template.render(start=start, wind_speed=0.0, wind_deg=0.0)
-    return out
-
 def parseKML(args):
     global start
 
@@ -149,12 +128,9 @@ def parseKML(args):
 
     out = generateScript(args, placemarks)
 
-    # Write the simulator world file with the correct starting pose!
+    # TODO: Need to update this for the new simulator.
     if args.sim:
-        world = generateWorldFile(args)
-        with open(args.world_output, mode='w', encoding='utf-8') as f:
-            f.write(world)
-        print(HR.format("Wrote Simulated World File"))
+        pass
 
     return out
 

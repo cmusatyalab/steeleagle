@@ -19,7 +19,6 @@ import android.webkit.URLUtil;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.parrot.drone.groundsdk.GroundSdk;
 import com.parrot.drone.groundsdk.ManagedGroundSdk;
 
 import java.io.BufferedInputStream;
@@ -27,15 +26,25 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
+import javax.net.SocketFactory;
+
 import dalvik.system.DexClassLoader;
 import edu.cmu.cs.dronebrain.impl.DebugCloudlet;
-import edu.cmu.cs.dronebrain.impl.ParrotAnafi;
+import edu.cmu.cs.dronebrain.impl.parrotanafi.ParrotAnafi;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
@@ -57,6 +66,8 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private Network LTEnetwork = null;
     /** Currently executing FlightScript **/
     private FlightScript MS = null;
+    /** Reference to the thread executing the FlightScript **/
+    private Thread scriptRunnable = null;
     /** Current drone object **/
     private DroneItf drone = null;
     /** Current cloudlet object **/
@@ -105,11 +116,18 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Protos.Command cmd = extras.getCmd();
                 if(cmd.getHalt()) {
                     Log.i(TAG, "Killswitch signaled from commander.");
-                    if (drone != null)
+                    if (scriptRunnable != null) {
+                        scriptRunnable.interrupt();
+                        Log.i(TAG, "Interrupting script thread.");
+                    }
+                    if (drone != null) {
+                        Log.i(TAG, "Killing drone.");
                         drone.kill();
+                    }
+                    finish();
                 }
 
-                if( URLUtil.isValidUrl(cmd.getScriptUrl())) {
+                if(URLUtil.isValidUrl(cmd.getScriptUrl())) {
                     Log.i(TAG, "Flight script sent by commander.");
                     scriptUrl = cmd.getScriptUrl();
                     Log.i(TAG, scriptUrl);
@@ -140,17 +158,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
         sdk = ManagedGroundSdk.obtainSession(this);
 
-        Consumer<ErrorType> onDisconnect = errorType -> {
-            Log.e(TAG, "Disconnect Error:" + errorType.name());
-            finish();
-        };
-
-        serverComm = ServerComm.createServerComm(
-                this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
-
-        loopHandler = new Handler();
-        loopHandler.postDelayed(gabrielLoop, 1000);
-
         CountDownLatch countDownLatch = new CountDownLatch(1);
         /** Create LTE network binding **/
         cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -169,6 +176,39 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             countDownLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+
+        Consumer<ErrorType> onDisconnect = errorType -> {
+            Log.e(TAG, "Disconnect Error:" + errorType.name());
+            finish();
+        };
+
+        serverComm = ServerComm.createServerComm(
+                this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
+
+        loopHandler = new Handler();
+        loopHandler.postDelayed(gabrielLoop, 1000);
+
+        /** Bind all future sockets to Wifi **/
+        //bindProcessToWifi();
+    }
+
+    public Network getNetworkObjectForCurrentWifiConnection() {
+        List<Network> networks = Arrays.asList(cm.getAllNetworks());
+        for (Network network : networks) {
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return network;
+            }
+        }
+        return null;
+    }
+
+    private void bindProcessToWifi() {
+        Network network = getNetworkObjectForCurrentWifiConnection();
+        if (network != null) {
+            Boolean success = cm.bindProcessToNetwork(network);
+            Log.d("WifiConnect", success.toString());
         }
     }
 
@@ -245,12 +285,13 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             Log.d(TAG, "Executing flight plan!");
             MS.setDrone(drone);
             MS.setCloudlet(cloudlet);
-            new Thread(new Runnable() {
+            scriptRunnable = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     MS.run();
                 }
-            }).start();
+            });
+            scriptRunnable.start();
         } catch (Exception e) {
             Log.e(TAG, e.toString());
         }
@@ -309,5 +350,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         while ((len = src.read(buf, 0, 8 * 1024)) > 0) {
             dst.write(buf, 0, len);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        sdk.close();
     }
 }

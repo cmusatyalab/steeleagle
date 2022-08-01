@@ -1,31 +1,30 @@
-package edu.cmu.cs.dronebrain.impl
+package edu.cmu.cs.dronebrain.impl.parrotanafi
 
 import android.graphics.Bitmap
-import android.location.Location
+import android.net.Network
 import android.util.Log
-import com.parrot.drone.groundsdk.GroundSdk
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
 import com.parrot.drone.groundsdk.device.instrument.Gps
-import com.parrot.drone.groundsdk.device.peripheral.Copilot
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
-import com.parrot.drone.groundsdk.device.peripheral.StreamServer
 import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
-import com.parrot.drone.groundsdk.device.peripheral.stream.CameraLive
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
-import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
+import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
-import com.parrot.drone.groundsdk.stream.GsdkStreamView
-import com.parrot.drone.groundsdk.value.EnumSetting
-import edu.cmu.cs.dronebrain.MainActivity
-import edu.cmu.cs.dronebrain.interfaces.DroneItf;
+import edu.cmu.cs.dronebrain.interfaces.DroneItf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import java.nio.ByteBuffer
+import org.bytedeco.ffmpeg.global.swscale
+import org.bytedeco.javacv.AndroidFrameConverter
+import org.bytedeco.javacv.Frame
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.net.Socket
 import java.util.concurrent.CountDownLatch
+import javax.net.SocketFactory
 
 class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
@@ -41,14 +40,22 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     /** Variable for storing flying indicators **/
     private var flyingIndicatorsRef: Ref<FlyingIndicators>? = null
 
-    /** Reference to the current drone stream server Peripheral. **/
-    private var streamServerRef: Ref<StreamServer>? = null
-    /** Reference to the current drone live stream. **/
-    private var liveStreamRef: Ref<CameraLive>? = null
-    /** Current drone live stream. **/
-    private var liveStream: CameraLive? = null
-    /** Video stream view. **/
-    private lateinit var streamView: GsdkStreamView
+    /** Stores a reference to the FFMPEG video stream reader **/
+    private var grabber: FFmpegFrameGrabber? = null
+    /** Wraps calls to the frame grabber **/
+    private var wrapper: GrabberWrapper? = null
+    /** Determines how many frames to skip and how many to decode to keep up
+     *  with slow decode speeds on the Android Watch. These settings are specific
+     *  to the Samsung Galaxy Watch 4. You may find that your device performs better
+     *  with different settings.
+     */
+    private var skip: Int = 3
+    private var decode: Int = 2
+    private var thread: Thread? = null
+    /** Converter that transforms AVFrames into Bitmaps **/
+    private var converter = AndroidFrameConverter()
+    /** Network object for streaming from the drone **/
+    private var stream: InputStream? = null
 
     /** Kill switch for the drone **/
     private var cancel: Boolean = false
@@ -99,13 +106,16 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
                     it?.let {
                         when (it.state) {
                             Activable.State.UNAVAILABLE -> {
+                                Log.d(TAG, "Manual interface is unavailable.")
                                 // Piloting interface is unavailable.
                             }
                             Activable.State.IDLE -> {
-                                if (guidedPilotingItf?.get()?.state != Activable.State.ACTIVE)
+                                Log.d(TAG, "Manual interface is idle.")
+                                if (guidedPilotingItf?.get()?.state != Activable.State.ACTIVE || cancel)
                                     it.activate()
                             }
                             Activable.State.ACTIVE -> {
+                                Log.d(TAG, "Manual interface is active.")
                                 when {
                                     it.canTakeOff() -> {
                                         countDownLatch.countDown()
@@ -153,9 +163,11 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             it?.let {
                 when (it.state) {
                     Activable.State.UNAVAILABLE -> {
+                        Log.d(TAG, "Guided interface is unavailable.")
                         // Piloting interface is unavailable.
                     }
                     Activable.State.IDLE -> {
+                        Log.d(TAG, "Guided interface is idle.")
                         // Piloting interface is idle.
                         countDownLatch.countDown()
                     }
@@ -216,81 +228,84 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     @Throws(Exception::class)
-    override fun startStreaming(sample_rate: Int?) {
-        // Monitor the stream server.
-        streamServerRef = drone?.getPeripheral(StreamServer::class.java) { streamServer ->
-            // Called when the stream server is available and when it changes.
+    override fun startStreaming(sample_rate: Int?, resolution: Int?) {
+        var grabber: FFmpegFrameGrabber = FFmpegFrameGrabber("rtsp://192.168.42.1/live")
+        grabber.setOption("rtsp_transport", "udp") // UDP connection
+        grabber.setOption("buffer_size", "4000000") // Increase buffer size to allow reading full frames
+        grabber.setVideoOption("tune", "fastdecode") // Tune for low compute decoding
+        grabber.imageScalingFlags = swscale.SWS_FAST_BILINEAR // Set scaling method
 
-            if (streamServer != null) {
-                // Enable Streaming
-                if(!streamServer.streamingEnabled()) {
-                    streamServer.enableStreaming(true)
-                }
+        var width: Int? = null
+        var height: Int? = null
+        if (resolution == 720) {
+            width = 1280
+            height = 720
+        } else if (resolution == 480) {
+            width = 640
+            height = 480
+        } else {
+            throw Exception("Streaming Exception: Unsupported resolution type!")
+        }
 
-                // Monitor the live stream.
-                if (liveStreamRef == null) {
-                    liveStreamRef = streamServer.live { liveStream ->
-                        // Called when the live stream is available and when it changes.
+        grabber.imageWidth = width
+        grabber.imageHeight = height
 
-                        if (liveStream != null) {
-                            if (this.liveStream == null) {
-                                // It is a new live stream.
+        // Connect to the drone and start streaming
+        try {
+            grabber.start()
+        } catch (e : FFmpegFrameGrabber.Exception) {
+            throw Exception("Streaming Exception: " + e.message)
+        }
 
-                                // Set the live stream as the stream
-                                // to be render by the stream view.
-                                streamView.setStream(liveStream)
-                            }
+        // Create the grabber wrapper
+        wrapper = GrabberWrapper(grabber, width, height)
 
-                            // Play the live stream.
-                            if (liveStream.playState() != CameraLive.PlayState.PLAYING) {
-                                liveStream.play()
-                            }
-                        } else {
-                            // Stop rendering the stream
-                            streamView.setStream(null)
+        // Start grabbing!
+        thread = Thread {
+            var decodeCounter = 0
+            while (true) {
+                if (decodeCounter % skip == 0) {
+                    decodeCounter = 1
+                    // Decode a chunk of frames
+                    for (i in 0 until decode) {
+                        try {
+                            wrapper!!.grab(false)
+                        } catch (e: java.lang.Exception) {
+                            Log.d(TAG, "Grab Exception: " + e.message)
                         }
-                        // Keep the live stream to know if it is a new one or not.
-                        this.liveStream = liveStream
                     }
+                } else {
+                    try {
+                        wrapper!!.grab(true)
+                    } catch (e: java.lang.Exception) {
+                        Log.d(TAG, "Grab Exception: " + e.message)
+                    }
+                    decodeCounter += 1
                 }
-            } else {
-                // Stop monitoring the live stream
-                liveStreamRef?.close()
-                liveStreamRef = null
-                // Stop rendering the stream
-                streamView.setStream(null)
+                try {
+                    Thread.sleep(1)
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                }
             }
         }
+        thread!!.start()
     }
 
     @Throws(Exception::class)
     override fun stopStreaming() {
-        // Cleanup livestream resources
-        liveStreamRef?.close()
-        liveStreamRef = null
-
-        streamServerRef?.close()
-        streamServerRef = null
-
-        liveStream = null
+        thread!!.interrupt() // Stop the thread
+        grabber!!.stop()
+        grabber!!.release()
     }
-
-    /** Helper function for transforming Bitmap to byte array **/
-    fun Bitmap.convertToByteArray(): ByteArray = ByteBuffer.allocate(byteCount).apply {
-        copyPixelsToBuffer(this)
-        rewind()
-    }.array()
 
     @Throws(Exception::class)
     override fun getVideoFrame(): ByteArray? {
-        var frame: Bitmap? = null
-        var countDownLatch = CountDownLatch(1)
-        streamView?.capture {
-            frame = it
-            countDownLatch.countDown()
-        }
-        countDownLatch.await()
-        return frame?.convertToByteArray()
+        var frame: Frame? = wrapper!!.copyFrame() ?: return null
+        val baos = ByteArrayOutputStream()
+        val bmp: Bitmap = converter.convert(frame)
+        bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+        return baos.toByteArray()
     }
 
     @Throws(Exception::class)
@@ -375,19 +390,33 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     @Throws(Exception::class)
     override fun cancel() {
         Log.d(TAG, "Cancelling previous action...")
-        cancel = true
-        TODO("Wait for all piloting interfaces to disengage")
-        cancel = false
+        TODO("Cancel and wait for all piloting interfaces to disengage")
         // Transfer control back to the flight script
     }
 
     @Throws(Exception::class)
     override fun kill() {
         cancel = true
+        val countDownLatch = CountDownLatch(1)
         pilotingItfRef?.get()?.let { itf ->
-            itf.hover()
-            Log.d(TAG, "Hovering")
+            when (itf.state) {
+                Activable.State.UNAVAILABLE -> {
+                    Log.d(TAG, "Can't do anything.")
+                }
+                Activable.State.IDLE -> {
+                    Log.d(TAG, "Activating itf.")
+                    itf.activate()
+                    itf.hover()
+                }
+                Activable.State.ACTIVE -> {
+                    Log.d(TAG, "Hovering.")
+                    itf.hover()
+                }
+            }
+
+            countDownLatch.countDown()
         }
-        groundSdk?.disconnectDrone(drone!!.uid)
+
+        countDownLatch.await()
     }
 }

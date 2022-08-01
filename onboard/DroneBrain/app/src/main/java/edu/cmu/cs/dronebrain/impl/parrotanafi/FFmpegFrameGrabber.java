@@ -1,4 +1,4 @@
-package edu.cmu.cs.streamingtest;
+package edu.cmu.cs.dronebrain.impl.parrotanafi;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -447,7 +447,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
         } else {
             if (samples_frame == null || samples_frame.nb_samples() == 0) {
                 try {
-                    grabFrame(true, false, false, false, false, false, false);
+                    grabFrame(true, false, false, false, false, false);
                     frameGrabbed = true;
                 } catch (Exception e) {
                     return 0.0;
@@ -701,7 +701,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     long maxSeekSteps = 0;
                     long count = 0;
                     Frame seekFrame = null;
-                    seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false, false);
+                    seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false);
                     if (seekFrame == null) return;
 
                     initialSeekPosition = seekFrame.timestamp;
@@ -725,7 +725,7 @@ public class FFmpegFrameGrabber extends FrameGrabber {
                     double delta = 0.0; //for the timestamp correction
                     count = 0;
                     while(count < maxSeekSteps) {
-                        seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false, false);
+                        seekFrame = grabFrame(frameTypesToSeek.contains(Frame.Type.AUDIO), frameTypesToSeek.contains(Frame.Type.VIDEO), false, false, false, false);
                         if (seekFrame == null) return; //is it better to throw NullPointerException?
 
                         count++;
@@ -1237,25 +1237,25 @@ public class FFmpegFrameGrabber extends FrameGrabber {
         }
     }
 
-    public Frame grabWithSkip(boolean skip, boolean reset) throws Exception {
-        return grabFrame(false, true, true, false, false, skip, reset);
+    public Frame skipPacket() throws Exception {
+        return grabFrame(false, true, true, false, false, true);
     }
     public Frame grab() throws Exception {
-        return grabFrame(true, true, true, false, true, false, false);
+        return grabFrame(true, true, true, false, true, false);
     }
     public Frame grabImage() throws Exception {
-        return grabFrame(false, true, true, false, false, false, false);
+        return grabFrame(false, true, true, false, false, false);
     }
     public Frame grabSamples() throws Exception {
-        return grabFrame(true, false, true, false, false, false, false);
+        return grabFrame(true, false, true, false, false, false);
     }
     public Frame grabKeyFrame() throws Exception {
-        return grabFrame(false, true, true, true, false, false, false);
+        return grabFrame(false, true, true, true, false, false);
     }
     public Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames) throws Exception {
-        return grabFrame(doAudio, doVideo, doProcessing, keyFrames, true, false, false);
+        return grabFrame(doAudio, doVideo, doProcessing, keyFrames, true, false);
     }
-    public synchronized Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames, boolean doData, boolean skipPreDecode, boolean resetStream) throws Exception {
+    public synchronized Frame grabFrame(boolean doAudio, boolean doVideo, boolean doProcessing, boolean keyFrames, boolean doData, boolean skipPreDecode) throws Exception {
         try (PointerScope scope = new PointerScope()) {
 
             if (oc == null || oc.isNull()) {
