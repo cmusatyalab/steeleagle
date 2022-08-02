@@ -55,13 +55,13 @@ public class MS extends FlightScript {
             {% for k,v in placemarks.items() %}
             // {{v.name}}/{{v.task}} START
             //{{v.kwargs}}
-            {%- if v.task == "heimdall_TakePhotosAlongPath" %}
+            {%- if v.task == "TakePhotosAlongPath" %}
             {{ macros.TakePhotosAlongPath(**v.kwargs) }}
             {% elif v.task == "SetNewHome" %}
             {{ macros.SetNewHome(**v.kwargs) }}
             {% elif v.task == "MoveTo" %}
             {{ macros.MoveTo(**v.kwargs) }}
-            {% elif v.task == "heimdall_DetectObjectsAlongPath" %}
+            {% elif v.task == "DetectObjectsAlongPath" %}
             {{ macros.DetectObjectsAlongPath(**v.kwargs) }}
             {% elif v.task == "Land" %}
             {{ macros.Land(**v.kwargs) }}
