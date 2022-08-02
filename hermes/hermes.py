@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2021 Carnegie Mellon University
+# Copyright 2021-2022 Carnegie Mellon University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import jsonschema
 import task_stubs
 import requests
 import json
+import subprocess
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
@@ -72,7 +73,7 @@ class Placemark:
                     self.kwargs = {**obj.defaults, **self.kwargs}  #merge default args
                     jsonschema.validate(self.kwargs, obj.schema)
             except NameError:
-                print(f"ERROR: The task ({self.task}) specified in the description of {self.name} is not found")
+                print(f"ERROR: The task {self.task} specified in the description of {self.name} is not found")
                 exit(-1)
             except SyntaxError as e:
                 print(f"ERROR: Syntax error in the task specification of {self.name} [{e}]")
@@ -161,6 +162,14 @@ def _main():
     parser.add_argument('-c', '--controller', action='store_true', 
         help='Connect to drone via SkyController at 192.168.53.1 [default: Direct connection to drone at 192.168.42.1]')
 
+    #java2dex.sh options
+    parser.add_argument('-jc', '--javac_path', default='~/android-studio/jre/bin/javac',
+        help='Specify a the path to javac [default: ~/android-studio/jre/bin/javac]')
+    parser.add_argument('-d8', '--d8_path', default='~/Android/Sdk/build-tools/30.0.3/d8',
+        help='Specify a the path to d8 [default: ~/Android/Sdk/build-tools/30.0.3/d8]')
+    parser.add_argument('-a', '--android_jar', default='~/Android/Sdk/platforms/android-30/android.jar',
+        help='Specify a the path to Android SDK jar [default: ~/Android/Sdk/platforms/android-30/android.jar]')
+
     if len(sys.argv) == 1:
         parser.print_help()
     args = parser.parse_args()
@@ -182,10 +191,11 @@ def _main():
 
     with open(args.output, mode='w', encoding='utf-8') as f:
         f.write(out)
-    
-    #py_compile.compile(args.output, doraise=True)
-    #TODO: run java2dex instead subprocess.run?
-    #print(HR.format(f"Script {args.output} compiled successfully!"))
+    try:
+        subprocess.run(f"./java2dex.sh {args.javac_path} {args.d8_path} {args.android_jar}", shell=True, check=True)
+        print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))
+    except subprocess.CalledProcessError as e:
+        print(e)
 
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))
