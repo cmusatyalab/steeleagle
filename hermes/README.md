@@ -70,6 +70,8 @@ hermes requires a .kml/.kmz file as input. Beyond that, most options have a defa
 Once hermes has successfully run, there should be a classes.dex file in the ```steel-eagle/hermes/src``` directory. This file will need to be served by some web server that is publicly accessible to the Android app running onboard the drone.
 
 ## New/Updated Task Specifications
-In order to provide new/updated tasks, we need to do two things:
-    1. task_stubs.py should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to hermes.
-    2. The github pages documentation (it has its own [branch](https://github.com/cmusatyalab/steel-eagle/tree/gh-pages) in the repo) should be updated to include the syntax of the new task and its description/parameters. To update the documentation, task_stubs.py can be executed and uses the json_schema_for_humans library to generate HTML files related to the documentation which are output to the ```task_docs``` directory.
+In order to provide new/updated tasks, we need to do a few things:
+
+1. task_stubs.py should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to hermes.
+2. ```base.java.jinja2``` needs to be updated to reflect the name of the new/updated task(s) when iterating through placemarks.
+3. The github pages documentation (it has its own [branch](https://github.com/cmusatyalab/steel-eagle/tree/gh-pages) in the repo) should be updated to include the syntax of the new task and its description/parameters. To update the documentation, task_stubs.py can be executed and uses the json_schema_for_humans library to generate HTML files related to the documentation which are output to the ```task_docs``` directory.
