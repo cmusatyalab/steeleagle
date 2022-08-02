@@ -3,11 +3,21 @@
 {%- endmacro %}
 
 {% macro StreamingThreadStart(sample_rate, model) -%}
-    drone.startStreaming({{sample_rate}});
-    cloudlet.sendFrame(drone.getVideoFrame());
+    drone.startStreaming({{sample_rate}}, 480);
+    Thread streamingThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                cloudlet.sendFrame(drone.getVideoFrame());
+            } catch (Exception e) {
+            }
+        }
+    });
+
 {%- endmacro %}
 
 {% macro StreamingThreadStop() -%}
+    streamingThread.interrupt();
     drone.stopStreaming();
 {%- endmacro %}
 

@@ -33,7 +33,7 @@ public class MS extends FlightScript {
         try {
             drone.init();
         } catch(Exception e) {
-            
+
         }
     }
 
@@ -50,6 +50,7 @@ public class MS extends FlightScript {
         try {
             drone.connect();
             drone.takeOff();
+
         
             {% for k,v in placemarks.items() %}
             // {{v.name}}/{{v.task}} START
