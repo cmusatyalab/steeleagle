@@ -1,4 +1,49 @@
 package edu.cmu.cs.dronebrain.impl;
 
-public class ElijahCloudlet {
+import android.net.Network;
+import android.util.Log;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+import javax.net.SocketFactory;
+
+import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
+
+public class ElijahCloudlet implements CloudletItf {
+
+    String TAG = "ElijahCloudlet";
+    Socket sock = null;
+    DataOutputStream daos = null;
+
+    public ElijahCloudlet(Network net) {
+        SocketFactory factory = net.getSocketFactory();
+        try {
+            sock = factory.createSocket("cloudlet040.elijah.cs.cmu.edu", 8485);
+            Log.d(TAG, "Opened socket to cloudlet.");
+        } catch (IOException e) {
+            Log.d(TAG, "Connection to cloudlet failed, reason: " + e.getMessage());
+            e.printStackTrace();
+        }
+        try {
+            daos = new DataOutputStream(sock.getOutputStream());
+        } catch (IOException e) {
+            Log.d(TAG, "Failed to get output stream from socket, reason: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void sendFrame(byte[] frame) {
+        try {
+            daos.writeInt(frame.length);
+            daos.write(frame);
+            daos.flush();
+            Log.d(TAG, "Successfully wrote frame to cloudlet!");
+        } catch (IOException e) {
+            Log.d(TAG, "Failed to write frame to socket, reason: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

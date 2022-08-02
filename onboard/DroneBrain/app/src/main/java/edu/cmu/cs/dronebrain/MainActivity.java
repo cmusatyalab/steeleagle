@@ -44,6 +44,7 @@ import javax.net.SocketFactory;
 
 import dalvik.system.DexClassLoader;
 import edu.cmu.cs.dronebrain.impl.DebugCloudlet;
+import edu.cmu.cs.dronebrain.impl.ElijahCloudlet;
 import edu.cmu.cs.dronebrain.impl.parrotanafi.ParrotAnafi;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
@@ -169,6 +170,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                         /** Assign LTE network object **/
                         LTEnetwork = network;
                         countDownLatch.countDown();
+                        Log.d(TAG, "LTE network successfully acquired");
                     }
                 }
         );
@@ -178,19 +180,20 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             e.printStackTrace();
         }
 
+
+
         Consumer<ErrorType> onDisconnect = errorType -> {
-            Log.e(TAG, "Disconnect Error:" + errorType.name());
+            Log.e(TAG, "Disconnect Error: " + errorType.name());
             finish();
         };
 
         serverComm = ServerComm.createServerComm(
-                this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect);
+                this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect, LTEnetwork);
 
         loopHandler = new Handler();
-        loopHandler.postDelayed(gabrielLoop, 1000);
+        loopHandler.postDelayed(gabrielLoop, 1);
 
-        /** Bind all future sockets to Wifi **/
-        //bindProcessToWifi();
+
     }
 
     public Network getNetworkObjectForCurrentWifiConnection() {
@@ -275,6 +278,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             success = true;
         } catch (Exception e) {
             Log.e(TAG, "Download failed! " + e.toString());
+            e.printStackTrace();
         }
         return success;
     }
@@ -283,6 +287,9 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         try {
             /** Execute flight plan **/
             Log.d(TAG, "Executing flight plan!");
+            /** Bind all future sockets to Wifi so that streaming works.
+             * Our LTE connections will persist. **/
+            bindProcessToWifi();
             MS.setDrone(drone);
             MS.setCloudlet(cloudlet);
             scriptRunnable = new Thread(new Runnable() {
@@ -319,7 +326,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     }
 
     private CloudletItf getCloudlet() {
-        return new DebugCloudlet();
+        return new ElijahCloudlet(LTEnetwork);
     }
 
     /** This needs to change in future to pull from CNC module **/

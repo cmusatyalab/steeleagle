@@ -71,14 +71,14 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         Log.d(TAG, "Waiting for task to complete")
         while (flyingIndicatorsRef?.get()?.flyingState != FlyingIndicators.FlyingState.WAITING
             && !cancel) {
-            delay(1)
+            delay(100)
         }
     }
 
     suspend fun wait_to_complete_guided_flight() {
         Log.d(TAG, "Waiting for guided task to complete")
         while (guidedPilotingItf?.get()?.state != Activable.State.IDLE && !cancel) {
-            delay(1)
+            delay(100)
         }
     }
 

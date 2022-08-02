@@ -13,9 +13,4 @@ public class DebugCloudlet implements CloudletItf {
     public void sendFrame(byte[] frame) {
         Log.d(TAG, "Writing frame!");
     }
-
-    @Override
-    public void init() throws Exception {
-
-    }
 }
