@@ -28,12 +28,12 @@ import json_schema_for_humans.generate as jsfh
  for validation and a python dict that holds any
  default values
 """
-class heimdall_TakePhotosAlongPath:
+class TakePhotosAlongPath:
     def __init__(self):
         self.schema = {
-                    "title": "heimdall_TakePhotosAlongPath",
+                    "title": "TakePhotosAlongPath",
                     "description": "Instruct drone to take photos at the coordinates specified by the path",
-                    "examples": ["heimdall_TakePhotosAlongPath: {mode: 'SINGLE', interval: 10, gimbal_pitch: -45.0}"],
+                    "examples": ["TakePhotosAlongPath: {mode: 'SINGLE', interval: 10, gimbal_pitch: -45.0}"],
                     "properties": {
                         "mode": {
                         "description": "Photo Mode",
@@ -93,12 +93,12 @@ class Land:
                 }
         self.defaults = {}
 
-class heimdall_DetectObjectsAlongPath:
+class DetectObjectsAlongPath:
      def __init__(self):
         self.schema = {
-                    "title": "heimdall_DetectObjectsAlongPath",
+                    "title": "DetectObjectsAlongPath",
                     "description": "Instruct drone to detect objects along the specified path using the specified pitch, rotation, sampling rate, and detection  model",
-                    "examples": ["heimdall_DetectObjectsAlongPath: {model: 'coco', sample_rate: 3, hover_delay: 10}"],
+                    "examples": ["DetectObjectsAlongPath: {model: 'coco', sample_rate: 3, hover_delay: 10}"],
                     "properties": {
                         "gimbal_pitch": {
                         "description": "The angle of the gimbal",
