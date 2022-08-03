@@ -231,7 +231,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     override fun startStreaming(sample_rate: Int?, resolution: Int?) {
         var grabber: FFmpegFrameGrabber = FFmpegFrameGrabber("rtsp://192.168.42.1/live")
         grabber.setOption("rtsp_transport", "udp") // UDP connection
-        grabber.setOption("buffer_size", "4000000") // Increase buffer size to allow reading full frames
+        grabber.setOption("buffer_size", "6000000") // Increase buffer size to allow reading full frames
         grabber.setVideoOption("tune", "fastdecode") // Tune for low compute decoding
         grabber.imageScalingFlags = swscale.SWS_FAST_BILINEAR // Set scaling method
 
