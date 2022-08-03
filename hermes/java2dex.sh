@@ -17,7 +17,7 @@ else
   echo "java2dex.sh: Compilation with javac failed!"
   exit 1;
 fi
-"${d8}" edu/cmu/cs/dronebrain/MS.class --lib "${sdk}"
+"${d8}" --classpath . edu/cmu/cs/dronebrain/MS.class --lib "${sdk}"
 if [ $? -eq 0 ] 
 then 
   echo "java2dex.sh: Built dex with d8."
