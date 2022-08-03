@@ -292,10 +292,12 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             bindProcessToWifi();
             MS.setDrone(drone);
             MS.setCloudlet(cloudlet);
-            scriptRunnable = new Thread(new Runnable() {
-                @Override
-                public void run() {
+            scriptRunnable = new Thread(() -> {
+                try {
                     MS.run();
+                } catch (Exception e) {
+                    Log.e(TAG, "Running flight plan failed, reason: " + e.getMessage());
+                    e.printStackTrace();
                 }
             });
             scriptRunnable.start();

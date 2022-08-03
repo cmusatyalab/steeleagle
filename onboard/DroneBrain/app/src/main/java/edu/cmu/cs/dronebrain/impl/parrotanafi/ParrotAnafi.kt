@@ -270,6 +270,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
                     for (i in 0 until decode) {
                         try {
                             wrapper!!.grab(false)
+                            Log.d(TAG, "Grabbed a frame!")
                         } catch (e: java.lang.Exception) {
                             Log.d(TAG, "Grab Exception: " + e.message)
                         }

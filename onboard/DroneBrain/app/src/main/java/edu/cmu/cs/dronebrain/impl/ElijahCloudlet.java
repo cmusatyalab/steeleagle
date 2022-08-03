@@ -10,12 +10,14 @@ import java.net.Socket;
 import javax.net.SocketFactory;
 
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
+import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 
 public class ElijahCloudlet implements CloudletItf {
 
     String TAG = "ElijahCloudlet";
     Socket sock = null;
     DataOutputStream daos = null;
+    Thread streamingThread = null;
 
     public ElijahCloudlet(Network net) {
         SocketFactory factory = net.getSocketFactory();
@@ -32,6 +34,27 @@ public class ElijahCloudlet implements CloudletItf {
             Log.d(TAG, "Failed to get output stream from socket, reason: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void startStreaming(DroneItf drone) {
+        streamingThread = new Thread(() -> {
+            while (true) {
+                try {
+                    sendFrame(drone.getVideoFrame());
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    Log.d(TAG, "Send frame failed, reason: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
+        streamingThread.start();
+    }
+
+    @Override
+    public void stopStreaming() {
+        streamingThread.interrupt();
     }
 
     @Override
