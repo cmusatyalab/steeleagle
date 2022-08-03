@@ -32,9 +32,49 @@ import uuid
 from urllib.parse import urlparse
 from io import BytesIO
 import threading
+import jsonschema
+import json
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+drone_schema = {
+                    "type" : "object",
+                    "properties": {
+                        "name": {
+                        "description": "Name of the drone",
+                        "type": "string",
+                        },
+                        "latitude": {
+                        "description": "The drone's current latitude",
+                        "type": "number",
+                        "minimum": -90.0,
+                        "maximum": 90.0
+                        },
+                        "longitude": {
+                        "description": "The drone's current longitude",
+                        "type": "number",
+                        "minimum": -180.0,
+                        "maximum": 180.0
+                        },
+                        "altitude": {
+                        "description": "The drone's current altitude",
+                        "type": "number",
+                        "minimum": 0.0,
+                        },
+                        "velocity": {
+                        "description": "The drone's current velocity",
+                        "type": "number",
+                        "minimum": 0.0,
+                        },
+                        "state": {
+                        "description": "The drone's status",
+                        "type": "string",
+                        "enum": ["offline", "online", "flying"],
+                        "default": "offline"
+                        },
+                    }
+                }
 
 class DroneClient:
     def __init__(self, id, heartbeat):
@@ -42,6 +82,7 @@ class DroneClient:
         self.heartbeat = heartbeat
         self.sent_halt = False
         self.script_url = ''
+        self.json = {"name" : id, "state": "online", "latitude": 0.0, "longitude": 0.0, "altitude" : 0.0, "velocity": 0.0}
     
 class DroneCommandEngine(cognitive_engine.Engine):
     ENGINE_NAME = "command"
@@ -52,6 +93,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.timeout = args.timeout
         self.invalidator = threading.Thread(target=self.invalidateDrones, daemon=True)
         self.invalidator.start()
+
+    def getDrones(self):
+        all_drones = []
+        for _, drone in self.drones.items():
+            all_drones.append(drone.json)
+        return json.dumps(all_drones)
 
     def invalidateDrones(self):
         ticks = 0
@@ -121,14 +168,14 @@ class DroneCommandEngine(cognitive_engine.Engine):
         #if it is a commander client...
         elif extras.commander_id is not "":
             commander = extras.commander_id
-            if extras.cmd is not None:
+            if extras.cmd is not "":
                 try:
                     drone = extras.cmd.for_drone_id
                     if extras.cmd.halt:
                         logger.info(f'Commander [{commander}] requests a halt be sent to drone [{drone}].')
                         self.drones[drone].sent_halt = True
                         result.payload = f'Halt sent to drone {drone}.'.encode(encoding="utf-8")
-                    elif extras.cmd.script_url is not None:
+                    elif extras.cmd.script_url is not "":
                         url = extras.cmd.script_url
                         if validators.url(url, public=True) == True:
                             logger.info(f'Commander [{commander}] requests drone [{drone}] run flight script at {url}.')
@@ -137,6 +184,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         else:
                             logger.error(f'Sorry, [{commander}]  {url} is invalid!')
                             result.payload = f'Invalid URL sent {url}!'.encode(encoding="utf-8")
+                    else:
+                        #if there is no command
+                        #return the list of connected drones to the commander
+                        logger.info(f'Commander [{commander}] requests drone list.')
+                        payload = self.getDrones()
+                        result.payload = payload.encode(encoding="utf-8")
                 except KeyError:
                     logger.error(f'Sorry, [{commander}]  drone [{drone}] does not exist!')
                     result.payload = f'Drone {drone} is not connected.'.encode(encoding="utf-8")
