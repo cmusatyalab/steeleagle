@@ -103,10 +103,8 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.invalidator.start()
 
     def updateDroneStatus(self, extras):
-        self.drones[extras.drone_id].json.latitude = self.drones[extras.drone_id].lat = extras.location.latitude
-        self.drones[extras.drone_id].json.longitude = self.drones[extras.drone_id].lon = extras.location.longitude
-        logger.info(
-            f'Setting lat/lon to {extras.location.latitude}, {extras.location.longitude}')
+        self.drones[extras.drone_id].json["latitude"] = self.drones[extras.drone_id].lat = extras.location.latitude
+        self.drones[extras.drone_id].json["longitude"] = self.drones[extras.drone_id].lon = extras.location.longitude
 
     def getDrones(self):
         all_drones = []
