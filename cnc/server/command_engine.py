@@ -18,17 +18,13 @@
 #
 #
 
-import base64
 import time
-import os
-import uuid
 import validators
 import numpy as np
 import logging
 from gabriel_server import cognitive_engine
 from gabriel_protocol import gabriel_pb2
 from cnc_protocol import cnc_pb2
-import uuid
 from urllib.parse import urlparse
 from io import BytesIO
 import threading

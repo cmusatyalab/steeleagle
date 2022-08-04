@@ -1,9 +1,6 @@
 gabriel-server==2.0.1
 opencv-python>=3, <5
 py-cpuinfo
-#required for TPOD object detection
-Pillow
-tensorflow-object-detection-api==0.1.1
-tensorflow==1.15
 validators
 randomname
+jsonschema
