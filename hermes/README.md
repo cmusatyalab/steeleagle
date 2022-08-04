@@ -1,17 +1,17 @@
-# hermes
+# Hermes
 
 ## Description
-hermes is used to compile a fligh plan designed in MyMaps and exported as a .kml/.kmz file, to drone specific flight commands for a particular drone platform. [Github pages](https://cmusatyalab.github.io/steel-eagle/) contains the current list of supported tasks. It uses jinja templating to generate a platform-agnostic mission script (or MS) in java. The MS contains drone and cloudlet facing commands at a high level, which correspond to the tasks defined in the .kml file. A drone platform is also specified in the MS and instructs the app onboard the drone which low-level drone implementation to use.
+Hermes is used to compile a fligh plan designed in MyMaps and exported as a .kml/.kmz file, to drone flight commands. [Github pages](https://cmusatyalab.github.io/steel-eagle/) contains the current list of supported tasks. It uses jinja templating to generate a platform-agnostic mission script (or MS) in java. The MS contains drone and cloudlet facing commands at a high level, which correspond to the tasks defined in the .kml file. A drone platform is also specified in the MS and instructs the app onboard the drone which low-level drone implementation to use.
 
 ## Prerequisites
 
 ### System Binary Requirements
 
-In order to compile the MS into a Java class file and subsequently a .dex file suitable for loading at runtime onto Android, hermes requires binaries for javac, d8, and a .jar containing a version of the Android SDK to compile against. The simplest way to obtain these is to install a version of [Android Studio](https://developer.android.com/studio) and then have it install a version of the Android SDK. You can then point hermes to the paths to the paths to those files that Android Studio has installed using the below options. If you are building the [onboard Android app](https://github.com/cmusatyalab/steel-eagle/tree/main/onboard/DroneBrain) that is also part of this repository, then you likely have already done this.
+In order to compile the MS into a Java class file and subsequently an Android-ready .dex file, Hermes requires binaries for javac, d8, and a .jar containing a version of the Android SDK to compile against. The simplest way to obtain these is to install a version of [Android Studio](https://developer.android.com/studio) and then have it install a version of the Android SDK. You can then point Hermes to the paths to the paths to those files that Android Studio has installed using the below options. If you are building the [onboard Android app](https://github.com/cmusatyalab/steel-eagle/tree/main/onboard/DroneBrain) that is also part of this repository, then you likely have already done this.
 
 ### Python Requirements
 
-hermes uses the jinja2 and jsonschema libraries. Task documentation (from ```task_stubs.py```) is generated using the json-schema-for-humans library. They can be installed with pip:
+Hermes uses the jinja2 and jsonschema libraries. Task documentation (from ```task_stubs.py```) is generated using the json-schema-for-humans library. They can be installed with pip:
 ```sh
 pip install Jinja2 jsonschema json-schema-for-humans
 ```
@@ -65,13 +65,13 @@ optional arguments:
                         Specify a the path to Android SDK jar [default:
                         ~/Android/Sdk/platforms/android-30/android.jar]
 ```
-hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone or for a drone to be controlled by a SkyController). **NOTE: There are 3 paths required for hermes to properly compile the Java class and build it into a .dex file for Android. The default values most likely need to be overriden to correspond to where you have**
+Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone or for a drone to be controlled by a SkyController). **NOTE: There are 3 paths required for Hermes to properly compile the Java class and build it into a .dex file for Android. The default values most likely need to be overriden to correspond to where you have these binaries**
 
-Once hermes has successfully run, there should be a classes.dex file in the ```steel-eagle/hermes/src``` directory. This file will need to be served by some web server that is publicly accessible to the Android app running onboard the drone.
+Once Hermes has successfully run, there should be a classes.dex file in the ```steel-eagle/hermes/src``` directory. This file will need to be served by some web server that is publicly accessible to the Android app running onboard the drone.
 
 ## New/Updated Task Specifications
 In order to provide new/updated tasks, we need to do a few things:
 
-1. task_stubs.py should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to hermes.
+1. task_stubs.py should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to Hermes.
 2. ```base.java.jinja2``` needs to be updated to reflect the name of the new/updated task(s) when iterating through placemarks.
 3. The github pages documentation (it has its own [branch](https://github.com/cmusatyalab/steel-eagle/tree/gh-pages) in the repo) should be updated to include the syntax of the new task and its description/parameters. To update the documentation, task_stubs.py can be executed and uses the json_schema_for_humans library to generate HTML files related to the documentation which are output to the ```task_docs``` directory.

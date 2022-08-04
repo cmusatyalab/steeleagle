@@ -41,6 +41,7 @@ class CommanderAdapter:
     def get_producer_wrappers(self):
         async def producer():
             await asyncio.sleep(2)
+            print('0. Get drone list')
             print('1. Halt (killswitch)')
             print('2. Send Script URL')
             print('Enter the number of the command you wish to send:')
@@ -48,19 +49,21 @@ class CommanderAdapter:
             if selection == 2:
                 print('Enter the URL where the script resides (i.e http://cloud.let/classes.dex):')
                 url = str(input())
-            print('Enter the drone id to send the command to:')
-            drone = str(input())
+            if selection != 0:
+                print('Enter the drone id to send the command to:')
+                drone = str(input())
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append(bytes('Message to CNC', 'utf-8'))
 
             extras = cnc_pb2.Extras()
             extras.commander_id = self.id
-            extras.cmd.for_drone_id = drone
-            if selection == 1:
-                extras.cmd.halt = True
-            elif selection == 2:
-                extras.cmd.script_url = url
+            if selection != 0:
+                extras.cmd.for_drone_id = drone
+                if selection == 1:
+                    extras.cmd.halt = True
+                elif selection == 2:
+                    extras.cmd.script_url = url
 
             input_frame.extras.Pack(extras)
             
