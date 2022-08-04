@@ -39,42 +39,43 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 drone_schema = {
-                    "type" : "object",
-                    "properties": {
-                        "name": {
-                        "description": "Name of the drone",
-                        "type": "string",
-                        },
-                        "latitude": {
-                        "description": "The drone's current latitude",
-                        "type": "number",
-                        "minimum": -90.0,
-                        "maximum": 90.0
-                        },
-                        "longitude": {
-                        "description": "The drone's current longitude",
-                        "type": "number",
-                        "minimum": -180.0,
-                        "maximum": 180.0
-                        },
-                        "altitude": {
-                        "description": "The drone's current altitude",
-                        "type": "number",
-                        "minimum": 0.0,
-                        },
-                        "velocity": {
-                        "description": "The drone's current velocity",
-                        "type": "number",
-                        "minimum": 0.0,
-                        },
-                        "state": {
-                        "description": "The drone's status",
-                        "type": "string",
-                        "enum": ["offline", "online", "flying"],
-                        "default": "offline"
-                        },
-                    }
-                }
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "Name of the drone",
+            "type": "string",
+        },
+        "latitude": {
+            "description": "The drone's current latitude",
+            "type": "number",
+            "minimum": -90.0,
+            "maximum": 90.0
+        },
+        "longitude": {
+            "description": "The drone's current longitude",
+            "type": "number",
+            "minimum": -180.0,
+            "maximum": 180.0
+        },
+        "altitude": {
+            "description": "The drone's current altitude",
+            "type": "number",
+            "minimum": 0.0,
+        },
+        "velocity": {
+            "description": "The drone's current velocity",
+            "type": "number",
+            "minimum": 0.0,
+        },
+        "state": {
+            "description": "The drone's status",
+            "type": "string",
+            "enum": ["offline", "online", "flying"],
+            "default": "offline"
+        },
+    }
+}
+
 
 class DroneClient:
     def __init__(self, id, heartbeat):
@@ -82,8 +83,14 @@ class DroneClient:
         self.heartbeat = heartbeat
         self.sent_halt = False
         self.script_url = ''
-        self.json = {"name" : id, "state": "online", "latitude": 0.0, "longitude": 0.0, "altitude" : 0.0, "velocity": 0.0}
-    
+        self.lat = 0.0
+        self.lon = 0.0
+        self.alt = 0.0
+        self.vel = 0.0
+        self.json = {"name": id, "state": "online", "latitude": 0.0,
+                     "longitude": 0.0, "altitude": 0.0, "velocity": 0.0}
+
+
 class DroneCommandEngine(cognitive_engine.Engine):
     ENGINE_NAME = "command"
 
@@ -91,8 +98,15 @@ class DroneCommandEngine(cognitive_engine.Engine):
         logger.info("Drone command engine intializing...")
         self.drones = {}
         self.timeout = args.timeout
-        self.invalidator = threading.Thread(target=self.invalidateDrones, daemon=True)
+        self.invalidator = threading.Thread(
+            target=self.invalidateDrones, daemon=True)
         self.invalidator.start()
+
+    def updateDroneStatus(self, extras):
+        self.drones[extras.drone_id].json.latitude = self.drones[extras.drone_id].lat = extras.location.latitude
+        self.drones[extras.drone_id].json.longitude = self.drones[extras.drone_id].lon = extras.location.longitude
+        logger.info(
+            f'Setting lat/lon to {extras.location.latitude}, {extras.location.longitude}')
 
     def getDrones(self):
         all_drones = []
@@ -106,11 +120,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
             if ticks % 10 == 0:
                 logger.info(f"===Connected drones===")
                 for key in self.drones.keys():
-                    logger.info(f"  [{key}]") 
+                    logger.info(f"  [{key}]")
             invalid = None
             for key, drone in self.drones.items():
                 if (time.time() - drone.heartbeat) > self.timeout:
-                    logger.info(f"Haven't heard from drone [{drone.id}] in {self.timeout} seconds. Invalidating...")
+                    logger.info(
+                        f"Haven't heard from drone [{drone.id}] in {self.timeout} seconds. Invalidating...")
                     invalid = key
             if invalid is not None:
                 del self.drones[invalid]
@@ -131,24 +146,30 @@ class DroneCommandEngine(cognitive_engine.Engine):
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
 
-        #if it is a drone client...
+        # if it is a drone client...
         if extras.drone_id is not "":
             if extras.registering:
                 d = DroneClient(extras.drone_id, time.time())
-                self.drones[d.id] = d #Add the drone to our list of connected drones
+                # Add the drone to our list of connected drones
+                self.drones[d.id] = d
                 logger.info(f"Drone [{d.id}] connected.")
-                result.payload = "Registration successful!".encode(encoding="utf-8")
+                result.payload = "Registration successful!".encode(
+                    encoding="utf-8")
             else:
                 try:
-                    self.drones[extras.drone_id].heartbeat = time.time()
+
                     if extras.drone_id in self.drones:
-                        #check if there is a script to send or if we need to signal a halt
+                        self.drones[extras.drone_id].heartbeat = time.time()
+                        self.updateDroneStatus(extras)
+                        # check if there is a script to send or if we need to signal a halt
                         if self.drones[extras.drone_id].sent_halt:
                             from_commander = cnc_pb2.Extras()
                             from_commander.cmd.halt = True
                             result_wrapper.extras.Pack(from_commander)
-                            result.payload = "!Halt sent!".encode(encoding="utf-8")
-                            logger.debug(f'Instructing drone {extras.drone_id} to halt and enable manual control...')
+                            result.payload = "!Halt sent!".encode(
+                                encoding="utf-8")
+                            logger.debug(
+                                f'Instructing drone {extras.drone_id} to halt and enable manual control...')
                             self.drones[extras.drone_id].sent_halt = False
                         elif self.drones[extras.drone_id].script_url != '':
                             url = self.drones[extras.drone_id].script_url
@@ -156,49 +177,60 @@ class DroneCommandEngine(cognitive_engine.Engine):
                             if validators.url(url, public=True) == True:
                                 from_commander.cmd.script_url = url
                                 result_wrapper.extras.Pack(from_commander)
-                                result.payload = "Script URL sent.".encode(encoding="utf-8")
-                                logger.debug(f'Directing {extras.drone_id} to to run flight script at {url}...')
+                                result.payload = "Script URL sent.".encode(
+                                    encoding="utf-8")
+                                logger.debug(
+                                    f'Directing {extras.drone_id} to to run flight script at {url}...')
                                 self.drones[extras.drone_id].script_url = ''
                             else:
-                                logger.error(f"Invalid URL [{url}] given as flight script.")
+                                logger.error(
+                                    f"Invalid URL [{url}] given as flight script.")
                         else:
-                            result.payload = "No command.".encode(encoding="utf-8")
+                            result.payload = "No command.".encode(
+                                encoding="utf-8")
                 except KeyError:
-                    logger.error(f'Sorry, drone [{extras.drone_id}]  has not registered yet!')
-        #if it is a commander client...
+                    logger.error(
+                        f'Sorry, drone [{extras.drone_id}]  has not registered yet!')
+        # if it is a commander client...
         elif extras.commander_id is not "":
             commander = extras.commander_id
             if extras.cmd is not "":
                 try:
                     drone = extras.cmd.for_drone_id
                     if extras.cmd.halt:
-                        logger.info(f'Commander [{commander}] requests a halt be sent to drone [{drone}].')
+                        logger.info(
+                            f'Commander [{commander}] requests a halt be sent to drone [{drone}].')
                         self.drones[drone].sent_halt = True
-                        result.payload = f'Halt sent to drone {drone}.'.encode(encoding="utf-8")
+                        result.payload = f'Halt sent to drone {drone}.'.encode(
+                            encoding="utf-8")
                     elif extras.cmd.script_url is not "":
                         url = extras.cmd.script_url
                         if validators.url(url, public=True) == True:
-                            logger.info(f'Commander [{commander}] requests drone [{drone}] run flight script at {url}.')
+                            logger.info(
+                                f'Commander [{commander}] requests drone [{drone}] run flight script at {url}.')
                             self.drones[drone].script_url = url
-                            result.payload = f'Script URL sent to drone {drone}.'.encode(encoding="utf-8")
+                            result.payload = f'Script URL sent to drone {drone}.'.encode(
+                                encoding="utf-8")
                         else:
-                            logger.error(f'Sorry, [{commander}]  {url} is invalid!')
-                            result.payload = f'Invalid URL sent {url}!'.encode(encoding="utf-8")
+                            logger.error(
+                                f'Sorry, [{commander}]  {url} is invalid!')
+                            result.payload = f'Invalid URL sent {url}!'.encode(
+                                encoding="utf-8")
                     else:
-                        #if there is no command
-                        #return the list of connected drones to the commander
-                        logger.info(f'Commander [{commander}] requests drone list.')
+                        # if there is no command
+                        # return the list of connected drones to the commander
+                        logger.info(
+                            f'Commander [{commander}] requests drone list.')
                         payload = self.getDrones()
                         result.payload = payload.encode(encoding="utf-8")
                 except KeyError:
-                    logger.error(f'Sorry, [{commander}]  drone [{drone}] does not exist!')
-                    result.payload = f'Drone {drone} is not connected.'.encode(encoding="utf-8")
+                    logger.error(
+                        f'Sorry, [{commander}]  drone [{drone}] does not exist!')
+                    result.payload = f'Drone {drone} is not connected.'.encode(
+                        encoding="utf-8")
 
         result_wrapper.results.append(result)
         return result_wrapper
 
     def preprocess_image(self, image):
         return BytesIO(image)
-
-
-
