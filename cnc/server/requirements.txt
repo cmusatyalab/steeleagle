@@ -1,4 +1,5 @@
 gabriel-server==2.0.1
+gabriel-client
 opencv-python>=3, <5
 py-cpuinfo
 validators

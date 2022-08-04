@@ -26,6 +26,22 @@ services:
     networks:
       - cnc-net
 
+  test-clients:
+    image: cmusatyalab/steel-eagle:${TAG}
+    container_name: test-clients
+    restart: unless-stopped
+    privileged: true
+    entrypoint:
+      [
+        "../python_client/drone_client.py",
+        "--s",
+        "gabriel-server"
+      ]
+    depends_on:
+      - gabriel-server
+    networks:
+      - cnc-net
+
   http-server:
     image: httpd:2.4
     container_name: http-server
