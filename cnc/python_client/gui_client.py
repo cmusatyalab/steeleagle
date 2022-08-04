@@ -77,7 +77,7 @@ class App(customtkinter.CTk):
                                               text_font=("Roboto Medium", -18))  # font name and size in px
         self.control_panel.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
 
-        image = Image.open("/home/mbala/Downloads/NoImage.jpg").resize((500, 400))
+        image = Image.open("images/NoImage.jpg").resize((500, 400))
         self.stream_image = ImageTk.PhotoImage(image)
 
         self.image_label = tkinter.Label(master=self.frame_left_bot, image=self.stream_image)
