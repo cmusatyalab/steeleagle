@@ -20,7 +20,7 @@ import logging
 from drone_adapter import DroneAdapter
 import randomname
 
-DRONE_ID = randomname.get_name()
+DRONE_ID = randomname.get_name(adj=('weather','materials',), noun=('birds',))
 WEBSOCKET_PORT = 9099
 DEFAULT_SOURCE_NAME = 'command'
 
