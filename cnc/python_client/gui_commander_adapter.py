@@ -1,5 +1,6 @@
 import customtkinter
 import tkinter
+from tkinter import filedialog as fd
 from tkintermapview import TkinterMapView
 from PIL import Image, ImageTk
 from queue import Queue
@@ -238,10 +239,21 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.state.configure(text="State: {0}".format(self.connected_drone["state"]))
 
     def on_fly_mission_pressed(self, event=None):
-        pass
+        filetypes = (
+            ('Dex files', '*.dex'),
+        )
+
+        filename = fd.askopenfilename(
+            title='Open a file',
+            initialdir='.',
+            filetypes=filetypes)
+
+        print("Selected file: " + filename)
+        # TODO: Send a URL to the file
 
     def on_kill_mission_pressed(self, event=None):
-        pass
+        command = {"drone": self.connected_drone["name"], "type": "kill"}
+        self.command_queue.put_nowait(command)
 
 
     # Events for handling the search bar
@@ -280,7 +292,6 @@ class GUICommanderAdapter(customtkinter.CTk):
 
             input_frame.extras.Pack(extras)
 
-            #logger.debug(f"Sending message #{self.frames_processed}...")
             return input_frame
 
         return [
@@ -288,7 +299,6 @@ class GUICommanderAdapter(customtkinter.CTk):
         ]
            
     def consumer(self, result_wrapper):
-        #logger.debug(f"Received results for frame {self.frames_processed}.")
         if len(result_wrapper.results) != 1:
             logger.error('Got %d results from server'.
                     len(result_wrapper.results))
@@ -302,7 +312,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         self.frames_processed += 1
         payload = result.payload.decode('utf-8')
-        #logger.info(payload)
+        # TODO: Try except around JSON decode
         data = json.loads(payload)
         self.on_drone_list_changed_event(data)
 
