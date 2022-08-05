@@ -20,9 +20,11 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
 import logging
 from cnc_protocol import cnc_pb2
+import random
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class DroneAdapter:
     def __init__(self, preprocess, source_name, drone_id):
@@ -40,9 +42,9 @@ class DroneAdapter:
     def produce_extras(self):
         extras = cnc_pb2.Extras()
         extras.drone_id = self.drone_id
-        
-        extras.location.latitude = 40.41348
-        extras.location.longitude = -79.94964
+
+        extras.location.latitude = 40.41348 - random.uniform(0.1, 0.5)
+        extras.location.longitude = -79.94964 + random.uniform(0.1, 0.5)
         extras.location.name = os.uname().nodename
         if self.frames_processed == 0:
             extras.registering = True
@@ -57,7 +59,7 @@ class DroneAdapter:
             extras = self.produce_extras()
             if extras is not None:
                 input_frame.extras.Pack(extras)
-            
+
             logger.debug(f"Sending message #{self.frames_processed}...")
             return input_frame
 
@@ -69,7 +71,7 @@ class DroneAdapter:
         logger.debug(f"Received results for frame {self.frames_processed}.")
         if len(result_wrapper.results) != 1:
             logger.error('Got %d results from server',
-                            len(result_wrapper.results))
+                         len(result_wrapper.results))
             return
 
         result = result_wrapper.results[0]
@@ -83,5 +85,5 @@ class DroneAdapter:
         if extras.cmd.halt:
             logger.info(result.payload.decode('utf-8'))
         elif extras.cmd.script_url != '':
-            logger.info(f"{result.payload.decode('utf-8')} {extras.cmd.script_url}")
-        
+            logger.info(
+                f"{result.payload.decode('utf-8')} {extras.cmd.script_url}")

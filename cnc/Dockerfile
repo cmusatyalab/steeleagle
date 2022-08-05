@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+FROM ubuntu:18.04
 LABEL Satyalab, satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -14,19 +14,16 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     python3 \
     python3-pip \
-    python3-pyqt5 \
     wget \
- && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN pip3 install --upgrade pip
 
 # Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir \
-    'opencv-python<5' \
     protobuf \
     py-cpuinfo \
-    'PyQt5==5.14.0' \
     pyzmq \
     'setuptools==41.0.0' \
     'websockets==8.0.0' \
