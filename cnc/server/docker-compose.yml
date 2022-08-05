@@ -38,7 +38,7 @@ services:
         "gabriel-server"
       ]
     depends_on:
-      - gabriel-server
+      - command-engine
     networks:
       - cnc-net
 
