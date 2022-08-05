@@ -213,8 +213,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     else:
                         # if there is no command
                         # return the list of connected drones to the commander
-                        logger.info(
-                            f'Commander [{commander}] requests drone list.')
                         payload = self.getDrones()
                         result.payload = payload.encode(encoding="utf-8")
                 except KeyError:
