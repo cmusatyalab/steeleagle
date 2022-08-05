@@ -328,7 +328,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     }
 
     private CloudletItf getCloudlet() {
-        return new ElijahCloudlet(LTEnetwork);
+        return new ElijahCloudlet(serverComm);
     }
 
     /** This needs to change in future to pull from CNC module **/
