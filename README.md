@@ -5,8 +5,8 @@ Introduction
 ------------
 Today, commercial autonomous drones are used for increasingly demanding tasks, from building inspection to area surveillance, which require
 computationally heavy algorithms. These algorithms necessitate the use of high-end CPUs and GPUs which are often mounted onboard the aircraft, driving up
-cost and weight. With Steel Eagle, we propose a framework for autonomous drones that enables small, lightweight, and cheap drones to run these 
-algorithms with similar performance to larger, more expensive drones using edge computing.
+cost and weight. Additionally, drone programming is often limited to proprietary APIs that have no cross-platform support. With Steel Eagle, we propose a solution to both of these problems. We have created a framework that enables small, lightweight, and cheap drones to run these 
+algorithms with similar performance to larger, more expensive drones using edge computing. We have also created a drone language interface to go along with this framework that can unify many different drone control APIs under one system.
 
 Nomenclature
 ------------
