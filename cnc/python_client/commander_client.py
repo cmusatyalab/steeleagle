@@ -16,11 +16,8 @@
 
 import argparse
 from gabriel_client.websocket_client import WebsocketClient
-from text_commander_adapter import TextCommanderAdapter
-from gui_commander_adapter import GUICommanderAdapter
 import logging
 import randomname
-from threading import Thread, Event
 import time
 
 COMMANDER_ID = randomname.get_name(adj=('age',), noun=('military_army', 'military_navy'))
@@ -31,14 +28,6 @@ logger = logging.getLogger(__name__)
 
 def preprocess(frame):
     return frame
-
-def start_ui_thread(funcs, funcSet):
-    UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
-    UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID)
-    funcs.append(UI.get_producer_wrappers())
-    funcs.append(UI.consumer)
-    funcSet.set()
-    UI.start()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -51,10 +40,24 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
     if args.nogui:
+        from text_commander_adapter import TextCommanderAdapter
+        
         adapter = TextCommanderAdapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID)
         producer = adapter.get_producer_wrappers()
         consumer = adapter.consumer
     else:
+        from gui_commander_adapter import GUICommanderAdapter
+        from threading import Thread, Event
+        
+        
+        def start_ui_thread(funcs, funcSet):
+            UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
+            UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID)
+            funcs.append(UI.get_producer_wrappers())
+            funcs.append(UI.consumer)
+            funcSet.set()
+            UI.start()
+
         funcs = [] # Need to get callback functions from the UI thread
         funcSet = Event()
         t = Thread(target=start_ui_thread, args=(funcs, funcSet))

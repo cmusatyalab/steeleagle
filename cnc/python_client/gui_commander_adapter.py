@@ -39,7 +39,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.command_queue = Queue()
         
         customtkinter.set_appearance_mode("Dark")
-        customtkinter.set_default_color_theme("green")
+        customtkinter.set_default_color_theme("sweetkind")
 
         # Configure spacing and frames of UI
         self.grid_columnconfigure(0, weight=1)
@@ -76,9 +76,6 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    width=150, 
                                                    height=65,
                                                    command=self.on_connect_pressed,
-                                                   fg_color=None,
-                                                   border_color="gray",
-                                                   border_width=3,
                                                    text_font=("Roboto Medium", 13))
         
         self.button_connect.grid(row=2, column=0, pady=10, padx=150, sticky="nsew")
@@ -91,9 +88,9 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.control_panel_text.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
 
         image = Image.open("images/NoImage.jpg").resize((500, 400))
-        self.stream_image = ImageTk.PhotoImage(image)
+        self.no_image = ImageTk.PhotoImage(image)
 
-        self.image_label = tkinter.Label(master=self.frame_left_bot, image=self.stream_image)
+        self.image_label = tkinter.Label(master=self.frame_left_bot, image=self.no_image)
         self.image_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
         self.image_label.grid(row=1, column=0, pady=5, padx=5)
 
@@ -112,26 +109,22 @@ class GUICommanderAdapter(customtkinter.CTk):
                                             text_font=("Roboto Medium", 13))  # font name and size in px
         self.state.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
         
-        self.button_send = customtkinter.CTkButton(master=self.frame_left_bot,
+        self.button_fly = customtkinter.CTkButton(master=self.frame_left_bot,
                                                    text="Fly Mission",
                                                    width=150, 
                                                    height=65,
-                                                   fg_color=None,
-                                                   border_color="gray",
-                                                   border_width=3,
                                                    command=self.on_fly_mission_pressed,
                                                    text_font=("Roboto Medium", 13))
 
-        self.button_send.grid(row=5, column=0, pady=5, padx=28, sticky="w")
-        self.button_send.configure(state=tkinter.DISABLED)
+        self.button_fly.grid(row=5, column=0, pady=5, padx=28, sticky="w")
+        self.button_fly.configure(state=tkinter.DISABLED)
         
         self.button_kill = customtkinter.CTkButton(master=self.frame_left_bot,
                                                    text="Kill", 
                                                    width=150,
                                                    height=65, 
-                                                   fg_color=None,
-                                                   border_color="gray",
-                                                   border_width=3,
+                                                   fg_color="#db1a2e",
+                                                   hover_color="#a61624",
                                                    command=self.on_kill_mission_pressed,
                                                    text_font=("Roboto Medium", 13))
 
@@ -196,19 +189,19 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def toggle_connect_button(self, on):
         if on:
-            self.button_connect.configure(state="enable", fg_color="#DBD000", hover_color="#ADA500")
+            self.button_connect.configure(state="enable")
         else:
-            self.button_connect.configure(state=tkinter.DISABLED, fg_color=None, hover_color=None)
+            self.button_connect.configure(state=tkinter.DISABLED)
 
     def on_connect_pressed(self, event=None):
         self.connected_drone = self.drone_dict[self.drone_dropdown.get()]
         self.connected_marker = self.map_widget.set_marker(self.connected_drone["latitude"],
                 self.connected_drone["longitude"],
                 text=self.connected_drone["name"],
-                text_color="#009E22",
+                text_color="#1a80ba",
                 font=("Roboto Medium", 13),
-                marker_color_circle="#118C2B",
-                marker_color_outside="#02BF2A",)
+                marker_color_circle="#065b8c",
+                marker_color_outside="#1a80ba",)
         self.on_connect_event()
         self.toggle_connect_button(False)
 
@@ -217,17 +210,18 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def on_disconnect_event(self):
         self.connected_drone = None
-        self.button_kill.configure(state=tkinter.DISABLED, fg_color=None, hover_color=None)
-        self.button_send.configure(state=tkinter.DISABLED, fg_color=None, hover_color=None)
+        self.button_kill.configure(state=tkinter.DISABLED)
+        self.button_fly.configure(state=tkinter.DISABLED)
         self.control_panel_text.configure(text="NO DRONE CONNECTED")
         self.loc.configure(text="Location: NONE")
         self.task.configure(text="Task: NONE")
         self.state.configure(text="State: DISCONNECTED")
+        self.image_label.configure(image=self.no_image)
         self.connected_marker.delete()
 
     def on_connect_event(self):
-        self.button_kill.configure(state="enable", fg_color="#CF4500", hover_color="#9E3500")
-        self.button_send.configure(state="enable", fg_color="#06C73D", hover_color="#009C2C")
+        self.button_kill.configure(state="enable")
+        self.button_fly.configure(state="enable")
         self.control_panel_text.configure(text="{0} Connected".format(self.connected_drone["name"]))
         self.on_update_event()
 
@@ -237,6 +231,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                 self.connected_drone["longitude"], self.connected_drone["altitude"]))
         self.task.configure(text="Task: {0}".format("Not Implemented"))
         self.state.configure(text="State: {0}".format(self.connected_drone["state"]))
+        frame = Image.read(self.connected_drone["frame"])
+        self.image_label.configure(image=frame)
 
     def on_fly_mission_pressed(self, event=None):
         filetypes = (
@@ -261,6 +257,7 @@ class GUICommanderAdapter(customtkinter.CTk):
     def on_search_pressed(self, event=None):
         self.map_widget.set_address(self.entry.get())
 
+
     # Gabriel
 
     def set_up_adapter(self, preprocess, source_name, id):
@@ -271,7 +268,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def get_producer_wrappers(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
             try:
                 command = self.command_queue.get_nowait()
             except:
@@ -289,6 +286,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                     extras.cmd.halt = True
                 elif command["type"] == "start":
                     extras.cmd.script_url = command["url"]
+            elif self.connected_drone != None:
+                extras.cmd.for_drone_id = self.connected_drone["name"]
 
             input_frame.extras.Pack(extras)
 
@@ -312,9 +311,11 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         self.frames_processed += 1
         payload = result.payload.decode('utf-8')
-        # TODO: Try except around JSON decode
-        data = json.loads(payload)
-        self.on_drone_list_changed_event(data)
+        try:
+            data = json.loads(payload)
+            self.on_drone_list_changed_event(data)
+        except:
+            print("Response from server: " + payload)
 
 
     # Cleanup and start events
