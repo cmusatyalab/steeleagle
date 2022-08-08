@@ -360,31 +360,40 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     override fun getLat(): Double? {
         var lat : Double = 0.0
+        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.latitude != null) {
                 lat = it.lastKnownLocation()!!.latitude
             }
+            countDownLatch.countDown()
         }
+        countDownLatch.await()
         return lat
     }
 
     override fun getLon(): Double? {
         var lon : Double = 0.0
+        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.longitude != null) {
                 lon = it.lastKnownLocation()!!.longitude
             }
+            countDownLatch.countDown()
         }
+        countDownLatch.await()
         return lon
     }
 
     override fun getAlt(): Double? {
         var alt : Double = 0.0
+        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.altitude != null) {
-                alt = it?.lastKnownLocation()!!.altitude
+                alt = it.lastKnownLocation()!!.altitude
             }
+            countDownLatch.countDown()
         }
+        countDownLatch.await()
         return alt
     }
 
