@@ -25,7 +25,7 @@ import asyncio
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class CommanderAdapter:
+class TextCommanderAdapter:
     def __init__(self, preprocess, source_name, id):
         '''
         preprocess should take one frame parameter
