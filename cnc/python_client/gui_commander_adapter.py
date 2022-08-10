@@ -265,7 +265,7 @@ class GUICommanderAdapter(customtkinter.CTk):
                 " from people and that the PIC is ready to takeover in case of failure.")
         if answer:
             SCP_URL = "teiszler@cloudlet040.elijah.cs.cmu.edu:/var/www/html/scripts/" + "mission.dex"
-            FLIGHT_URL = "http://www.cloudlet040.elijah.cs.cmu.edu/scripts/" + "mission.dex" 
+            FLIGHT_URL = "http://cloudlet040.elijah.cs.cmu.edu/scripts/" + "mission.dex" 
             subprocess.run(["scp", filename, SCP_URL])
             logger.info("Sent file {0} to the cloudlet".format(filename))
             command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}

@@ -94,6 +94,7 @@ dependencies {
 
     // Parrot Anafi GroundSDK
     implementation 'com.parrot.drone.groundsdk:groundsdk:7.2.0'
+    implementation 'com.google.android.gms:play-services-location:20.0.0'
     runtimeOnly 'com.parrot.drone.groundsdk:arsdkengine:7.2.0'
     // Parrot Anafi Streaming
     implementation group: 'org.bytedeco', name: 'javacv', version: "1.5.7"

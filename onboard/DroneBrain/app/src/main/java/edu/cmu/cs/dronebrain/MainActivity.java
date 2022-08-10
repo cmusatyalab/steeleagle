@@ -1,8 +1,11 @@
 package edu.cmu.cs.dronebrain;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -16,6 +19,11 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
 
+import androidx.core.app.ActivityCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -95,7 +103,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     public String getWifiSSID() {
         WifiManager wm = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        if(wm != null) {
+        if (wm != null) {
             return wm.getConnectionInfo().getSSID();
         } else {
             return "";
@@ -113,9 +121,9 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         try {
             Extras extras = Extras.parseFrom(resultWrapper.getExtras().getValue());
             ByteString r = result.getPayload();
-            if(extras.hasCmd()) {
+            if (extras.hasCmd()) {
                 Protos.Command cmd = extras.getCmd();
-                if(cmd.getHalt()) {
+                if (cmd.getHalt()) {
                     Log.i(TAG, "Killswitch signaled from commander.");
                     if (scriptRunnable != null) {
                         scriptRunnable.interrupt();
@@ -128,11 +136,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     finish();
                 }
 
-                if(URLUtil.isValidUrl(cmd.getScriptUrl())) {
+                if (URLUtil.isValidUrl(cmd.getScriptUrl())) {
                     Log.i(TAG, "Flight script sent by commander.");
                     scriptUrl = cmd.getScriptUrl();
                     Log.i(TAG, scriptUrl);
-                    if(retrieveFlightScript())
+                    if (retrieveFlightScript())
                         executeFlightScript();
                 }
             }
@@ -148,6 +156,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         }
 
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -159,7 +168,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
         sdk = ManagedGroundSdk.obtainSession(this);
 
-        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch lteLatch = new CountDownLatch(1);
         /** Create LTE network binding **/
         cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest.Builder req = new NetworkRequest.Builder();
@@ -169,18 +178,16 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     public void onAvailable(Network network) {
                         /** Assign LTE network object **/
                         LTEnetwork = network;
-                        countDownLatch.countDown();
+                        lteLatch.countDown();
                         Log.d(TAG, "LTE network successfully acquired");
                     }
                 }
         );
         try {
-            countDownLatch.await();
+            lteLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-
 
         Consumer<ErrorType> onDisconnect = errorType -> {
             Log.e(TAG, "Disconnect Error: " + errorType.name());
@@ -192,8 +199,31 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
         loopHandler = new Handler();
         loopHandler.postDelayed(gabrielLoop, 1);
+        Log.d(TAG, "Finished OnCreate");
+    }
 
-
+    // Used to get watch GPS location before drone GPS is active.
+    private double[] getWatchGPS() {
+        LocationManager lm = (LocationManager)getSystemService(LOCATION_SERVICE);
+        double[] gps = new double[2];
+        gps[0] = 0.0;
+        gps[1] = 0.0;
+        try {
+            Location loc =  lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (loc != null) {
+                gps[0] = loc.getLatitude();
+                gps[1] = loc.getLongitude();
+            } else {
+                loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (loc != null) {
+                    gps[0] = loc.getLatitude();
+                    gps[1] = loc.getLongitude();
+                }
+            }
+        } catch(SecurityException e)  {
+            Log.e(TAG, e.getMessage());
+        }
+        return gps;
     }
 
     public Network getNetworkObjectForCurrentWifiConnection() {
@@ -228,13 +258,14 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
                 Location l = null;
                 try {
-                    if(drone != null) {
+                    if (drone != null) {
                         lb.setLatitude(drone.getLat());
                         lb.setLongitude(drone.getLon());
                         extrasBuilder.setLocation(lb);
                     } else {
-                        lb.setLatitude(0);
-                        lb.setLongitude(0);
+                        double[] gps = getWatchGPS();
+                        lb.setLatitude(gps[0]);
+                        lb.setLongitude(gps[1]);
                         extrasBuilder.setLocation(lb);
                     }
 
