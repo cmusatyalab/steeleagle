@@ -1,15 +1,19 @@
 import customtkinter
 import tkinter
-from tkinter import filedialog as fd
+from tkinter import filedialog as fd, simpledialog, messagebox
 from tkintermapview import TkinterMapView
 from PIL import Image, ImageTk
 from queue import Queue
 import logging
 from cnc_protocol import cnc_pb2
 import asyncio
+import subprocess
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
 import json
+import io
+import numpy as np
+import cv2
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -189,7 +193,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def toggle_connect_button(self, on):
         if on:
-            self.button_connect.configure(state="enable")
+            self.button_connect.configure(state=tkinter.NORMAL)
         else:
             self.button_connect.configure(state=tkinter.DISABLED)
 
@@ -217,22 +221,33 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.task.configure(text="Task: NONE")
         self.state.configure(text="State: DISCONNECTED")
         self.image_label.configure(image=self.no_image)
-        self.connected_marker.delete()
+        if self.connected_marker != None:
+            self.connected_marker.delete()
+            self.connected_marker = None
 
     def on_connect_event(self):
-        self.button_kill.configure(state="enable")
-        self.button_fly.configure(state="enable")
+        self.button_kill.configure(state=tkinter.NORMAL)
+        self.button_fly.configure(state=tkinter.NORMAL)
         self.control_panel_text.configure(text="{0} Connected".format(self.connected_drone["name"]))
         self.on_update_event()
 
     def on_update_event(self, event=None):
         self.connected_marker.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
-        self.loc.configure(text="Location: {0}, {1}, {2}m".format(self.connected_drone["latitude"], 
-                self.connected_drone["longitude"], self.connected_drone["altitude"]))
+        self.loc.configure(text="Location: {0}, {1}, {2}m".format(round(self.connected_drone["latitude"], 5), 
+                round(self.connected_drone["longitude"], 5), self.connected_drone["altitude"]))
         self.task.configure(text="Task: {0}".format("Not Implemented"))
         self.state.configure(text="State: {0}".format(self.connected_drone["state"]))
-        frame = Image.read(self.connected_drone["frame"])
-        self.image_label.configure(image=frame)
+
+    def on_frame_update_event(self, byteframe, event=None):
+        try:
+            np_data = np.fromstring(byteframe, dtype=np.uint8)
+            img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+            self.image = ImageTk.PhotoImage(img)
+            self.image_label.configure(image=self.image)
+        except Exception as e:
+            logger.error(e)
 
     def on_fly_mission_pressed(self, event=None):
         filetypes = (
@@ -241,11 +256,21 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         filename = fd.askopenfilename(
             title='Open a file',
-            initialdir='.',
+            initialdir='../../hermes/src/',
             filetypes=filetypes)
 
-        print("Selected file: " + filename)
-        # TODO: Send a URL to the file
+        logger.info("Selected file: " + filename)
+        # TODO: Make SCP destination configurable
+        answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
+                " from people and that the PIC is ready to takeover in case of failure.")
+        if answer:
+            SCP_URL = "teiszler@cloudlet040.elijah.cs.cmu.edu:/var/www/html/scripts/" + "mission.dex"
+            FLIGHT_URL = "http://www.cloudlet040.elijah.cs.cmu.edu/scripts/" + "mission.dex" 
+            subprocess.run(["scp", filename, SCP_URL])
+            logger.info("Sent file {0} to the cloudlet".format(filename))
+            command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
+            self.command_queue.put_nowait(command)
+        
 
     def on_kill_mission_pressed(self, event=None):
         command = {"drone": self.connected_drone["name"], "type": "kill"}
@@ -268,7 +293,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def get_producer_wrappers(self):
         async def producer():
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.3)
             try:
                 command = self.command_queue.get_nowait()
             except:
@@ -290,7 +315,6 @@ class GUICommanderAdapter(customtkinter.CTk):
                 extras.cmd.for_drone_id = self.connected_drone["name"]
 
             input_frame.extras.Pack(extras)
-
             return input_frame
 
         return [
@@ -298,24 +322,26 @@ class GUICommanderAdapter(customtkinter.CTk):
         ]
            
     def consumer(self, result_wrapper):
-        if len(result_wrapper.results) != 1:
+        if len(result_wrapper.results) < 1 or len(result_wrapper.results) > 2:
             logger.error('Got %d results from server'.
                     len(result_wrapper.results))
             return
         
-        result = result_wrapper.results[0]
-        if result.payload_type != gabriel_pb2.PayloadType.TEXT:
-            type_name = gabriel_pb2.PayloadType.Name(result.payload_type)
-            logger.error('Got result of type %s', type_name)
-            return
-
-        self.frames_processed += 1
-        payload = result.payload.decode('utf-8')
-        try:
-            data = json.loads(payload)
-            self.on_drone_list_changed_event(data)
-        except:
-            print("Response from server: " + payload)
+        for result in result_wrapper.results:
+            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
+                self.frames_processed += 1
+                payload = result.payload.decode('utf-8')
+                try:
+                    data = json.loads(payload)
+                    self.on_drone_list_changed_event(data)
+                except Exception as e:
+                    pass
+            elif result.payload_type == gabriel_pb2.PayloadType.IMAGE:
+                self.frames_processed += 1
+                if self.connected_drone != None:
+                    self.image_label.after(1, self.on_frame_update_event(result.payload))
+            else:
+                logger.error("Got result type " + result.payload_type)
 
 
     # Cleanup and start events
@@ -325,5 +351,3 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def start(self):
         self.mainloop()
-
-
