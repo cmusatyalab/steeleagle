@@ -23,6 +23,5 @@ drone_body_mount(
     holes="everywhere"
 );
 
-translate([0, battery_width/2+wall_thickness+1, neck_length+collar_width])
-rotate([-90, 0, 0])
+translate([0, battery_width/2+wall_thickness+1, neck_length+collar_width]) rotate([-90, 0, 0])
 watch_case(watch_diameter=watch_diameter, watch_thickness=watch_thickness);
