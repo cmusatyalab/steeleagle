@@ -20,58 +20,58 @@ module battery_shape(battery_width, battery_height) {
     }
 }
 
-module collar(battery_width, battery_height, collar_width, wall_thickness) {
-    linear_extrude(collar_width) {
-        intersection() {
-            square([battery_width+wall_thickness*2, battery_height+wall_thickness*2+2], center=true);
-            difference() {
-                offset(r=wall_thickness)
-                battery_shape(battery_width, battery_height);
-                battery_shape(battery_width, battery_height);
-            };
-        };
-    };
-}
+module collar_and_neck(battery_width, battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness) {
+    clip_thickness = 4;
+    width = battery_width + wall_thickness*2;
+    height = battery_height + wall_thickness*2 + 2;
+    neck_height = collar_width + neck_length + clip_thickness;
+    clip_height=clip_depth+wall_thickness+2;
 
-module neck(battery_width, battery_height, neck_length, collar_width, clip_width, wall_thickness) {
-    linear_extrude(neck_length+collar_width+6) {
-        offset(r=1) offset(delta=-1)
-        difference() {
+    difference() {
+        union() {
+            // collar
+            translate([0, 1, collar_width/2])
+            cube([width, height, collar_width], center=true);
+            // neck
             translate([-clip_width/2, battery_height/2, 0])
-            square([clip_width, wall_thickness+1]);
-            battery_shape(battery_width, battery_height);
+            cube([clip_width, wall_thickness+2, neck_height]);
         }
-    }
-}
 
-module clip(battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness, r=3) {
-    //color("#0f0")
-    translate([0, battery_height/2+wall_thickness, neck_length+collar_width+r])
+        translate([0, 0, -1]) linear_extrude(neck_height) {
+            battery_shape(battery_width, battery_height);
+        };
+    }
+
+    // clip
+    r = clip_thickness/2;
+    translate([0, battery_height/2+wall_thickness+2, neck_height-r])
     rotate([90, 0, 0])
     difference() {
-        hull() {
+        union() {
+            translate([r-clip_width/2, -r, 0])
+            cube([clip_width-2*r, r, clip_height]);
             translate([-clip_width/2, 0, 0])
-            cube([clip_width, r, clip_depth]);
+            cube([clip_width, r, clip_height]);
             translate([r-clip_width/2, 0, 0])
-            cylinder(h=clip_depth+wall_thickness, r=r);
+            cylinder(h=clip_height, r=r);
             translate([clip_width/2-r, 0, 0])
-            cylinder(h=clip_depth+wall_thickness, r=r);
+            cylinder(h=clip_height, r=r);
         }
         translate([0, 0, wall_thickness+5.5])
         rotate([33.69, 0, 0])
-        translate([0, 5, 0])
+        translate([0, 6, 0])
         cube([battery_width, 10, 20], center=true);
     }
 }
 
 module gap(battery_width, clip_width, collar_width, wall_thickness, offset) {
     gap_width = (battery_width - clip_width) / 2;
-    translate([offset*(gap_width+clip_width)/2, battery_height/2+(wall_thickness+2), collar_width/2])
+    translate([offset*(gap_width+clip_width)/2, battery_height/2+wall_thickness*2+2, collar_width/2])
     rotate([90, 0, 0])
     union() {
-        cylinder(h=wall_thickness+4, d=gap_width);
+        cylinder(h=wall_thickness+6, d=gap_width);
         translate([-gap_width/2, 0, 0])
-        cube([gap_width, collar_width, wall_thickness+4]);
+        cube([gap_width, collar_width, wall_thickness+6]);
     }
 }
 
@@ -95,16 +95,20 @@ module drone_body_mount(
     hole_width=15,
     holes="minimal"
 ) {
+    translate([0, -(collar_width+neck_length)/2, 0])
+    rotate([-90, 0, 0])
+    translate([0, -battery_height/2-wall_thickness-2, 0])
     difference() {
         union() {
-            collar(battery_width, battery_height, collar_width, wall_thickness);
-            neck(battery_width, battery_height, neck_length, collar_width, clip_width, wall_thickness);
-            clip(battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness);
+            collar_and_neck(battery_width, battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness);
+            //clip(battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness);
         }
 
         // fan hole
         translate([0, -battery_height/2-2, collar_width/2])
+        //translate([0, -battery_height/2-2, (collar_width+neck_length+hole_width)/2])
         rotate([90, 0, 0])
+        //hole(wall_thickness, collar_width+neck_length-hole_width);
         hole(wall_thickness, hole_width);
 
         // hole in neck
@@ -128,6 +132,12 @@ module drone_body_mount(
             rotate([90, 0, 90])
             hole(wall_thickness, hole_width);
         }
+
+        // extreme cut
+        translate([0, -7, 0])
+        cube([battery_width+10, battery_height, collar_width], center=true);
+        translate([0, -hole_width, hole_width/2])
+        cube([battery_width+10, battery_height, collar_width], center=true);
     };
 }
 
@@ -142,6 +152,6 @@ neck_length = 37.7;
     holes="sides"
     holes="everywhere"
 */
-//drone_body_mount(battery_width=battery_width, battery_height=battery_height, neck_length=neck_length, holes="everywhere");
+drone_body_mount(battery_width, battery_height, neck_length, holes="everywhere", wall_thickness=1);
 
 //example();

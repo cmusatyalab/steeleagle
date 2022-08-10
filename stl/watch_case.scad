@@ -31,7 +31,7 @@ function outer_diameter(watch_diameter, arm_length=6, arm_width=24) =
     sqrt(x*x + y*y);
 
 
-module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thread_depth=1) {
+module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=1, thread_depth=1) {
     id = watch_diameter + 2;
     od = outer_diameter(watch_diameter);
     td = od + 2 * thread_depth;
@@ -81,12 +81,12 @@ module watch_case(watch_diameter=44, watch_thickness=10, floor_thickness=3, thre
 module watch_cap(watch_diameter=44, watch_thickness=10, thread_depth=1) {
     od = outer_diameter(watch_diameter);
     td = od + 2 * thread_depth;
-    wall = 1;
+    wall = 0.5;
 
     difference () {
         generic_bottle_cap(
             wall=wall,
-            texture="knurled",
+            //texture="knurled",
             height=watch_thickness,
             thread_od=td,
             neck_od=od,
