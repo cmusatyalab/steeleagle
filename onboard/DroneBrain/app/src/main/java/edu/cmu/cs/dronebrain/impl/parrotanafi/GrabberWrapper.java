@@ -18,11 +18,12 @@ public class GrabberWrapper {
         height = _height;
     }
 
-    public synchronized void grab(boolean skip) throws Exception {
-        if (skip)
-            grabber.skipPacket(); // Skip this packet
-        else
-            frame = grabber.grabImage(); // Grab the next frame
+    public synchronized void grab() throws Exception {
+        frame = grabber.grabImage();
+    }
+
+    public synchronized void skip() throws Exception {
+        grabber.skipPacket();
     }
 
     public synchronized Frame copyFrame() {

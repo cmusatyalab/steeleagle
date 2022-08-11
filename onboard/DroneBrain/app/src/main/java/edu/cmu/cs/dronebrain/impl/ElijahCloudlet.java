@@ -22,7 +22,7 @@ public class ElijahCloudlet implements CloudletItf, Consumer<Protos.ResultWrappe
     String TAG = "ElijahCloudlet";
     ServerComm comm = null;
     Thread streamingThread = null;
-    String SOURCE = "openscout"; //openscout cognitive engine will handle these image frames
+    String SOURCE = "command"; //command cognitive engine will handle these image frames
 
     public ElijahCloudlet(ServerComm s) {
         comm = s;
@@ -85,6 +85,8 @@ public class ElijahCloudlet implements CloudletItf, Consumer<Protos.ResultWrappe
 
     @Override
     public void sendFrame(byte[] frame) {
+        if (frame == null)
+            return;
         try {
             comm.sendSupplier(() -> {
                 Extras extras;
