@@ -71,14 +71,14 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         Log.d(TAG, "Waiting for task to complete")
         while (flyingIndicatorsRef?.get()?.flyingState != FlyingIndicators.FlyingState.WAITING
             && !cancel) {
-            delay(100)
+            delay(500)
         }
     }
 
     suspend fun wait_to_complete_guided_flight() {
         Log.d(TAG, "Waiting for guided task to complete")
         while (guidedPilotingItf?.get()?.state != Activable.State.IDLE && !cancel) {
-            delay(100)
+            delay(500)
         }
     }
 
@@ -269,7 +269,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
                     // Decode a chunk of frames
                     for (i in 0 until decode) {
                         try {
-                            wrapper!!.grab(false)
+                            wrapper!!.grab()
                             Log.d(TAG, "Grabbed a frame!")
                         } catch (e: java.lang.Exception) {
                             Log.d(TAG, "Grab Exception: " + e.message)
@@ -277,7 +277,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
                     }
                 } else {
                     try {
-                        wrapper!!.grab(true)
+                        wrapper!!.skip()
                     } catch (e: java.lang.Exception) {
                         Log.d(TAG, "Grab Exception: " + e.message)
                     }
