@@ -21,6 +21,8 @@ from gabriel_client.websocket_client import ProducerWrapper
 import logging
 from cnc_protocol import cnc_pb2
 import random
+import time
+import cv2
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -43,8 +45,8 @@ class DroneAdapter:
         extras = cnc_pb2.Extras()
         extras.drone_id = self.drone_id
 
-        extras.location.latitude = 40.41348 - random.uniform(0.1, 0.5)
-        extras.location.longitude = -79.94964 + random.uniform(0.1, 0.5)
+        extras.location.latitude = 40.41348 - random.uniform(0.01, 0.05)
+        extras.location.longitude = -79.94964 + random.uniform(0.01, 0.05)
         extras.location.name = os.uname().nodename
         if self.frames_processed == 0:
             extras.registering = True
@@ -53,8 +55,17 @@ class DroneAdapter:
     def get_producer_wrappers(self):
         async def producer():
             input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append(bytes('Message to CNC', 'utf-8'))
+            if self.frames_processed % 2 == 0:
+                input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+                input_frame.payloads.append(bytes('Message to CNC', 'utf-8'))
+            else:
+                input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
+                if int(time.time() % 2) == 0:
+                    i = cv2.imread("./images/1.jpg")
+                else:
+                    i = cv2.imread("./images/2.jpg")
+                _, jpeg_frame = cv2.imencode('.jpg', i)
+                input_frame.payloads.append(jpeg_frame.tobytes())
 
             extras = self.produce_extras()
             if extras is not None:
