@@ -340,8 +340,19 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onStart(){
         super.onStart();
+    }
 
-
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (drone != null) {
+            try {
+                drone.kill();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        finish();
     }
 
     @Override
