@@ -365,9 +365,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             if (it?.lastKnownLocation()?.latitude != null) {
                 lat = it.lastKnownLocation()!!.latitude
             }
-            countDownLatch.countDown()
         }
-        countDownLatch.await()
         return lat
     }
 
@@ -378,9 +376,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             if (it?.lastKnownLocation()?.longitude != null) {
                 lon = it.lastKnownLocation()!!.longitude
             }
-            countDownLatch.countDown()
         }
-        countDownLatch.await()
         return lon
     }
 
@@ -391,9 +387,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             if (it?.lastKnownLocation()?.altitude != null) {
                 alt = it.lastKnownLocation()!!.altitude
             }
-            countDownLatch.countDown()
         }
-        countDownLatch.await()
         return alt
     }
 
