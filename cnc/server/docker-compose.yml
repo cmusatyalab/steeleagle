@@ -61,6 +61,8 @@ services:
     entrypoint:
       [
         "./face.py",
+        "--source",
+        "command",
         "--endpoint",
         "http://openface-service:5000",
         "--threshold",
@@ -90,6 +92,8 @@ services:
     entrypoint:
       [
         "./obj.py",
+        "--source",
+        "command",
         "--model",
         "${DNN}",
         "--threshold",

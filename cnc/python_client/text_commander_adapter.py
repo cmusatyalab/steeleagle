@@ -21,6 +21,8 @@ from gabriel_client.websocket_client import ProducerWrapper
 import logging
 from cnc_protocol import cnc_pb2
 import asyncio
+from PIL import Image
+import cv2
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -42,14 +44,15 @@ class TextCommanderAdapter:
         async def producer():
             await asyncio.sleep(2)
             print('0. Get drone list')
-            print('1. Halt (killswitch)')
-            print('2. Send Script URL')
+            print('1. Get drone list (plus stream from drone)')
+            print('2. Halt (killswitch)')
+            print('3. Send Script URL')
             print('Enter the number of the command you wish to send:')
             selection = int(input())
             if selection == 2:
                 print('Enter the URL where the script resides (i.e http://cloud.let/classes.dex):')
                 url = str(input())
-            if selection != 0:
+            if selection > 0:
                 print('Enter the drone id to send the command to:')
                 drone = str(input())
             input_frame = gabriel_pb2.InputFrame()
@@ -60,9 +63,9 @@ class TextCommanderAdapter:
             extras.commander_id = self.id
             if selection != 0:
                 extras.cmd.for_drone_id = drone
-                if selection == 1:
+                if selection == 2:
                     extras.cmd.halt = True
-                elif selection == 2:
+                elif selection == 3:
                     extras.cmd.script_url = url
 
             input_frame.extras.Pack(extras)
@@ -76,7 +79,7 @@ class TextCommanderAdapter:
 
     def consumer(self, result_wrapper):
         logger.debug(f"Received results for frame {self.frames_processed}.")
-        if len(result_wrapper.results) != 1:
+        if len(result_wrapper.results) < 1 or len(result_wrapper.results)> 2:
             logger.error('Got %d results from server',
                             len(result_wrapper.results))
             return
@@ -86,6 +89,17 @@ class TextCommanderAdapter:
             type_name = gabriel_pb2.PayloadType.Name(result.payload_type)
             logger.error('Got result of type %s', type_name)
             return
-        self.frames_processed += 1            
-        logger.info(result.payload.decode('utf-8'))
+        try:
+
+            self.frames_processed += 1
+            logger.info(result.payload.decode('utf-8'))
+            if len(result_wrapper.results) == 2:
+                np_data = np.fromstring(result_wrapper.results[1].payload, dtype=np.uint8)
+                img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                i = Image.fromarray(img)
+                i.show('Stream')
+
+        except Exception as e:
+            logger.error(e)
         

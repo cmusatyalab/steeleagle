@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender1 \
     python3 \
+    python3-opencv \
     python3-pip \
     wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

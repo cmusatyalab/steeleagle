@@ -30,6 +30,8 @@ from io import BytesIO
 import threading
 import jsonschema
 import json
+import cv2
+import base64
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -83,6 +85,7 @@ class DroneClient:
         self.lon = 0.0
         self.alt = 0.0
         self.vel = 0.0
+        self.current_frame = False
         self.json = {"name": id, "state": "online", "latitude": 0.0,
                      "longitude": 0.0, "altitude": 0.0, "velocity": 0.0}
 
@@ -127,10 +130,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
             time.sleep(1)
 
     def handle(self, input_frame):
-        if input_frame.payload_type != gabriel_pb2.PayloadType.TEXT:
-            status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
-            return cognitive_engine.create_result_wrapper(status)
-
         extras = cognitive_engine.unpack_extras(cnc_pb2.Extras, input_frame)
 
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
@@ -151,37 +150,40 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     encoding="utf-8")
             else:
                 try:
-
-                    if extras.drone_id in self.drones:
-                        self.drones[extras.drone_id].heartbeat = time.time()
-                        self.updateDroneStatus(extras)
-                        # check if there is a script to send or if we need to signal a halt
-                        if self.drones[extras.drone_id].sent_halt:
-                            from_commander = cnc_pb2.Extras()
-                            from_commander.cmd.halt = True
-                            result_wrapper.extras.Pack(from_commander)
-                            result.payload = "!Halt sent!".encode(
-                                encoding="utf-8")
-                            logger.debug(
-                                f'Instructing drone {extras.drone_id} to halt and enable manual control...')
-                            self.drones[extras.drone_id].sent_halt = False
-                        elif self.drones[extras.drone_id].script_url != '':
-                            url = self.drones[extras.drone_id].script_url
-                            from_commander = cnc_pb2.Extras()
-                            if validators.url(url, public=True) == True:
-                                from_commander.cmd.script_url = url
+                    if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
+                        if extras.drone_id in self.drones:
+                            self.drones[extras.drone_id].heartbeat = time.time()
+                            self.updateDroneStatus(extras)
+                            # check if there is a script to send or if we need to signal a halt
+                            if self.drones[extras.drone_id].sent_halt:
+                                from_commander = cnc_pb2.Extras()
+                                from_commander.cmd.halt = True
                                 result_wrapper.extras.Pack(from_commander)
-                                result.payload = "Script URL sent.".encode(
+                                result.payload = "!Halt sent!".encode(
                                     encoding="utf-8")
                                 logger.debug(
-                                    f'Directing {extras.drone_id} to to run flight script at {url}...')
-                                self.drones[extras.drone_id].script_url = ''
+                                    f'Instructing drone {extras.drone_id} to halt and enable manual control...')
+                                self.drones[extras.drone_id].sent_halt = False
+                            elif self.drones[extras.drone_id].script_url != '':
+                                url = self.drones[extras.drone_id].script_url
+                                from_commander = cnc_pb2.Extras()
+                                if validators.url(url, public=True) == True:
+                                    from_commander.cmd.script_url = url
+                                    result_wrapper.extras.Pack(from_commander)
+                                    result.payload = "Script URL sent.".encode(
+                                        encoding="utf-8")
+                                    logger.debug(
+                                        f'Directing {extras.drone_id} to to run flight script at {url}...')
+                                    self.drones[extras.drone_id].script_url = ''
+                                else:
+                                    logger.error(
+                                        f"Invalid URL [{url}] given as flight script.")
                             else:
-                                logger.error(
-                                    f"Invalid URL [{url}] given as flight script.")
-                        else:
-                            result.payload = "No command.".encode(
-                                encoding="utf-8")
+                                result.payload = "No command.".encode(
+                                    encoding="utf-8")
+                    elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
+                        #update current_frame for this drone so it can be displayed in commander UI
+                        self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
                 except KeyError:
                     logger.error(
                         f'Sorry, drone [{extras.drone_id}]  has not registered yet!')
@@ -211,18 +213,32 @@ class DroneCommandEngine(cognitive_engine.Engine):
                             result.payload = f'Invalid URL sent {url}!'.encode(
                                 encoding="utf-8")
                     else:
-                        # if there is no command
-                        # return the list of connected drones to the commander
                         payload = self.getDrones()
                         result.payload = payload.encode(encoding="utf-8")
+                        result_wrapper.results.append(result)
+                        if self.drones[drone].current_frame != False:
+                            result = gabriel_pb2.ResultWrapper.Result()
+                            result.payload_type = gabriel_pb2.PayloadType.IMAGE
+                            result.payload = self.drones[drone].current_frame
                 except KeyError:
-                    logger.error(
-                        f'Sorry, [{commander}]  drone [{drone}] does not exist!')
+                    if drone != "":
+                        logger.error(
+                            f'Sorry, [{commander}]  drone [{drone}] does not exist!')
                     result.payload = f'Drone {drone} is not connected.'.encode(
                         encoding="utf-8")
+            else:
+                # if there is no command
+                # return the list of connected drones to the commander
+                payload = self.getDrones()
+                result.payload = payload.encode(encoding="utf-8")
+                result_wrapper.results.append(result)
 
         result_wrapper.results.append(result)
         return result_wrapper
 
-    def preprocess_image(self, image):
-        return BytesIO(image)
+    def process_image(self, image):
+        np_data = np.fromstring(image, dtype=np.uint8)
+        img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        return BytesIO(img)
