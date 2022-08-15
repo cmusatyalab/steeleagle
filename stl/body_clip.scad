@@ -143,15 +143,21 @@ module drone_body_mount(
 
 //example();
 
+// Parrot Anafi
 battery_width = 45;
 battery_height = 50;
 neck_length = 37.7;
 
+// Parrot Anafi USA
+battery_width = 58;
+battery_height = 55;
+neck_length = 40;
+
 /*
     holes="neck"
-    holes="sides"
+    holes="side"
     holes="everywhere"
 */
-drone_body_mount(battery_width, battery_height, neck_length, holes="everywhere", wall_thickness=1);
+drone_body_mount(battery_width, battery_height, neck_length, holes="side", wall_thickness=1);
 
 //example();
