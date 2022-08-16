@@ -42,8 +42,8 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.connected_flightplan = None
         self.command_queue = Queue()
         
-        customtkinter.set_appearance_mode("Dark")
-        customtkinter.set_default_color_theme("sweetkind")
+        customtkinter.set_appearance_mode("system")
+        customtkinter.set_default_color_theme("blue")
 
         # Configure spacing and frames of UI
         self.grid_columnconfigure(0, weight=1)
@@ -68,11 +68,12 @@ class GUICommanderAdapter(customtkinter.CTk):
                                               text_font=("Roboto Medium", -24))  # font name and size in px
         self.title.grid(row=0, column=0, pady=10, padx=10, sticky="w")
 
-        self.drone_dropdown = customtkinter.CTkOptionMenu(master=self.frame_left_top,
-                                                          values=["No Selection"],
-                                                          command=self.on_selection_changed_event,
-                                                          height=40,
-                                                          text_font=("Roboto Medium", 11))
+        self.drone_dropdown = customtkinter.CTkComboBox(master=self.frame_left_top,
+                                                values=["No Selection"],
+                                                command=self.on_selection_changed_event,
+                                                height=40,
+                                                text_font=("Roboto Medium", 14),
+                                                dropdown_text_font=("Roboto Medium", 14))
         self.drone_dropdown.grid(row=1, column=0, pady=20, padx=15, sticky="nsew")
         
         self.button_connect = customtkinter.CTkButton(master=self.frame_left_top,
@@ -177,6 +178,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         if len(self.drone_dict.keys()) == 0:
             if self.drone_dropdown.values != ["No Selection"]:
                 self.drone_dropdown.configure(values=["No Selection"])
+                self.drone_dropdown.set("No Selection")
             self.on_disconnect_event()
         else:
             new_values = [d["name"] for d in new_list]
