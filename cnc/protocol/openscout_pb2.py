@@ -1,0 +1,1 @@
+/home/teiszler/openscout/protocol/openscout_pb2.py
