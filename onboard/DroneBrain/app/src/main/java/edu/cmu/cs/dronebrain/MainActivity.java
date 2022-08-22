@@ -405,7 +405,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         sdk.close();
+        super.onDestroy();
     }
 }

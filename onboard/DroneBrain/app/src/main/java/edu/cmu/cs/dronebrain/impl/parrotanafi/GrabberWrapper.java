@@ -1,5 +1,7 @@
 package edu.cmu.cs.dronebrain.impl.parrotanafi;
 
+import android.util.Log;
+
 import org.bytedeco.javacv.Frame;
 import java.nio.ByteBuffer;
 
@@ -19,11 +21,15 @@ public class GrabberWrapper {
     }
 
     public synchronized void grab() throws Exception {
+        Long start = System.currentTimeMillis();
         frame = grabber.grabImage();
+        Log.d("[PERF]", "Grab took " + (System.currentTimeMillis() - start) + "ms to complete");
     }
 
     public synchronized void skip() throws Exception {
+        Long start = System.currentTimeMillis();
         grabber.skipPacket();
+        Log.d("[PERF]", "Skip took " + (System.currentTimeMillis() - start) + "ms to complete");
     }
 
     public synchronized Frame copyFrame() {
@@ -36,6 +42,7 @@ public class GrabberWrapper {
     private Frame deepCopyFrame(Frame frame)
     {
         try {
+            Long start = System.currentTimeMillis();
             // Frame that will hold the copy
             Frame cFrame = new Frame(width, height, 8, 3);
             // Copy the byte buffer from frame
@@ -59,9 +66,10 @@ public class GrabberWrapper {
 
             // Save the clone
             cFrame.image[0] = cloneBuffer;
-
+            Log.d("[PERF]", "Copy took " + (System.currentTimeMillis() - start) + "ms to complete");
             return cFrame;
         } catch (Exception e) {
+            Log.e("ParrotAnafi", "Copy failed, reason: " + e.getMessage());
             return null;
         }
     }
