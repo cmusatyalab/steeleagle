@@ -19,10 +19,11 @@ import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
 import logging
-from cnc_protocol import cnc_pb2
+from cnc_protocol import cnc_pb2, openscout_pb2
 import random
 import time
 import cv2
+import uuid
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,10 +42,17 @@ class DroneAdapter:
         self._source_name = source_name
         self.frames_processed = 0
 
-    def produce_extras(self):
+    def produce_openscout_extras(self):
+        extras = openscout_pb2.Extras()
+        extras.client_id = str(uuid.uuid4())
+        extras.location.latitude = 40.41348 - random.uniform(0.01, 0.05)
+        extras.location.longitude = -79.94964 + random.uniform(0.01, 0.05)
+        extras.location.name = os.uname().nodename
+        return extras
+
+    def produce_cnc_extras(self):
         extras = cnc_pb2.Extras()
         extras.drone_id = self.drone_id
-
         extras.location.latitude = 40.41348 - random.uniform(0.01, 0.05)
         extras.location.longitude = -79.94964 + random.uniform(0.01, 0.05)
         extras.location.name = os.uname().nodename
@@ -58,6 +66,9 @@ class DroneAdapter:
             if self.frames_processed % 2 == 0:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append(bytes('Message to CNC', 'utf-8'))
+                extras = self.produce_cnc_extras()
+                if extras is not None:
+                    input_frame.extras.Pack(extras)
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                 if int(time.time() % 2) == 0:
@@ -66,10 +77,9 @@ class DroneAdapter:
                     i = cv2.imread("./images/2.jpg")
                 _, jpeg_frame = cv2.imencode('.jpg', i)
                 input_frame.payloads.append(jpeg_frame.tobytes())
-
-            extras = self.produce_extras()
-            if extras is not None:
-                input_frame.extras.Pack(extras)
+                extras = self.produce_openscout_extras()
+                if extras is not None:
+                    input_frame.extras.Pack(extras)
 
             logger.debug(f"Sending message #{self.frames_processed}...")
             return input_frame
@@ -81,7 +91,7 @@ class DroneAdapter:
     def consumer(self, result_wrapper):
         logger.debug(f"Received results for frame {self.frames_processed}.")
         if len(result_wrapper.results) != 1:
-            logger.error('Got %d results from server',
+            logger.debug('Got %d results from server',
                          len(result_wrapper.results))
             return
 

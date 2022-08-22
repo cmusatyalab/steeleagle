@@ -25,7 +25,7 @@ module collar_and_neck(battery_width, battery_height, neck_length, collar_width,
     width = battery_width + wall_thickness*2;
     height = battery_height + wall_thickness*2 + 2;
     neck_height = collar_width + neck_length + clip_thickness;
-    clip_height=clip_depth+wall_thickness+2;
+    clip_height = clip_depth + wall_thickness + 2;
 
     difference() {
         union() {
@@ -134,7 +134,7 @@ module drone_body_mount(
         }
 
         // extreme cut
-        translate([0, -7, 0])
+        translate([0, -9.5, 0])
         cube([battery_width+10, battery_height, collar_width], center=true);
         translate([0, -hole_width, hole_width/2])
         cube([battery_width+10, battery_height, collar_width], center=true);
@@ -150,8 +150,8 @@ neck_length = 37.7;
 
 // Parrot Anafi USA
 battery_width = 58;
-battery_height = 55;
-neck_length = 40;
+battery_height = 54;
+neck_length = 37.7;
 
 /*
     holes="neck"
