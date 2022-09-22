@@ -69,14 +69,16 @@ import edu.cmu.cs.steeleagle.Protos.Extras;
 
 public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private ManagedGroundSdk sdk = null;
+    /** FOR TESTING ONLY -- Eventually, this will be passed to us by the main activity **/
+    private Platform platform = Platform.ANAFI;
     /** Connectivity Manager to retrieve network infos **/
     private ConnectivityManager cm = null;
     /** LTE network object **/
     private Network LTEnetwork = null;
     /** Currently executing FlightScript **/
     private FlightScript MS = null;
-    /** Reference to the thread executing the FlightScript **/
-    private Thread scriptRunnable = null;
+    /** Runnable holding the executing FlightScript **/
+    private Thread scriptThread = null;
     /** Current drone object **/
     private DroneItf drone = null;
     /** Current cloudlet object **/
@@ -125,13 +127,10 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Protos.Command cmd = extras.getCmd();
                 if (cmd.getHalt()) {
                     Log.i(TAG, "Killswitch signaled from commander.");
-                    if (scriptRunnable != null) {
-                        scriptRunnable.interrupt();
+                    if (MS != null) {
+                        MS.kill();
+                        //scriptThread.interrupt();
                         Log.i(TAG, "Interrupting script thread.");
-                    }
-                    if (drone != null) {
-                        Log.i(TAG, "Killing drone.");
-                        drone.kill();
                     }
                     finish();
                 }
@@ -304,7 +303,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             Log.i(TAG, clazz.toString());
             MS = (FlightScript)clazz.newInstance();
             Log.d(TAG, "Getting drone and cloudlet...");
-            drone = getDrone(MS.platform); // Get the corresponding drone
+            drone = getDrone(platform); // Get the corresponding drone
             cloudlet = getCloudlet(); // Get the corresponding cloudlet
             success = true;
         } catch (Exception e) {
@@ -321,17 +320,9 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             /** Bind all future sockets to Wifi so that streaming works.
              * Our LTE connections will persist. **/
             bindProcessToWifi();
-            MS.setDrone(drone);
-            MS.setCloudlet(cloudlet);
-            scriptRunnable = new Thread(() -> {
-                try {
-                    MS.run();
-                } catch (Exception e) {
-                    Log.e(TAG, "Running flight plan failed, reason: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            });
-            scriptRunnable.start();
+            MS.init(drone, cloudlet);
+            scriptThread = new Thread(MS);
+            scriptThread.start();
         } catch (Exception e) {
             Log.e(TAG, e.toString());
         }
