@@ -16,7 +16,7 @@ public abstract class FlightScript implements Runnable {
         cloudlet = c;
     }
 
-    // Runs method is derived from Runnable.
+    // Run method is derived from Runnable. Defined for each task.
 
     // Executes all tasks on the command queue.
     protected void execLoop() throws InterruptedException {

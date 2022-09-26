@@ -15,6 +15,7 @@ public abstract class Task implements Runnable {
 
     // Pauses the task. Allows resuming in certain cases.
     public abstract void pause();
+
     // Resumes the task if it is resumeable, otherwise returns immediately.
     public abstract void resume();
 }

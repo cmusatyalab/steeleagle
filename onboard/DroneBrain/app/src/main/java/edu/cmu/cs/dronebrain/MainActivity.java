@@ -188,6 +188,8 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             e.printStackTrace();
         }
 
+        Log.d(TAG, "Got LTE network object");
+
         Consumer<ErrorType> onDisconnect = errorType -> {
             Log.e(TAG, "Disconnect Error: " + errorType.name());
             finish();
