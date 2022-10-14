@@ -67,7 +67,7 @@ import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
-public class MainActivity extends Activity implements Consumer<ResultWrapper> {
+public class MPUActivity extends Activity implements Consumer<ResultWrapper> {
     private ManagedGroundSdk sdk = null;
     /** Connectivity Manager to retrieve network infos **/
     private ConnectivityManager cm = null;

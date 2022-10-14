@@ -17,10 +17,18 @@ message Command {
   bool halt = 3;
 }
 
+message DroneStatus {
+  int64 battery = 1;
+  double gimbal_pitch = 2;
+  double bearing =3;
+}
+
 message Extras {
     bool registering = 1;
     string drone_id = 2;
     string commander_id = 3;
     Command cmd = 4;
     Location location = 5;
+    DroneStatus status = 6;
+    string detection_model = 7;
 }
