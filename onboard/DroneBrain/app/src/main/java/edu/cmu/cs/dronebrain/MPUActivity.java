@@ -67,7 +67,7 @@ import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
-public class MainActivity extends Activity implements Consumer<ResultWrapper> {
+public class MPUActivity extends Activity implements Consumer<ResultWrapper> {
     private ManagedGroundSdk sdk = null;
     /** FOR TESTING ONLY -- Eventually, this will be passed to us by the main activity **/
     private Platform platform = Platform.ANAFI;
