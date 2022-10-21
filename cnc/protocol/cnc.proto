@@ -9,6 +9,7 @@ message Location {
   string name = 1;
   double latitude = 2;
   double longitude = 3;
+  double altitude = 4
 }
 
 message Command {
@@ -20,7 +21,7 @@ message Command {
 message DroneStatus {
   int64 battery = 1;
   double gimbal_pitch = 2;
-  double bearing =3;
+  double bearing = 3;
 }
 
 message Extras {
