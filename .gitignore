@@ -3,3 +3,4 @@
 ./kml2drone/weatherapi.key
 *.code-workspace
 *.vimrc
+*/__pycache__
