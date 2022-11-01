@@ -205,7 +205,7 @@ class KeyboardCtrl(Listener):
 
 
 class OlympeStreaming(threading.Thread):
-    def __init__(self, drone, sample_rate=5, model='robomaster'):
+    def __init__(self, drone, sample_rate=3, model='robomaster'):
         self.drone = drone
         self.sample_rate = sample_rate
         self.model = model
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     time.sleep(1)
     drone.connect()
     time.sleep(1)
-    streamer = OlympeStreaming(drone, model='coco')
+    streamer = OlympeStreaming(drone, model='robomaster')
     streamer.start()
     control = KeyboardCtrl()
     while not control.quit():
@@ -360,7 +360,7 @@ if __name__ == "__main__":
         elif control.landing():
             drone(Landing())
         if control.start_track():
-            tracker = dynamic.DynamicLeashTracker(drone, 10.0)
+            tracker = dynamic.DynamicLeashTracker(drone, 15.0)
             tracker.start()
             tracking = True
             print("Starting track!")

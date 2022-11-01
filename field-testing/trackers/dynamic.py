@@ -7,10 +7,12 @@ import threading
 import time
 import zmq
 import json
+import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 
 class DynamicLeashTracker(threading.Thread):
-    def __init__(self, drone, leash=10):
+    def __init__(self, drone, leash=10.0):
         self.drone = drone
         self.leash = leash
         self.context = zmq.Context()
@@ -30,22 +32,25 @@ class DynamicLeashTracker(threading.Thread):
         if plane_norm.dot(target_dir).all() == 0:
             return None
 
-        t = (plane_norm.dor(plane_pt) - plane)norm.dot(target_insct)) / plane_norm.dot(target_dir)
+        t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
     
     def get_movement_vectors(self, yaw, pitch):
-        gatt = drone.get_state(attitude)
+        gatt = self.drone.get_state(attitude)
         current_gimbal_pitch = gatt[0]["pitch_absolute"]
-        alt = drone.get_state(AltitudeChanged)
-        current_drone_altitude = att["altitude"]
+        alt = self.drone.get_state(AltitudeChanged)
+        current_drone_altitude = alt["altitude"]
         
         forward_vec = [0, 1, 0]
         r = R.from_euler('ZYX', [yaw, 0, pitch + current_gimbal_pitch], degrees=True)
         target_dir = r.as_matrix().dot(forward_vec)
-        target_vec = self.find_intersection(target_dir, np.array([0, 0, alt]))
+        target_vec = self.find_intersection(target_dir, np.array([0, 0, current_drone_altitude]))
+        print(f"Distance estimate: {np.linalg.norm(target_vec)}")
         
         leash_vec = self.leash * (target_vec / np.linalg.norm(target_vec))
-        movement_vec = leash_vec - target_vec
+        print(f"Leash vector: {leash_vec}")
+        movement_vec = target_vec - leash_vec
+        print(f"Move vector: {movement_vec}")
 
         return movement_vec[0], movement_vec[1]
 
@@ -57,24 +62,24 @@ class DynamicLeashTracker(threading.Thread):
 
         drone_roll, drone_pitch = self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
-        print(f"PITCH: {target_pitch_angle}, YAW: {target_yaw_angle}, SPEED: {speed}")
         return target_pitch_angle, target_yaw_angle, drone_pitch, drone_roll
 
     def clamp(self, value, minimum, maximum):
-        return max(minimum, min(new_index, maximum))
+        return max(minimum, min(value, maximum))
 
     def gain(self, gpitch, dyaw, dpitch, droll):
-        dyaw = self.clamp(int(dyaw * 2), -100, 100)
-        dpitch = self.clamp(int(dpitch * 3), -100, 100)
-        droll = self.clamp(int(droll * 3), -100, 100)
+        dyaw = self.clamp(int(dyaw * 2.5), -100, 100)
+        dpitch = self.clamp(int(dpitch * 2.5), -100, 100)
+        droll = self.clamp(int(droll * 2.0), -100, 100)
         gpitch = gpitch
 
         return gpitch, dyaw, dpitch, droll
 
     def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
         gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
+        print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
         self.drone(PCMD(1, droll, dpitch, dyaw, 0, timestampAndSeqNum=0))
-        gatt = drone.get_state(attitude)
+        gatt = self.drone.get_state(attitude)
         current_gimbal_pitch = gatt[0]["pitch_absolute"]
         self.drone(set_target(0, control_mode.position, "none", 0.0, "absolute", current_gimbal_pitch + gpitch, "none", 0.0))
 
