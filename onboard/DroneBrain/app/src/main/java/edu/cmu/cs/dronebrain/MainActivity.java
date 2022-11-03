@@ -19,11 +19,6 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
 
-import androidx.core.app.ActivityCompat;
-
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -34,24 +29,15 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
-import javax.net.SocketFactory;
-
 import dalvik.system.DexClassLoader;
-import edu.cmu.cs.dronebrain.impl.DebugCloudlet;
 import edu.cmu.cs.dronebrain.impl.ElijahCloudlet;
 import edu.cmu.cs.dronebrain.impl.parrotanafi.ParrotAnafi;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
@@ -67,7 +53,7 @@ import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
 
 
-public class MPUActivity extends Activity implements Consumer<ResultWrapper> {
+public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private ManagedGroundSdk sdk = null;
     /** FOR TESTING ONLY -- Eventually, this will be passed to us by the main activity **/
     private Platform platform = Platform.ANAFI;
@@ -114,8 +100,9 @@ public class MPUActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     public void accept(ResultWrapper resultWrapper) {
+        Log.d(TAG, "COMMAND producer: " + resultWrapper.getResultProducerName().getValue());
         if (resultWrapper.getResultsCount() != 1) {
-            Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output.");
+            Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from COMMAND.");
             return;
         }
 

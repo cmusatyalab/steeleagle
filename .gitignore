@@ -4,3 +4,5 @@
 *.code-workspace
 *.vimrc
 */__pycache__
+*.dex
+*.class

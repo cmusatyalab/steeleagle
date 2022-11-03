@@ -23,13 +23,13 @@ public class GrabberWrapper {
     public synchronized void grab() throws Exception {
         Long start = System.currentTimeMillis();
         frame = grabber.grabImage();
-        Log.d("[PERF]", "Grab took " + (System.currentTimeMillis() - start) + "ms to complete");
+        // Log.d("[PERF]", "Grab took " + (System.currentTimeMillis() - start) + "ms to complete");
     }
 
     public synchronized void skip() throws Exception {
         Long start = System.currentTimeMillis();
         grabber.skipPacket();
-        Log.d("[PERF]", "Skip took " + (System.currentTimeMillis() - start) + "ms to complete");
+        // Log.d("[PERF]", "Skip took " + (System.currentTimeMillis() - start) + "ms to complete");
     }
 
     public synchronized Frame copyFrame() {

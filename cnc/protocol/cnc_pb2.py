@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='cnc.proto',
   package='cnc',
   syntax='proto3',
-  serialized_pb=_b('\n\tcnc.proto\x12\x03\x63nc\"=\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08latitude\x18\x02 \x01(\x01\x12\x11\n\tlongitude\x18\x03 \x01(\x01\"A\n\x07\x43ommand\x12\x14\n\x0c\x66or_drone_id\x18\x01 \x01(\t\x12\x12\n\nscript_url\x18\x02 \x01(\t\x12\x0c\n\x04halt\x18\x03 \x01(\x08\"E\n\x0b\x44roneStatus\x12\x0f\n\x07\x62\x61ttery\x18\x01 \x01(\x03\x12\x14\n\x0cgimbal_pitch\x18\x02 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x03 \x01(\x01\"\xbc\x01\n\x06\x45xtras\x12\x13\n\x0bregistering\x18\x01 \x01(\x08\x12\x10\n\x08\x64rone_id\x18\x02 \x01(\t\x12\x14\n\x0c\x63ommander_id\x18\x03 \x01(\t\x12\x19\n\x03\x63md\x18\x04 \x01(\x0b\x32\x0c.cnc.Command\x12\x1f\n\x08location\x18\x05 \x01(\x0b\x32\r.cnc.Location\x12 \n\x06status\x18\x06 \x01(\x0b\x32\x10.cnc.DroneStatus\x12\x17\n\x0f\x64\x65tection_model\x18\x07 \x01(\tB\x1f\n\x15\x65\x64u.cmu.cs.steeleagleB\x06Protosb\x06proto3')
+  serialized_pb=_b('\n\tcnc.proto\x12\x03\x63nc\"O\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08latitude\x18\x02 \x01(\x01\x12\x11\n\tlongitude\x18\x03 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\x04 \x01(\x01\"A\n\x07\x43ommand\x12\x14\n\x0c\x66or_drone_id\x18\x01 \x01(\t\x12\x12\n\nscript_url\x18\x02 \x01(\t\x12\x0c\n\x04halt\x18\x03 \x01(\x08\"E\n\x0b\x44roneStatus\x12\x0f\n\x07\x62\x61ttery\x18\x01 \x01(\x03\x12\x14\n\x0cgimbal_pitch\x18\x02 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x03 \x01(\x01\"\xbc\x01\n\x06\x45xtras\x12\x13\n\x0bregistering\x18\x01 \x01(\x08\x12\x10\n\x08\x64rone_id\x18\x02 \x01(\t\x12\x14\n\x0c\x63ommander_id\x18\x03 \x01(\t\x12\x19\n\x03\x63md\x18\x04 \x01(\x0b\x32\x0c.cnc.Command\x12\x1f\n\x08location\x18\x05 \x01(\x0b\x32\r.cnc.Location\x12 \n\x06status\x18\x06 \x01(\x0b\x32\x10.cnc.DroneStatus\x12\x17\n\x0f\x64\x65tection_model\x18\x07 \x01(\tB\x1f\n\x15\x65\x64u.cmu.cs.steeleagleB\x06Protosb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -54,6 +54,13 @@ _LOCATION = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='altitude', full_name='cnc.Location.altitude', index=3,
+      number=4, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -67,7 +74,7 @@ _LOCATION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=18,
-  serialized_end=79,
+  serialized_end=97,
 )
 
 
@@ -111,8 +118,8 @@ _COMMAND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=81,
-  serialized_end=146,
+  serialized_start=99,
+  serialized_end=164,
 )
 
 
@@ -156,8 +163,8 @@ _DRONESTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=148,
-  serialized_end=217,
+  serialized_start=166,
+  serialized_end=235,
 )
 
 
@@ -229,8 +236,8 @@ _EXTRAS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=220,
-  serialized_end=408,
+  serialized_start=238,
+  serialized_end=426,
 )
 
 _EXTRAS.fields_by_name['cmd'].message_type = _COMMAND

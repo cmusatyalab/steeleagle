@@ -1,7 +1,6 @@
 package edu.cmu.cs.dronebrain.impl.parrotanafi
 
 import android.graphics.Bitmap
-import android.net.Network
 import android.util.Log
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
@@ -9,6 +8,7 @@ import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
 import com.parrot.drone.groundsdk.device.instrument.Gps
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
+import com.parrot.drone.groundsdk.device.peripheral.MainGimbal
 import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
@@ -22,9 +22,18 @@ import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.Frame
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.net.Socket
 import java.util.concurrent.CountDownLatch
-import javax.net.SocketFactory
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder
+import java.lang.IllegalArgumentException
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sign
+
 
 class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
@@ -56,6 +65,10 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     private var converter = AndroidFrameConverter()
     /** Network object for streaming from the drone **/
     private var stream: InputStream? = null
+    private var resolution_x: Int = 0
+    private var resolution_y: Int = 0
+    private var HFOV: Int = 69
+    private var VFOV: Int = 43
 
     /** Kill switch for the drone **/
     private var cancel: Boolean = false
@@ -216,6 +229,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun moveBy(x: Double, y: Double, z: Double) { //x,y,z in meters
+        Log.d(TAG, "moveBy called!");
         var directive = GuidedPilotingItf.RelativeMoveDirective(x, y, z, 0.0, null)
 
         guidedPilotingItf?.get()?.let {
@@ -228,27 +242,25 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     @Throws(Exception::class)
-    override fun startStreaming(sample_rate: Int?, resolution: Int?) {
+    override fun startStreaming(resolution: Int?) {
         var grabber: FFmpegFrameGrabber = FFmpegFrameGrabber("rtsp://192.168.42.1/live")
         grabber.setOption("rtsp_transport", "udp") // UDP connection
         grabber.setOption("buffer_size", "6000000") // Increase buffer size to allow reading full frames
         grabber.setVideoOption("tune", "fastdecode") // Tune for low compute decoding
         grabber.imageScalingFlags = swscale.SWS_FAST_BILINEAR // Set scaling method
 
-        var width: Int? = null
-        var height: Int? = null
         if (resolution == 720) {
-            width = 1280
-            height = 720
+            resolution_x = 1280
+            resolution_y = 720
         } else if (resolution == 480) {
-            width = 640
-            height = 480
+            resolution_x = 640
+            resolution_y = 480
         } else {
             throw Exception("Streaming Exception: Unsupported resolution type!")
         }
 
-        grabber.imageWidth = width
-        grabber.imageHeight = height
+        grabber.imageWidth = resolution_x
+        grabber.imageHeight = resolution_y
 
         // Connect to the drone and start streaming
         try {
@@ -258,7 +270,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         }
 
         // Create the grabber wrapper
-        wrapper = GrabberWrapper(grabber, width, height)
+        wrapper = GrabberWrapper(grabber, resolution_x, resolution_y)
 
         // Start grabbing!
         thread = Thread {
@@ -304,9 +316,111 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     override fun getVideoFrame(): ByteArray? {
         var frame: Frame? = wrapper!!.copyFrame() ?: return null
         val baos = ByteArrayOutputStream()
-        val bmp: Bitmap = converter.convert(frame)
+        val bmp = converter.convert(frame)
         bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos)
         return baos.toByteArray()
+    }
+
+    // Drone tracking
+    @Throws(Exception::class)
+    fun find_intersection(target_direction: Vector3D, altitude_vector: Vector3D): Vector3D {
+        var plane_point = Vector3D(0.0, 0.0, 0.0)
+        var plane_norm = Vector3D(0.0, 0.0, 1.0)
+        if (plane_norm.dotProduct(target_direction).equals(Vector3D.ZERO)) {
+            throw IllegalArgumentException()
+        }
+        var t = (plane_norm.dotProduct(plane_point) - plane_norm.dotProduct(altitude_vector)) / plane_norm.dotProduct(target_direction)
+        return altitude_vector.add(target_direction.scalarMultiply(t))
+    }
+
+    fun getGimbalPitch(): Double {
+        var gimbal_pitch: Double = 0.0
+        drone?.getPeripheral(MainGimbal::class.java) {
+            gimbal_pitch = it!!.getAttitude(MainGimbal.Axis.PITCH)
+        }
+        return gimbal_pitch
+    }
+
+    fun getMovementVectors(yaw: Double, pitch: Double, leash: Double): Vector3D {
+        var gimbal_pitch = getGimbalPitch()
+        var altitude = alt
+        var forward_vec = Vector3D(0.0, 1.0, 0.0)
+        var rotation = Rotation(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR, yaw, 0.0, pitch + gimbal_pitch)
+        var target_direction = rotation.applyTo(forward_vec)
+        var target_vector = find_intersection(target_direction, Vector3D(0.0, 0.0, altitude))
+        Log.d(TAG, "Distance estimate to target is " + target_vector.norm)
+
+        var leash_vec = target_vector.normalize().scalarMultiply(leash)
+        var movement_vector = target_vector.subtract(leash_vec)
+
+        return movement_vector
+    }
+
+    fun calculateOffsets(pixel_x: Int, pixel_y: Int, leash: Double): ArrayList<Double> {
+        var pixel_center_x = resolution_x / 2.0
+        var pixel_center_y = resolution_y / 2.0
+        Log.d("Tracking", "Detection centered at x: " + pixel_center_x + ", y: " + pixel_center_y)
+        var target_yaw_angle = ((pixel_x - pixel_center_x) / pixel_center_x) * (HFOV / 2.0)
+        var target_pitch_angle = ((pixel_y - pixel_center_y) / pixel_center_y) * (VFOV / 2.0)
+        Log.d("Tracking", "Yaw angle: " + target_yaw_angle + ", Pitch angle: " + target_pitch_angle)
+
+        var movement_vector = getMovementVectors(target_yaw_angle, target_pitch_angle, leash)
+        var drone_roll = movement_vector.x
+        var drone_pitch = movement_vector.y
+        Log.d("Tracking", "Roll amount: " + drone_roll + ", Pitch amount: " + drone_pitch)
+
+        var returnVector = ArrayList<Double>()
+        returnVector.add(target_pitch_angle)
+        returnVector.add(target_yaw_angle)
+        returnVector.add(drone_pitch)
+        returnVector.add(drone_roll)
+
+        return returnVector
+    }
+
+    fun gain(gimbal_pitch: Double, drone_yaw: Double, drone_pitch: Double, drone_roll: Double): ArrayList<Double> {
+        var dyaw = (sign(drone_yaw) * (drone_yaw / 3.0).pow(2)).coerceIn(-100.0, 100.0)
+        var dpitch = (sign(drone_pitch) * (drone_pitch / 2.0).pow(2)).coerceIn(-100.0, 100.0)
+        var droll = (sign(drone_roll) * drone_roll.pow(2)).coerceIn(-100.0, 100.0)
+        var gpitch = gimbal_pitch
+
+        var returnVector = ArrayList<Double>()
+        returnVector.add(gpitch)
+        returnVector.add(dyaw)
+        returnVector.add(dpitch)
+        returnVector.add(droll)
+
+        return returnVector
+    }
+
+    fun executePCMD(gimbal_pitch: Double, drone_yaw: Double, drone_pitch: Double, drone_roll: Double) {
+        var returnVector = gain(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
+        var gpitch = returnVector[0]
+        var dyaw = returnVector[1].roundToInt()
+        var dpitch = returnVector[2].roundToInt()
+        var droll = returnVector[3].roundToInt()
+
+        setGimbalPose(0.0, gpitch, 0.0)
+        pilotingItfRef?.get()?.let {
+            it.setYawRotationSpeed(dyaw)
+            it.setPitch(dpitch)
+            it.setRoll(droll)
+        }
+    }
+
+    @Throws(Exception::class)
+    override fun trackTarget(box: Vector<Double>, leash: Double) {
+        Log.d(TAG, "Tracking target...")
+        // Find the pixel center
+        var pixel_x = ((((box[3] - box[1]) / 2.0) + box[1]) * resolution_x).roundToInt()
+        var pixel_y = ((1 - (((box[2] - box[0]) / 2.0) + box[0])) * resolution_y).roundToInt()
+        // Get offsets
+        var offsets = calculateOffsets(pixel_x, pixel_y, leash)
+        var gpitch = offsets[0]
+        var dyaw = offsets[1]
+        var dpitch = offsets[2]
+        var droll = offsets[3]
+        executePCMD(gpitch, dyaw, dpitch, droll)
     }
 
     @Throws(Exception::class)
@@ -324,12 +438,14 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun rotateTo(theta: Double?) {
-
+        throw NotImplementedError()
     }
 
     @Throws(Exception::class)
     override fun setGimbalPose(yaw_theta: Double?, pitch_theta: Double?, roll_theta: Double?) {
-
+        drone?.getPeripheral(MainGimbal::class.java) {
+            it?.control(MainGimbal.ControlMode.POSITION, yaw_theta, pitch_theta, roll_theta)
+        }
     }
 
     @Throws(Exception::class)
@@ -351,16 +467,15 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     @Throws(Exception::class)
-    override fun getName(): String? {
+    override fun getName(): String {
         var name : String = "Unnamed"
         if (drone?.name != null)
             name = drone!!.name
         return name
     }
 
-    override fun getLat(): Double? {
+    override fun getLat(): Double {
         var lat : Double = 0.0
-        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.latitude != null) {
                 lat = it.lastKnownLocation()!!.latitude
@@ -369,9 +484,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         return lat
     }
 
-    override fun getLon(): Double? {
+    override fun getLon(): Double {
         var lon : Double = 0.0
-        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.longitude != null) {
                 lon = it.lastKnownLocation()!!.longitude
@@ -380,15 +494,36 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         return lon
     }
 
-    override fun getAlt(): Double? {
+    override fun getAlt(): Double {
         var alt : Double = 0.0
-        var countDownLatch = CountDownLatch(1)
         drone?.getInstrument(Gps::class.java) {
             if (it?.lastKnownLocation()?.altitude != null) {
                 alt = it.lastKnownLocation()!!.altitude
             }
         }
         return alt
+    }
+
+    override fun hover() {
+        val countDownLatch = CountDownLatch(1)
+        pilotingItfRef?.get()?.let { itf ->
+            when (itf.state) {
+                Activable.State.UNAVAILABLE -> {
+                    Log.d(TAG, "Can't do anything.")
+                }
+                Activable.State.IDLE -> {
+                    Log.d(TAG, "Activating itf.")
+                    itf.activate()
+                }
+                Activable.State.ACTIVE -> {
+                    Log.d(TAG, "Hovering.")
+                    itf.hover()
+                }
+            }
+
+            countDownLatch.countDown()
+        }
+        countDownLatch.await()
     }
 
     @Throws(Exception::class)
@@ -401,26 +536,6 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     @Throws(Exception::class)
     override fun kill() {
         cancel = true
-        val countDownLatch = CountDownLatch(1)
-        pilotingItfRef?.get()?.let { itf ->
-            when (itf.state) {
-                Activable.State.UNAVAILABLE -> {
-                    Log.d(TAG, "Can't do anything.")
-                }
-                Activable.State.IDLE -> {
-                    Log.d(TAG, "Activating itf.")
-                    itf.activate()
-                    itf.hover()
-                }
-                Activable.State.ACTIVE -> {
-                    Log.d(TAG, "Hovering.")
-                    itf.hover()
-                }
-            }
-
-            countDownLatch.countDown()
-        }
-
-        countDownLatch.await()
+        hover()
     }
 }
