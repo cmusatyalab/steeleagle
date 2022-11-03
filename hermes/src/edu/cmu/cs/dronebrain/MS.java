@@ -13,7 +13,6 @@
  limitations under the License. 
 */
 
-
 package edu.cmu.cs.dronebrain;
 
 import java.lang.Thread;
@@ -25,7 +24,6 @@ import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Task;
 
 import edu.cmu.cs.dronebrain.TrackingTask;
-
 
 public class MS extends FlightScript {
     
