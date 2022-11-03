@@ -379,9 +379,9 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     fun gain(gimbal_pitch: Double, drone_yaw: Double, drone_pitch: Double, drone_roll: Double): ArrayList<Double> {
-        var dyaw = (sign(drone_yaw) * (drone_yaw / 3.0).pow(2)).coerceIn(-100.0, 100.0)
-        var dpitch = (sign(drone_pitch) * (drone_pitch / 2.0).pow(2)).coerceIn(-100.0, 100.0)
-        var droll = (sign(drone_roll) * drone_roll.pow(2)).coerceIn(-100.0, 100.0)
+        var dyaw = (drone_yaw).coerceIn(-100.0, 100.0)
+        var dpitch = (drone_pitch / 2.0).coerceIn(-100.0, 100.0)
+        var droll = (drone_roll / 3.0).coerceIn(-100.0, 100.0)
         var gpitch = gimbal_pitch
 
         var returnVector = ArrayList<Double>()

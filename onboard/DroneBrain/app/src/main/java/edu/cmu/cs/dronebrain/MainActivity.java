@@ -34,6 +34,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
@@ -100,7 +101,13 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     public void accept(ResultWrapper resultWrapper) {
-        Log.d(TAG, "COMMAND producer: " + resultWrapper.getResultProducerName().getValue());
+        // Forward OpenScout results to the cloudlet so that it can process them
+        if (cloudlet != null && (resultWrapper.getResultProducerName().getValue().equals("openscout-object")
+                || resultWrapper.getResultProducerName().getValue().equals("openscout-face"))) {
+            cloudlet.processResults(resultWrapper);
+            return;
+        }
+
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from COMMAND.");
             return;

@@ -21,12 +21,12 @@ import edu.cmu.cs.gabriel.protocol.Protos.PayloadType;
 import edu.cmu.cs.gabriel.protocol.Protos.ResultWrapper;
 import edu.cmu.cs.steeleagle.Protos.Extras;
 
-public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
+public class ElijahCloudlet implements CloudletItf {
 
     String TAG = "ElijahCloudlet";
     ServerComm comm;
     Thread streamingThread = null;
-    String SOURCE = "openscout"; // Command cognitive engine will handle these image frames
+    String SOURCE = "command"; // Command cognitive engine will handle these image frames
     String detections = null; // JSON string storing the previous seen detections
     String detectionModel = "coco";
 
@@ -35,8 +35,8 @@ public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
     }
 
     @Override
-    public void accept(ResultWrapper resultWrapper) {
-        Log.d(TAG, "OPENSCOUT producer: " + resultWrapper.getResultProducerName().getValue());
+    public void processResults(ResultWrapper resultWrapper) {
+        Log.d(TAG, "Results processed by OPENSCOUT with producer: " + resultWrapper.getResultProducerName().getValue());
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from OPENSCOUT.");
             return;
@@ -46,8 +46,8 @@ public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
         try {
             Extras extras = Extras.parseFrom(resultWrapper.getExtras().getValue());
             ByteString r = result.getPayload();
-            Log.i(TAG, r.toString());
-            writeDets(r.toString());
+            Log.i(TAG, r.toString("utf-8"));
+            writeDets(r.toString("utf-8"));
         } catch (InvalidProtocolBufferException e) {
             Log.e(TAG, "Protobuf Error", e);
         } catch (Exception e) {
@@ -63,14 +63,18 @@ public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
 
     private Vector<Double> readDets(String c) throws JSONException {
         JSONArray dets = copyDets();
-
+        Log.d(TAG, "READ CALLED: " + (dets == null));
         if (dets == null)
             return null;
+
+        Log.d(TAG, "Class we are looking for: " + c);
 
         for (int i = 0; i < dets.length(); i++) {
             JSONObject jsonobject = dets.getJSONObject(i);
             String cla = jsonobject.getString("class");
-            if (cla == c) { // We found the class we want!
+            Log.d(TAG, "Iteration " + i + " is class " + cla);
+            if (cla.equals(c)) { // We found the class we want!
+                Log.d(TAG, "Got the box!!!!");
                 JSONArray bbox = jsonobject.getJSONArray("box");
                 Vector<Double> vec = new Vector<Double>();
                 vec.add(bbox.getDouble(0));
@@ -84,11 +88,15 @@ public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
         return null;
     }
 
-    private synchronized JSONArray copyDets() throws JSONException {
+    private synchronized JSONArray copyDets() {
         if (detections != null) {
-            JSONArray dets = new JSONArray(detections);
-            detections = null; // Invalidate the detection.
-            return dets;
+            try {
+                JSONArray dets = new JSONArray(detections);
+                detections = null; // Invalidate the detection.
+                return dets;
+            } catch (Exception e) {
+                return null;
+            }
         }
         else {
             return null;
@@ -97,7 +105,6 @@ public class ElijahCloudlet implements CloudletItf, Consumer<ResultWrapper> {
 
     private synchronized void writeDets(String dets) {
         detections = dets;
-        Log.d(TAG, "Detections " + dets);
     }
 
     @Override
