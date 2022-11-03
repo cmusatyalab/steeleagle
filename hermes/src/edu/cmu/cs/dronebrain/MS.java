@@ -13,10 +13,11 @@
  limitations under the License. 
 */
 
-
 package edu.cmu.cs.dronebrain;
 
 import java.lang.Thread;
+import java.util.PriorityQueue;
+import java.util.Comparator;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
@@ -25,34 +26,49 @@ import edu.cmu.cs.dronebrain.interfaces.Task;
 import edu.cmu.cs.dronebrain.T1;
 import edu.cmu.cs.dronebrain.T2;
 
-
 public class MS extends FlightScript {
-    
-    @Override
-    public void run() {
-	taskQueue.add(new T1(drone, cloudlet));
-	taskQueue.add(new T2(drone, cloudlet));	
-	try {
-	    customExecLoop();
-	} catch (Exception e) {
-        
+
+	@Override
+	public void run() {
+		Comparator<Task> comp = new Comparator<Task>() {
+			@Override
+			public int compare(Task t1, Task t2) {
+				return 0;
+			}
+		};
+		try {
+			drone.connect();
+			drone.takeOff();
+			taskQueue = new PriorityQueue<Task>(comp);
+			taskQueue.add(new T1(drone, cloudlet));
+			taskQueue.add(new T2(drone, cloudlet));
+			customExecLoop();
+		} catch (Exception e) {
+
+		}
 	}
-    }
-    
-    @Override
-    public void pause() {}
 
-    private void customExecLoop() throws Exception {
-	exec(taskQueue.remove());
-	Thread.sleep(5000);
-	currentTask.pause();
-	taskThread.interrupt();
-	taskThread.join();
-	exec(taskQueue.remove());
-    }
+	@Override
+	public void pause() {
+	}
 
-    private void customExec(Task newTask) throws Exception {
-	taskThread = new Thread(newTask);
-        taskThread.start();
-    }
+	private void customExecLoop() throws Exception {
+		System.out.println("customExec on T1");
+		customExec(taskQueue.remove());
+		System.out.println("About to sleep...");
+		Thread.sleep(3000);
+		System.out.println("Pausing currentTask");
+		currentTask.pause();
+		System.out.println("interrupt/join");
+		taskThread.interrupt();
+		taskThread.join();
+		System.out.println("customExec on T2");
+		customExec(taskQueue.remove());
+	}
+
+	private void customExec(Task newTask) throws Exception {
+		taskThread = new Thread(newTask);
+		taskThread.start();
+		currentTask = newTask;
+	}
 }
