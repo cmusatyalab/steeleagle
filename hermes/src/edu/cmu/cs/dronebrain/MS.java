@@ -17,42 +17,38 @@
 package edu.cmu.cs.dronebrain;
 
 import java.lang.Thread;
+import java.util.PriorityQueue;
+import java.util.Comparator;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Task;
 
-import edu.cmu.cs.dronebrain.T1;
-import edu.cmu.cs.dronebrain.T2;
+import edu.cmu.cs.dronebrain.TrackingTask;
 
 
 public class MS extends FlightScript {
     
     @Override
     public void run() {
-	taskQueue.add(new T1(drone, cloudlet));
-	taskQueue.add(new T2(drone, cloudlet));	
-	try {
-	    customExecLoop();
-	} catch (Exception e) {
+        Comparator<Task> comp = new Comparator<Task>() {
+            @Override
+            public int compare(Task t1, Task t2) {
+                return 0;
+            }
+        };
+        taskQueue = new PriorityQueue<Task>();
+	    taskQueue.add(new TrackingTask(drone, cloudlet));
+	    try {
+            drone.connect();
+            drone.startStreaming(480);
+            cloudlet.startStreaming(drone, "coco", 1);
+	        execLoop();
+	    } catch (Exception e) {
         
-	}
+	    }
     }
     
     @Override
     public void pause() {}
-
-    private void customExecLoop() throws Exception {
-	exec(taskQueue.remove());
-	Thread.sleep(5000);
-	currentTask.pause();
-	taskThread.interrupt();
-	taskThread.join();
-	exec(taskQueue.remove());
-    }
-
-    private void customExec(Task newTask) throws Exception {
-	taskThread = new Thread(newTask);
-        taskThread.start();
-    }
 }
