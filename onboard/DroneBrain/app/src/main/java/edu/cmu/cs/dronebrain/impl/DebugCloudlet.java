@@ -8,14 +8,13 @@ import java.util.Vector;
 
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
-import edu.cmu.cs.gabriel.protocol.Protos;
 
 public class DebugCloudlet implements CloudletItf {
 
     String TAG = "DebugCloudlet";
 
     @Override
-    public void processResults(Protos.ResultWrapper resultWrapper) {}
+    public void processResults(Object resultWrapper) {}
 
     @Override
     public void startStreaming(DroneItf drone, String model, Integer sample_rate) {

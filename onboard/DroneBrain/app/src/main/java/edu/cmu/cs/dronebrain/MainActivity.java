@@ -24,6 +24,12 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.parrot.drone.groundsdk.ManagedGroundSdk;
 
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_java;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,10 +37,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
@@ -79,6 +87,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     /** Log tag **/
     String TAG = "DroneBrain";
     String SOURCE = "command";
+    UUID uuid = UUID.randomUUID();
 
 
     // Based on
@@ -171,6 +180,17 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     public void onAvailable(Network network) {
                         /** Assign LTE network object **/
                         LTEnetwork = network;
+                        /*
+                        try {
+                            URL url = new URL("www.google.com");
+                            LTEnetwork.openConnection(url);
+                            Log.d(TAG, "Successfully performed GET request test!");
+                        } catch (MalformedURLException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        */
                         lteLatch.countDown();
                         Log.d(TAG, "LTE network successfully acquired");
                     }
@@ -251,11 +271,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
-                Location l = null;
                 try {
                     if (drone != null) {
                         lb.setLatitude(drone.getLat());
                         lb.setLongitude(drone.getLon());
+                        lb.setAltitude(drone.getAlt());
                         extrasBuilder.setLocation(lb);
                     } else {
                         double[] gps = getWatchGPS();
@@ -264,7 +284,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                         extrasBuilder.setLocation(lb);
                     }
 
-                    extrasBuilder.setDroneId(Build.ID);
+                    extrasBuilder.setDroneId(uuid.toString());
 
                     if(heartbeatsSent < 2) {
                         extrasBuilder.setRegistering(true);
@@ -345,6 +365,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onResume() {
         super.onResume();
+        Loader.load(opencv_java.class);
         heartbeatsSent = 0;
     }
 
@@ -357,7 +378,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     }
 
     private CloudletItf getCloudlet() {
-        return new ElijahCloudlet(serverComm);
+        return new ElijahCloudlet(serverComm, uuid);
     }
 
     /** This needs to change in future to pull from CNC module **/
@@ -392,7 +413,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     protected void onDestroy() {
-        sdk.close();
         super.onDestroy();
     }
 }

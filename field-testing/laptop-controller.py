@@ -351,7 +351,7 @@ if __name__ == "__main__":
     time.sleep(1)
     drone.connect()
     time.sleep(1)
-    streamer = OlympeStreaming(drone, model='robomaster')
+    streamer = OlympeStreaming(drone, model='coco')
     streamer.start()
     control = KeyboardCtrl()
     while not control.quit():

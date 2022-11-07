@@ -15,7 +15,6 @@ public class TrackingTask extends Task {
     public void run() {
         try {
             String cla = "car";
-            drone.hover();
             System.out.println("About to enter while loop.");
             while (true) {
                 Vector<Double> box = cloudlet.getDetections(cla);

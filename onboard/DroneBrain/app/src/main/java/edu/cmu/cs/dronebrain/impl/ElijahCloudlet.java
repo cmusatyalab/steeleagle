@@ -11,15 +11,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Date;
 import java.util.Vector;
-import java.util.function.Consumer;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.gabriel.client.comm.ServerComm;
 import edu.cmu.cs.gabriel.protocol.Protos.InputFrame;
 import edu.cmu.cs.gabriel.protocol.Protos.PayloadType;
 import edu.cmu.cs.gabriel.protocol.Protos.ResultWrapper;
+import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
+import java.util.UUID;
 
 public class ElijahCloudlet implements CloudletItf {
 
@@ -29,13 +31,20 @@ public class ElijahCloudlet implements CloudletItf {
     String SOURCE = "command"; // Command cognitive engine will handle these image frames
     String detections = null; // JSON string storing the previous seen detections
     String detectionModel = "coco";
+    DroneItf drone = null;
+    UUID uuid = null;
 
-    public ElijahCloudlet(ServerComm s) {
+    Long first_send_frame = null;
+    Long first_receive_det = null;
+
+    public ElijahCloudlet(ServerComm s, UUID id) {
+        uuid = id;
         comm = s;
     }
 
     @Override
-    public void processResults(ResultWrapper resultWrapper) {
+    public void processResults(Object object) {
+        ResultWrapper resultWrapper = (ResultWrapper) object;
         Log.d(TAG, "Results processed by OPENSCOUT with producer: " + resultWrapper.getResultProducerName().getValue());
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from OPENSCOUT.");
@@ -48,6 +57,14 @@ public class ElijahCloudlet implements CloudletItf {
             ByteString r = result.getPayload();
             Log.i(TAG, r.toString("utf-8"));
             writeDets(r.toString("utf-8"));
+            if (first_receive_det == null) {
+                JSONArray dets = copyDets();
+                if (dets.length() > 0) {
+                    Date d = new Date();
+                    first_receive_det = d.getTime();
+                    Log.d("[TIMING]", "First received detection " + first_receive_det);
+                }
+            }
         } catch (InvalidProtocolBufferException e) {
             Log.e(TAG, "Protobuf Error", e);
         } catch (Exception e) {
@@ -63,18 +80,14 @@ public class ElijahCloudlet implements CloudletItf {
 
     private Vector<Double> readDets(String c) throws JSONException {
         JSONArray dets = copyDets();
-        Log.d(TAG, "READ CALLED: " + (dets == null));
         if (dets == null)
             return null;
-
-        Log.d(TAG, "Class we are looking for: " + c);
+        Log.d(TAG, "Dets: " + dets);
 
         for (int i = 0; i < dets.length(); i++) {
             JSONObject jsonobject = dets.getJSONObject(i);
             String cla = jsonobject.getString("class");
-            Log.d(TAG, "Iteration " + i + " is class " + cla);
             if (cla.equals(c)) { // We found the class we want!
-                Log.d(TAG, "Got the box!!!!");
                 JSONArray bbox = jsonobject.getJSONArray("box");
                 Vector<Double> vec = new Vector<Double>();
                 vec.add(bbox.getDouble(0));
@@ -95,6 +108,7 @@ public class ElijahCloudlet implements CloudletItf {
                 detections = null; // Invalidate the detection.
                 return dets;
             } catch (Exception e) {
+                detections = null;
                 return null;
             }
         }
@@ -108,8 +122,9 @@ public class ElijahCloudlet implements CloudletItf {
     }
 
     @Override
-    public void startStreaming(DroneItf drone, String model, Integer sample_rate) {
+    public void startStreaming(DroneItf d, String model, Integer sample_rate) {
         detectionModel = model;
+        drone = d;
         streamingThread = new Thread(() -> {
             while (true) {
                 try {
@@ -143,11 +158,27 @@ public class ElijahCloudlet implements CloudletItf {
         if (frame == null)
             return;
         try {
+            if (first_send_frame == null) {
+                Date d = new Date();
+                first_send_frame = d.getTime();
+                Log.d("[TIMING]", "First sent frame " + first_send_frame);
+            }
             comm.sendSupplier(() -> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
-                extrasBuilder.setDroneId(Build.ID);
+                extrasBuilder.setDroneId(uuid.toString());
                 extrasBuilder.setDetectionModel(detectionModel);
+                Protos.Location.Builder lb = Protos.Location.newBuilder();
+                try {
+                    lb.setLongitude(drone.getLon());
+                    lb.setLatitude(drone.getLat());
+                    lb.setAltitude(drone.getAlt());
+                } catch (Exception e) {
+                    lb.setLongitude(0);
+                    lb.setLatitude(0);
+                    lb.setAltitude(0);
+                }
+                extrasBuilder.setLocation(lb);
                 extras = extrasBuilder.build();
 
                 return InputFrame.newBuilder()

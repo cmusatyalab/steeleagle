@@ -36,11 +36,15 @@ public class MS extends FlightScript {
             }
         };
         taskQueue = new PriorityQueue<Task>();
-	    taskQueue.add(new TrackingTask(drone, cloudlet));
+	    //taskQueue.add(new TrackingTask(drone, cloudlet));
 	    try {
             drone.connect();
+            //drone.takeOff();
+            //drone.moveBy(5.0, 15.0, 0.0);
+            //drone.rotateBy(-90.0);
+            //drone.setGimbalPose(0.0, -10.0, 0.0);
             drone.startStreaming(480);
-            cloudlet.startStreaming(drone, "coco", 1);
+            cloudlet.startStreaming(drone, "coco", 3);
 	        execLoop();
 	    } catch (Exception e) {
         
