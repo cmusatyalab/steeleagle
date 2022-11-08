@@ -28,7 +28,6 @@ import org.bytedeco.opencv.opencv_java
 import org.opencv.core.MatOfByte
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.InputStream
-import java.util.Date
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlin.math.roundToInt

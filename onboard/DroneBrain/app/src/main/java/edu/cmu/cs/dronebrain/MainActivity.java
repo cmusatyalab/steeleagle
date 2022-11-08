@@ -176,25 +176,14 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         NetworkRequest.Builder req = new NetworkRequest.Builder();
         req.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
         cm.requestNetwork(req.build(), new ConnectivityManager.NetworkCallback() {
-                    @Override
-                    public void onAvailable(Network network) {
-                        /** Assign LTE network object **/
-                        LTEnetwork = network;
-                        /*
-                        try {
-                            URL url = new URL("www.google.com");
-                            LTEnetwork.openConnection(url);
-                            Log.d(TAG, "Successfully performed GET request test!");
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        */
-                        lteLatch.countDown();
-                        Log.d(TAG, "LTE network successfully acquired");
-                    }
-                }
+            @Override
+            public void onAvailable(Network network) {
+                /** Assign LTE network object **/
+                LTEnetwork = network;
+                lteLatch.countDown();
+                Log.d(TAG, "LTE network successfully acquired");
+            }
+        }
         );
         try {
             lteLatch.await();
@@ -347,6 +336,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onStart(){
         super.onStart();
+        Loader.load(opencv_java.class);
     }
 
     @Override
@@ -365,7 +355,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onResume() {
         super.onResume();
-        Loader.load(opencv_java.class);
         heartbeatsSent = 0;
     }
 
