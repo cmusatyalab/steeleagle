@@ -1,9 +1,6 @@
 package edu.cmu.cs.dronebrain.impl;
 
 import android.util.Log;
-
-import org.json.JSONArray;
-
 import java.util.Vector;
 
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;

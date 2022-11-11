@@ -1,5 +1,6 @@
 package edu.cmu.cs.dronebrain;
 
+import java.lang.Thread;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.Task;
@@ -16,8 +17,8 @@ public class AltitudeTask extends Task {
     @Override
     public void run() {
         try {
-            drone.moveBy(0.0, 0.0, -1.0 * altitude);
             drone.setGimbalPose(0.0, -45.0, 0.0);
+            drone.moveBy(0.0, 0.0, -1.0 * altitude);
         } catch (Exception e) {}
     }
 

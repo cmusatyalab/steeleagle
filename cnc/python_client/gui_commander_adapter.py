@@ -266,8 +266,8 @@ class GUICommanderAdapter(customtkinter.CTk):
         answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
                 " from people and that the PIC is ready to takeover in case of failure.")
         if answer:
-            SCP_URL = "teiszler@cloudlet040.elijah.cs.cmu.edu:/var/www/html/scripts/" + "mission.dex"
-            FLIGHT_URL = "http://cloudlet040.elijah.cs.cmu.edu/scripts/" + "mission.dex" 
+            SCP_URL = "teiszler@128.2.212.60:/var/www/html/scripts/" + "mission.dex"
+            FLIGHT_URL = "http://128.2.212.60/scripts/" + "mission.dex" 
             subprocess.run(["scp", filename, SCP_URL])
             logger.info("Sent file {0} to the cloudlet".format(filename))
             command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}

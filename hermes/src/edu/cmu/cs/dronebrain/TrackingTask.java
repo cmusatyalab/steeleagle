@@ -4,6 +4,7 @@ import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.Task;
 import java.util.Vector;
+import java.lang.Thread;
 
 public class TrackingTask extends Task {
     
@@ -14,16 +15,15 @@ public class TrackingTask extends Task {
     @Override
     public void run() {
         try {
-            String cla = "car";
-            System.out.println("About to enter while loop.");
-            while (true) {
+            String cla = "sports ball";
+            while (true && !Thread.interrupted()) {
                 Vector<Double> box = cloudlet.getDetections(cla);
-                if (box != null) {
-                    System.out.println("Got a box!");
-                    drone.trackTarget(box, 10.0);
-                }
+                drone.trackTarget(box, 2.0);
+                Thread.sleep(50);
             }            
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            return;
+        }
     }
 
     @Override

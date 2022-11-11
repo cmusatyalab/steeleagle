@@ -1,9 +1,7 @@
 package edu.cmu.cs.dronebrain;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -11,7 +9,6 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.StrictMode;
@@ -24,12 +21,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.parrot.drone.groundsdk.ManagedGroundSdk;
 
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_java;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -37,11 +28,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -132,9 +121,8 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     Log.i(TAG, "Killswitch signaled from commander.");
                     if (MS != null) {
                         MS.kill();
-                        //scriptThread.interrupt();
-                        Log.i(TAG, "Interrupting script thread.");
                     }
+                    Log.d(TAG, "Destroying app!");
                     finish();
                 }
 
@@ -176,14 +164,14 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         NetworkRequest.Builder req = new NetworkRequest.Builder();
         req.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
         cm.requestNetwork(req.build(), new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(Network network) {
-                /** Assign LTE network object **/
-                LTEnetwork = network;
-                lteLatch.countDown();
-                Log.d(TAG, "LTE network successfully acquired");
-            }
-        }
+                    @Override
+                    public void onAvailable(Network network) {
+                        /** Assign LTE network object **/
+                        LTEnetwork = network;
+                        lteLatch.countDown();
+                        Log.d(TAG, "LTE network successfully acquired");
+                    }
+                }
         );
         try {
             lteLatch.await();
@@ -260,11 +248,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
+                Location l = null;
                 try {
                     if (drone != null) {
                         lb.setLatitude(drone.getLat());
                         lb.setLongitude(drone.getLon());
-                        lb.setAltitude(drone.getAlt());
                         extrasBuilder.setLocation(lb);
                     } else {
                         double[] gps = getWatchGPS();
@@ -336,7 +324,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     protected void onStart(){
         super.onStart();
-        Loader.load(opencv_java.class);
     }
 
     @Override
@@ -402,6 +389,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     protected void onDestroy() {
+        sdk.close();
         super.onDestroy();
     }
 }
