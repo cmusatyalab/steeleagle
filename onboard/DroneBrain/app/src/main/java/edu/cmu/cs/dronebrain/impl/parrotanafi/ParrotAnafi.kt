@@ -348,8 +348,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     fun getMovementVectors(yaw: Double, pitch: Double, leash: Double): Vector3D {
         var gimbal_pitch = getGimbalPitch()
-        //var altitude = alt
-        var altitude = 1.1938
+        var altitude = alt
         var forward_vec = Vector3D(0.0, 1.0, 0.0)
         var rotation = Rotation(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR, yaw * (PI / 180.0), 0.0, (pitch + gimbal_pitch) * (PI / 180.0))
         var target_direction = rotation.applyTo(forward_vec)
@@ -408,11 +407,11 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         var dpitch = returnVector[1].roundToInt()
         var droll = returnVector[2].roundToInt()
 
-        //if (gpitch != null) setGimbalPose(0.0, ((gpitch / 1.5) + getGimbalPitch()).coerceIn(-90.0, 90.0), 0.0)
+        if (gpitch != null) setGimbalPose(0.0, ((gpitch / 1.5) + getGimbalPitch()).coerceIn(-90.0, 90.0), 0.0)
         pilotingItfRef?.get()?.let {
-        //    it.setYawRotationSpeed(dyaw)
-        //    it.setPitch(dpitch)
-        //    it.setRoll(droll)
+            it.setYawRotationSpeed(dyaw)
+            it.setPitch(dpitch)
+            it.setRoll(droll)
         }
     }
 
