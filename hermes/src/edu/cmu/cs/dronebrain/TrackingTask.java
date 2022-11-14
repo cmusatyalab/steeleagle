@@ -15,10 +15,10 @@ public class TrackingTask extends Task {
     @Override
     public void run() {
         try {
-            String cla = "sports ball";
+            String cla = "person";
             while (true && !Thread.interrupted()) {
                 Vector<Double> box = cloudlet.getDetections(cla);
-                drone.trackTarget(box, 2.0);
+                drone.trackTarget(box, 8.0);
                 Thread.sleep(50);
             }            
         } catch (Exception e) {

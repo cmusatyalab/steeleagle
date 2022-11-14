@@ -5,6 +5,7 @@ import android.util.Log
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
+import com.parrot.drone.groundsdk.device.instrument.Altimeter
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
 import com.parrot.drone.groundsdk.device.instrument.Gps
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
@@ -349,11 +350,12 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     fun getMovementVectors(yaw: Double, pitch: Double, leash: Double): Vector3D {
         var gimbal_pitch = getGimbalPitch()
         var altitude = alt
+        Log.d("Tracking", "Altitude: " + altitude)
         var forward_vec = Vector3D(0.0, 1.0, 0.0)
         var rotation = Rotation(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR, yaw * (PI / 180.0), 0.0, (pitch + gimbal_pitch) * (PI / 180.0))
         var target_direction = rotation.applyTo(forward_vec)
         var target_vector = find_intersection(target_direction, Vector3D(0.0, 0.0, altitude))
-        Log.d(TAG, "Distance estimate to target is " + target_vector.norm)
+        Log.d("Tracking", "Distance estimate to target is " + target_vector.norm)
 
         var leash_vec: Vector3D?
         if (target_vector.norm > 0.0)
@@ -388,8 +390,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     fun gain(drone_yaw: Double, drone_pitch: Double, drone_roll: Double): ArrayList<Double> {
-        var dyaw = (drone_yaw * 2.5).coerceIn(-100.0, 100.0)
-        var dpitch = (drone_pitch).coerceIn(-100.0, 100.0)
+        var dyaw = (drone_yaw * 2.6).coerceIn(-100.0, 100.0)
+        var dpitch = (drone_pitch * 1.1).coerceIn(-100.0, 100.0)
         var droll = (drone_roll).coerceIn(-100.0, 100.0)
 
         var returnVector = ArrayList<Double>()
@@ -410,7 +412,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         if (gpitch != null) setGimbalPose(0.0, ((gpitch / 1.5) + getGimbalPitch()).coerceIn(-90.0, 90.0), 0.0)
         pilotingItfRef?.get()?.let {
             it.setYawRotationSpeed(dyaw)
-            it.setPitch(dpitch)
+            it.setPitch(-1 * dpitch)
             it.setRoll(droll)
         }
     }
@@ -430,8 +432,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             droll = offsets[3]
         } else {
             dyaw /= 1.02
-            dpitch /= 1.75
-            droll /= 2.0
+            dpitch /= 1.01
+            droll /= 1.01
         }
 
         executePCMD(gpitch, dyaw, dpitch, droll)
@@ -510,10 +512,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     override fun getAlt(): Double {
         var alt : Double = 0.0
-        drone?.getInstrument(Gps::class.java) {
-            if (it?.lastKnownLocation()?.altitude != null) {
-                alt = it.lastKnownLocation()!!.altitude
-            }
+        drone?.getInstrument(Altimeter::class.java) {
+            alt = it!!.takeOffRelativeAltitude
         }
         return alt
     }

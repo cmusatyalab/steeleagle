@@ -41,11 +41,11 @@ public class MS extends FlightScript {
 	    taskQueue.add(new TrackingTask(drone, cloudlet));
 	    try {
             drone.connect();
-            //drone.takeOff();
+            drone.takeOff();
             drone.startStreaming(480);
             cloudlet.startStreaming(drone, "coco", 1);
-            //drone.moveBy(0.0, 0.0, -5.0);
-            drone.setGimbalPose(0.0, -45.0, 0.0);
+            drone.moveBy(0.0, 0.0, -5.0);
+            drone.setGimbalPose(0.0, -30.0, 0.0);
 	        execLoop();
 	    } catch (Exception e) {
             return;        
