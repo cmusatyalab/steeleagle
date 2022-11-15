@@ -34,8 +34,6 @@ public abstract class FlightScript implements Runnable {
 
     // Kills this mission. Halts the drone and flushes the task queue.
     public void kill() throws Exception {
-        taskQueue.clear();
-        taskThread.interrupt();
         drone.kill();
     }
 

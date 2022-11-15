@@ -23,6 +23,7 @@ import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Task;
 
+import edu.cmu.cs.dronebrain.TrackingTask;
 import edu.cmu.cs.dronebrain.AltitudeTask;
 
 public class MS extends FlightScript {
@@ -36,15 +37,18 @@ public class MS extends FlightScript {
             }
         };
         taskQueue = new PriorityQueue<Task>();
-	    taskQueue.add(new AltitudeTask(drone, cloudlet, 10.0));
+	    //taskQueue.add(new AltitudeTask(drone, cloudlet, 15.0));
+	    taskQueue.add(new TrackingTask(drone, cloudlet));
 	    try {
             drone.connect();
             drone.takeOff();
             drone.startStreaming(480);
-            cloudlet.startStreaming(drone, "robomaster", 1);
+            cloudlet.startStreaming(drone, "coco", 1);
+            drone.moveBy(0.0, 0.0, -5.0);
+            drone.setGimbalPose(0.0, -30.0, 0.0);
 	        execLoop();
 	    } catch (Exception e) {
-        
+            return;        
 	    }
     }
     
