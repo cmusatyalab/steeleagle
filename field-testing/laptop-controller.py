@@ -1,5 +1,5 @@
 import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD, moveBy
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged
 from olympe.messages.gimbal import set_target, attitude
 from olympe.enums.gimbal import control_mode
@@ -205,7 +205,7 @@ class KeyboardCtrl(Listener):
 
 
 class OlympeStreaming(threading.Thread):
-    def __init__(self, drone, sample_rate=3, model='robomaster'):
+    def __init__(self, drone, sample_rate=6, model='coco'):
         self.drone = drone
         self.sample_rate = sample_rate
         self.model = model
@@ -360,7 +360,7 @@ if __name__ == "__main__":
         elif control.landing():
             drone(Landing())
         if control.start_track():
-            tracker = dynamic.DynamicLeashTracker(drone, 15.0)
+            tracker = dynamic.DynamicLeashTracker(drone, 17.0)
             tracker.start()
             tracking = True
             print("Starting track!")

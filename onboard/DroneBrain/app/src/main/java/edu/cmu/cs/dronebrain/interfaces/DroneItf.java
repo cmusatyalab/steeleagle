@@ -1,5 +1,6 @@
 package edu.cmu.cs.dronebrain.interfaces;
 
+import java.util.ArrayList;
 import java.util.Vector;
 
 public interface DroneItf {
@@ -18,7 +19,10 @@ public interface DroneItf {
     void rotateTo(Double theta) throws Exception;
     void setGimbalPose(Double yaw_theta, Double pitch_theta, Double roll_theta) throws Exception;
     void takePhoto() throws Exception;
+    // TODO: Remove this, it's for testing only.
+    ArrayList<Double> calculateOffsets(Integer pixel_x, Integer pixel_y, Double leash);
     void trackTarget(Vector<Double> box, Double leash) throws Exception;
+    void lookAtTarget(Vector<Double> box) throws Exception;
     void getStatus() throws Exception;
     String getName() throws Exception;
     Double getLat() throws Exception;

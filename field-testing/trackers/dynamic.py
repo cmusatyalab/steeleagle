@@ -1,7 +1,7 @@
 import olympe
 from olympe.messages.ardrone3.Piloting import PCMD
 from olympe.messages.ardrone3.PilotingState import AltitudeChanged
-from olympe.messages.gimbal import set_target, attitude
+from olympe.messages.gimbal import set_target, attitude, set_max_speed
 from olympe.enums.gimbal import control_mode
 import threading
 import time
@@ -12,8 +12,9 @@ from scipy.spatial.transform import Rotation as R
 
 
 class DynamicLeashTracker(threading.Thread):
-    def __init__(self, drone, leash=10.0):
+    def __init__(self, drone, leash=10.0, hysteresis=True):
         self.drone = drone
+        self.drone(set_max_speed(0, 10.0, 45.0, 10.0))
         self.leash = leash
         self.context = zmq.Context()
         self.sub_socket = self.context.socket(zmq.SUB)
@@ -23,6 +24,9 @@ class DynamicLeashTracker(threading.Thread):
         self.pixel_center = (self.image_res[0] / 2, self.image_res[1] / 2)
         self.HFOV = 69
         self.VFOV = 43
+        self.prev_center = None
+        self.prev_center_ts = None
+        self.hysteresis = hysteresis
         super().__init__()
 
     def find_intersection(self, target_dir, target_insct):
@@ -62,14 +66,23 @@ class DynamicLeashTracker(threading.Thread):
 
         drone_roll, drone_pitch = self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
+        if self.hysteresis and self.prev_center_ts != None and round(time.time() * 1000) - self.prev_center_ts < 500:
+            hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
+            hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
+            target_yaw_angle += 0.90 * hysteresis_yaw_angle
+            target_pitch_angle += 0.90 * hysteresis_pitch_angle
+        
+        self.prev_center_ts = round(time.time() * 1000)
+        self.prev_center = (target_x_pix, target_y_pix)
+
         return target_pitch_angle, target_yaw_angle, drone_pitch, drone_roll
 
     def clamp(self, value, minimum, maximum):
         return max(minimum, min(value, maximum))
 
     def gain(self, gpitch, dyaw, dpitch, droll):
-        dyaw = self.clamp(int(dyaw * 2.5), -100, 100)
-        dpitch = self.clamp(int(dpitch * 2.5), -100, 100)
+        dyaw = self.clamp(int(dyaw * 6.0), -100, 100)
+        dpitch = self.clamp(int(dpitch * 4.5), -100, 100)
         droll = self.clamp(int(droll * 2.0), -100, 100)
         gpitch = gpitch
 
@@ -78,10 +91,10 @@ class DynamicLeashTracker(threading.Thread):
     def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
         gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
         print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
-        self.drone(PCMD(1, droll, dpitch, dyaw, 0, timestampAndSeqNum=0))
-        gatt = self.drone.get_state(attitude)
-        current_gimbal_pitch = gatt[0]["pitch_absolute"]
-        self.drone(set_target(0, control_mode.position, "none", 0.0, "absolute", current_gimbal_pitch + gpitch, "none", 0.0))
+        self.drone(PCMD(1, 0, dpitch, dyaw, 0, timestampAndSeqNum=0))
+        #gatt = self.drone.get_state(attitude)
+        #current_gimbal_pitch = gatt[0]["pitch_absolute"]
+        #self.drone(set_target(0, control_mode.position, "none", 0.0, "absolute", current_gimbal_pitch + gpitch, "none", 0.0))
 
     def run(self):
         self.tracking = False

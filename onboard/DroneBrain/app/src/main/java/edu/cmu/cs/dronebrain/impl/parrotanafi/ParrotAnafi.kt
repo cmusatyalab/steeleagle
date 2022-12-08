@@ -75,6 +75,9 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     var dyaw : Double = 0.0
     var dpitch : Double = 0.0
     var droll : Double = 0.0
+    var hysteresis_x : Int? = null
+    var hysteresis_y : Int? = null
+    var timestamp: Long? = null
 
     /** Kill switch for the drone **/
     private var cancel: Boolean = false
@@ -367,13 +370,26 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         return movement_vector
     }
 
-    fun calculateOffsets(pixel_x: Int, pixel_y: Int, leash: Double): ArrayList<Double> {
+    override fun calculateOffsets(pixel_x: Int, pixel_y: Int, leash: Double): ArrayList<Double> {
+        var hysteresis = true
         var pixel_center_x = resolution_x / 2.0
         var pixel_center_y = resolution_y / 2.0
         Log.d("Tracking", "Detection centered at x: " + pixel_x + ", y: " + pixel_y)
         var target_yaw_angle = ((pixel_x - pixel_center_x) / pixel_center_x) * (HFOV / 2.0)
         var target_pitch_angle = ((pixel_y - pixel_center_y) / pixel_center_y) * (VFOV / 2.0)
         Log.d("Tracking", "Yaw angle: " + target_yaw_angle + ", Pitch angle: " + target_pitch_angle)
+
+        // Hysteresis code
+        if (hysteresis && timestamp != null && System.currentTimeMillis() - timestamp!! < 2000) {
+            var hysteresis_yaw_angle = ((pixel_x - hysteresis_x!!) / hysteresis_x!!) * (HFOV / 2.0)
+            var hysteresis_pitch_angle = ((pixel_y - hysteresis_y!!) / hysteresis_y!!) * (VFOV / 2.0)
+            target_yaw_angle += hysteresis_yaw_angle * 0.8
+            target_pitch_angle += hysteresis_pitch_angle * 0.65
+        } else {
+            timestamp = System.currentTimeMillis()
+            hysteresis_x = pixel_x
+            hysteresis_y = pixel_y
+        }
 
         var movement_vector = getMovementVectors(target_yaw_angle, target_pitch_angle, leash)
         var drone_roll = movement_vector.x
@@ -390,8 +406,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     }
 
     fun gain(drone_yaw: Double, drone_pitch: Double, drone_roll: Double): ArrayList<Double> {
-        var dyaw = (drone_yaw * 2.6).coerceIn(-100.0, 100.0)
-        var dpitch = (drone_pitch * 1.1).coerceIn(-100.0, 100.0)
+        var dyaw = (drone_yaw).coerceIn(-100.0, 100.0) //3.0
+        var dpitch = (drone_pitch).coerceIn(-100.0, 100.0) //15.0
         var droll = (drone_roll).coerceIn(-100.0, 100.0)
 
         var returnVector = ArrayList<Double>()
@@ -413,7 +429,6 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         pilotingItfRef?.get()?.let {
             it.setYawRotationSpeed(dyaw)
             it.setPitch(-1 * dpitch)
-            it.setRoll(droll)
         }
     }
 
@@ -421,22 +436,47 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     override fun trackTarget(box: Vector<Double>?, leash: Double) {
         var gpitch : Double? = null
         if (box != null) {
+            Log.d("Tracking", "Got box for target class!")
             // Find the pixel center
             var pixel_x = ((((box[3] - box[1]) / 2.0) + box[1]) * resolution_x).roundToInt()
             var pixel_y = ((1 - (((box[2] - box[0]) / 2.0) + box[0])) * resolution_y).roundToInt()
             // Get offsets
             var offsets = calculateOffsets(pixel_x, pixel_y, leash)
-            gpitch = offsets[0]
+            //gpitch = offsets[0]
             dyaw = offsets[1]
+            dyaw *= 30.0
             dpitch = offsets[2]
+            dpitch *= 20.0
             droll = offsets[3]
         } else {
-            dyaw /= 1.02
-            dpitch /= 1.01
+            //dyaw /= 1.225 //1.065
+            dyaw /= 1.23
+            dpitch /= 1.155
             droll /= 1.01
         }
 
         executePCMD(gpitch, dyaw, dpitch, droll)
+    }
+
+    @Throws(Exception::class)
+    override fun lookAtTarget(box: Vector<Double>?) {
+        var gpitch : Double? = null
+        if (box != null) {
+            Log.d("Tracking", "Got box for target class!")
+            // Find the pixel center
+            var pixel_x = ((((box[3] - box[1]) / 2.0) + box[1]) * resolution_x).roundToInt()
+            var pixel_y = ((1 - (((box[2] - box[0]) / 2.0) + box[0])) * resolution_y).roundToInt()
+            // Get offsets
+            var offsets = calculateOffsets(pixel_x, pixel_y, 1.0)
+            gpitch = offsets[0]
+            dyaw = offsets[1]
+            dyaw *= 20.0
+            pilotingItfRef?.get()?.let { if (alt > 6.0) it.setVerticalSpeed(-15) else it.setVerticalSpeed(0) }
+        } else {
+            dyaw /= 1.135
+        }
+
+        executePCMD(gpitch, dyaw, 0.0, 0.0)
     }
 
     @Throws(Exception::class)

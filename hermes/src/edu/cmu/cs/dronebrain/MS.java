@@ -42,10 +42,12 @@ public class MS extends FlightScript {
 	    try {
             drone.connect();
             drone.takeOff();
-            drone.startStreaming(480);
-            cloudlet.startStreaming(drone, "coco", 1);
-            drone.moveBy(0.0, 0.0, -5.0);
+            drone.moveBy(0.0, 0.0, -15.0);
             drone.setGimbalPose(0.0, -30.0, 0.0);
+            drone.startStreaming(480);
+            cloudlet.startStreaming(drone, "robomaster", 1);
+            //drone.rotateBy(-60.0);
+            //drone.setGimbalPose(0.0, -30.0, 0.0);
 	        execLoop();
 	    } catch (Exception e) {
             return;        

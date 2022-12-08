@@ -17,7 +17,7 @@ public class AltitudeTask extends Task {
     @Override
     public void run() {
         try {
-            drone.setGimbalPose(0.0, -45.0, 0.0);
+            drone.setGimbalPose(0.0, -30.0, 0.0);
             drone.moveBy(0.0, 0.0, -1.0 * altitude);
         } catch (Exception e) {}
     }

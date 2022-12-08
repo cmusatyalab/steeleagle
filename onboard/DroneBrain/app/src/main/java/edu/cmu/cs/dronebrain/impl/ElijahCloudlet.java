@@ -84,21 +84,31 @@ public class ElijahCloudlet implements CloudletItf {
             return null;
         Log.d(TAG, "Dets: " + dets);
 
+        double conf = 0.0;
+        int index = -1;
         for (int i = 0; i < dets.length(); i++) {
             JSONObject jsonobject = dets.getJSONObject(i);
             String cla = jsonobject.getString("class");
             if (cla.equals(c)) { // We found the class we want!
-                JSONArray bbox = jsonobject.getJSONArray("box");
-                Vector<Double> vec = new Vector<Double>();
-                vec.add(bbox.getDouble(0));
-                vec.add(bbox.getDouble(1));
-                vec.add(bbox.getDouble(2));
-                vec.add(bbox.getDouble(3));
-                return vec;
+                double classConf = jsonobject.getDouble("score");
+                if (classConf > conf) {
+                    index = i;
+                }
             }
         }
 
-        return null;
+        if (index != -1) {
+            JSONObject jsonobject = dets.getJSONObject(index);
+            JSONArray bbox = jsonobject.getJSONArray("box");
+            Vector<Double> vec = new Vector<Double>();
+            vec.add(bbox.getDouble(0));
+            vec.add(bbox.getDouble(1));
+            vec.add(bbox.getDouble(2));
+            vec.add(bbox.getDouble(3));
+            return vec;
+        } else {
+            return null;
+        }
     }
 
     private synchronized JSONArray copyDets() {
