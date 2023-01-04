@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 #/usr/bin/python3
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing, moveTo

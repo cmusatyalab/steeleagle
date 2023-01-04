@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 if [[ $# -ne 3 ]]; then
    printf "Usage: java2dex.sh javac_path d8_path androidjar_path \n"
    exit 1;

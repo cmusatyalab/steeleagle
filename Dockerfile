@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 FROM ubuntu:20.04
 LABEL Satyalab, satya-group@lists.andrew.cmu.edu
 

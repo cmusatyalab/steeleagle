@@ -1,0 +1,19 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Steel-Eagle
+Upstream-Contact: CMU Satyalab <satya-group@lists.andrew.cmu.edu>
+Source: https://github.com/cmusatyalab/steel-eagle
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
+
+Files: onboard/DroneBrain/*
+Copyright: 2023 Carnegie Mellon University - Satyalab
+License: GPL-2.0-only
+
+Files: survival/*
+Copyright: 2023 Carnegie Mellon University - Satyalab
+License: GPL-2.0-only
+

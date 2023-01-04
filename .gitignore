@@ -1,9 +1,19 @@
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: CC0-1.0
+
 ./transponder/flask/templates/index.html
 ./transponder/react/package-lock.json
 ./kml2drone/weatherapi.key
 *.code-workspace
 *.vimrc
-*/__pycache__/*
+__pycache__/
+.gradle/
 *.dex
 *.class
-
+*.pyc
+openscout-vol/
+*.env
+.vscode/
+cnc/server/model/
+venv/
