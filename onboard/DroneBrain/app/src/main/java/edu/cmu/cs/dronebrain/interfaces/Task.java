@@ -4,14 +4,18 @@
 
 package edu.cmu.cs.dronebrain.interfaces;
 
+import java.util.HashMap;
+
 public abstract class Task implements Runnable {
     protected DroneItf drone;
     protected CloudletItf cloudlet;
+    protected HashMap<String, String> kwargs;
 
     // Include references to task members
-    public Task(DroneItf d, CloudletItf c) {
+    public Task(DroneItf d, CloudletItf c, HashMap<String, String> k) {
         drone = d;
         cloudlet = c;
+        kwargs = k;
     }
 
     // TODO: Run is already an abstract method derived from Runnable.

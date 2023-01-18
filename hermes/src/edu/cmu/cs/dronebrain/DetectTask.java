@@ -5,17 +5,19 @@
 package edu.cmu.cs.dronebrain;
 
 import java.lang.Thread;
+import java.lang.Float;
+import java.util.HashMap;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.Task;
 
-public class AltitudeTask extends Task {
+public class DetectTask extends Task {
     
     double altitude;
+    public DetectTask(DroneItf d, CloudletItf c, HashMap<String, String> k) {
+        super(d, c, k);
+        altitude = new Float(kwargs.get("altitude"));
 
-    public AltitudeTask(DroneItf d, CloudletItf c, double alt) {
-        super(d, c);
-        altitude = alt;
     }
     
     @Override

@@ -19,6 +19,49 @@ import json_schema_for_humans.generate as jsfh
  for validation and a python dict that holds any
  default values
 """
+class TrackingTask:
+     def __init__(self):
+        self.schema = {
+                    "title": "TrackingTask",
+                    "description": "Track specified classing using model for inteferencing",
+                    "examples": ["TrackingTask: {model: 'robomaster', class: 'robomaster', gimbal_pitch: -30}"],
+                    "properties": {
+                        "gimbal_pitch": {
+                        "description": "The angle of the gimbal",
+                        "type": "number",
+                        "minimum": -90.0,
+                        "maximum": 90.0,
+                        "default": -30.0
+                        },
+                        "drone_rotation": {
+                        "description": "The heading offset to rotate the drone to at each vertex (in degrees) ",
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 360.0,
+                        "default": 0.0
+                        },
+                        "hover_delay": {
+                        "description": "The number of seconds to hover at each vertex before moving to the next",
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "default": 5
+                        },
+                        "model": {
+                        "description": "Name of the object detection model to evaluate frames against (default = 'coco')",
+                        "type": "string",
+                        "enum": ["coco", "robomaster"],
+                        "default": "coco"
+                        },
+                        "class": {
+                        "description": "Name of the class to track (default = 'person')",
+                        "type": "string",
+                        "default": "person"
+                        },
+                    },
+                    "additionalProperties": False
+                }
+        self.defaults = {'gimbal_pitch': -30.0, 'drone_rotation': 0.0, 'hover_delay': 5, 'model': 'coco', 'class': 'person'}
 class TakePhotosAlongPath:
     def __init__(self):
         self.schema = {
@@ -84,12 +127,12 @@ class Land:
                 }
         self.defaults = {}
 
-class DetectObjectsAlongPath:
+class DetectTask:
      def __init__(self):
         self.schema = {
-                    "title": "DetectObjectsAlongPath",
+                    "title": "DetectTask",
                     "description": "Instruct drone to detect objects along the specified path using the specified pitch, rotation, sampling rate, and detection  model",
-                    "examples": ["DetectObjectsAlongPath: {model: 'coco', sample_rate: 3, hover_delay: 10}"],
+                    "examples": ["DetectTask: {model: 'coco', sample_rate: 3, hover_delay: 10}"],
                     "properties": {
                         "gimbal_pitch": {
                         "description": "The angle of the gimbal",

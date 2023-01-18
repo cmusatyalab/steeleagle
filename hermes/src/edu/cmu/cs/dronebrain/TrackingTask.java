@@ -10,17 +10,18 @@ import edu.cmu.cs.dronebrain.interfaces.Task;
 import java.util.Vector;
 import java.lang.Thread;
 import java.lang.Math;
+import java.util.HashMap;
 
 public class TrackingTask extends Task {
     
-    public TrackingTask(DroneItf d, CloudletItf c) {
-        super(d, c);
+    public TrackingTask(DroneItf d, CloudletItf c, HashMap<String, String> kwargs) {
+        super(d, c, kwargs);
     }
     
     @Override
     public void run() {
         try {
-            String cla = "robomaster";
+            String cla = kwargs.get("class");
             //Vector<Double> box = cloudlet.getDetections(cla);
             //while (box == null) {
             //    box = cloudlet.getDetections(cla);

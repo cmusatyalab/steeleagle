@@ -60,9 +60,9 @@ class Placemark:
                     self.task = k
                     self.kwargs = v
                     obj = eval("task_stubs.{}()".format(self.task))
-                    self.kwargs['coords'] = self.coords #add the coordinates to the list of args
                     self.kwargs = {**obj.defaults, **self.kwargs}  #merge default args
                     jsonschema.validate(self.kwargs, obj.schema)
+                    self.kwargs['coords'] = self.coords #add the coordinates to the list of args after validation
             except NameError:
                 print(f"ERROR: The task {self.task} specified in the description of {self.name} is not found")
                 exit(-1)

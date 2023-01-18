@@ -1,82 +1,58 @@
-{#
-SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-
-SPDX-License-Identifier: GPL-2.0-only
-#}
-
-/* Copyright 2022 Carnegie Mellon University
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License. 
-*/
-{% import 'macros.jinja2' as macros with context %}
+// SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+//
+// SPDX-License-Identifier: GPL-2.0-only
 
 package edu.cmu.cs.dronebrain;
 
 import java.lang.Thread;
+import java.util.PriorityQueue;
+import java.util.Comparator;
+import java.util.HashMap;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
-import edu.cmu.cs.dronebrain.interfaces.Platform;
+import edu.cmu.cs.dronebrain.interfaces.Task;
+
+// import derived tasks
+{%- for k,v in placemarks.items() %}
+import edu.cmu.cs.dronebrain.{{v.task}};
+{%- endfor %}
 
 public class MS extends FlightScript {
     
-    public MS() {
-        platform = Platform.ANAFI;
-    }
-
-    public void setDrone(DroneItf d) {
-        drone = d;
-        try {
-            drone.init();
-        } catch(Exception e) {
-
-        }
-    }
-
-    public void setCloudlet(CloudletItf c) {
-        cloudlet = c;
-    }
-
+    @Override
     public void run() {
-        try {
+
+        Comparator<Task> comp = new Comparator<Task>() {
+            @Override
+            public int compare(Task t1, Task t2) {
+                return 0;
+            }
+        };
+        HashMap<String, String> kwargs =  new HashMap();
+        String json = "";
+        taskQueue = new PriorityQueue<Task>(1, comp);
+        {%- for k,v in placemarks.items() %}
+        // {{v.name}}/{{v.task}} START //
+        json = "{{v.kwargs}}";
+        kwargs.clear();
+        {%- for param, value in v.kwargs.items() %}
+        kwargs.put("{{param}}", "{{value}}");
+        {%- endfor %}
+	    taskQueue.add(new {{v.task}}(drone, cloudlet, kwargs));
+        //taskQueue.add(new {{v.task}}(drone, cloudlet, json));
+        {%- endfor %}
+
+	    try {
             drone.connect();
             drone.takeOff();
-
-        
-            {% for k,v in placemarks.items() %}
-            // {{v.name}}/{{v.task}} START
-            //{{v.kwargs}}
-            {%- if v.task == "TakePhotosAlongPath" %}
-            {{ macros.TakePhotosAlongPath(**v.kwargs) }}
-            {% elif v.task == "SetNewHome" %}
-            {{ macros.SetNewHome(**v.kwargs) }}
-            {% elif v.task == "MoveTo" %}
-            {{ macros.MoveTo(**v.kwargs) }}
-            {% elif v.task == "DetectObjectsAlongPath" %}
-            {{ macros.DetectObjectsAlongPath(**v.kwargs) }}
-            {% elif v.task == "Land" %}
-            {{ macros.Land(**v.kwargs) }}
-            {% endif -%}
-            //{{v.name}}/{{v.task}} END
-            {% endfor %}
-
+	        execLoop();
             drone.disconnect();
-
-        }
-        catch( Exception e) {
-
-        }
-
+	    } catch (Exception e) {
+            return;
+	    }
     }
 
+    @Override
+    public void pause() {}
 }
