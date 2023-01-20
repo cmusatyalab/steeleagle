@@ -12,6 +12,7 @@ import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.FlightScript;
 import edu.cmu.cs.dronebrain.interfaces.Task;
+import android.util.Log;
 
 // import derived tasks
 {%- for k,v in placemarks.items() %}
@@ -29,27 +30,26 @@ public class MS extends FlightScript {
                 return 0;
             }
         };
-        HashMap<String, String> kwargs =  new HashMap();
-        String json = "";
-        taskQueue = new PriorityQueue<Task>(1, comp);
-        {%- for k,v in placemarks.items() %}
-        // {{v.name}}/{{v.task}} START //
-        json = "{{v.kwargs}}";
-        kwargs.clear();
-        {%- for param, value in v.kwargs.items() %}
-        kwargs.put("{{param}}", "{{value}}");
-        {%- endfor %}
-	    taskQueue.add(new {{v.task}}(drone, cloudlet, kwargs));
-        //taskQueue.add(new {{v.task}}(drone, cloudlet, json));
-        {%- endfor %}
+        try {
+            HashMap<String, String> kwargs =  new HashMap<String, String>();
+            String json = "";
+            taskQueue = new PriorityQueue<Task>(1, comp);
+            {%- for k,v in placemarks.items() %}
+            // {{v.name}}/{{v.task}} START //
+            json = "{{v.kwargs}}";
+            kwargs.clear();
+            {%- for param, value in v.kwargs.items() %}
+            kwargs.put("{{param}}", "{{value}}");
+            {%- endfor %}
+            taskQueue.add(new {{v.task}}(drone, cloudlet, kwargs));
+            //taskQueue.add(new {{v.task}}(drone, cloudlet, json));
+            {%- endfor %}
 
-	    try {
             drone.connect();
             drone.takeOff();
 	        execLoop();
-            drone.disconnect();
 	    } catch (Exception e) {
-            return;
+            Log.i("FlightScript", e.toString());
 	    }
     }
 

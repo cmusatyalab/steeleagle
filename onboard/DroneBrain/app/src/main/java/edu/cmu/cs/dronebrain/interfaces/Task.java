@@ -5,7 +5,6 @@
 package edu.cmu.cs.dronebrain.interfaces;
 
 import java.util.HashMap;
-import org.json.JSONObject;
 
 public abstract class Task implements Runnable {
     protected DroneItf drone;

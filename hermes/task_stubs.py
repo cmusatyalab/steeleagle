@@ -11,20 +11,23 @@ import json
 import json_schema_for_humans.generate as jsfh
 
 """
- Stubs for Jinja Macros
+ Stubs for Tasks
  These stubs are used to validate the tasks
  specified in the description fields of the KML.
  Each class should contain two attributes that
  are assigned in the __init__ method: a JSON schema
  for validation and a python dict that holds any
  default values
+
+ Use "additionalProperties": False in the schema
+ to disallow additional properties (strict adherence)
 """
 class TrackingTask:
      def __init__(self):
         self.schema = {
                     "title": "TrackingTask",
-                    "description": "Track specified classing using model for inteferencing",
-                    "examples": ["TrackingTask: {model: 'robomaster', class: 'robomaster', gimbal_pitch: -30}"],
+                    "description": "Track specified class using a paritcular model for inteferencing",
+                    "examples": ["TrackingTask: {model: 'coco', class: 'person', gimbal_pitch: -30}"],
                     "properties": {
                         "gimbal_pitch": {
                         "description": "The angle of the gimbal",
@@ -32,20 +35,6 @@ class TrackingTask:
                         "minimum": -90.0,
                         "maximum": 90.0,
                         "default": -30.0
-                        },
-                        "drone_rotation": {
-                        "description": "The heading offset to rotate the drone to at each vertex (in degrees) ",
-                        "type": "number",
-                        "minimum": 0.0,
-                        "maximum": 360.0,
-                        "default": 0.0
-                        },
-                        "hover_delay": {
-                        "description": "The number of seconds to hover at each vertex before moving to the next",
-                        "type": "number",
-                        "minimum": 1,
-                        "maximum": 10,
-                        "default": 5
                         },
                         "model": {
                         "description": "Name of the object detection model to evaluate frames against (default = 'coco')",
@@ -99,6 +88,15 @@ class TakePhotosAlongPath:
                     "required": [ "mode" ]
                 }
         self.defaults = {'mode': 'SINGLE', 'interval': 5, 'gimbal_pitch': -90.0, 'drone_rotation': 0.0}
+
+class SimpleTask:
+    def __init__(self):
+        self.schema = {
+                    "title": "SimpleTask",
+                    "description": "Takeoff, then move",
+                    "examples": ["SimpleTask: {}"]
+                }
+        self.defaults = {}
 
 class SetNewHome:
     def __init__(self):
@@ -168,7 +166,8 @@ class DetectTask:
                         "enum": ["coco", "oidv4"],
                         "default": "coco"
                         },
-                    }
+                    },
+                    "additionalProperties": False
                 }
         self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 5, 'model': 'coco'}
 
