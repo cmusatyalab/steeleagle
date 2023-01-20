@@ -13,16 +13,15 @@ javac="$1"
 d8="$2"
 sdk="$3"
 #class="$4"
-cd src
-"${javac}" -verbose edu/cmu/cs/dronebrain/*.java
+./gradlew compileJava
 if [ $? -eq 0 ] 
 then 
-  echo "java2dex.sh: Compiled with javac. Attempting to dex..."
+  echo "java2dex.sh: Compiled with gradlew. Attempting to dex..."
 else 
-  echo "java2dex.sh: Compilation with javac failed!"
+  echo "java2dex.sh: Compilation with gradlew failed!"
   exit 1;
 fi
-"${d8}" --classpath . edu/cmu/cs/dronebrain/*.class --lib "${sdk}"
+"${d8}" --classpath . app/build/classes/java/main/edu/cmu/cs/dronebrain/*.class app/build/classes/java/main/edu/cmu/cs/dronebrain/interfaces/*.class --lib "${sdk}"
 if [ $? -eq 0 ] 
 then 
   echo "java2dex.sh: Built dex with d8."

@@ -132,10 +132,10 @@ def _main():
     parser.add_argument('input', help='kml/kmz file to convert')
     parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
         help='Drone platform to convert to  [default: Anafi]')
-    parser.add_argument('-i', '--intermediate', default='./src/edu/cmu/cs/dronebrain/MS.java',
-        help='Filename for generated drone instructions [default: ./src/edu/cmu/cs/dronebrain/MS.java]')
-    parser.add_argument('-o', '--output', default='./src/classes.dex',
-        help='Filename for .dex file  [default: ./src/classes.dex]')
+    parser.add_argument('-i', '--intermediate', default='./app/src/main/java/edu/cmu/cs/dronebrain/MS.java',
+        help='Filename for generated drone instructions [default: ./app/src/main/java/edu/cmu/cs/dronebrain/MS.java]')
+    parser.add_argument('-o', '--output', default='./flightplan.dex',
+        help='Filename for .dex file  [default: ./flightplan.dex]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
     parser.add_argument('-t', '--template', default='base.java.jinja2',
@@ -187,7 +187,7 @@ def _main():
     try:
         subprocess.run(f"./java2dex.sh {args.javac_path} {args.d8_path} {args.android_jar}", shell=True, check=True)
         #java2dex creates classes.dex in src, so we need to rename it if -o was given
-        os.rename("./src/classes.dex", args.output)
+        os.rename("./classes.dex", args.output)
         print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))
     except subprocess.CalledProcessError as e:
         print(e)

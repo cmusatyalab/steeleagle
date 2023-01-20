@@ -4,12 +4,11 @@
 
 package edu.cmu.cs.dronebrain;
 
-import java.lang.Thread;
-import java.lang.Float;
-import java.util.HashMap;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.Task;
+import java.lang.Float;
+import java.util.HashMap;
 
 public class DetectTask extends Task {
     

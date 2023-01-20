@@ -12,12 +12,34 @@ import java.lang.Thread;
 import java.lang.Math;
 import java.util.HashMap;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+
 public class TrackingTask extends Task {
     
     public TrackingTask(DroneItf d, CloudletItf c, HashMap<String, String> kwargs) {
         super(d, c, kwargs);
     }
     
+    public Vector3D getMovementVectors(Double yaw, Double pitch, Double leash) {
+        Vector3D forward_vec = new Vector3D(0.0, 1.0, 0.0);
+        Rotation rotation = new Rotation(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR, yaw * (Math.PI / 180.0), 0.0, (pitch + -30) * (Math.PI / 180.0));
+        Vector3D target_direction = rotation.applyTo(forward_vec);
+       // Vector3D target_vector = find_intersection(target_direction, new Vector3D(0.0, 0.0, 15));
+        Vector3D target_vector = new Vector3D(0.0,0.0,15);
+
+        Vector3D leash_vec = null;
+        if (target_vector.getNorm() > 0.0)
+            leash_vec = target_vector.normalize().scalarMultiply(leash);
+        else
+            leash_vec = target_vector;
+        Vector3D movement_vector = target_vector.subtract(leash_vec);
+
+        return movement_vector;
+    }
+
     @Override
     public void run() {
         try {
