@@ -90,6 +90,8 @@ feature_img = cv2.drawKeypoints(prev_img, prev_kps, None,(0,0,255),4)
 cv2.imshow("SIFT", feature_img)
 cv2.waitKey(1)
 
+
+kpHist = OrderedDict()
 while True:
     ret, img = capture.read()
     if not ret:
@@ -138,8 +140,11 @@ while True:
         bigger = []
         for g in good:
             logger.debug(f"Prev Size: {prev_kps[g.queryIdx].size}, Current Size: {kps[g.trainIdx].size}")
+            clsid = prev_kps[g.trainIdx].class_id
             if(kps[g.trainIdx].size > opts.scale*prev_kps[g.queryIdx].size):
                 bigger.append(g)
+                clsid = prev_kps[g.trainIdx].class_id
+        
         logger.info(f"Bigger Matches (curr.size > {opts.scale} * prev.size): {len(bigger)}")
 
 
