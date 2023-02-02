@@ -136,7 +136,6 @@ while True:
         kps, descs = sift.detectAndCompute(img,roi)
         for kp in kps: 
             kp.class_id = id
-            logger.debug(f"")
         id += 1
         feature_img = cv2.drawKeypoints(img, kps, None,(0,0,255),4)
         cv2.rectangle(feature_img,(scrapX,scrapY),(feature_img.shape[1]-scrapX,feature_img.shape[0]-scrapY),(0,255,255),thickness=1)
@@ -163,9 +162,10 @@ while True:
             logger.debug(f"M-dist: {m.distance}")
             if m.distance < opts.distance:
                 good.append(m)
-        max_value = max(matches, key=lambda x : x.distance)
-        min_value = min(matches, key=lambda x : x.distance)
-        logger.info(f"Min/Max dist: {min_value.distance} / {max_value.distance}")
+        if(len(matches) > 0):
+            max_value = max(matches, key=lambda x : x.distance)
+            min_value = min(matches, key=lambda x : x.distance)
+            logger.info(f"Min/Max dist: {min_value.distance} / {max_value.distance}")
         logger.info(f"Good Matches (distance < than {opts.distance}): {len(good)}")
         
         # Compare sizes of kps and eliminate all that are the same or getting smaller.
