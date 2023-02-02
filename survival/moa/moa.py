@@ -103,6 +103,7 @@ while True:
         kps, descs = sift.detectAndCompute(img,roi)
         for kp in kps: 
             kp.class_id = id
+            logger.debug(f"")
         id += 1
         feature_img = cv2.drawKeypoints(img, kps, None,(0,0,255),4)
         cv2.rectangle(feature_img,(scrapX,scrapY),(feature_img.shape[1]-scrapX,feature_img.shape[0]-scrapY),(0,255,255),thickness=1)
@@ -110,7 +111,7 @@ while True:
         cv2.waitKey(1)
 
         #matches = bfmatcher.knnMatch(prev_descs, descs, k=2)
-        matches = bfmatcher.match(prev_descs,descs)
+        matches = bfmatcher.match(descs,prev_descs)
         # Sort them in the order of their distance.
         matches = sorted(matches, key = lambda x:x.distance)
         logger.info(f"Total matches: {len(matches)}")
@@ -137,14 +138,14 @@ while True:
         # Compare sizes of kps and eliminate all that are the same or getting smaller.
         bigger = []
         for g in good:
-            logger.debug(f"Prev Size: {prev_kps[g.queryIdx].size}, Current Size: {kps[g.trainIdx].size}")
-            if(kps[g.trainIdx].size > opts.scale*prev_kps[g.queryIdx].size):
+            logger.debug(f"Prev Size: {prev_kps[g.trainIdx].size}, Current Size: {kps[g.queryIdx].size}")
+            if(kps[g.queryIdx].size > opts.scale*prev_kps[g.trainIdx].size):
                 bigger.append(g)
         logger.info(f"Bigger Matches (curr.size > {opts.scale} * prev.size): {len(bigger)}")
 
 
         # cv.drawMatchesKnn expects list of lists as matches.
-        matches_img = cv2.drawMatches(prev_img,prev_kps,img,kps,bigger,None,(128,128,0),(0,0,255),flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS|cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        matches_img = cv2.drawMatches(img,kps,prev_img,prev_kps,bigger,None,(128,128,0),(0,0,255),flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS|cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         cv2.imshow("MATCHES", matches_img)
         cv2.waitKey(opts.sleep)
 
