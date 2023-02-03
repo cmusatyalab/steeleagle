@@ -86,7 +86,7 @@ while not ret:
 prev_img = cv2.cvtColor(prev_img,cv2.COLOR_BGR2GRAY)
 
 bfmatcher = cv2.BFMatcher(cv2.NORM_L2)
-sift = cv2.SIFT_create(nfeatures=100, contrastThreshold=opts.contrast_threshold, edgeThreshold=opts.edge_threshold)
+sift = cv2.SIFT_create(nfeatures=opts.features, contrastThreshold=opts.contrast_threshold, edgeThreshold=opts.edge_threshold)
 id = 1
 # mask out region of interest
 try:
