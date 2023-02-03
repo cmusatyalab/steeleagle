@@ -11,19 +11,7 @@ import operator as op
 
 STREAM_FPS = 1 #used for ttc
 RATIO = 0.75
-LAST_DAY = 10
-
-class KeyPoint(object):
-     def __init__(self):
-        self.age = -1
-        self.lastFrameIdx = 0
-        self.detects = 0
-        self.scalehist = []
-        self.timehist = []
-        self.keypoint = None
-        self.descriptor = None
-        self.consecutive = 0
-
+AGE = 10
 
 def ClusterKeypoints(keypoints, kphist, img, epsilon=0):
     if len(keypoints) < 2: return []
@@ -73,7 +61,8 @@ parser.add_argument("-l", "--logging", type=int, default=20,
 parser.add_argument("--video-file", default=None
                     , help="Load a video file to test.")
 
-parser.add_argument("--sleep",  type=int, default=1000, help="Sleep with waitKey for this many ms (default=1000).")
+parser.add_argument("--sleep",  type=int, default=1000,
+                    help="Sleep with waitKey for this many ms (default=1000). Use 0 to wait indefinitely for keypress.")
 
 parser.add_argument("--epsilon", type=int, default=50, help="Maximum inter-distance between cluster points.")
 
@@ -84,13 +73,15 @@ logger.setLevel(opts.logging)
 
 cv2.namedWindow("SIFT", flags=cv2.WINDOW_NORMAL)
 cv2.namedWindow("MATCHES", flags=cv2.WINDOW_NORMAL)
+cv2.namedWindow("OBSTACLES", flags=cv2.WINDOW_NORMAL)
 
 
 
 capture = cv2.VideoCapture(opts.video_file)
 ret, prev_img = capture.read()
-if not ret: 
+while not ret: 
     logger.error(f"Failed to read from VideoCapture: {ret}")
+    ret, prev_img = capture.read()
 #convert to greyscale
 prev_img = cv2.cvtColor(prev_img,cv2.COLOR_BGR2GRAY)
 
@@ -187,8 +178,10 @@ while True:
                 kpHist[clsid].update(prev_kps[g.trainIdx], prev_descs[g.trainIdx], t_A, t_curr, kps[g.queryIdx].size)
         
         logger.info(f"Bigger Matches (curr.size > {opts.scale} * prev.size): {len(bigger)}")
+        matches_img = cv2.drawMatches(img,kps,prev_img,prev_kps,bigger,None,(128,128,0),(0,0,255),flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS|cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        cv2.imshow("MATCHES", matches_img)
 
-        kpHist = OrderedDict([kv for kv in iter(kpHist.items()) if kv[1].downdate().age < LAST_DAY])
+        kpHist = OrderedDict([kv for kv in iter(kpHist.items()) if kv[1].downdate().age < AGE])
 
         #missed = [k for k in iter(kpHist.keys()) if (kpHist[k].age > 0) and (k not in bigger)]
         #missed = [(kpHist[k].keypoint, kpHist[clsid].descriptor.reshape(1,-1)) for k in missed]
@@ -204,9 +197,6 @@ while True:
         votes = [sum(kpHist[kp.class_id].detects for kp in c.KPs) for c in cluster]
         for c in cluster:
             clustinfo = "%d" % len(c.KPs)
-            cv2.putText(dispim, clustinfo, (c.p1[0]-5,c.p1[1])
-                        ,cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0,0,255))
-
             # Draw an arrow denoting the direction to avoid obstacle
             x_obs, y = c.pt
             if (x_obs-(img.shape[1]//2)) < 0: offset = 50
@@ -217,15 +207,12 @@ while True:
 
             # draw cluster ranking
             clr = (0,255-sum(kpHist[kp.class_id].detects for kp in c.KPs)*165./max(votes),255)
-            cv2.rectangle(dispim, c.p0, c.p1, color=clr,thickness=2)
-        
+            cv2.putText(dispim, clustinfo, (c.p1[0]-(c.p1[0]-c.p0[0])//2, c.p1[1]-(c.p1[1]-c.p0[1])//2)
+                        ,cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.3, color=clr, thickness=1)
+            cv2.rectangle(dispim, c.p0, c.p1, color=clr,thickness=1)
+        #draw roi
         cv2.rectangle(dispim, (scrapX,scrapY), (dispim.shape[1]-scrapX, dispim.shape[0]-scrapY), (0,255,255), thickness=1)
-        cv2.imshow("Obstacles", dispim)
-
-
-        # cv.drawMatchesKnn expects list of lists as matches.
-        #matches_img = cv2.drawMatches(img,kps,prev_img,prev_kps,bigger,None,(128,128,0),(0,0,255),flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS|cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-        #cv2.imshow("MATCHES", matches_img)
+        cv2.imshow("OBSTACLES", dispim)
         cv2.waitKey(opts.sleep)
 
         prev_img = img
