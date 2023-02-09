@@ -68,13 +68,17 @@ parser.add_argument("--epsilon", type=int, default=50, help="Maximum inter-dista
 
 parser.add_argument("--features", type=int, default=0, help="The number of top features to keep; all if set to 0.")
 
+parser.add_argument("--output", default=None
+                    , help="Generate specified mp4 file from frames processed.")
+
+
 opts = parser.parse_args()
 logger.setLevel(opts.logging)
 
 cv2.namedWindow("SIFT", flags=cv2.WINDOW_NORMAL)
 cv2.namedWindow("MATCHES", flags=cv2.WINDOW_NORMAL)
 cv2.namedWindow("OBSTACLES", flags=cv2.WINDOW_NORMAL)
-
+output_frames = []
 
 
 capture = cv2.VideoCapture(opts.video_file)
@@ -213,12 +217,24 @@ while True:
         #draw roi
         cv2.rectangle(dispim, (scrapX,scrapY), (dispim.shape[1]-scrapX, dispim.shape[0]-scrapY), (0,255,255), thickness=1)
         cv2.imshow("OBSTACLES", dispim)
+
+        if opts.output:
+            height, width, layers = dispim.shape
+            size = (width,height)
+            output_frames.append(dispim)
+
         cv2.waitKey(opts.sleep)
 
         prev_img = img
         prev_kps = kps
         prev_descs = descs
         t_last = t_curr
+
+if opts.output:
+    out = cv2.VideoWriter(opts.output,cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
+    for i in range(len(output_frames)):
+        out.write(output_frames[i])
+    out.release()
 
 capture.release()
 cv2.destroyAllWindows()
