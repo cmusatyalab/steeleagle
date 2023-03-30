@@ -5,17 +5,20 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-filename = "cropped.mp4"
+filename = "hotmetal1fps.mp4"
 
 #model_type = "DPT_Large"     # MiDaS v3 - Large     (highest accuracy, slowest inference speed)
 model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
 #model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
 
+print("Loading model...")
 midas = torch.hub.load("intel-isl/MiDaS", model_type)
+print("Loaded model.")
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 midas.to(device)
 midas.eval()
+print("Model set to evaluation mode.")
 
 midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
 
@@ -23,6 +26,8 @@ if model_type == "DPT_Large" or model_type == "DPT_Hybrid":
     transform = midas_transforms.dpt_transform
 else:
     transform = midas_transforms.small_transform
+
+print("Starting video...")
 
 # Create a VideoCapture object
 cap = cv2.VideoCapture(filename)
@@ -45,10 +50,13 @@ while(True):
   counter += 1
   print("Frame {0}".format(counter))
 
+  if counter < 50:
+      continue
+
   if ret == True: 
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
+ 
     input_batch = transform(frame).to(device)
 
     with torch.no_grad():
@@ -65,9 +73,12 @@ while(True):
 
     depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
     depth_map = (depth_map*255).astype(np.uint8)
-    depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_MAGMA)
+    #depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_MAGMA)
     
-    #cv2.imshow('Depth Map', depth_map)
+    scrapY, scrapX = depth_map.shape[0]//3, depth_map.shape[1]//3
+    #cv2.rectangle(depth_map, (scrapX,scrapY), (depth_map.shape[1]-scrapX, depth_map.shape[0]-scrapY), (255,255,255), thickness=1)
+    depth_map[depth_map < 175] = 0
+    cv2.imshow('Depth Map', depth_map)
     # Write the frame into the file 'output.avi'
     out.write(depth_map)
 
