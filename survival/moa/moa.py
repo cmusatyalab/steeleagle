@@ -68,13 +68,19 @@ parser.add_argument("--epsilon", type=int, default=50, help="Maximum inter-dista
 
 parser.add_argument("--features", type=int, default=0, help="The number of top features to keep; all if set to 0.")
 
+parser.add_argument("--output", default=None
+                    , help="Generate specified mp4 file from frames processed.")
+
+parser.add_argument("--knn", action='store_true', help="Use knn matching and ratio test.")
+
+
 opts = parser.parse_args()
 logger.setLevel(opts.logging)
 
 cv2.namedWindow("SIFT", flags=cv2.WINDOW_NORMAL)
 cv2.namedWindow("MATCHES", flags=cv2.WINDOW_NORMAL)
 cv2.namedWindow("OBSTACLES", flags=cv2.WINDOW_NORMAL)
-
+output_frames = []
 
 
 capture = cv2.VideoCapture(opts.video_file)
@@ -133,31 +139,34 @@ while True:
         cv2.imshow("SIFT", feature_img)
         cv2.waitKey(1)
 
-        #matches = bfmatcher.knnMatch(prev_descs, descs, k=2)
-        matches = bfmatcher.match(descs,prev_descs)
-        # Sort them in the order of their distance.
-        matches = sorted(matches, key = lambda x:x.distance)
-        logger.info(f"Total matches: {len(matches)}")
+        if prev_descs is not None:
+            if opts.knn:
+                matches = bfmatcher.knnMatch(descs, prev_descs, k=2)
+                # Apply ratio test
+                good = []
+                for m,n in matches:
+                    logger.debug(f"M-dist: {m.distance}, N-dist: {n.distance}")
+                    if m.distance < RATIO*n.distance:
+                        good.append(m)
+                logger.info(f"Good Matches (passed ratio test of  < {RATIO}): {len(good)}")
 
-        # # Apply ratio test
-        # good = []
-        # for m,n in matches:
-        #     print(f"M-dist: {m.distance}, N-dist: {n.distance}")
-        #     if m.distance < RATIO*n.distance:
-        #         good.append(m)
-        # print(f"Good Matches (passed ratio test of  < {RATIO}): {len(good)}")
+            else:
+                matches = bfmatcher.match(descs, prev_descs)
+                # Sort them in the order of their distance.
+                matches = sorted(matches, key = lambda x:x.distance)
+                logger.info(f"Total matches: {len(matches)}")
 
-        # Filter out bad matches
-        good = []
-        for m in matches:
-            logger.debug(f"M-dist: {m.distance}")
-            if m.distance < opts.distance:
-                good.append(m)
-        if(len(matches) > 0):
-            max_value = max(matches, key=lambda x : x.distance)
-            min_value = min(matches, key=lambda x : x.distance)
-            logger.info(f"Min/Max dist: {min_value.distance} / {max_value.distance}")
-        logger.info(f"Good Matches (distance < than {opts.distance}): {len(good)}")
+                # Filter out bad matches
+                good = []
+                for m in matches:
+                    logger.debug(f"M-dist: {m.distance}")
+                    if m.distance < opts.distance:
+                        good.append(m)
+                if(len(matches) > 0):
+                    max_value = max(matches, key=lambda x : x.distance)
+                    min_value = min(matches, key=lambda x : x.distance)
+                    logger.info(f"Min/Max dist: {min_value.distance} / {max_value.distance}")
+                logger.info(f"Good Matches (distance < than {opts.distance}): {len(good)}")
         
         # Compare sizes of kps and eliminate all that are the same or getting smaller.
         bigger = []
@@ -213,12 +222,24 @@ while True:
         #draw roi
         cv2.rectangle(dispim, (scrapX,scrapY), (dispim.shape[1]-scrapX, dispim.shape[0]-scrapY), (0,255,255), thickness=1)
         cv2.imshow("OBSTACLES", dispim)
+
+        if opts.output:
+            height, width, layers = dispim.shape
+            size = (width,height)
+            output_frames.append(dispim)
+
         cv2.waitKey(opts.sleep)
 
         prev_img = img
         prev_kps = kps
         prev_descs = descs
         t_last = t_curr
+
+if opts.output:
+    out = cv2.VideoWriter(opts.output,cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
+    for i in range(len(output_frames)):
+        out.write(output_frames[i])
+    out.release()
 
 capture.release()
 cv2.destroyAllWindows()
