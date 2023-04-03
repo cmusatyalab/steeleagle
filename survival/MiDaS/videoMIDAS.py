@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 filename = "hotmetal1fps.mp4"
 
-#model_type = "DPT_Large"     # MiDaS v3 - Large     (highest accuracy, slowest inference speed)
-model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
+model_type = "DPT_Large"     # MiDaS v3 - Large     (highest accuracy, slowest inference speed)
+#model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
 #model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
 
 print("Loading model...")
@@ -40,6 +40,7 @@ if (cap.isOpened() == False):
 # We convert the resolutions from float to integer.
 frame_width = int(cap.get(3))
 frame_height = int(cap.get(4))
+scrapY, scrapX = frame_height//3, frame_width//3
 
 # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
 out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width,frame_height))
@@ -55,9 +56,9 @@ while(True):
 
   if ret == True: 
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
- 
-    input_batch = transform(frame).to(device)
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    input_batch = transform(rgb_frame).to(device)
 
     with torch.no_grad():
         prediction = midas(input_batch)
@@ -75,9 +76,27 @@ while(True):
     depth_map = (depth_map*255).astype(np.uint8)
     #depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_MAGMA)
     
-    scrapY, scrapX = depth_map.shape[0]//3, depth_map.shape[1]//3
-    #cv2.rectangle(depth_map, (scrapX,scrapY), (depth_map.shape[1]-scrapX, depth_map.shape[0]-scrapY), (255,255,255), thickness=1)
-    depth_map[depth_map < 175] = 0
+    cv2.rectangle(frame, (scrapX,scrapY), (frame.shape[1]-scrapX, frame.shape[0]-scrapY), (255,255,0), thickness=1)
+    depth_map[depth_map >= 190] = 0
+    depth_map[depth_map != 0] = 255
+    depth_map = depth_map[scrapY : frame_height - scrapY, scrapX : frame_width - scrapX]
+
+    # convert the grayscale image to binary image
+    ret, thresh = cv2.threshold(depth_map, 254, 255, 0)
+    # find contours in the binary image
+    contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    try:
+        c = max(contours, key=cv2.contourArea)
+        # calculate moments for each contour
+        M = cv2.moments(c)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        cv2.circle(frame, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
+        cv2.putText(frame, "safe", (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    except:
+        pass
+
+    cv2.imshow('Frame', frame)
     cv2.imshow('Depth Map', depth_map)
     # Write the frame into the file 'output.avi'
     out.write(depth_map)
