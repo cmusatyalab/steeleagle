@@ -1,0 +1,75 @@
+<!--
+SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+
+SPDX-License-Identifier: GPL-2.0-only
+-->
+
+<html>
+<style>
+  #content {
+    height: 500px;
+    width: auto;
+    border-radius: 1px;
+    border-style: solid;
+  }
+  
+  .my-col {
+    float: left;
+    width: 50%;
+  }
+
+  #info {
+    text-align: center;
+    font-weight: bolder;
+  }
+  
+  @media only screen and (min-width: 768px) {
+    .my-col {
+      width: 33%;
+    }
+  }
+  
+  .responsive {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+</head>
+<body>
+    <div id="content">
+        <div class="my-col">
+            <div id ="info">Raw</div>
+            <img id="viewerRaw" class="responsive" src="" width="400px"/>
+        </div>
+        <div class="my-col">
+            <div id ="info">Obstacle Avoidance</div>
+            <img id="viewerObstacle" class="responsive" src="" width="400px"/>
+        </div>
+        <div class="my-col">
+            <div id ="info">Object Detection</div>
+            <img id="viewerObject" class="responsive" src="" width="400px"/>
+        </div>
+    </div>
+<script>
+$(function() {
+
+	var rawUrl = "./received/latest.jpg";
+    var objectUrl = "./detected/latest.jpg";
+    var obstacleUrl = "./moa/latest.jpg";
+
+
+    const timeID = setInterval(changePictures, 100);
+
+    function changePictures() {
+        var t = new Date().getTime()
+        $('#viewerRaw').attr('src', rawUrl + "?t=" + t );
+        $('#viewerObject').attr('src', objectUrl + "?t=" + t );
+        $('#viewerObstacle').attr('src', obstacleUrl + "?t=" + t );
+    }
+
+});
+</script>
+</body>
+</html>
