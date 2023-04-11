@@ -5,6 +5,7 @@
 import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD, moveBy
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged
+from olympe.messages.skyctrl.CoPiloting import setPilotingSource
 from olympe.messages.gimbal import set_target, attitude
 from olympe.enums.gimbal import control_mode
 from olympe.video.renderer import PdrawRenderer
@@ -24,10 +25,10 @@ import os
 import zmq
 import json
 from trackers import dynamic, static, parrot
+from avoidance import avoider
+import argparse
 
-
-DRONE_IP = "192.168.42.1" # Real drone IP address
-#DRONE_IP = "10.202.0.1" # Simulated drone IP address
+DRONE_IP = "192.168.42.1" # Real drone no controller
 
 class Ctrl(Enum):
     (
@@ -45,7 +46,7 @@ class Ctrl(Enum):
         GIMBAL_UP,
         GIMBAL_DOWN,
         START_TRACK,
-        STOP_TRACK
+        STOP_TRACK,
     ) = range(15)
 
 
@@ -64,7 +65,7 @@ QWERTY_CTRL_KEYS = {
     Ctrl.GIMBAL_UP: "r",
     Ctrl.GIMBAL_DOWN: "f",
     Ctrl.START_TRACK: "b",
-    Ctrl.STOP_TRACK: "m"
+    Ctrl.STOP_TRACK: "m",
 }
 
 AZERTY_CTRL_KEYS = QWERTY_CTRL_KEYS.copy()
@@ -209,7 +210,7 @@ class KeyboardCtrl(Listener):
 
 
 class OlympeStreaming(threading.Thread):
-    def __init__(self, drone, sample_rate=6, model='coco'):
+    def __init__(self, drone, sample_rate=5, model='coco'):
         self.drone = drone
         self.sample_rate = sample_rate
         self.model = model
@@ -319,7 +320,7 @@ class OlympeStreaming(threading.Thread):
             cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
             cv2frame = cv2.resize(cv2frame, (640, 480))
             if self.frame_num % (30 / self.sample_rate) == 0:
-                print(f"Publishing frame {self.frame_num} to OpenScout client...")
+                #print(f"Publishing frame {self.frame_num} to OpenScout client...")
                 self.send_array(cv2frame, meta)
             self.frame_num += 1
         except Exception as e:
@@ -349,43 +350,65 @@ class OlympeStreaming(threading.Thread):
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(usage="laptop-controller.py [options]")
+
+    parser.add_argument("-c", "--controller", action='store_true', help="Use an attached Parrot SkyController to increase Olympe range")
+    parser.add_argument("-s", "--simulate", action='store_true', help="Run on a simulated drone in Parrot Sphinx")
+    parser.add_argument("-nf", "--nofly", action='store_true', help="Prevent flight while running")
+    parser.add_argument("-ns", "--nostream", action='store_true', help="Prevent streaming while running")
+
+    opts = parser.parse_args()
+
+    if opts.controller:
+        DRONE_IP = "192.168.53.1"
+    if opts.simulate:
+        DRONE_IP = "10.202.0.1"
+
     tracking = False
     tracker = None
+
     drone = olympe.Drone(DRONE_IP)
+    
     time.sleep(1)
     drone.connect()
+    if opts.controller:
+        drone(setPilotingSource(source="Controller")).wait().success()
     time.sleep(1)
-    streamer = OlympeStreaming(drone, model='coco')
-    streamer.start()
+    
+    if not opts.nostream:
+        streamer = OlympeStreaming(drone, sample_rate=1, model='DPT_Large')
+        streamer.start()
+    
     control = KeyboardCtrl()
     while not control.quit():
-        if control.takeoff():
-            drone(TakeOff())
-        elif control.landing():
-            drone(Landing())
-        if control.start_track():
-            tracker = dynamic.DynamicLeashTracker(drone, 17.0)
-            tracker.start()
-            tracking = True
-            print("Starting track!")
-        elif control.stop_track():
-            tracker.stop()
-            tracking = False
-            print("Stopping track!")
-        elif control.has_piloting_cmd() and not tracking:
-            drone(
-                PCMD(
-                    1,
-                    control.roll(),
-                    control.pitch(),
-                    control.yaw(),
-                    control.throttle(),
-                    timestampAndSeqNum=0
+        if not opts.nofly:
+            if control.takeoff():
+                drone(TakeOff())
+            elif control.landing():
+                drone(Landing())
+            if control.start_track():
+                tracker = avoider.Avoider(drone, 10.0)
+                tracker.start()
+                tracking = True
+                print("Starting track!")
+            elif control.stop_track():
+                tracker.stop()
+                tracking = False
+                print("Stopping track!")
+            elif control.has_piloting_cmd() and not tracking:
+                drone(
+                    PCMD(
+                        1,
+                        control.roll(),
+                        control.pitch(),
+                        control.yaw(),
+                        control.throttle(),
+                        timestampAndSeqNum=0
+                    )
                 )
-            )
-            drone(set_target(0, control_mode.position, "none", 0.0, "absolute", control.get_gimbal_target(), "none", 0.0))
-        elif not tracking:
-            drone(PCMD(0, 0, 0, 0, 0, timestampAndSeqNum=0))
+                drone(set_target(0, control_mode.position, "none", 0.0, "absolute", control.get_gimbal_target(), "none", 0.0))
+            elif not tracking:
+                drone(PCMD(0, 0, 0, 0, 0, timestampAndSeqNum=0))
         time.sleep(0.05)
 
     drone(Landing()).wait().success()
