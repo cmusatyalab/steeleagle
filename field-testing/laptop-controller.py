@@ -376,7 +376,7 @@ if __name__ == "__main__":
     time.sleep(1)
     
     if not opts.nostream:
-        streamer = OlympeStreaming(drone, sample_rate=1, model='DPT_Large')
+        streamer = OlympeStreaming(drone, sample_rate=6, model='DPT_Large')
         streamer.start()
     
     control = KeyboardCtrl()
