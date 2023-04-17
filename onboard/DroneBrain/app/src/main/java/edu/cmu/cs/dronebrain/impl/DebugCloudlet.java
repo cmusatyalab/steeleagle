@@ -5,6 +5,9 @@
 package edu.cmu.cs.dronebrain.impl;
 
 import android.util.Log;
+
+import org.json.JSONArray;
+
 import java.util.Vector;
 
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
@@ -33,5 +36,5 @@ public class DebugCloudlet implements CloudletItf {
     }
 
     @Override
-    public Vector<Double> getDetections(String c) {return new Vector<Double>();}
+    public JSONArray getResults() {return new JSONArray();}
 }

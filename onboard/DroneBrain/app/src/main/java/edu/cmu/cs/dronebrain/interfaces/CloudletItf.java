@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 package edu.cmu.cs.dronebrain.interfaces;
+import org.json.JSONArray;
+
 import java.util.Vector;
 
 public interface CloudletItf {
@@ -11,5 +13,5 @@ public interface CloudletItf {
     void startStreaming(DroneItf drone, String model, Integer sample_rate);
     void stopStreaming();
     void sendFrame(byte[] frame);
-    Vector<Double> getDetections(String c);
+    JSONArray getResults();
 }

@@ -4,7 +4,6 @@
 
 package edu.cmu.cs.dronebrain.impl;
 
-import android.os.Build;
 import android.util.Log;
 
 import com.google.protobuf.Any;
@@ -12,11 +11,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Date;
-import java.util.Vector;
 import edu.cmu.cs.dronebrain.interfaces.CloudletItf;
 import edu.cmu.cs.dronebrain.interfaces.DroneItf;
 import edu.cmu.cs.gabriel.client.comm.ServerComm;
@@ -33,13 +29,13 @@ public class ElijahCloudlet implements CloudletItf {
     ServerComm comm;
     Thread streamingThread = null;
     String SOURCE = "command"; // Command cognitive engine will handle these image frames
-    String detections = null; // JSON string storing the previous seen detections
-    String detectionModel = "coco";
+    String results = null; // JSON string storing the previous seen detections
+    String model = "coco";
     DroneItf drone = null;
     UUID uuid = null;
 
     Long first_send_frame = null;
-    Long first_receive_det = null;
+    Long first_receive_res = null;
 
     public ElijahCloudlet(ServerComm s, UUID id) {
         uuid = id;
@@ -60,13 +56,13 @@ public class ElijahCloudlet implements CloudletItf {
             Extras extras = Extras.parseFrom(resultWrapper.getExtras().getValue());
             ByteString r = result.getPayload();
             Log.i(TAG, r.toString("utf-8"));
-            writeDets(r.toString("utf-8"));
-            if (first_receive_det == null) {
-                JSONArray dets = copyDets();
-                if (dets.length() > 0) {
+            writeResults(r.toString("utf-8"));
+            if (first_receive_res == null) {
+                JSONArray res = copyResults();
+                if (res.length() > 0) {
                     Date d = new Date();
-                    first_receive_det = d.getTime();
-                    Log.d("[TIMING]", "First received detection " + first_receive_det);
+                    first_receive_res = d.getTime();
+                    Log.d("[TIMING]", "First received detection " + first_receive_res);
                 }
             }
         } catch (InvalidProtocolBufferException e) {
@@ -79,50 +75,16 @@ public class ElijahCloudlet implements CloudletItf {
             Log.e(TAG, "Got result of type " + result.getPayloadType().name());
             return;
         }
-
     }
 
-    private Vector<Double> readDets(String c) throws JSONException {
-        JSONArray dets = copyDets();
-        if (dets == null)
-            return null;
-        Log.d(TAG, "Dets: " + dets);
-
-        double conf = 0.0;
-        int index = -1;
-        for (int i = 0; i < dets.length(); i++) {
-            JSONObject jsonobject = dets.getJSONObject(i);
-            String cla = jsonobject.getString("class");
-            if (cla.equals(c)) { // We found the class we want!
-                double classConf = jsonobject.getDouble("score");
-                if (classConf > conf) {
-                    index = i;
-                }
-            }
-        }
-
-        if (index != -1) {
-            JSONObject jsonobject = dets.getJSONObject(index);
-            JSONArray bbox = jsonobject.getJSONArray("box");
-            Vector<Double> vec = new Vector<Double>();
-            vec.add(bbox.getDouble(0));
-            vec.add(bbox.getDouble(1));
-            vec.add(bbox.getDouble(2));
-            vec.add(bbox.getDouble(3));
-            return vec;
-        } else {
-            return null;
-        }
-    }
-
-    private synchronized JSONArray copyDets() {
-        if (detections != null) {
+    private synchronized JSONArray copyResults() {
+        if (results != null) {
             try {
-                JSONArray dets = new JSONArray(detections);
-                detections = null; // Invalidate the detection.
-                return dets;
+                JSONArray res = new JSONArray(results);
+                results = null; // Invalidate the detection.
+                return res;
             } catch (Exception e) {
-                detections = null;
+                results = null;
                 return null;
             }
         }
@@ -131,13 +93,15 @@ public class ElijahCloudlet implements CloudletItf {
         }
     }
 
-    private synchronized void writeDets(String dets) {
-        detections = dets;
+    private synchronized void writeResults(String res) {
+        results = res;
     }
 
+    private synchronized JSONArray readResults() { return copyResults(); }
+
     @Override
-    public void startStreaming(DroneItf d, String model, Integer sample_rate) {
-        detectionModel = model;
+    public void startStreaming(DroneItf d, String m, Integer sample_rate) {
+        model = m;
         drone = d;
         streamingThread = new Thread(() -> {
             while (true) {
@@ -181,7 +145,7 @@ public class ElijahCloudlet implements CloudletItf {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
                 extrasBuilder.setDroneId(uuid.toString());
-                extrasBuilder.setDetectionModel(detectionModel);
+                extrasBuilder.setDetectionModel(model);
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
                 try {
                     lb.setLongitude(drone.getLon());
@@ -209,12 +173,7 @@ public class ElijahCloudlet implements CloudletItf {
     }
 
     @Override
-    public Vector<Double> getDetections(String c) {
-        try {
-            return readDets(c);
-        } catch (Exception e) {
-            Log.e(TAG, "Got error decoding JSON: " + e.getMessage());
-            return null;
-        }
+    public JSONArray getResults() {
+        return readResults();
     }
 }
