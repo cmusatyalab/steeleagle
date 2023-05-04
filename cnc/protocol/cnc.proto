@@ -28,6 +28,13 @@ message DroneStatus {
   double bearing = 3;
 }
 
+message PCMD {
+  double gaz = 1;
+  double yaw = 2;
+  double pitch = 3;
+  double roll = 4;
+}
+
 message Extras {
     bool registering = 1;
     string drone_id = 2;
@@ -36,4 +43,7 @@ message Extras {
     Location location = 5;
     DroneStatus status = 6;
     string detection_model = 7;
+    PCMD pcmd = 8;
+    bool takeoff = 9;
+    bool land = 10;
 }
