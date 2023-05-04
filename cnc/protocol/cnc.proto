@@ -29,10 +29,10 @@ message DroneStatus {
 }
 
 message PCMD {
-  double gaz = 1;
-  double yaw = 2;
-  double pitch = 3;
-  double roll = 4;
+  int32 gaz = 1;
+  int32 yaw = 2;
+  int32 pitch = 3;
+  int32 roll = 4;
 }
 
 message Extras {
