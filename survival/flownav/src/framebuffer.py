@@ -1,15 +1,17 @@
 import sys
 import cv2
 import numpy as np
+import os
 
 VERBOSE = 0
 
 
 class VideoBuffer(object):
     def __init__(self,vidfile,start=None,stop=None,loop=False,historysize=1):
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp|buffer_size;4000000|tune;fastdecode"
         self.cap = cv2.VideoCapture(vidfile)
         self.name = str(vidfile)
-        self.live = not isinstance(vidfile,str)
+        self.live = True
         self.start = start
         self.stop = stop
         self.loop = loop

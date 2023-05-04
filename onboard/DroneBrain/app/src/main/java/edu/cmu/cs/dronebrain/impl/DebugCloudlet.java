@@ -36,5 +36,5 @@ public class DebugCloudlet implements CloudletItf {
     }
 
     @Override
-    public JSONArray getResults() {return new JSONArray();}
+    public JSONArray getResults(String key) {return new JSONArray();}
 }

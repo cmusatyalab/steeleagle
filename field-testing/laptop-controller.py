@@ -25,7 +25,7 @@ import os
 import zmq
 import json
 from trackers import dynamic, static, parrot
-from avoidance import avoider
+from avoidance import sift_avoider, midas_avoider
 import argparse
 
 DRONE_IP = "192.168.42.1" # Real drone no controller
@@ -356,6 +356,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--simulate", action='store_true', help="Run on a simulated drone in Parrot Sphinx")
     parser.add_argument("-nf", "--nofly", action='store_true', help="Prevent flight while running")
     parser.add_argument("-ns", "--nostream", action='store_true', help="Prevent streaming while running")
+    parser.add_argument("-mds", "--midas", action='store_true', help="Use MiDaS to do obstacle avoidance")
+    parser.add_argument("-sft", "--sift", action='store_true', help="Use SIFT to do obstacle avoidance")
 
     opts = parser.parse_args()
 
@@ -376,7 +378,7 @@ if __name__ == "__main__":
     time.sleep(1)
     
     if not opts.nostream:
-        streamer = OlympeStreaming(drone, sample_rate=6, model='DPT_Large')
+        streamer = OlympeStreaming(drone, sample_rate=3, model='DPT_BEiT_L_512')
         streamer.start()
     
     control = KeyboardCtrl()
@@ -387,7 +389,10 @@ if __name__ == "__main__":
             elif control.landing():
                 drone(Landing())
             if control.start_track():
-                tracker = avoider.Avoider(drone, 10.0)
+                if opts.midas:
+                    tracker = midas_avoider.MiDaSAvoider(drone)
+                elif opts.sift:
+                    tracker = sift_avoider.SIFTAvoider(drone)
                 tracker.start()
                 tracking = True
                 print("Starting track!")

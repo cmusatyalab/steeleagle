@@ -14,7 +14,7 @@ from zipfile import ZipFile
 import jinja2
 import yaml
 import jsonschema
-import task_stubs
+import docs.task_stubs as task_stubs
 import requests
 import json
 import subprocess
@@ -185,7 +185,7 @@ def _main():
     with open(args.intermediate, mode='w', encoding='utf-8') as f:
         f.write(out)
     try:
-        subprocess.run(f"./java2dex.sh {args.javac_path} {args.d8_path} {args.android_jar}", shell=True, check=True)
+        subprocess.run(f"./utils/java2dex.sh {args.javac_path} {args.d8_path} {args.android_jar}", shell=True, check=True)
         #java2dex creates classes.dex in src, so we need to rename it if -o was given
         os.rename("./classes.dex", args.output)
         print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))

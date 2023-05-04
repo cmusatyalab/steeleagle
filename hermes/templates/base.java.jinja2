@@ -32,17 +32,14 @@ public class MS extends FlightScript {
         };
         try {
             HashMap<String, String> kwargs =  new HashMap<String, String>();
-            String json = "";
             taskQueue = new PriorityQueue<Task>(1, comp);
             {%- for k,v in placemarks.items() %}
             // {{v.name}}/{{v.task}} START //
-            json = "{{v.kwargs}}";
             kwargs.clear();
             {%- for param, value in v.kwargs.items() %}
             kwargs.put("{{param}}", "{{value}}");
             {%- endfor %}
             taskQueue.add(new {{v.task}}(drone, cloudlet, kwargs));
-            //taskQueue.add(new {{v.task}}(drone, cloudlet, json));
             {%- endfor %}
 
             drone.connect();

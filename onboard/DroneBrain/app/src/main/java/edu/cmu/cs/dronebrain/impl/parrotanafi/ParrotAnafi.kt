@@ -10,6 +10,7 @@ import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
 import com.parrot.drone.groundsdk.device.instrument.Altimeter
+import com.parrot.drone.groundsdk.device.instrument.Compass
 import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
 import com.parrot.drone.groundsdk.device.instrument.Gps
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
@@ -19,6 +20,7 @@ import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
+import com.parrot.drone.groundsdk.value.OptionalDouble
 import edu.cmu.cs.dronebrain.interfaces.DroneItf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -32,6 +34,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D
 import org.apache.commons.math3.geometry.euclidean.threed.Rotation
 import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention
 import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder
+import java.io.NotActiveException
 import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.collections.ArrayList
@@ -256,11 +259,15 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun startStreaming(resolution: Int?) {
-        var grabber: FFmpegFrameGrabber = FFmpegFrameGrabber("rtsp://192.168.42.1/live")
-        grabber.setOption("rtsp_transport", "udp") // UDP connection
-        grabber.setOption("buffer_size", "6000000") // Increase buffer size to allow reading full frames
-        grabber.setVideoOption("tune", "fastdecode") // Tune for low compute decoding
-        grabber.imageScalingFlags = swscale.SWS_FAST_BILINEAR // Set scaling method
+        if (grabber != null) {
+            Log.d(TAG, "Drone already streaming, ignoring command")
+            return
+        }
+        grabber = FFmpegFrameGrabber("rtsp://192.168.42.1/live")
+        grabber!!.setOption("rtsp_transport", "udp") // UDP connection
+        grabber!!.setOption("buffer_size", "6000000") // Increase buffer size to allow reading full frames
+        grabber!!.setVideoOption("tune", "fastdecode") // Tune for low compute decoding
+        grabber!!.imageScalingFlags = swscale.SWS_FAST_BILINEAR // Set scaling method
 
         if (resolution == 720) {
             resolution_x = 1280
@@ -272,12 +279,12 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             throw Exception("Streaming Exception: Unsupported resolution type!")
         }
 
-        grabber.imageWidth = resolution_x
-        grabber.imageHeight = resolution_y
+        grabber!!.imageWidth = resolution_x
+        grabber!!.imageHeight = resolution_y
 
         // Connect to the drone and start streaming
         try {
-            grabber.start()
+            grabber!!.start()
         } catch (e : FFmpegFrameGrabber.Exception) {
             throw Exception("Streaming Exception: " + e.message)
         }
@@ -433,6 +440,19 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         pilotingItfRef?.get()?.let {
             it.setYawRotationSpeed(dyaw)
             it.setPitch(-1 * dpitch)
+            it.setRoll(droll)
+        }
+    }
+
+    override fun PCMD(pitch: Int, yaw: Int, roll: Int) {
+        var p = pitch.coerceIn(-100, 100)
+        var y = yaw.coerceIn(-100, 100)
+        var r = roll.coerceIn(-100, 100)
+
+        pilotingItfRef?.get()?.let {
+            it.setYawRotationSpeed(y)
+            it.setPitch(-1 * p)
+            it.setRoll(r)
         }
     }
 
@@ -498,7 +518,11 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun rotateTo(theta: Double?) {
-        throw NotImplementedError()
+        var head = heading
+        var diff = theta!! - head!!
+        if (diff > 180)
+            diff -= 360
+        rotateBy(diff)
     }
 
     @Throws(Exception::class)
@@ -560,6 +584,29 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
             alt = it!!.takeOffRelativeAltitude
         }
         return alt
+    }
+
+    override fun getExactAlt(): Double? {
+        var alt : Double? = null
+        drone?.getInstrument(Altimeter::class.java) {
+            var a = it!!.absoluteAltitude
+            if (a.isAvailable) {
+                alt = a.value
+            }
+        }
+        if (alt == null)
+            throw Exception("Altimiter did not return a value")
+        return alt
+    }
+
+    override fun getHeading(): Double? {
+        var head : Double? = null
+        drone?.getInstrument(Compass::class.java) {
+            head = it?.heading
+        }
+        if (head == null)
+            throw Exception("Compass did not return a value")
+        return head
     }
 
     override fun hover() {

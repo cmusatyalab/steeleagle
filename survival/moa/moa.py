@@ -61,7 +61,7 @@ parser.add_argument("-l", "--logging", type=int, default=20,
 parser.add_argument("--video-file", default=None
                     , help="Load a video file to test.")
 
-parser.add_argument("--sleep",  type=int, default=1000,
+parser.add_argument("--sleep",  type=int, default=1,
                     help="Sleep with waitKey for this many ms (default=1000). Use 0 to wait indefinitely for keypress.")
 
 parser.add_argument("--epsilon", type=int, default=50, help="Maximum inter-distance between cluster points.")
@@ -222,6 +222,8 @@ while True:
         #draw roi
         cv2.rectangle(dispim, (scrapX,scrapY), (dispim.shape[1]-scrapX, dispim.shape[0]-scrapY), (0,255,255), thickness=1)
         cv2.imshow("OBSTACLES", dispim)
+        if id == 150:
+            cv2.imwrite("obstacle.jpg", dispim)
 
         if opts.output:
             height, width, layers = dispim.shape

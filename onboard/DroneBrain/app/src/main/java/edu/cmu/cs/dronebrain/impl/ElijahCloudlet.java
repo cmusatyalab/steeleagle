@@ -21,6 +21,8 @@ import edu.cmu.cs.gabriel.protocol.Protos.PayloadType;
 import edu.cmu.cs.gabriel.protocol.Protos.ResultWrapper;
 import edu.cmu.cs.steeleagle.Protos;
 import edu.cmu.cs.steeleagle.Protos.Extras;
+
+import java.util.HashMap;
 import java.util.UUID;
 
 public class ElijahCloudlet implements CloudletItf {
@@ -29,23 +31,22 @@ public class ElijahCloudlet implements CloudletItf {
     ServerComm comm;
     Thread streamingThread = null;
     String SOURCE = "command"; // Command cognitive engine will handle these image frames
-    String results = null; // JSON string storing the previous seen detections
+    HashMap<String, String> results = null;
     String model = "coco";
     DroneItf drone = null;
     UUID uuid = null;
 
-    Long first_send_frame = null;
-    Long first_receive_res = null;
-
     public ElijahCloudlet(ServerComm s, UUID id) {
         uuid = id;
         comm = s;
+        results = new HashMap<>();
     }
 
     @Override
     public void processResults(Object object) {
         ResultWrapper resultWrapper = (ResultWrapper) object;
         Log.d(TAG, "Results processed by OPENSCOUT with producer: " + resultWrapper.getResultProducerName().getValue());
+        String producer = resultWrapper.getResultProducerName().getValue();
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from OPENSCOUT.");
             return;
@@ -56,15 +57,7 @@ public class ElijahCloudlet implements CloudletItf {
             Extras extras = Extras.parseFrom(resultWrapper.getExtras().getValue());
             ByteString r = result.getPayload();
             Log.i(TAG, r.toString("utf-8"));
-            writeResults(r.toString("utf-8"));
-            if (first_receive_res == null) {
-                JSONArray res = copyResults();
-                if (res.length() > 0) {
-                    Date d = new Date();
-                    first_receive_res = d.getTime();
-                    Log.d("[TIMING]", "First received detection " + first_receive_res);
-                }
-            }
+            writeResults(producer, r.toString("utf-8"));
         } catch (InvalidProtocolBufferException e) {
             Log.e(TAG, "Protobuf Error", e);
         } catch (Exception e) {
@@ -77,14 +70,14 @@ public class ElijahCloudlet implements CloudletItf {
         }
     }
 
-    private synchronized JSONArray copyResults() {
-        if (results != null) {
+    private synchronized JSONArray copyResults(String producer) {
+        if (results.get(producer) != null) {
             try {
-                JSONArray res = new JSONArray(results);
-                results = null; // Invalidate the detection.
+                JSONArray res = new JSONArray(results.get(producer));
+                results.put(producer, null); // Invalidate the detection.
                 return res;
             } catch (Exception e) {
-                results = null;
+                results.put(producer, null);
                 return null;
             }
         }
@@ -93,15 +86,19 @@ public class ElijahCloudlet implements CloudletItf {
         }
     }
 
-    private synchronized void writeResults(String res) {
-        results = res;
+    private synchronized void writeResults(String producer, String res) {
+        results.put(producer, res);
     }
 
-    private synchronized JSONArray readResults() { return copyResults(); }
+    private synchronized JSONArray readResults(String producer) { return copyResults(producer); }
 
     @Override
     public void startStreaming(DroneItf d, String m, Integer sample_rate) {
         model = m;
+        if (streamingThread != null) {
+            Log.d(TAG, "Cloudlet already streaming, ignoring command");
+            return;
+        }
         drone = d;
         streamingThread = new Thread(() -> {
             while (true) {
@@ -136,11 +133,6 @@ public class ElijahCloudlet implements CloudletItf {
         if (frame == null)
             return;
         try {
-            if (first_send_frame == null) {
-                Date d = new Date();
-                first_send_frame = d.getTime();
-                Log.d("[TIMING]", "First sent frame " + first_send_frame);
-            }
             comm.sendSupplier(() -> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
@@ -173,7 +165,7 @@ public class ElijahCloudlet implements CloudletItf {
     }
 
     @Override
-    public JSONArray getResults() {
-        return readResults();
+    public JSONArray getResults(String producer) {
+        return readResults(producer);
     }
 }

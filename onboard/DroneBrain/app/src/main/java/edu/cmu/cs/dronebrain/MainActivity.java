@@ -104,8 +104,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     @Override
     public void accept(ResultWrapper resultWrapper) {
         // Forward OpenScout results to the cloudlet so that it can process them
-        if (cloudlet != null && (resultWrapper.getResultProducerName().getValue().equals("openscout-object")
-                || resultWrapper.getResultProducerName().getValue().equals("openscout-face"))) {
+        if (cloudlet != null && !resultWrapper.getResultProducerName().getValue().equals("command")) {
             cloudlet.processResults(resultWrapper);
             return;
         }

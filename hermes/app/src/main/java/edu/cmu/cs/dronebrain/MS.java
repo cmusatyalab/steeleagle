@@ -15,7 +15,7 @@ import edu.cmu.cs.dronebrain.interfaces.Task;
 import android.util.Log;
 
 // import derived tasks
-import edu.cmu.cs.dronebrain.SimpleTask;
+import edu.cmu.cs.dronebrain.ObstacleTask;
 
 public class MS extends FlightScript {
     
@@ -30,14 +30,14 @@ public class MS extends FlightScript {
         };
         try {
             HashMap<String, String> kwargs =  new HashMap<String, String>();
-            String json = "";
             taskQueue = new PriorityQueue<Task>(1, comp);
-            // Task1/SimpleTask START //
-            json = "{'coords': [{'lng': -79.949659, 'lat': 40.4135201, 'alt': 15.0}, {'lng': -79.9495826, 'lat': 40.4135161, 'alt': 15.0}, {'lng': -79.949364, 'lat': 40.413464, 'alt': 15.0}, {'lng': -79.9486344, 'lat': 40.4135641, 'alt': 15.0}, {'lng': -79.9486344, 'lat': 40.4136611, 'alt': 15.0}, {'lng': -79.9491213, 'lat': 40.4136172, 'alt': 15.0}, {'lng': -79.9492956, 'lat': 40.4136662, 'alt': 15.0}, {'lng': -79.9494887, 'lat': 40.41366, 'alt': 15.0}, {'lng': -79.9495598, 'lat': 40.4135804, 'alt': 15.0}, {'lng': -79.949659, 'lat': 40.4135201, 'alt': 15.0}]}";
+            // Avoidance/ObstacleTask START //
             kwargs.clear();
-            kwargs.put("coords", "[{'lng': -79.949659, 'lat': 40.4135201, 'alt': 15.0}, {'lng': -79.9495826, 'lat': 40.4135161, 'alt': 15.0}, {'lng': -79.949364, 'lat': 40.413464, 'alt': 15.0}, {'lng': -79.9486344, 'lat': 40.4135641, 'alt': 15.0}, {'lng': -79.9486344, 'lat': 40.4136611, 'alt': 15.0}, {'lng': -79.9491213, 'lat': 40.4136172, 'alt': 15.0}, {'lng': -79.9492956, 'lat': 40.4136662, 'alt': 15.0}, {'lng': -79.9494887, 'lat': 40.41366, 'alt': 15.0}, {'lng': -79.9495598, 'lat': 40.4135804, 'alt': 15.0}, {'lng': -79.949659, 'lat': 40.4135201, 'alt': 15.0}]");
-            taskQueue.add(new SimpleTask(drone, cloudlet, kwargs));
-            //taskQueue.add(new SimpleTask(drone, cloudlet, json));
+            kwargs.put("model", "DPT_BEiT_L_512");
+            kwargs.put("speed", "5");
+            kwargs.put("altitude", "52.0");
+            kwargs.put("coords", "[{'lng': -79.9510911, 'lat': 40.4185768, 'alt': 15.0}, {'lng': -79.9512312, 'lat': 40.418852, 'alt': 15.0}]");
+            taskQueue.add(new ObstacleTask(drone, cloudlet, kwargs));
 
             drone.connect();
             drone.takeOff();
