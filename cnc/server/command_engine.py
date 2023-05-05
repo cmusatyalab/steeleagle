@@ -67,6 +67,9 @@ class DroneClient:
         self.id = id
         self.heartbeat = heartbeat
         self.sent_halt = False
+        self.takeoff = False
+        self.land = False
+        self.pitch = self.yaw = self.roll = self.gaz = 0
         self.script_url = ''
         self.lat = 0.0
         self.lon = 0.0
@@ -165,8 +168,31 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 else:
                                     logger.error(
                                         f"Invalid URL [{url}] given as flight script.")
+                            elif self.drones[extras.drone_id].takeoff:
+                                from_commander = cnc_pb2.Extras()
+                                from_commander.cmd.takeoff = True
+                                result_wrapper.extras.Pack(from_commander)
+                                result.payload = "!Takeoff sent!".encode(
+                                    encoding="utf-8")
+                                logger.debug(
+                                    f'Instructing drone {extras.drone_id} to takeoff...')
+                                self.drones[extras.drone_id].takeoff = False
+                            elif self.drones[extras.drone_id].land:
+                                from_commander = cnc_pb2.Extras()
+                                from_commander.cmd.land = True
+                                result_wrapper.extras.Pack(from_commander)
+                                result.payload = "!Land sent!".encode(
+                                    encoding="utf-8")
+                                logger.debug(
+                                    f'Instructing drone {extras.drone_id} to land...')
+                                self.drones[extras.drone_id].land = False
                             else:
-                                result.payload = "No command.".encode(
+                                from_commander = cnc_pb2.Extras()
+                                from_commander.cmd.pcmd.gaz = self.drones[extras.drone_id].gaz
+                                from_commander.cmd.pcmd.yaw = self.drones[extras.drone_id].yaw
+                                from_commander.cmd.pcmd.pitch = self.drones[extras.drone_id].pitch
+                                from_commander.cmd.pcmd.roll = self.drones[extras.drone_id].roll
+                                result.payload = "Sending PCMD commands.".encode(
                                     encoding="utf-8")
                     elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
                         #update current_frame for this drone so it can be displayed in commander UI
@@ -180,11 +206,30 @@ class DroneCommandEngine(cognitive_engine.Engine):
             if extras.cmd is not "":
                 try:
                     drone = extras.cmd.for_drone_id
+                    logger.info(
+                        f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}] takeoff.')
+                    self.drones[drone].gaz = extras.cmd.pcmd.gaz
+                    self.drones[drone].yaw = extras.cmd.pcmd.yaw
+                    self.drones[drone].pitch = extras.cmd.pcmd.pitch
+                    self.drones[drone].roll = extras.cmd.pcmd.roll
+
                     if extras.cmd.halt:
                         logger.info(
                             f'Commander [{commander}] requests a halt be sent to drone [{drone}].')
                         self.drones[drone].sent_halt = True
                         result.payload = f'Halt sent to drone {drone}.'.encode(
+                            encoding="utf-8")
+                    elif extras.cmd.takeoff:
+                        logger.info(
+                            f'Commander [{commander}] requests that drone [{drone}] takeoff.')
+                        self.drones[drone].takeoff = True
+                        result.payload = f'Takeoff sent to drone {drone}.'.encode(
+                            encoding="utf-8")
+                    elif extras.cmd.land:
+                        logger.info(
+                            f'Commander [{commander}] requests that drone [{drone}] land.')
+                        self.drones[drone].land = True
+                        result.payload = f'Land sent to drone {drone}.'.encode(
                             encoding="utf-8")
                     elif extras.cmd.script_url is not "":
                         url = extras.cmd.script_url
