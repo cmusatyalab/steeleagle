@@ -206,37 +206,30 @@ class DroneCommandEngine(cognitive_engine.Engine):
             logger.info(extras.cmd)
             try:
                 drone = extras.cmd.for_drone_id
+                payload = self.getDrones()
+                result.payload = payload.encode(encoding="utf-8")
+                result_wrapper.results.append(result)
                 if extras.cmd.halt:
                     logger.info(
                         f'Commander [{commander}] requests a halt be sent to drone [{drone}].')
                     self.drones[drone].sent_halt = True
-                    result.payload = f'Halt sent to drone {drone}.'.encode(
-                        encoding="utf-8")
                 elif extras.cmd.takeoff:
                     logger.info(
                         f'Commander [{commander}] requests that drone [{drone}] takeoff.')
                     self.drones[drone].takeoff = True
-                    result.payload = f'Takeoff sent to drone {drone}.'.encode(
-                        encoding="utf-8")
                 elif extras.cmd.land:
                     logger.info(
                         f'Commander [{commander}] requests that drone [{drone}] land.')
                     self.drones[drone].land = True
-                    result.payload = f'Land sent to drone {drone}.'.encode(
-                        encoding="utf-8")
                 elif extras.cmd.script_url is not "":
                     url = extras.cmd.script_url
                     if validators.url(url, public=True) == True:
                         logger.info(
                             f'Commander [{commander}] requests drone [{drone}] run flight script at {url}.')
                         self.drones[drone].script_url = url
-                        result.payload = f'Script URL sent to drone {drone}.'.encode(
-                            encoding="utf-8")
                     else:
                         logger.error(
                             f'Sorry, [{commander}]  {url} is invalid!')
-                        result.payload = f'Invalid URL sent {url}!'.encode(
-                            encoding="utf-8")
                 else:
                     logger.info(
                         f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}] takeoff.')
@@ -244,9 +237,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     self.drones[drone].yaw = extras.cmd.pcmd.yaw
                     self.drones[drone].pitch = extras.cmd.pcmd.pitch
                     self.drones[drone].roll = extras.cmd.pcmd.roll
-                    payload = self.getDrones()
-                    result.payload = payload.encode(encoding="utf-8")
-                    result_wrapper.results.append(result)
+
                     if self.drones[drone].current_frame != False:
                         result = gabriel_pb2.ResultWrapper.Result()
                         result.payload_type = gabriel_pb2.PayloadType.IMAGE
@@ -255,8 +246,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
                 if drone != "":
                     logger.error(
                         f'Sorry, [{commander}]  drone [{drone}] does not exist!')
-                result.payload = f'Drone {drone} is not connected.'.encode(
-                    encoding="utf-8")
 
         result_wrapper.results.append(result)
         return result_wrapper
