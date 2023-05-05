@@ -1,0 +1,5 @@
+gabriel-client
+randomname
+Pillow
+tkintermapview
+customtkinter
