@@ -192,6 +192,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 from_commander.cmd.pcmd.yaw = self.drones[extras.drone_id].yaw
                                 from_commander.cmd.pcmd.pitch = self.drones[extras.drone_id].pitch
                                 from_commander.cmd.pcmd.roll = self.drones[extras.drone_id].roll
+                                result_wrapper.extras.Pack(from_commander)
                                 result.payload = "Sending PCMD commands.".encode(
                                     encoding="utf-8")
                     elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
@@ -231,9 +232,8 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         logger.error(
                             f'Sorry, [{commander}]  {url} is invalid!')
                 else:
-                    if extras.cmd.pcmd.gaz > 0 or extras.cmd.pcmd.yaw > 0 or extras.cmd.pcmd.pitch >0 or extras.cmd.pcmd.roll > 0:
-                        logger.info(
-                            f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}].')
+                    logger.debug(
+                        f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}].')
                     self.drones[drone].gaz = extras.cmd.pcmd.gaz
                     self.drones[drone].yaw = extras.cmd.pcmd.yaw
                     self.drones[drone].pitch = extras.cmd.pcmd.pitch
