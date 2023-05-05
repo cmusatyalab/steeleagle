@@ -85,10 +85,10 @@ public class ObstacleTask extends Task {
                     int diff = (int)((offset - lastoffset));
                     float ratio = (offset + diff) / 640;
                     int move = (int)((ratio * 100));
-                    drone.PCMD(speed, 0, offset);
+                    drone.PCMD(speed, 0, offset, 0);
                     lastoffset = offset;
                 } else {
-                    drone.PCMD(speed, 0, lastoffset);
+                    drone.PCMD(speed, 0, lastoffset, 0);
                 }
                 Thread.sleep(50);
             } catch (Exception e) {
@@ -96,7 +96,7 @@ public class ObstacleTask extends Task {
             }
             lastoffset = (int)(lastoffset / 1.2);
         } 
-        drone.PCMD(0, 0, 0);
+        drone.PCMD(0, 0, 0, 0);
     }
 
     @Override

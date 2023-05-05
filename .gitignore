@@ -17,3 +17,4 @@ openscout-vol/
 .vscode/
 cnc/server/model/
 venv/
+*.jar

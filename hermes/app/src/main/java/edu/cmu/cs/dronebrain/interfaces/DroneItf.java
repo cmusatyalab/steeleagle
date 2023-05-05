@@ -23,7 +23,7 @@ public interface DroneItf {
     void rotateTo(Double theta) throws Exception;
     void setGimbalPose(Double yaw_theta, Double pitch_theta, Double roll_theta) throws Exception;
     void takePhoto() throws Exception;
-    void PCMD(Integer pitch, Integer yaw, Integer roll);
+    void PCMD(Integer pitch, Integer yaw, Integer roll, Integer gaz);
     // TODO: Remove this, it's for testing only.
     ArrayList<Double> calculateOffsets(Integer pixel_x, Integer pixel_y, Double leash);
     void trackTarget(Vector<Double> box, Double leash) throws Exception;

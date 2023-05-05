@@ -444,15 +444,17 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         }
     }
 
-    override fun PCMD(pitch: Int, yaw: Int, roll: Int) {
+    override fun PCMD(pitch: Int, yaw: Int, roll: Int, gaz: Int) {
         var p = pitch.coerceIn(-100, 100)
         var y = yaw.coerceIn(-100, 100)
         var r = roll.coerceIn(-100, 100)
+        var g = gaz.coerceIn(-100, 100)
 
         pilotingItfRef?.get()?.let {
             it.setYawRotationSpeed(y)
             it.setPitch(-1 * p)
             it.setRoll(r)
+            it.setVerticalSpeed(gaz)
         }
     }
 
