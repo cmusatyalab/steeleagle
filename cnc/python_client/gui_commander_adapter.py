@@ -108,6 +108,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.image_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
         self.image_label.grid(row=1, column=0, pady=5, padx=5)
         
+        
         self.man = customtkinter.CTkLabel(master=self.frame_left_bot,
                                           text="MANUAL CONTROL ACTIVE",
                                           font=("Roboto Medium", 13),
@@ -117,18 +118,13 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.loc = customtkinter.CTkLabel(master=self.frame_left_bot,
                                           text="Location: NONE",
                                           font=("Roboto Medium", 13))  # font name and size in px
-        self.loc.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
+        self.loc.grid(row=3, column=0, pady=10, padx=10, sticky="nsew")
 
         self.task = customtkinter.CTkLabel(master=self.frame_left_bot,
                                           text="Task: NONE",
                                           font=("Roboto Medium", 13))  # font name and size in px
-        self.task.grid(row=3, column=0, pady=10, padx=10, sticky="nsew")
+        self.task.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
 
-        self.state = customtkinter.CTkLabel(master=self.frame_left_bot,
-                                            text="State: DISCONNECTED",
-                                            font=("Roboto Medium", 13))  # font name and size in px
-        self.state.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
-        
         self.button_fly = customtkinter.CTkButton(master=self.frame_left_bot,
                                                    text="Fly Mission",
                                                    width=150, 
