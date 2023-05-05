@@ -231,8 +231,9 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         logger.error(
                             f'Sorry, [{commander}]  {url} is invalid!')
                 else:
-                    logger.info(
-                        f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}] takeoff.')
+                    if extras.cmd.pcmd.gaz > 0 or extras.cmd.pcmd.yaw > 0 or extras.cmd.pcmd.pitch >0 or extras.cmd.pcmd.roll > 0:
+                        logger.info(
+                            f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}].')
                     self.drones[drone].gaz = extras.cmd.pcmd.gaz
                     self.drones[drone].yaw = extras.cmd.pcmd.yaw
                     self.drones[drone].pitch = extras.cmd.pcmd.pitch
