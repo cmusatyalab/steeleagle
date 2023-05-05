@@ -69,6 +69,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private Thread scriptThread = null;
     /** Current drone object **/
     private DroneItf drone = null;
+    private boolean manual = true;
     /** Current cloudlet object **/
     private CloudletItf cloudlet = null;
     /** For Gabriel client connection **/
@@ -120,21 +121,44 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             ByteString r = result.getPayload();
             if (extras.hasCmd()) {
                 Protos.Command cmd = extras.getCmd();
+
                 if (cmd.getHalt()) {
                     Log.i(TAG, "Killswitch signaled from commander.");
                     if (MS != null) {
                         MS.kill();
                     }
-                    Log.d(TAG, "Destroying app!");
-                    finish();
+                    // Set the drone to manual control mode.
+                    manual = true;
                 }
 
                 if (URLUtil.isValidUrl(cmd.getScriptUrl())) {
                     Log.i(TAG, "Flight script sent by commander.");
                     scriptUrl = cmd.getScriptUrl();
                     Log.i(TAG, scriptUrl);
-                    if (retrieveFlightScript())
+                    if (retrieveFlightScript()) {
+                        manual = false;
                         executeFlightScript();
+                    }
+                }
+            }
+
+            if (manual) {
+                if (extras.getTakeoff()) {
+                    drone.takeOff();
+                    drone.startStreaming(480);
+                    cloudlet.startStreaming(drone, "", 1);
+                }
+                else if (extras.getLand()) {
+                    drone.land();
+                }
+                else if (extras.hasPcmd()) {
+                    Protos.PCMD pcmd = extras.getPcmd();
+                    int pitch = pcmd.getPitch();
+                    int yaw = pcmd.getYaw();
+                    int roll = pcmd.getRoll();
+                    int gaz = pcmd.getGaz();
+
+                    drone.PCMD(pitch, yaw, roll, gaz);
                 }
             }
         } catch (InvalidProtocolBufferException e) {
@@ -189,36 +213,21 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             finish();
         };
 
+        Log.d(TAG, "Getting drone and cloudlet...");
+        try {
+            drone = getDrone(BuildConfig.PLATFORM); // Get the corresponding drone
+        } catch (Exception e) {
+            e.printStackTrace();
+            finish();
+        }
+        cloudlet = getCloudlet(); // Get the corresponding cloudlet
+
         serverComm = ServerComm.createServerComm(
                 this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect, LTEnetwork);
 
         loopHandler = new Handler();
         loopHandler.postDelayed(gabrielLoop, 1);
         Log.d(TAG, "Finished OnCreate");
-    }
-
-    // Used to get watch GPS location before drone GPS is active.
-    private double[] getWatchGPS() {
-        LocationManager lm = (LocationManager)getSystemService(LOCATION_SERVICE);
-        double[] gps = new double[2];
-        gps[0] = 0.0;
-        gps[1] = 0.0;
-        try {
-            Location loc =  lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (loc != null) {
-                gps[0] = loc.getLatitude();
-                gps[1] = loc.getLongitude();
-            } else {
-                loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                if (loc != null) {
-                    gps[0] = loc.getLatitude();
-                    gps[1] = loc.getLongitude();
-                }
-            }
-        } catch(SecurityException e)  {
-            Log.e(TAG, e.getMessage());
-        }
-        return gps;
     }
 
     public Network getNetworkObjectForCurrentWifiConnection() {
@@ -253,17 +262,9 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
                 Location l = null;
                 try {
-                    if (drone != null) {
-                        lb.setLatitude(drone.getLat());
-                        lb.setLongitude(drone.getLon());
-                        extrasBuilder.setLocation(lb);
-                    } else {
-                        double[] gps = getWatchGPS();
-                        lb.setLatitude(gps[0]);
-                        lb.setLongitude(gps[1]);
-                        extrasBuilder.setLocation(lb);
-                    }
-
+                    lb.setLatitude(drone.getLat());
+                    lb.setLongitude(drone.getLon());
+                    extrasBuilder.setLocation(lb);
                     extrasBuilder.setDroneId(uuid.toString());
 
                     if(heartbeatsSent < 2) {
@@ -298,9 +299,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             Class clazz = classLoader.loadClass("edu.cmu.cs.dronebrain.MS");
             Log.i(TAG, clazz.toString());
             MS = (FlightScript)clazz.newInstance();
-            Log.d(TAG, "Getting drone and cloudlet...");
-            drone = getDrone(platform); // Get the corresponding drone
-            cloudlet = getCloudlet(); // Get the corresponding cloudlet
             success = true;
         } catch (Exception e) {
             Log.e(TAG, "Download failed! " + e.toString());

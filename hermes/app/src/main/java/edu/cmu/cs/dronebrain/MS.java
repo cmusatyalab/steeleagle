@@ -16,6 +16,7 @@ import android.util.Log;
 
 // import derived tasks
 import edu.cmu.cs.dronebrain.ObstacleTask;
+import edu.cmu.cs.dronebrain.ObstacleTask;
 
 public class MS extends FlightScript {
     
@@ -31,12 +32,19 @@ public class MS extends FlightScript {
         try {
             HashMap<String, String> kwargs =  new HashMap<String, String>();
             taskQueue = new PriorityQueue<Task>(1, comp);
-            // Avoidance/ObstacleTask START //
+            // AvoidancePath/ObstacleTask START //
             kwargs.clear();
             kwargs.put("model", "DPT_BEiT_L_512");
             kwargs.put("speed", "5");
             kwargs.put("altitude", "52.0");
-            kwargs.put("coords", "[{'lng': -79.9510911, 'lat': 40.4185768, 'alt': 15.0}, {'lng': -79.9512312, 'lat': 40.418852, 'alt': 15.0}]");
+            kwargs.put("coords", "[{'lng': 2.3676097, 'lat': 48.8789323, 'alt': 15.0}, {'lng': 2.3669914, 'lat': 48.8789235, 'alt': 15.0}]");
+            taskQueue.add(new ObstacleTask(drone, cloudlet, kwargs));
+            // AvoidancePath2/ObstacleTask START //
+            kwargs.clear();
+            kwargs.put("model", "DPT_BEiT_L_512");
+            kwargs.put("speed", "5");
+            kwargs.put("altitude", "52.0");
+            kwargs.put("coords", "[{'lng': 2.3669292, 'lat': 48.8788794, 'alt': 15.0}, {'lng': 2.3676105, 'lat': 48.8789218, 'alt': 15.0}]");
             taskQueue.add(new ObstacleTask(drone, cloudlet, kwargs));
 
             drone.connect();
