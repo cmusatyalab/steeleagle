@@ -16,23 +16,26 @@ message Location {
   double altitude = 4;
 }
 
+message PCMD {
+  int32 gaz = 1;
+  int32 yaw = 2;
+  int32 pitch = 3;
+  int32 roll = 4;
+}
+
 message Command {
   string for_drone_id = 1;
   string script_url = 2;
   bool halt = 3;
+  PCMD pcmd = 4;
+  bool takeoff = 5;
+  bool land = 6;
 }
 
 message DroneStatus {
   int64 battery = 1;
   double gimbal_pitch = 2;
   double bearing = 3;
-}
-
-message PCMD {
-  int32 gaz = 1;
-  int32 yaw = 2;
-  int32 pitch = 3;
-  int32 roll = 4;
 }
 
 message Extras {
@@ -43,7 +46,4 @@ message Extras {
     Location location = 5;
     DroneStatus status = 6;
     string detection_model = 7;
-    PCMD pcmd = 8;
-    bool takeoff = 9;
-    bool land = 10;
 }
