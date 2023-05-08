@@ -31,6 +31,7 @@ message Command {
   bool takeoff = 5;
   bool land = 6;
   bool manual = 7;
+  bool rth = 8;
 }
 
 message DroneStatus {

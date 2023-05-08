@@ -66,7 +66,7 @@ class DroneClient:
     def __init__(self, id, heartbeat):
         self.id = id
         self.heartbeat = heartbeat
-        self.sent_halt = self.takeoff = self.land = self.manual = False
+        self.rth = self.sent_halt = self.takeoff = self.land = self.manual = False
         self.pitch = self.yaw = self.roll = self.gaz = 0
         self.script_url = ''
         self.lat = 0.0
@@ -183,6 +183,14 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                     encoding="utf-8")
                                 logger.debug(
                                     f'Instructing drone {extras.drone_id} to land...')
+                            elif self.drones[extras.drone_id].rth:
+                                from_commander = cnc_pb2.Extras()
+                                from_commander.cmd.rth = True
+                                result_wrapper.extras.Pack(from_commander)
+                                result.payload = "!RTH sent!".encode(
+                                    encoding="utf-8")
+                                logger.debug(
+                                    f'Instructing drone {extras.drone_id} to return-to-home...')
                                 self.drones[extras.drone_id].land = False
                             elif self.drones[extras.drone_id].manual:
                                 from_commander = cnc_pb2.Extras()
@@ -219,6 +227,10 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     logger.info(
                         f'Commander [{commander}] requests that drone [{drone}] land.')
                     self.drones[drone].land = True
+                elif extras.cmd.rth:
+                    logger.info(
+                        f'Commander [{commander}] requests that drone [{drone}] return-to-home.')
+                    self.drones[drone].rth = True
                 elif extras.cmd.script_url is not "":
                     url = extras.cmd.script_url
                     if validators.url(url, public=True) == True:
