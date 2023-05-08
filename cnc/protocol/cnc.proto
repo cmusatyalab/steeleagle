@@ -30,6 +30,7 @@ message Command {
   PCMD pcmd = 4;
   bool takeoff = 5;
   bool land = 6;
+  bool manual = 7;
 }
 
 message DroneStatus {

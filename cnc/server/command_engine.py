@@ -66,9 +66,7 @@ class DroneClient:
     def __init__(self, id, heartbeat):
         self.id = id
         self.heartbeat = heartbeat
-        self.sent_halt = False
-        self.takeoff = False
-        self.land = False
+        self.sent_halt = self.takeoff = self.land = self.manual = False
         self.pitch = self.yaw = self.roll = self.gaz = 0
         self.script_url = ''
         self.lat = 0.0
@@ -186,7 +184,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 logger.debug(
                                     f'Instructing drone {extras.drone_id} to land...')
                                 self.drones[extras.drone_id].land = False
-                            else:
+                            elif self.drones[extras.drone_id].manual:
                                 from_commander = cnc_pb2.Extras()
                                 from_commander.cmd.pcmd.gaz = self.drones[extras.drone_id].gaz
                                 from_commander.cmd.pcmd.yaw = self.drones[extras.drone_id].yaw
@@ -204,7 +202,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
         # if it is a commander client...
         elif extras.commander_id is not "":
             commander = extras.commander_id
-            logger.info(extras.cmd)
             try:
                 drone = extras.cmd.for_drone_id
                 payload = self.getDrones()
@@ -231,7 +228,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     else:
                         logger.error(
                             f'Sorry, [{commander}]  {url} is invalid!')
-                else:
+                elif extras.cmd.manual:
                     logger.debug(
                         f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}].')
                     self.drones[drone].gaz = extras.cmd.pcmd.gaz
@@ -239,10 +236,10 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     self.drones[drone].pitch = extras.cmd.pcmd.pitch
                     self.drones[drone].roll = extras.cmd.pcmd.roll
 
-                    if self.drones[drone].current_frame != False:
-                        result = gabriel_pb2.ResultWrapper.Result()
-                        result.payload_type = gabriel_pb2.PayloadType.IMAGE
-                        result.payload = self.drones[drone].current_frame
+                if self.drones[drone].current_frame != False:
+                    result = gabriel_pb2.ResultWrapper.Result()
+                    result.payload_type = gabriel_pb2.PayloadType.IMAGE
+                    result.payload = self.drones[drone].current_frame
             except KeyError:
                 if drone != "":
                     logger.error(
