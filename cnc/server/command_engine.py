@@ -225,10 +225,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         logger.info(
                             f'Commander [{commander}] requests drone [{drone}] run flight script at {url}.')
                         self.drones[drone].script_url = url
+                        self.drones[drone].manual = False
                     else:
                         logger.error(
                             f'Sorry, [{commander}]  {url} is invalid!')
                 elif extras.cmd.manual:
+                    self.drones[drone].manual = True
                     logger.debug(
                         f'Commander [{commander}] sent PCMD[{extras.cmd.pcmd.gaz},{extras.cmd.pcmd.yaw},{extras.cmd.pcmd.pitch},{extras.cmd.pcmd.roll}] for drone [{drone}].')
                     self.drones[drone].gaz = extras.cmd.pcmd.gaz
