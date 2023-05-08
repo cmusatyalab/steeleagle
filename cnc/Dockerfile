@@ -36,9 +36,11 @@ RUN python3 -m pip install --no-cache-dir \
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -
+COPY ./server/requirements.txt ./requirements.txt
+RUN python3 -m pip install -r requirements.txt
 COPY . cnc
 WORKDIR cnc/server
-RUN python3 -m pip install -r requirements.txt
+
 
 EXPOSE 5555 9099
 ENTRYPOINT ["./entrypoint.sh"]
