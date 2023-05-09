@@ -183,6 +183,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                     encoding="utf-8")
                                 logger.debug(
                                     f'Instructing drone {extras.drone_id} to land...')
+                                self.drones[extras.drone_id].land = False
                             elif self.drones[extras.drone_id].rth:
                                 from_commander = cnc_pb2.Extras()
                                 from_commander.cmd.rth = True
@@ -191,7 +192,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                     encoding="utf-8")
                                 logger.debug(
                                     f'Instructing drone {extras.drone_id} to return-to-home...')
-                                self.drones[extras.drone_id].land = False
+                                self.drones[extras.drone_id].rth = False
                             elif self.drones[extras.drone_id].manual:
                                 from_commander = cnc_pb2.Extras()
                                 from_commander.cmd.pcmd.gaz = self.drones[extras.drone_id].gaz
@@ -258,7 +259,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                 if drone != "":
                     logger.error(
                         f'Sorry, [{commander}]  drone [{drone}] does not exist!')
-
+        logger.debug(result)
         result_wrapper.results.append(result)
         return result_wrapper
 
