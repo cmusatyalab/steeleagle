@@ -33,6 +33,9 @@ public interface DroneItf {
     Double getLat() throws Exception;
     Double getLon() throws Exception;
     Double getAlt() throws Exception;
+    Integer getRSSI() throws Exception;
+    Integer getBatteryPercentage() throws Exception;
+    Integer getMagnetometerReading() throws Exception;
     Double getExactAlt() throws Exception;
     Double getHeading() throws Exception;
     void hover() throws Exception;

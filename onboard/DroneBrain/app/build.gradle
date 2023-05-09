@@ -40,6 +40,7 @@ android {
         debug {
             buildConfigField "String", "GABRIEL_HOST", GABRIEL_HOST
             buildConfigField "int", "PORT", PORT
+            buildConfigField "String", "PLATFORM", PLATFORM
         }
         release {
             minifyEnabled false

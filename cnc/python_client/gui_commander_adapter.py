@@ -18,8 +18,7 @@ import json
 import io
 import numpy as np
 import cv2
-from keyboard_controller import KeyboardCtrl
-
+import time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,10 +28,11 @@ class GUICommanderAdapter(customtkinter.CTk):
     APP_NAME = "Command and Control Interface"
     WIDTH = 1800
     HEIGHT = 1000
+    KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        
         self.title(GUICommanderAdapter.APP_NAME)
         self.geometry(str(GUICommanderAdapter.WIDTH) + "x" + str(GUICommanderAdapter.HEIGHT))
         self.minsize(GUICommanderAdapter.WIDTH, GUICommanderAdapter.HEIGHT)
@@ -40,9 +40,8 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.bind("<Command-q>", self.on_closing)
         self.bind("<Command-w>", self.on_closing)
+        self.bind("<KeyPress>", self.update_keyboard_press)
         self.createcommand('tk::mac::Quit', self.on_closing)
-
-        self.control = KeyboardCtrl()
 
         self.drone_dict = {}
         self.connected_drone = None
@@ -50,6 +49,8 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.connected_flightplan = None
         self.command_queue = Queue()
         self.manual = True
+
+        self.keyboard_state = {k : 0 for k in GUICommanderAdapter.KEYLIST}
         
         customtkinter.set_appearance_mode("system")
         customtkinter.set_default_color_theme("blue")
@@ -120,28 +121,43 @@ class GUICommanderAdapter(customtkinter.CTk):
                                           font=("Roboto Medium", 13))  # font name and size in px
         self.loc.grid(row=3, column=0, pady=10, padx=10, sticky="nsew")
 
-        self.task = customtkinter.CTkLabel(master=self.frame_left_bot,
-                                          text="Task: NONE",
+        self.info = customtkinter.CTkLabel(master=self.frame_left_bot,
+                                          text="Info: NONE",
                                           font=("Roboto Medium", 13))  # font name and size in px
-        self.task.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
+        self.info.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
 
         self.button_fly = customtkinter.CTkButton(master=self.frame_left_bot,
                                                    text="Fly Mission",
                                                    width=150, 
                                                    height=65,
                                                    command=self.on_fly_mission_pressed,
+                                                   text_color="black",
                                                    font=("Roboto Medium", 13))
 
         self.button_fly.grid(row=5, column=0, pady=5, padx=28, sticky="w")
         self.button_fly.configure(state=tkinter.DISABLED)
         
-        self.button_kill = customtkinter.CTkButton(master=self.frame_left_bot,
-                                                   text="Kill", 
+        self.button_rth = customtkinter.CTkButton(master=self.frame_left_bot,
+                                                   text="Return Home", 
                                                    width=150,
                                                    height=65, 
-                                                   fg_color="#db1a2e",
-                                                   hover_color="#a61624",
+                                                   fg_color="#f06d35",
+                                                   hover_color="#c95a2a",
+                                                   command=self.on_return_home_pressed,
+                                                   text_color="black",
+                                                   font=("Roboto Medium", 13))
+
+        self.button_rth.grid(row=6, column=0, pady=5, padx=28, sticky="e")
+        self.button_rth.configure(state=tkinter.DISABLED)
+        
+        self.button_kill = customtkinter.CTkButton(master=self.frame_left_bot,
+                                                   text="Manual Ctrl", 
+                                                   width=150,
+                                                   height=65, 
+                                                   fg_color="#52e831",
+                                                   hover_color="#49cf2b",
                                                    command=self.on_kill_mission_pressed,
+                                                   text_color="black",
                                                    font=("Roboto Medium", 13))
 
         self.button_kill.grid(row=5, column=0, pady=5, padx=28, sticky="e")
@@ -187,14 +203,13 @@ class GUICommanderAdapter(customtkinter.CTk):
     def on_drone_list_changed_event(self, new_list, event=None):
         self.update_drone_dict(new_list)
         if len(self.drone_dict.keys()) == 0:
-            if self.drone_dropdown.values != ["No Selection"]:
+            if self.drone_dropdown.get() != "No Selection":
                 self.drone_dropdown.configure(values=["No Selection"])
                 self.drone_dropdown.set("No Selection")
             self.on_disconnect_event()
         else:
             new_values = [d["name"] for d in new_list]
-            if new_values != self.drone_dropdown.values:
-                self.drone_dropdown.configure(values=new_values)
+            self.drone_dropdown.configure(values=new_values)
 
     def on_selection_changed_event(self, event=None):
         if self.connected_drone != None and self.connected_drone["name"] == self.drone_dropdown.get():
@@ -221,6 +236,7 @@ class GUICommanderAdapter(customtkinter.CTk):
                 marker_color_outside="#1a80ba",)
         self.on_connect_event()
         self.toggle_connect_button(False)
+        self.toggle_manual(True)
 
 
     # Events for handling the control panel
@@ -231,7 +247,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_fly.configure(state=tkinter.DISABLED)
         self.control_panel_text.configure(text="NO DRONE CONNECTED")
         self.loc.configure(text="Location: NONE")
-        self.task.configure(text="Task: NONE")
+        self.info.configure(text="Info: NONE")
         self.image_label.configure(image=self.no_image)
         if self.connected_marker != None:
             self.connected_marker.delete()
@@ -240,6 +256,7 @@ class GUICommanderAdapter(customtkinter.CTk):
     def on_connect_event(self):
         self.button_kill.configure(state=tkinter.NORMAL)
         self.button_fly.configure(state=tkinter.NORMAL)
+        self.button_rth.configure(state=tkinter.NORMAL)
         self.control_panel_text.configure(text="{0} Connected".format(self.connected_drone["name"]))
         self.on_update_event()
 
@@ -247,7 +264,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.connected_marker.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
         self.loc.configure(text="Location: {0}, {1}, {2}m".format(round(self.connected_drone["latitude"], 5), 
                 round(self.connected_drone["longitude"], 5), self.connected_drone["altitude"]))
-        self.task.configure(text="Task: {0}".format("Not Implemented"))
+        self.info.configure(text="RSSI: {0}, Mag: {1}, Battery: {2}".format(self.connected_drone["rssi"], self.connected_drone["mag"], self.connected_drone["battery"]))
 
     def on_frame_update_event(self, byteframe, event=None):
         try:
@@ -275,13 +292,13 @@ class GUICommanderAdapter(customtkinter.CTk):
         answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
                 " from people and that the PIC is ready to takeover in case of failure.")
         if answer:
+            self.toggle_manual(False)
             SCP_URL = "teiszler@128.2.212.60:/var/www/html/scripts/" + "mission.dex"
             FLIGHT_URL = "http://128.2.212.60/scripts/" + "mission.dex" 
             subprocess.run(["scp", filename, SCP_URL])
             logger.info("Sent file {0} to the cloudlet".format(filename))
             command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
             self.command_queue.put_nowait(command)
-            self.toggle_manual(False)
         
 
     def on_kill_mission_pressed(self, event=None):
@@ -289,12 +306,36 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.command_queue.put_nowait(command)
         self.toggle_manual(True)
 
+    def on_return_home_pressed(self, event=None):
+        self.button_fly.configure(state=tkinter.DISABLED)
+        self.button_kill.configure(state=tkinter.DISABLED)
+        self.button_rth.configure(state=tkinter.DISABLED)
+        self.toggle_manual(False)
+        self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="red")
+        command = {"drone": self.connected_drone["name"], "type": "rth"}
+        self.command_queue.put_nowait(command)
 
     # Events for handling the search bar
 
     def on_search_pressed(self, event=None):
         self.map_widget.set_address(self.entry.get())
 
+    # Keyboard
+
+    def update_keyboard_press(self, event):
+        keypress = event.keysym
+        print("Key pressed: " + keypress)
+        if keypress not in self.keyboard_state.keys():
+            return
+        else:
+            print(f"RATE: {time.time() * 1000 - self.keyboard_state[keypress]}")
+            self.keyboard_state[keypress] = time.time() * 1000
+
+    def active(self, char):
+        return time.time() * 1000 - self.keyboard_state[char] < 50
+
+    def axis(self, left, right):
+        return 25 * (int(self.active(left)) - int(self.active(right)))
 
     # Gabriel
 
@@ -323,20 +364,28 @@ class GUICommanderAdapter(customtkinter.CTk):
                 if command["type"] == "kill":
                     extras.cmd.halt = True
                 elif command["type"] == "start":
+                    extras.cmd.manual = False
                     extras.cmd.script_url = command["url"]
+                elif command["type"] == "rth":
+                    extras.cmd.manual = False
+                    extras.cmd.rth = True
             elif self.connected_drone != None:
                 extras.cmd.for_drone_id = self.connected_drone["name"]
 
-            if self.manual:
-                if self.control.takeoff():
-                    extras.takeoff = True
-                if self.control.landing():
-                    extras.land = True
-                if self.control.has_piloting_cmd():
-                    extras.PCMD.yaw = self.control.yaw()
-                    extras.PCMD.pitch = self.control.pitch()
-                    extras.PCMD.roll = self.control.roll()
-                    extras.PCMD.gaz = self.control.throttle()
+            if self.manual and self.connected_drone != None:
+                extras.cmd.manual = True
+                if self.active('t'):
+                    print("Takeoff triggered")
+                    extras.cmd.takeoff = True
+                elif self.active('l'):
+                    print("Landing triggered")
+                    extras.cmd.land = True
+                else:
+                    extras.cmd.pcmd.yaw = self.axis('Right', 'Left')
+                    extras.cmd.pcmd.pitch = self.axis('w', 's')
+                    extras.cmd.pcmd.roll = self.axis('d', 'a')
+                    extras.cmd.pcmd.gaz = self.axis('Up', 'Down')
+                    print(f"PCMD: {extras.cmd.pcmd.yaw}, {extras.cmd.pcmd.pitch}, {extras.cmd.pcmd.roll}, {extras.cmd.pcmd.gaz}")
 
             input_frame.extras.Pack(extras)
             return input_frame
@@ -367,16 +416,17 @@ class GUICommanderAdapter(customtkinter.CTk):
             else:
                 logger.error("Got result type " + result.payload_type)
 
-
     # Cleanup and start events
 
     def toggle_manual(self, val):
         self.manual = val
         if self.manual:
             self.man.configure(text="MANUAL CONTROL ACTIVE", text_color="green")
+            self.button_kill.configure(state=tkinter.DISABLED)
         else:
             self.man.configure(text="AUTONOMOUS CONTROL ACTIVE", text_color="orange")
-
+            self.button_kill.configure(state=tkinter.NORMAL)
+    
     def on_closing(self, event=0):
         self.destroy()
 

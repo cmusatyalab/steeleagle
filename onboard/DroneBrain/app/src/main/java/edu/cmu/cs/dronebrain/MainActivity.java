@@ -122,6 +122,15 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             if (extras.hasCmd()) {
                 Protos.Command cmd = extras.getCmd();
 
+                if (cmd.getRth()) {
+                    Log.i(TAG, "RTH signaled from commander");
+                    if (MS != null) {
+                        MS.kill();
+                    }
+                    // Return home by severing the GSDK connection
+                    finish();
+                }
+
                 if (cmd.getHalt()) {
                     Log.i(TAG, "Killswitch signaled from commander.");
                     if (MS != null) {
@@ -142,21 +151,27 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 }
             }
 
-            if (manual) {
-                if (extras.getTakeoff()) {
+            if (manual && extras.hasCmd()) {
+                if (extras.getCmd().getTakeoff()) {
+                    Log.i(TAG, "Got manual takeoff");
+                    bindProcessToWifi();
+                    drone.connect();
                     drone.takeOff();
                     drone.startStreaming(480);
                     cloudlet.startStreaming(drone, "", 1);
                 }
-                else if (extras.getLand()) {
+                else if (extras.getCmd().getLand()) {
+                    Log.i(TAG, "Got manual land");
                     drone.land();
                 }
-                else if (extras.hasPcmd()) {
-                    Protos.PCMD pcmd = extras.getPcmd();
+                else {
+                    Log.i(TAG, "Got manual PCMD");
+                    Protos.PCMD pcmd = extras.getCmd().getPcmd();
                     int pitch = pcmd.getPitch();
                     int yaw = pcmd.getYaw();
                     int roll = pcmd.getRoll();
                     int gaz = pcmd.getGaz();
+                    Log.d(TAG, "Got PCMD values: " + pitch + " " + yaw + " " + roll + " " + gaz);
 
                     drone.PCMD(pitch, yaw, roll, gaz);
                 }
@@ -217,13 +232,14 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         try {
             drone = getDrone(BuildConfig.PLATFORM); // Get the corresponding drone
         } catch (Exception e) {
+            Log.e(TAG, "Could not get drone for specified platform!");
             e.printStackTrace();
             finish();
         }
-        cloudlet = getCloudlet(); // Get the corresponding cloudlet
-
         serverComm = ServerComm.createServerComm(
                 this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect, LTEnetwork);
+
+        cloudlet = getCloudlet(); // Get the corresponding cloudlet
 
         loopHandler = new Handler();
         loopHandler.postDelayed(gabrielLoop, 1);
@@ -260,11 +276,20 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
+                Protos.DroneStatus.Builder stat = Protos.DroneStatus.newBuilder();
                 Location l = null;
                 try {
                     lb.setLatitude(drone.getLat());
                     lb.setLongitude(drone.getLon());
+                    lb.setAltitude(drone.getAlt());
+
+                    stat.setBattery(drone.getBatteryPercentage());
+                    stat.setRssi(drone.getRSSI());
+                    stat.setMag(drone.getMagnetometerReading());
+                    Log.d(TAG, "Sent " + stat.getBattery() + " " + stat.getRssi() + " " + stat.getMag());
+
                     extrasBuilder.setLocation(lb);
+                    extrasBuilder.setStatus(stat);
                     extrasBuilder.setDroneId(uuid.toString());
 
                     if(heartbeatsSent < 2) {
@@ -310,10 +335,10 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     protected void executeFlightScript() {
         try {
             /** Execute flight plan **/
+            drone.hover();
             Log.d(TAG, "Executing flight plan!");
             /** Bind all future sockets to Wifi so that streaming works.
              * Our LTE connections will persist. **/
-            bindProcessToWifi();
             MS.init(drone, cloudlet);
             scriptThread = new Thread(MS);
             scriptThread.start();
@@ -346,11 +371,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         heartbeatsSent = 0;
     }
 
-    private DroneItf getDrone(Platform platform) throws Exception {
-        if (platform == Platform.ANAFI) {
+    private DroneItf getDrone(String platform) throws Exception {
+        if (platform == "anafi") {
             return new ParrotAnafi(sdk);
         } else {
-            throw new Exception("Unsupported platform: " + platform.name());
+            throw new Exception("Unsupported platform: " + platform);
         }
     }
 

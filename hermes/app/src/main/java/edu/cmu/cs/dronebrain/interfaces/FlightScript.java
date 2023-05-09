@@ -32,12 +32,15 @@ public abstract class FlightScript implements Runnable {
     // Executes a task.
     protected void exec(Task task) throws InterruptedException {
         taskThread = new Thread(task);
+        currentTask = task;
         taskThread.start();
         taskThread.join();
     }
 
     // Kills this mission. Halts the drone and flushes the task queue.
     public void kill() throws Exception {
+        taskQueue.clear();
+        currentTask.stop();
         drone.kill();
     }
 

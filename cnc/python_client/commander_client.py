@@ -40,7 +40,6 @@ def main():
         from gui_commander_adapter import GUICommanderAdapter
         from threading import Thread, Event
         
-        
         def start_ui_thread(funcs, funcSet):
             UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
             UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID)

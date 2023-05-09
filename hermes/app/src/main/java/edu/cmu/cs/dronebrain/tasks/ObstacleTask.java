@@ -106,7 +106,7 @@ public class ObstacleTask extends Task {
             cloudlet.startStreaming(drone, model, 1);
             drone.setGimbalPose(0.0, 0.0, 0.0);
             System.out.println("[FLIGHTSCRIPT]: Got before MoveTo");
-            drone.moveTo(start.getKey(), start.getValue(), 2.0);
+            drone.moveTo(start.getKey(), start.getValue(), 5.0);
             System.out.println("[FLIGHTSCRIPT]: Finished MoveTo, getting heading");
             double headingTarget = getHeading(start, end);
             drone.rotateTo(headingTarget);

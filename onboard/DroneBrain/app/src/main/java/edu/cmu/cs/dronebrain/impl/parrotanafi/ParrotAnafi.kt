@@ -9,10 +9,8 @@ import android.util.Log
 import com.parrot.drone.groundsdk.ManagedGroundSdk
 import com.parrot.drone.groundsdk.Ref
 import com.parrot.drone.groundsdk.device.Drone
-import com.parrot.drone.groundsdk.device.instrument.Altimeter
-import com.parrot.drone.groundsdk.device.instrument.Compass
-import com.parrot.drone.groundsdk.device.instrument.FlyingIndicators
-import com.parrot.drone.groundsdk.device.instrument.Gps
+import com.parrot.drone.groundsdk.device.instrument.*
+import com.parrot.drone.groundsdk.device.peripheral.Magnetometer
 import com.parrot.drone.groundsdk.device.peripheral.MainCamera
 import com.parrot.drone.groundsdk.device.peripheral.MainGimbal
 import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
@@ -118,6 +116,10 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     @Throws(Exception::class)
     override fun connect() {
         Log.d(TAG, "Connect called")
+        if (drone != null) {
+            Log.d(TAG, "Connect call ignored, already connected!")
+            return
+        }
         groundSdk?.resume();
         // Wait until all connections have been established
         val countDownLatch = CountDownLatch(2)
@@ -175,15 +177,20 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     @Throws(Exception::class)
     override fun takeOff() {
         Log.d(TAG, "Takeoff called")
+        var takingOff = false
         pilotingItfRef?.get()?.let { itf ->
             // Do the action according to the interface capabilities
             if (itf.canTakeOff()) {
                 // Take off
                 itf.takeOff()
+                takingOff = true
             }
         }
-        runBlocking {
-            wait_to_complete_manual_flight()
+
+        if (takingOff) {
+            runBlocking {
+                wait_to_complete_manual_flight()
+            }
         }
 
         var countDownLatch = CountDownLatch(1)
@@ -599,6 +606,46 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
         if (alt == null)
             throw Exception("Altimiter did not return a value")
         return alt
+    }
+
+    override fun getRSSI(): Int? {
+        var rssi : Int? = 0
+        drone?.getInstrument(Radio::class.java) {
+            rssi = it?.linkSignalQuality
+        }
+        return rssi
+    }
+
+    override fun getBatteryPercentage(): Int? {
+        var batt : Int? = 0
+        drone?.getInstrument(BatteryInfo::class.java) {
+            batt = it?.batteryLevel
+        }
+        return batt
+    }
+
+    override fun getMagnetometerReading(): Int? {
+        var mag: Int? = 0
+        drone?.getPeripheral(Magnetometer::class.java) {
+            var calibration = it?.calibrationState()
+            if (calibration == Magnetometer.MagnetometerCalibrationState.CALIBRATED) {
+                mag = 0
+            } else if (calibration == Magnetometer.MagnetometerCalibrationState.RECOMMENDED) {
+                mag = 1
+            } else if (calibration == Magnetometer.MagnetometerCalibrationState.REQUIRED) {
+                mag = 2
+            }
+        }
+        if (mag == 0) {
+            drone?.getInstrument(Alarms::class.java) {
+                var perturbationAlarm = it?.getAlarm(Alarms.Alarm.Kind.MAGNETOMETER_PERTURBATION)
+                if (perturbationAlarm?.level == Alarms.Alarm.Level.CRITICAL ||
+                            perturbationAlarm?.level == Alarms.Alarm.Level.WARNING) {
+                    mag = 4
+                }
+            }
+        }
+        return mag
     }
 
     override fun getHeading(): Double? {
