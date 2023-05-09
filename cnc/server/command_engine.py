@@ -199,6 +199,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 from_commander.cmd.pcmd.yaw = self.drones[extras.drone_id].yaw
                                 from_commander.cmd.pcmd.pitch = self.drones[extras.drone_id].pitch
                                 from_commander.cmd.pcmd.roll = self.drones[extras.drone_id].roll
+                                logger.debug(from_commander)
                                 result_wrapper.extras.Pack(from_commander)
                                 result.payload = "Sending PCMD commands.".encode(
                                     encoding="utf-8")
@@ -259,7 +260,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
                 if drone != "":
                     logger.error(
                         f'Sorry, [{commander}]  drone [{drone}] does not exist!')
-        logger.debug(result)
         result_wrapper.results.append(result)
         return result_wrapper
 
