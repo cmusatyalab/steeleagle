@@ -95,9 +95,10 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.drones[extras.drone_id].json["latitude"] = self.drones[extras.drone_id].lat = extras.location.latitude
         self.drones[extras.drone_id].json["longitude"] = self.drones[extras.drone_id].lon = extras.location.longitude
         self.drones[extras.drone_id].json["altitude"] = self.drones[extras.drone_id].alt = extras.location.altitude
-        self.drones[extras.drone_id].json["rssi"] = self.drones[extras.drone_id].rssi = extras.dronestatus.rssi
-        self.drones[extras.drone_id].json["battery"] = self.drones[extras.drone_id].battery = extras.dronestatus.battery
-        self.drones[extras.drone_id].json["mag"] = self.drones[extras.drone_id].mag = extras.dronestatus.mag
+        self.drones[extras.drone_id].json["rssi"] = self.drones[extras.drone_id].rssi = extras.status.rssi
+        self.drones[extras.drone_id].json["battery"] = self.drones[extras.drone_id].battery = extras.status.battery
+        self.drones[extras.drone_id].json["mag"] = self.drones[extras.drone_id].mag = extras.status.mag
+        logger.debug(f"Updated {extras.drone_id} status to {self.drones[extras.drone_id].json}")
 
     def getDrones(self):
         all_drones = []
@@ -205,7 +206,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 from_commander.cmd.pcmd.yaw = self.drones[extras.drone_id].yaw
                                 from_commander.cmd.pcmd.pitch = self.drones[extras.drone_id].pitch
                                 from_commander.cmd.pcmd.roll = self.drones[extras.drone_id].roll
-                                logger.debug(from_commander)
                                 result_wrapper.extras.Pack(from_commander)
                                 result.payload = "Sending PCMD commands.".encode(
                                     encoding="utf-8")
