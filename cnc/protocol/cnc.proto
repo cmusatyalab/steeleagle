@@ -38,6 +38,8 @@ message DroneStatus {
   int64 battery = 1;
   double gimbal_pitch = 2;
   double bearing = 3;
+  int64 rssi = 4;
+  int64 mag = 5;
 }
 
 message Extras {

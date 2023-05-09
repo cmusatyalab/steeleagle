@@ -73,9 +73,11 @@ class DroneClient:
         self.lon = 0.0
         self.alt = 0.0
         self.vel = 0.0
+        self.battery = self.rssi = self.mag = 0
         self.current_frame = False
         self.json = {"name": id, "state": "online", "latitude": 0.0,
-                     "longitude": 0.0, "altitude": 0.0, "velocity": 0.0}
+                     "longitude": 0.0, "altitude": 0.0, "velocity": 0.0, "battery": 0, "rssi": 0,
+                     "mag": 0}
 
 
 class DroneCommandEngine(cognitive_engine.Engine):
@@ -92,6 +94,10 @@ class DroneCommandEngine(cognitive_engine.Engine):
     def updateDroneStatus(self, extras):
         self.drones[extras.drone_id].json["latitude"] = self.drones[extras.drone_id].lat = extras.location.latitude
         self.drones[extras.drone_id].json["longitude"] = self.drones[extras.drone_id].lon = extras.location.longitude
+        self.drones[extras.drone_id].json["altitude"] = self.drones[extras.drone_id].alt = extras.location.altitude
+        self.drones[extras.drone_id].json["rssi"] = self.drones[extras.drone_id].rssi = extras.dronestatus.rssi
+        self.drones[extras.drone_id].json["battery"] = self.drones[extras.drone_id].battery = extras.dronestatus.battery
+        self.drones[extras.drone_id].json["mag"] = self.drones[extras.drone_id].mag = extras.dronestatus.mag
 
     def getDrones(self):
         all_drones = []
