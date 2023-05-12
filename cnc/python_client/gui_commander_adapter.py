@@ -113,8 +113,8 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.man = customtkinter.CTkLabel(master=self.frame_sidebar,
                                           text="MANUAL CONTROL ACTIVE",
                                           font=("Roboto Bold", 13),
-                                          text_color="green",
-                                          fg_color="white")  # font name and size in px
+                                          text_color="black",
+                                          fg_color="green")  # font name and size in px
         self.man.grid(row=3, column=0, pady=10, padx=10, sticky="nsew")
 
         self.loc = customtkinter.CTkLabel(master=self.frame_sidebar,
@@ -182,16 +182,9 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.map_widget = TkinterMapView(self.frame_map, corner_radius=0)
         self.map_widget.grid(row=1, rowspan=3, column=0, columnspan=3, sticky="nswe", padx=(5, 5), pady=(5, 5))
 
-        self.entry = customtkinter.CTkEntry(master=self.frame_map,
-                                            placeholder_text="Search for an address here...")
-        self.entry.grid(row=0, column=1,  sticky="we", padx=(12, 12), pady=12)
-        self.entry.bind("<Return>", self.on_search_pressed)
-
-        self.button_search = customtkinter.CTkButton(master=self.frame_map,
-                                                text="Search",
-                                                width=90,
-                                                command=self.on_search_pressed)
-        self.button_search.grid(row=0, column=2, sticky="we", padx=(12, 12), pady=12)
+        self.map_option_menu = customtkinter.CTkOptionMenu(self.frame_map, values=["OpenStreetMap", "Google (Street)", "Google (Satellite)"],
+                                                                       command=self.change_map)
+        self.map_option_menu.grid(row=2, column=2, padx=(15, 15), pady=(10, 10))
 
         # Set up the map
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
@@ -278,9 +271,9 @@ class GUICommanderAdapter(customtkinter.CTk):
             #Image.rotate is counter-clockwise, so negate the bearing
             self.drone_icon = ImageTk.PhotoImage(Image.open( "images/plane_circle_2.png").resize((35, 35)).rotate(-self.connected_drone["bearing"]))
             self.connected_marker.change_icon(self.drone_icon)
-        self.loc.configure(text="Location: {0}, {1}, {2}m".format(round(self.connected_drone["latitude"], 5), 
+        self.loc.configure(text="Location: ({0}, {1})\nAltitude: {2}m".format(round(self.connected_drone["latitude"], 5), 
                 round(self.connected_drone["longitude"], 5), round(self.connected_drone["altitude"], 2)))
-        self.info.configure(text="RSSI: {0}, Mag: {1}, Battery: {2}".format(self.connected_drone["rssi"], self.connected_drone["mag"], self.connected_drone["battery"]))
+        self.info.configure(text="RSSI: {0}\nMag: {1}\nBattery: {2}%".format(self.connected_drone["rssi"], self.connected_drone["mag"], self.connected_drone["battery"]))
 
     def on_frame_update_event(self, byteframe, event=None):
         try:
@@ -327,7 +320,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_kill.configure(state=tkinter.DISABLED)
         self.button_rth.configure(state=tkinter.DISABLED)
         self.toggle_manual(False)
-        self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="red")
+        self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="black", fg_color="red")
         command = {"drone": self.connected_drone["name"], "type": "rth"}
         self.command_queue.put_nowait(command)
 
@@ -437,10 +430,10 @@ class GUICommanderAdapter(customtkinter.CTk):
     def toggle_manual(self, val):
         self.manual = val
         if self.manual:
-            self.man.configure(text="MANUAL CONTROL ACTIVE", text_color="green")
+            self.man.configure(text="MANUAL CONTROL ACTIVE", text_color="black", fg_color="green")
             self.button_kill.configure(state=tkinter.DISABLED)
         else:
-            self.man.configure(text="AUTONOMOUS CONTROL ACTIVE", text_color="orange")
+            self.man.configure(text="AUTONOMOUS CONTROL ACTIVE", text_color="black", fg_color="orange")
             self.button_kill.configure(state=tkinter.NORMAL)
     
     def on_closing(self, event=0):
@@ -448,3 +441,11 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def start(self):
         self.mainloop()
+
+    def change_map(self, new_map: str):
+        if new_map == "OpenStreetMap":
+            self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        elif new_map == "Google (Street)":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        elif new_map == "Google (Satellite)":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
