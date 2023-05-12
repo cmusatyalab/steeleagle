@@ -73,11 +73,11 @@ class DroneClient:
         self.lon = 0.0
         self.alt = 0.0
         self.vel = 0.0
-        self.battery = self.rssi = self.mag = 0
+        self.battery = self.rssi = self.mag = self.bearing =  0
         self.current_frame = False
         self.json = {"name": id, "state": "online", "latitude": 0.0,
                      "longitude": 0.0, "altitude": 0.0, "velocity": 0.0, "battery": 0, "rssi": 0,
-                     "mag": 0}
+                     "mag": 0, "bearing": 0}
 
 
 class DroneCommandEngine(cognitive_engine.Engine):
@@ -98,6 +98,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.drones[extras.drone_id].json["rssi"] = self.drones[extras.drone_id].rssi = extras.status.rssi
         self.drones[extras.drone_id].json["battery"] = self.drones[extras.drone_id].battery = extras.status.battery
         self.drones[extras.drone_id].json["mag"] = self.drones[extras.drone_id].mag = extras.status.mag
+        self.drones[extras.drone_id].json["bearing"] = self.drones[extras.drone_id].bearing = int(extras.status.bearing)
         logger.debug(f"Updated {extras.drone_id} status to {self.drones[extras.drone_id].json}")
 
     def getDrones(self):
