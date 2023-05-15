@@ -9,7 +9,7 @@ import argparse
 from gabriel_client.websocket_client import WebsocketClient
 import logging
 import randomname
-import time
+import os
 
 COMMANDER_ID = randomname.get_name(adj=('age',), noun=('military_army', 'military_navy'))
 WEBSOCKET_PORT = 9099
@@ -37,12 +37,13 @@ def main():
         producer = adapter.get_producer_wrappers()
         consumer = adapter.consumer
     else:
+        COMMANDER_ID = os.uname()[1]
         from gui_commander_adapter import GUICommanderAdapter
         from threading import Thread, Event
         
         def start_ui_thread(funcs, funcSet):
             UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
-            UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID)
+            UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID, args.server)
             funcs.append(UI.get_producer_wrappers())
             funcs.append(UI.consumer)
             funcSet.set()
