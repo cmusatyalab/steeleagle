@@ -119,7 +119,13 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.image_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
         self.image_label.grid(row=1, column=0, pady=5, padx=5)
         
-        
+        self.keyboard_help = customtkinter.CTkTextbox(master=self.frame_stream,
+                                          font=("Roboto Medium", 24),
+                                          fg_color='transparent')  # font name and size in px
+        self.keyboard_help.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
+        self.keyboard_help.insert("0.0", "---Manual Flight Controls---\nWASD: Pitch/Roll\nArrow Keys: Yaw/Altitude\nT: Takeoff\nL: Land")
+        self.keyboard_help.configure(state="disabled")
+
         self.man = customtkinter.CTkLabel(master=self.frame_status,
                                           text="MANUAL CONTROL ACTIVE",
                                           font=("Roboto Bold", 13),
