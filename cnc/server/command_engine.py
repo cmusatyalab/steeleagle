@@ -87,7 +87,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
         logger.info("Drone command engine intializing...")
         self.drones = {}
         self.timeout = args.timeout
-        self.store_images = args.store
         self.invalidator = threading.Thread(
             target=self.invalidateDrones, daemon=True)
         self.invalidator.start()
