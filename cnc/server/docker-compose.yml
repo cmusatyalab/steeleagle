@@ -25,9 +25,7 @@ services:
     container_name: command-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}", "${STORE}" ]
-    volumes:
-      - ./openscout-vol:/cnc/server/images/
+    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}"]
     depends_on:
       - gabriel-server
     networks:
