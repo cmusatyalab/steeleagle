@@ -223,7 +223,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         #update current_frame for this drone so it can be displayed in commander UI
                         self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
                         filename = str(timestamp_millis) + ".jpg"
-                        img = Image.fromarray(image_np)
+                        img = Image.fromarray(np.fromstring(input_frame.payloads[0], dtype=np.uint8))
                         path = self.storage_path + "/received/" + filename
                         img.save(path, format="JPEG")
                         path = self.storage_path + "/received/latest.jpg"
