@@ -87,10 +87,11 @@ class DroneCommandEngine(cognitive_engine.Engine):
         logger.info("Drone command engine intializing...")
         self.drones = {}
         self.timeout = args.timeout
+        self.store_images = args.store
         self.invalidator = threading.Thread(
             target=self.invalidateDrones, daemon=True)
         self.invalidator.start()
-        if self.store_detections:
+        if self.store_images:
             self.storage_path = os.getcwd()+"/images/"
             try:
                 os.makedirs(self.storage_path+"/received")
