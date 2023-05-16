@@ -4,3 +4,4 @@ Pillow
 tkintermapview
 customtkinter
 pynput
+websockets>=10.0
