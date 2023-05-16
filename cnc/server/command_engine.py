@@ -15,10 +15,10 @@ from cnc_protocol import cnc_pb2
 from urllib.parse import urlparse
 from io import BytesIO
 import threading
-import jsonschema
+from PIL import Image
 import json
 import cv2
-import base64
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -90,6 +90,13 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.invalidator = threading.Thread(
             target=self.invalidateDrones, daemon=True)
         self.invalidator.start()
+        if self.store_detections:
+            self.storage_path = os.getcwd()+"/images/"
+            try:
+                os.makedirs(self.storage_path+"/received")
+            except FileExistsError:
+                logger.info("Images directory already exists.")
+            logger.info("Storing detection images at {}".format(self.storage_path))
 
     def updateDroneStatus(self, extras):
         self.drones[extras.drone_id].json["latitude"] = self.drones[extras.drone_id].lat = extras.location.latitude
@@ -134,6 +141,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
+        timestamp_millis = int(time.time() * 1000)
 
         # if it is a drone client...
         if extras.drone_id is not "":
@@ -213,6 +221,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
                         #update current_frame for this drone so it can be displayed in commander UI
                         self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
+                        filename = str(timestamp_millis) + ".jpg"
+                        img = Image.fromarray(image_np)
+                        path = self.storage_path + "/received/" + filename
+                        img.save(path, format="JPEG")
+                        path = self.storage_path + "/received/latest.jpg"
+                        img.save(path, format="JPEG")
                 except KeyError:
                     logger.error(
                         f'Sorry, drone [{extras.drone_id}]  has not registered yet!')

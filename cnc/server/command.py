@@ -32,6 +32,11 @@ def main():
         "-g", "--gabriel",  default="tcp://gabriel-server:5555", help="Gabriel server endpoint."
     )
 
+    parser.add_argument(
+        "-s", "--store", action="store_true", default=False, help="Store received images."
+    )
+
+
     args, _ = parser.parse_known_args()
 
     def engine_setup():
