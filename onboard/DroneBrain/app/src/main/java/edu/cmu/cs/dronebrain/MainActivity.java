@@ -82,6 +82,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private String scriptUrl = null;
     private Handler loopHandler = null;
     private int heartbeatsSent = 0;
+    private boolean sdk_connected = false;
     /** Log tag **/
     String TAG = "DroneBrain";
     String SOURCE = "command";
@@ -117,6 +118,15 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from COMMAND.");
             return;
+        }
+
+        if(sdk_connected) {
+            bindProcessToWifi();
+            try {
+                drone.connect();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
         ResultWrapper.Result result = resultWrapper.getResults(0);
@@ -158,8 +168,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             if (manual && extras.hasCmd()) {
                 if (extras.getCmd().getTakeoff()) {
                     Log.i(TAG, "Got manual takeoff");
-                    bindProcessToWifi();
-                    drone.connect();
                     drone.takeOff();
                     drone.startStreaming(480);
                     cloudlet.startStreaming(drone, "", 1);
@@ -381,6 +389,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     protected void onResume() {
         super.onResume();
         heartbeatsSent = 0;
+        sdk_connected = true;
     }
 
     private DroneItf getDrone(String platform) throws Exception {
