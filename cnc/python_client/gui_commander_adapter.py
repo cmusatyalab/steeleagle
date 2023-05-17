@@ -323,22 +323,22 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         filename = fd.askopenfilename(
             title='Open a file',
-            initialdir='../../hermes/src/',
+            initialdir='../../hermes/',
             filetypes=filetypes)
-
-        logger.info("Selected file: " + filename)
-        # TODO: Make SCP destination configurable
-        answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
-                " from people and that the PIC is ready to takeover in case of failure.")
-        if answer:
-            self.toggle_manual(False)
-            SCP_URL = "teiszler@128.2.212.60:/var/www/html/scripts/" + "mission.dex"
-            FLIGHT_URL = "http://128.2.212.60/scripts/" + "mission.dex" 
-            subprocess.run(["scp", filename, SCP_URL])
-            logger.info("Sent file {0} to the cloudlet".format(filename))
-            messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
-            command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
-            self.command_queue.put_nowait(command)
+        if filename:
+            logger.info("Selected file: " + filename)
+            # TODO: Make SCP destination configurable
+            answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
+                    " from people and that the PIC is ready to takeover in case of failure.")
+            if answer:
+                self.toggle_manual(False)
+                SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + "mission.dex"
+                FLIGHT_URL = f"http://{self.server}:8080/scripts/" + "mission.dex"
+                subprocess.run(["scp", filename, SCP_URL])
+                logger.info("Sent file {0} to the cloudlet".format(filename))
+                messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
+                command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
+                self.command_queue.put_nowait(command)
         
 
     def on_kill_mission_pressed(self, event=None):
