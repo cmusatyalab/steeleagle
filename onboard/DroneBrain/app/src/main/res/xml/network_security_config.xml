@@ -6,5 +6,6 @@
         <domain includeSubdomains="true">128.2.212.60</domain>
         <domain includeSubdomains="true">128.2.212.51</domain>
         <domain includeSubdomains="true">128.2.208.248</domain>
+        <domain includeSubdomains="true">cloudlet033.elijah.cs.cmu.edu</domain>
     </domain-config>
 </network-security-config>
