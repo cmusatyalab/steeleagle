@@ -15,10 +15,10 @@ from cnc_protocol import cnc_pb2
 from urllib.parse import urlparse
 from io import BytesIO
 import threading
-import jsonschema
+from PIL import Image
 import json
 import cv2
-import base64
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -274,5 +274,6 @@ class DroneCommandEngine(cognitive_engine.Engine):
         np_data = np.fromstring(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
 
         return BytesIO(img)
