@@ -29,6 +29,7 @@ class GUICommanderAdapter(customtkinter.CTk):
     WIDTH = 1800
     HEIGHT = 1000
     KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l']
+    MAG_STATE = ['Calibrated', 'Calibration Recommended', 'Calibration Required!', 'Magnetic Perturbation!!']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,7 +93,9 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                 command=self.on_selection_changed_event,
                                                 height=40,
                                                 font=("Roboto Medium", 14),
-                                                dropdown_font=("Roboto Medium", 18))
+                                                dropdown_font=("Roboto Medium", 18),
+                                                justify="center",
+                                                hover=True)
         self.drone_dropdown.grid(row=1, column=0, pady=(10,5), padx=15, sticky="nsew")
         
         self.button_connect = customtkinter.CTkButton(master=self.frame_actions,
@@ -101,7 +104,9 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    command=self.on_connect_pressed,
                                                    font=("Roboto Medium", 13),
                                                    border_width=3,
-                                                   border_color="black")
+                                                   border_color="black",
+                                                   fg_color="#4F4642",
+                                                   hover_color="#383231",)
         
         self.button_connect.grid(row=2, column=0, pady=(0,20), padx=15, sticky="nsew")
         self.button_connect.configure(state=tkinter.DISABLED)
@@ -296,7 +301,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.info.delete("0.0", "end")
         self.info.insert("0.0", "Location: ({0}, {1})\nAltitude: {2}m\nRSSI: {3}\nMag: {4}\nBattery: {5}%".format(round(self.connected_drone["latitude"], 5),
                 round(self.connected_drone["longitude"], 5), round(self.connected_drone["altitude"], 2), self.connected_drone["rssi"],
-                self.connected_drone["mag"], self.connected_drone["battery"]))
+                self.MAG_STATE[self.connected_drone["mag"]], self.connected_drone["battery"]))
         self.info.configure(state=tkinter.DISABLED)
 
 
