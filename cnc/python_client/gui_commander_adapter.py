@@ -102,11 +102,12 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    text="Connect",
                                                    height=40,
                                                    command=self.on_connect_pressed,
+                                                   text_color="black",
                                                    font=("Roboto Medium", 13),
                                                    border_width=3,
                                                    border_color="black",
                                                    fg_color="#4F4642",
-                                                   hover_color="#383231",)
+                                                   hover_color="#807873",)
         
         self.button_connect.grid(row=2, column=0, pady=(0,20), padx=15, sticky="nsew")
         self.button_connect.configure(state=tkinter.DISABLED)
@@ -119,6 +120,15 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         image = Image.open("images/NoImage.jpg").resize((640,480))
         self.no_image = ImageTk.PhotoImage(image)
+        #  https://www.flaticon.com/free-icons/helipad Helipad icons created by Freepik - Flaticon
+        self.rth_icon = ImageTk.PhotoImage(Image.open("images/helipad.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/drone title="drone icons">Drone icons created by ultimatearm - Flaticon
+        self.manual_icon = ImageTk.PhotoImage(Image.open("images/rc.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/map title="map icons">Map icons created by ultimatearm - Flaticon
+        self.script_icon = ImageTk.PhotoImage(Image.open("images/maps.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/drone title="drone icons">Drone icons created by Freepik - Flaticon
+        self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)))
+
 
         self.image_label = tkinter.Label(master=self.frame_stream, image=self.no_image)
         self.image_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
@@ -153,7 +163,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    text_color="black",
                                                    font=("Roboto Medium", 13),
                                                    border_width=3,
-                                                   border_color="black")
+                                                   border_color="black",
+                                                   image=self.script_icon)
 
         self.button_fly.grid(row=6, column=0, pady=5, padx=28, sticky="w")
         self.button_fly.configure(state=tkinter.DISABLED)
@@ -168,7 +179,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    text_color="black",
                                                    font=("Roboto Medium", 13),
                                                    border_width=3,
-                                                   border_color="black")
+                                                   border_color="black",
+                                                   image=self.rth_icon)
 
         self.button_rth.grid(row=7, column=0, pady=5, padx=28, sticky="e")
         self.button_rth.configure(state=tkinter.DISABLED)
@@ -183,7 +195,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    text_color="black",
                                                    font=("Roboto Medium", 13),
                                                    border_width=3,
-                                                   border_color="black")
+                                                   border_color="black",
+                                                   image=self.manual_icon)
 
         self.button_kill.grid(row=6, column=0, pady=5, padx=28, sticky="e")
         self.button_kill.configure(state=tkinter.DISABLED)
@@ -196,7 +209,6 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.frame_map.grid_columnconfigure(2, weight=0)
 
 
-        self.drone_icon = ImageTk.PhotoImage(Image.open( "images/plane_circle_2.png").resize((35, 35)))
 
 
 
@@ -294,7 +306,7 @@ class GUICommanderAdapter(customtkinter.CTk):
             self.last_map_update = time.time()
             self.map_widget.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
             #Image.rotate is counter-clockwise, so negate the bearing
-            self.drone_icon = ImageTk.PhotoImage(Image.open( "images/plane_circle_2.png").resize((35, 35)).rotate(-self.connected_drone["bearing"]))
+            self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)).rotate(-self.connected_drone["bearing"]))
             self.connected_marker.change_icon(self.drone_icon)
 
         self.info.configure(state=tkinter.NORMAL)
