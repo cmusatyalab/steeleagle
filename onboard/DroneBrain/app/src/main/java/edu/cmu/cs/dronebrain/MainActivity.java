@@ -4,8 +4,10 @@
 
 package edu.cmu.cs.dronebrain;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -19,6 +21,8 @@ import android.os.StrictMode;
 import android.util.Log;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
+
+import androidx.core.app.ActivityCompat;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
@@ -78,10 +82,11 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     private String scriptUrl = null;
     private Handler loopHandler = null;
     private int heartbeatsSent = 0;
+    private boolean sdk_connected = false;
     /** Log tag **/
     String TAG = "DroneBrain";
     String SOURCE = "command";
-    UUID uuid = UUID.randomUUID();
+    String uuid = "<unknown>";
 
 
     // Based on
@@ -96,7 +101,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     public String getWifiSSID() {
         WifiManager wm = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wm != null) {
-            return wm.getConnectionInfo().getSSID();
+            return wm.getConnectionInfo().getSSID().replace("\"", "");
         } else {
             return "";
         }
@@ -113,6 +118,15 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         if (resultWrapper.getResultsCount() != 1) {
             Log.e(TAG, "Got " + resultWrapper.getResultsCount() + " results in output from COMMAND.");
             return;
+        }
+
+        if(sdk_connected) {
+            bindProcessToWifi();
+            try {
+                drone.connect();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
         ResultWrapper.Result result = resultWrapper.getResults(0);
@@ -154,8 +168,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             if (manual && extras.hasCmd()) {
                 if (extras.getCmd().getTakeoff()) {
                     Log.i(TAG, "Got manual takeoff");
-                    bindProcessToWifi();
-                    drone.connect();
                     drone.takeOff();
                     drone.startStreaming(480);
                     cloudlet.startStreaming(drone, "", 1);
@@ -197,7 +209,9 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        }
         sdk = ManagedGroundSdk.obtainSession(this);
 
         CountDownLatch lteLatch = new CountDownLatch(1);
@@ -236,6 +250,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             e.printStackTrace();
             finish();
         }
+        uuid = getWifiSSID();
         serverComm = ServerComm.createServerComm(
                 this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect, LTEnetwork);
 
@@ -282,15 +297,20 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
                     lb.setLatitude(drone.getLat());
                     lb.setLongitude(drone.getLon());
                     lb.setAltitude(drone.getAlt());
-
-                    stat.setBattery(drone.getBatteryPercentage());
-                    stat.setRssi(drone.getRSSI());
-                    stat.setMag(drone.getMagnetometerReading());
-                    Log.d(TAG, "Sent " + stat.getBattery() + " " + stat.getRssi() + " " + stat.getMag());
+                    try {
+                        stat.setBattery(drone.getBatteryPercentage());
+                        stat.setRssi(drone.getRSSI());
+                        stat.setMag(drone.getMagnetometerReading());
+                        stat.setBearing(drone.getHeading());
+                        Log.d(TAG, String.format( "Battery: {1} RSSI: {2} Magnetometer: {3] Heading: {4} "
+                                , stat.getBattery(), stat.getRssi(), stat.getMag(), stat.getBearing()));
+                    } catch (Exception e) {
+                        Log.e(TAG, "Instruments not ready for reading...");
+                    }
 
                     extrasBuilder.setLocation(lb);
                     extrasBuilder.setStatus(stat);
-                    extrasBuilder.setDroneId(uuid.toString());
+                    extrasBuilder.setDroneId(uuid);
 
                     if(heartbeatsSent < 2) {
                         extrasBuilder.setRegistering(true);
@@ -369,6 +389,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     protected void onResume() {
         super.onResume();
         heartbeatsSent = 0;
+        sdk_connected = true;
     }
 
     private DroneItf getDrone(String platform) throws Exception {

@@ -29,6 +29,7 @@ class GUICommanderAdapter(customtkinter.CTk):
     WIDTH = 1800
     HEIGHT = 1000
     KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l']
+    MAG_STATE = ['Calibrated', 'Calibration Recommended', 'Calibration Required!', 'Magnetic Perturbation!!']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,87 +58,118 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         # Configure spacing and frames of UI
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=20)
+        self.grid_columnconfigure(1, weight=2)
         self.grid_rowconfigure(0, weight=1)
 
-        self.frame_left_top = customtkinter.CTkFrame(master=self, corner_radius=0)
-        self.frame_left_top.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.frame_stream = customtkinter.CTkFrame(master=self, corner_radius=0)
+        self.frame_stream.grid(row=0, column=1, rowspan=3, pady=5, padx=5, sticky="nsew")
         
-        self.frame_left_bot = customtkinter.CTkFrame(master=self, corner_radius=0)
-        self.frame_left_bot.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+        self.frame_sidebar = customtkinter.CTkFrame(master=self, corner_radius=0)
+        self.frame_sidebar.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
-        self.frame_right = customtkinter.CTkFrame(master=self, corner_radius=0)
-        self.frame_right.grid(row=0, column=1, rowspan=3, pady=5, padx=5, sticky="nsew")
+        self.frame_map = customtkinter.CTkFrame(master=self, corner_radius=0)
+        self.frame_map.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
         # Configure and add UI elements to available drones frame
-        self.frame_left_top.grid_columnconfigure(0, weight=1)
-        self.frame_left_bot.grid_columnconfigure(0, weight=1)
+        self.frame_stream.grid_columnconfigure(0, weight=1)
+        self.frame_sidebar.grid_columnconfigure(0, weight=3)
+        self.frame_sidebar.grid_columnconfigure(1, weight=1)
+
+        self.frame_actions = customtkinter.CTkFrame(master=self.frame_sidebar, corner_radius=0)
+        self.frame_actions.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.frame_actions.grid_columnconfigure(0, weight=1)
+
+        self.frame_status = customtkinter.CTkFrame(master=self.frame_sidebar, corner_radius=0)
+        self.frame_status.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        self.frame_status.grid_columnconfigure(0, weight=1)
        
-        self.title = customtkinter.CTkLabel(master=self.frame_left_top,
+        self.title = customtkinter.CTkLabel(master=self.frame_actions,
                                               text="Available Drones",
                                               font=("Roboto Medium", -24))  # font name and size in px
-        self.title.grid(row=0, column=0, pady=10, padx=10, sticky="w")
+        self.title.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
 
-        self.drone_dropdown = customtkinter.CTkComboBox(master=self.frame_left_top,
+        self.drone_dropdown = customtkinter.CTkComboBox(master=self.frame_actions,
                                                 values=["No Selection"],
                                                 command=self.on_selection_changed_event,
                                                 height=40,
                                                 font=("Roboto Medium", 14),
-                                                dropdown_font=("Roboto Medium", 14))
-        self.drone_dropdown.grid(row=1, column=0, pady=20, padx=15, sticky="nsew")
+                                                dropdown_font=("Roboto Medium", 18),
+                                                justify="center",
+                                                hover=True)
+        self.drone_dropdown.grid(row=1, column=0, pady=(10,5), padx=15, sticky="nsew")
         
-        self.button_connect = customtkinter.CTkButton(master=self.frame_left_top,
+        self.button_connect = customtkinter.CTkButton(master=self.frame_actions,
                                                    text="Connect",
-                                                   width=150, 
-                                                   height=65,
+                                                   height=40,
                                                    command=self.on_connect_pressed,
-                                                   font=("Roboto Medium", 13))
+                                                   text_color="black",
+                                                   font=("Roboto Medium", 13),
+                                                   border_width=3,
+                                                   border_color="black",
+                                                   fg_color="#4F4642",
+                                                   hover_color="#807873",)
         
-        self.button_connect.grid(row=2, column=0, pady=10, padx=150, sticky="nsew")
+        self.button_connect.grid(row=2, column=0, pady=(0,20), padx=15, sticky="nsew")
         self.button_connect.configure(state=tkinter.DISABLED)
 
         # Configure and add UI elements to control panel frame
-        self.control_panel_text = customtkinter.CTkLabel(master=self.frame_left_bot,
+        self.control_panel_text = customtkinter.CTkLabel(master=self.frame_stream,
                                               text="NO DRONE CONNECTED",
-                                              font=("Roboto Medium", -18))  # font name and size in px
-        self.control_panel_text.grid(row=0, column=0, pady=10, padx=10, sticky="nsew")
+                                              font=("Roboto Medium", 32))  # font name and size in px
+        self.control_panel_text.grid(row=0, column=0, pady=100, padx=10, sticky="nsew")
 
-        image = Image.open("images/NoImage.jpg").resize((500, 400))
+        image = Image.open("images/NoImage.jpg").resize((640,480))
         self.no_image = ImageTk.PhotoImage(image)
+        #  https://www.flaticon.com/free-icons/helipad Helipad icons created by Freepik - Flaticon
+        self.rth_icon = ImageTk.PhotoImage(Image.open("images/helipad.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/drone title="drone icons">Drone icons created by ultimatearm - Flaticon
+        self.manual_icon = ImageTk.PhotoImage(Image.open("images/rc.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/map title="map icons">Map icons created by ultimatearm - Flaticon
+        self.script_icon = ImageTk.PhotoImage(Image.open("images/maps.png").resize((48,48)))
+        #  https://www.flaticon.com/free-icons/drone title="drone icons">Drone icons created by Freepik - Flaticon
+        self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)))
 
-        self.image_label = tkinter.Label(master=self.frame_left_bot, image=self.no_image)
+
+        self.image_label = tkinter.Label(master=self.frame_stream, image=self.no_image)
         self.image_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
         self.image_label.grid(row=1, column=0, pady=5, padx=5)
         
-        
-        self.man = customtkinter.CTkLabel(master=self.frame_left_bot,
+        self.keyboard_help = customtkinter.CTkTextbox(master=self.frame_stream,
+                                          font=("Roboto Medium", 24),
+                                          fg_color='transparent')  # font name and size in px
+        self.keyboard_help.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
+        self.keyboard_help.insert("0.0", "---Manual Flight Controls---\nWASD: Pitch/Roll\nArrow Keys: Yaw/Altitude\nT: Takeoff\nL: Land")
+        self.keyboard_help.configure(state="disabled")
+
+        self.man = customtkinter.CTkLabel(master=self.frame_status,
                                           text="MANUAL CONTROL ACTIVE",
-                                          font=("Roboto Medium", 13),
-                                          text_color="green")  # font name and size in px
-        self.man.grid(row=2, column=0, pady=10, padx=10, sticky="nsew")
+                                          font=("Roboto Bold", 13),
+                                          text_color="black",
+                                          fg_color="green")  # font name and size in px
+        self.man.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
 
-        self.loc = customtkinter.CTkLabel(master=self.frame_left_bot,
-                                          text="Location: NONE",
-                                          font=("Roboto Medium", 13))  # font name and size in px
-        self.loc.grid(row=3, column=0, pady=10, padx=10, sticky="nsew")
+        self.info = customtkinter.CTkTextbox(master=self.frame_status,
+                                          font=("Roboto Medium", 18),
+                                          fg_color="white")  # font name and size in px
+        self.info.grid(row=2, column=0, pady=5, padx=10, sticky="nsew")
+        self.info.insert("0.0", "Status: NONE")
+        self.info.configure(state="disabled")
 
-        self.info = customtkinter.CTkLabel(master=self.frame_left_bot,
-                                          text="Info: NONE",
-                                          font=("Roboto Medium", 13))  # font name and size in px
-        self.info.grid(row=4, column=0, pady=10, padx=10, sticky="nsew")
-
-        self.button_fly = customtkinter.CTkButton(master=self.frame_left_bot,
+        self.button_fly = customtkinter.CTkButton(master=self.frame_actions,
                                                    text="Fly Mission",
                                                    width=150, 
                                                    height=65,
                                                    command=self.on_fly_mission_pressed,
                                                    text_color="black",
-                                                   font=("Roboto Medium", 13))
+                                                   font=("Roboto Medium", 13),
+                                                   border_width=3,
+                                                   border_color="black",
+                                                   image=self.script_icon)
 
-        self.button_fly.grid(row=5, column=0, pady=5, padx=28, sticky="w")
+        self.button_fly.grid(row=6, column=0, pady=5, padx=28, sticky="w")
         self.button_fly.configure(state=tkinter.DISABLED)
         
-        self.button_rth = customtkinter.CTkButton(master=self.frame_left_bot,
+        self.button_rth = customtkinter.CTkButton(master=self.frame_actions,
                                                    text="Return Home", 
                                                    width=150,
                                                    height=65, 
@@ -145,12 +177,15 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    hover_color="#c95a2a",
                                                    command=self.on_return_home_pressed,
                                                    text_color="black",
-                                                   font=("Roboto Medium", 13))
+                                                   font=("Roboto Medium", 13),
+                                                   border_width=3,
+                                                   border_color="black",
+                                                   image=self.rth_icon)
 
-        self.button_rth.grid(row=6, column=0, pady=5, padx=28, sticky="e")
+        self.button_rth.grid(row=7, column=0, pady=5, padx=28, sticky="e")
         self.button_rth.configure(state=tkinter.DISABLED)
         
-        self.button_kill = customtkinter.CTkButton(master=self.frame_left_bot,
+        self.button_kill = customtkinter.CTkButton(master=self.frame_actions,
                                                    text="Manual Ctrl", 
                                                    width=150,
                                                    height=65, 
@@ -158,37 +193,39 @@ class GUICommanderAdapter(customtkinter.CTk):
                                                    hover_color="#49cf2b",
                                                    command=self.on_kill_mission_pressed,
                                                    text_color="black",
-                                                   font=("Roboto Medium", 13))
+                                                   font=("Roboto Medium", 13),
+                                                   border_width=3,
+                                                   border_color="black",
+                                                   image=self.manual_icon)
 
-        self.button_kill.grid(row=5, column=0, pady=5, padx=28, sticky="e")
+        self.button_kill.grid(row=6, column=0, pady=5, padx=28, sticky="e")
         self.button_kill.configure(state=tkinter.DISABLED)
         
         # Configure and add elements to map frame
-        self.frame_right.grid_rowconfigure(1, weight=1)
-        self.frame_right.grid_rowconfigure(0, weight=0)
-        self.frame_right.grid_columnconfigure(0, weight=0)
-        self.frame_right.grid_columnconfigure(1, weight=1)
-        self.frame_right.grid_columnconfigure(2, weight=0)
+        self.frame_map.grid_rowconfigure(1, weight=1)
+        self.frame_map.grid_rowconfigure(0, weight=0)
+        self.frame_map.grid_columnconfigure(0, weight=0)
+        self.frame_map.grid_columnconfigure(1, weight=1)
+        self.frame_map.grid_columnconfigure(2, weight=0)
 
-        self.map_widget = TkinterMapView(self.frame_right, corner_radius=0)
-        self.map_widget.grid(row=1, rowspan=3, column=0, columnspan=3, sticky="nswe", padx=(5, 5), pady=(5, 5))
 
-        self.entry = customtkinter.CTkEntry(master=self.frame_right,
-                                            placeholder_text="Search for an address here...")
-        self.entry.grid(row=0, column=1,  sticky="we", padx=(12, 12), pady=12)
-        self.entry.bind("<Return>", self.on_search_pressed)
 
-        self.button_search = customtkinter.CTkButton(master=self.frame_right,
-                                                text="Search",
-                                                width=90,
-                                                command=self.on_search_pressed)
-        self.button_search.grid(row=0, column=2, sticky="we", padx=(12, 12), pady=12)
+
+
+# create markers
+        self.map_widget = TkinterMapView(self.frame_map, corner_radius=0)
+        self.map_widget.grid(row=0, rowspan=3, column=0, columnspan=3, sticky="nswe", padx=(5, 5), pady=(5, 5))
+
+        self.map_option_menu = customtkinter.CTkOptionMenu(self.frame_map, values=["OpenStreetMap", "Google (Street)", "Google (Satellite)"],
+                                                                       command=self.change_map)
+        self.map_option_menu.set("Google (Satellite)")
+        self.map_option_menu.grid(row=0, column=2, padx=(15, 15), pady=(20, 0))
 
         # Set up the map
-        self.map_widget.set_address("Pittsburgh")
-        self.map_widget.set_zoom(13)
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
-
+        self.map_widget.set_address("Mill 19")
+        self.map_widget.set_zoom(19)
+        self.last_map_update = time.time()
     
     # Events for handling changes to the available drone list
 
@@ -230,10 +267,11 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.connected_marker = self.map_widget.set_marker(self.connected_drone["latitude"],
                 self.connected_drone["longitude"],
                 text=self.connected_drone["name"],
-                text_color="#1a80ba",
+                text_color="#00efff",
                 font=("Roboto Medium", 13),
                 marker_color_circle="#065b8c",
-                marker_color_outside="#1a80ba",)
+                marker_color_outside="#00efff",
+                icon=self.drone_icon)
         self.on_connect_event()
         self.toggle_connect_button(False)
         self.toggle_manual(True)
@@ -246,8 +284,10 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_kill.configure(state=tkinter.DISABLED)
         self.button_fly.configure(state=tkinter.DISABLED)
         self.control_panel_text.configure(text="NO DRONE CONNECTED")
-        self.loc.configure(text="Location: NONE")
-        self.info.configure(text="Info: NONE")
+        self.info.configure(state=tkinter.NORMAL)
+        self.info.delete("0.0", "end")
+        self.info.insert("0.0", "Status: NONE")
+        self.info.configure(state=tkinter.DISABLED)
         self.image_label.configure(image=self.no_image)
         if self.connected_marker != None:
             self.connected_marker.delete()
@@ -262,9 +302,20 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def on_update_event(self, event=None):
         self.connected_marker.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
-        self.loc.configure(text="Location: {0}, {1}, {2}m".format(round(self.connected_drone["latitude"], 5), 
-                round(self.connected_drone["longitude"], 5), self.connected_drone["altitude"]))
-        self.info.configure(text="RSSI: {0}, Mag: {1}, Battery: {2}".format(self.connected_drone["rssi"], self.connected_drone["mag"], self.connected_drone["battery"]))
+        if(time.time() - self.last_map_update > 1):
+            self.last_map_update = time.time()
+            self.map_widget.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
+            #Image.rotate is counter-clockwise, so negate the bearing
+            self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)).rotate(-self.connected_drone["bearing"]))
+            self.connected_marker.change_icon(self.drone_icon)
+
+        self.info.configure(state=tkinter.NORMAL)
+        self.info.delete("0.0", "end")
+        self.info.insert("0.0", "Location: ({0}, {1})\nAltitude: {2}m\nRSSI: {3}\nMag: {4}\nBattery: {5}%".format(round(self.connected_drone["latitude"], 5),
+                round(self.connected_drone["longitude"], 5), round(self.connected_drone["altitude"], 2), self.connected_drone["rssi"],
+                self.MAG_STATE[self.connected_drone["mag"]], self.connected_drone["battery"]))
+        self.info.configure(state=tkinter.DISABLED)
+
 
     def on_frame_update_event(self, byteframe, event=None):
         try:
@@ -284,21 +335,22 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         filename = fd.askopenfilename(
             title='Open a file',
-            initialdir='../../hermes/src/',
+            initialdir='../../hermes/',
             filetypes=filetypes)
-
-        logger.info("Selected file: " + filename)
-        # TODO: Make SCP destination configurable
-        answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
-                " from people and that the PIC is ready to takeover in case of failure.")
-        if answer:
-            self.toggle_manual(False)
-            SCP_URL = "teiszler@128.2.212.60:/var/www/html/scripts/" + "mission.dex"
-            FLIGHT_URL = "http://128.2.212.60/scripts/" + "mission.dex" 
-            subprocess.run(["scp", filename, SCP_URL])
-            logger.info("Sent file {0} to the cloudlet".format(filename))
-            command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
-            self.command_queue.put_nowait(command)
+        if filename:
+            logger.info("Selected file: " + filename)
+            # TODO: Make SCP destination configurable
+            answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
+                    " from people and that the PIC is ready to takeover in case of failure.")
+            if answer:
+                self.toggle_manual(False)
+                SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + "mission.dex"
+                FLIGHT_URL = f"http://{self.server}:8080/scripts/" + "mission.dex"
+                subprocess.run(["scp", filename, SCP_URL])
+                logger.info("Sent file {0} to the cloudlet".format(filename))
+                messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
+                command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
+                self.command_queue.put_nowait(command)
         
 
     def on_kill_mission_pressed(self, event=None):
@@ -311,7 +363,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_kill.configure(state=tkinter.DISABLED)
         self.button_rth.configure(state=tkinter.DISABLED)
         self.toggle_manual(False)
-        self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="red")
+        self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="black", fg_color="red")
         command = {"drone": self.connected_drone["name"], "type": "rth"}
         self.command_queue.put_nowait(command)
 
@@ -339,11 +391,12 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     # Gabriel
 
-    def set_up_adapter(self, preprocess, source_name, id):
+    def set_up_adapter(self, preprocess, source_name, id, server):
         self.id = id
         self._preprocess = preprocess
         self._source_name = source_name
         self.frames_processed = 0
+        self.server = server
 
     def get_producer_wrappers(self):
         async def producer():
@@ -421,10 +474,10 @@ class GUICommanderAdapter(customtkinter.CTk):
     def toggle_manual(self, val):
         self.manual = val
         if self.manual:
-            self.man.configure(text="MANUAL CONTROL ACTIVE", text_color="green")
+            self.man.configure(text="MANUAL CONTROL ACTIVE", text_color="black", fg_color="green")
             self.button_kill.configure(state=tkinter.DISABLED)
         else:
-            self.man.configure(text="AUTONOMOUS CONTROL ACTIVE", text_color="orange")
+            self.man.configure(text="AUTONOMOUS CONTROL ACTIVE", text_color="black", fg_color="orange")
             self.button_kill.configure(state=tkinter.NORMAL)
     
     def on_closing(self, event=0):
@@ -432,3 +485,11 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def start(self):
         self.mainloop()
+
+    def change_map(self, new_map: str):
+        if new_map == "OpenStreetMap":
+            self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        elif new_map == "Google (Street)":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        elif new_map == "Google (Satellite)":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)

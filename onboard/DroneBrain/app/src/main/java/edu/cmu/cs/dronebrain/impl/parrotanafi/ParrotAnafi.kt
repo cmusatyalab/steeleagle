@@ -611,7 +611,7 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     override fun getRSSI(): Int? {
         var rssi : Int? = 0
         drone?.getInstrument(Radio::class.java) {
-            rssi = it?.linkSignalQuality
+            rssi = it?.rssi
         }
         return rssi
     }

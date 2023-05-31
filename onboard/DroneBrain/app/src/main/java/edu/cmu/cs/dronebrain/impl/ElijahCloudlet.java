@@ -34,9 +34,9 @@ public class ElijahCloudlet implements CloudletItf {
     HashMap<String, String> results = null;
     String model = "coco";
     DroneItf drone = null;
-    UUID uuid = null;
+    String uuid = null;
 
-    public ElijahCloudlet(ServerComm s, UUID id) {
+    public ElijahCloudlet(ServerComm s, String id) {
         uuid = id;
         comm = s;
         results = new HashMap<>();
@@ -136,7 +136,7 @@ public class ElijahCloudlet implements CloudletItf {
             comm.sendSupplier(() -> {
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
-                extrasBuilder.setDroneId(uuid.toString());
+                extrasBuilder.setDroneId(uuid);
                 extrasBuilder.setDetectionModel(model);
                 Protos.Location.Builder lb = Protos.Location.newBuilder();
                 try {

@@ -25,7 +25,7 @@ services:
     container_name: command-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}" ]
+    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}"]
     depends_on:
       - gabriel-server
     networks:

@@ -10,3 +10,4 @@ py-cpuinfo
 validators
 randomname
 jsonschema
+Pillow
