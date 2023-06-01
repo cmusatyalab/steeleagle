@@ -29,7 +29,7 @@ class GUICommanderAdapter(customtkinter.CTk):
     WIDTH = 1800
     HEIGHT = 1000
     KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l']
-    MAG_STATE = ['Calibrated', 'Calibration Recommended', 'Calibration Required!', 'Magnetic Perturbation!!']
+    MAG_STATE = ['Calibrated', 'Calibration Recommended', 'Calibration Required!', 'unused', 'Magnetic Perturbation!!']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -346,12 +346,14 @@ class GUICommanderAdapter(customtkinter.CTk):
                 self.toggle_manual(False)
                 SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + "mission.dex"
                 FLIGHT_URL = f"http://{self.server}:8080/scripts/" + "mission.dex"
-                subprocess.run(["scp", filename, SCP_URL])
-                logger.info("Sent file {0} to the cloudlet".format(filename))
-                messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
-                command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
-                self.command_queue.put_nowait(command)
-        
+                try:
+                    subprocess.run(["scp", filename, SCP_URL], check=True)
+                    logger.info("Sent file {0} to the cloudlet".format(filename))
+                    messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
+                    command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
+                    self.command_queue.put_nowait(command)
+                except subprocess.CalledProcessError as cpe:
+                    logger.error(cpe)
 
     def on_kill_mission_pressed(self, event=None):
         command = {"drone": self.connected_drone["name"], "type": "kill"}
