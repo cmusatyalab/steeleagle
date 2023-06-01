@@ -215,7 +215,13 @@ class DroneCommandEngine(cognitive_engine.Engine):
                         self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
                 except KeyError:
                     logger.error(
-                        f'Sorry, drone [{extras.drone_id}]  has not registered yet!')
+                        f'Sorry, drone [{extras.drone_id}]  has not registered yet! Attempting to register...')
+                    d = DroneClient(extras.drone_id, time.time())
+                    # Add the drone to our list of connected drones
+                    self.drones[d.id] = d
+                    logger.info(f"Drone [{d.id}] connected.")
+                    result.payload = "Registration successful!".encode(
+                        encoding="utf-8")
         # if it is a commander client...
         elif extras.commander_id is not "":
             commander = extras.commander_id
