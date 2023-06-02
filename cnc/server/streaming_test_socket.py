@@ -47,6 +47,7 @@ def _main():
         help='Store images locally on disk [default: False]')
     parser.add_argument('-z', '--zmq', action='store_true', 
         help='Send images over zmq to OpenScout (assumes OpenScout is listening locally) [default: False]')
+    parser.add_argument('-d', '--direct_send', action='store_true')
 
     args = parser.parse_args()
 
@@ -60,8 +61,10 @@ def _main():
 
     conn,addr=s.accept()
     data = b""
-    if(args.zmq):
+    if args.zmq:
         context = zmq.Context()
+    if args.direct_send:
+        codec = av.CodecContext.create("h264", "r")
 
     try:
         with conn:
@@ -79,10 +82,10 @@ def _main():
                 start = time.time()
                 header = recv_from_nonblocking(conn, 4)
                 size = int.from_bytes(header, "big")
-                print(f"About to receive an image of {size} bytes...")
+                #print(f"About to receive an image of {size} bytes...")
                 data = recv_from_nonblocking(conn, size)
                 frames_received += 1
-                print(f"Frames Received: {frames_received} Data Length: {len(data)}")
+                #print(f"Frames Received: {frames_received} Data Length: {len(data)}")
 
                 now = time.time()
                 if now - lastprint > 5:
@@ -94,8 +97,15 @@ def _main():
                     lastcount = frames_received
                     lastprint = now
 
-                frame = cv2.imdecode(np.fromstring(data, np.uint8), cv2.IMREAD_COLOR)
-                #cv2frame = cv2.cvtColor(frame.as_ndarray(), cv2.COLOR_YUV2BGR_I420)
+                if not args.direct_send:
+                    frame = cv2.imdecode(np.fromstring(data, np.uint8), cv2.IMREAD_COLOR)
+                    #cv2frame = cv2.cvtColor(frame.as_ndarray(), cv2.COLOR_YUV2BGR_I420)
+                else:
+                    packets = codec.parse(data)
+                    for packet in packets:
+                        frames = codec.decode(packet)
+                        frame = frames[-1]
+
                 if(args.zmq):
                     print(f"Publishing frame {frames_received} to OpenScout client...")
                     send_array(zmq_socket, frame)
