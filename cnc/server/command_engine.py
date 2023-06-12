@@ -23,6 +23,13 @@ import os
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+trace_log = logging.getLogger("command-engine")
+fh = logging.FileHandler('/openscout/server/images/trace.log')
+fh.setLevel(logging.INFO)
+formatter = logging.Formatter('%(message)s')
+fh.setFormatter(formatter)
+trace_log.addHandler(fh)
+
 drone_schema = {
     "type": "object",
     "properties": {
@@ -100,6 +107,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
         self.drones[extras.drone_id].json["mag"] = self.drones[extras.drone_id].mag = extras.status.mag
         self.drones[extras.drone_id].json["bearing"] = self.drones[extras.drone_id].bearing = int(extras.status.bearing)
         logger.debug(f"Updated {extras.drone_id} status to {self.drones[extras.drone_id].json}")
+        trace_log.info("{},{},{}".format(time.time(), extras.location.latitude, extras.location.longitude))
 
     def getDrones(self):
         all_drones = []
