@@ -131,7 +131,7 @@ class ObstacleTask:
                         "speed": {
                         "description": "Speed to execute avoidance at",
                         "type": "number",
-                        "default": 5
+                        "default": 10
                         },
                         "altitude": {
                         "description": "The altitude (above sea level) to fly at",
@@ -140,7 +140,7 @@ class ObstacleTask:
                         }
                     }
                 }
-        self.defaults = {"model": "DPT_Large", "speed": 5}
+        self.defaults = {"model": "DPT_Large", "speed": 10}
 
 
 class Land:

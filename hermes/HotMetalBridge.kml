@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>HotMetalBridge</name>
+    <description/>
+    <Style id="line-0097A7-6425-normal">
+      <LineStyle>
+        <color>ffa79700</color>
+        <width>6.425</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-0097A7-6425-highlight">
+      <LineStyle>
+        <color>ffa79700</color>
+        <width>9.6375</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-0097A7-6425">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-0097A7-6425-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-0097A7-6425-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-FFEA00-7200-normal">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>7.2</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-FFEA00-7200-highlight">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>10.8</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-FFEA00-7200">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-FFEA00-7200-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-FFEA00-7200-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Untitled layer</name>
+      <Placemark>
+        <name>Avoid1</name>
+        <description><![CDATA[ObstacleTask: {model: 'DPT_Large', altitude: 52.0}]]></description>
+        <styleUrl>#line-FFEA00-7200</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -79.9611343,40.428706,0
+            -79.9603994,40.428022,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>Avoid2</name>
+        <description><![CDATA[ObstacleTask: {model: 'DPT_Large', altitude: 52.0}]]></description>
+        <styleUrl>#line-0097A7-6425</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -79.95993,40.4282537,0
+            -79.9607105,40.4289296,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

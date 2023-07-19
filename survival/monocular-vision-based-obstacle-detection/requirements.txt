@@ -1,9 +1,0 @@
-moviepy==1.0.3
-scikit-image~=0.17.2
-tensorflow==2.2.1
-keras==2.3.1
-opencv-contrib-python
-tabulate~=0.8.7
-filterpy==1.4.5
-numpy~=1.18.4
-pandas

@@ -74,19 +74,23 @@ class Placemark:
                 exit(-1)
 
 def generateScript(args, placemarks):
-    env = jinja2.Environment(loader = jinja2.FileSystemLoader("templates"))
-    template = env.get_template(args.template)
+    env = jinja2.Environment(loader = jinja2.FileSystemLoader(os.path.join(args.platform, "templates")))
+    
+    if args.platform == "gsdk":
+        ext = "java"
+    elif args.platform == "olympe":
+        ext = "py"
+
+    template = env.get_template(f"base.{ext}.jinja2")
     kws = {}
-    if args.platform == 'anafi':
+    if args.platform == 'gsdk':
+        kws['ip'] = ""
+    elif args.platform == 'olympe':
         if args.sim:
             ip = "10.202.0.1"
-        elif args.controller:
-            ip = "192.168.53.1"
         else:
             ip = "192.168.42.1"
         kws['ip'] = ip
-    elif args.platform == 'dji':
-        kws['ip'] = ""
     else:
         raise Exception("ERROR: Unsupported drone platform {0}".format(args.platform))
 
@@ -120,48 +124,20 @@ def parseKML(args):
 
     out = generateScript(args, placemarks)
 
-    # TODO: Need to update this for the new simulator.
-    if args.sim:
-        pass
-
     return out
 
 def _main():
     parser = argparse.ArgumentParser(prog='hermes', 
         description='Convert kml/kmz file to drone-specific instructions.')
     parser.add_argument('input', help='kml/kmz file to convert')
-    parser.add_argument('-p', '--platform', choices=['anafi', 'dji'], default='anafi',
-        help='Drone platform to convert to  [default: Anafi]')
-    parser.add_argument('-i', '--intermediate', default='./app/src/main/java/edu/cmu/cs/dronebrain/MS.java',
-        help='Filename for generated drone instructions [default: ./app/src/main/java/edu/cmu/cs/dronebrain/MS.java]')
-    parser.add_argument('-o', '--output', default='./flightplan.dex',
-        help='Filename for .dex file  [default: ./flightplan.dex]')
+    parser.add_argument('-p', '--platform', choices=['gsdk', 'olympe'], default='gsdk',
+        help='Drone autopilot language to convert to  [default: gsdk (Parrot GroundSDK)]')
+    parser.add_argument('-o', '--output', default='./flightplan.ms',
+        help='Filename for .ms (mission script) file  [default: ./flightplan.ms]')
     parser.add_argument('-v', '--verbose', action='store_true', 
         help='Write output to console as well [default: False]')
-    parser.add_argument('-t', '--template', default='base.java.jinja2',
-        help='Specify a jinja2 template [default: base.java.jinja2]')
-    parser.add_argument('-w', '--world_template', default='empty.world.jinja2',
-        help='Specify a jinja2 template [default: empty.world.jinja2]')
-    parser.add_argument('-wo', '--world_output', default='sim.world',
-        help='Specify a world output file [default: sim.world]')
-    parser.add_argument('-da', '--dashboard_address', default='steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu',
-        help='Specify address of dashboard to send heartbeat to [default: steel-eagle-dashboard.pgh.cloudapp.azurelel.cs.cmu.edu]')
-    parser.add_argument('-dp', '--dashboard_port', default='8080',
-        help='Specify dashboard port [default: 8080]')
     parser.add_argument('-s', '--sim', action='store_true', 
-        help='Connect to  simulated drone at 10.202.0.1 [default: Direct connection to drone at 192.168.42.1]')
-    parser.add_argument('-sa', '--sample', action='store_true', default=0.2,
-        help='Sample rate for transponder/log file')
-    parser.add_argument('-c', '--controller', action='store_true', 
-        help='Connect to drone via SkyController at 192.168.53.1 [default: Direct connection to drone at 192.168.42.1]')
-
-    #java2dex.sh options
-    parser.add_argument('-jc', '--javac_path', default='~/android-studio/jre/bin/javac',
-        help='Specify a the path to javac [default: ~/android-studio/jre/bin/javac]')
-    parser.add_argument('-d8', '--d8_path', default='~/Android/Sdk/build-tools/30.0.3/d8',
-        help='Specify a the path to d8 [default: ~/Android/Sdk/build-tools/30.0.3/d8]')
-    parser.add_argument('-a', '--android_jar', default='~/Android/Sdk/platforms/android-30/android.jar',
-        help='Specify a the path to Android SDK jar [default: ~/Android/Sdk/platforms/android-30/android.jar]')
+        help='Connect to  simulated drone instead of a real drone [default: False')
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -169,9 +145,10 @@ def _main():
     if(args.verbose):
         print(HR.format("hermes"))
         print(f"Input File:\t\t{args.input}")
-        print(f"Drone Platform:\t\t{args.platform}")
+        print(f"Drone Control Platform:\t\t{args.platform}")
         print(f"Output File:\t\t{args.output}")
 
+    # Convert the KML specification into a flightscript according to platform
     _, extension = os.path.splitext(args.input)
     if extension == '.kmz':
         print(HR.format("Extracting KMZ"))
@@ -182,15 +159,25 @@ def _main():
     else:
         out = parseKML(args)
 
-    with open(args.intermediate, mode='w', encoding='utf-8') as f:
+    if args.platform == "gsdk":
+        intermediate = "./gsdk/app/src/main/java/edu/cmu/cs/dronebrain/MS.java"
+    elif args.platform == "olympe":
+        intermediate = "./olympe/MS.py"
+
+    # Write the template output to the intermediate file so that we can compile the flightscript
+    with open(intermediate, mode='w', encoding='utf-8') as f:
         f.write(out)
-    try:
-        subprocess.run(f"./utils/java2dex.sh {args.javac_path} {args.d8_path} {args.android_jar}", shell=True, check=True)
-        #java2dex creates classes.dex in src, so we need to rename it if -o was given
-        os.rename("./classes.dex", args.output)
-        print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))
-    except subprocess.CalledProcessError as e:
-        print(e)
+    
+    if args.platform == "gsdk":
+        try:
+            subprocess.run(f"cd gsdk; ./utils/java2dex.sh", shell=True, check=True)
+            os.rename("./gsdk/classes.dex", args.output)
+            print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))
+        except subprocess.CalledProcessError as e:
+            print(e)
+    elif args.platform == "olympe":
+        # Package the Python script in an MS folder for shipping
+        pass
 
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))

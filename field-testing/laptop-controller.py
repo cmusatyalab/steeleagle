@@ -6,6 +6,8 @@ import olympe
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD, moveBy
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged
 from olympe.messages.skyctrl.CoPiloting import setPilotingSource
+from olympe.messages.obstacle_avoidance import set_mode
+from olympe.enums.obstacle_avoidance import mode
 from olympe.messages.gimbal import set_target, attitude
 from olympe.enums.gimbal import control_mode
 from olympe.video.renderer import PdrawRenderer
@@ -27,6 +29,7 @@ import json
 from trackers import dynamic, static, parrot
 from avoidance import sift_avoider, midas_avoider
 import argparse
+from datetime import datetime
 
 DRONE_IP = "192.168.42.1" # Real drone no controller
 
@@ -109,7 +112,7 @@ class KeyboardCtrl(Listener):
         return not self.running or self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _axis(self, left_key, right_key):
-        return 50 * (
+        return 20 * (
             int(self._key_pressed[right_key]) - int(self._key_pressed[left_key])
         )
 
@@ -140,7 +143,7 @@ class KeyboardCtrl(Listener):
         axis = float(self._axis(
             self._ctrl_keys[Ctrl.GIMBAL_DOWN],
             self._ctrl_keys[Ctrl.GIMBAL_UP]
-        ) / 50)
+        ) / 20)
         self._current_gimbal_pitch += axis
         self._clamp(self._current_gimbal_pitch, -90.0, 90.0)
         return axis
@@ -358,6 +361,7 @@ if __name__ == "__main__":
     parser.add_argument("-ns", "--nostream", action='store_true', help="Prevent streaming while running")
     parser.add_argument("-mds", "--midas", action='store_true', help="Use MiDaS to do obstacle avoidance")
     parser.add_argument("-sft", "--sift", action='store_true', help="Use SIFT to do obstacle avoidance")
+    parser.add_argument("-o", "--obstacle", action='store_true', help="Use built-in obstacle avoidance (Anafi Ai only)")
 
     opts = parser.parse_args()
 
@@ -378,11 +382,21 @@ if __name__ == "__main__":
     time.sleep(1)
     
     if not opts.nostream:
-        streamer = OlympeStreaming(drone, sample_rate=3, model='DPT_BEiT_L_512')
+        streamer = OlympeStreaming(drone, sample_rate=3, model='coco')
         streamer.start()
     
+    trace = None
+    if opts.obstacle:
+        drone(set_mode(mode.standard)).wait().success()
+        trace = open(datetime.now().strftime("%m-%d-%Y-%H-%M-%S") + ".txt", 'a')
+
     control = KeyboardCtrl()
     while not control.quit():
+        if trace:
+            gps = drone.get_state(GpsLocationChanged)
+            lat = gps["latitude"]
+            lng = gps["longitude"]
+            trace.write(f"{lat}, {lng}\n")
         if not opts.nofly:
             if control.takeoff():
                 drone(TakeOff())
@@ -393,6 +407,8 @@ if __name__ == "__main__":
                     tracker = midas_avoider.MiDaSAvoider(drone)
                 elif opts.sift:
                     tracker = sift_avoider.SIFTAvoider(drone)
+                else:
+                    tracker = dynamic.DynamicLeashTracker(drone) 
                 tracker.start()
                 tracking = True
                 print("Starting track!")
@@ -416,5 +432,6 @@ if __name__ == "__main__":
                 drone(PCMD(0, 0, 0, 0, 0, timestampAndSeqNum=0))
         time.sleep(0.05)
 
+    trace.close()
     drone(Landing()).wait().success()
     drone.disconnect()
