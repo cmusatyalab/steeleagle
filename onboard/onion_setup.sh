@@ -143,7 +143,7 @@ PrivateKey = $(cat /etc/wireguard/networks/${LAN}/peers/${peer_ID}_${LAN}_${user
 PublicKey = $(cat /etc/wireguard/networks/${LAN}/${LAN}_server_public.key) # Server's public key
 PresharedKey = $(cat /etc/wireguard/networks/${LAN}/peers/${peer_ID}_${LAN}_${username}/${peer_ID}_${LAN}_${username}.psk) # Peer's pre-shared key
 PersistentKeepalive = 25
-AllowedIPs = 192.168.42.1/24, ${inferface}1/24 
+AllowedIPs = 192.168.42.1/24, ${interface}.1/24 
 Endpoint = ${public_lte_ip}:${server_port}
 EOF
 echo "Done"
