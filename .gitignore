@@ -18,3 +18,5 @@ openscout-vol/
 cnc/server/model/
 venv/
 *.jar
+*.ms
+*.kml
