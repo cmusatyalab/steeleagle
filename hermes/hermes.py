@@ -76,16 +76,16 @@ class Placemark:
 def generateScript(args, placemarks):
     env = jinja2.Environment(loader = jinja2.FileSystemLoader(os.path.join(args.platform, "templates")))
     
-    if args.platform == "gsdk":
+    if args.platform == "java":
         ext = "java"
-    elif args.platform == "olympe":
+    elif args.platform == "python":
         ext = "py"
 
     template = env.get_template(f"base.{ext}.jinja2")
     kws = {}
-    if args.platform == 'gsdk':
+    if args.platform == 'java':
         kws['ip'] = ""
-    elif args.platform == 'olympe':
+    elif args.platform == 'python':
         if args.sim:
             ip = "10.202.0.1"
         else:
@@ -130,8 +130,8 @@ def _main():
     parser = argparse.ArgumentParser(prog='hermes', 
         description='Convert kml/kmz file to drone-specific instructions.')
     parser.add_argument('input', help='kml/kmz file to convert')
-    parser.add_argument('-p', '--platform', choices=['gsdk', 'olympe'], default='gsdk',
-        help='Drone autopilot language to convert to  [default: gsdk (Parrot GroundSDK)]')
+    parser.add_argument('-p', '--platform', choices=['java', 'python'], default='java',
+        help='Drone autopilot language to convert to  [default: java (Parrot GroundSDK)]')
     parser.add_argument('-o', '--output', default='./flightplan.ms',
         help='Filename for .ms (mission script) file  [default: ./flightplan.ms]')
     parser.add_argument('-v', '--verbose', action='store_true', 
@@ -159,23 +159,23 @@ def _main():
     else:
         out = parseKML(args)
 
-    if args.platform == "gsdk":
-        intermediate = "./gsdk/app/src/main/java/edu/cmu/cs/dronebrain/MS.java"
-    elif args.platform == "olympe":
-        intermediate = "./olympe/MS.py"
+    if args.platform == "java":
+        intermediate = "./java/app/src/main/java/edu/cmu/cs/dronebrain/MS.java"
+    elif args.platform == "python":
+        intermediate = "./python/MS.py"
 
     # Write the template output to the intermediate file so that we can compile the flightscript
     with open(intermediate, mode='w', encoding='utf-8') as f:
         f.write(out)
     
-    if args.platform == "gsdk":
+    if args.platform == "java":
         try:
-            subprocess.run(f"cd gsdk; ./utils/java2dex.sh", shell=True, check=True)
-            os.rename("./gsdk/classes.dex", args.output)
+            subprocess.run(f"cd java; ./utils/set-env.sh; ./utils/java2dex.sh", shell=True, check=True)
+            os.rename("./java/classes.dex", args.output)
             print(HR.format(f"Script {args.output} compiled successfully to converted to dex with d8!"))
         except subprocess.CalledProcessError as e:
             print(e)
-    elif args.platform == "olympe":
+    elif args.platform == "python":
         # Package the Python script in an MS folder for shipping
         pass
 

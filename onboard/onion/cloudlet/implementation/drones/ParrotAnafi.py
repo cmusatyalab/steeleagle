@@ -1,0 +1,176 @@
+from interfaces import DroneItf
+from olympe import Drone
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing
+from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
+from olympe.messages.ardrone3.PilotingState import moveToChanged
+from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
+from olympe.messages.gimbal import set_target, attitude
+import olympe.enums.move as move_mode
+import olympe.enums.gimbal as gimbal_mode
+import math
+
+
+def killprotected(f):
+    def wrapper(*args):
+        if args[0].active:
+            f(*args)
+        else:
+            raise RuntimeError("Cannot execute command, this drone is not active!")
+    return wrapper
+
+
+class ParrotAnafi(DroneItf.DroneItf):
+    
+    def __init__(self, **kwargs):
+        self.drone = Drone(kwargs['ip'])
+        self.active = False
+
+    ''' Connection methods '''
+
+    def connect(self):
+        self.drone.connect()
+        self.active = True
+
+    def isConnected(self):
+        return self.drone.connection_state()
+
+    def disconnect(self):
+        self.drone.disconnect()
+        self.active = False
+
+    ''' Streaming methods '''
+
+    def startStreaming(self, resolution):
+        self.streamingThread = StreamingThread(self.drone)
+        self.streamingThread.start()
+
+    def getVideoFrame(self):
+        return self.streamingThread.grabFrame() 
+
+    def stopStreaming(self):
+        self.streamingThread.stop()
+
+    ''' Take off / Landing methods '''
+
+    @killprotected
+    def takeOff(self):
+        self.drone(TakeOff()).wait().success()
+
+    def land(self):
+        self.drone(Landing()).wait().success()
+
+    def setHome(self):
+        # TODO: Set the new RTH destination
+        pass
+
+    ''' Movement methods '''
+
+    @killprotected
+    def PCMD(self, pitch, yaw, roll, gaz, rot):
+        self.drone(
+            PCMD(pitch, yaw, roll, gaz, rot, timestampAndSeqNum=0)
+            >> FlyingStateChanged(state="hovering", _timeout=20)
+        ).wait().success()
+
+    @killprotected
+    def moveTo(self, lat, lng, alt):
+        self.drone(
+            moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
+            >> moveToChanged(latitude=lat, longitude=lng, altitude=alt, orientation_mode=move_mode.orientation_mode.to_target, status='DONE')
+        ).wait().success()
+
+    @killprotected
+    def moveBy(self, x, y, z, t):
+        drone(
+            moveBy(x, y, z, t) 
+            >> FlyingStateChanged(state="hovering", _timeout=20)
+        ).wait().success()
+
+    @killprotected
+    def rotateTo(self, theta):
+        # TODO: Rotate to exact heading
+        pass
+
+    @killprotected
+    def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
+        # The Anafi does not support yaw or roll on its gimbal, thus these
+        # parameters are discarded without effect.
+        self.drone(set_target(
+            gimbal_id=0,
+            control_mode="position",
+            yaw_frame_of_reference="none",
+            yaw=yaw_theta,
+            pitch_frame_of_reference="absolute",
+            pitch=pitch_theta,
+            roll_frame_of_reference="none",
+            roll=roll_theta,
+        )
+        >> attitude(pitch_absolute=pitch_theta, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
+
+    def hover(self):
+        self.moveBy(0.0, 0.0, 0.0, 0.0).wait().success()
+
+    ''' Photography methods '''
+
+    def takePhoto(self):
+        # TODO: Take a photo and save it to the local drone folder
+        pass
+
+    ''' Status methods '''
+
+    def getName(self):
+        return self.drone._device_name
+
+    def getLat(self):
+        return self.drone.get_state(GpsLocationChanged)["latitude"]
+
+    def getLng(self):
+        return self.drone.get_state(GpsLocationChanged)["longitude"]
+
+    def getHeading(self):
+        return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
+
+    def getRelAlt(self):
+        return self.drone.get_state(AltitudeChanged)["altitude"]
+
+    def getExactAlt(self):
+        pass
+
+    def getRSSI(self):
+        pass
+
+    def getBatteryPercentage(self):
+        pass
+
+    def getMagnetometerReading(self):
+        pass
+
+    def kill(self):
+        self.active = False
+
+
+import cv2
+import os
+import threading
+
+class StreamingThread(threading.Thread):
+
+    def __init__(self, drone):
+        self.currentFrame = None
+        self.drone = drone
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
+        self.cap = cv2.VideoCapture("rtsp://192.168.42.1/live", cv2.CAP_FFMPEG)
+        self.isRunning = True
+
+    def run(self):
+        try:
+            while(self.isRunning):
+                ret, self.currentFrame = self.cap.read()
+        except Exception as e:
+            pass
+
+    def grabFrame(self):
+        return self.currentFrame.copy()
+
+    def stop(self):
+        self.isRunning = False
