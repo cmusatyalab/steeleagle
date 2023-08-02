@@ -9,8 +9,8 @@ class FlightScript:
         self.taskQueue = queue.Queue()
 
     def _execLoop(self):
-        while not taskQueue.empty():
-            self._exec(taskQueue.get())
+        while not self.taskQueue.empty():
+            self._exec(self.taskQueue.get())
 
     def _exec(self, task):
         self.currentTask = task
