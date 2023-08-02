@@ -81,7 +81,7 @@ class ParrotAnafi(DroneItf.DroneItf):
 
     @killprotected
     def moveBy(self, x, y, z, t):
-        drone(
+        self.drone(
             moveBy(x, y, z, t) 
             >> FlyingStateChanged(state="hovering", _timeout=20)
         ).wait().success()
