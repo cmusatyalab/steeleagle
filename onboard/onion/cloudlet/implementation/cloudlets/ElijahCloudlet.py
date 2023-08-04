@@ -14,9 +14,8 @@ logger.setLevel(logging.DEBUG)
 
 class ElijahCloudlet(CloudletItf.CloudletItf):
 
-    def __init__(self, comm):
+    def __init__(self):
         self.engine_results = {}
-        self.comm = comm
         self.source = 'command'
         self.model = 'coco'
         self.drone = None
