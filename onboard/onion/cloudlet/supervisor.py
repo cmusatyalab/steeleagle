@@ -169,11 +169,20 @@ def _main():
                         level=args.loglevel)
     adapter = Supervisor()
 
-    client = WebsocketClient(
+    commander_client = WebsocketClient(
         args.server, args.port,
         adapter.get_producer_wrappers(), adapter.processResults
     )
-    client.launch()
+    commander_client.launch()
+
+
+    openscout_client = WebsocketClient(
+        args.server, args.port,
+        adapter.cloudlet.sendFrame(), adapter.processResults
+    )
+    openscout_client.launch()
+
+
 
 if __name__ == "__main__":
     _main()
