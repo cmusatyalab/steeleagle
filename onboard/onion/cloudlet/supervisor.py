@@ -139,11 +139,11 @@ class Supervisor:
             extras.location.longitude = self.drone.getLng()
             extras.location.altitude = self.drone.getRelAlt()
             try:
-                extras.stat.battery = self.drone.getBatteryPercentage()
-                extras.stat.rssi = self.drone.getRSSI()
-                extras.stat.mag = self.drone.getMagnetometerReading()
-                extras.stat.bearing = self.drone.getHeading()
-                logger.debug(f'Battery: {extras.stat.battery} RSSI: {extras.stat.rssi}  Magnetometer: {extras.stat.mag} Heading: {extras.stat.bearing}')
+                extras.status.battery = self.drone.getBatteryPercentage()
+                extras.status.rssi = self.drone.getRSSI()
+                extras.status.mag = self.drone.getMagnetometerReading()
+                extras.status.bearing = self.drone.getHeading()
+                logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
             except Exception as e:
                 logger.error(f'Error getting telemetry: {e}')
             if self.heartbeats < 2:
@@ -151,9 +151,7 @@ class Supervisor:
             input_frame.extras.Pack(extras)
             return input_frame
     
-        return [
-            ProducerWrapper(producer=producer, source_name=self.source)
-        ]
+        return ProducerWrapper(producer=producer, source_name=self.source)
 
 def _main():
     parser = argparse.ArgumentParser(prog='supervisor',
@@ -170,20 +168,11 @@ def _main():
                         level=args.loglevel)
     adapter = Supervisor()
 
-    commander_client = WebsocketClient(
+    gabriel_client = WebsocketClient(
         args.server, args.port,
-        adapter.get_producer_wrappers(), adapter.processResults
+        [adapter.get_producer_wrappers(), adapter.cloudlet.sendFrame()],  adapter.processResults
     )
-    commander_client.launch()
-
-
-    openscout_client = WebsocketClient(
-        args.server, args.port,
-        adapter.cloudlet.sendFrame(), adapter.processResults
-    )
-    openscout_client.launch()
-
-
+    gabriel_client.launch()
 
 if __name__ == "__main__":
     _main()

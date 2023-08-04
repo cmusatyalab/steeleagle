@@ -4,6 +4,7 @@ import threading
 import time
 import logging
 import asyncio
+import cv2
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
@@ -16,14 +17,15 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
 
     def __init__(self):
         self.engine_results = {}
-        self.comm = comm
-        self.source = 'openscout'
+        self.source = 'command'
         self.model = 'coco'
         self.drone = None
+        self.sample_rate = 1
+        self.stop = True
 
     def processResults(self, result_wrapper):
         if len(result_wrapper.results) != 1:
-            logger.error('Got %d results from server'.
+            logger.error('Got %d results from server',
                     len(result_wrapper.results))
             return
 
@@ -43,17 +45,10 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
         self.stop = False
         self.model = model
         self.drone = drone
-        def stream(self, sample_rate):
-            while not self.stop:
-                self.sendFrame(self.drone.getVideoFrame())
-                time.sleep(1 / sample_rate)
-
-        self.stream = threading.Thread(target=stream, args=(self, sample_rate, ))
-        self.stream.start()
+        self.sample_rate = sample_rate
 
     def stopStreaming(self):
         self.stop = True
-        self.stream.join()
 
     def produce_extras(self):
         extras = cnc_pb2.Extras()
@@ -63,23 +58,30 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
         extras.detection_model = self.model
         return extras
 
-    def sendFrame(self, frame):
-        if frame is None:
-            return
+    def sendFrame(self):
         async def producer():
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1 / self.sample_rate)
             input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-            input_frame.payloads.append(frame.tobytes())
+            if not self.stop:
+                try:
+                    _, frame = cv2.imencode('.jpg', self.drone.getVideoFrame())
+                    input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
+                    input_frame.payloads.append(frame.tobytes())
 
-            extras = self.produce_extras()
-            if extras is not None:
-                input_frame.extras.Pack(extras)
+                    extras = self.produce_extras()
+                    if extras is not None:
+                        input_frame.extras.Pack(extras)
+                except Exception as e:
+                    input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+                    input_frame.payloads.append("Unable to produce a frame!")
+                    logger.error(f'Unable to produce a frame: {e}')
+            else:
+                input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+                input_frame.payloads.append("Streaming not started, no frame to show.")
+
             return input_frame
-
-        return [
-            ProducerWrapper(producer=producer, source_name=self.source)
-        ]
+                    
+        return ProducerWrapper(producer=producer, source_name=self.source)
 
     def getResults(self, engine_key):
         try:    

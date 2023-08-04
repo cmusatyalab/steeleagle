@@ -143,8 +143,9 @@ class ParrotAnafi(DroneItf.DroneItf):
         return self.drone.get_state(rssi_changed)["rssi"]
 
     def getBatteryPercentage(self):
-        cap = self.drone.get_state(capacity)
-        return cap["remaining"] / cap["full_charge"]
+        #cap = self.drone.get_state(capacity)
+        #return cap["remaining"] / cap["full_charge"]
+        return 100
 
     def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
@@ -154,6 +155,7 @@ class ParrotAnafi(DroneItf.DroneItf):
 
 
 import cv2
+import numpy as np
 import os
 import threading
 
@@ -161,7 +163,7 @@ class StreamingThread(threading.Thread):
 
     def __init__(self, drone):
         threading.Thread.__init__(self)
-        self.currentFrame = None
+        self.currentFrame = None 
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
         self.cap = cv2.VideoCapture("rtsp://192.168.42.1/live", cv2.CAP_FFMPEG)
@@ -172,13 +174,15 @@ class StreamingThread(threading.Thread):
             while(self.isRunning):
                 ret, self.currentFrame = self.cap.read()
         except Exception as e:
-            pass
+            print(e)
 
     def grabFrame(self):
         try:
-            return self.currentFrame.copy()
+            frame = self.currentFrame.copy()
+            return frame
         except Exception as e:
-            return None
+            # Send a blank frame
+            return np.zeros((720, 1280, 3), np.uint8) 
 
     def stop(self):
         self.isRunning = False
