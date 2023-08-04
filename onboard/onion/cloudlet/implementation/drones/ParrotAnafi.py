@@ -160,6 +160,7 @@ import threading
 class StreamingThread(threading.Thread):
 
     def __init__(self, drone):
+        threading.Thread.__init__(self)
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
@@ -174,7 +175,10 @@ class StreamingThread(threading.Thread):
             pass
 
     def grabFrame(self):
-        return self.currentFrame.copy()
+        try:
+            return self.currentFrame.copy()
+        except Exception as e:
+            return None
 
     def stop(self):
         self.isRunning = False

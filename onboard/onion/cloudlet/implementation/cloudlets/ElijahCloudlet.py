@@ -34,7 +34,7 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
                     producer = result_wrapper.producer
                     self.engine_results[producer] = result
                 except Exception as e:
-                    logger.error(f'Error decoding json {data}')
+                    logger.error(f'Error decoding json')
             else:
                 logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 

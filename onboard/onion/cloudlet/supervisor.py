@@ -7,7 +7,8 @@ import sys
 import threading
 import validators
 from zipfile import ZipFile
-from implementation import drones, cloudlets
+from implementation.drones import ParrotAnafi
+from implementation.cloudlets import ElijahCloudlet
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
@@ -19,9 +20,14 @@ logger.setLevel(logging.DEBUG)
 
 class Supervisor:
     def __init__(self):
-        self.cloudlet = cloudlets.ElijahCloudlet()
+        self.cloudlet = ElijahCloudlet.ElijahCloudlet()
         kwargs = {'ip': '192.168.42.1'}
-        self.drone = drones.ParrotAnafi(**kwargs)
+        self.drone = ParrotAnafi.ParrotAnafi(**kwargs)
+        #connect to drone, if not already
+        if not self.drone.isConnected():
+            self.drone.connect()
+            self.drone.startStreaming(480)
+            self.cloudlet.startStreaming(self.drone, 'coco', 30)
         self.source = 'command'
         self.MS = None #mission script
         self.manual = True #default to manual control
@@ -76,12 +82,6 @@ class Supervisor:
                         len(result_wrapper.results))
                 return
 
-            #connect to drone, if not already
-            if not self.drone.isConnected():
-                self.drone.connect()
-                self.drone.startStreaming(480)
-                self.cloudlet.startStreaming(self.drone, 'coco', 30)
-
             for result in result_wrapper.results:
                 if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                     payload = result.payload.decode('utf-8')
@@ -115,45 +115,45 @@ class Supervisor:
                             self.drone.land()
                         else:
                             logger.info(f'Received manual PCMD')
-                            pitch = extras.cmd.pcmd.getPitch()
-                            yaw = extras.cmd.pcmd.getYaw()
-                            roll = extras.cmd.pcmd.getRoll()
-                            gaz = extras.cmd.pcmd.getGaz()
+                            pitch = extras.cmd.pcmd.pitch
+                            yaw = extras.cmd.pcmd.yaw
+                            roll = extras.cmd.pcmd.roll
+                            gaz = extras.cmd.pcmd.gaz
                             logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
 
                             self.drone.PCMD(roll, pitch, yaw, gaz)
                 else:
                     logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 
-        def get_producer_wrappers(self):
-            self.heartbeats += 1
-            async def producer():
-                await asyncio.sleep(1)
-                input_frame = gabriel_pb2.InputFrame()
-                input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append('heartbeart'.encode('utf8'))
-
-                extras = cnc_pb2.Extras()
-                extras.drone_id = self.drone.getName()
-                extras.location.latitude = self.drone.getLat()
-                extras.location.longitude = self.drone.getLng()
-                extras.location.altitude = self.drone.getRelAlt()
-                try:
-                    extras.stat.battery = self.drone.getBatteryPercentage()
-                    extras.stat.rssi = self.drone.getRSSI()
-                    extras.stat.mag = self.drone.getMagnetometerReading()
-                    extras.stat.bearing = self.drone.getHeading()
-                    logger.debug(f'Battery: {extras.stat.battery} RSSI: {extras.stat.rssi}  Magnetometer: {extras.stat.mag} Heading: {extras.stat.bearing}')
-                except Exception as e:
-                    logger.e(f'Error getting telemetry: {e}')
-                if self.hearbeats < 2:
-                    extras.registering = True
-                input_frame.extras.Pack(extras)
-                return input_frame
-
-            return [
-                ProducerWrapper(producer=producer, source_name=self.source)
-            ]
+    def get_producer_wrappers(self):
+        self.heartbeats += 1
+        async def producer():
+            await asyncio.sleep(1)
+            input_frame = gabriel_pb2.InputFrame()
+            input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+            input_frame.payloads.append('heartbeart'.encode('utf8'))
+    
+            extras = cnc_pb2.Extras()
+            extras.drone_id = self.drone.getName()
+            extras.location.latitude = self.drone.getLat()
+            extras.location.longitude = self.drone.getLng()
+            extras.location.altitude = self.drone.getRelAlt()
+            try:
+                extras.stat.battery = self.drone.getBatteryPercentage()
+                extras.stat.rssi = self.drone.getRSSI()
+                extras.stat.mag = self.drone.getMagnetometerReading()
+                extras.stat.bearing = self.drone.getHeading()
+                logger.debug(f'Battery: {extras.stat.battery} RSSI: {extras.stat.rssi}  Magnetometer: {extras.stat.mag} Heading: {extras.stat.bearing}')
+            except Exception as e:
+                logger.error(f'Error getting telemetry: {e}')
+            if self.heartbeats < 2:
+                extras.registering = True
+            input_frame.extras.Pack(extras)
+            return input_frame
+    
+        return [
+            ProducerWrapper(producer=producer, source_name=self.source)
+        ]
 
 def _main():
     parser = argparse.ArgumentParser(prog='supervisor',
