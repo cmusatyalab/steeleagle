@@ -35,6 +35,9 @@ class Supervisor(threading.Thread):
         self.drone.hover()
         logger.d('Executing flight plan!')
         #start new thread with self.MS
+        from script.MS import MS
+        self.MS = MS(self.drone, self.cloudlet)
+        self.MS.start()
 
     def download(self, url: str, ):
         #download zipfile and extract reqs/flight script from cloudlet
@@ -48,7 +51,7 @@ class Supervisor(threading.Thread):
         ret = False
         #pip install prerequsites for flight script
         try:
-            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', 'requirements.txt'])
+            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './script/requirements.txt'])
             ret = True
         except subprocess.CalledProcessError as e:
             logger.error(f"Error pip installing requirements.txt: {e}")
@@ -118,7 +121,7 @@ class Supervisor(threading.Thread):
                             gaz = extras.cmd.pcmd.getGaz()
                             logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
 
-                            self.drone.PCMD(pitch, yaw, roll, gaz)
+                            self.drone.PCMD(roll, pitch, yaw, gaz)
                 else:
                     logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 

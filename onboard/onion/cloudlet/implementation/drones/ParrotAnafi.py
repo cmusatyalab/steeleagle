@@ -5,6 +5,9 @@ from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
 from olympe.messages.gimbal import set_target, attitude
+from olympe.messages.wifi import rssi_changed
+from olympe.messages.battery import capacity
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 import math
@@ -66,9 +69,9 @@ class ParrotAnafi(DroneItf.DroneItf):
     ''' Movement methods '''
 
     @killprotected
-    def PCMD(self, pitch, yaw, roll, gaz, rot):
+    def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
-            PCMD(pitch, yaw, roll, gaz, rot, timestampAndSeqNum=0)
+            PCMD(0, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
             >> FlyingStateChanged(state="hovering", _timeout=20)
         ).wait().success()
 
@@ -137,13 +140,14 @@ class ParrotAnafi(DroneItf.DroneItf):
         pass
 
     def getRSSI(self):
-        pass
+        return self.drone.get_state(rssi_changed)["rssi"]
 
     def getBatteryPercentage(self):
-        pass
+        cap = self.drone.get_state(capacity)
+        return cap["remaining"] / cap["full_charge"]
 
     def getMagnetometerReading(self):
-        pass
+        return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
 
     def kill(self):
         self.active = False
