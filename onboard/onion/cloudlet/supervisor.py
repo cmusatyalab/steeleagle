@@ -7,7 +7,7 @@ import sys
 import threading
 import validators
 from zipfile import ZipFile
-from util import getDrone, getCloudlet
+from implementation import drones, cloudlets
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
@@ -19,8 +19,9 @@ logger.setLevel(logging.DEBUG)
 
 class Supervisor:
     def __init__(self):
-        self.cloudlet = util.getCloudlet()
-        self.drone = util.getDrone()
+        self.cloudlet = cloudlets.ElijahCloudlet()
+        kwargs = {'ip': '192.168.42.1'}
+        self.drone = drones.ParrotAnafi(**kwargs)
         self.source = 'command'
         self.MS = None #mission script
         self.manual = True #default to manual control
