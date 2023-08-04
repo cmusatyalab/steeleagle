@@ -16,7 +16,8 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
 
     def __init__(self):
         self.engine_results = {}
-        self.source = 'command'
+        self.comm = comm
+        self.source = 'openscout'
         self.model = 'coco'
         self.drone = None
 
