@@ -11,13 +11,13 @@ from util import getDrone, getCloudlet
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class Supervisor(threading.Thread):
+class Supervisor:
     def __init__(self):
         self.cloudlet = util.getCloudlet()
         self.drone = util.getDrone()
@@ -29,7 +29,6 @@ class Supervisor(threading.Thread):
     def retrieveFlightScript(self, url: str) -> bool:
         logger.d('String flight plan download')
         self.download(url)
-        self.MS = FlightScript() #?
 
     def executeFlightScript(self):
         self.drone.hover()
@@ -44,7 +43,8 @@ class Supervisor(threading.Thread):
         r = requests.get(url)
         with open('./script.zip', mode='w', encoding='utf-8') as f:
             f.write(r.content)
-        ZipFile.extractall(path='./script.zip')
+        z = ZipFile('./script.zip')
+        z.extractall()
         self.install_prereqs()
 
     def install_prereqs(self) -> bool:
@@ -56,7 +56,6 @@ class Supervisor(threading.Thread):
         except subprocess.CalledProcessError as e:
             logger.error(f"Error pip installing requirements.txt: {e}")
         return ret
-
 
     '''
     Process results from engines.
@@ -125,7 +124,7 @@ class Supervisor(threading.Thread):
                 else:
                     logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 
-        def sendTelemetry(self):
+        def get_producer_wrappers(self):
             self.heartbeats += 1
             async def producer():
                 await asyncio.sleep(1)
@@ -155,25 +154,26 @@ class Supervisor(threading.Thread):
                 ProducerWrapper(producer=producer, source_name=self.source)
             ]
 
-
 def _main():
     parser = argparse.ArgumentParser(prog='supervisor',
         description='Manage drones via olympe.')
-    '''
-    parser.add_argument('input', help='kml/kmz file to convert')
-    parser.add_argument('-p', '--platform', choices=['java', 'python'], default='java',
-        help='Drone autopilot language to convert to  [default: java (Parrot GroundSDK)]')
-    parser.add_argument('-o', '--output', default='./flightplan.ms',
-        help='Filename for .ms (mission script) file  [default: ./flightplan.ms]')
-    parser.add_argument('-v', '--verbose', action='store_true',
-        help='Write output to console as well [default: False]')
-    parser.add_argument('-s', '--sim', action='store_true',
-        help='Connect to  simulated drone instead of a real drone [default: False')
-    '''
-    if len(sys.argv) == 1:
-        parser.print_help()
-    args = parser.parse_args()
+    parser.add_argument('-s', '--server', default='gabriel-server',
+                        help='Specify address of Steel Eagle CNC server [default: gabriel-server')
+    parser.add_argument('-p', '--port', default='9099',
+                        help='Specify websocket port [default: 9099]')
+    parser.add_argument('-l', '--loglevel', default='INFO',
+                        help='Set the log level')
 
+    args = parser.parse_args()
+    logging.basicConfig(format="%(levelname)s: %(message)s",
+                        level=args.loglevel)
+    adapter = Supervisor()
+
+    client = WebsocketClient(
+        args.server, args.port,
+        adapter.get_producer_wrappers(), adapter.processResults
+    )
+    client.launch()
 
 if __name__ == "__main__":
     _main()
