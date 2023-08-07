@@ -25,7 +25,8 @@ def killprotected(f):
 class ParrotAnafi(DroneItf.DroneItf):
     
     def __init__(self, **kwargs):
-        self.drone = Drone(kwargs['ip'])
+        self.ip = kwargs['ip']
+        self.drone = Drone(self.ip)
         self.active = False
 
     ''' Connection methods '''
@@ -44,7 +45,7 @@ class ParrotAnafi(DroneItf.DroneItf):
     ''' Streaming methods '''
 
     def startStreaming(self, resolution):
-        self.streamingThread = StreamingThread(self.drone)
+        self.streamingThread = StreamingThread(self.drone, self.ip)
         self.streamingThread.start()
 
     def getVideoFrame(self):
@@ -73,7 +74,7 @@ class ParrotAnafi(DroneItf.DroneItf):
         self.drone(
             PCMD(0, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
             >> FlyingStateChanged(state="hovering", _timeout=20)
-        ).wait().success()
+        )
 
     @killprotected
     def moveTo(self, lat, lng, alt):
@@ -161,12 +162,12 @@ import threading
 
 class StreamingThread(threading.Thread):
 
-    def __init__(self, drone):
+    def __init__(self, drone, ip):
         threading.Thread.__init__(self)
         self.currentFrame = None 
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture("rtsp://192.168.42.1/live", cv2.CAP_FFMPEG)
+        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG)
         self.isRunning = True
 
     def run(self):

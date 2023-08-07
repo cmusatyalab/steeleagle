@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 class Supervisor:
     def __init__(self):
         self.cloudlet = ElijahCloudlet.ElijahCloudlet()
-        kwargs = {'ip': '192.168.42.1'}
+        kwargs = {'ip': '10.202.0.1'}
         self.drone = ParrotAnafi.ParrotAnafi(**kwargs)
         #connect to drone, if not already
         if not self.drone.isConnected():
@@ -111,7 +111,7 @@ class Supervisor:
                             logger.info(f'Received manual takeoff')
                             self.drone.takeOff()
                         elif extras.cmd.land:
-                            logger.info(f'Received manual takeoff')
+                            logger.info(f'Received manual land')
                             self.drone.land()
                         else:
                             logger.info(f'Received manual PCMD')
