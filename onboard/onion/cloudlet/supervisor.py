@@ -81,12 +81,13 @@ class Supervisor:
                 logger.error('Got %d results from server'.
                         len(result_wrapper.results))
                 return
+                    
+            extras = cnc_pb2.Extras()
+            result_wrapper.extras.Unpack(extras)
 
             for result in result_wrapper.results:
                 if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                     payload = result.payload.decode('utf-8')
-                    extras = cnc_pb2.Extras()
-                    result_wrapper.extras.Unpack(extras)
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
                         if self.MS:
@@ -126,9 +127,10 @@ class Supervisor:
                     logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 
     def get_producer_wrappers(self):
-        self.heartbeats += 1
         async def producer():
             await asyncio.sleep(1)
+            if self.heartbeats < 2:
+                self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
