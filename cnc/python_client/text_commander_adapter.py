@@ -40,7 +40,7 @@ class TextCommanderAdapter:
             print('3. Send Script URL')
             print('Enter the number of the command you wish to send:')
             selection = int(input())
-            if selection == 2:
+            if selection == 3:
                 print('Enter the URL where the script resides (i.e http://cloud.let/classes.dex):')
                 url = str(input())
             if selection > 0:
@@ -55,7 +55,8 @@ class TextCommanderAdapter:
             if selection != 0:
                 extras.cmd.for_drone_id = drone
                 if selection == 2:
-                    extras.cmd.halt = True
+                    extras.cmd.land = True
+                    extras.cmd.rth = True
                 elif selection == 3:
                     extras.cmd.script_url = url
 

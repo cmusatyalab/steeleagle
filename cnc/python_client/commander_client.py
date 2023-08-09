@@ -30,6 +30,7 @@ def main():
     
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
+    COMMANDER_ID = os.uname()[1]
     if args.nogui:
         from text_commander_adapter import TextCommanderAdapter
         
@@ -37,7 +38,7 @@ def main():
         producer = adapter.get_producer_wrappers()
         consumer = adapter.consumer
     else:
-        COMMANDER_ID = os.uname()[1]
+
         from gui_commander_adapter import GUICommanderAdapter
         from threading import Thread, Event
         
