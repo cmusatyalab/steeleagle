@@ -14,14 +14,16 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class Supervisor:
-    def __init__(self):
+    def __init__(self, args):
         self.cloudlet = ElijahCloudlet.ElijahCloudlet()
-        kwargs = {'ip': '10.202.0.1'}
+        if args.sim:
+            kwargs = {'ip': '10.202.0.1'}
+        else:
+            kwargs = {'ip': '192.168.42.1'}
         self.drone = ParrotAnafi.ParrotAnafi(**kwargs)
         #connect to drone, if not already
         if not self.drone.isConnected():
@@ -34,7 +36,7 @@ class Supervisor:
         self.heartbeats = 0
 
     def retrieveFlightScript(self, url: str) -> bool:
-        logger.d('String flight plan download')
+        logger.debug('String flight plan download')
         self.download(url)
 
     def executeFlightScript(self):
@@ -78,10 +80,9 @@ class Supervisor:
             #process result from command engine
 
             if len(result_wrapper.results) != 1:
-                logger.error('Got %d results from server'.
-                        len(result_wrapper.results))
+                logger.error(f'Got {len(result_wrapper.results)} results from server')
                 return
-                    
+
             extras = cnc_pb2.Extras()
             result_wrapper.extras.Unpack(extras)
 
@@ -102,7 +103,7 @@ class Supervisor:
                         #validate url
                         if validators.url(extras.cmd.script_url):
                             logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
-                            if self.retrieveFlightScript():
+                            if self.retrieveFlightScript(extras.cmd.script_url):
                                 self.manual = False
                                 self.executeFlightScript()
                         else:
@@ -128,9 +129,8 @@ class Supervisor:
 
     def get_producer_wrappers(self):
         async def producer():
-            await asyncio.sleep(1)
-            if self.heartbeats < 2:
-                self.heartbeats += 1
+            await asyncio.sleep(0.1)
+            self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
@@ -155,6 +155,7 @@ class Supervisor:
     
         return ProducerWrapper(producer=producer, source_name=self.source)
 
+
 def _main():
     parser = argparse.ArgumentParser(prog='supervisor',
         description='Manage drones via olympe.')
@@ -164,11 +165,13 @@ def _main():
                         help='Specify websocket port [default: 9099]')
     parser.add_argument('-l', '--loglevel', default='INFO',
                         help='Set the log level')
+    parser.add_argument('-S', '--sim', action='store_true',
+        help='Connect to  simulated drone instead of a real drone [default: False')
 
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s",
                         level=args.loglevel)
-    adapter = Supervisor()
+    adapter = Supervisor(args)
 
     gabriel_client = WebsocketClient(
         args.server, args.port,

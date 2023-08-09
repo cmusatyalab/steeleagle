@@ -60,7 +60,8 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
 
     def sendFrame(self):
         async def producer():
-            await asyncio.sleep(1 / self.sample_rate)
+            #await asyncio.sleep(1 / self.sample_rate)
+            await asyncio.sleep(0.1)
             input_frame = gabriel_pb2.InputFrame()
             if not self.stop:
                 try:
@@ -73,7 +74,7 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
                         input_frame.extras.Pack(extras)
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!")
+                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
                     logger.error(f'Unable to produce a frame: {e}')
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
