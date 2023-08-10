@@ -82,6 +82,7 @@ class DroneClient:
         self.vel = 0.0
         self.battery = self.rssi = self.mag = self.bearing =  0
         self.current_frame = False
+        #TODO: change state to indicate whether drone is in manual or autonomous flight so commander knows
         self.json = {"name": id, "state": "online", "latitude": 0.0,
                      "longitude": 0.0, "altitude": 0.0, "velocity": 0.0, "battery": 0, "rssi": 0,
                      "mag": 0, "bearing": 0}
@@ -140,8 +141,7 @@ class DroneCommandEngine(cognitive_engine.Engine):
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
-        result = gabriel_pb2.ResultWrapper.Result()
-        result.payload_type = gabriel_pb2.PayloadType.TEXT
+        result = None
 
         # if it is a drone client...
         if extras.drone_id is not "":
@@ -150,12 +150,16 @@ class DroneCommandEngine(cognitive_engine.Engine):
                 # Add the drone to our list of connected drones
                 self.drones[d.id] = d
                 logger.info(f"Drone [{d.id}] connected.")
+                result = gabriel_pb2.ResultWrapper.Result()
+                result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = "Registration successful!".encode(
                     encoding="utf-8")
             else:
                 try:
                     if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
                         if extras.drone_id in self.drones:
+                            result = gabriel_pb2.ResultWrapper.Result()
+                            result.payload_type = gabriel_pb2.PayloadType.TEXT
                             self.drones[extras.drone_id].heartbeat = time.time()
                             self.updateDroneStatus(extras)
                             # check if there is a script to send or if we need to signal a halt
@@ -218,6 +222,8 @@ class DroneCommandEngine(cognitive_engine.Engine):
                                 result_wrapper.extras.Pack(from_commander)
                                 result.payload = "Sending PCMD commands.".encode(
                                     encoding="utf-8")
+                            else:
+                                result = None
                     elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
                         #update current_frame for this drone so it can be displayed in commander UI
                         self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
@@ -236,6 +242,8 @@ class DroneCommandEngine(cognitive_engine.Engine):
             try:
                 drone = extras.cmd.for_drone_id
                 payload = self.getDrones()
+                result = gabriel_pb2.ResultWrapper.Result()
+                result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = payload.encode(encoding="utf-8")
                 result_wrapper.results.append(result)
                 if extras.cmd.halt:
@@ -282,8 +290,8 @@ class DroneCommandEngine(cognitive_engine.Engine):
                     logger.error(
                         f'Sorry, [{commander}]  drone [{drone}] does not exist!')
         # only append the result if it has a payload
-        # e.g. in the else block where we received an image from the streaming thread, we don't add a payload 
-        if result.payload is not None:
+        # e.g. in the else block where we received an image from the streaming thread, we don't add a payload
+        if result is not None:
             result_wrapper.results.append(result)
         return result_wrapper
 
