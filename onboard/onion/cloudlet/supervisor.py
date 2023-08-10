@@ -177,7 +177,12 @@ def _main():
         args.server, args.port,
         [adapter.get_producer_wrappers(), adapter.cloudlet.sendFrame()],  adapter.processResults
     )
-    gabriel_client.launch()
+    try:
+        gabriel_client.launch()
+    except KeyboardInterrupt:
+        adapter.cloudlet.stopStreaming()
+        adapter.drone.stopStreaming()
+        sys.exit(0)
 
 if __name__ == "__main__":
     _main()
