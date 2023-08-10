@@ -322,7 +322,7 @@ class GUICommanderAdapter(customtkinter.CTk):
             np_data = np.fromstring(byteframe, dtype=np.uint8)
             img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(img)
+            img = Image.fromarray(img).resize((640,480))
             self.image = ImageTk.PhotoImage(img)
             self.image_label.configure(image=self.image)
         except Exception as e:
@@ -382,7 +382,6 @@ class GUICommanderAdapter(customtkinter.CTk):
         if keypress not in self.keyboard_state.keys():
             return
         else:
-            print(f"RATE: {time.time() * 1000 - self.keyboard_state[keypress]}")
             self.keyboard_state[keypress] = time.time() * 1000
 
     def active(self, char):
