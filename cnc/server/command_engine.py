@@ -281,7 +281,10 @@ class DroneCommandEngine(cognitive_engine.Engine):
                 if drone != "":
                     logger.error(
                         f'Sorry, [{commander}]  drone [{drone}] does not exist!')
-        result_wrapper.results.append(result)
+        # only append the result if it has a payload
+        # e.g. in the else block where we received an image from the streaming thread, we don't add a payload 
+        if result.payload is not None:
+            result_wrapper.results.append(result)
         return result_wrapper
 
     def process_image(self, image):
