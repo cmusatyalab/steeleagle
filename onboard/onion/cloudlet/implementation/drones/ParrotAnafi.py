@@ -72,7 +72,7 @@ class ParrotAnafi(DroneItf.DroneItf):
     @killprotected
     def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
-            PCMD(0, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
+            PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
             >> FlyingStateChanged(state="hovering", _timeout=20)
         )
 

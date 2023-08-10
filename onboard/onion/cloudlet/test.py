@@ -6,5 +6,5 @@ if __name__ == "__main__":
     drone = ParrotAnafi.ParrotAnafi(**kwargs)
     drone.connect()
     print(drone.isConnected())
-    time.sleep(10)
+    drone.PCMD(0, 100, 0, 0)
     drone.disconnect()
