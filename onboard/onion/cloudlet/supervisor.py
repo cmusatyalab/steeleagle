@@ -36,7 +36,7 @@ class Supervisor:
         self.heartbeats = 0
 
     def retrieveFlightScript(self, url: str) -> bool:
-        logger.debug('String flight plan download')
+        logger.debug('Starting flight plan download...')
         self.download(url)
 
     def executeFlightScript(self):
@@ -49,11 +49,13 @@ class Supervisor:
 
     def download(self, url: str, ):
         #download zipfile and extract reqs/flight script from cloudlet
-        r = requests.get(url)
-        with open('./script.zip', mode='w', encoding='utf-8') as f:
-            f.write(r.content)
-        z = ZipFile('./script.zip')
-        z.extractall()
+        filename = url.rsplit(sep='/')[0]
+        r = requests.get(url, stream=True)
+        with open(filename, mode='wb') as f:
+            for chunk in r.iter_content():
+                f.write(chunk)
+        z = ZipFile(filename)
+        z.extractall(path='./script')
         self.install_prereqs()
 
     def install_prereqs(self) -> bool:
