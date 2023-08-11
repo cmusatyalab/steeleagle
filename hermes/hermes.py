@@ -177,7 +177,10 @@ def _main():
             print(e)
     elif args.platform == "python":
         # Package the Python script in an MS folder for shipping
-        pass
+        with ZipFile(args.output, 'w') as zf:
+            zf.write("./python/MS.py")
+            os.system("cd ./python; pipreqs . --force")
+            zf.write("./python/requirements.txt")
 
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))
