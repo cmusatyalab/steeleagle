@@ -1,0 +1,25 @@
+from interfaces.FlightScript import FlightScript
+# Import derived tasks
+{%- for k,v in placemarks.items() %}
+from task-defs.{{v.task}} import {{v.task}}
+{%- endfor %}
+
+class MS(FlightScript):
+    
+    def run(self):
+        try:
+            kwargs = {}
+            {%- for k,v in placemarks.items() %}
+            # {{v.name}}/{{v.task}} START
+            kwargs.clear()
+            {%- for param, value in v.kwargs.items() %}
+            kwargs["{{param}}"] = "{{value}}"
+            {%- endfor %}
+            t = {{v.task}}(self.drone, self.cloudlet, **kwargs)
+            self.taskQueue.put(t)
+            {%- endfor %}
+            
+            self.drone.takeOff()
+            self._execLoop()
+        except Exception as e:
+            pass
