@@ -55,14 +55,14 @@ class Supervisor:
             for chunk in r.iter_content():
                 f.write(chunk)
         z = ZipFile(filename)
-        z.extractall(path='./script')
+        z.extractall()
         self.install_prereqs()
 
     def install_prereqs(self) -> bool:
         ret = False
         #pip install prerequsites for flight script
         try:
-            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './script/requirements.txt'])
+            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './python/requirements.txt'])
             ret = True
         except subprocess.CalledProcessError as e:
             logger.error(f"Error pip installing requirements.txt: {e}")
