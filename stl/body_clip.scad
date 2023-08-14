@@ -24,32 +24,11 @@ module battery_shape(battery_width, battery_height) {
     }
 }
 
-module collar_and_neck(battery_width, battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness) {
+module clip(clip_width=30, clip_depth=7, wall_thickness=4) {
     clip_thickness = 4;
-    width = battery_width + wall_thickness*2;
-    height = battery_height + wall_thickness*2 + 2;
-    neck_height = collar_width + neck_length + clip_thickness;
     clip_height = clip_depth + wall_thickness + 2;
-
-    difference() {
-        union() {
-            // collar
-            translate([0, 1, collar_width/2])
-            cube([width, height, collar_width], center=true);
-            // neck
-            translate([-clip_width/2, battery_height/2, 0])
-            cube([clip_width, wall_thickness+2, neck_height]);
-        }
-
-        translate([0, 0, -1]) linear_extrude(neck_height) {
-            battery_shape(battery_width, battery_height);
-        };
-    }
-
-    // clip
     r = clip_thickness/2;
-    translate([0, battery_height/2+wall_thickness+2, neck_height-r])
-    rotate([90, 0, 0])
+    translate([0, r, 0])
     difference() {
         union() {
             translate([r-clip_width/2, -r, 0])
@@ -64,8 +43,34 @@ module collar_and_neck(battery_width, battery_height, neck_length, collar_width,
         translate([0, 0, wall_thickness+5.5])
         rotate([33.69, 0, 0])
         translate([0, 6, 0])
-        cube([battery_width, 10, 20], center=true);
+        cube([clip_width+4, 10, 20], center=true);
     }
+}
+
+module collar_and_neck(battery_width, battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness) {
+    width = battery_width + wall_thickness*2;
+    height = battery_height + wall_thickness*2 + 2;
+    neck_height = collar_width + neck_length;
+
+    difference() {
+        union() {
+            // collar
+            translate([0, 1, collar_width/2])
+            cube([width, height, collar_width], center=true);
+            // neck
+            translate([-clip_width/2, battery_height/2, 0])
+            cube([clip_width, wall_thickness+2, neck_height+2]);
+        }
+
+        translate([0, 0, -1]) linear_extrude(neck_height) {
+            battery_shape(battery_width, battery_height);
+        };
+    }
+
+    // clip
+    translate([0, battery_height/2+wall_thickness+2, neck_height])
+    rotate([90, 0, 0])
+    clip(clip_width, clip_depth, wall_thickness);
 }
 
 module gap(battery_width, clip_width, collar_width, wall_thickness, offset) {
@@ -145,6 +150,48 @@ module drone_body_mount(
     };
 }
 
+module onion_harness(
+    battery_width,
+    battery_height,
+    neck_length,
+    clip_width=30,
+    clip_depth=7,
+    collar_width=28,
+    wall_thickness=4,
+    hole_width=15,
+) {
+    difference() {
+        rotate([180, 0, 0])
+        translate([0, -battery_height/2-wall_thickness-2, -collar_width])
+        difference() {
+            collar_and_neck(battery_width, battery_height, neck_length, collar_width, clip_width, clip_depth, wall_thickness);
+
+            // gaps next to neck
+            gap(battery_width, clip_width, collar_width, wall_thickness, -1);
+            gap(battery_width, clip_width, collar_width, wall_thickness, 1);
+
+            // side holes
+            translate([battery_width/2+2, 0, collar_width/2])
+            rotate([90, 0, 90])
+            hole(wall_thickness, hole_width);
+
+            translate([-battery_width/2-2, 0, collar_width/2])
+            rotate([90, 0, 90])
+            hole(wall_thickness, hole_width);
+
+            // extreme cut
+            translate([0, -9.5, 0])
+            cube([battery_width+10, battery_height, collar_width], center=true);
+            translate([0, -hole_width, hole_width/2])
+            cube([battery_width+10, battery_height, collar_width], center=true);
+        }
+
+        // off with their heads
+        translate([0, 0, -neck_length/2-10])
+        cube([clip_width+2, 40, neck_length+20], center=true);
+    }
+}
+
 //example();
 
 // Parrot Anafi
@@ -153,15 +200,20 @@ battery_height = 50;
 neck_length = 37.7;
 
 // Parrot Anafi USA
-battery_width = 58;
-battery_height = 54;
-neck_length = 37.7;
+//battery_width = 58;
+//battery_height = 54;
+//neck_length = 37.7;
 
 /*
     holes="neck"
     holes="side"
     holes="everywhere"
 */
-drone_body_mount(battery_width, battery_height, neck_length, holes="side", wall_thickness=1);
+//drone_body_mount(battery_width, battery_height, neck_length, holes="side", wall_thickness=1);
 
 //example();
+
+// onion
+
+//clip(wall_thickness=1);
+onion_harness(battery_width, battery_height, neck_length, wall_thickness=1);
