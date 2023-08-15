@@ -88,22 +88,26 @@ module watch_cap(watch_diameter=44, watch_thickness=10, thread_depth=1) {
     wall = 0.5;
 
     difference () {
-        generic_bottle_cap(
-            wall=wall,
-            //texture="knurled",
-            height=watch_thickness,
-            thread_od=td,
-            neck_od=od,
-            tolerance=0.2
-        );
+        union () {
+            generic_bottle_cap(
+                wall=wall,
+                //texture="knurled",
+                height=watch_thickness,
+                thread_od=td,
+                neck_od=od,
+                tolerance=0.2
+            );
+            translate([0, 0, -2.01])
+            cylinder(h=wall+2, d=watch_diameter+0.5);
+        }
 
         // punch hole for watch face
-        translate([0, 0, -1])
-        cylinder(h=wall+2, d=watch_diameter);
+        translate([0, 0, -1.5])
+        cylinder(h=wall+3, d=watch_diameter);
     }
 }
 
 //watch_case(watch_diameter=watch_diameter, watch_thickness=watch_thickness);
-//watch_cap(watch_diameter=watch_diameter, watch_thickness=watch_thickness);
+watch_cap(watch_diameter=watch_diameter, watch_thickness=watch_thickness);
 
 //example_watch_case();
