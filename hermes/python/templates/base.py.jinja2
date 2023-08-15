@@ -24,9 +24,10 @@ class MS(FlightScript, threading.Thread):
             {%- endfor %}
             t = {{v.task}}(self.drone, self.cloudlet, **kwargs)
             self.taskQueue.put(t)
+            print("Added task {{v.task}} to the queue")
             {%- endfor %}
             
             self.drone.takeOff()
             self._execLoop()
         except Exception as e:
-            pass
+            print(e)

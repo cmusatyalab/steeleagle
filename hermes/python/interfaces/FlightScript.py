@@ -16,6 +16,7 @@ class FlightScript:
         self.currentTask = task
         self.taskThread = task
         self.taskThread.start()
+        self.taskThread.join()
 
     def _kill(self):
         self.taskQueue.clear()
