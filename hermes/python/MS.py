@@ -1,12 +1,20 @@
 from interfaces.FlightScript import FlightScript
+import threading
 # Import derived tasks
 from task_defs.ObstacleTask import ObstacleTask
 from task_defs.ObstacleTask import ObstacleTask
 
-class MS(FlightScript):
-    
+class MS(FlightScript, threading.Thread):
+   
+    def __init__(self, drone, cloudlet):
+        threading.Thread.__init__(self)
+        print("THREAD INITIALIZED")
+        super().__init__(drone, cloudlet)
+ 
     def run(self):
+        print("RUN CALLED!")
         try:
+            kwargs = {}
             # Avoid1/ObstacleTask START
             kwargs.clear()
             kwargs["model"] = "DPT_Large"

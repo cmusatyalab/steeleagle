@@ -9,4 +9,4 @@ class ObstacleTask(Task):
 
     def run(self):
         print("-------SCRIPT STARTED--------")
-        self.drone.takeOff()
+        self.drone.moveBy(0.0, 5.0, 0.0, 0.0)

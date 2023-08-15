@@ -1,12 +1,19 @@
 from interfaces.FlightScript import FlightScript
+import threading
 # Import derived tasks
 {%- for k,v in placemarks.items() %}
 from task_defs.{{v.task}} import {{v.task}}
 {%- endfor %}
 
-class MS(FlightScript):
-    
+class MS(FlightScript, threading.Thread):
+   
+    def __init__(self, drone, cloudlet):
+        threading.Thread.__init__(self)
+        print("THREAD INITIALIZED")
+        super().__init__(drone, cloudlet)
+ 
     def run(self):
+        print("RUN CALLED!")
         try:
             kwargs = {}
             {%- for k,v in placemarks.items() %}

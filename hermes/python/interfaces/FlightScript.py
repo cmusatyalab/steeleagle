@@ -1,16 +1,12 @@
-import threading
 import queue
 
-class FlightScript(threading.Thread):
+class FlightScript:
 
     def __init__(self, drone, cloudlet):
         self.drone = drone
         self.cloudlet = cloudlet
         self.taskThread = None
         self.taskQueue = queue.Queue()
-
-    def run(self): # To be implemented
-        pass
 
     def _execLoop(self):
         while not self.taskQueue.empty():
