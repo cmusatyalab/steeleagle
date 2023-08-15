@@ -2,9 +2,10 @@ import threading
 
 class Task:
 
-    def __init__(self, drone, cloudlet):
+    def __init__(self, drone, cloudlet, **kwargs):
         self.drone = drone
         self.cloudlet = cloudlet
+        self.kwargs = kwargs
         self.exit = False
 
     # Run is already an abstract method derived from Runnable.
