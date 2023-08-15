@@ -330,7 +330,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def on_fly_mission_pressed(self, event=None):
         filetypes = (
-            ('Dex files', '*.dex'),
+            ('Mission files', '*.ms'),
         )
 
         filename = fd.askopenfilename(

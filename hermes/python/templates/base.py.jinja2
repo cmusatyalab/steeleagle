@@ -1,7 +1,7 @@
 from interfaces.FlightScript import FlightScript
 # Import derived tasks
 {%- for k,v in placemarks.items() %}
-from task-defs.{{v.task}} import {{v.task}}
+from task_defs.{{v.task}} import {{v.task}}
 {%- endfor %}
 
 class MS(FlightScript):

@@ -6,6 +6,7 @@ import subprocess
 import sys
 import threading
 import validators
+import os
 from zipfile import ZipFile
 from implementation.drones import ParrotAnafi
 from implementation.cloudlets import ElijahCloudlet
@@ -43,7 +44,7 @@ class Supervisor:
         self.drone.hover()
         logger.d('Executing flight plan!')
         #start new thread with self.MS
-        from script.MS import MS
+        from MS import MS
         self.MS = MS(self.drone, self.cloudlet)
         self.MS.start()
 
@@ -56,13 +57,14 @@ class Supervisor:
                 f.write(chunk)
         z = ZipFile(filename)
         z.extractall()
+        os.system("mv python/* .")
         self.install_prereqs()
 
     def install_prereqs(self) -> bool:
         ret = False
         #pip install prerequsites for flight script
         try:
-            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './python/requirements.txt'])
+            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './requirements.txt'])
             ret = True
         except subprocess.CalledProcessError as e:
             logger.error(f"Error pip installing requirements.txt: {e}")

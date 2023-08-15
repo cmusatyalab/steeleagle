@@ -1,3 +1,0 @@
-jinja2
-jsonschema
-json_schema_for_humans
