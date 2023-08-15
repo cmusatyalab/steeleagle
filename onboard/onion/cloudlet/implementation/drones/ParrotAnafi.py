@@ -112,7 +112,7 @@ class ParrotAnafi(DroneItf.DroneItf):
         >> attitude(pitch_absolute=pitch_theta, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
 
     def hover(self):
-        self.moveBy(0.0, 0.0, 0.0, 0.0).wait().success()
+        self.moveBy(0.0, 0.0, 0.0, 0.0)
 
     ''' Photography methods '''
 

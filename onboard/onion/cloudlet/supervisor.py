@@ -39,10 +39,10 @@ class Supervisor:
     def retrieveFlightScript(self, url: str) -> bool:
         logger.debug('Starting flight plan download...')
         self.download(url)
+        return True
 
     def executeFlightScript(self):
-        self.drone.hover()
-        logger.d('Executing flight plan!')
+        logger.debug('Executing flight plan!')
         #start new thread with self.MS
         from MS import MS
         self.MS = MS(self.drone, self.cloudlet)
@@ -50,12 +50,14 @@ class Supervisor:
 
     def download(self, url: str, ):
         #download zipfile and extract reqs/flight script from cloudlet
-        filename = url.rsplit(sep='/')[0]
+        filename = url.rsplit(sep='/')[-1]
+        logger.info(f'Writing {filename} to disk...')
         r = requests.get(url, stream=True)
         with open(filename, mode='wb') as f:
             for chunk in r.iter_content():
                 f.write(chunk)
         z = ZipFile(filename)
+        os.system("rm -rf ./task_defs ./python")
         z.extractall()
         os.system("mv python/* .")
         self.install_prereqs()
