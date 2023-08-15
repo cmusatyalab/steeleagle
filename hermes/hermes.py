@@ -179,7 +179,8 @@ def _main():
         # Package the Python script in an MS folder for shipping
         with ZipFile(args.output, 'w') as zf:
             zf.write("./python/MS.py")
-            zf.write("./python/task_defs")
+            for file in os.listdir('./python/task_defs/'):
+                zf.write(f"./python/task_defs/{file}")
             os.system("cd ./python; pipreqs . --force")
             zf.write("./python/requirements.txt")
 

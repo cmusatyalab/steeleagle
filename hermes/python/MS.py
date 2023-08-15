@@ -7,7 +7,6 @@ class MS(FlightScript):
     
     def run(self):
         try:
-            kwargs = {}
             # Avoid1/ObstacleTask START
             kwargs.clear()
             kwargs["model"] = "DPT_Large"

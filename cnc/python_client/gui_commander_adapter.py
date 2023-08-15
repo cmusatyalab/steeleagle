@@ -333,10 +333,11 @@ class GUICommanderAdapter(customtkinter.CTk):
             ('Mission files', '*.ms'),
         )
 
-        filename = fd.askopenfilename(
+        filepath = fd.askopenfilename(
             title='Open a file',
             initialdir='../../hermes/',
             filetypes=filetypes)
+        filename = filepath.split('/')[-1]
         if filename:
             logger.info("Selected file: " + filename)
             # TODO: Make SCP destination configurable
@@ -344,10 +345,10 @@ class GUICommanderAdapter(customtkinter.CTk):
                     " from people and that the PIC is ready to takeover in case of failure.")
             if answer:
                 self.toggle_manual(False)
-                SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + "mission.dex"
-                FLIGHT_URL = f"http://{self.server}:8080/scripts/" + "mission.dex"
+                SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + filename
+                FLIGHT_URL = f"http://{self.server}:8080/scripts/" + filename
                 try:
-                    subprocess.run(["scp", filename, SCP_URL], check=True)
+                    subprocess.run(["scp", filepath, SCP_URL], check=True)
                     logger.info("Sent file {0} to the cloudlet".format(filename))
                     messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
                     command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
