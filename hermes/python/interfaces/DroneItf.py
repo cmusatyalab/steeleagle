@@ -76,6 +76,10 @@ class DroneItf(ABC):
     def takePhoto(self):
         pass
 
+    @abstractmethod
+    def toggleThermal(self, on):
+        pass
+
     ''' Status methods '''
 
     @abstractmethod

@@ -10,7 +10,5 @@ class ObstacleTask(Task, threading.Thread):
         super().__init__(drone, cloudlet, **kwargs)
 
     def run(self):
-        print("TASK STARTED ---------------")
-        self.drone.moveBy(0.0, 5.0, 0.0, 0.0)
-        time.sleep(5)
-        print("TASK FINISHED --------------")
+        # TODO: To be implemented
+        pass

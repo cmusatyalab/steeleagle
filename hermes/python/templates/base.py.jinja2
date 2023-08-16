@@ -9,11 +9,9 @@ class MS(FlightScript, threading.Thread):
    
     def __init__(self, drone, cloudlet):
         threading.Thread.__init__(self)
-        print("THREAD INITIALIZED")
         super().__init__(drone, cloudlet)
  
     def run(self):
-        print("RUN CALLED!")
         try:
             kwargs = {}
             {%- for k,v in placemarks.items() %}

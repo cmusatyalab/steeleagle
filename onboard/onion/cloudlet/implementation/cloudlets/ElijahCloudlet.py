@@ -50,6 +50,9 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
     def stopStreaming(self):
         self.stop = True
 
+    def switchModel(self, model):
+        self.model = model
+
     def produce_extras(self):
         extras = cnc_pb2.Extras()
         extras.drone_id = self.drone.getName()
@@ -60,7 +63,6 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
 
     def sendFrame(self):
         async def producer():
-            #await asyncio.sleep(1 / self.sample_rate)
             await asyncio.sleep(0.1)
             input_frame = gabriel_pb2.InputFrame()
             if not self.stop:

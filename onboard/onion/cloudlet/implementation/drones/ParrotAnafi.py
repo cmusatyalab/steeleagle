@@ -120,6 +120,13 @@ class ParrotAnafi(DroneItf.DroneItf):
         # TODO: Take a photo and save it to the local drone folder
         pass
 
+    def toggleThermal(self, on):
+        from olympe.messages.thermal import set_mode
+        if on:
+            self.drone(set_mode(mode="blended")).wait().success()
+        else:
+            self.drone(set_mode(mode="disabled")).wait().success()
+
     ''' Status methods '''
 
     def getName(self):

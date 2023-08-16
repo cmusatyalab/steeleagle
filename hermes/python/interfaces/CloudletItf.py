@@ -15,6 +15,10 @@ class CloudletItf(ABC):
         pass
 
     @abstractmethod
+    def switchModel(self, model):
+        pass
+
+    @abstractmethod
     def sendFrame(self, frame):
         pass
 
