@@ -45,7 +45,7 @@ class Placemark:
         for line in coords.text.strip().split('\n'):
             stripped = line.strip()
             lng,lat,alt = stripped.split(',')
-            self.coords.append({'lng': float(lng), 'lat': float(lat), 'alt': FIXED_ALTITUDE if float(alt) < 1 else alt})
+            self.coords.append({"lng": float(lng), "lat": float(lat), "alt": FIXED_ALTITUDE if float(alt) < 1 else alt})
 
     def print(self):
         print(self.name)

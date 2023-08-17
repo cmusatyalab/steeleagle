@@ -6,6 +6,7 @@ import os
 drone = olympe.Drone('192.168.42.1')
 drone.connect()
 drone(set_mode(mode="blended")).wait().success()
+drone(set_rendering(mode="thermal", blending_rate=0)).wait().success()
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
 vcap = cv.VideoCapture("rtsp://192.168.42.1/live", cv.CAP_FFMPEG)
