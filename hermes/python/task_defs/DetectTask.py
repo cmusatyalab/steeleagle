@@ -11,7 +11,6 @@ class DetectTask(Task, threading.Thread):
 
     def run(self):
         try:
-            print("--------------STARTING DETECT TASK-----------------")
             self.cloudlet.switchModel(self.kwargs["model"])
             coords = ast.literal_eval(self.kwargs["coords"])
             self.drone.setGimbalPose(0.0, float(self.kwargs["gimbal_pitch"]), 0.0)
@@ -20,11 +19,9 @@ class DetectTask(Task, threading.Thread):
                 lng = dest["lng"]
                 lat = dest["lat"]
                 alt = dest["alt"]
-                print(f"--------------MOVING TO COORD {lat}, {lng}, {alt}-----------")
                 self.drone.moveTo(lat, lng, alt)
                 time.sleep(hover_delay)
         except Exception as e:
-            print("------------EXCEPTION ENCOUNTERED------------------")
             print(e)
 
 

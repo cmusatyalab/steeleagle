@@ -43,6 +43,10 @@ class DroneItf(ABC):
     @abstractmethod
     def setHome(self, lat, lng):
         pass
+
+    @abstractmethod
+    def rth(self):
+        pass
     
     ''' Movement methods '''
 

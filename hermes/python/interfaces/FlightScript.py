@@ -21,7 +21,7 @@ class FlightScript:
     def _kill(self):
         self.taskQueue.clear()
         self.taskThread.stop()
-        self.drone.kill()
+        raise RuntimeError("Flight script killed by supervisor, terminating...")
 
     def _pause(self):
         pass

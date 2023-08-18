@@ -2,6 +2,7 @@ from interfaces import DroneItf
 from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
+from olympe.messages.rth import set_custom_location, return_to_home
 from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
 from olympe.messages.gimbal import set_target, attitude
@@ -63,9 +64,12 @@ class ParrotAnafi(DroneItf.DroneItf):
     def land(self):
         self.drone(Landing()).wait().success()
 
-    def setHome(self):
-        # TODO: Set the new RTH destination
-        pass
+    def setHome(self, lat, lng, alt):
+        self.drone(set_custom_location(lat, lng, alt)).wait().success()
+
+    def rth(self):
+        self.hover()
+        self.drone(return_to_home()).wait().success()
 
     ''' Movement methods '''
 
@@ -113,7 +117,7 @@ class ParrotAnafi(DroneItf.DroneItf):
         >> attitude(pitch_absolute=pitch_theta, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
 
     def hover(self):
-        self.moveBy(0.0, 0.0, 0.0, 0.0)
+        self.PCMD(0, 0, 0, 0)
 
     ''' Photography methods '''
 

@@ -99,11 +99,13 @@ class Supervisor:
                         logger.info('RTH signaled from commander')
                         if self.MS:
                             self.MS._kill()
-                        self.drone.disonnect()
+                            self.MS.join()
+                        self.drone.rth()
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
                         if self.MS:
                             self.MS._kill()
+                            self.MS.join()
                         self.manual = True
                     elif extras.cmd.script_url:
                         #validate url

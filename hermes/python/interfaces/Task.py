@@ -6,7 +6,6 @@ class Task:
         self.drone = drone
         self.cloudlet = cloudlet
         self.kwargs = kwargs
-        self.exit = False
 
     # Run is already an abstract method derived from Runnable.
     # It will be implemented separately by each task.
@@ -15,7 +14,7 @@ class Task:
         pass
 
     def stop(self):
-        self.exit = True
+        raise RuntimeError("Task killed by mission script, terminating...")
 
     def resume(self):
         pass
