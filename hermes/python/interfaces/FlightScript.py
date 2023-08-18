@@ -19,7 +19,6 @@ class FlightScript:
         self.taskThread.join()
 
     def _kill(self):
-        self.taskQueue.clear()
         self.taskThread.stop()
         raise RuntimeError("Flight script killed by supervisor, terminating...")
 
