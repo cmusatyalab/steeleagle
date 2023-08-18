@@ -73,21 +73,22 @@ class ParrotAnafi(DroneItf.DroneItf):
     def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
             PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
-            >> FlyingStateChanged(state="hovering", _timeout=20)
+            >> FlyingStateChanged(state="hovering", _timeout=5)
         )
 
     @killprotected
     def moveTo(self, lat, lng, alt):
         self.drone(
             moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
-            >> moveToChanged(latitude=lat, longitude=lng, altitude=alt, orientation_mode=move_mode.orientation_mode.to_target, status='DONE')
+            >> moveToChanged(status='DONE')
+            >> FlyingStateChanged(state="hovering", _timeout=5)
         ).wait().success()
 
     @killprotected
     def moveBy(self, x, y, z, t):
         self.drone(
             moveBy(x, y, z, t) 
-            >> FlyingStateChanged(state="hovering", _timeout=20)
+            >> FlyingStateChanged(state="hovering", _timeout=5)
         ).wait().success()
 
     @killprotected
