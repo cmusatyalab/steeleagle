@@ -9,8 +9,11 @@ class FlightScript:
         self.taskQueue = queue.Queue()
 
     def _execLoop(self):
-        while not self.taskQueue.empty():
-            self._exec(self.taskQueue.get())
+        try:
+            while not self.taskQueue.empty():
+                self._exec(self.taskQueue.get())
+        except Exception as e:
+            print(f'Exec loop interrupted by exception: {e}') 
 
     def _exec(self, task):
         self.currentTask = task
@@ -19,8 +22,15 @@ class FlightScript:
         self.taskThread.join()
 
     def _kill(self):
-        self.taskThread.stop()
-        raise RuntimeError("Flight script killed by supervisor, terminating...")
+        try:
+            self.taskThread.stop()
+        except RuntimeError as e:
+            print(e)
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            raise RuntimeError('Error killing flight script thread')
 
     def _pause(self):
         pass

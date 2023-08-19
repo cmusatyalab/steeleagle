@@ -1,4 +1,5 @@
 import threading
+import ctypes
 
 class Task:
 
@@ -14,7 +15,11 @@ class Task:
         pass
 
     def stop(self):
-        raise RuntimeError("Task killed by mission script, terminating...")
+        thread_id = self.get_id()
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            raise RuntimeError('Error killing task thread')
 
     def resume(self):
         pass

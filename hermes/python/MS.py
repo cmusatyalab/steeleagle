@@ -19,7 +19,7 @@ class MS(FlightScript, threading.Thread):
             kwargs["sample_rate"] = "2"
             kwargs["hover_delay"] = "5"
             kwargs["model"] = "coco"
-            kwargs["coords"] = "[{'lng': -79.9504203, 'lat': 40.4158615, 'alt': 15.0}, {'lng': -79.9504431, 'lat': 40.4157931, 'alt': 15.0}, {'lng': -79.9502553, 'lat': 40.4157349, 'alt': 15.0}, {'lng': -79.9501494, 'lat': 40.4158717, 'alt': 15.0}, {'lng': -79.9503492, 'lat': 40.4159544, 'alt': 15.0}, {'lng': -79.9504203, 'lat': 40.4158615, 'alt': 15.0}]"
+            kwargs["coords"] = "[{'lng': -80.0076661, 'lat': 40.4534506, 'alt': 15.0}, {'lng': -80.0075856, 'lat': 40.4526669, 'alt': 15.0}, {'lng': -80.0061211, 'lat': 40.4526995, 'alt': 15.0}, {'lng': -80.0057885, 'lat': 40.4536384, 'alt': 15.0}, {'lng': -80.0076661, 'lat': 40.4534506, 'alt': 15.0}]"
             t = DetectTask(self.drone, self.cloudlet, **kwargs)
             self.taskQueue.put(t)
             print("Added task DetectTask to the queue")
