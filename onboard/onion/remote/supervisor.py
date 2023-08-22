@@ -106,7 +106,10 @@ class Supervisor:
                         if self.MS:
                             self.MS._kill()
                             self.MS.join()
+                            logger.info('Mission script successfully killed')
                         self.manual = True
+                        logger.info('Manual control is now active!')
+                        self.drone.hover()
                     elif extras.cmd.script_url:
                         #validate url
                         if validators.url(extras.cmd.script_url):

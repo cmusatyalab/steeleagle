@@ -1,12 +1,10 @@
 from interfaces.FlightScript import FlightScript
-import threading
 # Import derived tasks
 from task_defs.DetectTask import DetectTask
 
-class MS(FlightScript, threading.Thread):
+class MS(FlightScript):
    
     def __init__(self, drone, cloudlet):
-        threading.Thread.__init__(self)
         super().__init__(drone, cloudlet)
  
     def run(self):

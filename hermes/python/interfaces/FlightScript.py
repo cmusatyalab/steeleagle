@@ -15,10 +15,8 @@ class FlightScript(threading.Thread):
         try:
             while not self.taskQueue.empty():
                 self._exec(self.taskQueue.get())
-            self.drone.hover()
         except Exception as e:
             print(f'Exec loop interrupted by exception: {e}')
-            self.drone.hover()
 
     def _exec(self, task):
         self.currentTask = task
@@ -46,7 +44,6 @@ class FlightScript(threading.Thread):
             self.taskThread.stop()
         except RuntimeError as e:
             print(e)
-            self.drone.hover()
 
     def _pause(self):
         pass
