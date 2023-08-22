@@ -15,8 +15,10 @@ class FlightScript(threading.Thread):
         try:
             while not self.taskQueue.empty():
                 self._exec(self.taskQueue.get())
+            self.drone.hover()
         except Exception as e:
-            print(f'Exec loop interrupted by exception: {e}') 
+            print(f'Exec loop interrupted by exception: {e}')
+            self.drone.hover()
 
     def _exec(self, task):
         self.currentTask = task
@@ -40,15 +42,11 @@ class FlightScript(threading.Thread):
 
     def _kill(self):
         try:
+            self.taskQueue = queue.Queue() # Clear the queue
             self.taskThread.stop()
-            self.taskThread.join()
         except RuntimeError as e:
             print(e)
-        thread_id = self._get_id()
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
-        if res > 1:
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
-            raise RuntimeError('Error killing flight script thread')
+            self.drone.hover()
 
     def _pause(self):
         pass
