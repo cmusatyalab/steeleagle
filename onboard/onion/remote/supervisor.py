@@ -99,13 +99,11 @@ class Supervisor:
                         logger.info('RTH signaled from commander')
                         if self.MS:
                             self.MS._kill()
-                            self.MS.join()
                         self.drone.rth()
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
                         if self.MS:
                             self.MS._kill()
-                            self.MS.join()
                             logger.info('Mission script successfully killed')
                         self.manual = True
                         logger.info('Manual control is now active!')
