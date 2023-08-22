@@ -32,11 +32,12 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
                 payload = result.payload.decode('utf-8')
                 data = ""
                 try:
-                    data = json.loads(payload)
-                    producer = result_wrapper.producer
-                    self.engine_results[producer] = result
+                    if payload != ""
+                        data = json.loads(payload)
+                        producer = result_wrapper.producer
+                        self.engine_results[producer] = result
                 except Exception as e:
-                    logger.error(f'Error decoding json: {data}')
+                    logger.error(f'Error decoding json: {payload}')
             else:
                 logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 
