@@ -16,7 +16,7 @@ class Task(threading.Thread):
         pass
 
     def stop(self):
-        thread_id = self.get_ident()
+        thread_id = threading.get_ident()
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
