@@ -25,8 +25,6 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
 
     def processResults(self, result_wrapper):
         if len(result_wrapper.results) != 1:
-            logger.error('Got %d results from server',
-                    len(result_wrapper.results))
             return
 
         for result in result_wrapper.results:
