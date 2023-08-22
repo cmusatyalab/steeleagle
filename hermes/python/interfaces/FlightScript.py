@@ -1,4 +1,5 @@
 import threading
+import ctypes
 import queue
 
 class FlightScript(threading.Thread):
@@ -23,12 +24,27 @@ class FlightScript(threading.Thread):
         self.taskThread.start()
         self.taskThread.join()
 
+    def _get_id(self):
+        if not self.is_alive():
+            raise threading.ThreadError("the thread is not active")
+
+        # do we have it cached?
+        if hasattr(self, "_thread_id"):
+            return self._thread_id
+
+        # no, look for it in the _active dict
+        for tid, tobj in threading._active.items():
+            if tobj is self:
+                self._thread_id = tid
+                return tid
+
     def _kill(self):
         try:
             self.taskThread.stop()
+            self.taskThread.join()
         except RuntimeError as e:
             print(e)
-        thread_id = threading.get_ident()
+        thread_id = self._get_id()
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
