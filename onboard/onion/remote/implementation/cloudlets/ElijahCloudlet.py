@@ -30,6 +30,7 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode('utf-8')
+                data = ""
                 try:
                     data = json.loads(payload)
                     producer = result_wrapper.producer
