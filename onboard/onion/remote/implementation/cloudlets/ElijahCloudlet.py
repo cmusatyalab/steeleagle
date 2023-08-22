@@ -1,5 +1,6 @@
 from interfaces import CloudletItf
 import json
+from json import JSONDecodeError
 import threading
 import time
 import logging
@@ -34,11 +35,12 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
                 try:
                     if len(payload) != 0:
                         data = json.loads(payload)
-                        producer = result_wrapper.producer
+                        producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
+                except JSONDecodeError as e:
+                    logger.error(f'Error decoding json: {payload}')
                 except Exception as e:
                     print(e)
-                    logger.error(f'Error decoding json: {payload}')
             else:
                 logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
 
