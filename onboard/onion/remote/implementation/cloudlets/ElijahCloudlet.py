@@ -32,7 +32,7 @@ class ElijahCloudlet(CloudletItf.CloudletItf):
                 payload = result.payload.decode('utf-8')
                 data = ""
                 try:
-                    if len(payload) != 0
+                    if len(payload) != 0:
                         data = json.loads(payload)
                         producer = result_wrapper.producer
                         self.engine_results[producer] = result
