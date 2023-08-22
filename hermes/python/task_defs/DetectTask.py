@@ -1,12 +1,10 @@
 from interfaces.Task import Task
-import threading
 import time
 import ast
 
-class DetectTask(Task, threading.Thread):
+class DetectTask(Task):
 
     def __init__(self, drone, cloudlet, **kwargs):
-        threading.Thread.__init__(self)
         super().__init__(drone, cloudlet, **kwargs)
 
     def run(self):

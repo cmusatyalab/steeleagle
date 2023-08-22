@@ -1,9 +1,10 @@
 import threading
 import ctypes
 
-class Task:
+class Task(threading.Thread):
 
     def __init__(self, drone, cloudlet, **kwargs):
+        threading.Thread.__init__(self)
         self.drone = drone
         self.cloudlet = cloudlet
         self.kwargs = kwargs

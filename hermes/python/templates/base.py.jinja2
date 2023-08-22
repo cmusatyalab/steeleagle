@@ -1,14 +1,12 @@
 from interfaces.FlightScript import FlightScript
-import threading
 # Import derived tasks
 {%- for k,v in placemarks.items() %}
 from task_defs.{{v.task}} import {{v.task}}
 {%- endfor %}
 
-class MS(FlightScript, threading.Thread):
+class MS(FlightScript):
    
     def __init__(self, drone, cloudlet):
-        threading.Thread.__init__(self)
         super().__init__(drone, cloudlet)
  
     def run(self):
