@@ -86,7 +86,6 @@ class Supervisor:
             #process result from command engine
 
             if len(result_wrapper.results) != 1:
-                logger.error(f'Got {len(result_wrapper.results)} results from server')
                 return
 
             extras = cnc_pb2.Extras()
@@ -99,12 +98,16 @@ class Supervisor:
                         logger.info('RTH signaled from commander')
                         if self.MS:
                             self.MS._kill()
+                            logger.info('Mission script successfully killed')
+                            self.MS = None
+                        self.manual = False
                         self.drone.rth()
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
                         if self.MS:
                             self.MS._kill()
                             logger.info('Mission script successfully killed')
+                            self.MS = None
                         self.manual = True
                         logger.info('Manual control is now active!')
                         self.drone.hover()
