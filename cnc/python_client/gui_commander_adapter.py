@@ -344,6 +344,9 @@ class GUICommanderAdapter(customtkinter.CTk):
             answer = messagebox.askokcancel("Warning","By clicking OK, the drone will start flying your mission. Please ensure that the drone is safely away" +
                     " from people and that the PIC is ready to takeover in case of failure.")
             if answer:
+                self.button_fly.configure(state=tkinter.DISABLED)
+                self.button_kill.configure(state=tkinter.NORMAL)
+                self.button_rth.configure(state=tkinter.NORMAL)
                 self.toggle_manual(False)
                 SCP_URL = f"root@{self.server}:/home/ubuntu/steel-eagle/cnc/server/openscout-vol/scripts/" + filename
                 FLIGHT_URL = f"http://{self.server}:8080/scripts/" + filename
@@ -357,13 +360,16 @@ class GUICommanderAdapter(customtkinter.CTk):
                     logger.error(cpe)
 
     def on_kill_mission_pressed(self, event=None):
+        self.button_fly.configure(state=tkinter.NORMAL)
+        self.button_kill.configure(state=tkinter.DISABLED)
+        self.button_rth.configure(state=tkinter.NORMAL)
         command = {"drone": self.connected_drone["name"], "type": "kill"}
         self.command_queue.put_nowait(command)
         self.toggle_manual(True)
 
     def on_return_home_pressed(self, event=None):
         self.button_fly.configure(state=tkinter.DISABLED)
-        self.button_kill.configure(state=tkinter.DISABLED)
+        self.button_kill.configure(state=tkinter.NORMAL)
         self.button_rth.configure(state=tkinter.DISABLED)
         self.toggle_manual(False)
         self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="black", fg_color="red")
