@@ -4,6 +4,7 @@ from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.rth import set_custom_location, return_to_home
 from olympe.messages.ardrone3.PilotingState import moveToChanged
+from olympe.messages.common.CommonState import BatteryStateChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
 from olympe.messages.gimbal import set_target, attitude
 from olympe.messages.wifi import rssi_changed
@@ -156,9 +157,7 @@ class ParrotAnafi(DroneItf.DroneItf):
         return self.drone.get_state(rssi_changed)["rssi"]
 
     def getBatteryPercentage(self):
-        #cap = self.drone.get_state(capacity)
-        #return cap["remaining"] / cap["full_charge"]
-        return 100
+        return self.drone.get_state(BatteryStateChanged)["percent"]
 
     def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
