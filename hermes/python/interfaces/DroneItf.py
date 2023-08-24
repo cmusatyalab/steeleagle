@@ -122,6 +122,10 @@ class DroneItf(ABC):
     def getMagnetometerReading(self):
         pass
 
+    @abstractmethod
+    def getSatellites(self):
+        pass
+
     ''' Control methods '''
 
     @abstractmethod

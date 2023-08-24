@@ -6,6 +6,7 @@ from olympe.messages.rth import set_custom_location, return_to_home
 from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
 from olympe.messages.wifi import rssi_changed
 from olympe.messages.battery import capacity
@@ -161,6 +162,8 @@ class ParrotAnafi(DroneItf.DroneItf):
 
     def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
+    def getSatellites(self):
+        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"] 
 
     def kill(self):
         self.active = False
