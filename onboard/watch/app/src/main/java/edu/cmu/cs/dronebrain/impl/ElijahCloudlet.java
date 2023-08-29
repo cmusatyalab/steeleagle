@@ -36,8 +36,7 @@ public class ElijahCloudlet implements CloudletItf {
     DroneItf drone = null;
     String uuid = null;
 
-    public ElijahCloudlet(ServerComm s, String id) {
-        uuid = id;
+    public ElijahCloudlet(ServerComm s) {
         comm = s;
         results = new HashMap<>();
     }
@@ -95,7 +94,7 @@ public class ElijahCloudlet implements CloudletItf {
     @Override
     public void startStreaming(DroneItf d, String m, Integer sample_rate) {
         model = m;
-        if (streamingThread != null) {
+         if (streamingThread != null) {
             Log.d(TAG, "Cloudlet already streaming, ignoring command");
             return;
         }
@@ -111,6 +110,11 @@ public class ElijahCloudlet implements CloudletItf {
                 }
             }
         });
+        try {
+            uuid = d.getName();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         streamingThread.start();
     }
 
