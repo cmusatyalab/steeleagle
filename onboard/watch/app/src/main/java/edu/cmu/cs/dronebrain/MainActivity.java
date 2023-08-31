@@ -87,7 +87,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     /** Log tag **/
     String TAG = "DroneBrain";
     String SOURCE = "command";
-    String uuid = "<unknown>";
+    String uuid = "";
 
 
     // Based on
@@ -110,6 +110,19 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
     @Override
     public void accept(ResultWrapper resultWrapper) {
+
+        if(sdk_connected && !drone.isConnected()) {
+            Log.d(TAG, "Connecting to drone...");
+            bindProcessToWifi();
+            try {
+                drone.connect();
+                uuid = drone.getName();
+                drone.startStreaming(480);
+                cloudlet.startStreaming(drone, "", 1);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         // Forward OpenScout results to the cloudlet so that it can process them
         if (cloudlet != null && !resultWrapper.getResultProducerName().getValue().equals("command")) {
             cloudlet.processResults(resultWrapper);
@@ -121,17 +134,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             return;
         }
 
-        if(sdk_connected && !drone.isConnected()) {
-            Log.d(TAG, "Connecting to drone...");
-            bindProcessToWifi();
-            try {
-                drone.connect();
-                drone.startStreaming(480);
-                cloudlet.startStreaming(drone, "", 1);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
 
         ResultWrapper.Result result = resultWrapper.getResults(0);
         try {
@@ -209,9 +211,6 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        }
         sdk = ManagedGroundSdk.obtainSession(this);
 
         CountDownLatch lteLatch = new CountDownLatch(1);
@@ -250,7 +249,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
             e.printStackTrace();
             finish();
         }
-        uuid = getWifiSSID();
+
         serverComm = ServerComm.createServerComm(
                 this, BuildConfig.GABRIEL_HOST, BuildConfig.PORT, getApplication(), onDisconnect, LTEnetwork);
 
@@ -284,9 +283,16 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
 
         @Override
         public void run() {
-            heartbeatsSent++;
+
             serverComm.sendSupplier(() -> {
                 String p = "heartbeat";
+                if (uuid == ""){
+                    return InputFrame.newBuilder()
+                            .setPayloadType(PayloadType.TEXT)
+                            .addPayloads(ByteString.copyFromUtf8(p))
+                            .build();
+                }
+                heartbeatsSent++;
 
                 Extras extras;
                 Extras.Builder extrasBuilder = Extras.newBuilder();
@@ -402,7 +408,7 @@ public class MainActivity extends Activity implements Consumer<ResultWrapper> {
     }
 
     private CloudletItf getCloudlet() {
-        return new ElijahCloudlet(serverComm, uuid);
+        return new ElijahCloudlet(serverComm);
     }
 
     /** This needs to change in future to pull from CNC module **/
