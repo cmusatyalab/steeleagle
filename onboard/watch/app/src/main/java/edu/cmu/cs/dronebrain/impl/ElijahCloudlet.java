@@ -93,11 +93,11 @@ public class ElijahCloudlet implements CloudletItf {
 
     @Override
     public void startStreaming(DroneItf d, String m, Integer sample_rate) {
-        model = m;
          if (streamingThread != null) {
             Log.d(TAG, "Cloudlet already streaming, ignoring command");
             return;
         }
+        model = m;
         drone = d;
         streamingThread = new Thread(() -> {
             while (true) {
@@ -121,6 +121,11 @@ public class ElijahCloudlet implements CloudletItf {
     @Override
     public void stopStreaming() {
         streamingThread.interrupt();
+    }
+
+    @Override
+    public void switchModel(String m) {
+        model = m;
     }
 
     // Based on
