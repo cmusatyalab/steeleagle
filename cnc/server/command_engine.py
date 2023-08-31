@@ -225,8 +225,12 @@ class DroneCommandEngine(cognitive_engine.Engine):
                             else:
                                 result = None
                     elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
-                        #update current_frame for this drone so it can be displayed in commander UI
-                        self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
+                        if extras.drone_id in self.drones:
+                            #update current_frame for this drone so it can be displayed in commander UI
+                            self.drones[extras.drone_id].current_frame = input_frame.payloads[0]
+                        else:
+                            logger.error(
+                                f'Cannot update frame for a drone until it has registered!')
                 except KeyError:
                     logger.error(
                         f'Sorry, drone [{extras.drone_id}]  has not registered yet! Attempting to register...')
