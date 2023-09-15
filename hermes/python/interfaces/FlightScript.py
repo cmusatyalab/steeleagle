@@ -23,6 +23,7 @@ class FlightScript(threading.Thread):
         self.taskThread = task
         self.taskThread.start()
         self.taskThread.join()
+        self.taskThread = None
 
     def _get_id(self):
         if not self.is_alive():
@@ -41,7 +42,8 @@ class FlightScript(threading.Thread):
     def _kill(self):
         try:
             self.taskQueue = queue.Queue() # Clear the queue
-            self.taskThread.stop()
+            if self.taskThread is not None:
+                self.taskThread.stop()
         except RuntimeError as e:
             print(e)
 

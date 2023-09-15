@@ -31,6 +31,9 @@ public class DebugCloudlet implements CloudletItf {
     }
 
     @Override
+    public void switchModel(String model) { Log.d(TAG, "Switching model!"); }
+
+    @Override
     public void sendFrame(byte[] frame) {
         Log.d(TAG, "Writing frame!");
     }

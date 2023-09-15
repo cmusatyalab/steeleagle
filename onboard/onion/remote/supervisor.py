@@ -97,17 +97,23 @@ class Supervisor:
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
                         if self.MS:
-                            self.MS._kill()
-                            logger.info('Mission script successfully killed')
-                            self.MS = None
+                            try:
+                                self.MS._kill()
+                                logger.info('Mission script successfully killed')
+                                self.MS = None
+                            except Exception as e:
+                                print("MS Kill threw an exception: {e}")
                         self.manual = False
                         self.drone.rth()
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
                         if self.MS:
-                            self.MS._kill()
-                            logger.info('Mission script successfully killed')
-                            self.MS = None
+                            try:
+                                self.MS._kill()
+                                logger.info('Mission script successfully killed')
+                                self.MS = None
+                            except Exception as e:
+                                print("MS Kill threw an exception: {e}")
                         self.manual = True
                         logger.info('Manual control is now active!')
                         self.drone.hover()
