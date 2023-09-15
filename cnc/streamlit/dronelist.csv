@@ -1,0 +1,4 @@
+key,latitude,longitude,altitude,bearing,rssi,battery,mag,sats,status
+buzzard,40.417429612484924,-79.95028831875038,20,0,-91,100,4,21,Manual Control
+harpyeagle,40.414428612484924,-79.95028831875038,12.5,180,-55,70,0,12,Autonomous
+goldeneagle,40.414429612484924,-79.95228831875038,22,145,-62,13,1,19,Returning Home

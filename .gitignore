@@ -20,3 +20,4 @@ venv/
 *.jar
 *.ms
 *.kml
+.venv
