@@ -18,6 +18,11 @@ from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+fh = logging.FileHandler('supervisor.log')
+formatter = logging.Formatter('%(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
 class Supervisor:
     def __init__(self, args):
         self.cloudlet = ElijahCloudlet.ElijahCloudlet()
