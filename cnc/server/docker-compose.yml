@@ -15,7 +15,7 @@ services:
     ports:
       - "9099:9099"
       - "5555:5555"
-    entrypoint: [ "./main.py" ]
+    entrypoint: [ "./main.py", "-t", "30" ]
     restart: unless-stopped
     networks:
       - cnc-net
@@ -30,6 +30,9 @@ services:
       - gabriel-server
     networks:
       - cnc-net
+    volumes:
+      - ./openscout-vol:/openscout/server/images/
+
 
   # test-clients:
   #   image: cmusatyalab/steel-eagle:${TAG}
@@ -53,6 +56,8 @@ services:
     ports:
       - "${HTTP_PORT}:80"
     restart: unless-stopped
+    logging:
+      driver: none
     networks:
       - cnc-net
     volumes:
@@ -219,6 +224,16 @@ services:
       - ./elk/pipeline/:/usr/share/logstash/pipeline/
     depends_on:
       - elasticsearch
+  go2rtc:
+    image: alexxit/go2rtc
+    network_mode: host       # important for WebRTC, HomeKit, UDP cameras
+    privileged: true         # only for FFmpeg hardware transcoding
+    restart: unless-stopped  # autorestart on fail or config change from WebUI
+    environment:
+      - TZ=Atlantic/Bermuda  # timezone in logs
+    volumes:
+      - "~/go2rtc:/config"   # folder for go2rtc.yaml file (edit from WebUI)
+
 networks:
   cnc-net:
   elk:
