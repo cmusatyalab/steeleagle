@@ -14,7 +14,7 @@ plugins {
 
 tasks.register('copyInterfaceFiles', Copy) {
     description 'Copies interfaces from onboard Android project so they are up-to-date'
-    from '../../onboard/DroneBrain/app/src/main/java/edu/cmu/cs/dronebrain/interfaces'
+    from '../../onboard/watch/app/src/main/java/edu/cmu/cs/dronebrain/interfaces'
     into 'src/main/java/edu/cmu/cs/dronebrain/interfaces'
 }
 
