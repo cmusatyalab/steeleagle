@@ -7,6 +7,8 @@ SPDX-License-Identifier: GPL-2.0-only
 layout: default
 title: Hermes
 nav_order: 2
+has_children: true
+permalink: docs/hermes
 ---
 
 
