@@ -33,7 +33,7 @@ git clone git@github.com:cmusatyalab/steel-eagle.git
 cd ~/steel-eagle/cnc/
 docker build . -t cmusatyalab/steel-eagle:latest
 git clone git@github.com:cmusatyalab/openscout.git
-cd ~/openscout
+cd ~/openscout/server
 git checkout steel-eagle
 docker build . -t cmusatyalab/openscout:steel-eagle
 ```
@@ -47,6 +47,9 @@ cd ~/steel-eagle/server/
 cp template.env .env
 #edit .env file as necessary
 ```
+* _DRONE_TIMEOUT_ - This value is used to control when the cnc server decides to invalidate a previously connected drone. If the drone hasn't sent any updates for this number of seconds, it will be considered lost.
+* _TAG_, _OPENSCOUT_TAG_ - These values should match the tags used to build the containers in the previous section (TAG=latest, OPENSCOUT_TAG=steel-eagle)
+* _STORE_ - When this is '--store', all incoming images will be stored to a docker volume (openscout-vol). Additionally, the output from the object detection and obstacle avoidance engines will be stored in subdirectories ('detected' and 'moa' respectively).
 
 ### Launch containers with docker-compose
 
@@ -69,7 +72,11 @@ If you run the containers in the background, you can view the logs with the foll
 ```sh
 docker-compose logs -f 
 ```
+If you wish to see a particular log, you can specify a particular service(s):
 
+```sh
+docker-compose logs -f command-engine,gabriel-server
+```
 ### Elasticsearch preparation
 
 Follow the [steps](https://github.com/cmusatyalab/openscout/blob/master/README.md#6-create-elasticsearch-index) outlined in the OpenScout documentation to prepare the Elasticsearch index template.
