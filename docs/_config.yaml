@@ -1,3 +1,6 @@
+title: SteelEagle Documentation
+description: Full documentation for SteelEagle drones and associated tools
+
 remote_theme: just-the-docs/just-the-docs
 plugins:
 - jekyll-remote-theme # add this line to the plugins list if you already have one
