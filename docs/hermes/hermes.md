@@ -8,8 +8,7 @@ permalink: docs/hermes
 
 # Hermes
 
-## Description
-Hermes is used to compile a fligh plan designed in MyMaps and exported as a .kml/.kmz file, to drone flight commands. [Github pages](https://cmusatyalab.github.io/steel-eagle/) contains the current list of supported tasks. It uses jinja templating to generate a platform-agnostic mission script (or MS) in java. The MS contains drone and cloudlet facing commands at a high level, which correspond to the tasks defined in the .kml file. A drone platform is also specified in the MS and instructs the app onboard the drone which low-level drone implementation to use.
+Hermes is used to compile a flight plan designed in MyMaps and exported as a .kml/.kmz file, to drone flight commands. It uses jinja templating to generate a platform-agnostic mission script (or MS) in java. The MS contains drone and cloudlet facing commands at a high level, which correspond to the tasks defined in the .kml file. A drone platform is also specified in the MS which instructs the app onboard the drone which low-level drone implementation to use.
 
 ## Prerequisites
 
