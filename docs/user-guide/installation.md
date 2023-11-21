@@ -22,7 +22,7 @@ Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tre
 </div>
 
 ## Python Environment
-This section will describe how to configure the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) to work with SteelEagle. Ensure that you have purchased the necessary materials outlined in the [requirements section]({{ site.baseurl }}{% link requirements.md %}).
+This section will describe how to configure the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) to work with SteelEagle. Ensure that you have purchased the necessary materials outlined in the [requirements section]({{ site.baseurl }}{% link user-guide/requirements.md %}).
 
 ### Hardware Preparation
 Insert a working compatible SIM card into your Onion Omega 2 LTE and attach the two LTE antennas to the ports labelled 4G and 4G DIV. Then, follow the steps outlined on Onion's [website](https://onion.io/omega2-lte-guide/) to complete setup. Ensure that your Onion has both WiFi and LTE working properly before proceeding.
