@@ -24,7 +24,7 @@ pip install Jinja2 jsonschema json-schema-for-humans
 ```
 
 ## Usage
-```
+```bash
 usage: hermes [-h] [-p {java,python}] [-o OUTPUT] [-v] [-s] input
 
 Convert kml/kmz file to drone-specific instructions.
@@ -39,11 +39,11 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Filename for .ms (mission script) file [default: ./flightplan.ms]
   -v, --verbose         Write output to console as well [default: False]
-  -s, --sim             Connect to simulated drone instead of a real drone [default: False
+  -s, --sim             Connect to simulated drone instead of a real drone [default: False]
 
 ```
 Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone). 
-Once Hermes has successfully run, there should be a flightplan.ms file in the ```steel-eagle/hermes/``` directory. This file can then be uploaded from a [commander](https://github.com/cmusatyalab/steel-eagle/blob/main/cnc/python_client/gui_commander_adapter.py) and sent to a connected drone.
+Once Hermes has successfully run, there should be a flightplan.ms file in the ```steel-eagle/hermes/``` directory. This file can then be uploaded from a [commander]({% link commander.md %}) and sent to a connected drone.
 
 ## New/Updated Task Specifications
 In order to provide new/updated tasks, we need to do a few things:
