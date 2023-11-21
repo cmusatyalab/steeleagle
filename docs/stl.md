@@ -8,16 +8,16 @@ permalink: docs/stl
 
 # Harness Printing
 
-In order to get our payloads (either the Samsung Galaxy 4 Watch or the Onion Omega LTE) to be carried by the ANAFI drones, we have created a number of modular pieces that can be printed and fused together using [Gloop](https://www.3dgloop.com/). We printed our harnesses in PLA, but prtining in ABS should also work, provided you get the correct version of Gloop.
+In order to get our payloads (either the Samsung Galaxy 4 Watch or the Onion Omega LTE) to be carried by the ANAFI drones, we have created a number of modular pieces that can be printed and fused together using [3D Gloop](https://www.3dgloop.com/). We printed our harnesses in PLA, but prtining in ABS should also work, provided you get the correct version of 3D Gloop.
 
 _NOTE: The ANAFI has a payload capacity of 60g, so the harness needs to be very light in order for the harness + watch or harness + onion to be below this threshold._
 
-## SCAD
+## OpenSCAD
 
 We used OpenSCAD to allow us to programmatically generate individual .stl files which can then be sent to a printer. OpenSCAD can be installed with apt:
 
 ```sh
-$ sudo apt-get install openscad
+$ sudo apt install openscad
 ```
 Unless you are modifying the ANAFI designs to print a harness for a different model drone, you should not need to change any of the .scad files in the /stl directory.
 
@@ -36,7 +36,7 @@ Unless you are modifying the ANAFI designs to print a harness for a different mo
 
 ## 3D Printer Settings
 
-Since we are optimizing for weight, we have used almost no infill. The .stl files listed above should already be arranged to reduce the amount of support material that is needed.
+Since we are optimizing for weight, we have used %5 infill. The .stl files listed above should already be arranged to reduce the amount of support material that is needed.
 
 ## Assembly
 
