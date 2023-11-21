@@ -1,24 +1,21 @@
 ---
 layout: default
-title: Commander GUI (our GCS)
+title: Commander GCS
 nav_order: 5
 has_children: false
 permalink: docs/commander
 ---
 
 # Commander
-
-## Description
-
-Our command and control software, simply referred to as the **Commander**, is used to view stream and telemetry data from connected drones and to send them command message (e.g. manual control, return to home, send on autonomous mission). 
+Our ground control software, simply referred to as the **Commander**, is used to view stream and telemetry data from connected drones and to send them command message (e.g. manual control, return to home, send on autonomous mission). 
 The current implementation runs in python and is based on [customtkinter](https://github.com/TomSchimansky/CustomTkinter).
 An implementation using [streamlit](https://streamlit.io/) is a work-in-progress.
 
-Typically we run the commander from a laptop that has mobile broadband from the field where we are launching the drone, but in theory it could be run anywhere as commands are relayed through the backend server over LTE to the drone.
+Typically the Commander is run by the drone pilot in the field, but in theory it can be run from anywhere with internet connectivity as commands are relayed through the internet backbone over LTE to the drone.
 
 ## Installation
 
-The commander can be installed by simply installing the requirements: 
+The commander can be installed by installing the requirements: 
 
 ```sh
 cd ~/steel-eagle/cnc/python-client/
@@ -42,7 +39,7 @@ optional arguments:
   -ng, --nogui          If specified, use the text prompt commander
 ```
 
-At a minimum you will need to point the commander to the address of the machine where the CNC backend is running.
+At a minimum, you will need to provide the commander with the address of the machine where the CNC backend is running.
 
 ### Layout/Usage
 
@@ -50,7 +47,7 @@ At a minimum you will need to point the commander to the address of the machine 
 
 The above screenshot details the layout of the Commander. The typical usage of the application is as follows: 
 
-1. The 'Available Drones' list will be populated with any steel-eagle drones once they have connected to the backend either by launching the Android app (Java) or starting the supervisor script (python). Select a drone from the list and then click the 'Connect' button.
+1. The 'Available Drones' list will be populated with any steel-eagle drones once they have connected to the backend either by launching the Android app (Java) or starting the supervisor script (Python). Select a drone from the list and then click the 'Connect' button.
 2. After connecting to a particular drone, the map should be updated to center on the location of the drone and a icon representing the drone will be shown. The position/orientation of the icon will correspond to the current position/bearing of the drone. This will be automatically updated over time. You can change the tile server using the dropdown menu in the upper right corner of the map.
 3. Once the drone has connected to the backend, it should also start sending its video stream which will be displayed here.
 4. The buttons here can be used to send control messages to the drone. By default, the drone is initially in manual control mode (see #6). The drone can be instructed to start an autonomous mission by using the 'Fly Mission' button. When an autonomous mission is ongoing, the 'Return Home' and 'Manual Ctrl' buttons can be used to wrest control of the drone at any time.
