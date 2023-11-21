@@ -22,7 +22,7 @@ This tutorial assumes that you possess:
 The minimum requirement to complete this tutorial is an Ubuntu 22.04 computer with a connected display and strong integrated graphics or a dedicated GPU. However, completing the tutorial in this way will not simulate LTE network conditions and real world computation limitations. Thus it is strongly suggested that you either purchase components for HITL Python or Java simulation.
 
 ## Hardware-in-the-Loop Purchase Guide (Optional)
-Hardware-in-the-Loop simulation will allow you to simulate the entire SteelEagle ecosystem and will better prepare you for real world flight operations. It is *highly recommended* that you complete either a walkthrough of the Python HITL or Java HITL tutorial prior to your first flight.
+Hardware-in-the-Loop (HITL) simulation will allow you to simulate the entire SteelEagle ecosystem and will better prepare you for real world flight operations. It is *highly recommended* that you complete either a walkthrough of the Python HITL or Java HITL tutorial prior to your first flight.
 
 ### Python HITL
 Python HITL on the Parrot Anafi uses the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/), a single-board Linux router that runs OpenWRT. The Omega 2 LTE does not have its own power supply or antennas, so these must be purchased separately.
