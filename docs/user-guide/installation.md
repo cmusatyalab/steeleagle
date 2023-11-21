@@ -1,39 +1,28 @@
 ---
 layout: default
-title: Installation
+title: Requirements
 parent: User Guide
-nav_order: 1
+nav_order: 2
 ---
-# Requirements
+# Installation
+Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tree/main). Then, install the necessary SDK for your drone. In this case, we will be working with the [Parrot Anafi](https://www.parrot.com/us/drones/anafi) which uses [Parrot Olympe](https://developer.parrot.com/docs/olympe/installation.html) for Python control and [Parrot GroundSDK](https://developer.parrot.com/docs/groundsdk-android/index.html) for Java control. Follow the steps below to install either the Python or Java control environment.
 
-## Software
-SteelEagle was tested and implemented on Ubuntu 22.04 machines. It is not guaranteed to work with other distributions, although it should be compatible with older Debian distributions with slight modifications. Windows and MacOS are both officially unsupported but may work with more significant modifications.
+## Python Environment
+This section will describe how to configure the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) to work with SteelEagle.
+
+### Hardware Preparation
+Insert a working compatible SIM card into your Onion Omega 2 LTE. Then, follow the steps outlined on Onion's [webstie](https://onion.io/omega2-lte-guide/) to complete setup. Ensure that your Onion has both WiFi and LTE working properly before proceeding.
+
+Optionally, you may wish to use the provided SteelEagle [STL files](https://github.com/cmusatyalab/steel-eagle/tree/main/stl/) to print our custom harness for the Onion. Follow the instructions at
+
+### Software Installation
+First, install Parrot Olympe by [following the steps provided on Parrot's website](https://developer.parrot.com/docs/olympe/installation.html). Then, navigate to the root directory of the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tree/main).
+
+### Verification
+
+### Parrot GroundSDK
+Parrot GroundSDK will be installed automatically when you build the control app on the Galaxy Watch. It is not necessary to build it separately.
 
 ## Hardware
-This tutorial assumes that you possess:
-1. A [Parrot Anafi](https://www.parrot.com/us/drones/anafi) drone (for hardware-in-the-loop (HITL) testing).
-2. A publicly addressable Ubuntu 22.04 server (optional but recommended).
-3. An Ubuntu 22.04 laptop (optional but recommended).
-4. An [Galaxy Watch 4](https://www.samsung.com/us/watches/galaxy-watch4/buy/) or equivalent Android smart watch (necessary for Java HITL).
-5. An [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) with a SIM card, two LTE antennas, and a small LiPo (necessary for Python HITL).
+ 
 
-The minimum requirement to complete this tutorial is an Ubuntu 22.04 computer with a connected display and strong integrated graphics or a dedicated GPU. However, completing the tutorial in this way will not simulate LTE network conditions and real world computation limitations. Thus it is strongly suggested that you either purchase components for HITL Python or Java simulation.
-
-## Hardware-in-the-Loop Purchase Guide (Optional)
-Hardware-in-the-Loop simulation will allow you to simulate the entire SteelEagle ecosystem and will better prepare you for real world flight operations. It is *highly recommended* that you complete either a walkthrough of the Python HITL or Java HITL tutorial prior to your first flight.
-
-### Python HITL
-Python HITL on the Parrot Anafi uses the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/), a single-board Linux router that runs OpenWRT. The Omega 2 LTE does not have its own power supply or antennas, so these must be purchased separately.
-
-The following purchases are recommended:
-1. 1 x [Onion Omega 2 LTE](https://www.mouser.com/ProductDetail/Onion/OM-O2LTE-NA?qs=yqaQSyyJnNhhcT0W%2FqC0PA%3D%3D). The link provided is for the North America version. If you are not based in North America, please purchase the version for your region.
-2. 1 x SIM card. You will need to order this based on your cellular provider. Keep in mind that the Onion has *extremely high* data usage since it offloads its 720p30fps (~3 Mbps bitrate) encoded stream entirely over LTE. You will almost certainly need a custom data plan for this SIM. If data rates are a concern, consider using the Galaxy Watch/Java API which transmits at a much lower bitrate.
-3. 2 x [Molex Antennas](https://www.digikey.com/en/products/detail/molex/2125700100/10489644?utm_adgroup=&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Product_Medium%20ROAS%20Categories&utm_term=&utm_content=&utm_id=go_cmp-20223376311_adg-_ad-__dev-c_ext-_prd-10489644_sig-Cj0KCQiApOyqBhDlARIsAGfnyMpPNSWaUFj4HC3CYBlANHco_McIhH5QFS9G4orVkqNVrHP24MXEUVgaAh4mEALw_wcB&gad_source=1&gclid=Cj0KCQiApOyqBhDlARIsAGfnyMpPNSWaUFj4HC3CYBlANHco_McIhH5QFS9G4orVkqNVrHP24MXEUVgaAh4mEALw_wcB) (or equivalent). Any lightweight, small ultra-wideband 4G PCB antenna should work. *See below note*
-4. 1 x [LiPo](https://www.adafruit.com/product/1578). Any lightweight, small LiPo should work. This battery will give the Onion enough battery life to last at least 20 minutes (the maximum flight time of the drone). *See below note*.
-
-*Note: the Parrot Anafi has a safe payload cutoff of around 60g. If you deviate from the recommended purchases, make sure that the overall payload of the Onion, antennas, LiPo, and harness does not exceed this threshold.*
-
-# Installation
-Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tree/main). Then, install the necessary SDK for your drone. In this case, we will be working with the [Parrot Anafi](https://www.parrot.com/us/drones/anafi).
-
-which uses [Parrot Olympe](https://developer.parrot.com/docs/olympe/installation.html) for Python control and [Parrot GroundSDK](https://developer.parrot.com/docs/groundsdk-android/index.html) for Java control.
