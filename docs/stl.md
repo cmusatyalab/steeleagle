@@ -8,7 +8,7 @@ permalink: docs/stl
 
 # Harness Printing
 
-In our to get our payloads (either the Samsung Galaxy 4 Watch or the Onion Omega LTE) to be carried by the ANAFI drones, we have created a number of modular pieces that can be printed and fused together using [Gloop](https://www.3dgloop.com/). We printed our harnesses in PLA, but prtining in ABS should also work, provided you get the correct version of Gloop.
+In order to get our payloads (either the Samsung Galaxy 4 Watch or the Onion Omega LTE) to be carried by the ANAFI drones, we have created a number of modular pieces that can be printed and fused together using [Gloop](https://www.3dgloop.com/). We printed our harnesses in PLA, but prtining in ABS should also work, provided you get the correct version of Gloop.
 
 _NOTE: The ANAFI has a payload capacity of 60g, so the harness needs to be very light in order for the harness + watch or harness + onion to be below this threshold._
 
