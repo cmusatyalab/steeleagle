@@ -8,7 +8,6 @@ permalink: docs/user-guide/install
 # Installation
 Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tree/main). Then, on your smartphone, install Parrot FreeFlight 6 which is available on both the [Apple App Store](https://apps.apple.com/us/app/freeflight-6/id1386165299) and [Google Play Store](https://play.google.com/store/apps/details?id=com.parrot.freeflight6&hl=en_US&gl=US&pli=1). Next, decide on a control environment: Python (Onion) or Java (smartwatch). There are advantages and disadvantages to both methods. Once you select the environment you want, follow the associated instructions below.
 
-<div class="comparison" markdown="1">
 |  Category | Python (Onion) | Java (smartwatch) |
 |:----------|:---------------|:------------------|
 | Framerate | 30 FPS         | 0.7 FPS           |
@@ -19,7 +18,6 @@ Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tre
 | Battery   | ~40 min        | ~1 hour           |
 | Weight    | 55g            | 39g               |
 | Install   | Moderate       | Easy              |
-</div>
 
 ## Python Environment
 This section will describe how to configure the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) to work with SteelEagle. Ensure that you have purchased the necessary materials outlined in the [requirements section]({{ site.baseurl }}{% link user-guide/requirements.md %}).
