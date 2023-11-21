@@ -15,9 +15,9 @@ This tutorial assumes that you possess:
 1. A [Parrot Anafi](https://www.parrot.com/us/drones/anafi) drone (for hardware-in-the-loop (HITL) testing).
 2. A publicly addressable Ubuntu 22.04 server (optional but recommended).
 3. An Ubuntu 22.04 laptop (optional but recommended).
-4. An [Galaxy Watch 4](https://www.samsung.com/us/watches/galaxy-watch4/buy/) or equivalent Android smartwatch with LTE (necessary for Java HITL).
+4. An [Galaxy Watch 4](https://www.samsung.com/us/watches/galaxy-watch4/buy/) or equivalent Android smartwatch with LTE (optional but necessary for Java HITL).
 5. A smartphone to set up the Galaxy Watch 4 (may not be necessary on all watches) and connect to the drone.
-6. An [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) with a SIM card, two LTE antennas, and a small LiPo (necessary for Python HITL).
+6. An [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) with a SIM card, two LTE antennas, and a small LiPo (optional but necessary for Python HITL).
 
 The minimum requirement to complete this tutorial is an Ubuntu 22.04 computer with a connected display and strong integrated graphics or a dedicated GPU. However, completing the tutorial in this way will not simulate LTE network conditions and real world computation limitations. Thus it is strongly suggested that you either purchase components for HITL Python or Java simulation.
 
