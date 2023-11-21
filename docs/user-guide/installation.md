@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Requirements
+title: Installation
 parent: User Guide
 nav_order: 2
 permalink: docs/user-guide/install
