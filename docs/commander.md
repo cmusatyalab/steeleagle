@@ -14,6 +14,8 @@ Our command and control software, simply referred to as the **Commander**, is us
 The current implementation runs in python and is based on [customtkinter](https://github.com/TomSchimansky/CustomTkinter).
 An implementation using [streamlit](https://streamlit.io/) is a work-in-progress.
 
+Typically we run the commander from a laptop that has mobile broadband from the field where we are launching the drone, but in theory it could be run anywhere as commands are relayed through the backend server over LTE to the drone.
+
 ## Installation
 
 The commander can be installed by simply installing the requirements: 
@@ -54,3 +56,5 @@ The above screenshot details the layout of the Commander. The typical usage of t
 4. The buttons here can be used to send control messages to the drone. By default, the drone is initially in manual control mode (see #6). The drone can be instructed to start an autonomous mission by using the 'Fly Mission' button. When an autonomous mission is ongoing, the 'Return Home' and 'Manual Ctrl' buttons can be used to wrest control of the drone at any time.
 5. This pane will display the current status of the drone. The green box that says 'Manual Control Active' will be displayed when the pilot has manual control. It will change to 'Autonomous Control Active' when instructed to fly a mission script. It will also indicate that a Return to Home is in progress if the RTH button is pressed.  The text box below will contain the current telemetry data from the drone including lat/lon, altitude, bearing, magnetometer status, and Wifi RSSI.
 6. The manual controls displayed here can be entered on the keyboard to manually pilot the drone while manual control is active.
+
+When multiple drones are connected, you can switch drones by selecting a different drone from the 'Available Drones' list and hitting the connect button.
