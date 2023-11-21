@@ -3,6 +3,7 @@ layout: default
 title: Requirements
 parent: User Guide
 nav_order: 1
+permalink: docs/user-guide/requirements
 ---
 # Requirements
 

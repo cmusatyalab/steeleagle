@@ -3,6 +3,7 @@ layout: default
 title: Requirements
 parent: User Guide
 nav_order: 2
+permalink: docs/user-guide/install
 ---
 # Installation
 Clone the SteelEagle [repository](https://github.com/cmusatyalab/steel-eagle/tree/main). Then, install the necessary SDK for your drone. In this case, we will be working with the [Parrot Anafi](https://www.parrot.com/us/drones/anafi) which uses [Parrot Olympe](https://developer.parrot.com/docs/olympe/installation.html) for Python control and [Parrot GroundSDK](https://developer.parrot.com/docs/groundsdk-android/index.html) for Java control. Follow the steps below to install either the Python or Java control environment.
