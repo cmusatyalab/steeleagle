@@ -61,7 +61,12 @@ Then, install Sphinx by running `sudo apt install parrot-sphinx` on your compute
 
 Plug your Parrot ANAFI into your computer using a USB C cable. Then, follow these [instructions](https://developer.parrot.com/docs/sphinx/wifi_setup.html) to set up your drone for HITL.
 
-Next, start the firmwared service by running `sudo systemctl start firmwared.service`. Then, start Sphinx by running `sphinx "/opt/parrot-sphinx/usr/share/sphinx/drones/anafi.drone"::firmware="https://firmware.parrot.com/Versions/anafi/pc/%23latest/images/anafi-pc.ext2.zip"`. In a different terminal tab, run `parrot-ue4-empty` or an equivalent simulation environment command.
+Next, start the firmwared service by running `sudo systemctl start firmwared.service`. Then, start Sphinx by running:
+```
+sphinx "/opt/parrot-sphinx/usr/share/sphinx/drones/anafi.drone"::firmware="https://firmware.parrot.com/Versions/anafi/pc/%23latest/images/anafi-pc.ext2.zip"
+```
+
+In a different terminal tab, run `parrot-ue4-empty` or an equivalent simulation environment command.
 
 {: .note }
 
