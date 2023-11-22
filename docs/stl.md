@@ -10,7 +10,9 @@ permalink: docs/stl
 
 In order to get our payloads (either the Samsung Galaxy 4 Watch or the Onion Omega LTE) to be carried by the ANAFI drones, we have created a number of modular pieces that can be printed and fused together using [3D Gloop](https://www.3dgloop.com/). We printed our harnesses in PLA, but prtining in ABS should also work, provided you get the correct version of 3D Gloop.
 
-_NOTE: The ANAFI has a payload capacity of 60g, so the harness needs to be very light in order for the harness + watch or harness + onion to be below this threshold._
+{: .warning }
+
+The Parrot Anafi has a safe payload cutoff of around 60g. Ensure that the overall payload, including the harness, is below this threshold.
 
 ## OpenSCAD
 
@@ -48,6 +50,8 @@ Since we are optimizing for weight, we have used %5 infill. The .stl files liste
 
 ![Onion Assembly!](commander_layout.png)
 
-_NOTE: The LTE module on the Onion Omega can interfere with the GPS of the ANAFI which is near the camera/gimbal. As such, care must be taken to orient the case properly and as far back on the clip as possible when Glooping the pieces together._
+{: .note }
+
+The LTE module on the Onion Omega can interfere with the GPS of the ANAFI which is near the camera/gimbal. As such, care must be taken to orient the case properly and as far back on the clip as possible when Glooping the pieces together.
 
   
