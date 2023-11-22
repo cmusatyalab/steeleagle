@@ -23,6 +23,5 @@ We have currently implemented several basic tasks in Steel-Eagle. Below is a lis
 
 ### SetNewHome
 
-### Land
+### [Land]({{ site.baseurl }}{% link hermes/tasks/Land.html %})
 
-[Land]({{ site.baseurl }}{% link hermes/tasks/Land.html %}
