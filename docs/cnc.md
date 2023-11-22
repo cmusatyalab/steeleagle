@@ -26,8 +26,6 @@ Docker and docker-compose must be installed. NVIDIA CUDA drivers must also be pr
 
 ### Build/Obtain Docker Images
 
-
-
 ```sh
 git clone git@github.com:cmusatyalab/steel-eagle.git
 cd ~/steel-eagle/cnc/
@@ -114,3 +112,43 @@ docker-compose logs -f command-engine,gabriel-server
 ### Elasticsearch preparation
 
 Follow the [steps](https://github.com/cmusatyalab/openscout/blob/master/README.md#6-create-elasticsearch-index) outlined in the OpenScout documentation to prepare the Elasticsearch index template.
+
+### Deubging/Troubleshooting
+
+In the field, it is often useful to have an ssh connection to the backend server open that is displaying the logs of the docker containers running there. When particular services are not specified, ```docker-compose logs -f``` will interleave the logs messages from all of the running containers which can be difficult to read. It is often helpful to only look at a subset of the logs. For example, to look at only the cognitive engine logs use ```docker-comopse logs -f command-engine,openscout-object-engine,obstacle-engine```.  It is also helpful to see in real-time what the processed image frames look like. To do this, you will need to copy some HTML files from the ```steel-eagle/cnc/``` directory into ```steel-eagle/cnc/server/openscout-vol``` directory. Alternatively, the docker-compose file will launch a go2rtc container which can be configured to serve the updates to these image directories with WebRTC.
+
+{: .note}
+
+The openscout-vol directory will not exist until the containers are launched for the first time and **only** if the STORE=--store variable is set in the .env file.
+
+#### view.html
+
+view.html can be copied into any/all of the following 3 directories: received, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image nubmer and the total number of images in the directory.
+
+![view.html example!](images/viewhtml.png)
+
+#### live.html
+
+live.html can be copied into openscout-vol root. One can then navigate to http://host:8080/live.html. This will display the latest raw image, obstacle avoidance output, and object detection output. 
+
+{: .note}
+
+The object detection engine will only output an image if one of the classes is detected above the specified threshold, therefore it will not update as frequently as the other images.
+
+![live.html example!](images/livehtml.png)
+
+#### go2rtc
+
+[go2rtc](https://github.com/AlexxIT/go2rtc) can be configured to serve the same images as view/live.html but will do so using webrtc.  The go2rtc container will look for a configuration file in ~/go2trc/go2rtc.yaml. Below is configuration for our purpose:
+
+```yaml
+streams:
+  # [JPEG] snapshots from Dahua camera, will be converted to MJPEG stream
+  1_raw: http://localhost:8080/received/latest.jpg
+  2_midas: http://localhost:8080/moa/latest.jpg
+  3_detections: http://localhost:8080/detected/latest.jpg
+```
+
+Once configured, navigate to http://host:1984 and select the streams to view and click the stream button. The streams will be rendered in a similar fashion as live.html.
+
+![go2rtc!](images/go2rtc.png)
