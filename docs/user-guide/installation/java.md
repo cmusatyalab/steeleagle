@@ -12,7 +12,7 @@ This section will describe how to configure the [Galaxy Watch 4](https://www.sam
 
 {: .warning }
 
-The Java version of SteelEagle only supports HITL simulation for the Parrot Anafi and does not support pure simulation. If you do not have access to a physical drone, see the [Python version of this guide]({{ site.baseurl }}{% link install/python.md %}) 
+The Java version of SteelEagle only supports HITL simulation for the Parrot Anafi and does not support pure simulation. If you do not have access to a physical drone, see the [Python version of this guide]({{ site.baseurl }}{% link user-guide/install/python.md %}) 
 
 ### Hardware Preparation
 Set up LTE connectivity on your smartwatch. This process varies by device. You can follow instructions for Galaxy series watches [here](https://www.samsung.com/us/support/answer/ANS00082122/). Unlike the Onion, a static IP SIM is not needed on the watch. Ensure that your watch has both WiFi and LTE working properly before proceeding.
