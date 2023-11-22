@@ -21,3 +21,5 @@ Navigate to the root directory of the SteelEagle [repository](https://github.com
 Once you have copied the setup script to the Onion, run `ssh root@omega-XXXX.local` on your computer to login. Install Wireguard on the device by running `opkg --force-depends install wireguard`. Then, run `./onion_setup.sh`. Run `ls -ltrh`. You should see four new Wireguard configuration files, named `Alpha.conf`, `Bravo.conf`, `Charlie.conf`, and `Delta.conf`. These files are used to open Wireguard tunnels to talk to the Onion and the drone when in flight. It is *highly recommended* that you purchase a static IP SIM card to use with the Onion. If you do not do this, you will have to modify the configuration file on the server every time the Onion is power cycled or disconnects.
 
 On your computer, run `scp root@omega-XXXX.local:~/X.conf .` where `X.conf` can refer to any one of the four configuration files. Then, move this file to the server under `/etc/wireguard`. Keep in mind that this directory requires root to access. Setup of the Onion is now complete and you can proceed to setting up the backend.
+
+The full command list is as follows:
