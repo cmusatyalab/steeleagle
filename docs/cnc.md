@@ -41,7 +41,7 @@ docker build . -t cmusatyalab/openscout:steel-eagle
 In the `/steel-eagle/cnc/server/` directory, there is a template.env file that can be used as an example docker-compose environment. Copy and then modify it to control things such as the confidence thresholds for the face and object engines, the initial DNN model to load, and the public URL for the webserver.
 
 ```sh
-cd ~/steel-eagle/server/
+cd ~/steel-eagle/cnc/server/
 cp template.env .env
 #edit .env file as necessary
 ```
