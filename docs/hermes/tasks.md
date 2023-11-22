@@ -13,15 +13,15 @@ We have currently implemented several basic tasks in Steel-Eagle. Below is a lis
 
 ## Active Vision Tasks
 
-### DetectTask
+### [DetectTask]({{ site.baseurl }}{% link hermes/tasks/DetectTask.html %})
 
-### TrackingTask
+### [TrackingTask]({{ site.baseurl }}{% link hermes/tasks/TrackingTask.html %})
 
-### ObstacleTask
+### [ObstacleTask]({{ site.baseurl }}{% link hermes/tasks/ObstacleTask.html %})
 
 ## Helper Tasks
 
-### SetNewHome
+### [SetNewHome]({{ site.baseurl }}{% link hermes/tasks/SetNewHome.html %})
 
 ### [Land]({{ site.baseurl }}{% link hermes/tasks/Land.html %})
 
