@@ -33,9 +33,13 @@ The following purchases are recommended:
 3. 2 x [Molex Antennas](https://www.digikey.com/en/products/detail/molex/2125700100/10489644?utm_adgroup=&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Product_Medium%20ROAS%20Categories&utm_term=&utm_content=&utm_id=go_cmp-20223376311_adg-_ad-__dev-c_ext-_prd-10489644_sig-Cj0KCQiApOyqBhDlARIsAGfnyMpPNSWaUFj4HC3CYBlANHco_McIhH5QFS9G4orVkqNVrHP24MXEUVgaAh4mEALw_wcB&gad_source=1&gclid=Cj0KCQiApOyqBhDlARIsAGfnyMpPNSWaUFj4HC3CYBlANHco_McIhH5QFS9G4orVkqNVrHP24MXEUVgaAh4mEALw_wcB) (or equivalent). Any lightweight, small ultra-wideband 4G PCB antenna should work. *See below note*
 4. 1 x [LiPo](https://www.adafruit.com/product/1578). Any lightweight, small LiPo should work. This battery will give the Onion enough battery life to last at least 20 minutes (the maximum flight time of the drone). *See below note*.
 
-*Note: the Parrot Anafi has a safe payload cutoff of around 60g. If you deviate from the recommended purchases, make sure that the overall payload of the Onion, antennas, LiPo, and harness does not exceed this threshold.*
+{: .note }
+
+The Parrot Anafi has a safe payload cutoff of around 60g. If you deviate from the recommended purchases, make sure that the overall payload of the Onion, antennas, LiPo, and harness does not exceed this threshold.
 
 ### Java HITL
 Java HITL on the Parrot Anafi uses the [Samsung Galaxy Watch 4](https://www.samsung.com/us/watches/galaxy-watch4/buy/) or an equivalent modern Android smartwatch with LTE connectivity (*see below note*). For the Galaxy Watch series and some other watches, a smartphone is required for initial setup and for configuring the watch ESIM. This tutorial assumes you are using the Samsung Galaxy Watch 4 but installation steps should be similar for other smartwatches.
 
-*Note: the Parrot Anafi has a safe payload cutoff of around 60g. If you deviate from the recommended purchase, make sure that the overall payload of the watch and harness does not exceed this threshold.*
+{: .note }
+
+The Parrot Anafi has a safe payload cutoff of around 60g. If you deviate from the recommended purchase, make sure that the overall payload of the watch and harness does not exceed this threshold.
