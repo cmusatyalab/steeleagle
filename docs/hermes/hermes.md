@@ -52,4 +52,5 @@ In order to provide new/updated tasks, we need to do a few things:
 2. Implement the task for either [Java](https://github.com/cmusatyalab/steel-eagle/tree/main/hermes/java/app/src/main/java/edu/cmu/cs/dronebrain/tasks) or [Python](https://github.com/cmusatyalab/steel-eagle/tree/main/hermes/python/task_defs) (or both). These contain the actual code that will be run on board the drone. The arguments given in the KML file will be accessible via the kwargs variable.
 
 {: .note }
+
 The name of the task class must match the name specified in task_stubs.py from step 1.
