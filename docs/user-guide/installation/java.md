@@ -2,8 +2,9 @@
 layout: default
 title: Java Guide
 parent: Installation
+grand_parent: User Guide
 nav_order: 2
-has_children: true
+has_children: false
 permalink: docs/user-guide/install/java
 ---
 ## Java Environment
