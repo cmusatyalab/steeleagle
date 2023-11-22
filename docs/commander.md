@@ -43,7 +43,7 @@ At a minimum, you will need to provide the commander with the address of the mac
 
 ### Layout/Usage
 
-![Commander Layout!](commander_layout.png)
+![Commander Layout!](images/commander_layout.png)
 
 The above screenshot details the layout of the Commander. The typical usage of the application is as follows: 
 
