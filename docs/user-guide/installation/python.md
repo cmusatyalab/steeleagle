@@ -2,8 +2,9 @@
 layout: default
 title: Python Guide
 parent: Installation
+grand_parent: User Guide
 nav_order: 1
-has_children: true
+has_children: false
 permalink: docs/user-guide/install/python
 ---
 ## Python Environment
