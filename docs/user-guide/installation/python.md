@@ -7,7 +7,7 @@ nav_order: 1
 has_children: false
 permalink: docs/user-guide/install/python
 ---
-## Python Environment
+## Python Installation Guide
 This section will describe how to configure the [Onion Omega 2 LTE](https://onion.io/store/omega2-lte-na/) to work with SteelEagle. Ensure that you have purchased the necessary materials outlined in the [requirements section]({{ site.baseurl }}{% link user-guide/requirements.md %}).
 
 ### Hardware Preparation
@@ -23,3 +23,13 @@ Once you have copied the setup script to the Onion, run `ssh root@omega-XXXX.loc
 On your computer, run `scp root@omega-XXXX.local:~/X.conf .` where `X.conf` can refer to any one of the four configuration files. Then, move this file to the server under `/etc/wireguard`. Keep in mind that this directory requires root to access. Setup of the Onion is now complete and you can proceed to setting up the backend.
 
 The full command list is as follows:
+```
+cd /path/to/steel-eagle/onboard/onion/device
+scp onion_setup.sh root@omega-XXXX.local:~/
+ssh root@omega-XXXX.local
+opkg --force-depends install wireguard
+./onion_setup.sh
+exit
+scp root@omega-XXXX.local:~/X.conf .
+sudo mv ~/X.conf /etc/wireguard
+```
