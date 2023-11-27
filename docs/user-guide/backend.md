@@ -25,7 +25,14 @@ git checkout steel-eagle
 # Build the OpenScout backend
 docker build . -t cmusatyalab/openscout:steel-eagle
 cd /path/to/steel-eagle/cnc/server
+# Copy env
+cp template.env .env
+# Create models dir and obtain YOLO model
+mkdir models
+cd models
+wget https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m.pt
 # Start the backend!
+cd ..
 docker-compose up -d
 ```
 
