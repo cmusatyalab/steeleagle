@@ -22,7 +22,7 @@ We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/abo
 
 ![Drawing!](images/mymaps2.png)
 
-Once a line or polygon is created, a text box will be displayed for a description. Enter a task and its associated parameters. See the [Task Stubs]({{ site.baseurl }}{% link tasks.md %}) page for a list of existing tasks. The description can be editing at any time by clicking on the pencil icon. The style of the line/polygon can be changed using the paint bucket icon.
+Once a line or polygon is created, a text box will be displayed for a description. Enter a task and its associated parameters. See the [Task Stubs]({{ site.baseurl }}{% link hermes/tasks.md %}) page for a list of existing tasks. The description can be editing at any time by clicking on the pencil icon. The style of the line/polygon can be changed using the paint bucket icon.
 
 ## Exporting to KML
 
