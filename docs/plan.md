@@ -8,7 +8,7 @@ permalink: docs/plan
 
 # Mission Planning
 
-We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/about/mymaps/) to plan out missions for SteelEagle. MyMaps allows a user to draw lines and polygons representing waypoints and then attach a particular task specification to each by editing the description field. The entire mission can then be exported to a KML file which can be used as input into the [Hermes]({{ site.baseurl }}{% link hermes.md %}) parser and subsequently turned into a mission script (.ms).
+We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/about/mymaps/) to plan out missions for SteelEagle. MyMaps allows a user to draw lines and polygons representing waypoints and then attach a particular task specification to each by editing the description field. The entire mission can then be exported to a KML file which can be used as input into the [Hermes]({{ site.baseurl }}{% link hermes/hermes.md %}) parser and subsequently turned into a mission script (.ms).
 
 ## Drawing Lines/Polygons
 
