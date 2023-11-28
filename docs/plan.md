@@ -24,6 +24,10 @@ We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/abo
 
 Once a line or polygon is created, a text box will be displayed for a description. Enter a task and its associated parameters. See the [Task Stubs]({{ site.baseurl }}{% link hermes/tasks.md %}) page for a list of existing tasks. The description can be editing at any time by clicking on the pencil icon. The style of the line/polygon can be changed using the paint bucket icon.
 
+![Drawing!](images/mymaps4.png)
+
+Multiple lines/polygons can be added to the map, each with their own task specification. The tasks will be executed in the order they appear in the list (see #1 in the image above). In the above image, that would mean **Area1** is executed first, then **GreenArea**, and finally **Red**. The order can be rearranged by dragging the names of the placemarks in the list at the left.  
+
 ## Exporting to KML
 
 ![Drawing!](images/mymaps3.png)
