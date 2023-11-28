@@ -183,9 +183,9 @@ class DetectTask:
                         "hover_delay": {
                         "description": "The number of seconds to hover at each vertex before moving to the next",
                         "type": "number",
-                        "minimum": 1,
+                        "minimum": 0,
                         "maximum": 10,
-                        "default": 5
+                        "default": 0
                         },
                         "model": {
                         "description": "Name of the object detection model to evaluate frames against (default = 'coco')",
@@ -196,7 +196,7 @@ class DetectTask:
                     },
                     "additionalProperties": False
                 }
-        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 5, 'model': 'coco'}
+        self.defaults = {'gimbal_pitch': -45.0, 'drone_rotation': 0.0, 'sample_rate': 2, 'hover_delay': 0, 'model': 'coco'}
 
 def _main():
     #get all class stubs in this module into a dict

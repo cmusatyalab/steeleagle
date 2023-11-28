@@ -21,7 +21,7 @@ import subprocess
 
 KML_NAMESPACE = '{http://www.opengis.net/kml/2.2}'
 HR = '==============={0}===================='
-FIXED_ALTITUDE = 15.0 #meters
+FIXED_ALTITUDE = 25.0 #meters
 start = None #starting position, to be assigned
 
 #Representation of a point/line/polygon from MyMaps

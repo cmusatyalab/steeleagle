@@ -10,14 +10,14 @@ class MS(FlightScript):
     def run(self):
         try:
             kwargs = {}
-            # Detect/DetectTask START
+            # Pacman/DetectTask START
             kwargs.clear()
             kwargs["gimbal_pitch"] = "-45.0"
             kwargs["drone_rotation"] = "0.0"
             kwargs["sample_rate"] = "2"
-            kwargs["hover_delay"] = "5"
+            kwargs["hover_delay"] = "0"
             kwargs["model"] = "coco"
-            kwargs["coords"] = "[{'lng': -80.0076661, 'lat': 40.4534506, 'alt': 15.0}, {'lng': -80.0075856, 'lat': 40.4526669, 'alt': 15.0}, {'lng': -80.0061211, 'lat': 40.4526995, 'alt': 15.0}, {'lng': -80.0057885, 'lat': 40.4536384, 'alt': 15.0}, {'lng': -80.0076661, 'lat': 40.4534506, 'alt': 15.0}]"
+            kwargs["coords"] = "[{'lng': -79.9503727, 'lat': 40.4154746, 'alt': 25.0}, {'lng': -79.9497505, 'lat': 40.4152295, 'alt': 25.0}, {'lng': -79.9501689, 'lat': 40.4149395, 'alt': 25.0}, {'lng': -79.9498631, 'lat': 40.4147843, 'alt': 25.0}, {'lng': -79.9492838, 'lat': 40.4148537, 'alt': 25.0}, {'lng': -79.9491443, 'lat': 40.4153112, 'alt': 25.0}, {'lng': -79.9492945, 'lat': 40.4157074, 'alt': 25.0}, {'lng': -79.9499704, 'lat': 40.415789, 'alt': 25.0}, {'lng': -79.9503727, 'lat': 40.4154746, 'alt': 25.0}]"
             t = DetectTask(self.drone, self.cloudlet, **kwargs)
             self.taskQueue.put(t)
             print("Added task DetectTask to the queue")

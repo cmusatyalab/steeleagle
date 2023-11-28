@@ -36,9 +36,9 @@ public class MS extends FlightScript {
             kwargs.put("gimbal_pitch", "-45.0");
             kwargs.put("drone_rotation", "0.0");
             kwargs.put("sample_rate", "2");
-            kwargs.put("hover_delay", "5");
+            kwargs.put("hover_delay", "0");
             kwargs.put("model", "coco");
-            kwargs.put("coords", "[{'lng': -79.9504103, 'lat': 40.4158558, 'alt': 15.0}, {'lng': -79.9502949, 'lat': 40.4154147, 'alt': 15.0}, {'lng': -79.9498068, 'lat': 40.4154984, 'alt': 15.0}, {'lng': -79.9499784, 'lat': 40.4160028, 'alt': 15.0}, {'lng': -79.9504103, 'lat': 40.4158558, 'alt': 15.0}]");
+            kwargs.put("coords", "[{'lng': -79.9505194, 'lat': 40.4158379, 'alt': 25.0}, {'lng': -79.9508788, 'lat': 40.4157705, 'alt': 25.0}, {'lng': -79.9498238, 'lat': 40.4133333, 'alt': 25.0}, {'lng': -79.9495454, 'lat': 40.4132911, 'alt': 25.0}, {'lng': -79.9505194, 'lat': 40.4158379, 'alt': 25.0}]");
 	    Log.d("MS", "Adding task DetectTask to the task queue!");
             taskQueue.add(new DetectTask(drone, cloudlet, kwargs));
 

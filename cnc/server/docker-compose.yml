@@ -111,7 +111,7 @@ services:
                 - gpu
     volumes:
       - ./openscout-vol:/openscout/server/images/
-      - ./model:/root/.cache/torch/hub/
+      - ./models:/root/.cache/torch/hub/
     depends_on:
       - gabriel-server
     networks:
