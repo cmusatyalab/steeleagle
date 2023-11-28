@@ -82,6 +82,13 @@ The docker-compose.yaml file specifies several services that run as part of the 
 10. **logstash** - Final part of ELK. Handles ingestion of data from the cognitive engines into elasticsearch.
 11. **go2rtc** - A webRTC frontend that allows for streamlined viewing of the data in /openscout-vol.
 
+### Models
+
+Before we launch the containers, we first need to download the models for the object detection and obstacle avoidance cognitive engines. The models need to be placed into the ```steel-eagle/cnc/server/models``` directory. For object detection, any YOLOv5 pytorch model should work. Pretrained models can be downloaded [here](https://pytorch.org/hub/ultralytics_yolov5/). For MiDas, pretrained models will automatically be downloaded the first time the container launches. See above for the valid values for _MIDAS_ in the .env file.
+
+{: .note}
+
+The name (left-hand side) of the model must match what is configured in your .env file for _DNN_ and _MIDAS_.
 
 ### Launch containers with docker-compose
 
