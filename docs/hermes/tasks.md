@@ -3,7 +3,7 @@ layout: default
 title: Task Stubs
 nav_order: 1
 has_children: false
-parent: Hermes
+parent: Hermes Compiler
 permalink: docs/hermes/tasks
 ---
 
@@ -21,7 +21,7 @@ We have currently implemented several basic tasks in Steel-Eagle. Below is a lis
 
 ## Helper Tasks
 
-### [SetNewHome]({{ site.baseurl }}{% link hermes/tasks/SetNewHome.html %})
+### [SetHome]({{ site.baseurl }}{% link hermes/tasks/SetHome.html %})
 
 ### [Land]({{ site.baseurl }}{% link hermes/tasks/Land.html %})
 
