@@ -17,6 +17,22 @@ SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) d
 
 [**Documentation**](https://cmusatyalab.github.io/steeleagle/)
 
+License
+-----
+Unless otherwise stated in the table below, all source code and documentation are under the [GNU Public License, Version 2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
+A copy of this license is reproduced in the [LICENSE](LICENSE) file.
+
+Portions from the following third party sources have
+been modified and are included in this repository.
+These portions are noted in the source files and are
+copyright their respective authors with
+the licenses listed.
+
+Project | Modified | License
+---|---|---|
+[cmusatyalab/openscout](https://github.com/cmusatyalab/openscout) | Yes | Apache 2.0
+[bytedeco/javacv](https://github.com/bytedeco/javacv) | Yes | Apache 2.0
+
 Design
 ------
 Steel Eagle is separated into three distinct parts: the local commander client, the cloudlet server, and the onboard software. The commander client is intended to run on a personal computer close to the RPIC (Remote Pilot-in-Command) with an internet connection. It gives an interface to receive telemetry and upload an MS to the drone. It also provides tools to assume manual control of the drone while it is in-flight. The cloudlet server is the bridge between the onboard drone software and the commander client. It relays messages between the two and also publicly hosts flight scripts. Additionally, the server runs compute engines for the drone which will be executed on the offloaded sensor data/video stream. Finally, the onboard software consists of an app that runs on the drone-mounted Android or router device. This app relays telemetry and offloads sensor data/video frames to the cloudlet server. In the Android case, it is also responsible for running the mission script and directly sending control commands to the drone. In the router case, the cloudlet runs the mission script and sends control commands over the network to the drone.
