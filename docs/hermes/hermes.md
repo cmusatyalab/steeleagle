@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Hermes
+title: Hermes Compiler
 nav_order: 3
 has_children: true
 permalink: docs/hermes
