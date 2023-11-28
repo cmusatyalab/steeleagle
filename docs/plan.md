@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Misson Planning (MyMaps)
+title: Misson Planning
 nav_order: 3
 has_children: false
 permalink: docs/plan
