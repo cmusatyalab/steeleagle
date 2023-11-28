@@ -15,11 +15,11 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 fh = logging.FileHandler('supervisor.log')
-formatter = logging.Formatter('%(message)s')
+formatter = logging.Formatter('%(asctime)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 
