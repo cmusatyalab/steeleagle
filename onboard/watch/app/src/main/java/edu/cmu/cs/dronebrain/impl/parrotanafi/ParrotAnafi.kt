@@ -17,6 +17,7 @@ import com.parrot.drone.groundsdk.device.peripheral.camera.Camera
 import com.parrot.drone.groundsdk.device.pilotingitf.Activable
 import com.parrot.drone.groundsdk.device.pilotingitf.GuidedPilotingItf
 import com.parrot.drone.groundsdk.device.pilotingitf.ManualCopterPilotingItf
+import com.parrot.drone.groundsdk.device.pilotingitf.ReturnHomePilotingItf
 import com.parrot.drone.groundsdk.facility.AutoConnection
 import edu.cmu.cs.dronebrain.interfaces.DroneItf
 import kotlinx.coroutines.delay
@@ -49,6 +50,8 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
     private var guidedPilotingItf: Ref<GuidedPilotingItf>? = null
     /** Variable for storing flying indicators **/
     private var flyingIndicatorsRef: Ref<FlyingIndicators>? = null
+    /** Variable for storing return home interface **/
+    private var returnHomePilotingItf: Ref<ReturnHomePilotingItf>? = null
 
     /** Stores a reference to the FFMPEG video stream reader **/
     private var grabber: FFmpegFrameGrabber? = null
@@ -230,7 +233,11 @@ class ParrotAnafi(sdk: ManagedGroundSdk) : DroneItf {
 
     @Throws(Exception::class)
     override fun setHome(lat: Double?, lng: Double?) {
-
+        returnHomePilotingItf = drone?.getPilotingItf(ReturnHomePilotingItf::class.java) {
+            it?.let {
+                it.setCustomLocation(lat!!, lng!!, 1.0)
+            }
+        }
     }
 
     @Throws(Exception::class)
