@@ -98,12 +98,12 @@ class SimpleTask:
                 }
         self.defaults = {}
 
-class SetNewHome:
+class SetHome:
     def __init__(self):
         self.schema = {
-                    "title": "SetNewHome",
+                    "title": "SetHome",
                     "description": "<span class='badge badge-danger'>Deprecated</span> Set the return to home point to the coordinates",
-                    "examples": ["SetNewHome: {}"]
+                    "examples": ["SetHome: {}"]
                 }
         self.defaults = {}
 
