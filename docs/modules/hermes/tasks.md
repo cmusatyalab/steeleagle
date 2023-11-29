@@ -2,7 +2,7 @@
 layout: default
 title: Task Stubs
 parent: Hermes Compiler
-grandparent: Module Documentation
+grand_parent: Module Documentation
 nav_order: 1
 has_children: false
 permalink: docs/modules/hermes/tasks
