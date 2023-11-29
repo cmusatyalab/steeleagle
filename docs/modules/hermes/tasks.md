@@ -1,10 +1,10 @@
 ---
 layout: default
 title: Task Stubs
-nav_order: 1
-has_children: false
 parent: Hermes Compiler
 grandparent: Module Documentation
+nav_order: 1
+has_children: false
 permalink: docs/modules/hermes/tasks
 ---
 
