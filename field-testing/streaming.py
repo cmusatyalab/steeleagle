@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 # NOTE: Line numbers of this example are referenced in the user guide.
 # Don't forget to update the user guide after every modification of this example.
 

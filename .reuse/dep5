@@ -9,11 +9,18 @@ Source: https://github.com/cmusatyalab/steel-eagle
 # Copyright: $YEAR $NAME <$CONTACT>
 # License: ...
 
-Files: onboard/DroneBrain/*
+Files: onboard/watch/*
 Copyright: 2023 Carnegie Mellon University - Satyalab
 License: GPL-2.0-only
 
-Files: survival/*
+Files: stl/*
 Copyright: 2023 Carnegie Mellon University - Satyalab
-License: GPL-2.0-only
+License: CC0-1.0
 
+Files: docs/*
+Copyright: 2023 Carnegie Mellon University - Satyalab
+License: CC0-1.0
+
+Files: hermes/java/gradle*
+Copyright: Original authors
+License: Apache-2.0

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 import streamlit as st
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
