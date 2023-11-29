@@ -129,7 +129,7 @@ The openscout-vol directory will not exist until the containers are launched for
 
 view.html can be copied into any/all of the following 3 directories: received, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image nubmer and the total number of images in the directory.
 
-![view.html example!](../images/viewhtml.png)
+![view.html example!](images/viewhtml.png)
 
 #### live.html
 
@@ -139,7 +139,7 @@ live.html can be copied into openscout-vol root. One can then navigate to http:/
 
 The object detection engine will only output an image if one of the classes is detected above the specified threshold, therefore it will not update as frequently as the other images.
 
-![live.html example!](../images/livehtml.png)
+![live.html example!](images/livehtml.png)
 
 #### go2rtc
 
@@ -155,4 +155,4 @@ streams:
 
 Once configured, navigate to http://host:1984 and select the streams to view and click the stream button. The streams will be rendered in a similar fashion as live.html.
 
-![go2rtc!](../images/go2rtc.png)
+![go2rtc!](images/go2rtc.png)
