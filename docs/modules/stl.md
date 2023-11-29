@@ -1,9 +1,10 @@
 ---
 layout: default
 title: Harness Printing
-nav_order: 6
+nav_order: 5
 has_children: false
-permalink: docs/stl
+parent: Module Documentation
+permalink: docs/modules/stl
 ---
 
 # Harness Printing

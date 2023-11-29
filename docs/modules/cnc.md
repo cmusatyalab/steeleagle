@@ -1,15 +1,12 @@
 ---
 layout: default
 title: Command and Control Server
-nav_order: 4
+nav_order: 3
 has_children: false
+parent: Module Documentation
 permalink: docs/cnc
 ---
-<!--
-SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
 
-SPDX-License-Identifier: GPL-2.0-only
--->
 # Command and Control Gabriel Server
 
 ## Description
@@ -27,8 +24,8 @@ Docker and docker-compose must be installed. NVIDIA CUDA drivers must also be pr
 ### Build/Obtain Docker Images
 
 ```sh
-git clone git@github.com:cmusatyalab/steel-eagle.git
-cd ~/steel-eagle/cnc/
+git clone git@github.com:cmusatyalab/steeleagle.git
+cd ~/steeleagle/cnc/
 docker build . -t cmusatyalab/steel-eagle:latest
 git clone git@github.com:cmusatyalab/openscout.git
 cd ~/openscout
@@ -38,10 +35,10 @@ docker build . -t cmusatyalab/openscout:steel-eagle
 
 ### Configure docker-compose environment
 
-In the `/steel-eagle/cnc/server/` directory, there is a template.env file that can be used as an example docker-compose environment. Copy and then modify it to control things such as the confidence thresholds for the face and object engines, the initial DNN model to load, and the public URL for the webserver.
+In the `/steeleagle/cnc/server/` directory, there is a template.env file that can be used as an example docker-compose environment. Copy and then modify it to control things such as the confidence thresholds for the face and object engines, the initial DNN model to load, and the public URL for the webserver.
 
 ```sh
-cd ~/steel-eagle/cnc/server/
+cd ~/steeleagle/cnc/server/
 cp template.env .env
 #edit .env file as necessary
 ```
@@ -68,7 +65,7 @@ cp template.env .env
 
 ### Explanation of Services
 
-The docker-compose.yaml file specifies several services that run as part of the steel-eagle backend. It is useful to understand what each container is responsible for in order to find information and debug issues.
+The docker-compose.yaml file specifies several services that run as part of the steeleagle backend. It is useful to understand what each container is responsible for in order to find information and debug issues.
 
 1. **gabriel-server** - Core gabriel server container. Responsible for managing connections between clients (drones, commanders0 and cognitives engines (cnc, object detection, obstacle avoidance).
 2. **command-engine** - Used for comand and control (shorthand: cnc). Keeps track of drones and commander clients that have connected and relays information (stream, telemetry, command messages) between them.
@@ -84,7 +81,7 @@ The docker-compose.yaml file specifies several services that run as part of the 
 
 ### Models
 
-Before we launch the containers, we first need to download the models for the object detection and obstacle avoidance cognitive engines. The models need to be placed into the ```steel-eagle/cnc/server/models``` directory. For object detection, any YOLOv5 pytorch model should work. Pretrained models can be downloaded [here](https://pytorch.org/hub/ultralytics_yolov5/). For MiDas, pretrained models will automatically be downloaded the first time the container launches. See above for the valid values for _MIDAS_ in the .env file.
+Before we launch the containers, we first need to download the models for the object detection and obstacle avoidance cognitive engines. The models need to be placed into the ```steeleagle/cnc/server/models``` directory. For object detection, any YOLOv5 pytorch model should work. Pretrained models can be downloaded [here](https://pytorch.org/hub/ultralytics_yolov5/). For MiDas, pretrained models will automatically be downloaded the first time the container launches. See above for the valid values for _MIDAS_ in the .env file.
 
 {: .note}
 
@@ -95,14 +92,14 @@ The name (left-hand side) of the model must match what is configured in your .en
 To launch all the containers and interleave the output from each container in the terminal:
 
 ```sh
-cd ~/steel-eagle/cnc/server
+cd ~/steeleagle/cnc/server
 docker-compose up
 ```
 
 If you wish to launch the containers in the background, you can pass the -d flag to docker compose. You can then use docker logs to inspect what is happening to individual containers.
 
 ```sh
-cd ~/steel-eagle/cnc/server
+cd ~/steeleagle/cnc/server
 docker-compose up -d
 ```
 
@@ -122,7 +119,7 @@ Follow the [steps](https://github.com/cmusatyalab/openscout/blob/master/README.m
 
 ### Deubging/Troubleshooting
 
-In the field, it is often useful to have an ssh connection to the backend server open that is displaying the logs of the docker containers running there. When particular services are not specified, ```docker-compose logs -f``` will interleave the logs messages from all of the running containers which can be difficult to read. It is often helpful to only look at a subset of the logs. For example, to look at only the cognitive engine logs use ```docker-comopse logs -f command-engine,openscout-object-engine,obstacle-engine```.  It is also helpful to see in real-time what the processed image frames look like. To do this, you will need to copy some HTML files from the ```steel-eagle/cnc/``` directory into ```steel-eagle/cnc/server/openscout-vol``` directory. Alternatively, the docker-compose file will launch a go2rtc container which can be configured to serve the updates to these image directories with WebRTC.
+In the field, it is often useful to have an ssh connection to the backend server open that is displaying the logs of the docker containers running there. When particular services are not specified, ```docker-compose logs -f``` will interleave the logs messages from all of the running containers which can be difficult to read. It is often helpful to only look at a subset of the logs. For example, to look at only the cognitive engine logs use ```docker-comopse logs -f command-engine,openscout-object-engine,obstacle-engine```.  It is also helpful to see in real-time what the processed image frames look like. To do this, you will need to copy some HTML files from the ```steeleagle/cnc/``` directory into ```steeleagle/cnc/server/openscout-vol``` directory. Alternatively, the docker-compose file will launch a go2rtc container which can be configured to serve the updates to these image directories with WebRTC.
 
 {: .note}
 

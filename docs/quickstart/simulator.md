@@ -1,10 +1,10 @@
 ---
 layout: default
 title: Simulator Setup
-parent: User Guide
+parent: Quickstart
 nav_order: 4
 has_children: false
-permalink: docs/user-guide/simulator
+permalink: docs/quickstart/simulator
 ---
 # Simulator Setup
 Parrot Sphinx is a simulation environment for ANAFI series drones built on top of Unreal Engine 4. SteelEagle, by design, is compatible with most simulation environments that support HITL. This tutorial will use Sphinx to simulate a basic SteelEagle mission without flying the drone.

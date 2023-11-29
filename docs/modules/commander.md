@@ -1,9 +1,10 @@
 ---
 layout: default
 title: Commander GCS
-nav_order: 5
+nav_order: 4
 has_children: false
-permalink: docs/commander
+parent: Module Documentation
+permalink: docs/modules/commander
 ---
 
 # Commander
@@ -18,14 +19,14 @@ Typically the Commander is run by the drone pilot in the field, but in theory it
 The commander can be installed by installing the requirements: 
 
 ```sh
-cd ~/steel-eagle/cnc/python-client/
+cd ~/steeleagle/cnc/python-client/
 python3 -m pip install requirements.txt
 ```
 
 ## Launching
 
 ```sh
-cd ~/steel-eagle/cnc/python-client/
+cd ~/steeleagle/cnc/python-client/
 python3 gui_commander.py
 usage: commander_client.py [-h] [-s SERVER] [-p PORT] [-l LOGLEVEL] [-ng]
 
@@ -47,7 +48,7 @@ At a minimum, you will need to provide the commander with the address of the mac
 
 The above screenshot details the layout of the Commander. The typical usage of the application is as follows: 
 
-1. The 'Available Drones' list will be populated with any steel-eagle drones once they have connected to the backend either by launching the Android app (Java) or starting the supervisor script (Python). Select a drone from the list and then click the 'Connect' button.
+1. The 'Available Drones' list will be populated with any steeleagle drones once they have connected to the backend either by launching the Android app (Java) or starting the supervisor script (Python). Select a drone from the list and then click the 'Connect' button.
 2. After connecting to a particular drone, the map should be updated to center on the location of the drone and a icon representing the drone will be shown. The position/orientation of the icon will correspond to the current position/bearing of the drone. This will be automatically updated over time. You can change the tile server using the dropdown menu in the upper right corner of the map.
 3. Once the drone has connected to the backend, it should also start sending its video stream which will be displayed here.
 4. The buttons here can be used to send control messages to the drone. By default, the drone is initially in manual control mode (see #6). The drone can be instructed to start an autonomous mission by using the 'Fly Mission' button. When an autonomous mission is ongoing, the 'Return Home' and 'Manual Ctrl' buttons can be used to wrest control of the drone at any time.

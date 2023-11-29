@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Requirements
-parent: User Guide
+parent: Quickstart
 nav_order: 1
-permalink: docs/user-guide/requirements
+permalink: docs/quickstart/requirements
 ---
 # Requirements
 

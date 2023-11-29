@@ -1,14 +1,15 @@
 ---
 layout: default
 title: Misson Planning
-nav_order: 3
+nav_order: 1
 has_children: false
-permalink: docs/plan
+parent: Module Documentation
+permalink: docs/modules/plan
 ---
 
 # Mission Planning
 
-We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/about/mymaps/) to plan out missions for SteelEagle. MyMaps allows a user to draw lines and polygons representing waypoints and then attach a particular task specification to each by editing the description field. The entire mission can then be exported to a KML file which can be used as input into the [Hermes]({{ site.baseurl }}{% link hermes/hermes.md %}) parser and subsequently turned into a mission script (.ms).
+We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/about/mymaps/) to plan out missions for SteelEagle. MyMaps allows a user to draw lines and polygons representing waypoints and then attach a particular task specification to each by editing the description field. The entire mission can then be exported to a KML file which can be used as input into the [Hermes]({{ site.baseurl }}{% link modules/hermes/hermes.md %}) parser and subsequently turned into a mission script (.ms).
 
 ## Drawing Lines/Polygons
 
@@ -22,7 +23,7 @@ We leverage the drawing tools of [Google MyMaps](https://www.google.com/maps/abo
 
 ![Drawing!](images/mymaps2.png)
 
-Once a line or polygon is created, a text box will be displayed for a description. Enter a task and its associated parameters. See the [Task Stubs]({{ site.baseurl }}{% link hermes/tasks.md %}) page for a list of existing tasks. The description can be editing at any time by clicking on the pencil icon. The style of the line/polygon can be changed using the paint bucket icon.
+Once a line or polygon is created, a text box will be displayed for a description. Enter a task and its associated parameters. See the [Task Stubs]({{ site.baseurl }}{% link modules/hermes/tasks.md %}) page for a list of existing tasks. The description can be editing at any time by clicking on the pencil icon. The style of the line/polygon can be changed using the paint bucket icon.
 
 ![Drawing!](images/mymaps4.png)
 
