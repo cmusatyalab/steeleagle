@@ -39,7 +39,7 @@ Steel Eagle is separated into three distinct parts: the local commander client, 
 
 Architecture
 ------
-![drawing](https://github.com/cmusatyalab/steeleagle/blob/main/docs/images/system-arch.png)
+![drawing](https://github.com/cmusatyalab/steeleagle/blob/main/docs/modules/images/system-arch.png)
 
 Workflow
 --------
