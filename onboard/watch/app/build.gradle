@@ -56,7 +56,7 @@ android {
     productFlavors {
         standard {
             isDefault = true
-            manifestPlaceholders = [gabrielHost:"cloudlet040.elijah.cs.cmu.edu"]
+            manifestPlaceholders = [gabrielHost:"localhost"]
         }
         wearos {
             dimension 'form_factor'
