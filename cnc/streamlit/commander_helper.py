@@ -99,7 +99,7 @@ def main():
         "-s",
         "--server",
         default="cloudlet033.elijah.cs.cmu.edu",
-        help="Specify address of Steel Eagle CNC server [default: cloudlet033.elijah.cs.cmu.edu",
+        help="Specify address of Steel Eagle CNC server [default: localhost",
     )
     parser.add_argument(
         "-p", "--port", default="9099", help="Specify Gabriel websocket port [default: 9099]"
