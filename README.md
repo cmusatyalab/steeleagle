@@ -13,7 +13,7 @@ SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) d
 
 [Democratizing Drone Autonomy Via Edge Computing]() published in ACM SEC 2023
 
-[**Quickstart**](https://cmusatyalab.github.io/steeleagle/docs/user-guide)
+[**Quickstart**](https://cmusatyalab.github.io/steeleagle/docs/quickstart)
 
 [**Documentation**](https://cmusatyalab.github.io/steeleagle/)
 
