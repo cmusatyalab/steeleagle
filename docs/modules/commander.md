@@ -33,7 +33,7 @@ usage: commander_client.py [-h] [-s SERVER] [-p PORT] [-l LOGLEVEL] [-ng]
 optional arguments:
   -h, --help            show this help message and exit
   -s SERVER, --server SERVER
-                        Specify address of Steel Eagle CNC server [default: cloudlet040.elijah.cs.cmu.edu
+                        Specify address of Steel Eagle CNC server [default: localhost]
   -p PORT, --port PORT  Specify websocket port [default: 9099]
   -l LOGLEVEL, --loglevel LOGLEVEL
                         Set the log level
