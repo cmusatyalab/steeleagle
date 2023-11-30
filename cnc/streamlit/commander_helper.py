@@ -98,7 +98,7 @@ def main():
     parser.add_argument(
         "-s",
         "--server",
-        default="cloudlet033.elijah.cs.cmu.edu",
+        default="localhost",
         help="Specify address of Steel Eagle CNC server [default: localhost",
     )
     parser.add_argument(
