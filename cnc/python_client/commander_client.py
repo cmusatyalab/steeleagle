@@ -22,8 +22,8 @@ def preprocess(frame):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--server', default='cloudlet040.elijah.cs.cmu.edu',
-        help='Specify address of Steel Eagle CNC server [default: cloudlet040.elijah.cs.cmu.edu')
+    parser.add_argument('-s', '--server', default='localhost',
+        help='Specify address of Steel Eagle CNC server [default: localhost')
     parser.add_argument('-p', '--port', default='9099', help='Specify websocket port [default: 9099]')
     parser.add_argument('-l', '--loglevel', default='INFO', help='Set the log level')
     parser.add_argument('-ng', '--nogui', action='store_true', help='If specified, use the text prompt commander') 
