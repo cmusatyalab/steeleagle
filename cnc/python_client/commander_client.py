@@ -26,7 +26,8 @@ def main():
         help='Specify address of Steel Eagle CNC server [default: localhost')
     parser.add_argument('-p', '--port', default='9099', help='Specify websocket port [default: 9099]')
     parser.add_argument('-l', '--loglevel', default='INFO', help='Set the log level')
-    parser.add_argument('-ng', '--nogui', action='store_true', help='If specified, use the text prompt commander') 
+    parser.add_argument('-ng', '--nogui', action='store_true', help='If specified, use the text prompt commander')
+    parser.add_argument('-u', '--user', default='root', help='Specify the user when copying .ms files to the server. [default: root] NOTE: An ssh key for this user must exist on the server.')
     
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
@@ -44,7 +45,7 @@ def main():
         
         def start_ui_thread(funcs, funcSet):
             UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
-            UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID, args.server)
+            UI.set_up_adapter(preprocess, DEFAULT_SOURCE_NAME, COMMANDER_ID, args.server, args.user)
             funcs.append(UI.get_producer_wrappers())
             funcs.append(UI.consumer)
             funcSet.set()

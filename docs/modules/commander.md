@@ -38,9 +38,14 @@ optional arguments:
   -l LOGLEVEL, --loglevel LOGLEVEL
                         Set the log level
   -ng, --nogui          If specified, use the text prompt commander
+  -u, --user            Specify the user when copying .ms files to the server. [default: root] NOTE: An ssh key for this user must exist on the server.
 ```
 
 At a minimum, you will need to provide the commander with the address of the machine where the CNC backend is running.
+
+{: .important }
+
+Ensure that the ssh key of the user running the commander is placed into the server's authorized_keys file. If the key is not present, the scp of any flightscript will prompt for authentication in the terminal. `ssh-copy-id user@host` can be used to push the ssh key from the location where the commander is being run.
 
 ### Layout/Usage
 
