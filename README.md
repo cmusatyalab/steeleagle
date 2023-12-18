@@ -9,7 +9,7 @@ SteelEagle: Edge-Enabled Drone Autonomy
 
 Introduction
 ------------
-SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process.
+SteelEagle is a software suite that transforms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process.
 
 [Democratizing Drone Autonomy Via Edge Computing]() published in ACM SEC 2023
 
@@ -35,7 +35,7 @@ Project | Modified | License
 
 Design
 ------
-Steel Eagle is separated into three distinct parts: the local commander client, the cloudlet server, and the onboard software. The commander client is intended to run on a personal computer close to the RPIC (Remote Pilot-in-Command) with an internet connection. It gives an interface to receive telemetry and upload an MS to the drone. It also provides tools to assume manual control of the drone while it is in-flight. The cloudlet server is the bridge between the onboard drone software and the commander client. It relays messages between the two and also publicly hosts flight scripts. Additionally, the server runs compute engines for the drone which will be executed on the offloaded sensor data/video stream. Finally, the onboard software consists of an app that runs on the drone-mounted Android or router device. This app relays telemetry and offloads sensor data/video frames to the cloudlet server. In the Android case, it is also responsible for running the mission script and directly sending control commands to the drone. In the router case, the cloudlet runs the mission script and sends control commands over the network to the drone.
+SteelEagle is separated into three distinct parts: the local commander client, the cloudlet server, and the onboard software. The commander client is intended to run on a personal computer close to the RPIC (Remote Pilot-in-Command) with an internet connection. It gives an interface to receive telemetry and upload an MS to the drone. It also provides tools to assume manual control of the drone while it is in-flight. The cloudlet server is the bridge between the onboard drone software and the commander client. It relays messages between the two and also publicly hosts flight scripts. Additionally, the server runs compute engines for the drone which will be executed on the offloaded sensor data/video stream. Finally, the onboard software consists of an app that runs on the drone-mounted Android or router device. This app relays telemetry and offloads sensor data/video frames to the cloudlet server. In the Android case, it is also responsible for running the mission script and directly sending control commands to the drone. In the router case, the cloudlet runs the mission script and sends control commands over the network to the drone.
 
 Architecture
 ------
@@ -43,7 +43,7 @@ Architecture
 
 Workflow
 --------
-1. A planner utilizes Google MyMaps to define the mission in a graphical UI by creating tasks. A task is created by drawing a polygon/marker, naming them, and defining the actions associated with that task by adding these to the description textbox.
+1. A planner utilizes Google MyMaps to define the mission in a graphical UI by creating tasks. A task is created by drawing a polygon/marker, naming it, and defining the actions associated with that task by adding these to the description textbox.
 
 2. Once defined, the planner exports the mission as a KML file.
 
