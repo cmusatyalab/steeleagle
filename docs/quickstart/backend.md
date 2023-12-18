@@ -21,7 +21,7 @@ docker build . -t cmusatyalab/steeleagle:latest
 git clone git@github.com:cmusatyalab/openscout.git
 cd /path/to/openscout
 # Checkout the SteelEagle branch of OpenScout
-git checkout steeleagle
+git checkout steel-eagle
 # Build the OpenScout backend
 docker build . -t cmusatyalab/openscout:steeleagle
 cd /path/to/steeleagle/cnc/server
