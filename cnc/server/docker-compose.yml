@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-License-Identifier: GPL-2.0-only
 
-# The environment variables such as 
+# The environment variables such as
 # ${FACE_THRESHOLD} and ${API_KEY} should
 # reside in a .env file along side docker-compose.yaml
 
 version: '2.3'
 services:
   gabriel-server:
-    image: cmusatyalab/steel-eagle:${TAG}
+    image: cmusatyalab/steeleagle:${TAG}
     container_name: gabriel-server
     ports:
       - "9099:9099"
@@ -21,7 +21,7 @@ services:
       - cnc-net
 
   command-engine:
-    image: cmusatyalab/steel-eagle:${TAG}
+    image: cmusatyalab/steeleagle:${TAG}
     container_name: command-engine
     restart: unless-stopped
     privileged: true
@@ -35,7 +35,7 @@ services:
 
 
   # test-clients:
-  #   image: cmusatyalab/steel-eagle:${TAG}
+  #   image: cmusatyalab/steeleagle:${TAG}
   #   container_name: test-clients
   #   restart: unless-stopped
   #   privileged: true
