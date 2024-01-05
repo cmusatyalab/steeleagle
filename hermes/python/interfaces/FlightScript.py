@@ -1,17 +1,12 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-#
-# SPDX-License-Identifier: GPL-2.0-only
-
 import threading
 import ctypes
 import queue
 
 class FlightScript(threading.Thread):
 
-    def __init__(self, drone, cloudlet):
+    def __init__(self, drone):
         threading.Thread.__init__(self)
         self.drone = drone
-        self.cloudlet = cloudlet
         self.taskThread = None
         self.taskQueue = queue.Queue()
 
@@ -23,7 +18,6 @@ class FlightScript(threading.Thread):
             print(f'Exec loop interrupted by exception: {e}')
 
     def _exec(self, task):
-        self.currentTask = task
         self.taskThread = task
         self.taskThread.start()
         self.taskThread.join()
@@ -48,8 +42,10 @@ class FlightScript(threading.Thread):
             self.taskQueue = queue.Queue() # Clear the queue
             if self.taskThread is not None:
                 self.taskThread.stop()
+            else:
+                print(f"FlightScript: thread gracefully exit")
         except RuntimeError as e:
-            print(e)
+            print(f"FlightScript: ", e)
 
     def _pause(self):
         pass
