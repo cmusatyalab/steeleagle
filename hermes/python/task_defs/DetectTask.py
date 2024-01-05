@@ -5,8 +5,8 @@ import ast
 
 class DetectTask(Task):
 
-    def __init__(self, drone, task_id, event_queue,**kwargs):
-        super().__init__(drone, task_id, **kwargs)
+    def __init__(self, drone, cloudlet, task_id, event_queue,**kwargs):
+        super().__init__(drone, cloudlet, task_id, **kwargs)
         self.event_queue = event_queue
 
     def trigger_event(self, event):
@@ -14,6 +14,9 @@ class DetectTask(Task):
         self.event_queue.put((self.task_id,  event))
 
     def run(self):
+        # init the cloudlet
+        self.cloudlet.switchModel(self.kwargs["model"])
+        
         # triggered event
         if (self.task_id == "task1"):
             # construct the timer with 90 seconds

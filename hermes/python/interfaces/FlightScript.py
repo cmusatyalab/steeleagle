@@ -4,8 +4,9 @@ import queue
 
 class FlightScript(threading.Thread):
 
-    def __init__(self, drone):
+    def __init__(self, drone, cloudlet):
         threading.Thread.__init__(self)
+        self.cloudlet = cloudlet
         self.drone = drone
         self.taskThread = None
         self.taskQueue = queue.Queue()

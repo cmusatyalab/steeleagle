@@ -3,8 +3,9 @@ import ctypes
 
 class Task(threading.Thread):
 
-    def __init__(self, drone, task_id,**kwargs):
+    def __init__(self, drone, cloudlet, task_id,**kwargs):
         threading.Thread.__init__(self)
+        self.cloudlet = cloudlet
         self.drone = drone
         self.kwargs = kwargs
         self.task_id = task_id

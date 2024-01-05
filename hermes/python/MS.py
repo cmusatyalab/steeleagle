@@ -1,29 +1,27 @@
 import threading
 from runtime.MissionRunner import MissionRunner
 from runtime.TaskController import TaskController
-from interfaces.FlightScript import FlightScript
 
 
 class MS(threading.Thread):
    
-    def __init__(self, drone):
+    def __init__(self, drone, cloudlet):
         threading.Thread.__init__(self)
-        self.drone = drone
- 
-    def run(self):
+        
         # init the mission runner
-        mr = MissionRunner(self.drone)
-        print("init the mission runner\n")
+        self.mr = MissionRunner(drone, cloudlet)
+        print("MS: init the mission runner\n")
 
         # context switch controller
-        tc =  TaskController(mr)
-        print("init the task switch controller\n")
+        self.tc =  TaskController(self.mr)
+        print("MS: init the task switch controller\n")
 
-
+ 
+    def run(self):
         # running the program
-        print("run the flight mission\n")
-        tc.start()
-        mr.start()
+        print("MS: run the flight mission\n")
+        self.tc.start()
+        self.mr.start()
 
-        tc.join()
-        mr.join()
+        self.tc.join()
+        self.mr.join()
