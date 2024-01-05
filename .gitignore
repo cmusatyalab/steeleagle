@@ -21,3 +21,5 @@ venv/
 *.ms
 *.kml
 .venv
+onboard/onion/remote/supervisor.log
+
