@@ -46,11 +46,11 @@ class MissionRunner(FlightScript):
             self.end_mission()
     def start_mission(self):
        # set the current task
-       task_id = self.task2.get_task_id()
+       task_id = self.task1.get_task_id()
        self.set_current_task(task_id)
        print(f"MR: start mission, current taskid:{task_id}\n")
        # start
-       self.taskQueue.put(self.task2)
+       self.taskQueue.put(self.task1)
        print("MR: taking off")
        self.drone.takeOff()
        self._execLoop()

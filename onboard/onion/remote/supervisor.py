@@ -67,6 +67,7 @@ class Supervisor:
                 f.write(chunk)
         z = ZipFile(filename)
         os.system("rm -rf ./task_defs ./python")
+        os.system("rm -rf ./runtime ./python")
         z.extractall()
         os.system("mv python/* .")
         self.install_prereqs()
