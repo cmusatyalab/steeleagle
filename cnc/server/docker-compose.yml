@@ -10,7 +10,7 @@
 version: '2.3'
 services:
   gabriel-server:
-    image: cmusatyalab/steel-eagle:${TAG}
+    image: cmusatyalab/steeleagle:${TAG}
     container_name: gabriel-server
     ports:
       - "9099:9099"
@@ -20,22 +20,23 @@ services:
     networks:
       - cnc-net
 
-  command-engine:
-    image: cmusatyalab/steel-eagle:${TAG}
-    container_name: command-engine
+  telemetry-engine:
+    image: cmusatyalab/steeleagle:${TAG}
+    container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}"]
+    entrypoint: [ "./telemetry.py"]
     depends_on:
       - gabriel-server
     networks:
       - cnc-net
+      - redis
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/cnc/server/images/
 
 
   # test-clients:
-  #   image: cmusatyalab/steel-eagle:${TAG}
+  #   image: cmusatyalab/steeleagle:${TAG}
   #   container_name: test-clients
   #   restart: unless-stopped
   #   privileged: true
@@ -61,7 +62,7 @@ services:
     networks:
       - cnc-net
     volumes:
-      - ./openscout-vol:/usr/local/apache2/htdocs
+      - ./steeleagle-vol:/usr/local/apache2/htdocs
 
   openscout-face-engine:
     image: cmusatyalab/openscout:${OPENSCOUT_TAG}
@@ -72,7 +73,7 @@ services:
       [
         "./face.py",
         "--source",
-        "command",
+        "telemetry",
         "--endpoint",
         "http://openface-service:5000",
         "--threshold",
@@ -82,7 +83,7 @@ services:
     #to use MS Face Cognitive Service, make this the entrypoint instead and use the ms-face-server container...
     #entrypoint: ["./face.py", "--msface", "--endpoint", "http://ms-face-service:5000","--apikey", "${API_KEY}", "--threshold", "${FACE_THRESHOLD}"]
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
       - training-vol:/openscout/server/training/
     depends_on:
       - gabriel-server
@@ -99,7 +100,7 @@ services:
     container_name: obstacle-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: ["./depth.py", "--source", "command", "--model", "${MIDAS}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}"]
+    entrypoint: ["./depth.py", "--source", "telemetry", "--model", "${MIDAS}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}"]
     # for NVIDIA GPUs
     #gpus: all     # not yet supported by docker-compose
     deploy:
@@ -110,7 +111,7 @@ services:
               capabilities:
                 - gpu
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
       - ./models:/root/.cache/torch/hub/
     depends_on:
       - gabriel-server
@@ -130,7 +131,7 @@ services:
       [
         "./obj.py",
         "--source",
-        "command",
+        "telemetry",
         "--model",
         "${DNN}",
         "--threshold",
@@ -144,7 +145,7 @@ services:
     runtime: nvidia
     volumes:
       - ./models:/openscout/server/model/
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
     depends_on:
       - gabriel-server
     networks:
@@ -233,10 +234,23 @@ services:
       - TZ=Atlantic/Bermuda  # timezone in logs
     volumes:
       - "~/go2rtc:/config"   # folder for go2rtc.yaml file (edit from WebUI)
+  redis:
+    image: redis/redis-stack:${REDIS_VERSION}
+    container_name: redis
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - 6379:6379
+      - 8001:8001
+    networks:
+      - redis
+    volumes:
+      - ./steeleagle-vol/redis:/data
 
 networks:
   cnc-net:
   elk:
+  redis:
 volumes:
   training-vol:
 
