@@ -40,7 +40,7 @@ class Supervisor:
             self.drone.connect()
             self.drone.startStreaming(480)
             self.cloudlet.startStreaming(self.drone, 'coco', 30)
-        self.source = 'command'
+        self.source = 'telemetry'
         self.MS = None #mission script
         self.manual = True #default to manual control
         self.heartbeats = 0
@@ -87,7 +87,7 @@ class Supervisor:
     Parse and deal with results from command engine
     '''
     def processResults(self, result_wrapper):
-        if self.cloudlet and result_wrapper.result_producer_name.value != 'command':
+        if self.cloudlet and result_wrapper.result_producer_name.value != 'telemetry':
             #forward result to cloudlet
             self.cloudlet.processResults(result_wrapper)
             return
