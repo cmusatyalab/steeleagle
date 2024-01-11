@@ -25,7 +25,7 @@ services:
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "./telemetry.py"]
+    entrypoint: [ "./telemetry.py", "-a", "${REDIS_AUTH}"]
     depends_on:
       - gabriel-server
     networks:
@@ -246,6 +246,7 @@ services:
       - redis
     volumes:
       - ./steeleagle-vol/redis:/data
+      - ./steeleagle-vol/redis/redis.conf:/redis-stack.conf
 
 networks:
   cnc-net:

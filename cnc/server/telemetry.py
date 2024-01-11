@@ -32,6 +32,10 @@ def main():
         "-r", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
     )
 
+    parser.add_argument(
+        "-a", "--auth", default="", help="Share key for redis user."
+    )
+
     args, _ = parser.parse_known_args()
 
     def engine_setup():

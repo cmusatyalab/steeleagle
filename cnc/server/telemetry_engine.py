@@ -26,7 +26,8 @@ class TelemetryEngine(cognitive_engine.Engine):
     def __init__(self, args):
         logger.info("Telemetry engine intializing...")
 
-        self.r = redis.Redis(host='redis', port=args.redis, decode_responses=True)
+        self.r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+        self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
         self.storage_path = os.getcwd()+"/images/"
         try:
@@ -38,11 +39,11 @@ class TelemetryEngine(cognitive_engine.Engine):
 
     def updateDroneStatus(self, extras):
         key = self.r.xadd(
-                    f"steeleagle.telemetry.{extras.drone_id}",
+                    f"telemetry.{extras.drone_id}",
                     {"latitude": extras.location.latitude, "longitude": extras.location.longitude, "altitude": extras.location.altitude,
                      "rssi": extras.status.rssi, "battery": extras.status.battery, "mag": extras.status.mag, "bearing": int(extras.status.bearing)},
                 )
-        logger.debug(f"Updated status of {extras.drone_id} in redis under stream steeleagle:telemetry at key {key}")
+        logger.debug(f"Updated status of {extras.drone_id} in redis under stream telemetry at key {key}")
 
     def handle(self, input_frame):
         extras = cognitive_engine.unpack_extras(cnc_pb2.Extras, input_frame)
