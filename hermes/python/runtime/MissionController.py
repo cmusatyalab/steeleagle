@@ -48,7 +48,7 @@ class MissionController(threading.Thread):
         self.mr.start()
         print("MissionController: init the mission runner\n")
         
-        # check the triggered event
+        # main logic check the triggered event
         while True:
             item = self.trigger_event_queue.get()
             if item is not None:
@@ -58,11 +58,14 @@ class MissionController(threading.Thread):
                 if (item[0] == self.mr.get_current_task()):
                     next_task_id = self.next_task(item[1])
                     if (next_task_id == "terminate"):
-                        print(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")
-                        self.mr.end_mission()
                         break
                     else:
                         self.mr.transit_to(next_task_id)
+                        
+        # terminate the mr          
+        print(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")
+        self.mr.end_mission()
+        
         #end the mc              
         print("MissionController: terminate the controller\n")           
         

@@ -50,6 +50,8 @@ def _main():
                 zf.write(f"./python/task_defs/{file}")
             for file in os.listdir('./python/runtime/'):
                 zf.write(f"./python/runtime/{file}")
+            for file in os.listdir('./python/transition_defs/'):
+                zf.write(f"./python/transition_defs/{file}")
             os.system("cd ./python; pipreqs . --force")
             zf.write("./python/requirements.txt")
 
