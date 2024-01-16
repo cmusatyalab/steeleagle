@@ -17,12 +17,11 @@ class TransObjectDetection(Transition):
     
     def run(self):
         self._register()
-        print(f"**************Detect Task {self.task_id}: trigger object detection! **************\n")
         while not self.stop_signal:
             # Replace this with your actual condition
             result = self.cloudlet.getResults("openscout-object")
             if (result != None):
-                print(f"**************Detect Task {self.task_id}: detected payload! {result}**************\n")
+                print(f"**************Transition:  Task {self.task_id}: detected payload! {result}**************\n")
                 # Check if the payload type is TEXT, since your JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
@@ -37,7 +36,7 @@ class TransObjectDetection(Transition):
                         print(class_attribute)
 
                         if (class_attribute== self.target):
-                                print(f"**************Detect Task {self.task_id}: detect condition met! {class_attribute}**************\n")
+                                print(f"**************Transition: Task {self.task_id}: detect condition met! {class_attribute}**************\n")
                                 self._trigger_event("detected")
                                 break
                     except JSONDecodeError as e:
@@ -46,8 +45,5 @@ class TransObjectDetection(Transition):
                         print(e)
                         
         self._unregister()
-
-        print(f"Thread {self.name} is terminating due to parent signal")    
-    
   
     
