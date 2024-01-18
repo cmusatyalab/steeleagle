@@ -29,9 +29,9 @@ class DetectTask(Task):
         }
         
         # triggered event
-        if ("timer" in self.transition_args):
+        if ("timeout" in self.transition_args):
             print(f"**************Detect Task {self.task_id}: trigger timer! **************\n")
-            timer = TransTimer(args, self.transition_args["timer"])
+            timer = TransTimer(args, self.transition_args["timeout"])
             timer.daemon = True
             timer.start()
             

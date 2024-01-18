@@ -37,13 +37,13 @@ class TransObjectDetection(Transition):
 
                         if (class_attribute== self.target):
                                 print(f"**************Transition: Task {self.task_id}: detect condition met! {class_attribute}**************\n")
-                                self._trigger_event("detected")
+                                self._trigger_event("object_detection")
                                 break
                     except JSONDecodeError as e:
                         logger.error(f'Error decoding json: {json_string}')
                     except Exception as e:
                         print(e)
-                        
+        # print("object stopping...\n")          
         self._unregister()
   
     

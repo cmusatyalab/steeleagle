@@ -48,10 +48,12 @@ class Task(threading.Thread):
         
     def stop(self):
         # kill all the transitions
+        # print(self.trans_active)
         for trans in self.trans_active:
             if trans.is_alive():
                 trans.stop()
                 trans.join()
+            
                     
         # kill the task itself
         thread_id = self._get_id()

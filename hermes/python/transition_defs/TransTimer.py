@@ -17,5 +17,5 @@ class TransTimer (Transition):
         self.timer.start()
         self.timer.join()  # Optionally wait for the timer to finish
         if (self.completed):
-            print(f"**************Transition: Task {self.task_id}: timeup!**************\n")
+            print(f"**************Transition: Task {self.task_id}: timeout!**************\n")
         self._unregister()
