@@ -34,6 +34,18 @@ services:
     volumes:
       - ./steeleagle-vol:/cnc/server/images/
 
+  control-plane:
+    image: cmusatyalab/steeleagle:${TAG}
+    container_name: control-plane
+    restart: unless-stopped
+    ports:
+      - "6000:6000"
+      - "6001:6001"
+    privileged: true
+    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
+    networks:
+      - cnc-net
+      - redis
 
   # test-clients:
   #   image: cmusatyalab/steeleagle:${TAG}
@@ -241,7 +253,7 @@ services:
     privileged: true
     ports:
       - 6379:6379
-      - 8001:8001
+      - ${REDIS_HOST}:8001:8001
     networks:
       - redis
     volumes:
