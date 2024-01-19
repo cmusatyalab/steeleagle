@@ -37,6 +37,7 @@ class DetectTask(Task):
             
         if ("object_detection" in self.transitions_attributes):
             print(f"**************Detect Task {self.task_id}:  object detection transition! **************\n")
+            self.cloudlet.clearResults("openscout-object")
             object_trans = TransObjectDetection(args, self.transitions_attributes["object_detection"], self.cloudlet)
             object_trans.daemon = True
             object_trans.start()

@@ -26,15 +26,15 @@ class MissionController(threading.Thread):
     def task1_transit(triggered_event):
         if (triggered_event == "object_detection"):
             return "task2"
+        
+        if (triggered_event == "timeout"):
+            return "task2"
 
         if (triggered_event == "done"):
             return "terminate"
 
     @staticmethod
     def task2_transit(triggered_event):
-        if (triggered_event == "timeout"):
-            return "task1"
-
         if (triggered_event == "done"):
             return "terminate"
 
@@ -64,6 +64,7 @@ class MissionController(threading.Thread):
         # task1 = DetectTask(self.drone, self.cloudlet, "task1", self.trigger_event_queue, transition_args_task1, **kwargs)
         transition_attr_task1 = {}
         transition_attr_task1["object_detection"] = "person"
+        transition_attr_task1["timeout"] = 90.0
         self.taskMap["task1"] = self.TaskArguments(transition_attr_task1, task_attr_task1)
         
         # TASKtask2
@@ -72,11 +73,11 @@ class MissionController(threading.Thread):
         task_attr_task2["drone_rotation"] = "0.0"
         task_attr_task2["sample_rate"] = "2"
         task_attr_task2["hover_delay"] = "0"
-        task_attr_task2["coords"] = "[{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 25}, {'lng': -79.9502655, 'lat': 40.4154588, 'alt': 25}, {'lng': -79.9499142, 'lat': 40.4154567, 'alt': 25}, {'lng': -79.9499128, 'lat': 40.4156753, 'alt': 25}, {'lng': -79.9502696, 'lat': 40.4156737, 'alt': 25}]"
+        task_attr_task2["coords"] = "[{'lng': -79.9503492, 'lat': 40.4155806, 'alt': 25}, {'lng': -79.9491717, 'lat': 40.4155826, 'alt': 25}]"
+        # task_attr_task2["coords"] = "[{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 25}, {'lng': -79.9502655, 'lat': 40.4154588, 'alt': 25}, {'lng': -79.9499142, 'lat': 40.4154567, 'alt': 25}, {'lng': -79.9499128, 'lat': 40.4156753, 'alt': 25}, {'lng': -79.9502696, 'lat': 40.4156737, 'alt': 25}]"
         task_attr_task2["model"] = "coco"
         # task2 = DetectTask(self.drone, self.cloudlet, "task2", self.trigger_event_queue, transition_args_task2, **kwargs)
         transition_attr_task2 = {}
-        transition_attr_task2["timeout"] = 20.0
         self.taskMap["task2"] = self.TaskArguments(transition_attr_task2, task_attr_task2)
         
         
