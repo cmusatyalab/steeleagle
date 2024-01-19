@@ -3,11 +3,12 @@ import ctypes
 
 class Task(threading.Thread):
 
-    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, **kwargs):
+    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         threading.Thread.__init__(self)
         self.cloudlet = cloudlet
         self.drone = drone
-        self.kwargs = kwargs
+        self.task_attributes = task_args.task_attributes
+        self.transitions_attributes = task_args.transitions_attributes
         self.task_id = task_id
         self.trans_active =  []
         self.trans_active_lock = threading.Lock()

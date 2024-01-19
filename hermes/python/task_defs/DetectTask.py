@@ -13,14 +13,14 @@ logger.setLevel(logging.DEBUG)
 
 class DetectTask(Task):
 
-    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, transition_args, **kwargs):
-        super().__init__(drone, cloudlet, task_id, trigger_event_queue, **kwargs)
-        self.transition_args = transition_args
+    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
+        super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)
+       
         
     def create_transition(self):
         
         print(f"**************Detect Task {self.task_id}: create transition! **************\n")
-        print(self.transition_args)
+        print(self.transitions_attributes)
         args = {
             'task_id': self.task_id,
             'trans_active': self.trans_active,
@@ -29,29 +29,29 @@ class DetectTask(Task):
         }
         
         # triggered event
-        if ("timeout" in self.transition_args):
-            print(f"**************Detect Task {self.task_id}: trigger timer! **************\n")
-            timer = TransTimer(args, self.transition_args["timeout"])
+        if ("timeout" in self.transitions_attributes):
+            print(f"**************Detect Task {self.task_id}:  timer transition! **************\n")
+            timer = TransTimer(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
             
-        if ("object_detection" in self.transition_args):
-            print(f"**************Detect Task {self.task_id}: trigger object detection! **************\n")
-            object_trans = TransObjectDetection(args, self.transition_args["object_detection"], self.cloudlet)
+        if ("object_detection" in self.transitions_attributes):
+            print(f"**************Detect Task {self.task_id}:  object detection transition! **************\n")
+            object_trans = TransObjectDetection(args, self.transitions_attributes["object_detection"], self.cloudlet)
             object_trans.daemon = True
             object_trans.start()
             
     def run(self):
         # init the cloudlet
-        self.cloudlet.switchModel(self.kwargs["model"])
+        self.cloudlet.switchModel(self.task_attributes["model"])
         
         self.create_transition()
         
         try:
             print(f"**************Detect Task {self.task_id}: hi this is detect task {self.task_id}**************\n")
-            coords = ast.literal_eval(self.kwargs["coords"])
-            self.drone.setGimbalPose(0.0, float(self.kwargs["gimbal_pitch"]), 0.0)
-            hover_delay = int(self.kwargs["hover_delay"])
+            coords = ast.literal_eval(self.task_attributes["coords"])
+            self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
+            hover_delay = int(self.task_attributes["hover_delay"])
             for dest in coords:
                 lng = dest["lng"]
                 lat = dest["lat"]
