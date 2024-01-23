@@ -57,7 +57,8 @@ class DetectTask(Task):
                 lng = dest["lng"]
                 lat = dest["lat"]
                 alt = dest["alt"]
-                print(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************")
+                print(f"**************Detect Task {self.task_id}: Move **************\n")
+                print(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
                 self.drone.moveTo(lat, lng, alt)
                 time.sleep(hover_delay)
 
