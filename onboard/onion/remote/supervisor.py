@@ -19,6 +19,8 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 
+import zmq
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -44,6 +46,8 @@ class Supervisor:
         self.MS = None #mission script
         self.manual = True #default to manual control
         self.heartbeats = 0
+        self.zmq = zmq.Context().socket(zmq.REQ)
+        self.zmq.connect(f'tcp://{args.server}:{args.zmqport}')
 
     def retrieveFlightScript(self, url: str) -> bool:
         logger.debug('Starting flight plan download...')
@@ -81,28 +85,19 @@ class Supervisor:
             logger.error(f"Error pip installing requirements.txt: {e}")
         return ret
 
-    '''
-    Process results from engines.
-    Forward openscout engine results to Cloudlet object
-    Parse and deal with results from command engine
-    '''
-    def processResults(self, result_wrapper):
-        if self.cloudlet and result_wrapper.result_producer_name.value != 'telemetry':
-            #forward result to cloudlet
-            self.cloudlet.processResults(result_wrapper)
-            return
-        else:
-            #process result from command engine
 
-            if len(result_wrapper.results) != 1:
-                return
+    def commandHandler(self):
+        name = self.drone.getName()
 
-            extras = cnc_pb2.Extras()
-            result_wrapper.extras.Unpack(extras)
-
-            for result in result_wrapper.results:
-                if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                    payload = result.payload.decode('utf-8')
+        req = cnc_pb2.Extras()
+        req.drone_id = name
+        while True:
+            try:
+                self.zmq.send(req.SerializeToString())
+                rep = self.zmq.recv()
+                if b'No commands.' != rep:
+                    extras  = cnc_pb2.Extras()
+                    extras.ParseFromString(rep)
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
                         if self.MS:
@@ -151,8 +146,23 @@ class Supervisor:
                             logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
 
                             self.drone.PCMD(roll, pitch, yaw, gaz)
-                else:
-                    logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
+            except zmq.Error as z:
+                logger.error(z)
+
+
+    '''
+    Process results from engines.
+    Forward openscout engine results to Cloudlet object
+    Parse and deal with results from command engine
+    '''
+    def processResults(self, result_wrapper):
+        if self.cloudlet and result_wrapper.result_producer_name.value != 'telemetry':
+            #forward result to cloudlet
+            self.cloudlet.processResults(result_wrapper)
+            return
+        else:
+            #process result from command engine
+            pass
 
     def get_producer_wrappers(self):
         async def producer():
@@ -194,11 +204,15 @@ def _main():
                         help='Set the log level')
     parser.add_argument('-S', '--sim', action='store_true',
         help='Connect to  simulated drone instead of a real drone [default: False')
+    parser.add_argument('-zp', '--zmqport', type=int, default=6000,
+                        help='Specify websocket port [default: 6000]')
 
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s",
                         level=args.loglevel)
     adapter = Supervisor(args)
+    handler = threading.Thread(target=adapter.commandHandler)
+    handler.start()
 
     gabriel_client = WebsocketClient(
         args.server, args.port,

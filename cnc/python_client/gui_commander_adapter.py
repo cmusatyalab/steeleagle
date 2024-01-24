@@ -10,18 +10,25 @@ from PIL import Image, ImageTk
 from queue import Queue
 import logging
 from cnc_protocol import cnc_pb2
-import asyncio
 import subprocess
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper
-import json
-import io
+import redis
 import numpy as np
 import cv2
 import time
+import argparse
+import os
+from threading import Thread
+from dotenv import dotenv_values
+import zmq
+import datetime
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+COMMANDER_ID = os.uname()[1]
+WEBSOCKET_PORT = 9099
+DEFAULT_SOURCE_NAME = 'telemetry'
+SECRETS = dotenv_values(".env")
 
 class GUICommanderAdapter(customtkinter.CTk):
 
@@ -33,7 +40,22 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+        self.id = os.uname()[1]
+        self._source_name = DEFAULT_SOURCE_NAME
+        self.frames_processed = 0
+        self.server = SECRETS["CLOUDLET"]
+        self.user = SECRETS["SCP_USER"]
+
+        self.r = redis.Redis(host=SECRETS["REDIS"], port=SECRETS["REDIS_PORT"], username=SECRETS["REDIS_USER"], password=SECRETS["REDIS_AUTH"],decode_responses=True)
+        self.r2 = redis.Redis(host=SECRETS["REDIS"], port=SECRETS["REDIS_PORT"], username=SECRETS["REDIS_USER"], password=SECRETS["REDIS_AUTH"])
+        self.r.ping()
+        self.subscriber = self.r2.pubsub(ignore_subscribe_messages=True)
+        self.subscriber.psubscribe('imagery.*')
+
+        self.ctx = zmq.Context()
+        self.zmq = self.ctx.socket(zmq.REQ)
+        self.zmq.connect(f'tcp://{SECRETS["ZMQ"]}:{SECRETS["ZMQ_PORT"]}')
+
         self.title(GUICommanderAdapter.APP_NAME)
         self.geometry(str(GUICommanderAdapter.WIDTH) + "x" + str(GUICommanderAdapter.HEIGHT))
         self.minsize(GUICommanderAdapter.WIDTH, GUICommanderAdapter.HEIGHT)
@@ -45,6 +67,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.createcommand('tk::mac::Quit', self.on_closing)
 
         self.drone_dict = {}
+        self.selected_drone_name = None
         self.connected_drone = None
         self.connected_marker = None
         self.connected_flightplan = None
@@ -150,7 +173,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
         self.info = customtkinter.CTkTextbox(master=self.frame_status,
                                           font=("Roboto Medium", 18),
-                                          fg_color="white")  # font name and size in px
+                                          fg_color="white",text_color="black")  # font name and size in px
         self.info.grid(row=2, column=0, pady=5, padx=10, sticky="nsew")
         self.info.insert("0.0", "Status: NONE")
         self.info.configure(state="disabled")
@@ -229,32 +252,26 @@ class GUICommanderAdapter(customtkinter.CTk):
     
     # Events for handling changes to the available drone list
 
-    def update_drone_dict(self, new_list):
-        self.drone_dict = {}
-        for item in new_list:
-            self.drone_dict[item["name"]] = item
-        if self.connected_drone is not None and self.connected_drone["name"] in self.drone_dict.keys():
-            self.connected_drone = self.drone_dict[self.connected_drone["name"]]
-            self.on_update_event()
-
-    def on_drone_list_changed_event(self, new_list, event=None):
-        self.update_drone_dict(new_list)
-        if len(self.drone_dict.keys()) == 0:
+    def on_drone_list_changed_event(self, telemetry, event=None):
+        self.drone_dict = self.retrieve_drones()
+        if len(self.drone_dict) == 0:
             if self.drone_dropdown.get() != "No Selection":
                 self.drone_dropdown.configure(values=["No Selection"])
                 self.drone_dropdown.set("No Selection")
             self.on_disconnect_event()
         else:
-            new_values = [d["name"] for d in new_list]
-            self.drone_dropdown.configure(values=new_values)
+            self.drone_dropdown.configure(values=self.drone_dict)
+            self.connected_drone = telemetry
+            self.on_update_event()
 
     def on_selection_changed_event(self, event=None):
-        if self.connected_drone != None and self.connected_drone["name"] == self.drone_dropdown.get():
-            self.toggle_connect_button(False)
-        elif len(self.drone_dict.keys()) > 0:
-            self.toggle_connect_button(True)
+        if len(self.drone_dict) > 0:
+            if self.drone_dropdown.get() != self.selected_drone_name:
+                self.toggle_connect_button(True)
+                self.selected_drone_name = self.drone_dropdown.get()
         else:
             self.toggle_connect_button(False)
+        
 
     def toggle_connect_button(self, on):
         if on:
@@ -263,10 +280,9 @@ class GUICommanderAdapter(customtkinter.CTk):
             self.button_connect.configure(state=tkinter.DISABLED)
 
     def on_connect_pressed(self, event=None):
-        self.connected_drone = self.drone_dict[self.drone_dropdown.get()]
-        self.connected_marker = self.map_widget.set_marker(self.connected_drone["latitude"],
-                self.connected_drone["longitude"],
-                text=self.connected_drone["name"],
+        self.connected_marker = self.map_widget.set_marker(float(self.connected_drone["latitude"]),
+                float(self.connected_drone["longitude"]),
+                text=self.selected_drone_name,
                 text_color="#00efff",
                 font=("Roboto Medium", 13),
                 marker_color_circle="#065b8c",
@@ -297,29 +313,30 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_kill.configure(state=tkinter.NORMAL)
         self.button_fly.configure(state=tkinter.NORMAL)
         self.button_rth.configure(state=tkinter.NORMAL)
-        self.control_panel_text.configure(text="{0} Connected".format(self.connected_drone["name"]))
+        self.control_panel_text.configure(text="{0} Connected".format(self.selected_drone_name))
         self.on_update_event()
 
     def on_update_event(self, event=None):
-        self.connected_marker.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
-        if(time.time() - self.last_map_update > 1):
-            self.last_map_update = time.time()
-            self.map_widget.set_position(self.connected_drone["latitude"], self.connected_drone["longitude"])
-            #Image.rotate is counter-clockwise, so negate the bearing
-            self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)).rotate(-self.connected_drone["bearing"]))
-            self.connected_marker.change_icon(self.drone_icon)
+        if self.connected_marker is not None:
+            self.connected_marker.set_position(float(self.connected_drone["latitude"]), float(self.connected_drone["longitude"]))
+            if(time.time() - self.last_map_update > 1):
+                self.last_map_update = time.time()
+                self.map_widget.set_position(float(self.connected_drone["latitude"]), float(self.connected_drone["longitude"]))
+                #Image.rotate is counter-clockwise, so negate the bearing
+                self.drone_icon = ImageTk.PhotoImage(Image.open( "images/uav.png").resize((35, 35)).rotate(-int(self.connected_drone["bearing"])))
+                self.connected_marker.change_icon(self.drone_icon)
 
-        self.info.configure(state=tkinter.NORMAL)
-        self.info.delete("0.0", "end")
-        self.info.insert("0.0", "Location: ({0}, {1})\nAltitude: {2}m\nRSSI: {3}\nMag: {4}\nBattery: {5}%".format(round(self.connected_drone["latitude"], 5),
-                round(self.connected_drone["longitude"], 5), round(self.connected_drone["altitude"], 2), self.connected_drone["rssi"],
-                self.MAG_STATE[self.connected_drone["mag"]], self.connected_drone["battery"]))
-        self.info.configure(state=tkinter.DISABLED)
+            self.info.configure(state=tkinter.NORMAL)
+            self.info.delete("0.0", "end")
+            self.info.insert("0.0", "Last Update: {6}\nLocation: ({0}, {1})\nAltitude: {2}m\nRSSI: {3}\nMag: {4}\nBattery: {5}%".format(round(float(self.connected_drone["latitude"]), 5),
+                    round(float(self.connected_drone["longitude"]), 5), round(float(self.connected_drone["altitude"]), 2), self.connected_drone["rssi"],
+                    self.MAG_STATE[int(self.connected_drone["mag"])], self.connected_drone["battery"], self.connected_drone["last_update"]))
+            self.info.configure(state=tkinter.DISABLED)
 
 
     def on_frame_update_event(self, byteframe, event=None):
         try:
-            np_data = np.fromstring(byteframe, dtype=np.uint8)
+            np_data = np.frombuffer(byteframe, dtype=np.uint8)
             img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img).resize((640,480))
@@ -363,8 +380,11 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_fly.configure(state=tkinter.NORMAL)
         self.button_kill.configure(state=tkinter.DISABLED)
         self.button_rth.configure(state=tkinter.NORMAL)
-        command = {"drone": self.connected_drone["name"], "type": "kill"}
-        self.command_queue.put_nowait(command)
+        req = cnc_pb2.Extras()
+        req.cmd.halt = True
+        req.commander_id = COMMANDER_ID
+        req.cmd.for_drone_id = self.selected_drone_name
+        self.command_queue.put_nowait(req)
         self.toggle_manual(True)
 
     def on_return_home_pressed(self, event=None):
@@ -372,9 +392,14 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.button_kill.configure(state=tkinter.NORMAL)
         self.button_rth.configure(state=tkinter.DISABLED)
         self.toggle_manual(False)
+
+        req = cnc_pb2.Extras()
+        req.cmd.rth = True
+        req.cmd.manual = False
+        req.commander_id = COMMANDER_ID
+        req.cmd.for_drone_id = self.selected_drone_name
+        self.command_queue.put_nowait(req)
         self.man.configure(text="RETURNING HOME - CONNECTION LOST", text_color="black", fg_color="red")
-        command = {"drone": self.connected_drone["name"], "type": "rth"}
-        self.command_queue.put_nowait(command)
 
     # Events for handling the search bar
 
@@ -397,86 +422,61 @@ class GUICommanderAdapter(customtkinter.CTk):
     def axis(self, left, right):
         return 25 * (int(self.active(left)) - int(self.active(right)))
 
-    # Gabriel
+    def image_subscriber(self,):
+        while True:
+            message = self.subscriber.get_message( timeout=0.1)
+            if message:
+                # {message['channel'].split(b'.')[-1]}") 
+                # b'imagery.<drone>'
+                self.frames_processed += 1
+                if self.selected_drone_name != None and bytes(self.selected_drone_name, encoding='utf-8') == message['channel'].split(b'.')[-1]:
+                    self.image_label.after(1, self.on_frame_update_event(message['data']))
 
-    def set_up_adapter(self, preprocess, source_name, id, server, user):
-        self.id = id
-        self._preprocess = preprocess
-        self._source_name = source_name
-        self.frames_processed = 0
-        self.server = server
-        self.user = user
+    def retrieve_drones(self):
+        l=[]
+        for k in self.r.keys("telemetry.*"):
+            l.append(k.split(".")[-1])
+        return l
 
-    def get_producer_wrappers(self):
-        async def producer():
-            await asyncio.sleep(0.3)
+    def update_telemetry(self,):
+        telemetry = {}
+        while True:
+            if self.selected_drone_name is not None:
+                results = self.r.xrevrange(f"telemetry.{self.selected_drone_name}", "+", "-", 1)
+                telemetry = results[0][1]
+                telemetry["last_update"] = results[0][0].split("-")[0]
+            self.on_drone_list_changed_event(telemetry)
+            time.sleep(0.1)
+
+    def command_handler(self):
+        while True:
             try:
-                command = self.command_queue.get_nowait()
+                req = self.command_queue.get_nowait()
             except:
-                command = None
-
-            input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append(bytes('Message to CNC', 'utf-8'))
-
-            extras = cnc_pb2.Extras()
-            extras.commander_id = self.id
-            if command != None:
-                extras.cmd.for_drone_id = command["drone"]
-                if command["type"] == "kill":
-                    extras.cmd.halt = True
-                elif command["type"] == "start":
-                    extras.cmd.manual = False
-                    extras.cmd.script_url = command["url"]
-                elif command["type"] == "rth":
-                    extras.cmd.manual = False
-                    extras.cmd.rth = True
-            elif self.connected_drone != None:
-                extras.cmd.for_drone_id = self.connected_drone["name"]
-
-            if self.manual and self.connected_drone != None:
-                extras.cmd.manual = True
-                if self.active('t'):
-                    print("Takeoff triggered")
-                    extras.cmd.takeoff = True
-                elif self.active('l'):
-                    print("Landing triggered")
-                    extras.cmd.land = True
-                else:
-                    extras.cmd.pcmd.yaw = self.axis('Right', 'Left')
-                    extras.cmd.pcmd.pitch = self.axis('w', 's')
-                    extras.cmd.pcmd.roll = self.axis('d', 'a')
-                    extras.cmd.pcmd.gaz = self.axis('Up', 'Down')
-                    print(f"PCMD: {extras.cmd.pcmd.yaw}, {extras.cmd.pcmd.pitch}, {extras.cmd.pcmd.roll}, {extras.cmd.pcmd.gaz}")
-
-            input_frame.extras.Pack(extras)
-            return input_frame
-
-        return [
-            ProducerWrapper(producer=producer, source_name=self._source_name)
-        ]
-           
-    def consumer(self, result_wrapper):
-        if len(result_wrapper.results) < 1 or len(result_wrapper.results) > 2:
-            logger.error('Got %d results from server'.
-                    len(result_wrapper.results))
-            return
-        
-        for result in result_wrapper.results:
-            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                self.frames_processed += 1
-                payload = result.payload.decode('utf-8')
-                try:
-                    data = json.loads(payload)
-                    self.on_drone_list_changed_event(data)
-                except Exception as e:
-                    pass
-            elif result.payload_type == gabriel_pb2.PayloadType.IMAGE:
-                self.frames_processed += 1
-                if self.connected_drone != None:
-                    self.image_label.after(1, self.on_frame_update_event(result.payload))
-            else:
-                logger.error("Got result type " + result.payload_type)
+                req = None
+                if self.selected_drone_name != None:
+                    if self.manual:
+                        req = cnc_pb2.Extras()
+                        req.commander_id = COMMANDER_ID
+                        req.cmd.for_drone_id = self.selected_drone_name
+                        req.cmd.manual = True
+                        if self.active('t'):
+                            logger.debug("Takeoff triggered")
+                            req.cmd.takeoff = True
+                        elif self.active('l'):
+                            logger.debug("Landing triggered")
+                            req.cmd.land = True
+                        else:
+                            req.cmd.pcmd.yaw = self.axis('Right', 'Left')
+                            req.cmd.pcmd.pitch = self.axis('w', 's')
+                            req.cmd.pcmd.roll = self.axis('d', 'a')
+                            req.cmd.pcmd.gaz = self.axis('Up', 'Down')
+                            logger.debug(f"PCMD: {req.cmd.pcmd.yaw}, {req.cmd.pcmd.pitch}, {req.cmd.pcmd.roll}, {req.cmd.pcmd.gaz}")
+            if req is not None:
+                self.zmq.send(req.SerializeToString())
+                rep = self.zmq.recv()
+                logger.debug(f"Received {rep} for the following request: {req}")
+            time.sleep(0.1)
 
     # Cleanup and start events
 
@@ -502,3 +502,18 @@ class GUICommanderAdapter(customtkinter.CTk):
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
         elif new_map == "Google (Satellite)":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--loglevel', default='INFO', help='Set the log level')
+    
+    args = parser.parse_args()
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
+    UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
+    subscriber = Thread(target=UI.image_subscriber)
+    telem = Thread(target=UI.update_telemetry)
+    cmd_handler = Thread(target=UI.command_handler)
+    subscriber.start()
+    telem.start()
+    cmd_handler.start()
+    UI.start()
