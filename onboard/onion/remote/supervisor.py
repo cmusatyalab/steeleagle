@@ -211,7 +211,7 @@ def _main():
     logging.basicConfig(format="%(levelname)s: %(message)s",
                         level=args.loglevel)
     adapter = Supervisor(args)
-    handler = threading.Thread(target=adapter.commandHandler)
+    handler = threading.Thread(target=adapter.commandHandler, daemon=True)
     handler.start()
 
     gabriel_client = WebsocketClient(

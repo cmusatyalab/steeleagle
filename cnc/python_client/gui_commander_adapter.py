@@ -172,7 +172,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.man.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
 
         self.info = customtkinter.CTkTextbox(master=self.frame_status,
-                                          font=("Roboto Medium", 18),
+                                          font=("Roboto Medium", 12),
                                           fg_color="white",text_color="black")  # font name and size in px
         self.info.grid(row=2, column=0, pady=5, padx=10, sticky="nsew")
         self.info.insert("0.0", "Status: NONE")
@@ -260,8 +260,8 @@ class GUICommanderAdapter(customtkinter.CTk):
                 self.drone_dropdown.set("No Selection")
             self.on_disconnect_event()
         else:
-            self.drone_dropdown.configure(values=self.drone_dict)
             self.connected_drone = telemetry
+            self.drone_dropdown.configure(values=self.drone_dict)
             self.on_update_event()
 
     def on_selection_changed_event(self, event=None):
@@ -444,7 +444,7 @@ class GUICommanderAdapter(customtkinter.CTk):
             if self.selected_drone_name is not None:
                 results = self.r.xrevrange(f"telemetry.{self.selected_drone_name}", "+", "-", 1)
                 telemetry = results[0][1]
-                telemetry["last_update"] = results[0][0].split("-")[0]
+                telemetry["last_update"] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(int(results[0][0].split("-")[0])/1000), "%d-%b-%Y %H:%M:%S")
             self.on_drone_list_changed_event(telemetry)
             time.sleep(0.1)
 
@@ -510,9 +510,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
     UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
-    subscriber = Thread(target=UI.image_subscriber)
-    telem = Thread(target=UI.update_telemetry)
-    cmd_handler = Thread(target=UI.command_handler)
+    subscriber = Thread(target=UI.image_subscriber, daemon=True)
+    telem = Thread(target=UI.update_telemetry, daemon=True)
+    cmd_handler = Thread(target=UI.command_handler, daemon=True)
     subscriber.start()
     telem.start()
     cmd_handler.start()
