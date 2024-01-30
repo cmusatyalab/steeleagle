@@ -78,7 +78,8 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
                 img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
-                img.save(f"{self.storage_path}/raw/{extras.drone_id}/latest.jpg", format="JPEG")
+                img.save(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", format="JPEG")
+                os.rename(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", f"{self.storage_path}/raw/{extras.drone_id}/latest.jpg")
         
         # only append the result if it has a payload
         # e.g. in the elif block where we received an image from the streaming thread, we don't add a payload
