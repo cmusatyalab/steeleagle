@@ -193,6 +193,13 @@ class MavlinkDrone(DroneItf.DroneItf):
     ''' Status methods '''
 
     async def getName(self):
+        try:
+            product = await self.drone.info.get_product()
+            if product.product_name is not None and product.product_name != 'undefined':
+                return product.product_name
+        except Exception:
+            pass
+
         return "MavlinkDrone"
 
     async def getLat(self):

@@ -161,6 +161,7 @@ class Supervisor:
                         self.kill_mission()
                         self.manual = True
                         logger.info('Manual control is now active!')
+                        # Try cancelling the RTH task if it exists
                         sync(self.drone.hover())
                     elif extras.cmd.script_url:
                         # Validate url
