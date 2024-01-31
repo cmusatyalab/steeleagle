@@ -1,18 +1,19 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-#
-# SPDX-License-Identifier: GPL-2.0-only
+
 
 from interfaces.FlightScript import FlightScript
+import asyncio
+import logging
 # Import derived tasks
 from task_defs.DetectTask import DetectTask
-from task_defs.SetHome import SetHome
+
+logger = logging.getLogger()
 
 class MS(FlightScript):
    
     def __init__(self, drone, cloudlet):
         super().__init__(drone, cloudlet)
  
-    def run(self):
+    async def run(self):
         try:
             kwargs = {}
             # Polygon 1/DetectTask START
@@ -22,18 +23,14 @@ class MS(FlightScript):
             kwargs["sample_rate"] = "2"
             kwargs["hover_delay"] = "0"
             kwargs["model"] = "coco"
-            kwargs["coords"] = "[{'lng': -79.9503848, 'lat': 40.4155378, 'alt': 25.0}, {'lng': -79.9502292, 'lat': 40.4155031, 'alt': 25.0}, {'lng': -79.9500777, 'lat': 40.4156849, 'alt': 25.0}, {'lng': -79.9502386, 'lat': 40.4157267, 'alt': 25.0}, {'lng': -79.9503848, 'lat': 40.4155378, 'alt': 25.0}]"
+            kwargs["coords"] = "[{'lng': -79.9504026, 'lat': 40.4158087, 'alt': 25.0}, {'lng': -79.9494558, 'lat': 40.4133265, 'alt': 25.0}, {'lng': -79.9481307, 'lat': 40.4136072, 'alt': 25.0}, {'lng': -79.9490977, 'lat': 40.4160665, 'alt': 25.0}, {'lng': -79.9504026, 'lat': 40.4158087, 'alt': 25.0}]"
             t = DetectTask(self.drone, self.cloudlet, **kwargs)
             self.taskQueue.put(t)
-            print("Added task DetectTask to the queue")
-            # Point 3/SetHome START
-            kwargs.clear()
-            kwargs["coords"] = "[{'lng': -79.9499174, 'lat': 40.4158897, 'alt': 25.0}]"
-            t = SetHome(self.drone, self.cloudlet, **kwargs)
-            self.taskQueue.put(t)
-            print("Added task SetHome to the queue")
+            logger.debug('[Mission] Added task DetectTask to the queue')
             
-            self.drone.takeOff()
-            self._execLoop()
+            logger.debug('[Mission] Directing the drone to take off')
+            await self.drone.takeOff()
+            logger.debug('[Mission] Starting the exec loop')
+            await self.execLoop()
         except Exception as e:
             print(e)

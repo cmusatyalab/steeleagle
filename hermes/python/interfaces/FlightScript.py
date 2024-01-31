@@ -5,57 +5,52 @@
 import threading
 import ctypes
 import queue
+import asyncio
+import logging
 
-class FlightScript(threading.Thread):
+logger = logging.getLogger()
+
+class FlightScript():
 
     def __init__(self, drone, cloudlet):
-        threading.Thread.__init__(self)
         self.drone = drone
         self.cloudlet = cloudlet
         self.taskThread = None
         self.taskQueue = queue.Queue()
 
-    def _execLoop(self):
+    async def execLoop(self):
         try:
             while not self.taskQueue.empty():
-                self._exec(self.taskQueue.get())
+                logger.debug('[Mission] Pulling a task off the task queue')
+                await self.exec(self.taskQueue.get())
         except Exception as e:
-            print(f'Exec loop interrupted by exception: {e}')
+            logger.error(f'[Mission] Exec loop interrupted by exception: {e}')
+        finally:
+            await self.stop()
 
-    def _exec(self, task):
-        self.currentTask = task
-        self.taskThread = task
-        self.taskThread.start()
-        self.taskThread.join()
-        self.taskThread = None
-
-    def _get_id(self):
-        if not self.is_alive():
-            raise threading.ThreadError("the thread is not active")
-
-        # do we have it cached?
-        if hasattr(self, "_thread_id"):
-            return self._thread_id
-
-        # no, look for it in the _active dict
-        for tid, tobj in threading._active.items():
-            if tobj is self:
-                self._thread_id = tid
-                return tid
-
-    def _kill(self):
+    async def exec(self, task):
         try:
-            self.taskQueue = queue.Queue() # Clear the queue
-            if self.taskThread is not None:
-                self.taskThread.stop()
-        except RuntimeError as e:
-            print(e)
+            self.currentTask = task
+            self.taskThread = asyncio.create_task(self.currentTask.run()) 
+            await self.taskThread
+            self.taskThread = None
+        except Exception as e:
+            logger.error(f'[Mission] Task exited with error: {e}')
 
-    def _pause(self):
+    async def stop(self):
+        self.taskQueue = queue.Queue() # Clear the queue
+        if self.taskThread is not None:
+            self.taskThread.cancel()
+            try:
+                await self.taskThread
+            except asyncio.CancelledError:
+                logger.debug(f'[Mission] Stopped current task!')
+
+    def pause(self):
         pass
 
-    def _push_task(self, task):
+    def push_task(self, task):
         self.taskQueue.put(task)
 
-    def _force_task(self, task):
+    def force_task(self, task):
         pass
