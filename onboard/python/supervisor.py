@@ -67,7 +67,7 @@ class Supervisor:
         self.source = 'command'
         self.mission = None
         self.missionTask = None
-        self.manual = True #default to manual control
+        self.manual = True # Default to manual control
         self.heartbeats = 0
 
     async def initializeConnection(self):

@@ -32,6 +32,22 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         self.drone = Drone(self.ip)
         self.active = False
 
+    ''' Awaiting methods '''
+
+    async def hovering(self, timeout=None):
+        # Let the task start before checking for hover state.
+        await asyncio.sleep(3)
+        start = None
+        if timeout is not None:
+            start = time.time()
+        while True:
+            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
+                break
+            elif start is not None and time.time() - start < timeout:
+                break
+            else:
+                await asyncio.sleep(1)
+
     ''' Connection methods '''
 
     async def connect(self):
@@ -61,7 +77,8 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
     ''' Take off / Landing methods '''
 
     async def takeOff(self):
-        self.drone(TakeOff()).wait().success()
+        self.drone(TakeOff())
+        await self.hovering()
 
     async def land(self):
         self.drone(Landing()).wait().success()
@@ -71,28 +88,26 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def rth(self):
         self.hover()
-        self.drone(return_to_home()).wait().success()
+        self.drone(return_to_home())
 
     ''' Movement methods '''
 
     async def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
             PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
-            >> FlyingStateChanged(state="hovering", _timeout=5)
         )
 
     async def moveTo(self, lat, lng, alt):
         self.drone(
             moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
-            >> moveToChanged(status='DONE')
-            >> FlyingStateChanged(state="hovering", _timeout=5)
-        ).wait().success()
+        )
+        await self.hovering()
 
     async def moveBy(self, x, y, z, t):
         self.drone(
             moveBy(x, y, z, t) 
-            >> FlyingStateChanged(state="hovering", _timeout=5)
-        ).wait().success()
+        )
+        await self.hovering()
 
     async def rotateTo(self, theta):
         # TODO: Rotate to exact heading
@@ -109,9 +124,8 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
             pitch_frame_of_reference="absolute",
             pitch=pitch_theta,
             roll_frame_of_reference="none",
-            roll=roll_theta,
+            roll=roll_theta,)
         )
-        >> attitude(pitch_absolute=pitch_theta, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
 
     async def hover(self):
         await self.PCMD(0, 0, 0, 0)
