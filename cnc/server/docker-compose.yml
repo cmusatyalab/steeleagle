@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-License-Identifier: GPL-2.0-only
 
-# The environment variables such as 
+# The environment variables such as
 # ${FACE_THRESHOLD} and ${API_KEY} should
 # reside in a .env file along side docker-compose.yaml
 

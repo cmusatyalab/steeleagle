@@ -130,7 +130,7 @@ def _main():
     parser = argparse.ArgumentParser(prog='hermes', 
         description='Convert kml/kmz file to drone-specific instructions.')
     parser.add_argument('input', help='kml/kmz file to convert')
-    parser.add_argument('-p', '--platform', choices=['java', 'python'], default='java',
+    parser.add_argument('-p', '--platform', choices=['java', 'python'], default='python',
         help='Drone autopilot language to convert to  [default: java (Parrot GroundSDK)]')
     parser.add_argument('-o', '--output', default='./flightplan.ms',
         help='Filename for .ms (mission script) file  [default: ./flightplan.ms]')

@@ -15,10 +15,11 @@ __pycache__/
 openscout-vol/
 *.env
 .vscode/
-cnc/server/model/
+cnc/server/models/
 venv/
 *.jar
 *.ms
 *.kml
 .venv
 .streamlit/secrets.toml
+*~

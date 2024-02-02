@@ -5,17 +5,21 @@ SPDX-License-Identifier: GPL-2.0-only
 #}
 
 from interfaces.FlightScript import FlightScript
+import asyncio
+import logging
 # Import derived tasks
 {%- for k,v in placemarks.items() %}
 from task_defs.{{v.task}} import {{v.task}}
 {%- endfor %}
+
+logger = logging.getLogger()
 
 class MS(FlightScript):
    
     def __init__(self, drone, cloudlet):
         super().__init__(drone, cloudlet)
  
-    def run(self):
+    async def run(self):
         try:
             kwargs = {}
             {%- for k,v in placemarks.items() %}
@@ -26,10 +30,12 @@ class MS(FlightScript):
             {%- endfor %}
             t = {{v.task}}(self.drone, self.cloudlet, **kwargs)
             self.taskQueue.put(t)
-            print("Added task {{v.task}} to the queue")
+            logger.debug('[Mission] Added task {{v.task}} to the queue')
             {%- endfor %}
             
-            self.drone.takeOff()
-            self._execLoop()
+            logger.debug('[Mission] Directing the drone to take off')
+            await self.drone.takeOff()
+            logger.debug('[Mission] Starting the exec loop')
+            await self.execLoop()
         except Exception as e:
             print(e)
