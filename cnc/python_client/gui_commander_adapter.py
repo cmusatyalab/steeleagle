@@ -365,14 +365,17 @@ class GUICommanderAdapter(customtkinter.CTk):
                 self.button_kill.configure(state=tkinter.NORMAL)
                 self.button_rth.configure(state=tkinter.NORMAL)
                 self.toggle_manual(False)
-                SCP_URL = f"{self.user}@{self.server}:~/steeleagle/cnc/server/openscout-vol/scripts/" + filename
+                SCP_URL = f"{self.user}@{self.server}:~/steel-eagle-clean/cnc/server/steeleagle-vol/scripts/" + filename
                 FLIGHT_URL = f"http://{self.server}:8080/scripts/" + filename
                 try:
                     subprocess.run(["scp", filepath, SCP_URL], check=True)
                     logger.info("Sent file {0} to the cloudlet".format(filename))
+                    req = cnc_pb2.Extras()
+                    req.cmd.script_url = FLIGHT_URL
+                    req.commander_id = COMMANDER_ID
+                    req.cmd.for_drone_id = self.selected_drone_name
+                    self.command_queue.put_nowait(req)
                     messagebox.showinfo("Upload Complete","Flight script uploaded to server.")
-                    command = {"drone": self.connected_drone["name"], "type": "start", "url": FLIGHT_URL}
-                    self.command_queue.put_nowait(command)
                 except subprocess.CalledProcessError as cpe:
                     logger.error(cpe)
 

@@ -58,6 +58,7 @@ class Supervisor:
             logger.info('Could not initialize {args.cloudlet}, name does not exist. Aborting.')
             sys.exit(0)
         try:
+            kwargs = {}
             if args.sim:
                 kwargs = {'sim': True}
             self.drone = getattr(Drone, args.drone)(**kwargs)
@@ -136,7 +137,7 @@ class Supervisor:
 
 
     async def commandHandler(self):
-        name = self.drone.getName()
+        name = await self.drone.getName()
 
         req = cnc_pb2.Extras()
         req.drone_id = name
@@ -224,8 +225,6 @@ class Supervisor:
                 logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
             except Exception as e:
                 logger.error(f'Error getting telemetry: {e}')
-            if self.heartbeats < 100:
-                extras.registering = True
             logger.debug('Producing Gabriel frame!')
             input_frame.extras.Pack(extras)
             return input_frame

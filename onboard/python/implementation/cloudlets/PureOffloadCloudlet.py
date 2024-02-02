@@ -23,7 +23,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
     def __init__(self):
         self.engine_results = {}
-        self.source = 'command'
+        self.source = 'telemetry'
         self.model = 'coco'
         self.drone = None
         self.sample_rate = 1
