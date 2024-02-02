@@ -21,4 +21,5 @@ venv/
 *.ms
 *.kml
 .venv
+.streamlit/secrets.toml
 *~

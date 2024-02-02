@@ -9,5 +9,6 @@ tkintermapview
 customtkinter
 pynput
 websockets>=10.0
+python-dotenv
 tkintermapview
 customtkinter
