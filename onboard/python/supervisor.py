@@ -185,7 +185,7 @@ class Supervisor:
                             logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
 
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
-            except zmq.Error as z:
+            except Exception as z:
                 logger.error(z)
 
 

@@ -62,7 +62,6 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
         
     async def telemetry_subscriber(self):
         async def pos(self):
-            await self.drone.telemetry.set_rate_position(1)
             async for position in self.drone.telemetry.position():
                 self.telemetry['lat'] = position.latitude_deg
                 self.telemetry['lng'] = position.longitude_deg
@@ -72,14 +71,12 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
             async for heading in self.drone.telemetry.heading():
                 self.telemetry['head'] = heading.heading_deg
         async def battery(self):
-            await self.drone.telemetry.set_rate_battery(1)
             async for battery in self.drone.telemetry.battery():
                 self.telemetry['battery'] = battery.remaining_percent
         async def mag(self):
             async for health in self.drone.telemetry.health():
                 self.telemetry['mag'] = health.is_magnetometer_calibration_ok
         async def sat(self):
-            await self.drone.telemetry.set_rate_gps_info(1)
             async for info in self.drone.telemetry.gps_info():
                 self.telemetry['sat'] = info.num_satellites
 
@@ -194,14 +191,7 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
     ''' Status methods '''
 
     async def getName(self):
-        try:
-            product = await self.drone.info.get_product()
-            if product.product_name is not None and product.product_name != 'undefined':
-                return product.product_name
-        except Exception:
-            pass
-
-        return "MavlinkDrone"
+        return "ModalAISeekerDrone"
 
     async def getLat(self):
         return self.telemetry['lat']
