@@ -83,7 +83,6 @@ class ParrotAnafi(DroneItf.DroneItf):
     def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
             PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
-            >> FlyingStateChanged(state="hovering", _timeout=5)
         )
 
     @killprotected
@@ -167,7 +166,10 @@ class ParrotAnafi(DroneItf.DroneItf):
     def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
     def getSatellites(self):
-        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"] 
+        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+    
+    def getGimbalPitch(self):
+        return self.drone.get_state(attitude)[0]["pitch_absolute"]
 
     def kill(self):
         self.active = False

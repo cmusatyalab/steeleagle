@@ -130,6 +130,10 @@ class DroneItf(ABC):
     def getSatellites(self):
         pass
 
+    @abstractmethod
+    def getGimbalPitch(self):
+        pass
+    
     ''' Control methods '''
 
     @abstractmethod

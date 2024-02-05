@@ -1,13 +1,20 @@
+from task_defs.TrackTask import TrackTask
 from task_defs.DetectTask import DetectTask
 from runtime.MissionRunner import MissionRunner
+from enum import Enum
 import threading
 import queue
 
 
 class MissionController(threading.Thread):
+    
+    class TaskType(Enum):
+        Detect = 1
+        Track = 2
 
     class TaskArguments():
-        def __init__(self, transitions_attributes, task_attributes):
+        def __init__(self, task_type, transitions_attributes, task_attributes):
+            self.task_type = task_type
             self.task_attributes = task_attributes
             self.transitions_attributes = transitions_attributes
 
@@ -20,11 +27,12 @@ class MissionController(threading.Thread):
         self.start_task_id = None
         self.taskMap = {}
         self.transitMap = {}
+        
+        self.task_arg_map = {}
+        
     # transition
     @staticmethod
     def task1_transit(triggered_event):
-        if (triggered_event == "timeout"):
-            return "task2"
         if (triggered_event == "object_detection"):
             return "task2"
         if (triggered_event == "done"):
@@ -32,6 +40,8 @@ class MissionController(threading.Thread):
 
     @staticmethod
     def task2_transit(triggered_event):
+        if (triggered_event == "timeout"):
+            return "task1"
         if (triggered_event == "done"):
             return "terminate"
 
@@ -52,16 +62,16 @@ class MissionController(threading.Thread):
         self.start_task_id = "task1"
         # TASKtask1
         task_attr_task1 = {}
-        task_attr_task1["gimbal_pitch"] = "-45.0"
+        task_attr_task1["gimbal_pitch"] = "-20.0"
         task_attr_task1["drone_rotation"] = "0.0"
         task_attr_task1["sample_rate"] = "2"
         task_attr_task1["hover_delay"] = "0"
-        task_attr_task1["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 15.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 15.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 15.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 15.0}]"
+        task_attr_task1["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 8.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0}]"
         task_attr_task1["model"] = "coco"
         transition_attr_task1 = {}
-        transition_attr_task1["timeout"] = 70.0
-        transition_attr_task1["object_detection"] = "person"
-        self.taskMap["task1"] = self.TaskArguments(transition_attr_task1, task_attr_task1)
+        transition_attr_task1["object_detection"] = "car"
+        self.task_arg_map["task1"] = self.TaskArguments(self.TaskType.Detect, transition_attr_task1, task_attr_task1)
+        
         # TASKtask2
         task_attr_task2 = {}
         task_attr_task2["gimbal_pitch"] = "-45.0"
@@ -71,11 +81,24 @@ class MissionController(threading.Thread):
         task_attr_task2["coords"] = "[{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 35.0},{'lng': -79.9502655, 'lat': 40.4154588, 'alt': 35.0},{'lng': -79.9499142, 'lat': 40.4154567, 'alt': 35.0},{'lng': -79.9499128, 'lat': 40.4156753, 'alt': 35.0},{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 35.0}]"
         task_attr_task2["model"] = "coco"
         transition_attr_task2 = {}
-        self.taskMap["task2"] = self.TaskArguments(transition_attr_task2, task_attr_task2)
+        transition_attr_task2["timeout"] = 70.0
+        self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Detect, transition_attr_task2, task_attr_task2)
+        
+        # TASKtask2
+        # task_attr_task2 = {}
+        # task_attr_task2["model"] = "coco"
+        # task_attr_task2["class"] = "car"
+        # task_attr_task2["gimbal_pitch"] = "-30"
+        # transition_attr_task2 = {}
+        # transition_attr_task2["timeout"] = 100.0
+        # self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Track, transition_attr_task2, task_attr_task2)
 
     def add_task(self, task_id):
-        self.taskMap[task_id] = DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.taskMap[task_id])
-
+        if (self.task_arg_map[task_id].task_type == self.TaskType.Detect):
+            self.taskMap[task_id] = DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+        elif (self.task_arg_map[task_id].task_type == self.TaskType.Track):
+            self.taskMap[task_id] = TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            
     def next_task(self, current_task_id, triggered_event):
         next_task_id  = self.transitMap.get(current_task_id, self.default_transit)(triggered_event)
         return next_task_id

@@ -211,8 +211,8 @@ class GUICommanderAdapter(customtkinter.CTk):
 
 
 
-
-# create markers
+        '''
+        # create markers
         self.map_widget = TkinterMapView(self.frame_map, corner_radius=0)
         self.map_widget.grid(row=0, rowspan=3, column=0, columnspan=3, sticky="nswe", padx=(5, 5), pady=(5, 5))
 
@@ -226,7 +226,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.map_widget.set_address("Mill 19")
         self.map_widget.set_zoom(19)
         self.last_map_update = time.time()
-    
+   ''' 
     # Events for handling changes to the available drone list
 
     def update_drone_dict(self, new_list):
@@ -264,6 +264,7 @@ class GUICommanderAdapter(customtkinter.CTk):
 
     def on_connect_pressed(self, event=None):
         self.connected_drone = self.drone_dict[self.drone_dropdown.get()]
+        '''
         self.connected_marker = self.map_widget.set_marker(self.connected_drone["latitude"],
                 self.connected_drone["longitude"],
                 text=self.connected_drone["name"],
@@ -272,6 +273,7 @@ class GUICommanderAdapter(customtkinter.CTk):
                 marker_color_circle="#065b8c",
                 marker_color_outside="#00efff",
                 icon=self.drone_icon)
+        '''
         self.on_connect_event()
         self.toggle_connect_button(False)
         self.toggle_manual(True)

@@ -17,17 +17,17 @@ class Transition(threading.Thread, ABC):
         pass
     
     def _trigger_event(self, event):
-        print(f"**************Detect Task {self.task_id}: triggered event! {event}**************\n")
+        print(f"************** Task {self.task_id}: triggered event! {event}**************\n")
         # with self.trigger_event_queue_lock:
         self.trigger_event_queue.put((self.task_id,  event))
     
     def _register(self):
-        print(f"**************Detect Task transition {self.name} is registering by itself**************\n")
+        print(f"************** Task transition {self.name} is registering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.append(self)
             
     def _unregister(self):
-        print(f"**************Detect Task transition {self.name} is unregistering by itself**************\n")
+        print(f"************** Task transition {self.name} is unregistering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.remove(self)
         

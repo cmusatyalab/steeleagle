@@ -18,7 +18,7 @@ class TransObjectDetection(Transition):
     def run(self):
         self._register()
         while not self.stop_signal:
-            # Replace this with your actual condition
+            # get result
             result = self.cloudlet.getResults("openscout-object")
             if (result != None):
                 print(f"**************Transition:  Task {self.task_id}: detected payload! {result}**************\n")

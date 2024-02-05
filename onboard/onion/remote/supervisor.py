@@ -59,19 +59,22 @@ class Supervisor:
 
     def download(self, url: str, ):
         #download zipfile and extract reqs/flight script from cloudlet
-        filename = url.rsplit(sep='/')[-1]
-        logger.info(f'Writing {filename} to disk...')
-        r = requests.get(url, stream=True)
-        with open(filename, mode='wb') as f:
-            for chunk in r.iter_content():
-                f.write(chunk)
-        z = ZipFile(filename)
-        os.system("rm -rf ./task_defs ./python")
-        os.system("rm -rf ./runtime ./python")
-        os.system("rm -rf ./transition_defs ./python")
-        z.extractall()
-        os.system("mv python/* .")
-        self.install_prereqs()
+        try:
+            filename = url.rsplit(sep='/')[-1]
+            logger.info(f'Writing {filename} to disk...')
+            r = requests.get(url, stream=True)
+            with open(filename, mode='wb') as f:
+                for chunk in r.iter_content():
+                    f.write(chunk)
+            z = ZipFile(filename)
+            os.system("rm -rf ./task_defs ./python")
+            os.system("rm -rf ./runtime ./python")
+            os.system("rm -rf ./transition_defs ./python")
+            z.extractall()
+            os.system("mv python/* .")
+            self.install_prereqs()
+        except Exception as e:
+            print(e)
 
     def install_prereqs(self) -> bool:
         ret = False
