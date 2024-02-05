@@ -13,7 +13,7 @@ __pycache__/
 *.class
 *.pyc
 openscout-vol/
-*.env
+.env
 .vscode/
 cnc/server/models/
 venv/
