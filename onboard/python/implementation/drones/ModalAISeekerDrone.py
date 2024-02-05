@@ -34,7 +34,7 @@ def get_rot_mat(theta):
     return np.matrix([[m.cos(theta), -m.sin(theta), 0], [m.sin(theta), m.cos(theta), 0], [0, 0, 1]])
 
 
-class MavlinkDrone(DroneItf.DroneItf):
+class ModalAISeekerDrone(DroneItf.DroneItf):
 
     VEL_TOL = 0.1
     ANG_VEL_TOL = 0.01
