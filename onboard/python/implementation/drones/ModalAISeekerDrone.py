@@ -242,7 +242,11 @@ class StreamingThread(threading.Thread):
     def run(self):
         try:
             while(self.isRunning):
-                ret, self.currentFrame = self.cap.read()
+                ret, frame = self.cap.read()
+                if len(frame.shape) < 3: # Grayscale
+                    self.currentFrame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+                else:
+                    self.currentFrame = frame
         except Exception as e:
             print(e)
 
