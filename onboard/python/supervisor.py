@@ -185,8 +185,8 @@ class Supervisor:
                             logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
 
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
-            except Exception as z:
-                logger.error(z)
+            except Exception as e:
+                logger.error(e)
 
 
     '''
@@ -225,6 +225,11 @@ class Supervisor:
                 logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
             except Exception as e:
                 logger.error(f'Error getting telemetry: {e}')
+
+            # Register on the first frame
+            if self.heartbeats == 1:
+                extras.registering = True
+
             logger.debug('Producing Gabriel frame!')
             input_frame.extras.Pack(extras)
             return input_frame
