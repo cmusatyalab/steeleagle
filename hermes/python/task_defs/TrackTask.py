@@ -67,7 +67,7 @@ class TrackTask(Task):
                 if (start is not None):
                     print(f"TRACKING FPS: {counter / (time.time() - start)}")
                 print(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
-                # Check if the payload type is TEXT, since your JSON seems to be text data
+                # Check if the payload type is TEXT, since  JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
                         # Decode the payload from bytes to string
@@ -77,7 +77,7 @@ class TrackTask(Task):
                         json_data = json.loads(json_string)
 
                         # Access the 'class' attribute
-                        class_attribute = json_data[0]['class']  # Adjust the indexing based on your JSON structure
+                        class_attribute = json_data[0]['class']  # Adjust the indexing based on JSON structure
                         
                         print(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
                         
