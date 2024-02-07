@@ -94,10 +94,13 @@ class MissionController(threading.Thread):
         # self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Track, transition_attr_task2, task_attr_task2)
 
     def create_task(self, task_id):
-        if (self.task_arg_map[task_id].task_type == self.TaskType.Detect):
-            return DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
-        elif (self.task_arg_map[task_id].task_type == self.TaskType.Track):
-            return TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+        if (task_id in self.task_arg_map.keys()):
+            if (self.task_arg_map[task_id].task_type == self.TaskType.Detect):
+                return DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == self.TaskType.Track):
+                return TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+        
+        return None
             
     def next_task(self, current_task_id, triggered_event):
         next_task_id  = self.transitMap.get(current_task_id, self.default_transit)(triggered_event)
@@ -112,14 +115,18 @@ class MissionController(threading.Thread):
 
         # init the mission runner
         print("MissionController: init the mission runner\n")
-        mr = MissionRunner(self.drone, self.cloudlet, self.taskMap, self.start_task_id)
+        mr = MissionRunner(self.drone)
         
         mr.start()
-        mr.start_mission(self.create_task(self.start_task_id))
+        start_task = self.create_task(self.start_task_id)
+        if start_task != None:
+            mr.start_mission(start_task)
+        
 
         # main logic check the triggered event
         while True:
             item = self.trigger_event_queue.get()
+
             if item is not None:
                 task_id = item[0]
                 trigger_event = item[1]
@@ -131,7 +138,8 @@ class MissionController(threading.Thread):
                     if (next_task_id == "terminate"):
                         break
                     else:
-                        mr.transit_to(self.create_task(next_task_id))
+                        next_task = self.create_task(next_task_id)
+                        mr.transit_to(next_task)
 
         # terminate the mr
         print(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")

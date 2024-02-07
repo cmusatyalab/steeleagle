@@ -3,10 +3,9 @@ from interfaces.FlightScript import FlightScript
 class MissionRunner(FlightScript):
     
     # private method
-    def __init__(self, drone, start_task_id):
+    def __init__(self, drone):
         super().__init__(drone)
         self.curr_task_id = None
-        self.start_task_id = start_task_id
         
     def start_mission(self, task):
        # set the current task
@@ -16,7 +15,7 @@ class MissionRunner(FlightScript):
        self._push_task(task)
        print("MR: taking off")
        self.drone.takeOff()
-       self._execLoop()
+       
     
     #public method    
     def transit_to(self, task):
@@ -39,6 +38,6 @@ class MissionRunner(FlightScript):
         try:
             # start mission
             print("MR: start the mission!\n")
-            self.start_mission()
+            self._execLoop()
         except Exception as e:
             print(e)
