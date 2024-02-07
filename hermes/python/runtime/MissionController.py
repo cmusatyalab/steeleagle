@@ -93,11 +93,11 @@ class MissionController(threading.Thread):
         # transition_attr_task2["timeout"] = 100.0
         # self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Track, transition_attr_task2, task_attr_task2)
 
-    def add_task(self, task_id):
+    def create_task(self, task_id):
         if (self.task_arg_map[task_id].task_type == self.TaskType.Detect):
-            self.taskMap[task_id] = DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            return DetectTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
         elif (self.task_arg_map[task_id].task_type == self.TaskType.Track):
-            self.taskMap[task_id] = TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            return TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
             
     def next_task(self, current_task_id, triggered_event):
         next_task_id  = self.transitMap.get(current_task_id, self.default_transit)(triggered_event)
@@ -113,8 +113,9 @@ class MissionController(threading.Thread):
         # init the mission runner
         print("MissionController: init the mission runner\n")
         mr = MissionRunner(self.drone, self.cloudlet, self.taskMap, self.start_task_id)
-        self.add_task(self.start_task_id)
+        
         mr.start()
+        mr.start_mission(self.create_task(self.start_task_id))
 
         # main logic check the triggered event
         while True:
@@ -130,8 +131,7 @@ class MissionController(threading.Thread):
                     if (next_task_id == "terminate"):
                         break
                     else:
-                        self.add_task(next_task_id)
-                        mr.transit_to(next_task_id)
+                        mr.transit_to(self.create_task(next_task_id))
 
         # terminate the mr
         print(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")

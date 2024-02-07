@@ -3,11 +3,13 @@ import threading
 
 class FlightScript(threading.Thread):
 
-    def __init__(self, drone, cloudlet):
+    def __init__(self, drone):
         threading.Thread.__init__(self)
-        self.cloudlet = cloudlet
         self.drone = drone
+        # lock the taskthread for contention?
         self.taskThread = None
+        
+        # thread safe queue
         self.taskQueue = queue.Queue()
         self._stop_loop_event = threading.Event()
         
@@ -25,7 +27,7 @@ class FlightScript(threading.Thread):
                     self.taskThread = self.taskQueue.get()
                     self._exec(self.taskThread)
         except Exception as e:
-            print(f'Exec loop interrupted by exception: {e}')
+            print(f'FlightScript: Exec loop interrupted by exception: {e}')
 
     def _exec(self, task):
         self.taskThread = task
