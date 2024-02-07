@@ -1,5 +1,6 @@
 from json import JSONDecodeError
 import json
+import time
 from venv import logger
 from interfaces.Transition import Transition
 from gabriel_protocol import gabriel_pb2
@@ -17,6 +18,7 @@ class TransObjectDetection(Transition):
     
     def run(self):
         self._register()
+        time.sleep(1)
         while not self.stop_signal:
             # get result
             result = self.cloudlet.getResults("openscout-object")
