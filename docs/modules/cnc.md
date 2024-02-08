@@ -165,13 +165,13 @@ The steeleagle-vol directory will not exist until the containers are launched fo
 
 #### view.html
 
-[view.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/view.html) can be copied into any/all of the following 3 directories: raw/<drone_name>/<flight_dir>, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image nubmer and the total number of images in the directory.
+[view.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/view.html) can be copied into any/all of the following 3 directories: raw/DRONE_NAME/<flight_dir>, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image nubmer and the total number of images in the directory.
 
 ![view.html example!](images/viewhtml.png)
 
 #### live.html
 
-[live.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/live.html) can be copied into any steeleagle-vol/raw/<drone_name> subdirectory. One can then navigate to http://host:8080/raw/<drone_name>/live.html. This will display the latest raw image, obstacle avoidance output, and object detection output. 
+[live.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/live.html) can be copied into any steeleagle-vol/raw/DRONE_NAME subdirectory. One can then navigate to http://host:8080/raw/DRONE_NAME/live.html. This will display the latest raw image, obstacle avoidance output, and object detection output.
 
 {: .note}
 
@@ -186,7 +186,7 @@ The object detection engine will only output an image if one of the classes is d
 ```yaml
 streams:
   # [JPEG] snapshots from Dahua camera, will be converted to MJPEG stream
-  1_raw: http://localhost:8080/raw/<drone_name>/latest.jpg
+  1_raw: http://localhost:8080/raw/DRONE_NAME/latest.jpg
   2_midas: http://localhost:8080/moa/latest.jpg
   3_detections: http://localhost:8080/detected/latest.jpg
 ```
