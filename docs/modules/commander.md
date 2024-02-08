@@ -28,20 +28,30 @@ python3 -m pip install requirements.txt
 ```sh
 cd ~/steeleagle/cnc/python-client/
 python3 gui_commander.py
-usage: commander_client.py [-h] [-s SERVER] [-p PORT] [-l LOGLEVEL] [-ng]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -s SERVER, --server SERVER
-                        Specify address of Steel Eagle CNC server [default: localhost]
-  -p PORT, --port PORT  Specify websocket port [default: 9099]
-  -l LOGLEVEL, --loglevel LOGLEVEL
-                        Set the log level
-  -ng, --nogui          If specified, use the text prompt commander
-  -u, --user            Specify the user when copying .ms files to the server. [default: root] NOTE: An ssh key for this user must exist on the server.
 ```
 
-At a minimum, you will need to provide the commander with the address of the machine where the CNC backend is running.
+The configuration for the commander is stored in a .env file in the python-client directory. [template.env](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/python_client/template.env) can be copied to .env and modified to reflect the correct endpoints/keys.
+
+```sh
+cd ~/steeleagle/cnc/python-client/
+cp template.env .env
+#edit .env file to supply necessary values as shown below
+```
+
+Below is the contents of template.env. Typically all the services are running on the same host, and so all of the server addresses below will actually be the same machine, but the servcies can in fact be run on different hosts in practice.
+
+```conf
+CLOUDLET="<server address>"
+SCP_USER="root"
+
+REDIS="<server address>"
+REDIS_USER="steeleagle"
+REDIS_PORT=6379
+REDIS_AUTH="<from redis.conf>"
+
+ZMQ="<server address>"
+ZMQ_PORT=6001
+```
 
 {: .important }
 
