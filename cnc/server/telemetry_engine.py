@@ -61,7 +61,10 @@ class TelemetryEngine(cognitive_engine.Engine):
                     if not os.path.exists(f"{self.storage_path}/raw/{extras.drone_id}"):
                         os.mkdir(f"{self.storage_path}/raw/{extras.drone_id}")
                     self.current_path = f"{self.storage_path}/raw/{extras.drone_id}/{datetime.datetime.now().strftime('%d-%b-%Y-%H%M')}"
-                    os.mkdir(self.current_path)
+                    try:
+                        os.mkdir(self.current_path)
+                    except FileExistsError:
+                        logger.error(f"Directory {self.current_path} already exists. Moving on....")
 
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
