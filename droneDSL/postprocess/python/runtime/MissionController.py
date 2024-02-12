@@ -7,7 +7,6 @@ import queue
 
 
 class MissionController(threading.Thread):
-    
     class TaskType(Enum):
         Detect = 1
         Track = 2
@@ -27,7 +26,6 @@ class MissionController(threading.Thread):
         self.start_task_id = None
         self.transitMap = {}
         self.task_arg_map = {}
-        
     # transition
     @staticmethod
     def task1_transit(triggered_event):
@@ -64,32 +62,22 @@ class MissionController(threading.Thread):
         task_attr_task1["drone_rotation"] = "0.0"
         task_attr_task1["sample_rate"] = "2"
         task_attr_task1["hover_delay"] = "0"
-        task_attr_task1["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 8.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0}]"
+        task_attr_task1["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 12.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 12.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 12.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 12.0}]"
         task_attr_task1["model"] = "coco"
         transition_attr_task1 = {}
         transition_attr_task1["object_detection"] = "car"
         self.task_arg_map["task1"] = self.TaskArguments(self.TaskType.Detect, transition_attr_task1, task_attr_task1)
-        
-        # # TASKtask2
-        # task_attr_task2 = {}
-        # task_attr_task2["gimbal_pitch"] = "-45.0"
-        # task_attr_task2["drone_rotation"] = "0.0"
-        # task_attr_task2["sample_rate"] = "2"
-        # task_attr_task2["hover_delay"] = "0"
-        # task_attr_task2["coords"] = "[{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 35.0},{'lng': -79.9502655, 'lat': 40.4154588, 'alt': 35.0},{'lng': -79.9499142, 'lat': 40.4154567, 'alt': 35.0},{'lng': -79.9499128, 'lat': 40.4156753, 'alt': 35.0},{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 35.0}]"
-        # task_attr_task2["model"] = "coco"
-        # transition_attr_task2 = {}
-        # transition_attr_task2["timeout"] = 70.0
-        # self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Detect, transition_attr_task2, task_attr_task2)
-        
-        #TASKtask2
+        # TASKtask2
         task_attr_task2 = {}
+        task_attr_task2["gimbal_pitch"] = "-45.0"
+        task_attr_task2["drone_rotation"] = "0.0"
+        task_attr_task2["sample_rate"] = "2"
+        task_attr_task2["hover_delay"] = "0"
+        task_attr_task2["coords"] = "[{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 23.0},{'lng': -79.9502655, 'lat': 40.4154588, 'alt': 23.0},{'lng': -79.9499142, 'lat': 40.4154567, 'alt': 23.0},{'lng': -79.9499128, 'lat': 40.4156753, 'alt': 23.0},{'lng': -79.9502696, 'lat': 40.4156737, 'alt': 23.0}]"
         task_attr_task2["model"] = "coco"
-        task_attr_task2["class"] = "car"
-        task_attr_task2["gimbal_pitch"] = "-30"
         transition_attr_task2 = {}
-        transition_attr_task2["timeout"] = 30.0
-        self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Track, transition_attr_task2, task_attr_task2)
+        transition_attr_task2["timeout"] = 70.0
+        self.task_arg_map["task2"] = self.TaskArguments(self.TaskType.Detect, transition_attr_task2, task_attr_task2)
 
     def create_task(self, task_id):
         if (task_id in self.task_arg_map.keys()):
@@ -145,6 +133,10 @@ class MissionController(threading.Thread):
 
         #end the mc
         print("MissionController: terminate the controller\n")
+
+
+
+
 
 
 
