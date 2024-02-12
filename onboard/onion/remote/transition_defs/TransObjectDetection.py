@@ -18,7 +18,8 @@ class TransObjectDetection(Transition):
     
     def run(self):
         self._register()
-        time.sleep(1)
+        time.sleep(2)
+        self.cloudlet.clearResults("openscout-object")
         while not self.stop_signal:
             # get result
             result = self.cloudlet.getResults("openscout-object")
