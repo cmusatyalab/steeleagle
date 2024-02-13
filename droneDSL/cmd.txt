@@ -1,4 +1,0 @@
-
-./gradlew :cli:run --args="../preprocess/src/main/resources/DSL_task_switch_2 --se"
-
-./gradlew :preprocess:run --args="./src/main/resources/task_switch_2.kml"
