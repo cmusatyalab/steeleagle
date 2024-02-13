@@ -1,10 +1,3 @@
-// Copyright (c) 2020-2023 Tesla (Yinsen) Zhang.
-// Use of this source code is governed by the MIT license that can be found in the LICENSE.md file.
-//import jflex.core.OptionUtils
-//import jflex.generator.LexGenerator
-//import jflex.l10n.ErrorMessages
-//import jflex.option.Options
-
 import org.aya.gradle.jflex.JFlexUtil
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.InputFile

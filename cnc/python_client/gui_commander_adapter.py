@@ -208,10 +208,6 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.frame_map.grid_columnconfigure(1, weight=1)
         self.frame_map.grid_columnconfigure(2, weight=0)
 
-
-
-
-        '''
         # create markers
         self.map_widget = TkinterMapView(self.frame_map, corner_radius=0)
         self.map_widget.grid(row=0, rowspan=3, column=0, columnspan=3, sticky="nswe", padx=(5, 5), pady=(5, 5))
@@ -226,7 +222,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.map_widget.set_address("Mill 19")
         self.map_widget.set_zoom(19)
         self.last_map_update = time.time()
-   ''' 
+
     # Events for handling changes to the available drone list
 
     def update_drone_dict(self, new_list):
