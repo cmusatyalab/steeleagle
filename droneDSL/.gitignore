@@ -1,4 +1,5 @@
 build/
+shared_dir/
 
 # ide
 /.idea/*.xml
