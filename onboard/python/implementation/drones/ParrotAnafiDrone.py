@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import asyncio
+import threading
 from interfaces import DroneItf
 from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
@@ -20,93 +22,98 @@ import olympe.enums.gimbal as gimbal_mode
 import math
 
 
-def killprotected(f):
-    def wrapper(*args):
-        if args[0].active:
-            f(*args)
-        else:
-            raise RuntimeError("Cannot execute command, this drone is not active!")
-    return wrapper
-
-
-class ParrotAnafi(DroneItf.DroneItf):
+class ParrotAnafiDrone(DroneItf.DroneItf):
     
     def __init__(self, **kwargs):
-        self.ip = kwargs['ip']
+        if 'sim' in kwargs:
+            self.ip = '10.202.0.1'
+        else:
+            self.ip = '192.168.42.1'
         self.drone = Drone(self.ip)
         self.active = False
 
+    ''' Awaiting methods '''
+
+    async def hovering(self, timeout=None):
+        # Let the task start before checking for hover state.
+        await asyncio.sleep(3)
+        start = None
+        if timeout is not None:
+            start = time.time()
+        while True:
+            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
+                break
+            elif start is not None and time.time() - start < timeout:
+                break
+            else:
+                await asyncio.sleep(1)
+
     ''' Connection methods '''
 
-    def connect(self):
+    async def connect(self):
         self.drone.connect()
         self.active = True
 
-    def isConnected(self):
+    async def isConnected(self):
         return self.drone.connection_state()
 
-    def disconnect(self):
+    async def disconnect(self):
         self.drone.disconnect()
         self.active = False
 
     ''' Streaming methods '''
 
-    def startStreaming(self, resolution):
+    async def startStreaming(self, **kwargs):
         self.streamingThread = StreamingThread(self.drone, self.ip)
         self.streamingThread.start()
 
-    def getVideoFrame(self):
-        return self.streamingThread.grabFrame() 
+    async def getVideoFrame(self):
+        if self.streamingThread:
+            return self.streamingThread.grabFrame()
 
-    def stopStreaming(self):
+    async def stopStreaming(self):
         self.streamingThread.stop()
 
     ''' Take off / Landing methods '''
 
-    @killprotected
-    def takeOff(self):
-        self.drone(TakeOff()).wait().success()
+    async def takeOff(self):
+        self.drone(TakeOff())
+        await self.hovering()
 
-    def land(self):
+    async def land(self):
         self.drone(Landing()).wait().success()
 
-    def setHome(self, lat, lng, alt):
+    async def setHome(self, lat, lng, alt):
         self.drone(set_custom_location(lat, lng, alt)).wait().success()
 
-    def rth(self):
+    async def rth(self):
         self.hover()
-        self.drone(return_to_home()).wait().success()
+        self.drone(return_to_home())
 
     ''' Movement methods '''
 
-    @killprotected
-    def PCMD(self, roll, pitch, yaw, gaz):
+    async def PCMD(self, roll, pitch, yaw, gaz):
         self.drone(
             PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
         )
 
-    @killprotected
-    def moveTo(self, lat, lng, alt):
+    async def moveTo(self, lat, lng, alt):
         self.drone(
             moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
-            >> moveToChanged(status='DONE')
-            >> FlyingStateChanged(state="hovering", _timeout=5)
-        ).wait().success()
+        )
+        await self.hovering()
 
-    @killprotected
-    def moveBy(self, x, y, z, t):
+    async def moveBy(self, x, y, z, t):
         self.drone(
             moveBy(x, y, z, t) 
-            >> FlyingStateChanged(state="hovering", _timeout=5)
-        ).wait().success()
+        )
+        await self.hovering()
 
-    @killprotected
-    def rotateTo(self, theta):
+    async def rotateTo(self, theta):
         # TODO: Rotate to exact heading
         pass
 
-    @killprotected
-    def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
+    async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         # The Anafi does not support yaw or roll on its gimbal, thus these
         # parameters are discarded without effect.
         self.drone(set_target(
@@ -117,20 +124,19 @@ class ParrotAnafi(DroneItf.DroneItf):
             pitch_frame_of_reference="absolute",
             pitch=pitch_theta,
             roll_frame_of_reference="none",
-            roll=roll_theta,
+            roll=roll_theta,)
         )
-        >> attitude(pitch_absolute=pitch_theta, _policy="wait", _float_tol=(1e-3, 1e-1))).wait().success()
 
-    def hover(self):
-        self.PCMD(0, 0, 0, 0)
+    async def hover(self):
+        await self.PCMD(0, 0, 0, 0)
 
     ''' Photography methods '''
 
-    def takePhoto(self):
+    async def takePhoto(self):
         # TODO: Take a photo and save it to the local drone folder
         pass
 
-    def toggleThermal(self, on):
+    async def toggleThermal(self, on):
         from olympe.messages.thermal import set_mode
         if on:
             self.drone(set_mode(mode="blended")).wait().success()
@@ -139,46 +145,46 @@ class ParrotAnafi(DroneItf.DroneItf):
 
     ''' Status methods '''
 
-    def getName(self):
+    async def getName(self):
         return self.drone._device_name
 
-    def getLat(self):
+    async def getLat(self):
         return self.drone.get_state(GpsLocationChanged)["latitude"]
 
-    def getLng(self):
+    async def getLng(self):
         return self.drone.get_state(GpsLocationChanged)["longitude"]
 
-    def getHeading(self):
+    async def getHeading(self):
         return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
 
-    def getRelAlt(self):
+    async def getRelAlt(self):
         return self.drone.get_state(AltitudeChanged)["altitude"]
 
-    def getExactAlt(self):
+    async def getExactAlt(self):
         pass
 
-    def getRSSI(self):
+    async def getRSSI(self):
         return self.drone.get_state(rssi_changed)["rssi"]
 
-    def getBatteryPercentage(self):
+    async def getBatteryPercentage(self):
         return self.drone.get_state(BatteryStateChanged)["percent"]
 
-    def getMagnetometerReading(self):
+    async def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
-    def getSatellites(self):
-        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
     
-    def getGimbalPitch(self):
+    async def getGimbalPitch(self):
         return self.drone.get_state(attitude)[0]["pitch_absolute"]
+    
+    async def getSatellites(self):
+        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"] 
 
-    def kill(self):
+    async def kill(self):
         self.active = False
 
 
 import cv2
 import numpy as np
 import os
-import threading
 
 class StreamingThread(threading.Thread):
 

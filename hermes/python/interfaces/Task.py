@@ -1,24 +1,24 @@
-import threading
-import ctypes
+# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
 
-class Task(threading.Thread):
+import asyncio
+import ctypes
+from abc import ABC, abstractmethod
+
+class Task(ABC):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         threading.Thread.__init__(self)
-        self.cloudlet = cloudlet
+    def __init__(self, drone, cloudlet, **kwargs):
         self.drone = drone
-        self.task_attributes = task_args.task_attributes
-        self.transitions_attributes = task_args.transitions_attributes
-        self.task_id = task_id
-        self.trans_active =  []
-        self.trans_active_lock = threading.Lock()
-        self.trigger_event_queue = trigger_event_queue
+        self.cloudlet = cloudlet
+        self.kwargs = kwargs
 
-        
+    @abstractmethod
+    async def run(self):
+        pass
 
-    # Run is already an abstract method derived from Runnable.
-    # It will be implemented separately by each task.
-    
     def pause(self):
         pass
     

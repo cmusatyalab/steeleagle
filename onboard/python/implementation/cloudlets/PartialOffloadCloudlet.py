@@ -18,11 +18,11 @@ from gabriel_client.websocket_client import ProducerWrapper
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class ElijahCloudlet(CloudletItf.CloudletItf):
+class PartialOffloadCloudlet(CloudletItf.CloudletItf):
 
     def __init__(self):
         self.engine_results = {}
-        self.source = 'command'
+        self.source = 'telemetry'
         self.model = 'coco'
         self.drone = None
         self.sample_rate = 1

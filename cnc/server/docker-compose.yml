@@ -20,19 +20,32 @@ services:
     networks:
       - cnc-net
 
-  command-engine:
+  telemetry-engine:
     image: cmusatyalab/steeleagle:${TAG}
-    container_name: command-engine
+    container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "./command.py", "--timeout", "${DRONE_TIMEOUT}"]
+    entrypoint: [ "./telemetry.py", "-a", "${REDIS_AUTH}"]
     depends_on:
       - gabriel-server
     networks:
       - cnc-net
+      - redis
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/cnc/server/images/
 
+  control-plane:
+    image: cmusatyalab/steeleagle:${TAG}
+    container_name: control-plane
+    restart: unless-stopped
+    ports:
+      - "6000:6000"
+      - "6001:6001"
+    privileged: true
+    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
+    networks:
+      - cnc-net
+      - redis
 
   # test-clients:
   #   image: cmusatyalab/steeleagle:${TAG}
@@ -61,7 +74,7 @@ services:
     networks:
       - cnc-net
     volumes:
-      - ./openscout-vol:/usr/local/apache2/htdocs
+      - ./steeleagle-vol:/usr/local/apache2/htdocs
 
   openscout-face-engine:
     image: cmusatyalab/openscout:${OPENSCOUT_TAG}
@@ -72,7 +85,7 @@ services:
       [
         "./face.py",
         "--source",
-        "command",
+        "telemetry",
         "--endpoint",
         "http://openface-service:5000",
         "--threshold",
@@ -82,7 +95,7 @@ services:
     #to use MS Face Cognitive Service, make this the entrypoint instead and use the ms-face-server container...
     #entrypoint: ["./face.py", "--msface", "--endpoint", "http://ms-face-service:5000","--apikey", "${API_KEY}", "--threshold", "${FACE_THRESHOLD}"]
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
       - training-vol:/openscout/server/training/
     depends_on:
       - gabriel-server
@@ -90,7 +103,7 @@ services:
       #- ms-face-service
     networks:
       - cnc-net
-      - elk
+      - redis
     environment:
       - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
 
@@ -99,7 +112,7 @@ services:
     container_name: obstacle-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: ["./depth.py", "--source", "command", "--model", "${MIDAS}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}"]
+    entrypoint: ["./depth.py", "--source", "telemetry", "--model", "${MIDAS}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}"]
     # for NVIDIA GPUs
     #gpus: all     # not yet supported by docker-compose
     deploy:
@@ -110,13 +123,13 @@ services:
               capabilities:
                 - gpu
     volumes:
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
       - ./models:/root/.cache/torch/hub/
     depends_on:
       - gabriel-server
     networks:
       - cnc-net
-      - elk
+      - redis
     #environment:
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=1 #set this if you want to force CPU only
@@ -130,26 +143,28 @@ services:
       [
         "./obj.py",
         "--source",
-        "command",
+        "telemetry",
         "--model",
         "${DNN}",
         "--threshold",
         "${OBJ_THRESHOLD}",
         "--exclude",
         "${EXCLUSIONS}",
-        "${STORE}"
+        "${STORE}",
+        "-a",
+        "${REDIS_AUTH}"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose
     runtime: nvidia
     volumes:
       - ./models:/openscout/server/model/
-      - ./openscout-vol:/openscout/server/images/
+      - ./steeleagle-vol:/openscout/server/images/
     depends_on:
       - gabriel-server
     networks:
       - cnc-net
-      - elk
+      - redis
     environment:
       - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
@@ -189,41 +204,6 @@ services:
   #     - Eula=accept
   #     - Billing=${BILLING_ENDPOINT}
   #     - ApiKey=${API_KEY}
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ELK_VERSION}-amd64
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-    ports:
-      - 9200:9200
-    restart: unless-stopped
-    privileged: true
-    networks:
-      - elk
-  kibana:
-    image: docker.elastic.co/kibana/kibana-oss:${ELK_VERSION}
-    container_name: kibana
-    ports:
-      - 5601:5601
-    restart: unless-stopped
-    privileged: true
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
-  logstash:
-    image: docker.elastic.co/logstash/logstash-oss:${ELK_VERSION}
-    container_name: logstash
-    ports:
-      - 5044:5044
-    restart: unless-stopped
-    privileged: true
-    networks:
-      - elk
-    volumes:
-      - ./elk/pipeline/:/usr/share/logstash/pipeline/
-    depends_on:
-      - elasticsearch
   go2rtc:
     image: alexxit/go2rtc
     network_mode: host       # important for WebRTC, HomeKit, UDP cameras
@@ -233,10 +213,24 @@ services:
       - TZ=Atlantic/Bermuda  # timezone in logs
     volumes:
       - "~/go2rtc:/config"   # folder for go2rtc.yaml file (edit from WebUI)
+      - ./steeleagle-vol:/tmp
+  redis:
+    image: redis/redis-stack:${REDIS_VERSION}
+    container_name: redis
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - 6379:6379
+      - ${REDIS_HOST}:8001:8001
+    networks:
+      - redis
+    volumes:
+      - ./steeleagle-vol/redis:/data
+      - ./steeleagle-vol/redis/redis.conf:/redis-stack.conf
 
 networks:
   cnc-net:
-  elk:
+  redis:
 volumes:
   training-vol:
 

@@ -1,133 +1,133 @@
 # SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-
+import asyncio
 from abc import ABC, abstractmethod
 
 class DroneItf(ABC):
 
     ''' Connection methods '''
-
+    
     @abstractmethod
-    def connect(self):
+    async def connect(self):
         pass
 
     @abstractmethod
-    def isConnected(self):
+    async def isConnected(self):
         pass
 
     @abstractmethod
-    def disconnect(self):
+    async def disconnect(self):
         pass
     
     ''' Streaming methods '''
-
+    
     @abstractmethod
-    def startStreaming(self, resolution):
+    async def startStreaming(self, **kwargs):
         pass
     
     @abstractmethod
-    def getVideoFrame(self):
+    async def getVideoFrame(self):
         pass
-
+    
     @abstractmethod
-    def stopStreaming(self):
+    async def stopStreaming(self):
         pass
 
     ''' Take off/ Landing methods '''
 
     @abstractmethod
-    def takeOff(self):
+    async def takeOff(self):
         pass
 
     @abstractmethod
-    def land(self):
+    async def land(self):
         pass
 
     @abstractmethod
-    def setHome(self, lat, lng):
+    async def setHome(self, lat, lng):
         pass
 
     @abstractmethod
-    def rth(self):
+    async def rth(self):
         pass
     
     ''' Movement methods '''
 
     @abstractmethod
-    def PCMD(self, pitch, yaw, roll, gaz, rot):
+    async def PCMD(self, pitch, yaw, roll, gaz, rot):
         pass
 
     @abstractmethod
-    def moveTo(self, lat, lng, alt):
+    async def moveTo(self, lat, lng, alt):
         pass
     
     @abstractmethod
-    def moveBy(self, x, y, z, t):
+    async def moveBy(self, x, y, z, t):
         pass
 
     @abstractmethod
-    def rotateTo(self, theta):
+    async def rotateTo(self, theta):
         pass
 
     @abstractmethod
-    def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
+    async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         pass
 
     @abstractmethod
-    def hover(self):
+    async def hover(self):
         pass
 
     ''' Photography methods ''' 
 
     @abstractmethod
-    def takePhoto(self):
+    async def takePhoto(self):
         pass
 
     @abstractmethod
-    def toggleThermal(self, on):
+    async def toggleThermal(self, on):
         pass
 
     ''' Status methods '''
 
     @abstractmethod
-    def getName(self):
+    async def getName(self):
         pass
 
     @abstractmethod
-    def getLat(self):
+    async def getLat(self):
         pass
 
     @abstractmethod
-    def getLng(self):
+    async def getLng(self):
         pass
     
     @abstractmethod
-    def getHeading(self):
+    async def getHeading(self):
         pass
 
     @abstractmethod
-    def getRelAlt(self):
+    async def getRelAlt(self):
         pass
 
     @abstractmethod
-    def getExactAlt(self):
+    async def getExactAlt(self):
         pass
     
     @abstractmethod
-    def getRSSI(self):
+    async def getRSSI(self):
         pass
 
     @abstractmethod
-    def getBatteryPercentage(self):
+    async def getBatteryPercentage(self):
         pass
 
     @abstractmethod
-    def getMagnetometerReading(self):
+    async def getMagnetometerReading(self):
         pass
 
     @abstractmethod
-    def getSatellites(self):
+    async def getSatellites(self):
         pass
 
     @abstractmethod
@@ -137,5 +137,5 @@ class DroneItf(ABC):
     ''' Control methods '''
 
     @abstractmethod
-    def kill(self):
+    async def kill(self):
         pass
