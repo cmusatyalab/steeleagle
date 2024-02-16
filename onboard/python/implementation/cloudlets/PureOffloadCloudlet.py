@@ -100,3 +100,6 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
             return self.engine_results.pop(engine_key)
         except:
             return None
+        
+    def clearResults(self, engine_key):
+        self.engine_results[engine_key] = None

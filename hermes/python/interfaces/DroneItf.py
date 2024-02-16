@@ -131,7 +131,7 @@ class DroneItf(ABC):
         pass
 
     @abstractmethod
-    def getGimbalPitch(self):
+    async def getGimbalPitch(self):
         pass
     
     ''' Control methods '''

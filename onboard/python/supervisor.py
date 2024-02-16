@@ -91,18 +91,23 @@ class Supervisor:
         self.start_mission()
 
     def start_mission(self):
+        logger.debug('Start mission supervisor')
+        logger.debug(self)
         # Stop existing mission (if there is one)
         self.stop_mission()
         # Start new task
-        from MS import MS
-        self.mission = MS(self.drone, self.cloudlet)
+        logger.debug('MS import')
+        from MS import MissionController
+        logger.debug('MC init')
+        self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
+        logger.debug('Finish func')
 
     def stop_mission(self):
         if self.mission:
-            asyncio.run(self.mission.stop())
             logger.info('Mission script stop signalled')
+            sync(self.mission.stop())
             self.mission = None
 
     def kill_mission(self):
@@ -111,19 +116,23 @@ class Supervisor:
             self.missionTask.cancel() # Hard stops the mission with an exception
 
     def download(self, url: str):
-        # Download zipfile and extract reqs/flight script from cloudlet
-        filename = url.rsplit(sep='/')[-1]
-        logger.info(f'Writing {filename} to disk...')
-        r = requests.get(url, stream=True)
-        r.raise_for_status()
-        with open(filename, mode='wb') as f:
-            for chunk in r.iter_content():
-                f.write(chunk)
-        z = ZipFile(filename)
-        os.system("rm -rf ./task_defs ./python")
-        z.extractall()
-        os.system("mv python/* .")
-        self.install_prereqs()
+        #download zipfile and extract reqs/flight script from cloudlet
+        try:
+            filename = url.rsplit(sep='/')[-1]
+            logger.info(f'Writing {filename} to disk...')
+            r = requests.get(url, stream=True)
+            with open(filename, mode='wb') as f:
+                for chunk in r.iter_content():
+                    f.write(chunk)
+            z = ZipFile(filename)
+            os.system("rm -rf ./task_defs ./python")
+            os.system("rm -rf ./runtime ./python")
+            os.system("rm -rf ./transition_defs ./python")
+            z.extractall()
+            os.system("mv python/* .")
+            self.install_prereqs()
+        except Exception as e:
+            print(e)
 
     def install_prereqs(self) -> bool:
         ret = False

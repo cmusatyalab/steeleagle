@@ -23,5 +23,6 @@ sphinx-cli param -m world actors pause false
 python3 hermes.py -p python -v
 
 python3 commander_client.py -s 128.2.213.139 -u ubuntu
+python3 gui_commander_adapter.py
 
 python3 supervisor.py -s 128.2.213.139 -S

@@ -24,7 +24,6 @@ class TrackTask(Task):
         self.prev_center = None
         self.prev_center_ts = None
         self.hysteresis = True
-        self.active = True
         
     def create_transition(self):
         
@@ -45,21 +44,21 @@ class TrackTask(Task):
             timer.start()
 
             
-    def run(self):
+    async def run(self):
         
         print(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
         
         target = self.task_attributes["class"]
         
-        self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
+        await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
         
-        self.cloudlet.switchModel(self.task_attributes["model"])
+        await self.cloudlet.switchModel(self.task_attributes["model"])
         
         self.create_transition()
         
         start = None
         counter = 0
-        while self.active:
+        while True:
             # get result
             result = self.cloudlet.getResults("openscout-object")
             if (result != None):

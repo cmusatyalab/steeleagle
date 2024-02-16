@@ -2,7 +2,7 @@
 from transition_defs.TransObjectDetection import TransObjectDetection
 from transition_defs.TransTimer import TransTimer
 from interfaces.Task import Task
-import time
+import asyncio
 import ast
 import logging
 from gabriel_protocol import gabriel_pb2
@@ -42,7 +42,7 @@ class DetectTask(Task):
             object_trans.daemon = True
             object_trans.start()
             
-    def run(self):
+    async def run(self):
         # init the cloudlet
         self.cloudlet.switchModel(self.task_attributes["model"])
         
@@ -51,7 +51,7 @@ class DetectTask(Task):
         try:
             print(f"**************Detect Task {self.task_id}: hi this is detect task {self.task_id}**************\n")
             coords = ast.literal_eval(self.task_attributes["coords"])
-            self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
+            await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
             hover_delay = int(self.task_attributes["hover_delay"])
             for dest in coords:
                 lng = dest["lng"]
@@ -59,8 +59,8 @@ class DetectTask(Task):
                 alt = dest["alt"]
                 print(f"**************Detect Task {self.task_id}: Move **************\n")
                 print(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
-                self.drone.moveTo(lat, lng, alt)
-                time.sleep(hover_delay)
+                await self.drone.moveTo(lat, lng, alt)
+                await asyncio.sleep(hover_delay)
 
             print(f"**************Detect Task {self.task_id}: Done**************\n")
             self._exit()
