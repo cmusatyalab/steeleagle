@@ -62,11 +62,14 @@ class MissionController():
             # set the current task
             self.curr_task_id = start_task.task_id
             logger.debug(f"MC: start mission, current taskid:{self.curr_task_id}\n")
+            
             # takeoff
             await self.drone.takeOff()
+            logger.debug("MC: taking off")
+            
             # start
             tr.push_task(start_task)
-            logger.debug("MC: taking off")
+            
        
     async def transit_to(self, task, tr):
         logger.debug(f"MC: transit to task with task_id: {task.task_id}, current_task_id: {self.curr_task_id}")
@@ -101,10 +104,13 @@ class MissionController():
         logger.debug("MissionController: start mission \n")
         await self.start_mission(tr)
         
+        logger.debug("MissionController: go to the inf loop routine\n")
         # main logic check the triggered event
         while True:
-            item = self.trigger_event_queue.get()
-            if item is not None:
+            logger.debug('[MC] HI tttt')
+            
+            if (not self.trigger_event_queue.empty()):
+                item = self.trigger_event_queue.get()
                 task_id = item[0]
                 trigger_event = item[1]
                 logger.debug(f"MissionController: Trigger one event! \n")
@@ -117,6 +123,7 @@ class MissionController():
                     else:
                         next_task = self.create_task(next_task_id)
                         await self.transit_to(next_task)
+                        
             await asyncio.sleep(0.1)
 
         # terminate the mr
