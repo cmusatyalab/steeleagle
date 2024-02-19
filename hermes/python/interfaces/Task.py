@@ -18,7 +18,7 @@ class TaskArguments():
 
 class Task(ABC):
 
-    def __init__(self, drone, cloudlet,  task_id, trigger_event_queue, task_args):
+    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         self.cloudlet = cloudlet
         self.drone = drone
         self.task_attributes = task_args.task_attributes

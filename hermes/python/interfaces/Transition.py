@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
+import logging
 import threading
 
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class Transition(threading.Thread, ABC):
     def __init__(self, args):
@@ -17,17 +21,17 @@ class Transition(threading.Thread, ABC):
         pass
     
     def _trigger_event(self, event):
-        print(f"************** Task {self.task_id}: triggered event! {event}**************\n")
+        logger.debug(f"************** Task {self.task_id}: triggered event! {event}**************\n")
         # with self.trigger_event_queue_lock:
         self.trigger_event_queue.put((self.task_id,  event))
     
     def _register(self):
-        print(f"************** Task transition {self.name} is registering by itself**************\n")
+        logger.debug(f"************** Task transition {self.name} is registering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.append(self)
             
     def _unregister(self):
-        print(f"************** Task transition {self.name} is unregistering by itself**************\n")
+        logger.debug(f"************** Task transition {self.name} is unregistering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.remove(self)
         

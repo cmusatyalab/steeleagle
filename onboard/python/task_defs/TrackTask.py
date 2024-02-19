@@ -27,8 +27,8 @@ class TrackTask(Task):
         
     def create_transition(self):
         
-        print(f"**************Track Task {self.task_id}: create transition! **************\n")
-        print(self.transitions_attributes)
+        logger.debug(f"**************Track Task {self.task_id}: create transition! **************\n")
+        logger.debug(self.transitions_attributes)
         args = {
             'task_id': self.task_id,
             'trans_active': self.trans_active,
@@ -38,7 +38,7 @@ class TrackTask(Task):
         
         # triggered event
         if ("timeout" in self.transitions_attributes):
-            print(f"**************Track Task {self.task_id}:  timer transition! **************\n")
+            logger.debug(f"**************Track Task {self.task_id}:  timer transition! **************\n")
             timer = TransTimer(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
@@ -46,7 +46,7 @@ class TrackTask(Task):
             
     async def run(self):
         
-        print(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
+        logger.debug(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
         
         target = self.task_attributes["class"]
         
@@ -64,8 +64,8 @@ class TrackTask(Task):
             if (result != None):
                 counter += 1
                 if (start is not None):
-                    print(f"TRACKING FPS: {counter / (time.time() - start)}")
-                print(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
+                    logger.debug(f"TRACKING FPS: {counter / (time.time() - start)}")
+                logger.debug(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
                 # Check if the payload type is TEXT, since  JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
@@ -78,11 +78,11 @@ class TrackTask(Task):
                         # Access the 'class' attribute
                         class_attribute = json_data[0]['class']  # Adjust the indexing based on JSON structure
                         
-                        print(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
+                        logger.debug(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
                         
                         if (class_attribute == target):
                             start = time.time()
-                            print(f"**************Track Task: condition met, and execute tracking**************")
+                            logger.debug(f"**************Track Task: condition met, and execute tracking**************")
                             gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = self.calculate_offsets(json_data[0]["box"])
                             self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
                         

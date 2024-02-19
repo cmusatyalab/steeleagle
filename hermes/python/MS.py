@@ -122,6 +122,7 @@ class MissionController():
                         break
                     else:
                         next_task = self.create_task(next_task_id)
+                        logger.debug(f"MissionController: task created  taskid {next_task_id} \n")
                         await self.transit_to(next_task)
                         
             await asyncio.sleep(0.1)
