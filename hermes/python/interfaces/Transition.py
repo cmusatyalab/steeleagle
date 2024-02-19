@@ -4,7 +4,7 @@ import threading
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Transition(threading.Thread, ABC):
     def __init__(self, args):
@@ -21,17 +21,17 @@ class Transition(threading.Thread, ABC):
         pass
     
     def _trigger_event(self, event):
-        logger.debug(f"************** Task {self.task_id}: triggered event! {event}**************\n")
+        logger.info(f"************** Task transition task id {self.task_id}: triggered event! {event}**************\n")
         # with self.trigger_event_queue_lock:
         self.trigger_event_queue.put((self.task_id,  event))
     
     def _register(self):
-        logger.debug(f"************** Task transition {self.name} is registering by itself**************\n")
+        logger.info(f"************** Task transition {self.name} is registering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.append(self)
             
     def _unregister(self):
-        logger.debug(f"************** Task transition {self.name} is unregistering by itself**************\n")
+        logger.info(f"************** Task transition {self.name} is unregistering by itself**************\n")
         with self.trans_active_lock:
             self.trans_active.remove(self)
         

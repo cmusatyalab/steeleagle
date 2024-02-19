@@ -3,7 +3,7 @@ import threading
 from interfaces.Transition import Transition
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class TransTimer (Transition):
     def __init__(self, args, timer_interval):
@@ -21,5 +21,5 @@ class TransTimer (Transition):
         self.timer.start()
         self.timer.join()  # Optionally wait for the timer to finish
         if (self.completed):
-            logger.debug(f"**************Transition: Task {self.task_id}: timeout!**************\n")
+            logger.info(f"**************Transition: Task {self.task_id}: timeout!**************\n")
         self._unregister()

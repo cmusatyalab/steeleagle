@@ -1,6 +1,6 @@
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 from interfaces.Task import TaskArguments, TaskType
 
 
@@ -8,7 +8,7 @@ class MissionCreator:
     # transition
     @staticmethod
     def start_transit(triggered_event):
-        logger.debug("start_transit\n")
+        logger.info("start_transit\n")
         return "task1"
 
     @staticmethod
@@ -29,7 +29,7 @@ class MissionCreator:
     @staticmethod
     def define_mission(transitMap, task_arg_map):
         #define transition
-        logger.debug("MissionController: define the transitMap\n")
+        logger.info("MissionController: define the transitMap\n")
 
         transitMap["start"] = MissionCreator.start_transit
         transitMap["task1"]= MissionCreator.task1_transit
@@ -37,7 +37,7 @@ class MissionCreator:
         
         
         # define task
-        logger.debug("MissionController: define the tasks\n")
+        logger.info("MissionController: define the tasks\n")
         # TASKtask1
         task_attr_task1 = {}
         task_attr_task1["gimbal_pitch"] = "-20.0"

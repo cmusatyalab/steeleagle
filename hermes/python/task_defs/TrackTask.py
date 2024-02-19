@@ -1,3 +1,4 @@
+import asyncio
 from json import JSONDecodeError
 import json
 import numpy as np
@@ -10,7 +11,7 @@ from scipy.spatial.transform import Rotation as R
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class TrackTask(Task):
 
@@ -27,8 +28,8 @@ class TrackTask(Task):
         
     def create_transition(self):
         
-        logger.debug(f"**************Track Task {self.task_id}: create transition! **************\n")
-        logger.debug(self.transitions_attributes)
+        logger.info(f"**************Track Task {self.task_id}: create transition! **************\n")
+        logger.info(self.transitions_attributes)
         args = {
             'task_id': self.task_id,
             'trans_active': self.trans_active,
@@ -38,7 +39,7 @@ class TrackTask(Task):
         
         # triggered event
         if ("timeout" in self.transitions_attributes):
-            logger.debug(f"**************Track Task {self.task_id}:  timer transition! **************\n")
+            logger.info(f"**************Track Task {self.task_id}:  timer transition! **************\n")
             timer = TransTimer(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
@@ -46,7 +47,7 @@ class TrackTask(Task):
             
     async def run(self):
         
-        logger.debug(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
+        logger.info(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
         
         target = self.task_attributes["class"]
         
@@ -64,8 +65,8 @@ class TrackTask(Task):
             if (result != None):
                 counter += 1
                 if (start is not None):
-                    logger.debug(f"TRACKING FPS: {counter / (time.time() - start)}")
-                logger.debug(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
+                    logger.info(f"TRACKING FPS: {counter / (time.time() - start)}")
+                logger.info(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
                 # Check if the payload type is TEXT, since  JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
@@ -78,11 +79,11 @@ class TrackTask(Task):
                         # Access the 'class' attribute
                         class_attribute = json_data[0]['class']  # Adjust the indexing based on JSON structure
                         
-                        logger.debug(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
+                        logger.info(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
                         
                         if (class_attribute == target):
                             start = time.time()
-                            logger.debug(f"**************Track Task: condition met, and execute tracking**************")
+                            logger.info(f"**************Track Task: condition met, and execute tracking**************")
                             gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = self.calculate_offsets(json_data[0]["box"])
                             self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
                         
@@ -91,7 +92,7 @@ class TrackTask(Task):
                         logger.error(f'Track Task: Error decoding json: {json_string}')
                     except Exception as e:
                         print(f"Track Task: Exception: {e}")
-            # time.sleep(0.05)
+            await asyncio.sleep(0.05)
 
 
 

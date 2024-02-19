@@ -3,6 +3,7 @@ import asyncio
 import logging
 
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class TaskRunner():
     def __init__(self, drone):
@@ -14,20 +15,21 @@ class TaskRunner():
         self.taskQueue = queue.Queue()
 
     async def run(self):
-        logger.debug('[TaskRunner] Start to manage the task queue')
+        logger.info('[TaskRunner] Start to manage the task queue')
         try:
             while True:
-                logger.debug('[TaskRunner] HI tttt')
+                logger.info('[TaskRunner] HI tttt')
                 if (not self.taskQueue.empty()):
                     
                     # get the task
-                    logger.debug('[TaskRunner] Pulling a task off the task queue')
+                    logger.info('[TaskRunner] Pulling a task off the task queue')
                     self.currentTask = self.taskQueue.get()
                     
                     # execute a task
                     try:
                         self.taskCoroutinue = asyncio.create_task(self.currentTask.run()) 
                         await self.taskCoroutinue
+                        logger.info('[TaskRunner] Finish executing one task off the task queue')
                         self.taskCoroutinue = None
                     except Exception as e:
                         logger.error(f'[TaskRunner] Task exited with error: {e}')
@@ -42,21 +44,23 @@ class TaskRunner():
     async def stop_task(self):
         
         if self.taskCoroutinue is not None:
-            logger.debug(f'[TaskRunner] Stopping current task!')
+            logger.info(f'[TaskRunner] Stopping current task!')
             # stop all the transitions of the task
             self.currentTask.stop_trans()
+            logger.info(f'[TaskRunner]  transitions in the current task stopped!')
             
             # kill the task
             try:
                 await self.taskCoroutinue.cancel()
+                logger.info(f'[TaskRunner]  current task stopped!')
             except asyncio.CancelledError:
-                logger.debug(f'[TaskRunner] Error: Stopped current task!')
+                logger.info(f'[TaskRunner] Error: Stopped current task!')
                 
-            logger.debug(f'[TaskRunner] Stopped current task!')
+            logger.info(f'[TaskRunner] Stopped current task!')
                 
                 
     def push_task(self, task):
-        logger.debug(f'[TaskRunner] push the task! task: {str(task)}')
+        logger.info(f'[TaskRunner] push the task! task: {str(task)}')
         
         self.taskQueue.put(task)
 
