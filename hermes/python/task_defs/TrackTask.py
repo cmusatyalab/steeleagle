@@ -53,7 +53,7 @@ class TrackTask(Task):
         
         await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
         
-        await self.cloudlet.switchModel(self.task_attributes["model"])
+        self.cloudlet.switchModel(self.task_attributes["model"])
         
         self.create_transition()
         
@@ -84,15 +84,15 @@ class TrackTask(Task):
                         if (class_attribute == target):
                             start = time.time()
                             logger.info(f"**************Track Task: condition met, and execute tracking**************")
-                            gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = self.calculate_offsets(json_data[0]["box"])
-                            self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
+                            gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = await self.calculate_offsets(json_data[0]["box"])
+                            await self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
                         
                         
                     except JSONDecodeError as e:
                         logger.error(f'Track Task: Error decoding json: {json_string}')
                     except Exception as e:
                         print(f"Track Task: Exception: {e}")
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.1)
 
 
 
@@ -106,9 +106,9 @@ class TrackTask(Task):
         t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
     
-    def get_movement_vectors(self, yaw, pitch):
-        current_drone_altitude = self.drone.getRelAlt()
-        current_gimbal_pitch = self.drone.getGimbalPitch()
+    async def get_movement_vectors(self, yaw, pitch):
+        current_drone_altitude = await self.drone.getRelAlt()
+        current_gimbal_pitch = await self.drone.getGimbalPitch()
         
         
         forward_vec = [0, 1, 0]
@@ -124,7 +124,7 @@ class TrackTask(Task):
 
         return movement_vec[0], movement_vec[1]
 
-    def calculate_offsets(self, box):
+    async def calculate_offsets(self, box):
         print(f'Bounding box: {box}')
         #target_x_pix = int((((box[3] - box[1]) / 2.0) + box[1]) * self.image_res[0])
         #target_y_pix = int((1 - (((box[2] - box[0]) / 2.0) + box[0])) * self.image_res[1])
@@ -134,7 +134,7 @@ class TrackTask(Task):
         target_yaw_angle = ((target_x_pix - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
         target_pitch_angle = ((target_y_pix - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
 
-        drone_roll, drone_pitch = self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
+        drone_roll, drone_pitch = await self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
         if self.hysteresis and self.prev_center_ts != None and round(time.time() * 1000) - self.prev_center_ts < 500:
             hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
@@ -158,8 +158,8 @@ class TrackTask(Task):
 
         return gpitch, dyaw, dpitch, droll
 
-    def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
+    async def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
         gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
         print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
-        self.drone.PCMD(0, dpitch, dyaw, 0)
-        self.drone.setGimbalPose(0.0, -float(gpitch), 0.0)
+        await self.drone.PCMD(0, dpitch, dyaw, 0)
+        await self.drone.setGimbalPose(0.0, -float(gpitch), 0.0)

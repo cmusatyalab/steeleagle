@@ -55,7 +55,7 @@ class DroneItf(ABC):
     ''' Movement methods '''
 
     @abstractmethod
-    async def PCMD(self, pitch, yaw, roll, gaz, rot):
+    async def PCMD(self, pitch, yaw, roll, gaz):
         pass
 
     @abstractmethod

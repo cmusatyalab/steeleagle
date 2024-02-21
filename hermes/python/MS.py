@@ -107,7 +107,7 @@ class MissionController():
         logger.info("MissionController: go to the inf loop routine\n")
         # main logic check the triggered event
         while True:
-            logger.info('[MC] HI tttt')
+            # logger.info('[MC] HI tttt')
             
             if (not self.trigger_event_queue.empty()):
                 item = self.trigger_event_queue.get()
@@ -122,8 +122,8 @@ class MissionController():
                         break
                     else:
                         next_task = self.create_task(next_task_id)
-                        logger.info(f"MissionController: task created  taskid {next_task_id} \n")
-                        await self.transit_to(next_task)
+                        logger.info(f"MissionController: task created  taskid {str(next_task.task_id)} \n")
+                        await self.transit_to(next_task, tr)
                         
             await asyncio.sleep(0.1)
 
@@ -132,7 +132,8 @@ class MissionController():
         await self.end_mission()
         
         logger.info("MissionController: terminate TaskRunner \n")
-        await tr_coroutine.cancel()
+        tr_coroutine.cancel()
+        await tr_coroutine
         
         #end the mc
         logger.info("MissionController: terminate the controller\n")

@@ -60,11 +60,12 @@ class DetectTask(Task):
                 logger.info(f"**************Detect Task {self.task_id}: Move **************\n")
                 logger.info(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
                 await self.drone.moveTo(lat, lng, alt)
-                await asyncio.sleep(hover_delay)
+                await asyncio.sleep(1)
+                # await asyncio.sleep(hover_delay)
 
             logger.info(f"**************Detect Task {self.task_id}: Done**************\n")
             self._exit()
-        except Exception as e:
-            print(e)
+        except asyncio.CancelledError as e:
+            logger.info(f"**************Detect Task Exception : {e}**************\n")
 
 
