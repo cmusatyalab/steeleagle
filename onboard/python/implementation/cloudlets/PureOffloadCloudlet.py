@@ -17,7 +17,7 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
@@ -43,11 +43,11 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
                 except JSONDecodeError as e:
-                    logger.error(f'Error decoding json: {payload}')
+                    logger.debug(f'Error decoding json: {payload}')
                 except Exception as e:
                     print(e)
             else:
-                logger.error(f"Got result type {result.payload_type}. Expected TEXT.")
+                logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
 
     def startStreaming(self, drone, model, sample_rate):
         self.stop = False
@@ -86,7 +86,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.error(f'Unable to produce a frame: {e}')
+                    logger.debug(f'Unable to produce a frame: {e}')
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.")

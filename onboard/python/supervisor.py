@@ -141,7 +141,7 @@ class Supervisor:
             subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './requirements.txt'])
             ret = True
         except subprocess.CalledProcessError as e:
-            logger.error(f"Error pip installing requirements.txt: {e}")
+            logger.debug(f"Error pip installing requirements.txt: {e}")
         return ret
 
 
@@ -195,7 +195,7 @@ class Supervisor:
 
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
             except Exception as e:
-                logger.error(e)
+                logger.debug(e)
 
 
     '''
@@ -233,7 +233,7 @@ class Supervisor:
                 extras.status.bearing = sync(self.drone.getHeading())
                 logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
             except Exception as e:
-                logger.error(f'Error getting telemetry: {e}')
+                logger.debug(f'Error getting telemetry: {e}')
 
             # Register on the first frame
             if self.heartbeats == 1:
