@@ -1,21 +1,17 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+# SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
 import streamlit as st
 import folium
-from folium.plugins import Draw
 from streamlit_folium import st_folium
 from st_keypressed import st_keypressed
-import redis
 import os
 from cnc_protocol import cnc_pb2
-import zmq
 import time
 import datetime
-import pandas as pd
 from streamlit_autorefresh import st_autorefresh
-import json
+from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu
 
 st.set_page_config(
     page_title="Commander",
@@ -57,18 +53,6 @@ if "gaz_speed" not in st.session_state:
 if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 25
 
-@st.cache_resource
-def connect_redis():
-    red = redis.Redis(host=st.secrets.redis, port=st.secrets.redis_port, username=st.secrets.redis_user, password=st.secrets.redis_pw,decode_responses=True)
-    return red
-
-@st.cache_resource
-def connect_zmq():
-    ctx = zmq.Context()
-    z = ctx.socket(zmq.REQ)
-    z.connect(f'tcp://{st.secrets.zmq}:{st.secrets.zmq_port}')
-    return z
-
 #Redis Connection
 red = connect_redis()
 #ZMQ Control Plane
@@ -82,23 +66,6 @@ MAG_STATE = [
     "Perturbation!!",
 ]
 
-DATA_TYPES = {
-    "latitude": 'float',
-    "longitude": 'float',
-    "altitude": 'float',
-    "bearing": 'int',
-    "rssi": 'int',
-    "battery": 'int',
-    "mag": 'int',
-    #"sats": int,
-}
-
-def get_drones():
-    l=[]
-    for k in red.keys("telemetry.*"):
-        l.append(k.split(".")[-1])
-    return l
-
 def get_telemetry(drone):
     results = red.xrevrange(f"telemetry.{drone}", "+", "-", 1)
     telemetry = results[0][1]
@@ -110,23 +77,21 @@ def run_flightscript():
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
         bytes_data = st.session_state.script_file.getvalue()
-        fd = open(file=st.session_state.script_file.name, mode="wb")
+        fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
         fd.write(bytes_data)
         st.session_state.manual_control = False
         st.session_state.rth_sent = False
         st.session_state.autonomous = True
-        # TODO: Copy ms to /var/www/html/scripts and then instruct drone to flight the script
+        req = cnc_pb2.Extras()
+        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
+        req.commander_id = os.uname()[1]
+        req.cmd.for_drone_id = st.session_state.selected_drone
+        z.send(req.SerializeToString())
+        rep = z.recv()
         st.toast(
             f"Instructed {st.session_state.selected_drone} to fly autonomous script",
             icon="\u2601",
         )
-        st.session_state.publisher.send_json(
-            {
-                "drone_id": st.session_state.selected_drone,
-                "script": st.session_state.script_file.name,
-            }
-        )
-        message = st.session_state.publisher.recv_string()
 
 def enable_manual():
     st.session_state.rth_sent = False
@@ -155,17 +120,6 @@ def rth():
     rep = z.recv()
     st.toast(f"Instructed {st.session_state.selected_drone} to return to home!")
 
-def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
-    _container = {}
-    for item in results:
-        _container[item[0]] = json.loads(json.dumps(item[1]))
-
-    df = pd.DataFrame.from_dict(_container, orient='index')
-    if types is not None:
-        df = df.astype(types)
-
-    return df
-
 def change_center():
     if st.session_state.selected_drone is not None:
         df = stream_to_dataframe(red.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
@@ -173,7 +127,7 @@ def change_center():
             st.session_state.center =[row['latitude'], row['longitude']]
 
 refresh_count = st_autorefresh(interval=500, key="individual_refresh")
-
+menu(with_control=False)
 c2, c3 = st.columns(spec=[2, 3], gap="large")
 
 
@@ -265,7 +219,7 @@ with c2:
         options=get_drones(),
         placeholder="No drone selected...",
         on_change=change_center(),
-        index = None
+        index = get_drones().index(st.session_state.selected_drone)
     )
     tiles_col[1].selectbox(
         key="map_server",

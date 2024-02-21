@@ -1,12 +1,13 @@
+# SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
-import redis
-import time
-import json
-import pandas as pd
 from folium.plugins import MiniMap
+from util import stream_to_dataframe, connect_redis, get_drones, menu
 
 if "location" not in st.session_state:
     st.session_state["location"] = [40.44482669, -79.90575779]
@@ -16,17 +17,6 @@ if "center" not in st.session_state:
     st.session_state.center = [40.415428612484924, -79.95028831875038]
 if "tracking_selection" not in st.session_state:
     st.session_state.tracking_selection = None
-
-DATA_TYPES = {
-    "latitude": "float",
-    "longitude": "float",
-    "altitude": "float",
-    "bearing": "int",
-    "rssi": "int",
-    "battery": "int",
-    "mag": "int",
-    # "sats": int,
-}
 
 COLORS = [
     "red",
@@ -59,37 +49,6 @@ st.set_page_config(
         'About': "SteelEagle - Automated drone flights for visual inspection tasks\n https://github.com/cmusatyalab/steeleagle"
     }
 )
-
-
-@st.cache_resource
-def connect_redis():
-    red = redis.Redis(
-        host=st.secrets.redis,
-        port=st.secrets.redis_port,
-        username=st.secrets.redis_user,
-        password=st.secrets.redis_pw,
-        decode_responses=True,
-    )
-    return red
-
-
-def stream_to_dataframe(results, types=DATA_TYPES) -> pd.DataFrame:
-    _container = {}
-    for item in results:
-        _container[item[0]] = json.loads(json.dumps(item[1]))
-
-    df = pd.DataFrame.from_dict(_container, orient="index")
-    if types is not None:
-        df = df.astype(types)
-
-    return df
-
-
-def get_drones():
-    l = []
-    for k in red.keys("telemetry.*"):
-        l.append(k.split(".")[-1])
-    return l
 
 
 def change_center():
@@ -176,7 +135,7 @@ def draw_map():
         center=st.session_state.center,
     )
 
-
+menu()
 red = connect_redis()
 
 tiles_col = st.columns(5)

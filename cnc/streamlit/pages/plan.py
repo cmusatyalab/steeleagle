@@ -1,12 +1,13 @@
+# SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
+#
+# SPDX-License-Identifier: GPL-2.0-only
+
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
-import redis
-import json
-import pandas as pd
 from folium.plugins import MiniMap, Draw, Geocoder
-import time
 from barfi import st_barfi, Block, barfi_schemas
+from util import menu
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -26,7 +27,7 @@ st.set_page_config(
         'About': "SteelEagle - Automated drone flights for visual inspection tasks\n https://github.com/cmusatyalab/steeleagle"
     }
 )
-
+menu()
 tiles_col = st.columns(5)
 tiles_col[0].selectbox(
     key="map_server",
