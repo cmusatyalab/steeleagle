@@ -17,7 +17,7 @@ class TrackTask(Task):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)
-        self.leash = 10.0
+        self.leash = 6.0
         self.image_res = (1280, 720)
         self.pixel_center = (self.image_res[0] / 2, self.image_res[1] / 2)
         self.HFOV = 69
@@ -140,7 +140,7 @@ class TrackTask(Task):
             hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
             hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
             target_yaw_angle += 0.90 * hysteresis_yaw_angle
-            target_pitch_angle += 0.90 * hysteresis_pitch_angle
+            target_pitch_angle += 0.20 * hysteresis_pitch_angle
         
         self.prev_center_ts = round(time.time() * 1000)
         self.prev_center = (target_x_pix, target_y_pix)
@@ -151,9 +151,9 @@ class TrackTask(Task):
         return max(minimum, min(value, maximum))
 
     def gain(self, gpitch, dyaw, dpitch, droll):
-        dyaw = self.clamp(int(dyaw * 3.0), -100, 100)
-        dpitch = self.clamp(int(dpitch * 2.5), -100, 100)
-        droll = self.clamp(int(droll * 2), -100, 100)
+        dyaw = self.clamp(int(dyaw), -100, 100)
+        dpitch = self.clamp(int(dpitch * 0.5), -100, 100)
+        droll = self.clamp(int(droll * 0.5), -100, 100)
         gpitch = gpitch
 
         return gpitch, dyaw, dpitch, droll
@@ -161,5 +161,5 @@ class TrackTask(Task):
     async def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
         gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
         print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
-        await self.drone.PCMD(0, dpitch, dyaw, 0)
+        await self.drone.PCMD(0, 0, dyaw, 0)
         await self.drone.setGimbalPose(0.0, -float(gpitch), 0.0)

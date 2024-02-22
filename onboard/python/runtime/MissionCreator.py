@@ -45,13 +45,13 @@ class MissionCreator:
         task_attr_task1["sample_rate"] = "2"
         task_attr_task1["hover_delay"] = "0"
         task_attr_task1["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 8.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 8.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 8.0}]"
-        task_attr_task1["model"] = "coco"
+        task_attr_task1["model"] = "visdrone"
         transition_attr_task1 = {}
         transition_attr_task1["object_detection"] = "car"
         task_arg_map["task1"] = TaskArguments(TaskType.Detect, transition_attr_task1, task_attr_task1)
         # TASKtask2
         task_attr_task2 = {}
-        task_attr_task2["model"] = "coco"
+        task_attr_task2["model"] = "visdrone"
         task_attr_task2["class"] = "car"
         task_attr_task2["gimbal_pitch"] = "-30.0"
         transition_attr_task2 = {}
