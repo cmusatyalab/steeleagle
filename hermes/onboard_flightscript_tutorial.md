@@ -12,6 +12,21 @@ Under `hermes/python/`, three new directories have been added:
 - `task_defs/`
 - `transition_defs/`
 
+
+
+### Work Flow:
+
+1. **Initialize the Mission Controller**: The supervisor is responsible for creating the Mission Controller, which will manage the drone's operations.
+2. **Start the Mission**: The Mission Controller initiates the mission by sending a command for the drone to take off, marking the beginning of its operational phase.
+3. **Create the Task Runner**: Alongside initiating the mission, the Mission Controller also establishes a Task Runner. The Task Runner is responsible for executing tasks that are queued up for the drone.
+4. **Queue the First Task**: The Mission Controller queues the first task into the task queue, which is then picked up by the Task Runner for execution.
+5. **Create Transitions for Task Monitoring**: As each task is created and queued, corresponding transitions are also established. These transitions are designed to constantly monitor the drone's environment to check if specific trigger conditions are met.
+6. **Monitor Environment and Trigger Conditions**: The transitions continuously assess the environment based on the data captured by the drone. They check against predefined trigger conditions to determine if a transition is necessary.
+7. **Signal Trigger Events**: When a trigger condition is met, the transition sends a signal back to the Mission Controller, indicating that the current task may need to be adjusted based on the new conditions.
+8. **Switch Tasks Based on Conditions**: Upon receiving a signal that a trigger condition has been met, the Mission Controller evaluates the situation and switches the drone's task as needed. This ensures the mission adapts to changing conditions in real-time.
+
+ <img src="https://documents.lucid.app/documents/036d65a8-1197-41e7-9e98-4f0be76c5665/pages/0_0?a=5683&x=489&y=4271&w=1213&h=1519&store=1&accept=image%2F*&auth=LCA%205e21fa4e462d85a6f108ccf7154ab48a3fab918dcbf5ce8fa978358fe023fb44-ts%3D1708724405" alt="img" style="zoom:67%;" />
+
 ### Mission
 
 The mission directory contains the following key components:
