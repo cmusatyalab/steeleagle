@@ -57,7 +57,7 @@ class MissionController():
         self.start_task_id = self.next_task("start", None)
         logger.info('MC: Create task')
         start_task = self.create_task(self.start_task_id)
-        logger.info('Got task, starting...')
+        logger.info('MC: Got task, starting...')
         if start_task != None:
             # set the current task
             self.curr_task_id = start_task.task_id
@@ -73,7 +73,7 @@ class MissionController():
        
     async def transit_to(self, task, tr):
         logger.info(f"MC: transit to task with task_id: {task.task_id}, current_task_id: {self.curr_task_id}")
-        await tr.stop_task()
+        tr.stop_task()
         tr.push_task(task)
         self.curr_task_id = task.task_id
        
@@ -124,16 +124,16 @@ class MissionController():
                         await self.transit_to(next_task, tr)
                         
             await asyncio.sleep(0.1)
-
-        # terminate the mr
-        logger.info(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")
-        await self.end_mission()
         
         # terminate the tr
         logger.info("MissionController: terminating TaskRunner \n")
         tr.terminate()
         await tr_coroutine
         logger.info("MissionController: terminated TaskRunner \n")
+        
+        # terminate the mr
+        logger.info(f"MissionController: the current task is done, end mission \n")
+        await self.end_mission()
         
         #end the mc
         logger.info("MissionController: terminate the controller\n")

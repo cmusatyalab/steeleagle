@@ -20,31 +20,28 @@ class TaskRunner():
         
     async def run(self):
         logger.info('[TaskRunner] Start to manage the task queue')
-        try:
-            while not self.isTerminated:
-                logger.info('[TaskRunner] HI tttt')
-                if (not self.taskQueue.empty()):
-                    # get the task
-                    logger.info('[TaskRunner] Pulling a task off the task queue')
-                    self.currentTask = self.taskQueue.get()
-                    
-                    # execute a task
-                    self.taskCoroutinue = asyncio.create_task(self.currentTask.run()) 
-                    await self.taskCoroutinue
-                    logger.info('[TaskRunner] Finish executing one task off the task queue')
-                    self.taskCoroutinue = None
-
-                await asyncio.sleep(0.1)                   
-        except asyncio.CancelledError as e:
-            logger.info(f'[TaskRunner] Exec loop interrupted by exception: {e}')
-        finally:
-            await self.stop_task()
-
-
-    async def stop_task(self):
+        while True:
+            # termniate the loop if commanded by mission controller
+            if (self.isTerminated):
+                logger.info('[TaskRunner] terminating the task queue')
+                self.stop_task()
+                break
+            
+            # logger.info('[TaskRunner] HI tttt')
+            if (not self.taskQueue.empty()):
+                # get the task
+                logger.info('[TaskRunner] Pulling a task off the task queue')
+                self.currentTask = self.taskQueue.get()
+                
+                # execute a task
+                self.taskCoroutinue = asyncio.create_task(self.currentTask.run())
+            await asyncio.sleep(0.1)                   
         
+
+
+    def stop_task(self):
+        logger.info(f'[TaskRunner] Stopping current task!')
         if self.taskCoroutinue is not None:
-            logger.info(f'[TaskRunner] Stopping current task!')
             # stop all the transitions of the task
             self.currentTask.stop_trans()
             logger.info(f'[TaskRunner]  transitions in the current task stopped!')
