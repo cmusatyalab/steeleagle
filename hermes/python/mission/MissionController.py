@@ -129,13 +129,12 @@ class MissionController():
         logger.info(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")
         await self.end_mission()
         
+        # terminate the tr
         logger.info("MissionController: terminating TaskRunner \n")
-        tr_coroutine.cancel()
-        try:
-            await tr_coroutine
-        except asyncio.CancelledError as e:
-            logger.info(f'MissionController: terminated TaskRunner {e}')
-            
+        tr.terminate()
+        await tr_coroutine
+        logger.info("MissionController: terminated TaskRunner \n")
+        
         #end the mc
         logger.info("MissionController: terminate the controller\n")
 

@@ -13,11 +13,15 @@ class TaskRunner():
         self.currentTask = None
         # thread safe queue
         self.taskQueue = queue.Queue()
+        self.isTerminated = False
 
+    def terminate(self):
+        self.isTerminated = True
+        
     async def run(self):
         logger.info('[TaskRunner] Start to manage the task queue')
         try:
-            while True:
+            while not self.isTerminated:
                 logger.info('[TaskRunner] HI tttt')
                 if (not self.taskQueue.empty()):
                     # get the task
