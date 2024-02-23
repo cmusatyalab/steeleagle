@@ -20,23 +20,19 @@ class TaskRunner():
             while True:
                 logger.info('[TaskRunner] HI tttt')
                 if (not self.taskQueue.empty()):
-                    
                     # get the task
                     logger.info('[TaskRunner] Pulling a task off the task queue')
                     self.currentTask = self.taskQueue.get()
                     
                     # execute a task
-                    try:
-                        self.taskCoroutinue = asyncio.create_task(self.currentTask.run()) 
-                        await self.taskCoroutinue
-                        logger.info('[TaskRunner] Finish executing one task off the task queue')
-                        self.taskCoroutinue = None
-                    except asyncio.CancelledError as e:
-                        logger.error(f'[TaskRunner] Task exited: {e}')
-                        
+                    self.taskCoroutinue = asyncio.create_task(self.currentTask.run()) 
+                    await self.taskCoroutinue
+                    logger.info('[TaskRunner] Finish executing one task off the task queue')
+                    self.taskCoroutinue = None
+
                 await asyncio.sleep(0.1)                   
         except asyncio.CancelledError as e:
-            logger.error(f'[TaskRunner] Exec loop interrupted by exception: {e}')
+            logger.info(f'[TaskRunner] Exec loop interrupted by exception: {e}')
         finally:
             await self.stop_task()
 
@@ -51,13 +47,7 @@ class TaskRunner():
             
             is_canceled = self.taskCoroutinue.cancel()
             if is_canceled:
-                logger.info(f'[TaskRunner]  cancel successfully')
-            # # kill the task
-            # try:
-            #     self.taskCoroutinue.cancel()
-            #     await self.taskCoroutinue
-            # except asyncio.CancelledError:
-            #     logger.info(f'[TaskRunner] Stopped current task!')
+                logger.info(f'[TaskRunner]  task cancelled successfully')
                 
                 
                 

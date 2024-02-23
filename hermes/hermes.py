@@ -45,16 +45,26 @@ def _main():
             print(e)
     elif args.platform == "python":
         # Package the Python script in an MS folder for shipping
+
         with ZipFile(args.output, 'w') as zf:
-            zf.write("./python/MS.py")
+            
+            # Loop through each file in the task_defs directory and add it under the new directory name
             for file in os.listdir('./python/task_defs/'):
-                zf.write(f"./python/task_defs/{file}")
-            for file in os.listdir('./python/runtime/'):
-                zf.write(f"./python/runtime/{file}")
+                zf.write(f"./python/task_defs/{file}", arcname=f"./task_defs/{file}")
+            
+            # Repeat for files in the runtime directory
+            for file in os.listdir('./python/mission/'):
+                zf.write(f"./python/mission/{file}", arcname=f"./mission/{file}")
+            
+            # And again for files in the transition_defs directory
             for file in os.listdir('./python/transition_defs/'):
-                zf.write(f"./python/transition_defs/{file}")
+                zf.write(f"./python/transition_defs/{file}", arcname=f"./transition_defs/{file}")
+            
+            # Generate requirements.txt inside the python directory
             os.system("cd ./python; pipreqs . --force")
-            zf.write("./python/requirements.txt")
+            
+            # Add requirements.txt to the zip, under the new directory
+            zf.write("./python/requirements.txt", arcname=f"./requirements.txt")
 
     if args.verbose:
         print(HR.format(f"Output for {args.platform}"))

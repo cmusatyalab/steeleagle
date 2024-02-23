@@ -97,7 +97,7 @@ class Supervisor:
         self.stop_mission()
         # Start new task
         logger.debug('MS import')
-        from MS import MissionController
+        from mission.MissionController import MissionController
         logger.debug('MC init')
         self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
@@ -125,11 +125,8 @@ class Supervisor:
                 for chunk in r.iter_content():
                     f.write(chunk)
             z = ZipFile(filename)
-            os.system("rm -rf ./task_defs ./python")
-            os.system("rm -rf ./runtime ./python")
-            os.system("rm -rf ./transition_defs ./python")
+            os.system("rm -rf ./task_defs ./mission ./transition_defs")
             z.extractall()
-            os.system("mv python/* .")
             self.install_prereqs()
         except Exception as e:
             print(e)

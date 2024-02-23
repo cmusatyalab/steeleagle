@@ -67,5 +67,8 @@ class DetectTask(Task):
             self._exit()
         except asyncio.CancelledError as e:
             logger.info(f"**************Detect Task Exception : {e}**************\n")
+            
+            # in case it is a cancel from task runner to propagate down
+            # raise
 
 

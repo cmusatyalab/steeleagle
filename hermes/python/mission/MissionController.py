@@ -2,8 +2,8 @@ import asyncio
 from  interfaces.Task import TaskType      
 from task_defs.TrackTask import TrackTask
 from task_defs.DetectTask import DetectTask
-from runtime.MissionCreator import MissionCreator
-from runtime.TaskRunner import TaskRunner
+from mission.MissionCreator import MissionCreator
+from mission.TaskRunner import TaskRunner
 import queue
 import logging
 
@@ -79,9 +79,7 @@ class MissionController():
        
     async def end_mission(self):
         logger.info("MC: end mission, rth\n")
-        await self.drone.moveTo(40.4156235, -79.9504726 , 20)
-        logger.info("MC: land")
-        await self.drone.land()
+        await self.drone.rth()
         
     def get_current_task(self):
         return self.curr_task_id
@@ -131,10 +129,13 @@ class MissionController():
         logger.info(f"MissionController: the current task is done, terminate the MISSION RUNNER \n")
         await self.end_mission()
         
-        logger.info("MissionController: terminate TaskRunner \n")
+        logger.info("MissionController: terminating TaskRunner \n")
         tr_coroutine.cancel()
-        await tr_coroutine
-        
+        try:
+            await tr_coroutine
+        except asyncio.CancelledError as e:
+            logger.info(f'MissionController: terminated TaskRunner {e}')
+            
         #end the mc
         logger.info("MissionController: terminate the controller\n")
 
