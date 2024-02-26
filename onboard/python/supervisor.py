@@ -105,15 +105,10 @@ class Supervisor:
         logger.debug('Finish func')
 
     def stop_mission(self):
-        if self.mission:
+        if self.mission and not self.missionTask.cancelled():
             logger.info('Mission script stop signalled')
-            sync(self.mission.stop())
+            self.missionTask.cancel()
             self.mission = None
-
-    def kill_mission(self):
-        if self.mission and self.missionTask and not self.missionTask.cancelled():
-            logger.info('Mission script kill signalled')
-            self.missionTask.cancel() # Hard stops the mission with an exception
 
     def download(self, url: str):
         #download zipfile and extract reqs/flight script from cloudlet
@@ -157,12 +152,12 @@ class Supervisor:
                     extras.ParseFromString(rep)
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
-                        self.kill_mission()
+                        self.stop_mission()
                         self.manual = False
                         asyncio.create_task(self.drone.rth())
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
-                        self.kill_mission()
+                        self.stop_mission()
                         self.manual = True
                         logger.info('Manual control is now active!')
                         # Try cancelling the RTH task if it exists

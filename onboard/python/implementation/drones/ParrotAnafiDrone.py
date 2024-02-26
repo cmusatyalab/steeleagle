@@ -87,7 +87,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         self.drone(set_custom_location(lat, lng, alt)).wait().success()
 
     async def rth(self):
-        self.hover()
+        await self.hover()
         self.drone(return_to_home())
 
     ''' Movement methods '''

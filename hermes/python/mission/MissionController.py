@@ -12,10 +12,6 @@ logger.setLevel(logging.INFO)
 
     
 class MissionController():
-
-    @staticmethod
-    def default_transit(triggered_event):
-        logger.info(f"MissionController: no matched up transition, triggered event {triggered_event}\n", triggered_event)
         
     def __init__(self, drone, cloudlet):
         super().__init__()
@@ -25,7 +21,7 @@ class MissionController():
         self.start_task_id = None
         self.curr_task_id = None
         self.transitMap = {}
-        self.transitMap["default"]= self.default_transit
+        self.transitMap["default"]= MissionCreator.default_transit
         self.task_arg_map = {}
 
     ######################################################## TASK #############################################################
@@ -43,7 +39,7 @@ class MissionController():
     def next_task(self, current_task_id, triggered_event):
         logger.info(f"MC next task, current_task_id {current_task_id}, trigger_event {triggered_event}")
         try:
-            next_task_id  = self.transitMap.get(current_task_id, self.default_transit)(triggered_event)
+            next_task_id  = self.transitMap.get(current_task_id, MissionCreator.default_transit)(triggered_event)
         except Exception as e:
             logger.info(f"{e}")
                 
@@ -87,56 +83,61 @@ class MissionController():
     ######################################################## CONTROL ############################################################
      
     async def run(self):
-        # start the mc
-        logger.info("MissionController: hi start the controller\n")
+        try:
+            # start the mc
+            logger.info("MissionController: hi start the controller\n")
 
-        logger.info("MissionController: define mission \n")
-        MissionCreator.define_mission(self.transitMap, self.task_arg_map)
-        logger.info(f"MissionController: transitMap {str(self.transitMap)} \n")
-        logger.info(f"MissionController: task_arg_map {str(self.task_arg_map)} \n")
-        
-        logger.info("MissionController: create TaskRunner \n")
-        tr = TaskRunner(self.drone)
-        tr_coroutine = asyncio.create_task(tr.run())
-        
-        logger.info("MissionController: start mission \n")
-        await self.start_mission(tr)
-        
-        logger.info("MissionController: go to the inf loop routine\n")
-        # main logic check the triggered event
-        while True:
-            # logger.info('[MC] HI tttt')
+            logger.info("MissionController: define mission \n")
+            MissionCreator.define_mission(self.transitMap, self.task_arg_map)
+            logger.info(f"MissionController: transitMap {str(self.transitMap)} \n")
+            logger.info(f"MissionController: task_arg_map {str(self.task_arg_map)} \n")
             
-            if (not self.trigger_event_queue.empty()):
-                item = self.trigger_event_queue.get()
-                task_id = item[0]
-                trigger_event = item[1]
-                logger.info(f"MissionController: Trigger one event! \n")
-                logger.info(f"MissionController: Task id  {task_id} \n")
-                logger.info(f"MissionController: event   {trigger_event} \n")
-                if (task_id == self.get_current_task()):
-                    next_task_id = self.next_task(task_id, trigger_event)
-                    if (next_task_id == "terminate"):
-                        break
-                    else:
-                        next_task = self.create_task(next_task_id)
-                        logger.info(f"MissionController: task created  taskid {str(next_task.task_id)} \n")
-                        await self.transit_to(next_task, tr)
-                        
-            await asyncio.sleep(0.1)
+            logger.info("MissionController: create TaskRunner \n")
+            tr = TaskRunner(self.drone)
+            tr_coroutine = asyncio.create_task(tr.run())
+            
+            logger.info("MissionController: start mission \n")
+            await self.start_mission(tr)
+            
+            logger.info("MissionController: go to the inf loop routine\n")
+            # main logic check the triggered event
         
-        # terminate the tr
-        logger.info("MissionController: terminating TaskRunner \n")
-        tr.terminate()
-        await tr_coroutine
-        logger.info("MissionController: terminated TaskRunner \n")
-        
-        # terminate the mr
-        logger.info(f"MissionController: the current task is done, end mission \n")
-        await self.end_mission()
-        
-        #end the mc
-        logger.info("MissionController: terminate the controller\n")
+            while True:
+                # logger.info('[MC] HI tttt')
+                
+                if (not self.trigger_event_queue.empty()):
+                    item = self.trigger_event_queue.get()
+                    task_id = item[0]
+                    trigger_event = item[1]
+                    logger.info(f"MissionController: Trigger one event! \n")
+                    logger.info(f"MissionController: Task id  {task_id} \n")
+                    logger.info(f"MissionController: event   {trigger_event} \n")
+                    if (task_id == self.get_current_task()):
+                        next_task_id = self.next_task(task_id, trigger_event)
+                        if (next_task_id == "terminate"):
+                            break
+                        else:
+                            next_task = self.create_task(next_task_id)
+                            logger.info(f"MissionController: task created  taskid {str(next_task.task_id)} \n")
+                            await self.transit_to(next_task, tr)
+                            
+                await asyncio.sleep(0.1)            
+
+        except asyncio.CancelledError as e:
+            logger.info(f"MissionController: catching the asyncio exception {e} \n")
+        finally:
+            # terminate the tr
+            logger.info("MissionController: terminating TaskRunner \n")
+            tr.terminate()
+            await tr_coroutine
+            logger.info("MissionController: terminated TaskRunner \n")
+            
+            # terminate the mr
+            logger.info(f"MissionController: the current task is done, end mission \n")
+            await self.end_mission()
+            
+            #end the mc
+            logger.info("MissionController: terminate the controller\n")
 
 
 

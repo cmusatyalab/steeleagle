@@ -20,23 +20,27 @@ class TaskRunner():
         
     async def run(self):
         logger.info('[TaskRunner] Start to manage the task queue')
-        while True:
-            # termniate the loop if commanded by mission controller
-            if (self.isTerminated):
-                logger.info('[TaskRunner] terminating the task queue')
-                self.stop_task()
-                break
-            
-            # logger.info('[TaskRunner] HI tttt')
-            if (not self.taskQueue.empty()):
-                # get the task
-                logger.info('[TaskRunner] Pulling a task off the task queue')
-                self.currentTask = self.taskQueue.get()
+        try:
+            while True:
+                # termniate the loop if commanded by mission controller
+                if (self.isTerminated):
+                    logger.info('[TaskRunner] terminating the task queue')
+                    break
                 
-                # execute a task
-                self.taskCoroutinue = asyncio.create_task(self.currentTask.run())
-            await asyncio.sleep(0.1)                   
-        
+                # logger.info('[TaskRunner] HI tttt')
+                if (not self.taskQueue.empty()):
+                    # get the task
+                    logger.info('[TaskRunner] Pulling a task off the task queue')
+                    self.currentTask = self.taskQueue.get()
+                    
+                    # execute a task
+                    self.taskCoroutinue = asyncio.create_task(self.currentTask.run())
+                await asyncio.sleep(0.1)                   
+        except asyncio.CancelledError as e:
+            logger.info(f"[TaskRunner]: catching the asyncio exception {e} \n")
+            raise
+        finally:
+            self.stop_task()
 
 
     def stop_task(self):

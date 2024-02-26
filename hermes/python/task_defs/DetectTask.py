@@ -48,25 +48,25 @@ class DetectTask(Task):
         
         self.create_transition()
         
-        try:
-            logger.info(f"**************Detect Task {self.task_id}: hi this is detect task {self.task_id}**************\n")
-            coords = ast.literal_eval(self.task_attributes["coords"])
-            await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
-            hover_delay = int(self.task_attributes["hover_delay"])
-            for dest in coords:
-                lng = dest["lng"]
-                lat = dest["lat"]
-                alt = dest["alt"]
-                logger.info(f"**************Detect Task {self.task_id}: Move **************\n")
-                logger.info(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
-                await self.drone.moveTo(lat, lng, alt)
-                await asyncio.sleep(1)
-                # await asyncio.sleep(hover_delay)
+        # try:
+        logger.info(f"**************Detect Task {self.task_id}: hi this is detect task {self.task_id}**************\n")
+        coords = ast.literal_eval(self.task_attributes["coords"])
+        await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
+        hover_delay = int(self.task_attributes["hover_delay"])
+        for dest in coords:
+            lng = dest["lng"]
+            lat = dest["lat"]
+            alt = dest["alt"]
+            logger.info(f"**************Detect Task {self.task_id}: Move **************\n")
+            logger.info(f"**************Detect Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
+            await self.drone.moveTo(lat, lng, alt)
+            await asyncio.sleep(1)
+            # await asyncio.sleep(hover_delay)
 
-            logger.info(f"**************Detect Task {self.task_id}: Done**************\n")
-            self._exit()
-        except asyncio.CancelledError as e:
-            logger.info(f"**************Detect Task Exception : {e}**************\n")
+        logger.info(f"**************Detect Task {self.task_id}: Done**************\n")
+        self._exit()
+        # except asyncio.CancelledError as e:
+        #     logger.info(f"**************Detect Task Exception : {e}**************\n")
             
             # in case it is a cancel from task runner to propagate down
             # raise
