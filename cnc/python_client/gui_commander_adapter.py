@@ -365,7 +365,7 @@ class GUICommanderAdapter(customtkinter.CTk):
                 self.button_kill.configure(state=tkinter.NORMAL)
                 self.button_rth.configure(state=tkinter.NORMAL)
                 self.toggle_manual(False)
-                SCP_URL = f"{self.user}@{self.server}:~/steel-eagle-clean/cnc/server/steeleagle-vol/scripts/" + filename
+                SCP_URL = f"{self.user}@{self.server}:~/steeleagle/cnc/server/steeleagle-vol/scripts/" + filename
                 FLIGHT_URL = f"http://{self.server}:8080/scripts/" + filename
                 try:
                     subprocess.run(["scp", filepath, SCP_URL], check=True)

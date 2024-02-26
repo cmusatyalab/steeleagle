@@ -29,3 +29,8 @@ class CloudletItf(ABC):
     @abstractmethod
     def getResults(self, engine_key):
         pass
+    
+    @abstractmethod
+    def clearResults(self, engine_key):
+        pass
+

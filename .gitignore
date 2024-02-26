@@ -24,3 +24,10 @@ venv/
 .streamlit/secrets.toml
 *~
 *.log
+
+hermes/python/mission/MissionCreator.py
+onboard/python/runtime/
+onboard/python/task_defs/
+onboard/python/transition_defs/
+onboard/python/mission/
+onboard/python/requirements.txt

@@ -24,9 +24,9 @@ from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 import zmq
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -91,39 +91,40 @@ class Supervisor:
         self.start_mission()
 
     def start_mission(self):
+        logger.debug('Start mission supervisor')
+        logger.debug(self)
         # Stop existing mission (if there is one)
         self.stop_mission()
         # Start new task
-        from MS import MS
-        self.mission = MS(self.drone, self.cloudlet)
+        logger.debug('MS import')
+        from mission.MissionController import MissionController
+        logger.debug('MC init')
+        self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
+        logger.debug('Finish func')
 
     def stop_mission(self):
-        if self.mission:
-            asyncio.run(self.mission.stop())
+        if self.mission and not self.missionTask.cancelled():
             logger.info('Mission script stop signalled')
+            self.missionTask.cancel()
             self.mission = None
 
-    def kill_mission(self):
-        if self.mission and self.missionTask and not self.missionTask.cancelled():
-            logger.info('Mission script kill signalled')
-            self.missionTask.cancel() # Hard stops the mission with an exception
-
     def download(self, url: str):
-        # Download zipfile and extract reqs/flight script from cloudlet
-        filename = url.rsplit(sep='/')[-1]
-        logger.info(f'Writing {filename} to disk...')
-        r = requests.get(url, stream=True)
-        r.raise_for_status()
-        with open(filename, mode='wb') as f:
-            for chunk in r.iter_content():
-                f.write(chunk)
-        z = ZipFile(filename)
-        os.system("rm -rf ./task_defs ./python")
-        z.extractall()
-        os.system("mv python/* .")
-        self.install_prereqs()
+        #download zipfile and extract reqs/flight script from cloudlet
+        try:
+            filename = url.rsplit(sep='/')[-1]
+            logger.info(f'Writing {filename} to disk...')
+            r = requests.get(url, stream=True)
+            with open(filename, mode='wb') as f:
+                for chunk in r.iter_content():
+                    f.write(chunk)
+            z = ZipFile(filename)
+            os.system("rm -rf ./task_defs ./mission ./transition_defs")
+            z.extractall()
+            self.install_prereqs()
+        except Exception as e:
+            print(e)
 
     def install_prereqs(self) -> bool:
         ret = False
@@ -132,7 +133,7 @@ class Supervisor:
             subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', './requirements.txt'])
             ret = True
         except subprocess.CalledProcessError as e:
-            logger.error(f"Error pip installing requirements.txt: {e}")
+            logger.debug(f"Error pip installing requirements.txt: {e}")
         return ret
 
 
@@ -151,12 +152,12 @@ class Supervisor:
                     extras.ParseFromString(rep)
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
-                        self.kill_mission()
+                        self.stop_mission()
                         self.manual = False
                         asyncio.create_task(self.drone.rth())
                     elif extras.cmd.halt:
                         logger.info('Killswitch signaled from commander')
-                        self.kill_mission()
+                        self.stop_mission()
                         self.manual = True
                         logger.info('Manual control is now active!')
                         # Try cancelling the RTH task if it exists
@@ -186,7 +187,7 @@ class Supervisor:
 
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
             except Exception as e:
-                logger.error(e)
+                logger.debug(e)
 
 
     '''
@@ -224,7 +225,7 @@ class Supervisor:
                 extras.status.bearing = sync(self.drone.getHeading())
                 logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
             except Exception as e:
-                logger.error(f'Error getting telemetry: {e}')
+                logger.debug(f'Error getting telemetry: {e}')
 
             # Register on the first frame
             if self.heartbeats == 1:

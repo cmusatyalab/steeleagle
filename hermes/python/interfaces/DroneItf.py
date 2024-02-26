@@ -55,7 +55,7 @@ class DroneItf(ABC):
     ''' Movement methods '''
 
     @abstractmethod
-    async def PCMD(self, pitch, yaw, roll, gaz, rot):
+    async def PCMD(self, pitch, yaw, roll, gaz):
         pass
 
     @abstractmethod
@@ -130,6 +130,10 @@ class DroneItf(ABC):
     async def getSatellites(self):
         pass
 
+    @abstractmethod
+    async def getGimbalPitch(self):
+        pass
+    
     ''' Control methods '''
 
     @abstractmethod

@@ -87,7 +87,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         self.drone(set_custom_location(lat, lng, alt)).wait().success()
 
     async def rth(self):
-        self.hover()
+        await self.hover()
         self.drone(return_to_home())
 
     ''' Movement methods '''
@@ -171,6 +171,9 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
+    
+    async def getGimbalPitch(self):
+        return self.drone.get_state(attitude)[0]["pitch_absolute"]
     
     async def getSatellites(self):
         return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"] 
