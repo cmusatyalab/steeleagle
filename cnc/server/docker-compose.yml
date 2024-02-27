@@ -225,8 +225,8 @@ services:
     networks:
       - redis
     volumes:
-      - ./steeleagle-vol/redis:/data
-      - ./steeleagle-vol/redis/redis.conf:/redis-stack.conf
+      - ./redis:/data
+      - ./redis/redis.conf:/redis-stack.conf
 
 networks:
   cnc-net:
