@@ -280,8 +280,10 @@ class GUICommanderAdapter(customtkinter.CTk):
             self.button_connect.configure(state=tkinter.DISABLED)
 
     def on_connect_pressed(self, event=None):
-        self.connected_marker = self.map_widget.set_marker(float(self.connected_drone["latitude"]),
-                float(self.connected_drone["longitude"]),
+        lat = float(self.connected_drone["latitude"])
+        long = float(self.connected_drone["longitude"])
+        self.connected_marker = self.map_widget.set_marker( lat if lat >= 500 else 0,
+                long if long >= 500 else 0,
                 text=self.selected_drone_name,
                 text_color="#00efff",
                 font=("Roboto Medium", 13),
