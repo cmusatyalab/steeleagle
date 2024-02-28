@@ -28,9 +28,9 @@ logger.setLevel(logging.DEBUG)
 COMMANDER_ID = os.uname()[1]
 WEBSOCKET_PORT = 9099
 DEFAULT_SOURCE_NAME = 'telemetry'
-SECRETS = dotenv_values(".env")
+SECRETS = None
 
-class GUICommanderAdapter(customtkinter.CTk):
+class TKCommander(customtkinter.CTk):
 
     APP_NAME = "Command and Control Interface"
     WIDTH = 1800
@@ -56,9 +56,9 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.zmq = self.ctx.socket(zmq.REQ)
         self.zmq.connect(f'tcp://{SECRETS["ZMQ"]}:{SECRETS["ZMQ_PORT"]}')
 
-        self.title(GUICommanderAdapter.APP_NAME)
-        self.geometry(str(GUICommanderAdapter.WIDTH) + "x" + str(GUICommanderAdapter.HEIGHT))
-        self.minsize(GUICommanderAdapter.WIDTH, GUICommanderAdapter.HEIGHT)
+        self.title(TKCommander.APP_NAME)
+        self.geometry(str(TKCommander.WIDTH) + "x" + str(TKCommander.HEIGHT))
+        self.minsize(TKCommander.WIDTH, TKCommander.HEIGHT)
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.bind("<Command-q>", self.on_closing)
@@ -74,7 +74,7 @@ class GUICommanderAdapter(customtkinter.CTk):
         self.command_queue = Queue()
         self.manual = True
 
-        self.keyboard_state = {k : 0 for k in GUICommanderAdapter.KEYLIST}
+        self.keyboard_state = {k : 0 for k in TKCommander.KEYLIST}
         
         customtkinter.set_appearance_mode("system")
         customtkinter.set_default_color_theme("blue")
@@ -511,10 +511,12 @@ class GUICommanderAdapter(customtkinter.CTk):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--loglevel', default='INFO', help='Set the log level')
+    parser.add_argument('-e', '--env', default='.env', help='.env file to load [default: .env]')
     
     args = parser.parse_args()
+    SECRETS = dotenv_values(args.env)
     logging.basicConfig(format="%(levelname)s: %(message)s", level=args.loglevel)
-    UI = GUICommanderAdapter() # Must initialize the UI in the thread in which it will run
+    UI = TKCommander() # Must initialize the UI in the thread in which it will run
     subscriber = Thread(target=UI.image_subscriber, daemon=True)
     telem = Thread(target=UI.update_telemetry, daemon=True)
     cmd_handler = Thread(target=UI.command_handler, daemon=True)
