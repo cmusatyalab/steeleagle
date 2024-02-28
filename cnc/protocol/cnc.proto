@@ -21,6 +21,7 @@ message PCMD {
   int32 yaw = 2;
   int32 pitch = 3;
   int32 roll = 4;
+  int32 gimbal_pitch = 5;
 }
 
 message Command {

@@ -476,7 +476,8 @@ class TKCommander(customtkinter.CTk):
                             req.cmd.pcmd.pitch = self.axis('w', 's')
                             req.cmd.pcmd.roll = self.axis('d', 'a')
                             req.cmd.pcmd.gaz = self.axis('Up', 'Down')
-                            logger.debug(f"PCMD: {req.cmd.pcmd.yaw}, {req.cmd.pcmd.pitch}, {req.cmd.pcmd.roll}, {req.cmd.pcmd.gaz}")
+                            req.cmd.pcmd.gimbal_pitch = self.axis('r', 'f')
+                            logger.debug(f"PCMD: {req.cmd.pcmd.yaw}, {req.cmd.pcmd.pitch}, {req.cmd.pcmd.roll}, {req.cmd.pcmd.gaz} {req.cmd.pcmd.gimbal_pitch}")
             if req is not None:
                 self.zmq.send(req.SerializeToString())
                 rep = self.zmq.recv()

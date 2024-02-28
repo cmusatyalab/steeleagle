@@ -183,9 +183,11 @@ class Supervisor:
                             yaw = extras.cmd.pcmd.yaw
                             roll = extras.cmd.pcmd.roll
                             gaz = extras.cmd.pcmd.gaz
-                            logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz}')
-
+                            gimbal_pitch = extras.cmd.pcmd.gimbal_pitch
+                            logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {gaz} {gimbal_pitch}')
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
+                            current = await self.drone.getGimbalPitch()
+                            asyncio.create_task(self.drone.setGimbalPose(0, current+gimbal_pitch , 0))
             except Exception as e:
                 logger.debug(e)
 
