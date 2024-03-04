@@ -1,0 +1,31 @@
+extern timeout
+extern object_detection
+Task {
+    Detect task1 {
+        way_points: <Triangle>,
+        gimbal_pitch: -20.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 0,
+        model: coco
+    }
+
+    Detect task2 {
+        way_points: <Rectangle>,
+        gimbal_pitch: -45.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 0,
+        model: coco
+    }
+}
+
+
+Mission {
+    task1->
+
+    Transition ( timeout( 70 ) ) task2 -> task1
+    Transition ( object_detection( car ) ) task1 -> task2
+}
+
+

@@ -1,0 +1,52 @@
+    Trigger event {
+        bool Object_detection(Drone d, trigger_object o, Task curr_task_id);
+        bool Timeout(time t);
+    }
+
+
+    Detect task1 = {
+        way_points: [(-79.9503492, 40.4155806, 25.0),(-79.9491717, 40.4155826, 25.0)],
+        gimbal_pitch: -45.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 5,
+        model: none
+    };
+
+    Detect task2 = {
+        way_points: [(-79.9497296, 40.415505, 25.0),(-79.9497001, 40.41507, 25.0)],
+        gimbal_pitch: -45.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 5,
+        model: none
+    };
+
+    Drone harpy = {
+        drone_model : "anafi",
+        Task curr_task  : task 1
+    };
+
+    Mission {
+        start(harpy){
+            Transition (timeout(40) and harpy.curr_task == task1 ) {
+                harpy -> task2;
+            }
+
+            Transition (object_detection('car') and harpy.curr_task == task2) {
+                harpy -> task1;
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
