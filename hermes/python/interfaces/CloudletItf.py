@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 class CloudletItf(ABC):
 
@@ -20,6 +21,10 @@ class CloudletItf(ABC):
 
     @abstractmethod
     def switchModel(self, model):
+        pass
+
+    @abstractmethod
+    def setHSVFilter(self, lower_bound: Tuple[int, int, int], upper_bound: Tuple[int, int, int]):
         pass
 
     @abstractmethod

@@ -43,6 +43,12 @@ message DroneStatus {
   int64 mag = 5;
 }
 
+message HSV {
+  int64 H = 1;
+  int64 S = 2;
+  int64 V = 3;
+}
+
 message Extras {
     bool registering = 1;
     string drone_id = 2;
@@ -51,4 +57,8 @@ message Extras {
     Location location = 5;
     DroneStatus status = 6;
     string detection_model = 7;
+
+    //for HSV filtering of object detection results
+    optional HSV lower_bound = 8;
+    optional HSV upper_bound = 9;
 }
