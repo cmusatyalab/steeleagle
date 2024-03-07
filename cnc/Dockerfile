@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 LABEL Satyalab, satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -27,12 +27,9 @@ RUN pip3 install --upgrade pip
 
 # Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir \
-    protobuf \
     py-cpuinfo \
-    pyzmq \
     'setuptools==41.0.0' \
-    'websockets==8.0.0' \
-    zmq 
+    'websockets==8.0.0'
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -

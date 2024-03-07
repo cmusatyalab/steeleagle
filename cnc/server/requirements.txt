@@ -12,3 +12,5 @@ randomname
 jsonschema
 Pillow
 redis
+zmq
+protobuf==3.20.0
