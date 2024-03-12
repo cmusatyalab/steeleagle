@@ -120,7 +120,10 @@ class Supervisor:
                 for chunk in r.iter_content():
                     f.write(chunk)
             z = ZipFile(filename)
-            os.system("rm -rf ./task_defs ./mission ./transition_defs")
+            try:
+                subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
+            except subprocess.CalledProcessError as e:
+                logger.debug(f"Error removing old task/transition defs: {e}")
             z.extractall()
             self.install_prereqs()
         except Exception as e:
