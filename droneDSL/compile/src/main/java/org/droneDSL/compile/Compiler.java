@@ -16,35 +16,34 @@ import picocli.CommandLine;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @CommandLine.Command(name = "DroneDSL Compiler", version = "DroneDSL Compiler 1.0", mixinStandardHelpOptions = true)
 public class Compiler implements Runnable {
-  public record Pt(
-      @NotNull String longitude,
-      @NotNull String latitude,
-      @NotNull String altitude
-  ) {
+  public record Pt(@NotNull String longitude, @NotNull String latitude, @NotNull String altitude) {
   }
 
-  @CommandLine.Option(names = {"-k", "--kmlFilePath"}, paramLabel = "<kmlFilePath>", defaultValue = "null",
-      description = "File Path of the KML file")
+  @CommandLine.Option(names = {"-k", "--kmlFilePath"}, paramLabel = "<kmlFilePath>", defaultValue = "null", description = "File Path of the KML file")
   String kmlFilePath;
 
-  @CommandLine.Option(names = {"-d", "--dslFilePath"}, paramLabel = "<dslFilePath>", defaultValue = "null",
-      description = "File Path of the DSL script")
+  @CommandLine.Option(names = {"-d", "--dslFilePath"}, paramLabel = "<dslFilePath>", defaultValue = "null", description = "File Path of the DSL script")
   String dslFilePath;
 
-  @CommandLine.Option(names = {"-o", "--outputFilePath"}, paramLabel = "<outputFilePath>", defaultValue = "null",
-      description = "output file path")
-  String outputFilePath;
+  @CommandLine.Option(names = {"-o", "--outputFilePath"}, paramLabel = "<outputFilePath>", defaultValue = "./flightplan.ms", description = "output file path")
+  String outputFilePath = "./flightplan.ms";
 
-  @CommandLine.Option(names = {"-a", "--altitude"}, paramLabel = "<altitude>", defaultValue = "15",
-      description = "altitude of the waypoints specified")
+  @CommandLine.Option(names = {"-a", "--altitude"}, paramLabel = "<altitude>", defaultValue = "15", description = "altitude of the waypoints specified")
   String altitude = "15";
+
+  @CommandLine.Option(names = {"-p", "--platform"}, paramLabel = "<platform>", defaultValue = "python", description = "compiled code platform")
+  String platform = "python";
 
   @Override
   public void run() {
@@ -65,14 +64,30 @@ public class Compiler implements Runnable {
     System.out.println(node.toDebugString());
 
     // get the concrete Flight plan structure
-    ImmutableMap<String, Task> taskMap = ImmutableMap.from(node.child(BotPsiElementTypes.TASK).childrenOfType(BotPsiElementTypes.TASK_DECL)
-        .map(task -> Parse.createTask(task, waypointsMap)));
+    ImmutableMap<String, Task> taskMap = ImmutableMap.from(node.child(BotPsiElementTypes.TASK).childrenOfType(BotPsiElementTypes.TASK_DECL).map(task -> Parse.createTask(task, waypointsMap)));
     var startTaskID = Parse.createMission(node.child(BotPsiElementTypes.MISSION).child(BotPsiElementTypes.MISSION_CONTENT), taskMap);
     var ast = new MissionPlan(startTaskID, taskMap);
 
     // code generate
+    var platformPath = String.format("./%s", platform);
     try {
-      ast.codeGenPython(outputFilePath);
+      ast.codeGenPython(platformPath);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    // zip
+    try {
+      FileOutputStream fos = new FileOutputStream(outputFilePath);
+      ZipOutputStream zos = new ZipOutputStream(fos);
+
+      // Function to add a directory's files to the zip
+      addToZipFile(platformPath + "/task_defs", "./task_defs", zos);
+      addToZipFile(platformPath + "/mission", "./mission", zos);
+      addToZipFile(platformPath + "/transition_defs", "./transition_defs", zos);
+
+      zos.close();
+      fos.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -86,6 +101,20 @@ public class Compiler implements Runnable {
   @NotNull
   private static DslParserImpl parser() {
     return new DslParserImpl(new StreamReporter(System.out));
+  }
+
+  private static void addToZipFile(String sourceDir, String insideZipDir, ZipOutputStream zos) throws IOException {
+    File dir = new File(sourceDir);
+    File[] files = dir.listFiles();
+    if (files != null) {
+      for (File file : files) {
+        if (file.isFile()) {
+          zos.putNextEntry(new ZipEntry(insideZipDir + "/" + file.getName()));
+          Files.copy(file.toPath(), zos);
+          zos.closeEntry();
+        }
+      }
+    }
   }
 
   private static Map<String, List<Compiler.Pt>> parseKML2Map(String kmlPath, String altitude) {

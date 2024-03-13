@@ -25,4 +25,8 @@ lombok.config
 # output
 /*/out/
 
+# mission creator
+python/mission/MissionCreator.py
+
+
 
