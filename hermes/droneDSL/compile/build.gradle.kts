@@ -1,5 +1,5 @@
 plugins { application }
-val mainClassFQName = "org.droneDSL.compile.Main"
+val mainClassFQName = "org.droneDSL.compile.Compiler"
 application.mainClass.set(mainClassFQName)
 CommonTasks.fatJar(project, mainClassFQName)
 
@@ -27,4 +27,23 @@ val genVer = tasks.register<GenerateVersionTask>("genVer") {
   basePackage = "org.droneDSL.compile"
   outputDir = genDir.resolve("org/droneDSL/compile/prelude")
 }
+
+val jarDep = tasks.register<Jar>("jarDep") {
+  group = "build"
+  manifest.attributes["Main-Class"] = "${project.group}.frontend.ConsoleMain"
+  duplicatesStrategy = DuplicatesStrategy.INCLUDE
+  dependsOn(configurations.runtimeClasspath)
+  from({ configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) } })
+  from(sourceSets.main.get().output)
+  archiveClassifier.set("full")
+}
+
+val copyJarDep = tasks.register<Copy>("copyJarDep") {
+  val jarDep = jarDep.get()
+  dependsOn(jarDep)
+  from(jarDep.archiveFile.get().asFile)
+  into(System.getProperty("user.dir"))
+  outputs.upToDateWhen { false }
+}
+
 tasks.compileJava.configure { dependsOn(genVer, lexer) }

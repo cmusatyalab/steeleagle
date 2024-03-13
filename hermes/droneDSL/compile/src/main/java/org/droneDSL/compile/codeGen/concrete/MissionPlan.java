@@ -19,13 +19,10 @@ public final class MissionPlan {
     this.taskMap = taskMap;
   }
 
-  public void codeGenPython() throws IOException {
-    var pRoot = Paths.get("../postprocess");
+  public void codeGenPython(String rootPath) throws IOException {
+    var pRoot = Paths.get(rootPath);
     var root = pRoot.resolve("mission");
-    Files.createDirectories(Files.readSymbolicLink(root));
     Files.writeString(root.resolve("MissionCreator.py"), missionControllerContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-
   }
 
   private String missionControllerContent() {

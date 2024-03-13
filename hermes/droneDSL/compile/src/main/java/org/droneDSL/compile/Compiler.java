@@ -4,7 +4,6 @@ import kala.collection.immutable.ImmutableMap;
 import org.droneDSL.compile.codeGen.concrete.MissionPlan;
 import org.droneDSL.compile.codeGen.concrete.Parse;
 import org.droneDSL.compile.codeGen.concrete.Task;
-import org.droneDSL.compile.codeGen.pythonGen.CodeGeneratorPython;
 import org.droneDSL.compile.parser.BotPsiElementTypes;
 import org.jetbrains.annotations.NotNull;
 import org.droneDSL.compile.psi.DslParserImpl;
@@ -39,6 +38,10 @@ public class Compiler implements Runnable {
       description = "File Path of the DSL script")
   String dslFilePath;
 
+  @CommandLine.Parameters(paramLabel = "<outputFilePath>", defaultValue = "null",
+      description = "output file path")
+  String outputFilePath;
+
   @CommandLine.Parameters(paramLabel = "<altitude>", defaultValue = "15",
       description = "altitude of the waypoints specified")
   String altitude;
@@ -68,7 +71,11 @@ public class Compiler implements Runnable {
     var ast = new MissionPlan(startTaskID, taskMap);
 
     // code generate
-    CodeGeneratorPython.generateCode(ast);
+    try {
+      ast.codeGenPython(outputFilePath);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public static void main(String[] args) {
