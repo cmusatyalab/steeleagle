@@ -1,2 +1,2 @@
 rootProject.name = "droneDSL"
-include("cli", "preprocess")
+include("compile")

@@ -352,7 +352,7 @@ convert low level AST to concrete level structure Flight Plan Structure (FPS):
       import threading
       from dependencies.Task import Task
       import time
-      import ast
+      import missionPlan
       
       class DetectTask(Task):
       def __init__(self, drone, task_id, event_queue,**kwargs):
@@ -373,7 +373,7 @@ convert low level AST to concrete level structure Flight Plan Structure (FPS):
               timer.start()
           try:
               print(f"**************Detect Task {self.task_id}: hi this is detect task {self.task_id}**************\n")
-              coords = ast.literal_eval(self.kwargs["coords"])
+              coords = missionPlan.literal_eval(self.kwargs["coords"])
               self.drone.setGimbalPose(0.0, float(self.kwargs["gimbal_pitch"]), 0.0)
               hover_delay = int(self.kwargs["hover_delay"])
               for dest in coords:

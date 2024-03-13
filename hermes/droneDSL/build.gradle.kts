@@ -19,8 +19,6 @@ subprojects {
 
   val javaVersion = 17
   java {
-    withSourcesJar()
-    if (hasProperty("release")) withJavadocJar()
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
     toolchain {
@@ -42,11 +40,6 @@ subprojects {
       release.set(javaVersion)
       compilerArgs.addAll(listOf("-Xlint:unchecked"))
     }
-  }
-
-  tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
-    enableAssertions = true
   }
 
   tasks.withType<JavaExec>().configureEach { enableAssertions = true }
