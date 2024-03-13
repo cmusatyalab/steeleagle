@@ -30,21 +30,21 @@ public class Compiler implements Runnable {
   ) {
   }
 
-  @CommandLine.Parameters(paramLabel = "<kmlFilePath>", defaultValue = "null",
+  @CommandLine.Option(names = {"-k", "--kmlFilePath"}, paramLabel = "<kmlFilePath>", defaultValue = "null",
       description = "File Path of the KML file")
   String kmlFilePath;
 
-  @CommandLine.Parameters(paramLabel = "<dslFilePath>", defaultValue = "null",
+  @CommandLine.Option(names = {"-d", "--dslFilePath"}, paramLabel = "<dslFilePath>", defaultValue = "null",
       description = "File Path of the DSL script")
   String dslFilePath;
 
-  @CommandLine.Parameters(paramLabel = "<outputFilePath>", defaultValue = "null",
+  @CommandLine.Option(names = {"-o", "--outputFilePath"}, paramLabel = "<outputFilePath>", defaultValue = "null",
       description = "output file path")
   String outputFilePath;
 
-  @CommandLine.Parameters(paramLabel = "<altitude>", defaultValue = "15",
+  @CommandLine.Option(names = {"-a", "--altitude"}, paramLabel = "<altitude>", defaultValue = "15",
       description = "altitude of the waypoints specified")
-  String altitude;
+  String altitude = "15";
 
   @Override
   public void run() {

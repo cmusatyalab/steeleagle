@@ -1,7 +1,7 @@
 plugins { application }
 val mainClassFQName = "org.droneDSL.compile.Compiler"
 application.mainClass.set(mainClassFQName)
-CommonTasks.fatJar(project, mainClassFQName)
+//CommonTasks.fatJar(project, mainClassFQName)
 
 dependencies {
   api(libs.picocli)
@@ -30,7 +30,7 @@ val genVer = tasks.register<GenerateVersionTask>("genVer") {
 
 val jarDep = tasks.register<Jar>("jarDep") {
   group = "build"
-  manifest.attributes["Main-Class"] = "${project.group}.frontend.ConsoleMain"
+  manifest.attributes["Main-Class"] = "${project.group}.compile.Compiler"
   duplicatesStrategy = DuplicatesStrategy.INCLUDE
   dependsOn(configurations.runtimeClasspath)
   from({ configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) } })
