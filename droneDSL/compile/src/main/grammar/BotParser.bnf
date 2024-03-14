@@ -23,9 +23,9 @@ task_decl ::= (TASK_DETECT_KW | TASK_TRACK_KW) task_name task_body
 task_body ::= <<braced <<commaSep attributes>>>>
 private attributes ::= attribute*
 attribute ::=  ID <<coloned attribute_expr>>
-    //attribute expression: could be number, name, or list of waypoints
-attribute_expr ::= NUMBER | name | <<square_bracked <<commaSep <<paren waypoint>> >> >> | <<angle_bracked name>>
-waypoint ::= NUMBER COMMA NUMBER COMMA NUMBER
+    //attribute expression: could be number, name, list of waypoints, waypoints variable , list of hsv values
+attribute_expr ::= NUMBER | name | <<square_bracked <<commaSep <<paren tuple>> >> >> | <<angle_bracked name>> | <<paren tuple>>
+tuple ::= NUMBER COMMA NUMBER COMMA NUMBER
 
 task_name ::= name
 name ::= ID

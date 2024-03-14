@@ -54,6 +54,9 @@ public final class MissionPlan {
 
 
     taskMap.forEach((taskID, taskContent) -> {
+
+      var isDoneCustomized = false;
+
       //task
       staticMethod.append(String.format("""
               @staticmethod
@@ -61,6 +64,9 @@ public final class MissionPlan {
           """, taskID));
 
       for (var trans: taskContent.transitions){
+        if (Objects.equals(trans.condID(), "done")){
+          isDoneCustomized = true;
+        }
         staticMethod.append(String.format("""
                   if (triggered_event == "%s"):
                       return "%s"
@@ -74,12 +80,13 @@ public final class MissionPlan {
 
       missionTask.append(taskContent.generateDefineTaskCode());
 
-
-      staticMethod.append("""
+      if (!isDoneCustomized){
+        staticMethod.append("""
                   if (triggered_event == "done"):
                       return "terminate"
                       
           """);
+      }
     });
 
 

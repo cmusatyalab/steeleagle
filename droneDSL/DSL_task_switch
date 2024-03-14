@@ -5,7 +5,9 @@ Task {
         drone_rotation: 0.0,
         sample_rate: 2,
         hover_delay: 0,
-        model: coco
+        model: coco,
+        hsv_upper_bound: (30, 100, 100),
+        hsv_lower_bound: (50, 255, 255)
     }
 
     Track task2 {
@@ -20,4 +22,6 @@ Mission {
     Start task1
     Transition ( timeout( 30 ) ) task2 -> task1
     Transition ( object_detection( car ) ) task1 -> task2
+    Transition (done) task2 -> task1
+    Transition (done) task1 -> task2
 }

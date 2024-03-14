@@ -63,7 +63,7 @@ public class BotPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // NUMBER | name | <<square_bracked <<commaSep <<paren waypoint>> >> >> | <<angle_bracked name>>
+  // NUMBER | name | <<square_bracked <<commaSep <<paren tuple>> >> >> | <<angle_bracked name>> | <<paren tuple>>
   public static boolean attribute_expr(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "attribute_expr")) return false;
     boolean r;
@@ -72,6 +72,7 @@ public class BotPsiParser implements PsiParser, LightPsiParser {
     if (!r) r = name(b, l + 1);
     if (!r) r = square_bracked(b, l + 1, attribute_expr_2_0_parser_);
     if (!r) r = angle_bracked(b, l + 1, BotPsiParser::name);
+    if (!r) r = paren(b, l + 1, BotPsiParser::tuple);
     exit_section_(b, l, m, r, false, null);
     return r;
   }
@@ -378,17 +379,17 @@ public class BotPsiParser implements PsiParser, LightPsiParser {
 
   /* ********************************************************** */
   // NUMBER COMMA NUMBER COMMA NUMBER
-  public static boolean waypoint(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "waypoint")) return false;
+  public static boolean tuple(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tuple")) return false;
     if (!nextTokenIs(b, NUMBER)) return false;
     boolean r;
     Marker m = enter_section_(b);
     r = consumeTokens(b, 0, NUMBER, COMMA, NUMBER, COMMA, NUMBER);
-    exit_section_(b, m, WAYPOINT, r);
+    exit_section_(b, m, TUPLE, r);
     return r;
   }
 
-  private static final Parser attribute_expr_2_0_0_parser_ = paren_$(BotPsiParser::waypoint);
+  private static final Parser attribute_expr_2_0_0_parser_ = paren_$(BotPsiParser::tuple);
   private static final Parser attribute_expr_2_0_parser_ = commaSep_$(attribute_expr_2_0_0_parser_);
   private static final Parser task_body_0_0_parser_ = commaSep_$(BotPsiParser::attributes);
 }

@@ -20,7 +20,7 @@ public interface BotPsiElementTypes {
   IElementType TASK_BODY = new BotPsiElementType("TASK_BODY");
   IElementType TASK_DECL = new BotPsiElementType("TASK_DECL");
   IElementType TASK_NAME = new BotPsiElementType("TASK_NAME");
-  IElementType WAYPOINT = new BotPsiElementType("WAYPOINT");
+  IElementType TUPLE = new BotPsiElementType("TUPLE");
 
   IElementType ARROW = new BotPsiTokenType("ARROW");
   IElementType COLON = new BotPsiTokenType("COLON");

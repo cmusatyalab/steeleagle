@@ -48,7 +48,7 @@ public interface Parse {
         if (isWayPointsVar == null) {
           wayPoints = attrMap.get("way_points").child(BotPsiElementTypes.SQUARE_BRACKED).childrenOfType(BotPsiElementTypes.PAREN).
               map(point -> {
-                var nums = point.child(BotPsiElementTypes.WAYPOINT).childrenOfType(BotPsiElementTypes.NUMBER)
+                var nums = point.child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER)
                     .map(t -> t.tokenText().toFloat())
                     .toImmutableSeq();
                 return new DetectTask.Point(nums.get(0), nums.get(1), nums.get(2));
@@ -60,6 +60,12 @@ public interface Parse {
               .map(pt -> new DetectTask.Point(Double.parseDouble(pt.longitude()), Double.parseDouble(pt.latitude()), Double.parseDouble(pt.altitude())));
         }
 
+        // HSV
+        var nums = attrMap.get("hsv_upper_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toFloat()).toImmutableSeq();
+        var hsv_upper_bound  = new DetectTask.HSV(nums.get(0), nums.get(1), nums.get(2));
+        nums = attrMap.get("hsv_lower_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toFloat()).toImmutableSeq();
+        var hsv_lower_bound  = new DetectTask.HSV(nums.get(0), nums.get(1), nums.get(2));
+
         // construct new task
         var detectTask = new DetectTask(
             taskID,
@@ -68,7 +74,9 @@ public interface Parse {
             drone_rotation.toFloat(),
             sample_rate.toInt(),
             hover_delay.toInt(),
-            model.toString()
+            model.toString(),
+            hsv_lower_bound,
+            hsv_upper_bound
         );
         yield Tuple.of(taskID, detectTask);
       }
@@ -105,18 +113,23 @@ public interface Parse {
       var curr_task = taskPair.get(0);
       var next_task = taskPair.get(1);
 
-      if (argNode != null) {
+      if (argNode != null) { // transition has cond argument
+
         var isArgID = argNode.peekChild(BotPsiElementTypes.ID);
-        if (isArgID != null) {
+        if (isArgID != null) { // ID cond argument
           var arg = argNode.child(BotPsiElementTypes.ID).tokenText().toString();
           var tran = new Task.Transition<String>(condId, arg, curr_task, next_task);
           taskMap.get(curr_task).transitions.add(tran);
-        } else {
+
+        } else { // number cond argument
           var arg = argNode.child(BotPsiElementTypes.NUMBER).tokenText().toDouble();
           var tran = new Task.Transition<Double>(condId, arg, curr_task, next_task);
           taskMap.get(curr_task).transitions.add(tran);
-
         }
+
+      }else{ // transition has no cond argument
+        var tran = new Task.Transition<Double>(condId, null, curr_task, next_task);
+        taskMap.get(curr_task).transitions.add(tran);
       }
 
     }

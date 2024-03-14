@@ -9,6 +9,9 @@ public class DetectTask extends Task {
   public int hoverDelay;
   public String model;
 
+  public HSV lowerBound;
+  public HSV upperBound;
+
   public ImmutableSeq<Point> wayPoints;
 
   public record Point(double x, double y, double z) {
@@ -16,8 +19,13 @@ public class DetectTask extends Task {
       return String.format("{'lng': %s, 'lat': %s, 'alt': %s}", x, y, z);
     }
   }
+  public record HSV(double x, double y, double z) {
+    public String toString() {
+      return String.format("(%s, %s, %s)", x, y, z);
+    }
+  }
 
-  public DetectTask(String taskID, ImmutableSeq<Point> wayPoints, float gimbalPitch, float droneRotation, int sampleRate, int hoverDelay, String model) {
+  public DetectTask(String taskID, ImmutableSeq<Point> wayPoints, float gimbalPitch, float droneRotation, int sampleRate, int hoverDelay, String model, HSV lowerBound, HSV upperBound) {
     super(taskID);
     this.wayPoints = wayPoints;
     this.gimbalPitch = gimbalPitch;
@@ -25,6 +33,8 @@ public class DetectTask extends Task {
     this.sampleRate = sampleRate;
     this.hoverDelay = hoverDelay;
     this.model = model;
+    this.lowerBound = lowerBound;
+    this.upperBound = upperBound;
   }
 
   public void debugPrint() {
@@ -47,7 +57,9 @@ public class DetectTask extends Task {
                 task_attr_%s["hover_delay"] = "%s"
                 task_attr_%s["coords"] = "%s"
                 task_attr_%s["model"] = "%s"
-        """.formatted(taskID, taskID, taskID, gimbalPitch, taskID, droneRotation, taskID, sampleRate, taskID, hoverDelay, taskID, waypointsStr, taskID, model)
+                task_attr_%s["upper_bound"] = "%s"
+                task_attr_%s["lower_bound"] = "%s"
+        """.formatted(taskID, taskID, taskID, gimbalPitch, taskID, droneRotation, taskID, sampleRate, taskID, hoverDelay, taskID, waypointsStr, taskID, model, taskID, upperBound.toString(), taskID, lowerBound.toString())
             + this.generateTaskTransCode() +
             """
                   task_arg_map["%s"] = TaskArguments(TaskType.Detect, transition_attr_%s, task_attr_%s)
