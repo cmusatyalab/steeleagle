@@ -61,9 +61,9 @@ public interface Parse {
         }
 
         // HSV
-        var nums = attrMap.get("hsv_upper_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toFloat()).toImmutableSeq();
+        var nums = attrMap.get("hsv_upper_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toInt()).toImmutableSeq();
         var hsv_upper_bound  = new DetectTask.HSV(nums.get(0), nums.get(1), nums.get(2));
-        nums = attrMap.get("hsv_lower_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toFloat()).toImmutableSeq();
+        nums = attrMap.get("hsv_lower_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toInt()).toImmutableSeq();
         var hsv_lower_bound  = new DetectTask.HSV(nums.get(0), nums.get(1), nums.get(2));
 
         // construct new task
