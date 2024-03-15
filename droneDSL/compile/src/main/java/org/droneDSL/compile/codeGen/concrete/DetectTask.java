@@ -19,9 +19,9 @@ public class DetectTask extends Task {
       return String.format("{'lng': %s, 'lat': %s, 'alt': %s}", x, y, z);
     }
   }
-  public record HSV(double x, double y, double z) {
+  public record HSV(double h, double s, double v) {
     public String toString() {
-      return String.format("(%s, %s, %s)", x, y, z);
+      return String.format("[%s, %s, %s]", int(h), int(s), int(v));
     }
   }
 
@@ -57,8 +57,8 @@ public class DetectTask extends Task {
                 task_attr_%s["hover_delay"] = "%s"
                 task_attr_%s["coords"] = "%s"
                 task_attr_%s["model"] = "%s"
-                task_attr_%s["upper_bound"] = "%s"
-                task_attr_%s["lower_bound"] = "%s"
+                task_attr_%s["upper_bound"] = %s
+                task_attr_%s["lower_bound"] = %s
         """.formatted(taskID, taskID, taskID, gimbalPitch, taskID, droneRotation, taskID, sampleRate, taskID, hoverDelay, taskID, waypointsStr, taskID, model, taskID, upperBound.toString(), taskID, lowerBound.toString())
             + this.generateTaskTransCode() +
             """
