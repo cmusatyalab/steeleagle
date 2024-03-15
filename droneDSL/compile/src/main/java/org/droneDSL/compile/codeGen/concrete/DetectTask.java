@@ -19,9 +19,9 @@ public class DetectTask extends Task {
       return String.format("{'lng': %s, 'lat': %s, 'alt': %s}", x, y, z);
     }
   }
-  public record HSV(double h, double s, double v) {
+  public record HSV(int h, int s, int v) {
     public String toString() {
-      return String.format("[%s, %s, %s]", int(h), int(s), int(v));
+      return String.format("[%s, %s, %s]", h, s, v);
     }
   }
 
