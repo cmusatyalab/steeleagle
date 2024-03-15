@@ -32,6 +32,7 @@ Project | Modified | License
 ---|---|---|
 [cmusatyalab/openscout](https://github.com/cmusatyalab/openscout) | Yes | Apache 2.0
 [bytedeco/javacv](https://github.com/bytedeco/javacv) | Yes | Apache 2.0
+[xianglic/droneDSL](https://github.com/xianglic/droneDSL) | Yes | GPL 3.0
 
 Design
 ------
