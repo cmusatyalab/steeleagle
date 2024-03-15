@@ -2,7 +2,7 @@ import asyncio
 from json import JSONDecodeError
 import json
 import numpy as np
-from droneDSL.python.transition_defs.TimerTransition import TimerTransition
+from transition_defs.TimerTransition import TimerTransition
 from interfaces.Task import Task
 import time
 import logging
@@ -17,7 +17,7 @@ class TrackTask(Task):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)
-        self.leash = 6.0
+        self.leash = 10.0
         self.image_res = (1280, 720)
         self.pixel_center = (self.image_res[0] / 2, self.image_res[1] / 2)
         self.HFOV = 69
@@ -86,13 +86,12 @@ class TrackTask(Task):
                             logger.info(f"**************Track Task: condition met, and execute tracking**************")
                             gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = await self.calculate_offsets(json_data[0]["box"])
                             await self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
-                        
-                        
+
                     except JSONDecodeError as e:
                         logger.error(f'Track Task: Error decoding json: {json_string}')
                     except Exception as e:
                         print(f"Track Task: Exception: {e}")
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
 
 
@@ -129,10 +128,13 @@ class TrackTask(Task):
         #target_x_pix = int((((box[3] - box[1]) / 2.0) + box[1]) * self.image_res[0])
         #target_y_pix = int((1 - (((box[2] - box[0]) / 2.0) + box[0])) * self.image_res[1])
         target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1])
-        target_y_pix = int(((box[2] - box[0]) / 2.0) + box[1])
+        target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0])
         print(f'Offsets: {target_x_pix}, {target_y_pix}')
         target_yaw_angle = ((target_x_pix - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
         target_pitch_angle = ((target_y_pix - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
+        # Used for estimating the GPS location (we want to check the bottom of the bounding box)
+        #target_bottom_yaw_angle = ((box[1] - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
+        #target_bottom_pitch_angle = ((box[0] - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
 
         drone_roll, drone_pitch = await self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
@@ -140,7 +142,7 @@ class TrackTask(Task):
             hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
             hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
             target_yaw_angle += 0.90 * hysteresis_yaw_angle
-            target_pitch_angle += 0.20 * hysteresis_pitch_angle
+            target_pitch_angle += 0.90 * hysteresis_pitch_angle
         
         self.prev_center_ts = round(time.time() * 1000)
         self.prev_center = (target_x_pix, target_y_pix)
@@ -152,14 +154,15 @@ class TrackTask(Task):
 
     def gain(self, gpitch, dyaw, dpitch, droll):
         dyaw = self.clamp(int(dyaw), -100, 100)
-        dpitch = self.clamp(int(dpitch * 0.5), -100, 100)
-        droll = self.clamp(int(droll * 0.5), -100, 100)
-        gpitch = gpitch
+        dpitch = self.clamp(int(dpitch), -100, 100)
+        droll = self.clamp(int(droll), -100, 100)
+        gpitch = gpitch * 0.5
 
         return gpitch, dyaw, dpitch, droll
 
     async def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
         gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
         print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
-        await self.drone.PCMD(0, 0, dyaw, 0)
-        await self.drone.setGimbalPose(0.0, -float(gpitch), 0.0)
+        await self.drone.PCMD(droll, dpitch, dyaw, 0)
+        g = await self.drone.getGimbalPitch()
+        await self.drone.setGimbalPose(0.0, g + (-float(gpitch)), 0.0)
