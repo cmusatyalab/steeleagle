@@ -1,6 +1,7 @@
 
-from transition_defs.TransObjectDetection import TransObjectDetection
-from transition_defs.TransTimer import TransTimer
+from transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
+from transition_defs.TimerTransition import TimerTransition
+from transition_defs.HSVDetectionTransition import HSVDetectionTransition
 from interfaces.Task import Task
 import asyncio
 import ast
@@ -31,20 +32,28 @@ class DetectTask(Task):
         # triggered event
         if ("timeout" in self.transitions_attributes):
             logger.info(f"**************Detect Task {self.task_id}:  timer transition! **************\n")
-            timer = TransTimer(args, self.transitions_attributes["timeout"])
+            timer = TimerTransition(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
             
         if ("object_detection" in self.transitions_attributes):
             logger.info(f"**************Detect Task {self.task_id}:  object detection transition! **************\n")
             self.cloudlet.clearResults("openscout-object")
-            object_trans = TransObjectDetection(args, self.transitions_attributes["object_detection"], self.cloudlet)
+            object_trans = ObjectDetectionTransition(args, self.transitions_attributes["object_detection"], self.cloudlet)
             object_trans.daemon = True
             object_trans.start()
+
+        if ("hsv_detection" in self.transitions_attributes):
+            logger.info(f"**************Detect Task {self.task_id}:  hsv detection transition! **************\n")
+            self.cloudlet.clearResults("openscout-object")
+            hsv = HSVDetectionTransition(args, self.transitions_attributes["hsv_detection"], self.cloudlet)
+            hsv.daemon = True
+            hsv.start()
             
     async def run(self):
         # init the cloudlet
         self.cloudlet.switchModel(self.task_attributes["model"])
+        self.cloudlet.setHSVFilter(lower_bound=self.task_attributes["lower_bound"], upper_bound=self.task_attributes["upper_bound"])
         
         self.create_transition()
         

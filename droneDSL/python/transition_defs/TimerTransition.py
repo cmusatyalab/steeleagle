@@ -5,7 +5,7 @@ from interfaces.Transition import Transition
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class TransTimer (Transition):
+class TimerTransition (Transition):
     def __init__(self, args, timer_interval):
         super().__init__(args)
         # Create a Timer within the thread

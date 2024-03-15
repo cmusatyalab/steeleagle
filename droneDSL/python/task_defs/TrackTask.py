@@ -2,7 +2,7 @@ import asyncio
 from json import JSONDecodeError
 import json
 import numpy as np
-from transition_defs.TransTimer import TransTimer
+from droneDSL.python.transition_defs.TimerTransition import TimerTransition
 from interfaces.Task import Task
 import time
 import logging
@@ -40,7 +40,7 @@ class TrackTask(Task):
         # triggered event
         if ("timeout" in self.transitions_attributes):
             logger.info(f"**************Track Task {self.task_id}:  timer transition! **************\n")
-            timer = TransTimer(args, self.transitions_attributes["timeout"])
+            timer = TimerTransition(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
 
