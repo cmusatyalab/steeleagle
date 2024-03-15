@@ -1,0 +1,32 @@
+build/
+
+# ide
+/.idea/*.xml
+/.idea/.gitignore
+/.idea/modules/*
+/.idea/shelf/*
+/.idea/codeStyles/*
+/.idea/dictionaries/*
+/.idea/.name
+/.idea/inspectionProfiles/Project_Default.xml
+/.gradle/
+/.fleet/
+/.vs/
+/.vscode/
+*.iml
+gradle.properties
+
+# mac
+.DS_Store
+
+# lombok
+lombok.config
+
+# output
+/*/out/
+
+# mission creator
+python/mission/MissionCreator.py
+
+
+
