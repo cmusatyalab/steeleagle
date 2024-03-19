@@ -1,7 +1,9 @@
 import asyncio
 from json import JSONDecodeError
+import sys
 import json
 import numpy as np
+import math
 from transition_defs.TransTimer import TransTimer
 from interfaces.Task import Task
 import time
@@ -9,26 +11,34 @@ import logging
 from gabriel_protocol import gabriel_pb2
 from scipy.spatial.transform import Rotation as R
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class TrackTask(Task):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)
-        self.leash = 10.0
+        # TODO: Make this a drone interface command
+        # self.image_res = drone.getResolution()
         self.image_res = (1280, 720)
         self.pixel_center = (self.image_res[0] / 2, self.image_res[1] / 2)
+        # TODO: Make this a drone interface command
+        # self.HFOV = drone.getFOV()[0]
+        # self.VFOV = drone.getFOV()[1]
         self.HFOV = 69
         self.VFOV = 43
-        self.prev_center = None
-        self.prev_center_ts = None
-        self.hysteresis = True
-        
+
+        # PID controller parameters
+        # TODO: Somehow, this needs to be portable to other drones, maybe we implement a 
+        # setpoint interface? This would be easy with MAVLINK drones but harder with the
+        # ANAFI series.
+        self.time_prev = None
+        self.error_prev = [0, 0, 0]
+        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.0005, "Kd": 3.0}, "saved" : {"I": 0.0}}
+        self.move_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.0005, "Kd": 3.0}, "saved" : {"I": 0.0}}
+
     def create_transition(self):
-        
-        logger.info(f"**************Track Task {self.task_id}: create transition! **************\n")
         logger.info(self.transitions_attributes)
         args = {
             'task_id': self.task_id,
@@ -37,65 +47,29 @@ class TrackTask(Task):
             'trigger_event_queue': self.trigger_event_queue
         }
         
-        # triggered event
+        # Triggered event
         if ("timeout" in self.transitions_attributes):
-            logger.info(f"**************Track Task {self.task_id}:  timer transition! **************\n")
             timer = TransTimer(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
+    
+    def targetBearing(self, origin, destination):
+    	lat1, lon1 = origin
+    	lat2, lon2 = destination
+    
+    	rlat1 = math.radians(lat1)
+    	rlat2 = math.radians(lat2)
+    	rlon1 = math.radians(lon1)
+    	rlon2 = math.radians(lon2)
+    	dlon = math.radians(lon2-lon1)
+    
+    	b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon))
+    	bd = math.degrees(b)
+    	br,bn = divmod(bd+360,360) 
+    	
+    	return bn
 
-            
-    async def run(self):
-        
-        logger.info(f"**************Track Task {self.task_id}: hi this is Track task {self.task_id}**************\n")
-        
-        target = self.task_attributes["class"]
-        
-        await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
-        
-        self.cloudlet.switchModel(self.task_attributes["model"])
-        
-        self.create_transition()
-        
-        start = None
-        counter = 0
-        while True:
-            # get result
-            result = self.cloudlet.getResults("openscout-object")
-            if (result != None):
-                counter += 1
-                if (start is not None):
-                    logger.info(f"TRACKING FPS: {counter / (time.time() - start)}")
-                logger.info(f"**************Track Task: {self.task_id}: detected payload! {result}**************\n")
-                # Check if the payload type is TEXT, since  JSON seems to be text data
-                if result.payload_type == gabriel_pb2.TEXT:
-                    try:
-                        # Decode the payload from bytes to string
-                        json_string = result.payload.decode('utf-8')
-
-                        # Parse the JSON string
-                        json_data = json.loads(json_string)
-
-                        # Access the 'class' attribute
-                        class_attribute = json_data[0]['class']  # Adjust the indexing based on JSON structure
-                        
-                        logger.info(f"**************Track Task: detected class: {class_attribute}, target class: {target}**************")
-                        
-                        if (class_attribute == target):
-                            start = time.time()
-                            logger.info(f"**************Track Task: condition met, and execute tracking**************")
-                            gimbal_pitch, drone_yaw, drone_pitch, drone_roll  = await self.calculate_offsets(json_data[0]["box"])
-                            await self.execute_PCMD(gimbal_pitch, drone_yaw, drone_pitch, drone_roll)
-
-                    except JSONDecodeError as e:
-                        logger.error(f'Track Task: Error decoding json: {json_string}')
-                    except Exception as e:
-                        print(f"Track Task: Exception: {e}")
-            await asyncio.sleep(0.2)
-
-
-
-    def find_intersection(self, target_dir, target_insct):
+    def findIntersection(self, target_dir, target_insct):
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
@@ -105,64 +79,125 @@ class TrackTask(Task):
         t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
     
-    async def get_movement_vectors(self, yaw, pitch):
-        current_drone_altitude = await self.drone.getRelAlt()
-        current_gimbal_pitch = await self.drone.getGimbalPitch()
-        
-        
-        forward_vec = [0, 1, 0]
-        r = R.from_euler('ZYX', [yaw, 0, pitch + current_gimbal_pitch], degrees=True)
-        target_dir = r.as_matrix().dot(forward_vec)
-        target_vec = self.find_intersection(target_dir, np.array([0, 0, current_drone_altitude]))
-        print(f"Distance estimate: {np.linalg.norm(target_vec)}")
-        
-        leash_vec = self.leash * (target_vec / np.linalg.norm(target_vec))
-        print(f"Leash vector: {leash_vec}")
-        movement_vec = target_vec - leash_vec
-        print(f"Move vector: {movement_vec}")
+    async def estimateDistance(self, yaw, pitch):
+        alt = await self.drone.getRelAlt()
+        gimbal = await self.drone.getGimbalPitch()
 
-        return movement_vec[0], movement_vec[1]
+        vf = [0, 1, 0]
+        r = R.from_euler('ZYX', [yaw, 0, pitch + gimbal], degrees=True)
+        target_dir = r.as_matrix().dot(vf)
+        target_vec = self.findIntersection(target_dir, np.array([0, 0, alt]))
+        
+        leash_vec = self.leash_length * (target_vec / np.linalg.norm(target_vec))
+        return target_vec - leash_vec
 
-    async def calculate_offsets(self, box):
-        print(f'Bounding box: {box}')
-        #target_x_pix = int((((box[3] - box[1]) / 2.0) + box[1]) * self.image_res[0])
-        #target_y_pix = int((1 - (((box[2] - box[0]) / 2.0) + box[0])) * self.image_res[1])
+    async def error(self, box):
         target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1])
         target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0])
-        print(f'Offsets: {target_x_pix}, {target_y_pix}')
         target_yaw_angle = ((target_x_pix - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
         target_pitch_angle = ((target_y_pix - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
-        # Used for estimating the GPS location (we want to check the bottom of the bounding box)
-        #target_bottom_yaw_angle = ((box[1] - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
-        #target_bottom_pitch_angle = ((box[0] - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
-
-        drone_roll, drone_pitch = await self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
-
-        if self.hysteresis and self.prev_center_ts != None and round(time.time() * 1000) - self.prev_center_ts < 500:
-            hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
-            hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
-            target_yaw_angle += 0.90 * hysteresis_yaw_angle
-            target_pitch_angle += 0.90 * hysteresis_pitch_angle
         
-        self.prev_center_ts = round(time.time() * 1000)
-        self.prev_center = (target_x_pix, target_y_pix)
-
-        return target_pitch_angle, target_yaw_angle, drone_pitch, drone_roll
+        yaw_error = target_yaw_angle
+        gimbal_error = target_pitch_angle
+        move_error = await self.estimateDistance(target_yaw_angle, target_pitch_angle)
+        
+        return (yaw_error, gimbal_error, move_error[1])
 
     def clamp(self, value, minimum, maximum):
         return max(minimum, min(value, maximum))
 
-    def gain(self, gpitch, dyaw, dpitch, droll):
-        dyaw = self.clamp(int(dyaw), -100, 100)
-        dpitch = self.clamp(int(dpitch), -100, 100)
-        droll = self.clamp(int(droll), -100, 100)
-        gpitch = gpitch * 0.5
+    async def pid(self, box):
+        error = await self.error(box)
+        ye = error[0]
+        ge = error[1]
+        me = error[2]
+        ts = round(time.time() * 1000)
 
-        return gpitch, dyaw, dpitch, droll
+        # Reset pid loop if we haven't seen a target for a second or this is
+        # the first target we have seen.
+        if self.time_prev is None or (ts - self.time_prev) > 1000:
+            self.time_prev = ts - 1 # Do this to prevent a divide by zero error!
+            self.error_prev = [ye, ge, me]
 
-    async def execute_PCMD(self, gpitch, dyaw, dpitch, droll):
-        gpitch, dyaw, dpitch, droll = self.gain(gpitch, dyaw, dpitch, droll)
-        print(f"Gimbal Pitch: {gpitch}, Drone Yaw: {dyaw}, Drone Pitch: {dpitch}, Drone Roll: {droll}")
-        await self.drone.PCMD(droll, dpitch, dyaw, 0)
+        # Control loop for yaw
+        Py = self.yaw_pid_info["constants"]["Kp"] * ye
+        Iy = self.yaw_pid_info["saved"]["I"] + self.yaw_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        if ye < 0:
+            Iy *= -1
+        self.yaw_pid_info["saved"]["I"] = Iy
+        Dy = self.yaw_pid_info["constants"]["Kd"] * (ye - self.error_prev[0]) / (ts - self.time_prev)
+        logger.info(f"[TrackTask]: YAW values {ye} {Py} {Iy} {Dy}")
+        yaw = Py + Iy + Dy
+        logger.info(f"[TrackTask]: Final yaw {yaw}")
+
+        # Control loop for gimbal
+        gimbal = ge * 0.5
+
+        # Control loop for movement
+        Pm = self.move_pid_info["constants"]["Kp"] * me
+        Im = self.move_pid_info["saved"]["I"] + self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        if me < 0:
+            Im *= -1
+        self.move_pid_info["saved"]["I"] = Im
+        Dm = self.move_pid_info["constants"]["Kd"] * (me - self.error_prev[2]) / (ts - self.time_prev)
+        logger.info(f"[TrackTask]: MOVE values {me} {Pm} {Im} {Dm}")
+        move = Pm + Im + Dm
+
+        yaw = self.clamp(int(yaw), -100, 100)
+        pitch = self.clamp(int(move), -100, 100)
+
+        self.time_prev = ts
+        self.error_prev = [ye, ge, me]
+
+        return (yaw, gimbal, pitch)
+
+    async def actuate(self, vels):
+        #await self.drone.PCMD(0, vels[2], vels[0], 0)
+        logger.info(f"Calling pcmd with {vels}")
+        await self.drone.PCMD(0, 0, vels[0], 0)
         g = await self.drone.getGimbalPitch()
-        await self.drone.setGimbalPose(0.0, g + (-float(gpitch)), 0.0)
+        await self.drone.setGimbalPose(0.0, g - float(vels[1]), 0.0)
+
+    async def run(self):
+        self.cloudlet.switchModel(self.task_attributes["model"])
+
+        # TODO: Parameterize this
+        # self.leash_length = float(self.task_attributes["leash"])
+        self.leash_length = 10.0
+
+        target = self.task_attributes["class"]
+
+        # TODO: This should only be done if requested.
+        #await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
+
+        self.create_transition()
+
+        while True:
+            result = self.cloudlet.getResults("openscout-object")
+            if result != None:
+
+                if result.payload_type == gabriel_pb2.TEXT:
+                    try:
+                        json_string = result.payload.decode('utf-8')
+                        json_data = json.loads(json_string)
+
+                        box = None
+                        for det in json_data:
+                            # Return the first instance found of the target class.
+                            if det["class"] == target:
+                                box = det["box"]
+                                break 
+
+                        # Found an instance of target, start tracking!
+                        if box is not None:
+                            logger.info(f"[TrackTask]: Detected instance of {target}, tracking...")
+                            vels = await self.pid(box)
+                            await self.actuate(vels)
+                    except JSONDecodeError as e:
+                        logger.error(f"[TrackTask]: Error decoding json, ignoring")
+                    except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
+            await asyncio.sleep(0.2)
+
+
