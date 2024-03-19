@@ -354,7 +354,7 @@ class TKCommander(customtkinter.CTk):
 
         filepath = fd.askopenfilename(
             title='Open a file',
-            initialdir='../../hermes/',
+            initialdir='../../droneDSL/',
             filetypes=filetypes)
         filename = filepath.split('/')[-1]
         if filename:
