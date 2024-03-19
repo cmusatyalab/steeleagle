@@ -11,6 +11,7 @@ import logging
 import asyncio
 from syncer import sync
 import cv2
+from typing import Tuple
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
@@ -28,6 +29,8 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
         self.drone = None
         self.sample_rate = 1
         self.stop = True
+        self.hsv_upper = [50,255,255]
+        self.hsv_lower = [30,100,100]
 
     def processResults(self, result_wrapper):
         if len(result_wrapper.results) != 1:
@@ -61,12 +64,22 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
     def switchModel(self, model):
         self.model = model
 
+    def setHSVFilter(self, lower_bound: Tuple[int, int, int], upper_bound: Tuple[int, int, int]):
+        self.hsv_lower = lower_bound
+        self.hsv_upper = upper_bound
+
     def produce_extras(self):
         extras = cnc_pb2.Extras()
         extras.drone_id = sync(self.drone.getName())
         extras.location.latitude = sync(self.drone.getLat())
         extras.location.longitude = sync(self.drone.getLng())
         extras.detection_model = self.model
+        extras.lower_bound.H = self.hsv_lower[0]
+        extras.lower_bound.S = self.hsv_lower[1]
+        extras.lower_bound.V = self.hsv_lower[2]
+        extras.upper_bound.H = self.hsv_upper[0]
+        extras.upper_bound.S = self.hsv_upper[1]
+        extras.upper_bound.V = self.hsv_upper[2]
         return extras
 
     def sendFrame(self):
