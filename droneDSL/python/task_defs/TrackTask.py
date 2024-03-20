@@ -4,7 +4,7 @@ import sys
 import json
 import numpy as np
 import math
-from transition_defs.TransTimer import TransTimer
+from transition_defs.TimerTransition import TimerTransition
 from interfaces.Task import Task
 import time
 import logging
@@ -50,7 +50,7 @@ class TrackTask(Task):
         
         # Triggered event
         if ("timeout" in self.transitions_attributes):
-            timer = TransTimer(args, self.transitions_attributes["timeout"])
+            timer = TimerTransition(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
     
@@ -188,7 +188,7 @@ class TrackTask(Task):
                         box = None
                         for det in json_data:
                             # Return the first instance found of the target class.
-                            if det["class"] == target:
+                            if det["class"] == target and det["hsv_filter"]:
                                 box = det["box"]
                                 break 
 
