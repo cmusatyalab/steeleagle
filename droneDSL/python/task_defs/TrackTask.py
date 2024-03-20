@@ -28,6 +28,7 @@ class TrackTask(Task):
         # self.VFOV = drone.getFOV()[1]
         self.HFOV = 69
         self.VFOV = 43
+        self.target_lost_duration = 10
 
         # PID controller parameters
         # TODO: Somehow, this needs to be portable to other drones, maybe we implement a 
@@ -54,20 +55,20 @@ class TrackTask(Task):
             timer.start()
     
     def targetBearing(self, origin, destination):
-    	lat1, lon1 = origin
-    	lat2, lon2 = destination
-    
-    	rlat1 = math.radians(lat1)
-    	rlat2 = math.radians(lat2)
-    	rlon1 = math.radians(lon1)
-    	rlon2 = math.radians(lon2)
-    	dlon = math.radians(lon2-lon1)
-    
-    	b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon))
-    	bd = math.degrees(b)
-    	br,bn = divmod(bd+360,360) 
-    	
-    	return bn
+        lat1, lon1 = origin
+        lat2, lon2 = destination
+
+        rlat1 = math.radians(lat1)
+        rlat2 = math.radians(lat2)
+        rlon1 = math.radians(lon1)
+        rlon2 = math.radians(lon2)
+        dlon = math.radians(lon2-lon1)
+
+        b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon))
+        bd = math.degrees(b)
+        br,bn = divmod(bd+360,360)
+
+        return bn
 
     def findIntersection(self, target_dir, target_insct):
         plane_pt = np.array([0, 0, 0])
@@ -171,11 +172,14 @@ class TrackTask(Task):
         #await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
 
         self.create_transition()
-
+        lost_at = 0
         while True:
             result = self.cloudlet.getResults("openscout-object")
+            if (int(time.time() - lost_at)  > self.target_lost_duration):
+                #if we have not found the target in N seconds trigger the done transition
+                break
             if result != None:
-
+                lost_at = 0 #reset the time the target was lost if we detect it again
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
@@ -198,6 +202,8 @@ class TrackTask(Task):
                     except Exception as e:
                         exc_type, exc_obj, exc_tb = sys.exc_info()
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
+            else:
+                lost_at = time.time()
             await asyncio.sleep(0.2)
 
 
