@@ -35,7 +35,7 @@ class TKCommander(customtkinter.CTk):
     APP_NAME = "Command and Control Interface"
     WIDTH = 1800
     HEIGHT = 1000
-    KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l']
+    KEYLIST = ['w', 'a', 's', 'd', 'Left', 'Right', 'Up', 'Down', 't', 'l', 'r', 'f']
     MAG_STATE = ['Calibrated', 'Calibration Recommended', 'Calibration Required!', 'unused', 'Magnetic Perturbation!!']
 
     def __init__(self, *args, **kwargs):
