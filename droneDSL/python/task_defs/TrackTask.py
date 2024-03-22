@@ -160,6 +160,8 @@ class TrackTask(Task):
         await self.drone.setGimbalPose(0.0, g - float(vels[1]), 0.0)
 
     async def run(self):
+        logger.info("[TrackTask]: Starting tracking task")
+
         self.cloudlet.switchModel(self.task_attributes["model"])
 
         # TODO: Parameterize this
