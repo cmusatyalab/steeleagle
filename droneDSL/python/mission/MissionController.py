@@ -73,10 +73,6 @@ class MissionController():
         tr.push_task(task)
         self.curr_task_id = task.task_id
        
-    async def end_mission(self):
-        logger.info("MC: end mission, rth\n")
-        await self.drone.rth()
-        
     def get_current_task(self):
         return self.curr_task_id
     
@@ -131,10 +127,6 @@ class MissionController():
             tr.terminate()
             await tr_coroutine
             logger.info("MissionController: terminated TaskRunner \n")
-            
-            # terminate the mr
-            logger.info(f"MissionController: the current task is done, end mission \n")
-            await self.end_mission()
             
             #end the mc
             logger.info("MissionController: terminate the controller\n")

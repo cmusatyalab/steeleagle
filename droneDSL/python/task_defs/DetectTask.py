@@ -73,6 +73,7 @@ class DetectTask(Task):
             # await asyncio.sleep(hover_delay)
 
         logger.info(f"**************Detect Task {self.task_id}: Done**************\n")
+        self._exit()
         # except asyncio.CancelledError as e:
         #     logger.info(f"**************Detect Task Exception : {e}**************\n")
             

@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class Task {
 
@@ -37,7 +38,9 @@ public abstract class Task {
         """, taskID));
 
     for (var trans : this.transitions){
-
+      if (Objects.equals(trans.condID, "done")){
+        continue;
+      }
       if (trans.condArg() instanceof String){
         transitCode.append(String.format(
             """
