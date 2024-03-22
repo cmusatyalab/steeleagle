@@ -43,6 +43,7 @@ public class DetectTask extends Task {
     System.out.println("sample_rate :" + sampleRate);
     System.out.println("hover_delay :" + hoverDelay);
     System.out.println("model :" + model);
+    System.out.println("hsv (lower_bound/upper_bound) :" + this.lowerBound + " / " + this.upperBound);
   }
 
   @Override

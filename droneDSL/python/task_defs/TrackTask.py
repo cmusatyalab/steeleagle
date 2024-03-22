@@ -163,7 +163,7 @@ class TrackTask(Task):
         logger.info("[TrackTask]: Starting tracking task")
 
         self.cloudlet.switchModel(self.task_attributes["model"])
-
+        self.cloudlet.setHSVFilter(lower_bound=self.task_attributes["lower_bound"], upper_bound=self.task_attributes["upper_bound"])
         # TODO: Parameterize this
         # self.leash_length = float(self.task_attributes["leash"])
         self.leash_length = 10.0

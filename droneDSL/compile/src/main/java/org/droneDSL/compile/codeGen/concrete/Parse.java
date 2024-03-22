@@ -81,6 +81,13 @@ public interface Parse {
         yield Tuple.of(taskID, detectTask);
       }
       case Track -> {
+        
+        // HSV
+        var nums = attrMap.get("hsv_upper_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toInt()).toImmutableSeq();
+        var hsv_upper_bound  = new TrackTask.HSV(nums.get(0), nums.get(1), nums.get(2));
+        nums = attrMap.get("hsv_lower_bound").child(BotPsiElementTypes.PAREN).child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER).map(t -> t.tokenText().toInt()).toImmutableSeq();
+        var hsv_lower_bound  = new TrackTask.HSV(nums.get(0), nums.get(1), nums.get(2));
+
         var gimbal_pitch = attrMap.get("gimbal_pitch").child(BotPsiElementTypes.NUMBER).tokenText();
         var model = attrMap.get("model").child(BotPsiElementTypes.NAME).tokenText();
         var target_class = attrMap.get("class").child(BotPsiElementTypes.NAME).tokenText();
@@ -90,7 +97,9 @@ public interface Parse {
             taskID,
             gimbal_pitch.toFloat(),
             target_class.toString(),
-            model.toString()
+            model.toString(),
+            hsv_lower_bound,
+            hsv_upper_bound
         );
         yield Tuple.of(taskID, trackTask);
       }
