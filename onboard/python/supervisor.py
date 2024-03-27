@@ -13,13 +13,13 @@ import subprocess
 import sys
 import validators
 import os
-from zipfile import ZipFile
 import importlib
+from IPython.lib.deepreload import reload as reload
+from zipfile import ZipFile
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
-#from websocket_client import WebsocketClient
 
 import zmq
 
@@ -69,6 +69,7 @@ class Supervisor:
         # Set the Gabriel soure
         self.source = 'telemetry'
         self.mission = None
+        self.missionModule = None
         self.missionTask = None
         self.manual = True # Default to manual control
         self.heartbeats = 0
@@ -91,18 +92,19 @@ class Supervisor:
         self.start_mission()
 
     def start_mission(self):
-        logger.debug('Start mission supervisor')
-        logger.debug(self)
+        logger.info('Starting mission...')
         # Stop existing mission (if there is one)
         self.stop_mission()
-        # Start new task
-        logger.debug('MS import')
-        from mission.MissionController import MissionController
-        logger.debug('MC init')
+        # Load the script module
+        logger.info('Creating script module')
+        if self.mission is None:
+            from mission.MissionController import MissionController
+        else:
+            self.mission = None
+            reload(mission) 
         self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
-        logger.debug('Finish func')
 
     def stop_mission(self):
         if self.mission and not self.missionTask.cancelled():
@@ -121,7 +123,7 @@ class Supervisor:
                     f.write(chunk)
             z = ZipFile(filename)
             try:
-                subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
+                subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs', './flightplan.ms'])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
             z.extractall()

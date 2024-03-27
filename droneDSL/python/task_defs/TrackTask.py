@@ -36,8 +36,8 @@ class TrackTask(Task):
         # ANAFI series.
         self.time_prev = None
         self.error_prev = [0, 0, 0]
-        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.0005, "Kd": 3.0}, "saved" : {"I": 0.0}}
-        self.move_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.0005, "Kd": 3.0}, "saved" : {"I": 0.0}}
+        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.005, "Kd": 3.0}, "saved" : {"I": 0.0}}
+        self.move_pid_info = {"constants": {"Kp": 10.0, "Ki": 0.0, "Kd": 0.0}, "saved" : {"I": 0.0}}
 
     def create_transition(self):
         logger.info(self.transitions_attributes)
@@ -89,20 +89,23 @@ class TrackTask(Task):
         target_dir = r.as_matrix().dot(vf)
         target_vec = self.findIntersection(target_dir, np.array([0, 0, alt]))
         
+        logger.info(f"[TrackTask]: Distance estimation: {np.linalg.norm(target_vec)}")
         leash_vec = self.leash_length * (target_vec / np.linalg.norm(target_vec))
-        return target_vec - leash_vec
+        logger.info(f"[TrackTask]: Error vector length: {np.linalg.norm(leash_vec - target_vec)}")
+        return leash_vec - target_vec
 
     async def error(self, box):
-        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1])
-        target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0])
+        target_x_pix = self.image_res[0] - int(((box[3] - box[1]) / 2.0) + box[1])
+        target_y_pix = self.image_res[1] - int(((box[2] - box[0]) / 2.0) + box[0])
         target_yaw_angle = ((target_x_pix - self.pixel_center[0]) / self.pixel_center[0]) * (self.HFOV / 2)
         target_pitch_angle = ((target_y_pix - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
+        target_bottom_pitch_angle = (((self.image_res[1] - box[2]) - self.pixel_center[1]) / self.pixel_center[1]) * (self.VFOV / 2)
         
-        yaw_error = target_yaw_angle
+        yaw_error = -1 * target_yaw_angle
         gimbal_error = target_pitch_angle
-        move_error = await self.estimateDistance(target_yaw_angle, target_pitch_angle)
+        move_error = await self.estimateDistance(target_yaw_angle, target_bottom_pitch_angle)
         
-        return (yaw_error, gimbal_error, move_error[1])
+        return (yaw_error, gimbal_error, move_error[1] * -1)
 
     def clamp(self, value, minimum, maximum):
         return max(minimum, min(value, maximum))
@@ -122,10 +125,10 @@ class TrackTask(Task):
 
         # Control loop for yaw
         Py = self.yaw_pid_info["constants"]["Kp"] * ye
-        Iy = self.yaw_pid_info["saved"]["I"] + self.yaw_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        Iy = self.yaw_pid_info["constants"]["Ki"] * (ts - self.time_prev)
         if ye < 0:
             Iy *= -1
-        self.yaw_pid_info["saved"]["I"] = Iy
+        self.yaw_pid_info["saved"]["I"] += Iy
         Dy = self.yaw_pid_info["constants"]["Kd"] * (ye - self.error_prev[0]) / (ts - self.time_prev)
         logger.info(f"[TrackTask]: YAW values {ye} {Py} {Iy} {Dy}")
         yaw = Py + Iy + Dy
@@ -135,11 +138,12 @@ class TrackTask(Task):
         gimbal = ge * 0.5
 
         # Control loop for movement
+        logger.info(f"[TrackTask]: Move error {me}")
         Pm = self.move_pid_info["constants"]["Kp"] * me
-        Im = self.move_pid_info["saved"]["I"] + self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        Im = self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev)
         if me < 0:
             Im *= -1
-        self.move_pid_info["saved"]["I"] = Im
+        self.move_pid_info["saved"]["I"] += Im
         Dm = self.move_pid_info["constants"]["Kd"] * (me - self.error_prev[2]) / (ts - self.time_prev)
         logger.info(f"[TrackTask]: MOVE values {me} {Pm} {Im} {Dm}")
         move = Pm + Im + Dm
@@ -155,18 +159,20 @@ class TrackTask(Task):
     async def actuate(self, vels):
         #await self.drone.PCMD(0, vels[2], vels[0], 0)
         logger.info(f"Calling pcmd with {vels}")
-        await self.drone.PCMD(0, 0, vels[0], 0)
+        await self.drone.PCMD(0, vels[2], vels[0], 0)
         g = await self.drone.getGimbalPitch()
-        await self.drone.setGimbalPose(0.0, g - float(vels[1]), 0.0)
+        await self.drone.setGimbalPose(0.0, g + float(vels[1]), 0.0)
 
     async def run(self):
         logger.info("[TrackTask]: Starting tracking task")
 
         self.cloudlet.switchModel(self.task_attributes["model"])
         self.cloudlet.setHSVFilter(lower_bound=self.task_attributes["lower_bound"], upper_bound=self.task_attributes["upper_bound"])
+        
         # TODO: Parameterize this
         # self.leash_length = float(self.task_attributes["leash"])
         self.leash_length = 10.0
+        logger.info(f"[TrackTask]: Setting leash length {self.leash_length}")
 
         target = self.task_attributes["class"]
 
@@ -174,14 +180,14 @@ class TrackTask(Task):
         #await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
 
         self.create_transition()
-        lost_at = 0
+        last_seen = None
         while True:
             result = self.cloudlet.getResults("openscout-object")
-            if (int(time.time() - lost_at)  > self.target_lost_duration):
+            if last_seen is not None and int(time.time() - last_seen)  > self.target_lost_duration:
                 #if we have not found the target in N seconds trigger the done transition
                 break
             if result != None:
-                lost_at = 0 #reset the time the target was lost if we detect it again
+                last_seen = time.time() 
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
@@ -189,6 +195,7 @@ class TrackTask(Task):
 
                         box = None
                         for det in json_data:
+
                             # Return the first instance found of the target class.
                             if det["class"] == target and det["hsv_filter"]:
                                 box = det["box"]
@@ -204,8 +211,5 @@ class TrackTask(Task):
                     except Exception as e:
                         exc_type, exc_obj, exc_tb = sys.exc_info()
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
-            else:
-                lost_at = time.time()
+            
             await asyncio.sleep(0.2)
-
-
