@@ -52,6 +52,8 @@ if "gaz_speed" not in st.session_state:
     st.session_state.gaz_speed = 75
 if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 25
+if "st.session_state.gimbal_speed" not in st.session_state:
+    st.session_state.gimbal_speed = 50
 
 #Redis Connection
 red = connect_redis()
@@ -153,7 +155,7 @@ with st.sidebar:
         label=":joystick: Manual Control",
         help="Immediately take manual control of drone.",
         type="primary",
-        disabled=st.session_state.manual_control,
+        disabled=False,
         use_container_width=True,
         on_click=enable_manual,
     )
@@ -206,6 +208,15 @@ with st.sidebar:
             step=5,
             format="%d%%"
         )
+        st.sidebar.slider(
+            key="gimbal_speed",
+            label="Gimbal Pitch",
+            min_value=0,
+            max_value=100,
+            value=st.session_state.gimbal_speed,
+            step=5,
+            format="%d%%"
+        )
     elif st.session_state.rth_sent:
         st.subheader(f":orange[Return to Home Initiated]")
     elif st.session_state.script_file is not None:
@@ -213,14 +224,15 @@ with st.sidebar:
 
 with c2:
     tiles_col = st.columns(2)
-    st.session_state.selected_drone = tiles_col[0].selectbox(
-        key="drone_list",
-        label=":helicopter: :green[Available Drones]",
-        options=get_drones(),
-        placeholder="No drone selected...",
-        on_change=change_center(),
-        index = get_drones().index(st.session_state.selected_drone)
-    )
+    if st.session_state.selected_drone is not None:
+        st.session_state.selected_drone = tiles_col[0].selectbox(
+            key="drone_list",
+            label=":helicopter: :green[Available Drones]",
+            options=get_drones(),
+            placeholder="No drone selected...",
+            on_change=change_center(),
+            index = get_drones().index(st.session_state.selected_drone)
+        )
     tiles_col[1].selectbox(
         key="map_server",
         label=":world_map: :blue[Tile Server]",
@@ -354,7 +366,7 @@ with c3:
             req.cmd.land = True
             st.info(f"Instructed {st.session_state.selected_drone} to land.")
         else:
-            pitch = roll = yaw = gaz = 0
+            pitch = roll = yaw = gaz = gimbal_pitch = 0
             if st.session_state.key_pressed == "w":
                 pitch = 1 * st.session_state.pitch_speed
             elif st.session_state.key_pressed == "s":
@@ -365,17 +377,21 @@ with c3:
                 roll = -1 * st.session_state.roll_speed
             elif st.session_state.key_pressed == "i":
                 gaz = 1 * st.session_state.gaz_speed
-                st.write(gaz)
             elif st.session_state.key_pressed == "k":
                 gaz = -1 * st.session_state.gaz_speed
             elif st.session_state.key_pressed == "l":
                 yaw = 1 * st.session_state.yaw_speed
             elif st.session_state.key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
+            elif st.session_state.key_pressed == "r":
+                gimbal_pitch = 1 * st.session_state.gimbal_speed
+            elif st.session_state.key_pressed == "f":
+                gimbal_pitch = -1 * st.session_state.gimbal_speed
             #st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
             req.cmd.pcmd.yaw = yaw
             req.cmd.pcmd.pitch = pitch
             req.cmd.pcmd.roll = roll
             req.cmd.pcmd.gaz = gaz
+            req.cmd.pcmd.gimbal_pitch = gimbal_pitch
         z.send(req.SerializeToString())
         rep = z.recv()
