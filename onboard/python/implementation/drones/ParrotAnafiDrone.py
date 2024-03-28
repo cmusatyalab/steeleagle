@@ -29,6 +29,10 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
             self.ip = '10.202.0.1'
         else:
             self.ip = '192.168.42.1'
+        if 'lowdelay' in kwargs:
+            self.lowdelay = True
+        else:
+            self.lowdelay = False
         self.drone = Drone(self.ip)
         self.active = False
 
@@ -64,7 +68,10 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
     ''' Streaming methods '''
 
     async def startStreaming(self, **kwargs):
-        self.streamingThread = StreamingThread(self.drone, self.ip)
+        if self.lowdelay:
+            self.streamingThread = LowDelayStreamingThread(self.drone, self.ip)
+        else:
+            self.streamingThread = StreamingThread(self.drone, self.ip)
         self.streamingThread.start()
 
     async def getVideoFrame(self):
@@ -213,3 +220,86 @@ class StreamingThread(threading.Thread):
 
     def stop(self):
         self.isRunning = False
+
+
+class LowDelayStreamingThread(Threading.Thread):
+
+    def __init__(self, drone, ip):
+        threading.Thread.__init__(self)
+        self.drone = drone
+        self.frame_queue = queue.Queue()
+        self.currentFrame = np.zeros((720, 1280, 3), np.uint8)
+
+        self.drone.streaming.set_callbacks(
+            raw_cb=self.yuvFrameCb,
+            h264_cb=self.h264FrameCb,
+            start_cb=self.startCb,
+            end_cb=self.endCb,
+            flush_raw_cb=self.flushCb,
+        )
+
+    def run(self):
+        self.isRunning = True
+
+        while self.isRunning:
+            try:
+                yuv_frame = self.frame_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            self.copyFrame(yuv_frame)
+            yuv_frame.unref()
+    
+    def grabFrame(self):
+        try:
+            frame = self.currentFrame.copy()
+            return frame
+        except Exception as e:
+            # Send a blank frame
+            return np.zeros((720, 1280, 3), np.uint8) 
+
+    def copyFrame(self, yuv_frame):
+        info = yuv_frame.info()
+
+        height, width = (  # noqa
+            info["raw"]["frame"]["info"]["height"],
+            info["raw"]["frame"]["info"]["width"],
+        )
+        
+        cv2_cvt_color_flag = {
+            olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
+            olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
+        }[yuv_frame.format()]
+
+        self.currentFrame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+
+    ''' Callbacks '''
+
+    def yuvFrameCb(self, yuv_frame):
+        """
+        This function will be called by Olympe for each decoded YUV frame.
+
+            :type yuv_frame: olympe.VideoFrame
+        """
+        yuv_frame.ref()
+        self.frame_queue.put_nowait(yuv_frame)
+
+    def flushCb(self, stream):
+        if stream["vdef_format"] != olympe.VDEF_I420:
+            return True
+        while not self.frame_queue.empty():
+            self.frame_queue.get_nowait().unref()
+        return True
+
+    def startCb(self):
+        pass
+
+    def endCb(self):
+        pass
+
+    def h264FrameCb(self, h264_frame):
+        pass
+
+    def stop(self):
+        self.isRunning = False
+        # Properly stop the video stream and disconnect
+        assert self.drone.streaming.stop()

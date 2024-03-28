@@ -13,13 +13,13 @@ import subprocess
 import sys
 import validators
 import os
-import importlib
-from IPython.lib.deepreload import reload as reload
 from zipfile import ZipFile
+import importlib
 
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+#from websocket_client import WebsocketClient
 
 import zmq
 
@@ -60,7 +60,9 @@ class Supervisor:
         try:
             kwargs = {}
             if args.sim:
-                kwargs = {'sim': True}
+                kwargs['sim'] = True
+            if args.lowdelay:
+                kwargs['lowdelay'] = True
             self.drone = getattr(Drone, args.drone)(**kwargs)
         except Exception as e:
             logger.info('Could not initialize {args.drone}, name does not exist. Aborting.')
@@ -69,7 +71,6 @@ class Supervisor:
         # Set the Gabriel soure
         self.source = 'telemetry'
         self.mission = None
-        self.missionModule = None
         self.missionTask = None
         self.manual = True # Default to manual control
         self.heartbeats = 0
@@ -92,19 +93,18 @@ class Supervisor:
         self.start_mission()
 
     def start_mission(self):
-        logger.info('Starting mission...')
+        logger.debug('Start mission supervisor')
+        logger.debug(self)
         # Stop existing mission (if there is one)
         self.stop_mission()
-        # Load the script module
-        logger.info('Creating script module')
-        if self.mission is None:
-            from mission.MissionController import MissionController
-        else:
-            self.mission = None
-            reload(mission) 
+        # Start new task
+        logger.debug('MS import')
+        from mission.MissionController import MissionController
+        logger.debug('MC init')
         self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
+        logger.debug('Finish func')
 
     def stop_mission(self):
         if self.mission and not self.missionTask.cancelled():
@@ -123,7 +123,7 @@ class Supervisor:
                     f.write(chunk)
             z = ZipFile(filename)
             try:
-                subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs', './flightplan.ms'])
+                subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
             z.extractall()
@@ -253,13 +253,15 @@ async def _main():
     parser.add_argument('-c', '--cloudlet', default='PureOffloadCloudlet',
                         help='Set the type of offload method to the cloudlet [default: PureOffloadCloudlet]')
     parser.add_argument('-s', '--server', default='gabriel-server',
-                        help='Specify address of Steel Eagle CNC server [default: gabriel-server')
+                        help='Specify address of Steel Eagle CNC server [default: gabriel-server]')
     parser.add_argument('-p', '--port', default='9099',
                         help='Specify websocket port [default: 9099]')
     parser.add_argument('-l', '--loglevel', default='INFO',
                         help='Set the log level')
     parser.add_argument('-S', '--sim', action='store_true',
-        help='Connect to  simulated drone instead of a real drone [default: False')
+        help='Connect to  simulated drone instead of a real drone [default: False]')
+    parser.add_argument('-L', '--lowdelay', action='store_true',
+        help='Use low delay settings for video streaming [default: False]')
     parser.add_argument('-zp', '--zmqport', type=int, default=6000,
                         help='Specify websocket port [default: 6000]')
 
