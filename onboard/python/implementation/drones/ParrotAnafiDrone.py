@@ -222,7 +222,7 @@ class StreamingThread(threading.Thread):
         self.isRunning = False
 
 
-class LowDelayStreamingThread(Threading.Thread):
+class LowDelayStreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
