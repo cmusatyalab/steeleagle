@@ -36,7 +36,7 @@ class TrackTask(Task):
         # ANAFI series.
         self.time_prev = None
         self.error_prev = [0, 0, 0]
-        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.005, "Kd": 3.0}, "saved" : {"I": 0.0}}
+        self.yaw_pid_info = {"constants": {"Kp": 20.0, "Ki": 0.0, "Kd": 0.0}, "saved" : {"I": 0.0}}
         self.move_pid_info = {"constants": {"Kp": 10.0, "Ki": 0.0, "Kd": 0.0}, "saved" : {"I": 0.0}}
 
     def create_transition(self):
@@ -159,7 +159,7 @@ class TrackTask(Task):
     async def actuate(self, vels):
         #await self.drone.PCMD(0, vels[2], vels[0], 0)
         logger.info(f"Calling pcmd with {vels}")
-        await self.drone.PCMD(0, vels[2], vels[0], 0)
+        await self.drone.PCMD(0, 0, vels[0], 0)
         g = await self.drone.getGimbalPitch()
         await self.drone.setGimbalPose(0.0, g + float(vels[1]), 0.0)
 
@@ -213,3 +213,4 @@ class TrackTask(Task):
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
             
             await asyncio.sleep(0.2)
+        self._exit()
