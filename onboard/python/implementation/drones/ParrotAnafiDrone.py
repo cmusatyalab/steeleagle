@@ -221,6 +221,7 @@ class StreamingThread(threading.Thread):
     def stop(self):
         self.isRunning = False
 
+import queue
 
 class LowDelayStreamingThread(threading.Thread):
 
