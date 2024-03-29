@@ -21,7 +21,6 @@ class HSVDetectionTransition(Transition):
     
     def run(self):
         self._register()
-        time.sleep(4)
         self.cloudlet.clearResults("openscout-object")
         while not self.stop_signal:
             result = self.cloudlet.getResults("openscout-object")

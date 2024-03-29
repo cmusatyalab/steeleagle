@@ -5,6 +5,7 @@
 import asyncio
 import threading
 from interfaces import DroneItf
+import olympe
 from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
@@ -241,6 +242,7 @@ class LowDelayStreamingThread(threading.Thread):
 
     def run(self):
         self.isRunning = True
+        self.drone.streaming.start()
 
         while self.isRunning:
             try:

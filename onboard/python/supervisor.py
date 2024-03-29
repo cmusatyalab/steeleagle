@@ -70,6 +70,7 @@ class Supervisor:
 
         # Set the Gabriel soure
         self.source = 'telemetry'
+        self.reload = False
         self.mission = None
         self.missionTask = None
         self.manual = True # Default to manual control
@@ -99,18 +100,29 @@ class Supervisor:
         self.stop_mission()
         # Start new task
         logger.debug('MS import')
-        from mission.MissionController import MissionController
+        if not self.reload:
+            import mission
+            import task_defs
+            import transition_defs
+        else:
+            logger.info('Reloading...')
+            modules = sys.modules.copy()
+            for module in modules.values():
+                if module.__name__.startswith('mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
+                    importlib.reload(module)
         logger.debug('MC init')
+        from mission.MissionController import MissionController
         self.mission = MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
-        logger.debug('Finish func')
+        self.reload = True
 
     def stop_mission(self):
         if self.mission and not self.missionTask.cancelled():
             logger.info('Mission script stop signalled')
             self.missionTask.cancel()
             self.mission = None
+            self.missionTask = None
 
     def download(self, url: str):
         #download zipfile and extract reqs/flight script from cloudlet
@@ -220,12 +232,12 @@ class Supervisor:
             input_frame.payloads.append('heartbeart'.encode('utf8'))
     
             extras = cnc_pb2.Extras()
-            extras.drone_id = sync(self.drone.getName())
-            extras.location.latitude = sync(self.drone.getLat())
-            extras.location.longitude = sync(self.drone.getLng())
-            extras.location.altitude = sync(self.drone.getRelAlt())
-            logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
             try:
+                extras.drone_id = sync(self.drone.getName())
+                extras.location.latitude = sync(self.drone.getLat())
+                extras.location.longitude = sync(self.drone.getLng())
+                extras.location.altitude = sync(self.drone.getRelAlt())
+                logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
                 extras.status.battery = sync(self.drone.getBatteryPercentage())
                 extras.status.rssi = sync(self.drone.getRSSI())
                 extras.status.mag = sync(self.drone.getMagnetometerReading())
