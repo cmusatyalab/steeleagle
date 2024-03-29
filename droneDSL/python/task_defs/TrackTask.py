@@ -36,8 +36,8 @@ class TrackTask(Task):
         # ANAFI series.
         self.time_prev = None
         self.error_prev = [0, 0, 0]
-        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.005, "Kd": 1.0}, "saved" : {"I": 0.0}}
-        self.move_pid_info = {"constants": {"Kp": 10.0, "Ki": 0.0, "Kd": 0.0}, "saved" : {"I": 0.0}}
+        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.01, "Kd": 20.0}, "saved" : {"I": 0.0}}
+        self.move_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.015, "Kd": 25.0}, "saved" : {"I": 0.0}}
 
     def create_transition(self):
         logger.info(self.transitions_attributes)
@@ -129,10 +129,10 @@ class TrackTask(Task):
         if ye < 0:
             Iy *= -1
         self.yaw_pid_info["saved"]["I"] += Iy
+        self.yaw_pid_info["saved"]["I"] = self.clamp(self.yaw_pid_info["saved"]["I"], -100.0, 100.0)
         Dy = self.yaw_pid_info["constants"]["Kd"] * (ye - self.error_prev[0]) / (ts - self.time_prev)
         logger.info(f"[TrackTask]: YAW values {ye} {Py} {Iy} {Dy}")
         yaw = Py + Iy + Dy
-        logger.info(f"[TrackTask]: Final yaw {yaw}")
 
         # Control loop for gimbal
         gimbal = ge * 0.5
@@ -144,6 +144,7 @@ class TrackTask(Task):
         if me < 0:
             Im *= -1
         self.move_pid_info["saved"]["I"] += Im
+        self.move_pid_info["saved"]["I"] = self.clamp(self.move_pid_info["saved"]["I"], -100.0, 100.0)
         Dm = self.move_pid_info["constants"]["Kd"] * (me - self.error_prev[2]) / (ts - self.time_prev)
         logger.info(f"[TrackTask]: MOVE values {me} {Pm} {Im} {Dm}")
         move = Pm + Im + Dm
