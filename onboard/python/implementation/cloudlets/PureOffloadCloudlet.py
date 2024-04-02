@@ -84,7 +84,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
     def sendFrame(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
             input_frame = gabriel_pb2.InputFrame()
             if not self.stop:
                 try:

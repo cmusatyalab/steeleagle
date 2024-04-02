@@ -139,11 +139,14 @@ class TrackTask(Task):
 
         # Control loop for movement
         logger.info(f"[TrackTask]: Move error {me}")
-        Pm = self.move_pid_info["constants"]["Kp"] * me
-        Im = self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        extra = 1.0
+        if me < 0:
+            extra = 1.5
+        Pm = self.move_pid_info["constants"]["Kp"] * me * 2 * extra
+        Im = self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev) * extra
         if me < 0:
             Im *= -1
-        self.move_pid_info["saved"]["I"] += Im
+        self.move_pid_info["saved"]["I"] += Im * extra
         self.move_pid_info["saved"]["I"] = self.clamp(self.move_pid_info["saved"]["I"], -100.0, 100.0)
         Dm = self.move_pid_info["constants"]["Kd"] * (me - self.error_prev[2]) / (ts - self.time_prev)
         logger.info(f"[TrackTask]: MOVE values {me} {Pm} {Im} {Dm}")
