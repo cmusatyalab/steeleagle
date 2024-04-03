@@ -160,7 +160,7 @@ class Supervisor:
         req = cnc_pb2.Extras()
         req.drone_id = name
         while True:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
             try:
                 self.zmq.send(req.SerializeToString())
                 rep = self.zmq.recv()
