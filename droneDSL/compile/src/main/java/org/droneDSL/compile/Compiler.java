@@ -17,9 +17,11 @@ import picocli.CommandLine;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -76,15 +78,32 @@ public class Compiler implements Runnable {
       e.printStackTrace();
     }
 
+    // build file generate
+    try {
+      ProcessBuilder builder = new ProcessBuilder();
+      var cmd = String.format("cd %s && pipreqs . --force", platform);
+      builder.command("bash", "-c", cmd);
+      builder.start().waitFor(); // Wait for the command to complete
+    } catch (IOException | InterruptedException e) {
+        e.printStackTrace();
+    }
+
     // zip
     try {
       FileOutputStream fos = new FileOutputStream(outputFilePath);
       ZipOutputStream zos = new ZipOutputStream(fos);
 
-      // Function to add a directory's files to the zip
+      // add a directory's files to the zip
       addToZipFile(platformPath + "/task_defs", "./task_defs", zos);
       addToZipFile(platformPath + "/mission", "./mission", zos);
       addToZipFile(platformPath + "/transition_defs", "./transition_defs", zos);
+
+      // add build file to the zip
+      Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
+      zos.putNextEntry(new ZipEntry("requirements.txt"));
+      Files.copy(buildFile, zos);
+      zos.closeEntry();
+      
 
       zos.close();
       fos.close();
