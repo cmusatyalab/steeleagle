@@ -36,8 +36,8 @@ class TrackTask(Task):
         # ANAFI series.
         self.time_prev = None
         self.error_prev = [0, 0, 0]
-        self.yaw_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.01, "Kd": 20.0}, "saved" : {"I": 0.0}}
-        self.move_pid_info = {"constants": {"Kp": 1.0, "Ki": 0.015, "Kd": 25.0}, "saved" : {"I": 0.0}}
+        self.yaw_pid_info = {"constants": {"Kp": 10.0, "Ki": 0.09, "Kd": 40.0}, "saved" : {"I": 0.0}}
+        self.move_pid_info = {"constants": {"Kp": 2.0, "Ki": 0.030, "Kd": 35.0}, "saved" : {"I": 0.0}}
 
     def create_transition(self):
         logger.info(self.transitions_attributes)
@@ -141,7 +141,7 @@ class TrackTask(Task):
         logger.info(f"[TrackTask]: Move error {me}")
         extra = 1.0
         if me < 0:
-            extra = 1.5
+            extra = 2.5
         Pm = self.move_pid_info["constants"]["Kp"] * me * 2 * extra
         Im = self.move_pid_info["constants"]["Ki"] * (ts - self.time_prev) * extra
         if me < 0:
@@ -175,7 +175,7 @@ class TrackTask(Task):
         
         # TODO: Parameterize this
         # self.leash_length = float(self.task_attributes["leash"])
-        self.leash_length = 10.0
+        self.leash_length = 15.0
         logger.info(f"[TrackTask]: Setting leash length {self.leash_length}")
 
         target = self.task_attributes["class"]
@@ -216,5 +216,5 @@ class TrackTask(Task):
                         exc_type, exc_obj, exc_tb = sys.exc_info()
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
             
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.03)
         self._exit()
