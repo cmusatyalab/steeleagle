@@ -191,18 +191,17 @@ class TrackTask(Task):
                 #if we have not found the target in N seconds trigger the done transition
                 break
             if result != None:
-                last_seen = time.time() 
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
                         json_data = json.loads(json_string)
-
                         box = None
                         for det in json_data:
 
                             # Return the first instance found of the target class.
                             if det["class"] == target and det["hsv_filter"]:
                                 box = det["box"]
+                                last_seen = time.time()
                                 break 
 
                         # Found an instance of target, start tracking!
