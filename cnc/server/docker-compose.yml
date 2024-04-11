@@ -153,7 +153,7 @@ services:
         "${STORE}",
         "-a",
         "${REDIS_AUTH}",
-        "-h",
+        "-hsv",
         "${HSV_THRESHOLD}"
       ]
     # for NVIDIA GPUs
