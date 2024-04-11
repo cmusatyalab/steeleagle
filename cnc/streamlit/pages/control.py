@@ -69,6 +69,7 @@ MAG_STATE = [
 ]
 
 def get_telemetry(drone):
+    #df = stream_to_dataframe(red.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
     results = red.xrevrange(f"telemetry.{drone}", "+", "-", 1)
     telemetry = results[0][1]
     telemetry["last_update"] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(int(results[0][0].split("-")[0])/1000), "%d-%b-%Y %H:%M:%S") 
@@ -334,7 +335,7 @@ with c2:
 
 
 with c3:
-    tab1, tab2, tab3 = st.tabs(["Live", "Obstacle Avoidance", "Object Detection"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Live", "Obstacle Avoidance", "Object Detection", "HSV Filter"])
     if st.session_state.selected_drone is not None:
         # message = st.session_state.subscriber.get_message(timeout=0.1)
 
@@ -346,10 +347,14 @@ with c3:
         #tab1.image(f"http://{st.secrets.webrtc}/api/frame.jpeg?src=file2&a={time.time()}", use_column_width="auto")
         #live = tab1.empty()
         #tab1.image(f"../server/steeleagle-vol/raw/{st.session_state.selected_drone}/latest.jpg")
+        #tab1.video(f"http://{st.secrets.webrtc}/api/stream.mp4?src=drone")
         tab1.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}")
     tab2.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_column_width="auto")
     tab3.image(
         f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_column_width="auto"
+    )
+    tab4.image(
+        f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_column_width="auto"
     )
 
     #st.write(f":keyboard: {st.session_state.key_pressed}")
