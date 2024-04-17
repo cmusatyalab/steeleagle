@@ -25,7 +25,7 @@ SPDX-License-Identifier: GPL-2.0-only
   
   @media only screen and (min-width: 768px) {
     .my-col {
-      width: 33%;
+      width: 50%;
     }
   }
   
@@ -41,16 +41,18 @@ SPDX-License-Identifier: GPL-2.0-only
     <div id="content">
         <div class="my-col">
             <div id ="info">Raw</div>
-            <img id="viewerRaw" class="responsive" src="" width="400px"/>
-        </div>
-        <div class="my-col">
+            <img id="viewerRaw" class="responsive" src="" />
+
             <div id ="info">Obstacle Avoidance</div>
-            <img id="viewerObstacle" class="responsive" src="" width="400px"/>
+            <img id="viewerObstacle" class="responsive" src="" />
         </div>
         <div class="my-col">
             <div id ="info">Object Detection</div>
-            <img id="viewerObject" class="responsive" src="" width="400px"/>
-        </div>
+            <img id="viewerObject" class="responsive" src="" />
+
+          <div id ="info">HSV Filter</div>
+          <img id="viewerHSV" class="responsive" src="" />
+      </div>
     </div>
 <script>
 $(function() {
@@ -58,7 +60,7 @@ $(function() {
 	var rawUrl = "latest.jpg";
     var objectUrl = "../../detected/latest.jpg";
     var obstacleUrl = "../../moa/latest.jpg";
-
+    var hsvUrl = "../../detected/hsv.jpg";
 
     const timeID = setInterval(changePictures, 400);
 
@@ -67,6 +69,7 @@ $(function() {
         $('#viewerRaw').attr('src', rawUrl + "#t=" + t );
         $('#viewerObject').attr('src', objectUrl + "#t=" + t );
         $('#viewerObstacle').attr('src', obstacleUrl + "#t=" + t );
+        $('#viewerHSV').attr('src', hsvUrl + "#t=" + t );
     }
 
 });
