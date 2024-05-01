@@ -2,21 +2,32 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces.Task import Task
+#from interfaces.Task import Task
 import json
+from json import JSONDecodeError
+from gabriel_protocol import gabriel_pb2
 import time
 import asyncio
+import logging
 
-class ObstacleTask(Task):
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+#class ObstacleTask(Task):
+class ObstacleTask:
 
     def __init__(self, drone, cloudlet, **kwargs):
-        super().__init__(drone, cloudlet, **kwargs)
+        #super().__init__(drone, cloudlet, **kwargs)
+        self.drone = drone
+        self.cloudlet = cloudlet
 
         # PID controller parameters
         self.time_prev = None
         self.error_prev = 0
-        self.pid_info = {"constants", {"Kp": 1.0, "Ki": 0.09, "Kd": 10.0}, "saved" : {"I": 0.0}}
+        self.pid_info = {"constants" : {"Kp": 0.1, "Ki": 0.001, "Kd": 0.2}, "saved" : {"I": 0.0}}
+        self.speed = 15
 
+    '''
     def create_transition(self):
         logger.info(self.transitions_attributes)
         args = {
@@ -31,11 +42,12 @@ class ObstacleTask(Task):
             timer = TimerTransition(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
-    
+    '''
+
     def clamp(self, value, minimum, maximum):
         return max(minimum, min(value, maximum))
 
-    async def moveForwardAndAvoid(error):
+    async def moveForwardAndAvoid(self, error):
         ts = round(time.time() * 1000)
         # Reset pid loop if we haven't seen a target for a second or this is
         # the first target we have seen.
@@ -51,21 +63,32 @@ class ObstacleTask(Task):
         self.pid_info["saved"]["I"] += self.clamp(I, -100.0, 100.0)
         D = self.pid_info["constants"]["Kd"] * (error - self.error_prev) / (ts - self.time_prev)
         
-        roll = self.clamp(P + I + D, -100, 100)
+        roll = self.clamp(int(P + I + D), -100, 100)
         self.time_prev = ts
         self.error_prev = error
         
         await self.drone.PCMD(roll, self.speed, 0, 0)
 
     async def run(self):
-        self.drone.setGimbalPose(0.0, 0.0, 0.0)
+        logger.info("[ObstacleTask] Started run")
+        await self.drone.setGimbalPose(0.0, 0.0, 0.0)
         try:
             while True:
-                res = self.cloudlet.getResults("obstacle-avoidance")
+                result = self.cloudlet.getResults("obstacle-avoidance")
                 offset = 0
-                if res is not None:
-                    offset = res['vector']
-                await self.moveForwardAndAvoid(offset)
+                try:
+                    logger.info("[ObstacleTask] Getting results")
+                    logger.info(f"[ObstacleTask] result: {result}")
+                    if result is not None and result.payload_type == gabriel_pb2.TEXT:
+                        json_string = result.payload.decode('utf-8')
+                        json_data = json.loads(json_string)
+                        logger.info("[ObstacleTask] Decoded results")
+                        offset = json_data[0]['vector']
+                        await self.moveForwardAndAvoid(offset)
+                except JSONDecodeError as e:
+                    logger.error(f"[ObstacleTask]: Error decoding JSON")
+                await asyncio.sleep(0.1)
         except Exception as e:
-            self.drone.hover()
+            logger.info(f"[ObstacleTask] Task failed with exception {e}")
+            await self.drone.hover()
 
