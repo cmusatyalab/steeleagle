@@ -86,7 +86,8 @@ class Supervisor:
     async def executeFlightScript(self, url: str):
         logger.debug('Starting flight plan download...')
         try:
-            self.download(url)
+            #self.download(url)
+            pass
         except Exception as e:
             logger.debug('Flight script download failed! Aborting.')
             return
@@ -111,8 +112,10 @@ class Supervisor:
                 if module.__name__.startswith('mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
                     importlib.reload(module)
         logger.debug('MC init')
-        from mission.MissionController import MissionController
-        self.mission = MissionController(self.drone, self.cloudlet)
+        #from mission.MissionController import MissionController
+        #self.mission = MissionController(self.drone, self.cloudlet)
+        from task_defs.ObstacleTask import ObstacleTask
+        self.mission = ObstacleTask(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
         self.reload = True
