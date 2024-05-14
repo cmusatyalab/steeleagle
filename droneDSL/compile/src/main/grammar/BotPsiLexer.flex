@@ -34,6 +34,7 @@ IDENTIFIER=[α-ωa-zA-Z_][α-ωa-zA-Z0-9_'-]*
   Task                { return TASK_KW; }
   Detect              { return TASK_DETECT_KW; }
   Track               { return TASK_TRACK_KW; }
+  Avoid               { return TASK_AVOID_KW; }
   Mission             { return MISSION_KW; }
   Transition          { return TRANSITION_KW; }
   Start               { return MISSION_START_KW; }
