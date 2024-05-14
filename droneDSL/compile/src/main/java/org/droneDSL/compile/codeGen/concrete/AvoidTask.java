@@ -27,7 +27,7 @@ public class AvoidTask extends Task {
                 task_attr_%s = {}
                 task_attr_%s["speed"] = "%s"
                 task_attr_%s["model"] = "%s"
-                task_attr_%s["waypoints"] = "%s"
+                task_attr_%s["coords"] = "%s"
         """.formatted(taskID, taskID, taskID, speed, taskID, model, taskID, waypointsStr)
            + this.generateTaskTransCode() +
            """

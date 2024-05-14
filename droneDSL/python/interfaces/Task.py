@@ -20,7 +20,7 @@ class TaskArguments():
         self.task_type = task_type
         self.task_attributes = task_attributes
         self.transitions_attributes = transitions_attributes
-
+        
 class Task(ABC):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
