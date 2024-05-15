@@ -107,6 +107,14 @@ class DroneItf(ABC):
         pass
 
     @abstractmethod
+    async def getSpeedNED(self):
+        pass
+
+    @abstractmethod
+    async def getSpeedRel(self):
+        pass
+
+    @abstractmethod
     async def getRelAlt(self):
         pass
 
