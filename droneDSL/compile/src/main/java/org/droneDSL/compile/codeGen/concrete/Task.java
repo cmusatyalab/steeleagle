@@ -1,5 +1,6 @@
 package org.droneDSL.compile.codeGen.concrete;
 
+import kala.collection.immutable.ImmutableSeq;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -15,9 +16,20 @@ public abstract class Task {
     this.transitions = new ArrayList<>();
   }
 
+
+  public ImmutableSeq<Point> wayPoints;
+  public record Point(double x, double y, double z) {
+    public String toJson() {
+      return String.format("{'lng': %s, 'lat': %s, 'alt': %s}", x, y, z);
+    }
+  }
+  public record HSV(int h, int s, int v) {
+    public String toString() {
+      return String.format("[%s, %s, %s]", h, s, v);
+    }
+  }
+
   public List<Transition> transitions;
-
-
   public record Transition<T>(
       String condID,
       @Nullable T condArg,
@@ -25,6 +37,8 @@ public abstract class Task {
       String nextTaskID
   ) {
   }
+
+
 
   public abstract void debugPrint();
 

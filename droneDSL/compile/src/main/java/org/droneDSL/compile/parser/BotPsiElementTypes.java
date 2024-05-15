@@ -37,6 +37,7 @@ public interface BotPsiElementTypes {
   IElementType RBRACE = new BotPsiTokenType("RBRACE");
   IElementType RPAREN = new BotPsiTokenType("RPAREN");
   IElementType RSQUA = new BotPsiTokenType("RSQUA");
+  IElementType TASK_AVOID_KW = new BotPsiTokenType("TASK_AVOID_KW");
   IElementType TASK_DETECT_KW = new BotPsiTokenType("TASK_DETECT_KW");
   IElementType TASK_KW = new BotPsiTokenType("TASK_KW");
   IElementType TASK_TRACK_KW = new BotPsiTokenType("TASK_TRACK_KW");

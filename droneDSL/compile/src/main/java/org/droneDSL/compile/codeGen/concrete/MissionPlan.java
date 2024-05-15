@@ -44,12 +44,12 @@ public final class MissionPlan {
             @staticmethod
             def define_mission(transitMap, task_arg_map):
                 #define transition
-                logger.info("MissionController: define the transitMap\\n")
+                logger.info("MissionCreator: define the transitMap\\n")
                 transitMap["start"] = MissionCreator.start_transit        
         """);
     missionTask.append(String.format("""
                 # define task
-                logger.info("MissionController: define the tasks\\n")
+                logger.info("MissionCreator: define the tasks\\n")
         """, this.startTaskID));
 
 
@@ -89,11 +89,15 @@ public final class MissionPlan {
       }
     });
 
+    missionTask.append(String.format("""
+                logger.info("MissionCreator: finish defining the tasks\\n")
+        """));
+
 
     staticMethod.append("""
             @staticmethod
             def default_transit(triggered_event):
-                logger.info(f"MissionController: no matched up transition, triggered event {triggered_event}\\n", triggered_event)
+                logger.info(f"MissionCreator: no matched up transition, triggered event {triggered_event}\\n", triggered_event)
         """);
 
     missionTrans.append("""

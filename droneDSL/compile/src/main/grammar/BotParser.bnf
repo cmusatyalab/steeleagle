@@ -19,7 +19,7 @@ file ::= task mission
 
 // defining the task
 task ::= TASK_KW <<braced task_decl*>>
-task_decl ::= (TASK_DETECT_KW | TASK_TRACK_KW) task_name task_body
+task_decl ::= (TASK_DETECT_KW | TASK_TRACK_KW | TASK_AVOID_KW) task_name task_body
 task_body ::= <<braced <<commaSep attributes>>>>
 private attributes ::= attribute*
 attribute ::=  ID <<coloned attribute_expr>>

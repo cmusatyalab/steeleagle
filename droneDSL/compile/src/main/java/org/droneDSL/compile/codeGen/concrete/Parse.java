@@ -18,7 +18,8 @@ import java.util.Map;
 public interface Parse {
   enum TaskKind {
     Detect,
-    Track
+    Track,
+    Avoid
   }
 
   class AttributeMap {
@@ -103,6 +104,40 @@ public interface Parse {
         );
         yield Tuple.of(taskID, trackTask);
       }
+      case Avoid -> {
+
+        var speed = attrMap.get("speed").child(BotPsiElementTypes.NUMBER).tokenText();
+        var model = attrMap.get("model").child(BotPsiElementTypes.NAME).tokenText();
+
+
+        // waypoints
+        var isWayPointsVar = attrMap.get("way_points").peekChild(BotPsiElementTypes.ANGLE_BRACKED);
+        ImmutableSeq<DetectTask.Point> wayPoints;
+        if (isWayPointsVar == null) {
+          wayPoints = attrMap.get("way_points").child(BotPsiElementTypes.SQUARE_BRACKED).childrenOfType(BotPsiElementTypes.PAREN).
+              map(point -> {
+                var nums = point.child(BotPsiElementTypes.TUPLE).childrenOfType(BotPsiElementTypes.NUMBER)
+                    .map(t -> t.tokenText().toFloat())
+                    .toImmutableSeq();
+                return new DetectTask.Point(nums.get(0), nums.get(1), nums.get(2));
+              })
+              .toImmutableSeq();
+        } else {
+          var wayPointsID = attrMap.get("way_points").child(BotPsiElementTypes.ANGLE_BRACKED).child(BotPsiElementTypes.NAME).tokenText().toString();
+          wayPoints = Seq.wrapJava(waypointsMap.get(wayPointsID))
+              .map(pt -> new DetectTask.Point(Double.parseDouble(pt.longitude()), Double.parseDouble(pt.latitude()), Double.parseDouble(pt.altitude())));
+        }
+
+
+        // construct new task
+        var avoidTask = new AvoidTask(
+            taskID,
+            wayPoints,
+            speed.toFloat(),
+            model.toString()
+        );
+        yield Tuple.of(taskID, avoidTask);
+      }
 
     };
   }
@@ -149,13 +184,18 @@ public interface Parse {
   @NotNull
   private static AttributeMap createMap(GenericNode<? extends GenericNode<?>> task) {
     var isDetect = task.peekChild(BotPsiElementTypes.TASK_DETECT_KW);
+    var isTrack = task.peekChild(BotPsiElementTypes.TASK_TRACK_KW);
     var attrMap = new AttributeMap();
     task.child(BotPsiElementTypes.TASK_BODY).childrenOfType(BotPsiElementTypes.ATTRIBUTE)
         .forEach(attr -> attrMap.content.put(attr.child(BotPsiElementTypes.ID).tokenText(), attr.child(BotPsiElementTypes.ATTRIBUTE_EXPR)));
+
+
     if (isDetect != null) {
       attrMap.kind = TaskKind.Detect;
-    } else {
+    } else if (isTrack!= null){
       attrMap.kind = TaskKind.Track;
+    } else{
+      attrMap.kind = TaskKind.Avoid;
     }
     return attrMap;
   }

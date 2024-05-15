@@ -2,6 +2,7 @@ import asyncio
 from  interfaces.Task import TaskType      
 from task_defs.TrackTask import TrackTask
 from task_defs.DetectTask import DetectTask
+from task_defs.AvoidTask import AvoidTask
 from mission.MissionCreator import MissionCreator
 from mission.TaskRunner import TaskRunner
 import queue
@@ -34,6 +35,9 @@ class MissionController():
             elif (self.task_arg_map[task_id].task_type == TaskType.Track):
                 logger.info('MC: Track task')
                 return TrackTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == TaskType.Avoid):
+                logger.info('MC: Avoid task')
+                return AvoidTask(self.drone, self.cloudlet, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
         return None
             
     def next_task(self, current_task_id, triggered_event):

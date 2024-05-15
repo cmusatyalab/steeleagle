@@ -13,13 +13,14 @@ logger.setLevel(logging.INFO)
 class TaskType(Enum):
     Detect = 1
     Track = 2
+    Avoid = 3
 
 class TaskArguments():
     def __init__(self, task_type, transitions_attributes, task_attributes):
         self.task_type = task_type
         self.task_attributes = task_attributes
         self.transitions_attributes = transitions_attributes
-
+        
 class Task(ABC):
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
