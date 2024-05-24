@@ -12,18 +12,6 @@ public class DetectTask extends Task {
   public HSV lowerBound;
   public HSV upperBound;
 
-  public ImmutableSeq<Point> wayPoints;
-
-  public record Point(double x, double y, double z) {
-    public String toJson() {
-      return String.format("{'lng': %s, 'lat': %s, 'alt': %s}", x, y, z);
-    }
-  }
-  public record HSV(int h, int s, int v) {
-    public String toString() {
-      return String.format("[%s, %s, %s]", h, s, v);
-    }
-  }
 
   public DetectTask(String taskID, ImmutableSeq<Point> wayPoints, float gimbalPitch, float droneRotation, int sampleRate, int hoverDelay, String model, HSV lowerBound, HSV upperBound) {
     super(taskID);
@@ -37,6 +25,7 @@ public class DetectTask extends Task {
     this.upperBound = upperBound;
   }
 
+  @Override
   public void debugPrint() {
     System.out.println("gimbal_pitch :" + gimbalPitch);
     System.out.println("drone_rotation :" + droneRotation);

@@ -12,7 +12,7 @@ from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.rth import set_custom_location, return_to_home
 from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged
+from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
 from olympe.messages.wifi import rssi_changed
@@ -21,7 +21,10 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 import math
+import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class ParrotAnafiDrone(DroneItf.DroneItf):
     
@@ -167,6 +170,29 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def getRelAlt(self):
         return self.drone.get_state(AltitudeChanged)["altitude"]
+
+    async def getSpeedNED(self):
+        return self.drone.get_state(SpeedChanged)
+
+    async def getSpeedRel(self):
+        NED = await self.getSpeedNED()
+        vec = np.array([NED["speedX"], NED["speedY"]], dtype=float)
+        vecf = np.array([0.0, 1.0], dtype=float)
+        
+        hd = (await self.getHeading()) + 90
+        fw = np.radians(hd)
+        c, s = np.cos(fw), np.sin(fw)
+        R1 = np.array(((c, -s), (s, c)))
+        vecf = np.dot(R1, vecf)
+
+        vecr = np.array([0.0, 1.0], dtype=float)
+        rt = np.radians(hd + 90)
+        c, s = np.cos(rt), np.sin(rt)
+        R2 = np.array(((c,-s), (s, c)))
+        vecr = np.dot(R2, vecr)
+
+        res = {"speedX": np.dot(vec, vecf), "speedY": np.dot(vec, vecr) * -1, "speedZ": NED["speedZ"]}
+        return res
 
     async def getExactAlt(self):
         pass

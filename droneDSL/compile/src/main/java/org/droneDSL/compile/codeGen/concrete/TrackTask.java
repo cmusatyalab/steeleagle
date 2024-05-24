@@ -9,11 +9,6 @@ public class TrackTask extends Task {
   public HSV lowerBound;
   public HSV upperBound;
 
-  public record HSV(int h, int s, int v) {
-    public String toString() {
-      return String.format("[%s, %s, %s]", h, s, v);
-    }
-  }
 
   public TrackTask(String taskID, float gimbalPitch, String target_class, String model, HSV lower_bound, HSV upper_bound) {
     super(taskID);
@@ -24,6 +19,7 @@ public class TrackTask extends Task {
     this.upperBound = upper_bound;
   }
 
+  @Override
   public void debugPrint() {
     System.out.println("gimbal_pitch :" + gimbalPitch);
     System.out.println("model :" + model);
