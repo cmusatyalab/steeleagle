@@ -26,10 +26,11 @@ class AvoidTask(Task):
         # PID controller parameters
         self.time_prev = None
         self.error_prev = 0
-        self.setpt = 0.0
-        self.pid_info = {"constants" : {"Kp": 3.0, "Ki": 0.01, "Kd": 4.0}, "saved" : {"I": 0.0}}
-        self.forwardspeed = 15
-        self.horizontalspeed = 2
+        self.setpt = [0.0, 0.0]
+        self.roll_pid_info = {"constants" : {"Kp": 3.0, "Ki": 0.01, "Kd": 4.0}, "saved" : {"I": 0.0}}
+        self.pitch_pid_info = {"constants" : {"Kp": 3.0, "Ki": 0.01, "Kd": 5.0}, "saved" : {"I": 0.0}}
+        self.forwardspeed = 2
+        self.horizontalspeed = 1
         self.oscillations = 0
 
     def create_transition(self):
@@ -52,9 +53,10 @@ class AvoidTask(Task):
 
     async def computeError(self):
         speeds = await self.drone.getSpeedRel()
+        fspeed = speeds["speedX"]
         hspeed = speeds["speedY"]
-        logger.info(f"[ObstacleTask] HSpeed: {hspeed}")
-        return self.setpt - hspeed 
+        logger.info(f"[ObstacleTask] HSpeed: {hspeed}, FSpeed: {fspeed}")
+        return [self.setpt[0] - hspeed, self.setpt[1] - fspeed]
 
     async def moveForwardAndAvoid(self, error):
         ts = round(time.time() * 1000)
@@ -62,35 +64,51 @@ class AvoidTask(Task):
             self.time_prev = ts - 1 # Do this to prevent a divide by zero error!
             self.error_prev = error
 
-        # Control loop
-        P = self.pid_info["constants"]["Kp"] * error
-        I = self.pid_info["constants"]["Ki"] * (ts - self.time_prev)
-        if error < 0:
-            I *= -1
-        if error == 0:
-            self.pid_info["saved"]["I"] = 0
+        # Roll control loop
+        Pr = self.roll_pid_info["constants"]["Kp"] * error[0]
+        Ir = self.roll_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        if error[0] < 0:
+            Ir *= -1
+        if error[0] == 0:
+            self.roll_pid_info["saved"]["I"] = 0
         else:
-            self.pid_info["saved"]["I"] += self.clamp(I, -100.0, 100.0)
-        D = self.pid_info["constants"]["Kd"] * (error - self.error_prev) / (ts - self.time_prev)
+            self.roll_pid_info["saved"]["I"] += self.clamp(Ir, -100.0, 100.0)
+        Dr = self.roll_pid_info["constants"]["Kd"] * (error[0] - self.error_prev[0]) / (ts - self.time_prev)
         
-        roll = self.clamp(int(P + I + D), -100, 100)
+        roll = self.clamp(int(Pr + Ir + Dr), -100, 100)
+        
+        # Pitch control loop
+        Pp = self.pitch_pid_info["constants"]["Kp"] * error[1]
+        Ip = self.pitch_pid_info["constants"]["Ki"] * (ts - self.time_prev)
+        if error[1] < 0:
+            Ip *= -1
+        if error[1] == 0:
+            self.pitch_pid_info["saved"]["I"] = 0
+        else:
+            self.pitch_pid_info["saved"]["I"] += self.clamp(Ip, -100.0, 100.0)
+        Dp = self.pitch_pid_info["constants"]["Kd"] * (error[1] - self.error_prev[1]) / (ts - self.time_prev)
+        
+        pitch = self.clamp(int(Pp + Ip + Dp), -100, 100)
+
         self.time_prev = ts
         self.error_prev = error
 
-        pitch = self.forwardspeed
-        if abs(error) >= 0.4:
-            pitch = int(self.forwardspeed / 4)
-            
         logger.info(f"[ObstacleTask] Giving PCMD {roll} {pitch}")
         await self.drone.PCMD(roll, pitch, 0, 0)
 
     def setPoint(self, error):
+        # Calculate horizontal error
         newpt = error * self.horizontalspeed
-        if newpt * self.setpt < 0 and abs(self.setpt - newpt) > 0.5 and self.oscillations < 3: # Check if they have different signs
+        if newpt * self.setpt[0] < 0 and abs(self.setpt[0] - newpt) > 0.5 and self.oscillations < 3: # Check if they have different signs
             self.oscillations += 1 
         else:
             self.oscillations = 0
-            self.setpt = error * self.horizontalspeed
+            self.setpt[0] = error * self.horizontalspeed
+        # Calculate forward error
+        if abs(error) >= 0.1:
+            self.setpt[1] = 0
+        else:
+            self.setpt[1] = self.forwardspeed
 
     async def run(self):
         logger.info("[ObstacleTask] Started run")

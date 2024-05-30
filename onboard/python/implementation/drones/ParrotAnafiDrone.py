@@ -191,7 +191,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         R2 = np.array(((c,-s), (s, c)))
         vecr = np.dot(R2, vecr)
 
-        res = {"speedX": np.dot(vec, vecf), "speedY": np.dot(vec, vecr) * -1, "speedZ": NED["speedZ"]}
+        res = {"speedX": np.dot(vec, vecf) * -1, "speedY": np.dot(vec, vecr) * -1, "speedZ": NED["speedZ"]}
         return res
 
     async def getExactAlt(self):
