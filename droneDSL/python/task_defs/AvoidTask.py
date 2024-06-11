@@ -27,9 +27,9 @@ class AvoidTask(Task):
         self.time_prev = None
         self.error_prev = 0
         self.setpt = [0.0, 0.0]
-        self.roll_pid_info = {"constants" : {"Kp": 3.0, "Ki": 0.01, "Kd": 4.0}, "saved" : {"I": 0.0}}
-        self.pitch_pid_info = {"constants" : {"Kp": 3.0, "Ki": 0.01, "Kd": 5.0}, "saved" : {"I": 0.0}}
-        self.forwardspeed = 2
+        self.roll_pid_info = {"constants" : {"Kp": 5.0, "Ki": 0.01, "Kd": 6.0}, "saved" : {"I": 0.0}}
+        self.pitch_pid_info = {"constants" : {"Kp": 5.0, "Ki": 0.01, "Kd": 6.0}, "saved" : {"I": 0.0}}
+        self.forwardspeed = 1.5 
         self.horizontalspeed = 1
         self.oscillations = 0
 
