@@ -77,6 +77,9 @@ class Supervisor:
         self.heartbeats = 0
         self.zmq = zmq.Context().socket(zmq.REQ)
         self.zmq.connect(f'tcp://{args.server}:{args.zmqport}')
+        self.tlogfile = None
+        if args.trajectory:
+            self.tlogfile = open("trajectory.log", "w")
 
     async def initializeConnection(self):
         await self.drone.connect()
@@ -205,6 +208,11 @@ class Supervisor:
                             asyncio.create_task(self.drone.PCMD(roll, pitch, yaw, gaz))
                             current = await self.drone.getGimbalPitch()
                             asyncio.create_task(self.drone.setGimbalPose(0, current+gimbal_pitch , 0))
+                if self.tlogfile: # Log trajectory IMU data
+                    speeds = await self.drone.getSpeedRel()
+                    fspeed = speeds["speedX"]
+                    hspeed = speeds["speedY"]
+                    self.tlogfile.write(f"{time.time()},{fspeed},{hspeed} ")
             except Exception as e:
                 logger.debug(e)
 
@@ -230,7 +238,7 @@ class Supervisor:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
-    
+
             extras = cnc_pb2.Extras()
             try:
                 extras.drone_id = sync(self.drone.getName())
@@ -253,7 +261,7 @@ class Supervisor:
             logger.debug('Producing Gabriel frame!')
             input_frame.extras.Pack(extras)
             return input_frame
-    
+
         return ProducerWrapper(producer=producer, source_name=self.source)
 
 
@@ -276,6 +284,8 @@ async def _main():
         help='Use low delay settings for video streaming [default: False]')
     parser.add_argument('-zp', '--zmqport', type=int, default=6000,
                         help='Specify websocket port [default: 6000]')
+    parser.add_argument('-t', '--trajectory', action='store_true',
+        help='Log the trajectory of the drone over the flight duration [default: False]')
 
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s",

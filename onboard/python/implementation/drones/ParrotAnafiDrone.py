@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class ParrotAnafiDrone(DroneItf.DroneItf):
-    
+
     def __init__(self, **kwargs):
         if 'sim' in kwargs:
             self.ip = '10.202.0.1'
@@ -116,7 +116,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def moveBy(self, x, y, z, t):
         self.drone(
-            moveBy(x, y, z, t) 
+            moveBy(x, y, z, t)
         )
         await self.hovering()
 
@@ -178,7 +178,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         NED = await self.getSpeedNED()
         vec = np.array([NED["speedX"], NED["speedY"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
-        
+
         hd = (await self.getHeading()) + 90
         fw = np.radians(hd)
         c, s = np.cos(fw), np.sin(fw)
@@ -204,13 +204,13 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         return self.drone.get_state(BatteryStateChanged)["percent"]
 
     async def getMagnetometerReading(self):
-        return self.drone.get_state(MagnetoCalibrationRequiredState)["required"] 
-    
+        return self.drone.get_state(MagnetoCalibrationRequiredState)["required"]
+
     async def getGimbalPitch(self):
         return self.drone.get_state(attitude)[0]["pitch_absolute"]
-    
+
     async def getSatellites(self):
-        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"] 
+        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
 
     async def kill(self):
         self.active = False
@@ -224,10 +224,10 @@ class StreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
-        self.currentFrame = None 
+        self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG)
+        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
         self.isRunning = True
 
     def run(self):
@@ -243,7 +243,7 @@ class StreamingThread(threading.Thread):
             return frame
         except Exception as e:
             # Send a blank frame
-            return np.zeros((720, 1280, 3), np.uint8) 
+            return np.zeros((720, 1280, 3), np.uint8)
 
     def stop(self):
         self.isRunning = False
@@ -252,11 +252,13 @@ import queue
 
 class LowDelayStreamingThread(threading.Thread):
 
-    def __init__(self, drone, ip):
+    def __init__(self, drone, ip, save_frames = False):
         threading.Thread.__init__(self)
         self.drone = drone
         self.frame_queue = queue.Queue()
         self.currentFrame = np.zeros((720, 1280, 3), np.uint8)
+        self.save_frames = save_frames
+        self.frames_recd = 0
 
         self.drone.streaming.set_callbacks(
             raw_cb=self.yuvFrameCb,
@@ -277,14 +279,14 @@ class LowDelayStreamingThread(threading.Thread):
                 continue
             self.copyFrame(yuv_frame)
             yuv_frame.unref()
-    
+
     def grabFrame(self):
         try:
             frame = self.currentFrame.copy()
             return frame
         except Exception as e:
             # Send a blank frame
-            return np.zeros((720, 1280, 3), np.uint8) 
+            return np.zeros((720, 1280, 3), np.uint8)
 
     def copyFrame(self, yuv_frame):
         info = yuv_frame.info()
@@ -293,7 +295,7 @@ class LowDelayStreamingThread(threading.Thread):
             info["raw"]["frame"]["info"]["height"],
             info["raw"]["frame"]["info"]["width"],
         )
-        
+
         cv2_cvt_color_flag = {
             olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
             olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
@@ -310,7 +312,13 @@ class LowDelayStreamingThread(threading.Thread):
             :type yuv_frame: olympe.VideoFrame
         """
         yuv_frame.ref()
-        self.frame_queue.put_nowait(yuv_frame)
+        fps = 30 // float(os.environ.get('FPS'))
+        self.frames_recd += 1
+        if self.frames_recd == fps:
+            self.frame_queue.put_nowait(yuv_frame)
+            self.frames_recd = 0
+        else:
+            yuv_frame.unref()
 
     def flushCb(self, stream):
         if stream["vdef_format"] != olympe.VDEF_I420:
