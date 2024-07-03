@@ -163,7 +163,7 @@ class Supervisor:
         req = cnc_pb2.Extras()
         req.drone_id = name
         while True:
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
             try:
                 self.zmq.send(req.SerializeToString())
                 rep = self.zmq.recv()
@@ -233,7 +233,7 @@ class Supervisor:
 
     def get_producer_wrappers(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
             self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
