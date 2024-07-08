@@ -84,7 +84,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
     def sendFrame(self):
         async def producer():
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
             input_frame = gabriel_pb2.InputFrame()
             if not self.stop:
                 try:
@@ -105,14 +105,14 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                 input_frame.payloads.append("Streaming not started, no frame to show.")
 
             return input_frame
-                    
+
         return ProducerWrapper(producer=producer, source_name=self.source)
 
     def getResults(self, engine_key):
-        try:    
+        try:
             return self.engine_results.pop(engine_key)
         except:
             return None
-        
+
     def clearResults(self, engine_key):
         self.engine_results[engine_key] = None
