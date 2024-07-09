@@ -270,6 +270,7 @@ async def _main():
         description='Bridges python API drones to SteelEagle.')
     parser.add_argument('-d', '--drone', default='ParrotAnafiDrone',
                         help='Set the type of drone to interface with [default: ParrotAnafiDrone]')
+    
     parser.add_argument('-c', '--cloudlet', default='PureOffloadCloudlet',
                         help='Set the type of offload method to the cloudlet [default: PureOffloadCloudlet]')
     parser.add_argument('-s', '--server', default='gabriel-server',
