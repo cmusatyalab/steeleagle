@@ -24,6 +24,7 @@ venv/
 .streamlit/secrets.toml
 *~
 *.log
+cnc/server/steeleagle-vol/
 
 hermes/python/mission/MissionCreator.py
 onboard/python/runtime/
