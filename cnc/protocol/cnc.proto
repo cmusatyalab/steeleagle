@@ -62,3 +62,94 @@ message Extras {
     optional HSV lower_bound = 8;
     optional HSV upper_bound = 9;
 }
+
+// Driver - Kernel API
+enum Magnetometer {
+  MAG_CALIBRATED = 0;
+  MAG_RECOMMENDED = 1;
+  MAG_REQUIRED = 2;
+  MAG_UNUSED = 3;
+  MAG_PERTURBATION = 4;
+}
+
+message Attitude {
+  double yaw = 1;
+  double pitch = 2;
+  double roll = 3;
+  double thrust = 4;
+}
+
+message IMU {
+  double xvel = 1;
+  double yvel = 2;
+  double zvel = 3;
+  double rotvel = 4;
+}
+
+message Position {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double theta = 4
+}
+
+// Pub/Sub for telemetry
+messsage Telemetry {
+  Location global_position = 1;
+  Magnetometer mag = 2;
+  int64 battery = 3;
+  Attitude gimbal_attitude = 4;
+  Attitude drone_attitude = 5;
+  IMU imu = 6;
+  Position relative_position = 7;
+  int64 satellites = 8;
+}
+
+message SetAttitude {
+  double yaw = 1;
+  double pitch = 2;
+  double roll = 3;
+  double thrust = 4;
+}
+
+message ConnectionStatus {
+  bool isConnected = 1;
+  int64 wifi_rssi = 2;
+  int64 cellular_rssi = 3;
+  int64 radio_rssi = 4;
+  string drone_name = 5;
+}
+
+enum CameraType {
+  CAM_RGB = 0;
+  CAM_STEREO = 1;
+  CAM_IR = 2;
+}
+
+mesaage Camera {
+  repeated int64 id = 1;
+  repeated CameraType type = 2;
+}
+
+// Request/Response for commands
+message Driver {
+  oneof value {
+    SetAttitude setAttitude = 1;
+    ConnectionStatus connectionStatus = 2;
+    bool takeOff = 3;
+    bool land = 4;
+    bool hover = 5;
+    bool kill = 6;
+    bool rth = 7 //return to home
+    Location setHome = 8;
+    Location getHome = 9;
+    Position setVelocity = 10;
+    Position setRelativePosition = 11; //relative to home Position
+    Position setGlobalPosition = 12;
+    Position setTranslatedPosition = 13; //relative to current position
+    int64 switchCamera = 14; //change current switchCamera
+    Camera getCameras = 15;
+  }
+}
+
+// Kernel - Mission Controller API
