@@ -146,9 +146,10 @@ message Driver {
     Position setVelocity = 10;
     Position setRelativePosition = 11; //relative to home Position
     Position setGlobalPosition = 12;
-    Position setTranslation = 13; //relative to current position
+    Position setTranslatedPosition = 13; //relative to current position
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;
   }
 }
 
+// Kernel - Mission Controller API
