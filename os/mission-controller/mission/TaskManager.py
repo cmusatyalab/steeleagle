@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
     
 class TaskManager():
     
-    def __init__(self, drone, compute, transit_map):
+    def __init__(self, drone, compute, transit_map, task_arg_map):
         super().__init__()
         self.trigger_event_queue = queue.Queue()
         self.drone = drone
@@ -23,7 +23,7 @@ class TaskManager():
         self.start_task_id = None
         self.curr_task_id = None
         self.transit_map = transit_map
-        self.task_arg_map = {}
+        self.task_arg_map = task_arg_map
 
     ######################################################## TASK #############################################################
     def get_current_task(self):
