@@ -13,8 +13,8 @@ logger.setLevel(logging.INFO)
 class MissionController():
     def __init__(self):
         context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.connect("tcp://localhost:5555")
+        self.socket = context.socket(zmq.REQ)
+        self.socket.connect("tcp://localhost:5555")
         self.isTerminated = False
         
         self.fsm = {}
@@ -26,8 +26,8 @@ class MissionController():
         
         await asyncio.sleep(0)
         try:
-            self.zmq.send(req.SerializeToString())
-            rep = self.zmq.recv()
+            rep = self.socket.recv()
+            
             if b'No commands.' != rep:
                 extras  = cnc_pb2.Extras()
                 extras.ParseFromString(rep)

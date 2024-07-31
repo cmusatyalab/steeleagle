@@ -1,11 +1,11 @@
 import asyncio
 from proxy import DroneProxy
 from proxy import ComputeProxy
-from proxy import CommandProxy
 from  task_defs.Task import TaskType      
 from task_defs.TrackTask import TrackTask
 from task_defs.DetectTask import DetectTask
 from task_defs.AvoidTask import AvoidTask
+from task_defs.TestTask import TestTask
 import queue
 import logging
 
@@ -75,6 +75,9 @@ class TaskManager():
             elif (self.task_arg_map[task_id].task_type == TaskType.Avoid):
                 logger.info('TaskManager: Avoid task')
                 return AvoidTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == TaskType.Test):
+                logger.info('TaskManager: Test task')
+                return TestTask(self.drone, None, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
         return None
     
     def stop_task(self):

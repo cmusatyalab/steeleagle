@@ -15,6 +15,7 @@ class TaskType(Enum):
     Detect = 1
     Track = 2
     Avoid = 3
+    Test = 4
 
 class TaskArguments():
     def __init__(self, task_type, transitions_attributes, task_attributes):
