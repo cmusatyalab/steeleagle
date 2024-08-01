@@ -64,12 +64,25 @@ message Extras {
 }
 
 // Driver - Kernel API
+message Frame {
+  bytes data = 1;
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4;
+}
+
+enum ResponseStatus {
+  OK = 0;
+  FAILED = 1;
+  NOTSUPPORTED = 2;
+}
+
 enum Magnetometer {
-  MAG_CALIBRATED = 0;
-  MAG_RECOMMENDED = 1;
-  MAG_REQUIRED = 2;
-  MAG_UNUSED = 3;
-  MAG_PERTURBATION = 4;
+  CALIBRATED = 0;
+  RECOMMENDED = 1;
+  REQUIRED = 2;
+  UNUSED = 3;
+  PERTURBATION = 4;
 }
 
 message Attitude {
@@ -105,13 +118,6 @@ messsage Telemetry {
   int64 satellites = 8;
 }
 
-message SetAttitude {
-  double yaw = 1;
-  double pitch = 2;
-  double roll = 3;
-  double thrust = 4;
-}
-
 message ConnectionStatus {
   bool isConnected = 1;
   int64 wifi_rssi = 2;
@@ -121,20 +127,21 @@ message ConnectionStatus {
 }
 
 enum CameraType {
-  CAM_RGB = 0;
-  CAM_STEREO = 1;
-  CAM_IR = 2;
+  RGB = 0;
+  STEREO = 1;
+  THERMAL = 2;
+  NIGHT = 3;
 }
 
-mesaage Camera {
+message Camera {
   repeated int64 id = 1;
   repeated CameraType type = 2;
 }
 
 // Request/Response for commands
 message Driver {
-  oneof value {
-    SetAttitude setAttitude = 1;
+  oneof method {
+    Attitude setAttitude = 1;
     ConnectionStatus connectionStatus = 2;
     bool takeOff = 3;
     bool land = 4;
@@ -150,6 +157,25 @@ message Driver {
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;
   }
+  ReponseStatus status = 16;
 }
 
 // Kernel - Mission Controller API
+/*Request/Response for commands should just use the Driver message;
+the Kernel will reject any privileged calls
+
+message Driver {
+  oneof method {
+...
+  }
+}
+*/
+
+message Mission {
+  oneof method {
+    string startMission = 1; //this path should point to task sources/dependencies
+    bool pauseMission = 2;
+    bool resumeMission = 3;
+    bool stopMission = 4;
+  }
+}
