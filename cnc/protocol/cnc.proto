@@ -59,8 +59,8 @@ message Extras {
     string detection_model = 7;
 
     //for HSV filtering of object detection results
-    optional HSV lower_bound = 8;
-    optional HSV upper_bound = 9;
+    HSV lower_bound = 8;
+    HSV upper_bound = 9;
 }
 
 // Driver - Kernel API
@@ -103,11 +103,11 @@ message Position {
   double x = 1;
   double y = 2;
   double z = 3;
-  double theta = 4
+  double theta = 4;
 }
 
 // Pub/Sub for telemetry
-messsage Telemetry {
+message Telemetry {
   Location global_position = 1;
   Magnetometer mag = 2;
   int64 battery = 3;
@@ -147,7 +147,7 @@ message Driver {
     bool land = 4;
     bool hover = 5;
     bool kill = 6;
-    bool rth = 7 //return to home
+    bool rth = 7; //return to home
     Location setHome = 8;
     Location getHome = 9;
     Position setVelocity = 10;
@@ -157,7 +157,7 @@ message Driver {
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;
   }
-  ReponseStatus status = 16;
+  ResponseStatus status = 16;
 }
 
 // Kernel - Mission Controller API
