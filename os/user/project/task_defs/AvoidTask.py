@@ -10,8 +10,9 @@ import asyncio
 import logging
 import math
 from gabriel_protocol import gabriel_pb2
+from cnc.streamlit.pages import control
 from transition_defs.TimerTransition import TimerTransition
-from Task import Task
+from interface.Task import Task
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

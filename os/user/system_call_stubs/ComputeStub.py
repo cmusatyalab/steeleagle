@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-class ComputerProxy():
+class ComputeStub():
 
 
     def processResults(self, result_wrapper):

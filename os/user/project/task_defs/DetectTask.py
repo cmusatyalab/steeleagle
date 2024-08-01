@@ -2,7 +2,7 @@
 from transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
 from transition_defs.TimerTransition import TimerTransition
 from transition_defs.HSVDetectionTransition import HSVDetectionTransition
-from Task import Task
+from interface.Task import Task
 import asyncio
 import ast
 import logging

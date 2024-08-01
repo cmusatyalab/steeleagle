@@ -5,7 +5,7 @@ import json
 import numpy as np
 import math
 from transition_defs.TimerTransition import TimerTransition
-from Task import Task
+from interface.Task import Task
 import time
 import logging
 from gabriel_protocol import gabriel_pb2

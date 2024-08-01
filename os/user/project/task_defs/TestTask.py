@@ -1,8 +1,8 @@
 
-from transition_defs.ObjectTestionTransition import ObjectTestionTransition
+from transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
 from transition_defs.TimerTransition import TimerTransition
-from transition_defs.HSVTestionTransition import HSVTestionTransition
-from Task import Task
+from transition_defs.HSVDetectionTransition import HSVDetectionTransition
+from interface.Task import Task
 import asyncio
 import ast
 import logging

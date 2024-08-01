@@ -2,8 +2,8 @@
 import zmq
 import asyncio
 import logging
-from proxy import DroneProxy
-from proxy import ComputeProxy
+from system_call_stubs import DroneStub
+from system_call_stubs import ComputeStub
 import TaskManager
 
 
@@ -16,9 +16,7 @@ class MissionController():
         self.socket = context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5555")
         self.isTerminated = False
-
         self.tm = None
-        
         self.transitMap = {}
         self.task_arg_map = {}
             
@@ -26,8 +24,8 @@ class MissionController():
     ######################################################## MISSION ############################################################ 
     async def start_mission(self):
         # dynamic import the fsm
-        from mission.MissionCreator import MissionCreator
-        MissionCreator.define_mission(self.transitMap, self.task_arg_map)
+        from project.Mission import Mission
+        Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
         self.tm = TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
@@ -43,8 +41,8 @@ class MissionController():
         
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
-        self.drone = DroneProxy()
-        self.compute = ComputeProxy()
+        self.drone = DroneStub()
+        self.compute = ComputeStub()
         
         await asyncio.sleep(0)
         while True:

@@ -1,11 +1,9 @@
 import asyncio
-from proxy import DroneProxy
-from proxy import ComputeProxy
-from  task_defs.Task import TaskType      
-from task_defs.TrackTask import TrackTask
-from task_defs.DetectTask import DetectTask
-from task_defs.AvoidTask import AvoidTask
-from task_defs.TestTask import TestTask
+from  project.interface.Task import TaskType      
+from project.task_defs.TrackTask import TrackTask
+from project.task_defs.DetectTask import DetectTask
+from project.task_defs.AvoidTask import AvoidTask
+from project.task_defs.TestTask import TestTask
 import queue
 import logging
 

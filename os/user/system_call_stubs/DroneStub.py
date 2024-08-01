@@ -4,7 +4,7 @@
 import asyncio
 import zmq
 
-class DroneProxy():
+class DroneStub():
 
     def __init__(self):
         context = zmq.Context()
