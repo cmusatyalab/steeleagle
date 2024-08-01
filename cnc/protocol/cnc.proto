@@ -126,7 +126,7 @@ enum CameraType {
   NIGHT = 3;
 }
 
-mesaage Camera {
+message Camera {
   repeated int64 id = 1;
   repeated CameraType type = 2;
 }
