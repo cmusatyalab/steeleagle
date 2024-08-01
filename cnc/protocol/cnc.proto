@@ -64,6 +64,13 @@ message Extras {
 }
 
 // Driver - Kernel API
+message Frame {
+  bytes data = 1;
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4;
+}
+
 enum ResponseStatus {
   OK = 0;
   FAILED = 1;
