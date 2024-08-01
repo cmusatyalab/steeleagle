@@ -4,6 +4,11 @@
 import asyncio
 import zmq
 
+from cnc_protocol import cnc_pb2
+
+
+
+
 class DroneStub():
 
     def __init__(self):
@@ -13,28 +18,86 @@ class DroneStub():
     
     ''' Streaming methods '''
     async def getCameras(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.getCameras.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
+
     
     async def switchCameras(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.switchCameras.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
+       
     
     ''' Movement methods '''
 
     async def setAttitude(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.setAttitude.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
+       
     
     async def setVelocity(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.setVelocity.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
     
     async def setRelativePosition(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.setRelativePosition.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
     
     async def setTranslation(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.setTranslation.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
     
     async def setGlobalPosition(self):
-        pass
+        driver_req = cnc_pb2.Driver()
+        driver_req.setGlobalPosition.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
     
     async def hover(self):
-        pass
-
+        driver_req = cnc_pb2.Driver()
+        driver_req.hover.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        await self.socket.send(serialized_req)
+        response = await self.socket.recv()
+        print("Received response:", response)
+        
+        return response
