@@ -1,10 +1,10 @@
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-from task_defs.Task import TaskArguments, TaskType
+from interface.Task import TaskArguments, TaskType
 
 
-class MissionCreator:
+class Mission:
 
     # transition
     @staticmethod
@@ -24,9 +24,9 @@ class MissionCreator:
     def define_mission(transitMap, task_arg_map):
         #define transition
         logger.info("MissionCreator: define the transitMap\n")
-        transitMap["start"] = MissionCreator.start_transit
-        transitMap["tri"]= MissionCreator.tri_transit
-        transitMap["default"]= MissionCreator.default_transit
+        transitMap["start"] = Mission.start_transit
+        transitMap["tri"]= Mission.tri_transit
+        transitMap["default"]= Mission.default_transit
         # define task
         logger.info("MissionCreator: define the tasks\n")
         # TASKtri
