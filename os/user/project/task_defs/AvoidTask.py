@@ -11,13 +11,14 @@ import logging
 import math
 from gabriel_protocol import gabriel_pb2
 from cnc.streamlit.pages import control
-from transition_defs.TimerTransition import TimerTransition
-from interface.Task import Task
+from user.project.transition_defs.TimerTransition import TimerTransition
+from user.project.interface.Task import Task
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class AvoidTask(Task):
+        
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)

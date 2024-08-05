@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interface.Task import Task
+from user.project.interface.Task import Task
 import time
 import ast
 import asyncio
