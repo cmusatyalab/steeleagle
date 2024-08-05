@@ -13,6 +13,7 @@ def k_client():
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
         message = mission_command.SerializeToString()
+        print(f'start_mission message:{message}')
         socket.send(message)
         reply = socket.recv_string()
         print(f"Server reply: {reply}")
@@ -32,4 +33,5 @@ def k_client():
     send_stop_mission()
 
 if __name__ == "__main__":
+    print("Starting client")
     k_client()

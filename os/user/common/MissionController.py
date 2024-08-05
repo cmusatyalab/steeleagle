@@ -2,9 +2,9 @@
 import zmq
 import asyncio
 import logging
-from user.system_call_stubs import DroneStub
-from user.system_call_stubs import ComputeStub
-from user.common import TaskManager
+from user.system_call_stubs.DroneStub import DroneStub
+from user.system_call_stubs.ComputeStub import ComputeStub
+from user.common.TaskManager import TaskManager
 from cnc_protocol import cnc_pb2
 
 
@@ -15,7 +15,7 @@ class MissionController():
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.connect("tcp://localhost:5000")
+        self.socket.bind("tcp://*:5000") 
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}
@@ -29,7 +29,7 @@ class MissionController():
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
-        self.tm = TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
+        self.tm = TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
     
@@ -50,12 +50,15 @@ class MissionController():
             # Receive a message
             message = self.socket.recv()
 
-            # Parse the message based on expected type
             try:
-                # For example, if expecting a Command message
+                # Log the raw received message
+                print(f"Received raw message: {message}")
+                
+                # Parse the message
                 mission_command = cnc_pb2.Mission()
                 mission_command.ParseFromString(message)
-                print(f"Received Command: {mission_command}")
+                print(f"Parsed Command: {mission_command}")
+                
                 if mission_command.startMission:
                     self.start_mission()
                     response = "Mission started"

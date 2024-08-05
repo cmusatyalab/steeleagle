@@ -8,9 +8,7 @@ from json import JSONDecodeError
 import time
 import asyncio
 import logging
-import math
 from gabriel_protocol import gabriel_pb2
-from cnc.streamlit.pages import control
 from user.project.transition_defs.TimerTransition import TimerTransition
 from user.project.interface.Task import Task
 
