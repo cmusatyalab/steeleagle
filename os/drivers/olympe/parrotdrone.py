@@ -88,7 +88,7 @@ class ParrotDrone():
 
     async def getVideoFrame(self):
         if self.streamingThread:
-            return self.streamingThread.grabFrame()
+            return self.streamingThread.grabFrame().tobytes()
 
     async def stopStreaming(self):
         self.streamingThread.stop()
@@ -118,7 +118,7 @@ class ParrotDrone():
 
     ''' Movement methods '''
 
-    async def setTilt(self, roll, pitch, gaz, omega):
+    async def setAttitude(self, roll, pitch, gaz, omega):
         # Get attitude bounds from the drone
         tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
         tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
@@ -173,6 +173,18 @@ class ParrotDrone():
     
     ''' Status methods '''
 
+    async def getTelemetry(self):
+        telDict = {}
+        telDict["gps"] = await self.getGPS()
+        telDict["satellites"] = await self.getSatellites()
+        telDict["attitude"] = await self.getAttitude()
+        telDict["magnetometer"] = await self.getMagnetometerReading()
+        telDict["imu"] = await self.getVelocityBody()
+        telDict["battery"] = await self.getBatteryPercentage()
+        telDict["gimbalAttitude"] = await self.getGimbalPose()
+        
+        return telDict
+
     async def getName(self):
         return self.drone._device_name
     
@@ -224,8 +236,14 @@ class ParrotDrone():
     async def getMagnetometerReading(self):
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"]
 
-    async def getGimbalPitch(self):
-        return self.drone.get_state(attitude)[0]["pitch_absolute"]
+    async def getGimbalPose(self):
+        return {"roll": 0.0, "pitch": self.drone.get_state(attitude)[0]["pitch_absolute"], "yaw": 0.0}
+
+    async def getAttitude(self):
+        att = self.drone.get_state(AttitudeChanged)
+        rad_to_deg = 180 / math.pi
+        return {"roll": att["roll"] * rad_to_deg, "pitch": att["pitch"] * rad_to_deg,
+                "yaw": att["yaw"] * rad_to_deg}
 
     ''' Emergency methods '''
 
