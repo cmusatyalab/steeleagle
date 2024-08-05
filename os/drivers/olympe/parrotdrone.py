@@ -14,7 +14,8 @@ from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.rth import set_custom_location, return_to_home
 from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged, MaxVerticalSpeedChanged, MaxRotationSpeedChanged
+from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
+from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
