@@ -1,4 +1,5 @@
 
+import sys
 import zmq
 import asyncio
 import logging
@@ -8,8 +9,14 @@ from user.common.TaskManager import TaskManager
 from cnc_protocol import cnc_pb2
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 class MissionController():
     def __init__(self):
@@ -25,10 +32,12 @@ class MissionController():
     ######################################################## MISSION ############################################################ 
     def start_mission(self):
         # dynamic import the fsm
+        logger.info(f"MissionController: start the mission")
         from user.project.Mission import Mission
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
+        logger.info(f"MissionController: start the task manager")
         self.tm = TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
@@ -45,7 +54,7 @@ class MissionController():
         self.drone = DroneStub()
         # self.compute = ComputeStub()
         
-        await asyncio.sleep(0)
+        
         while True:
             # Receive a message
             message = self.socket.recv()
@@ -61,10 +70,10 @@ class MissionController():
                 
                 if mission_command.startMission:
                     self.start_mission()
-                    response = "Mission started"
+                    response = "Mission starting"
                 elif mission_command.stopMission:
                     self.end_mission()
-                    response = "Mission stopped"
+                    response = "Mission stopping"
                 else:
                     response = "Unknown command"
 
@@ -74,6 +83,8 @@ class MissionController():
             except Exception as e:
                 print(f"Failed to parse message: {e}")
                 self.socket.send_string("Error processing command")
+            
+            await asyncio.sleep(0)
             
 
 if __name__ == "__main__":

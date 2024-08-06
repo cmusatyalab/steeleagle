@@ -9,8 +9,8 @@ class Mission:
     # transition
     @staticmethod
     def start_transit(triggered_event):
-        logger.info("start_transit\n")
         return "tri"
+    
     @staticmethod
     def tri_transit(triggered_event):
         if (triggered_event == "done"):

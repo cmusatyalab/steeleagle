@@ -13,8 +13,8 @@ class DroneStub():
 
     def __init__(self):
         context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.connect("tcp://localhost:5001")
+        self.socket = context.socket(zmq.REQ)
+        self.socket.connect("tcp://localhost:5001")
         
         
     ''' Streaming methods '''
@@ -22,8 +22,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.getCameras.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -33,21 +33,30 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.switchCameras.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
        
     
     ''' Movement methods '''
+    async def takeOff(self):
+        driver_req = cnc_pb2.Driver()
+        driver_req.takeOff.SetInParent()
+        serialized_req = driver_req.SerializedToString()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
+        print("Received response:", response)
+        
+        return response
 
     async def setAttitude(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setAttitude.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -57,8 +66,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.setVelocity.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -67,8 +76,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.setRelativePosition.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -77,8 +86,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.setTranslation.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -87,8 +96,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.setGlobalPosition.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response
@@ -97,8 +106,8 @@ class DroneStub():
         driver_req = cnc_pb2.Driver()
         driver_req.hover.SetInParent()
         serialized_req = driver_req.SerializedToString()
-        await self.socket.send(serialized_req)
-        response = await self.socket.recv()
+        self.socket.send(serialized_req)
+        response = self.socket.recv()
         print("Received response:", response)
         
         return response

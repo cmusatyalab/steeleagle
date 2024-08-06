@@ -27,10 +27,18 @@ def k_client():
         reply = socket.recv_string()
         print(f"Server reply: {reply}")
 
-    # Example usage
-    send_start_mission()
-    time.sleep(10)  # Wait for 10 seconds
-    send_stop_mission()
+    # Interactive command input loop
+    while True:
+        user_input = input("Enter 'start' to start the mission or 'stop' to stop the mission (type 'exit' to quit): ").strip().lower()
+        if user_input == 'start':
+            send_start_mission()
+        elif user_input == 'stop':
+            send_stop_mission()
+        elif user_input == 'exit':
+            print("Exiting client.")
+            break
+        else:
+            print("Invalid command.")
 
 if __name__ == "__main__":
     print("Starting client")

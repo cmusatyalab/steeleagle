@@ -44,11 +44,10 @@ class TaskManager():
         self.curr_task_id = task.task_id
     
     async def init_task(self):
-        logger.info('TaskManager: Start task')
+        logger.info('TaskManager: init task')
         self.start_task_id = self.retrieve_next_task("start", None)
-        logger.info('TaskManager: Create task')
+        logger.info('TaskManager: create start task')
         start_task = self.create_task(self.start_task_id)
-        logger.info('TaskManager: Got task, starting...')
         if start_task != None:
             # set the current task
             self.curr_task_id = start_task.task_id
