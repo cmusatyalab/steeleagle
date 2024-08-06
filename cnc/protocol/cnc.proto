@@ -76,6 +76,8 @@ enum ResponseStatus {
   OK = 0;
   FAILED = 1;
   NOTSUPPORTED = 2;
+  COMPLETED = 3;
+  DENIED = 4;
 }
 
 enum Magnetometer {
@@ -140,11 +142,6 @@ message Camera {
 }
 
 // Request/Response for commands
-message Response {
-  ResponseStatus status = 1;
-  int64 seqNum = 2;
-}
-
 message Driver {
   oneof method {
     Attitude setAttitude = 1;
@@ -163,7 +160,8 @@ message Driver {
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;
   }
-  Response resp = 16;
+  ResponseStatus resp = 16;
+  int64 seqNum = 17;
 }
 
 // Kernel - Mission Controller API
