@@ -54,12 +54,11 @@ class MissionController():
         self.drone = DroneStub()
         # self.compute = ComputeStub()
         
-        
         while True:
-            # Receive a message
-            message = self.socket.recv()
-
             try:
+                # Receive a message
+                message = self.socket.recv(flags=zmq.NOBLOCK)
+                
                 # Log the raw received message
                 print(f"Received raw message: {message}")
                 
@@ -79,12 +78,15 @@ class MissionController():
 
                 # Send a reply back to the client
                 self.socket.send_string(response)
-
+                
+            except zmq.Again:
+                await asyncio.sleep(0)
+                
             except Exception as e:
                 print(f"Failed to parse message: {e}")
                 self.socket.send_string("Error processing command")
             
-            await asyncio.sleep(0)
+            
             
 
 if __name__ == "__main__":

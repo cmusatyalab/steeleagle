@@ -2,12 +2,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 import asyncio
+import logging
 import zmq
 
 from cnc_protocol import cnc_pb2
 
 
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class DroneStub():
 
@@ -21,7 +23,7 @@ class DroneStub():
     async def getCameras(self):
         driver_req = cnc_pb2.Driver()
         driver_req.getCameras.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -32,7 +34,7 @@ class DroneStub():
     async def switchCameras(self):
         driver_req = cnc_pb2.Driver()
         driver_req.switchCameras.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -42,9 +44,11 @@ class DroneStub():
     
     ''' Movement methods '''
     async def takeOff(self):
+        logger.info("DroneStub: takeOff")
         driver_req = cnc_pb2.Driver()
-        driver_req.takeOff.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        logger.info("DroneStub: sending the request")
+        driver_req.takeOff = True
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -54,7 +58,7 @@ class DroneStub():
     async def setAttitude(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setAttitude.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -65,7 +69,7 @@ class DroneStub():
     async def setVelocity(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setVelocity.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -75,7 +79,7 @@ class DroneStub():
     async def setRelativePosition(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setRelativePosition.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -85,7 +89,7 @@ class DroneStub():
     async def setTranslation(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setTranslation.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -95,7 +99,7 @@ class DroneStub():
     async def setGlobalPosition(self):
         driver_req = cnc_pb2.Driver()
         driver_req.setGlobalPosition.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)
@@ -105,7 +109,7 @@ class DroneStub():
     async def hover(self):
         driver_req = cnc_pb2.Driver()
         driver_req.hover.SetInParent()
-        serialized_req = driver_req.SerializedToString()
+        serialized_req = driver_req.SerializeToString()
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)

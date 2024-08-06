@@ -41,47 +41,24 @@ class TestTask(Task):
     @Task.call_after_exit
     async def run(self):
         
-        self.create_transition()
+        # self.create_transition()
         
-        # try:
         logger.info(f"**************Test Task {self.task_id}: hi this is Test task {self.task_id}**************\n")
 
-        ''' Streaming methods '''
-        await self.drone.getCameras()
-        await self.drone.switchCameras()
+        # ''' Streaming methods '''
+        # await self.drone.getCameras()
+        # await self.drone.switchCameras()
        
     
-        ''' Movement methods '''
-        await self.drone.setAttitude()
-        await self.drone.setVelocity()
-        await self.drone.setRelativePosition()
-        await self.drone.setTranslation()
-        await self.drone.setGlobalPosition()
-        await self.drone.hover()
+        # ''' Movement methods '''
+        # await self.drone.setAttitude()
+        # await self.drone.setVelocity()
+        # await self.drone.setRelativePosition()
+        # await self.drone.setTranslation()
+        # await self.drone.setGlobalPosition()
+        # await self.drone.hover()
 
         logger.info(f"**************Test Task {self.task_id}: Done**************\n")
     
-    
-    # this is for partol test
-    # async def run(self):
-        
-    #     self.create_transition()
-        
-    #     # try:
-    #     logger.info(f"**************Test Task {self.task_id}: hi this is Test task {self.task_id}**************\n")
-    #     coords = ast.literal_eval(self.task_attributes["coords"])
-    #     await self.drone.setGimbalPose(0.0, float(self.task_attributes["gimbal_pitch"]), 0.0)
-        
-    #     for dest in coords:
-    #         lng = dest["lng"]
-    #         lat = dest["lat"]
-    #         alt = dest["alt"]
-    #         logger.info(f"**************Test Task {self.task_id}: Move **************\n")
-    #         logger.info(f"**************Test Task {self.task_id}: move to {lat}, {lng}, {alt}**************\n")
-    #         await self.drone.moveTo(lat, lng, alt)
-    #         await asyncio.sleep(0.2)
-    #         # await asyncio.sleep(hover_delay)
-
-    #     logger.info(f"**************Test Task {self.task_id}: Done**************\n")
 
 

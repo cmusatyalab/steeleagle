@@ -21,33 +21,9 @@ def d_server():
             driver_req.ParseFromString(message)
             
             # Print parsed message and determine the response
-            if driver_req.HasField('getCameras'):
-                print("Request: getCameras")
-                response_msg = "getCameras response"
-            elif driver_req.HasField('switchCameras'):
-                print("Request: switchCameras")
-                response_msg = "switchCameras response"
-            elif driver_req.HasField('takeOff'):
-                print("Request: takeOff")
-                response_msg = "takeOff response"
-            elif driver_req.HasField('setAttitude'):
-                print("Request: setAttitude")
-                response_msg = "setAttitude response"
-            elif driver_req.HasField('setVelocity'):
-                print("Request: setVelocity")
-                response_msg = "setVelocity response"
-            elif driver_req.HasField('setRelativePosition'):
-                print("Request: setRelativePosition")
-                response_msg = "setRelativePosition response"
-            elif driver_req.HasField('setTranslation'):
-                print("Request: setTranslation")
-                response_msg = "setTranslation response"
-            elif driver_req.HasField('setGlobalPosition'):
-                print("Request: setGlobalPosition")
-                response_msg = "setGlobalPosition response"
-            elif driver_req.HasField('hover'):
-                print("Request: hover")
-                response_msg = "hover response"
+            if driver_req.takeOff:
+                print("Request: take OFF")
+                response_msg = "take off response"
             else:
                 print("Unknown request")
                 response_msg = "Unknown request"

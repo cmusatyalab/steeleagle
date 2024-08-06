@@ -53,9 +53,11 @@ class TaskManager():
             self.curr_task_id = start_task.task_id
             logger.info(f"TaskManager: start task, current taskid:{self.curr_task_id}\n")
             
+            
             # takeoff
-            await self.drone.takeOff()
             logger.info("TaskManager: taking off")
+            await self.drone.takeOff()
+            
             
             # start
             self.start_task(start_task)
@@ -92,6 +94,7 @@ class TaskManager():
         logger.info(f'TaskManager: start the task! task: {str(task)}')
         self.currentTask = task
         self.taskCurrentCoroutinue = asyncio.create_task(self.currentTask.run())
+        logger.info(f'TaskManager: started the task! task: {str(task)}')
 
     def pause_task(self):
         pass
@@ -103,14 +106,13 @@ class TaskManager():
     async def run(self):
         try:
             # start the mc
-            logger.info("TaskManager: start the mission runner\n")
-            
-            logger.info("TaskManager: start the task\n")
+            logger.info("TaskManager: start the manager\n")
             await self.init_task()
             
             # main
-            logger.info("TaskManager: go to the inf loop routine\n")
+            logger.info("TaskManager: go to the loop routine\n")
             while True:
+                # logger.info("TaskManager: loop routine\n")
                 if (not self.trigger_event_queue.empty()):
                     item = self.trigger_event_queue.get()
                     task_id = item[0]
@@ -126,15 +128,15 @@ class TaskManager():
                             next_task = self.create_task(next_task_id)
                             logger.info(f"TaskManager: task created  taskid {str(next_task.task_id)} \n")
                             self.transit_task_to(next_task, self.tr)
-                            
-                await asyncio.sleep(0.1)            
 
-        except asyncio.CancelledError as e:
-            logger.info(f"TaskManager: catching the asyncio exception {e} \n")
+                await asyncio.sleep(0)            
+
+        except Exception as e:
+            logger.info(f"TaskManager: catching the exception {e} \n")
         finally:
             # stop the current task
             self.stop_task()
             #end the tr
-            logger.info("TaskManager: terminate the runner\n")
+            logger.info("TaskManager: terminate the manager\n")
 
     
