@@ -4,7 +4,7 @@ import os
 import sys
 import asyncio
 import logging
-import cnc_protocol.cnc_pb2
+import cnc_protocol.cnc_pb2 as cnc_protocol
 from drivers.olympe.parrotdrone import ParrotDrone, ArgumentOutOfBoundsException
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ else:
 
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.PUB)
-tel_pub_addr = 'udp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
+tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
 if tel_pub_addr:
     telemetry_socket.bind(tel_pub_addr)
     logger.info('Created telemetry publish endpoint')
@@ -41,7 +41,7 @@ else:
 
 # Create a pub/sub socket that the camera stream can be read from
 camera_socket = context.socket(zmq.PUB)
-cam_pub_addr = 'udp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
+cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
 if cam_pub_addr:
     camera_socket.bind(cam_pub_addr)
     logger.info('Created camera publish endpoint')
@@ -54,36 +54,42 @@ droneArgs = json.loads(os.environ.get('STEELEAGLE_DRONE_ARGS'))
 drone = ParrotDrone(**droneArgs)
 
 async def camera_stream(drone, camera_sock):
-    cam_message = cnc_protocol.Frame 
+    cam_message = cnc_protocol.Frame() 
     while drone.isConnected():
-        cam_message.data = await drone.getVideoFrame()
-        cam_message.height = 720
-        cam_message.width = 1280
-        cam_message.channels = 3
-        camera_sock.send(cam_message.SerializeToString())
-        asyncio.sleep(0)
+        try:
+            cam_message.data = await drone.getVideoFrame()
+            cam_message.height = 720
+            cam_message.width = 1280
+            cam_message.channels = 3
+            camera_sock.send(cam_message.SerializeToString())
+        except Exception as e:
+            pass
+        await asyncio.sleep(0)
 
-async def telementery_stream(drone, telemetry_sock):
-    tel_message = cnc_protocol.Telemetry
+async def telemetry_stream(drone, telemetry_sock):
+    tel_message = cnc_protocol.Telemetry()
     while drone.isConnected():
-        telDict = await drone.getTelemetry()
-        tel_message.global_position.latitude = telDict["gps"][0] 
-        tel_message.global_position.longitude = telDict["gps"][1]
-        tel_message.global_position.altitude = telDict["gps"][2]
-        tel_message.mag = telDict["magnetometer"]
-        tel_message.battery = telDict["battery"]
-        tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"][0]
-        tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"][1]
-        tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"][2]
-        tel_message.attitude.yaw = telDict["attitude"][0]
-        tel_message.attitude.pitch = telDict["attitude"][1]
-        tel_message.attitude.roll = telDict["attitude"][2]
-        tel_message.imu.xvel = telDict["imu"]["speedX"]
-        tel_message.imu.yvel = telDict["imu"]["speedY"]
-        tel_message.imu.zvel = telDict["imu"]["speedZ"]
-        tel_message.satellites = telDict["satellites"]
-        telemetry_socket.send(tel_message.SerializeToString())
-        asyncio.sleep(0)
+        try:
+            telDict = await drone.getTelemetry()
+            tel_message.global_position.latitude = telDict["gps"][0] 
+            tel_message.global_position.longitude = telDict["gps"][1]
+            tel_message.global_position.altitude = telDict["gps"][2]
+            tel_message.mag = telDict["magnetometer"]
+            tel_message.battery = telDict["battery"]
+            tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"][0]
+            tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"][1]
+            tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"][2]
+            tel_message.attitude.yaw = telDict["attitude"][0]
+            tel_message.attitude.pitch = telDict["attitude"][1]
+            tel_message.attitude.roll = telDict["attitude"][2]
+            tel_message.imu.xvel = telDict["imu"]["speedX"]
+            tel_message.imu.yvel = telDict["imu"]["speedY"]
+            tel_message.imu.zvel = telDict["imu"]["speedZ"]
+            tel_message.satellites = telDict["satellites"]
+            telemetry_socket.send(tel_message.SerializeToString())
+        except Exception as e:
+            pass
+        await asyncio.sleep(0)
 
 async def handle(message, resp, action, resp_sock):
     try:
@@ -159,6 +165,6 @@ async def main(drone, camera_sock, telemetry_sock, args):
                 asyncio.create_task(handle(message, resp, action, command_socket))
             except zmq.Again as e:
                 pass
-            asyncio.sleep(0)
+            await asyncio.sleep(0)
 
-asyncio.run(main(drone, camera_sock, telemetry_sock, driverArgs))
+asyncio.run(main(drone, camera_socket, telemetry_socket, driverArgs))

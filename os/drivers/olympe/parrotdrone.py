@@ -71,7 +71,7 @@ class ParrotDrone():
         if not self.active:
             raise ConnectionFailedException("Cannot connect to drone")
 
-    async def isConnected(self):
+    def isConnected(self):
         return self.drone.connection_state()
 
     async def disconnect(self):
@@ -348,13 +348,7 @@ class PDRAWStreamingThread(threading.Thread):
             :type yuv_frame: olympe.VideoFrame
         """
         yuv_frame.ref()
-        fps = 30 // float(os.environ.get('FPS'))
-        self.frames_recd += 1
-        if self.frames_recd == fps:
-            self.frame_queue.put_nowait(yuv_frame)
-            self.frames_recd = 0
-        else:
-            yuv_frame.unref()
+        self.frame_queue.put_nowait(yuv_frame)
 
     def flushCb(self, stream):
         if stream["vdef_format"] != olympe.VDEF_I420:
