@@ -68,7 +68,8 @@ message Frame {
   bytes data = 1;
   int64 width = 2;
   int64 height = 3;
-  int64 channels = 4;
+  int64 channels = 4; //rgb, greyscale, etc
+  int64 id = 5; //for future correlation
 }
 
 enum ResponseStatus {
@@ -173,9 +174,18 @@ message Driver {
 
 message Mission {
   oneof method {
-    string startMission = 1; //this path should point to task sources/dependencies
+    //for MissionController
+    bool startMission = 1;
     bool pauseMission = 2;
     bool resumeMission = 3;
     bool stopMission = 4;
+    //for Kernel
+    string downloadMission = 5; // URL that specifies the zip file to download
   }
+  string UUID = 6; //unique mission reference for cataloging
+}
+
+message ComputeResult {
+  string result = 1; //JSON/YAML/etc, varies by compute engine
+  int64 frameId = 2; //for future correlation
 }

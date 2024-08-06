@@ -14,8 +14,9 @@ class DroneStub():
     def __init__(self):
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
-        socket.connect("tcp://localhost:5555")
-    
+        socket.connect("tcp://localhost:5001")
+        
+        
     ''' Streaming methods '''
     async def getCameras(self):
         driver_req = cnc_pb2.Driver()

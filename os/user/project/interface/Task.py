@@ -63,24 +63,21 @@ class Task(ABC):
         logger.info(f"************** Task: the transitions stopped**************\n")
         
         
-    def call_after_exit(self, func):
+    @classmethod
+    def call_after_exit(cls, func):
         """Decorator to call _exit after the decorated function completes."""
         async def async_wrapper(*args, **kwargs):
             try:
-                # Call the decorated coroutine
                 result = await func(*args, **kwargs)
             finally:
-                # Call the _exit method
-                self._exit()
+                cls._exit()  # Assuming _exit is a class method or static method
             return result
 
         def sync_wrapper(*args, **kwargs):
             try:
-                # Call the decorated function
                 result = func(*args, **kwargs)
             finally:
-                # Call the _exit method
-                self._exit()
+                cls._exit()
             return result
 
         if inspect.iscoroutinefunction(func):
