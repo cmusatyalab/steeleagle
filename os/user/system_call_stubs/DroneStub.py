@@ -18,6 +18,11 @@ class DroneStub():
         self.socket = context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5001")
         
+    
+    async def run(self):
+        response = self.socket.recv()
+        
+        
         
     ''' Streaming methods '''
     async def getCameras(self):
@@ -44,11 +49,18 @@ class DroneStub():
     
     ''' Movement methods '''
     async def takeOff(self):
+        
+
+        
+        
+        
         logger.info("DroneStub: takeOff")
         driver_req = cnc_pb2.Driver()
         logger.info("DroneStub: sending the request")
         driver_req.takeOff = True
         serialized_req = driver_req.SerializeToString()
+        
+        
         self.socket.send(serialized_req)
         response = self.socket.recv()
         print("Received response:", response)

@@ -44,6 +44,19 @@ class TestTask(Task):
         # self.create_transition()
         
         logger.info(f"**************Test Task {self.task_id}: hi this is Test task {self.task_id}**************\n")
+        
+        # takeoff().sucess()
+        # takeoff() 
+        
+        # synchronous/ async call
+        # stage of 2: ack, complete
+        
+            
+            
+        # for given command comm
+        # await comm() -> send the command (implicitly wait for acknowledgement)
+        
+        # async send_command(proto, )
 
         # ''' Streaming methods '''
         # await self.drone.getCameras()
