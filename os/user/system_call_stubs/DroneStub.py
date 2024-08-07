@@ -36,8 +36,9 @@ class DroneStub():
 
     def __init__(self):
         context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.connect("tcp://localhost:5001")
+        self.socket = context.socket(zmq.DEALER)
+        self.socket.bind("tcp://127.0.0.1:5001")
+        self.socket.send("Hello".encode())
         self.seqNum = 0
         self.seqNum_res = {}
     

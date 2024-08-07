@@ -6,6 +6,7 @@ import asyncio
 import threading
 import math
 import logging
+import time
 
 import olympe
 from olympe import Drone
