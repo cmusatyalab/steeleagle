@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-#
-# SPDX-License-Identifier: GPL-2.0-only
 import asyncio
 import logging
 import zmq
@@ -11,119 +8,130 @@ from cnc_protocol import cnc_pb2
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+class DriverRespond():
+    def __init__(self):
+        self.event = asyncio.Event()
+        
+    def putStatus(self, status):
+        self.status = status
+    
+    def getStatus(self):
+        return self.status  
+    
+    def putResult(self, result):
+        self.result = result
+        
+    def getResult (self):
+        return self.result
+
+    def set(self):
+        self.event.set()
+
+    async def wait(self):
+        await self.event.wait()
+        
+
 class DroneStub():
 
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5001")
-        
+        self.seqNum = 0
+        self.seqNum_res = {}
     
+    def sender (self, request, driverRespond):
+        
+        # sequence number
+        seqNum = self.seqNum
+        self.seqNum += 1
+        request.seqNum = seqNum
+        
+        # map the sequence number with event
+        self.seqNum_res[seqNum] = driverRespond
+        
+        # serialize the request and send it
+        serialized_request = request.SerializeToString()
+        self.socket.send(serialized_request)
+        
+        
+        
+        
     async def run(self):
-        response = self.socket.recv()
+        
+        # constantly listen for the response
+        while True:
+            try:
+                # Receive a request
+                response = self.socket.recv(flags=zmq.NOBLOCK)
+                result = cnc_pb2.Driver()
+                result.ParseFromString(response)
+                
+                seqNum = result.seqNum
+                driverRespond = self.seqNum_res[seqNum]
+                
+                
+                driverRespond.putResult(result)
+                driverRespond.putStatus(result.status)
+                driverRespond.set()
+                
+
+            except zmq.Again:
+                await asyncio.sleep(0)
+                
+
         
         
         
     ''' Streaming methods '''
     async def getCameras(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.getCameras.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
 
     
     async def switchCameras(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.switchCameras.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
-       
+        pass
     
     ''' Movement methods '''
     async def takeOff(self):
         
-
-        
-        
-        
+        # drone 
         logger.info("DroneStub: takeOff")
-        driver_req = cnc_pb2.Driver()
+        request = cnc_pb2.Driver()
         logger.info("DroneStub: sending the request")
-        driver_req.takeOff = True
-        serialized_req = driver_req.SerializeToString()
+        request.takeOff = True
         
+        # create a asyncio event
+        driverRespond = DriverRespond()
+        self.sender(request, driverRespond)
         
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
+        # wait for the event to be set
+        await driverRespond.wait()
         
-        return response
+        res = driverRespond.getResult()
+        status = driverRespond.getStatus()
+        
+        if status == cnc_pb2.SUCCESS:
+            logger.info("DroneStub: takeOff success")
+        else:
+            logger.info("DroneStub: takeOff failed")
+            
+        return res.takeOff
 
     async def setAttitude(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.setAttitude.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
-       
+        pass
     
     async def setVelocity(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.setVelocity.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
     
     async def setRelativePosition(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.setRelativePosition.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
     
     async def setTranslation(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.setTranslation.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
     
     async def setGlobalPosition(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.setGlobalPosition.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
     
     async def hover(self):
-        driver_req = cnc_pb2.Driver()
-        driver_req.hover.SetInParent()
-        serialized_req = driver_req.SerializeToString()
-        self.socket.send(serialized_req)
-        response = self.socket.recv()
-        print("Received response:", response)
-        
-        return response
+        pass
