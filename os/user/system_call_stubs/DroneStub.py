@@ -41,8 +41,8 @@ class DroneStub():
         self.seqNum = 0
         self.seqNum_res = {}
     
+    
     def sender (self, request, driverRespond):
-        
         # sequence number
         seqNum = self.seqNum
         self.seqNum += 1
@@ -55,9 +55,7 @@ class DroneStub():
         serialized_request = request.SerializeToString()
         self.socket.send(serialized_request)
         
-        
-        
-        
+    
     async def run(self):
         
         # constantly listen for the response

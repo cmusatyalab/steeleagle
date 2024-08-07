@@ -52,6 +52,8 @@ class MissionController():
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
         self.drone = DroneStub()
+        asyncio.create_task(self.drone.run())
+        
         # self.compute = ComputeStub()
         
         while True:
