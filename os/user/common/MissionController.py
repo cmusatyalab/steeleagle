@@ -82,11 +82,13 @@ class MissionController():
                 self.socket.send_string(response)
                 
             except zmq.Again:
-                await asyncio.sleep(0)
+                pass
                 
             except Exception as e:
                 print(f"Failed to parse message: {e}")
                 self.socket.send_string("Error processing command")
+            
+            await asyncio.sleep(0)
             
             
             

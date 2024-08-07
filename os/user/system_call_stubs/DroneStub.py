@@ -76,7 +76,9 @@ class DroneStub():
                 
 
             except zmq.Again:
-                await asyncio.sleep(0)
+                pass
+            
+            await asyncio.sleep(0)
                 
 
         
