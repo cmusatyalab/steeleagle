@@ -119,7 +119,7 @@ class ParrotDrone():
 
     ''' Movement methods '''
 
-    async def setAttitude(self, roll, pitch, gaz, omega):
+    async def setAttitude(self, pitch, roll, thrust, theta):
         # Get attitude bounds from the drone
         tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
         tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
@@ -132,13 +132,16 @@ class ParrotDrone():
             raise ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
         if omega > rotMax or omega < rotMin:
             raise ArgumentOutOfBoundsException("Rotation speed outside bound")
-        if gaz > vertMax or gaz < vertMin:
+        if thrust > vertMax or thrust < vertMin:
             raise ArgumentOutOfBoundsException("Vertical speed outside bound")
 
         self.drone(
             PCMD(1, int((roll * 100) / tiltMax), int((pitch * 100) / tiltMax), 
                 int((omega * 100) / rotMax), int((gaz * 100) / vertMax), timestampAndSeqNum=0)
         )
+
+    async def setVelocity(self, forward, right, up, theta):
+        
 
     async def setGlobalPosition(self, lat, lng, alt, theta):
         if theta is None:
