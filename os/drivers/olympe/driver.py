@@ -5,7 +5,7 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
-from drivers.olympe.parrotdrone import ParrotDrone, ArgumentOutOfBoundsException
+from drivers.olympe.parrotdrone import ConnectionFailedException, ParrotDrone, ArgumentOutOfBoundsException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,7 +20,7 @@ logger.addHandler(handler)
 context = zmq.Context()
 
 # Create a response socket connected to the kernel
-command_socket = context.socket(zmq.REP)
+command_socket = context.socket(zmq.ROUTER)
 kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')
 if kernel_addr:
     command_socket.connect(kernel_addr)
@@ -109,7 +109,7 @@ async def handle(message, resp, action, resp_sock):
                 await drone.rth()
                 resp.status = cnc_protocol.ResponseStatus.OK
             case "setHome":
-                await drone.setHome(args['lat'], args['lng'])
+                #await drone.setHome(args['lat'], args['lng'])
                 resp.status = cnc_protocol.ResponseStatus.OK
             case "getHome":
                 resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
@@ -123,10 +123,10 @@ async def handle(message, resp, action, resp_sock):
             case "setRelativePosition":
                 resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
             case "setGlobalPosition":
-                await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
+                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
                 resp.status = cnc_protocol.ResponseStatus.OK
             case "setTranslatedPosition":
-                await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
+                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
                 resp.status = cnc_protocol.ResponseStatus.OK
             case "hover":
                 await drone.hover()
@@ -156,10 +156,11 @@ async def main(drone, camera_sock, telemetry_sock, args):
         
         while drone.isConnected():
             try:
-                message = command_socket.recv(flags=zmq.NOBLOCK)
+                data = command_socket.recv(flags=zmq.NOBLOCK)
                 # Decode message via protobuf, then execute it
-                message = cnc_protocol.ParseFromString(message)
-                action = message.WhichOneOf("method")
+                message = cnc_protocol.Driver()
+                message.ParseFromString(data)
+                action = message.WhichOneof("method")
                 # Create a driver response message
                 resp = message
                 asyncio.create_task(handle(message, resp, action, command_socket))

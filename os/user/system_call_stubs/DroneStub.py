@@ -36,13 +36,14 @@ class DroneStub():
 
     def __init__(self):
         context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.connect("tcp://localhost:5001")
+        self.socket = context.socket(zmq.DEALER)
+        self.socket.bind("tcp://127.0.0.1:5001")
+        self.socket.send("Hello".encode())
         self.seqNum = 0
         self.seqNum_res = {}
     
+    
     def sender (self, request, driverRespond):
-        
         # sequence number
         seqNum = self.seqNum
         self.seqNum += 1
@@ -55,9 +56,7 @@ class DroneStub():
         serialized_request = request.SerializeToString()
         self.socket.send(serialized_request)
         
-        
-        
-        
+    
     async def run(self):
         
         # constantly listen for the response
@@ -78,7 +77,9 @@ class DroneStub():
                 
 
             except zmq.Again:
-                await asyncio.sleep(0)
+                pass
+            
+            await asyncio.sleep(0)
                 
 
         
