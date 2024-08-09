@@ -12,17 +12,17 @@ def d_server():
             message_parts = socket.recv_multipart()
             
             # Expecting three parts: [identity, empty, message]
-            if len(message_parts) != 3:
+            if len(message_parts) != 2:
                 print(f"Invalid message received: {message_parts}")
                 continue
             
             identity = message_parts[0]  # Identity of the DEALER socket
-            empty = message_parts[1]     # The empty delimiter part
-            message = message_parts[2]   # The actual serialized request
+            message = message_parts[1]     # The empty delimiter part
+            # message = message_parts[2]   # The actual serialized request
             
             # Print each part to understand the structure
             print(f"Identity: {identity}")
-            print(f"Empty delimiter: {empty}")
+            # print(f"Empty delimiter: {empty}")
             print(f"Message: {message}")
             
             # Parse the message
@@ -33,17 +33,15 @@ def d_server():
             # Print parsed message and determine the response
             if driver_req.takeOff:
                 print("Request: take OFF")
-                response_msg = cnc_pb2.Driver()
-                response_msg.resp = cnc_pb2.ResponseStatus.COMPLETED 
+                driver_req.resp = cnc_pb2.ResponseStatus.COMPLETED
             else:
                 print("Unknown request")
-                response_msg = cnc_pb2.Driver()
-                response_msg.resp = cnc_pb2.ResponseStatus.NOTSUPPORTED
+                driver_req.resp = cnc_pb2.ResponseStatus.UNSUPPORTED
             
-            serialized_response = response_msg.SerializeToString()
+            serialized_response = driver_req.SerializeToString()
             
             # Send a reply back to the client with the identity frame and empty delimiter
-            socket.send_multipart([identity, b'', serialized_response])
+            socket.send_multipart([identity, serialized_response])
         
         except Exception as e:
             print(f"Failed to process request: {e}")

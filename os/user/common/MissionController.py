@@ -55,19 +55,19 @@ class MissionController():
         asyncio.create_task(self.drone.run())
         
         # self.compute = ComputeStub()
-        
         while True:
+            # logger.info("MC")
             try:
                 # Receive a message
                 message = self.socket.recv(flags=zmq.NOBLOCK)
                 
                 # Log the raw received message
-                print(f"Received raw message: {message}")
+                logger.info(f"Received raw message: {message}")
                 
                 # Parse the message
                 mission_command = cnc_pb2.Mission()
                 mission_command.ParseFromString(message)
-                print(f"Parsed Command: {mission_command}")
+                logger.info(f"Parsed Command: {mission_command}")
                 
                 if mission_command.startMission:
                     self.start_mission()
@@ -85,7 +85,7 @@ class MissionController():
                 pass
                 
             except Exception as e:
-                print(f"Failed to parse message: {e}")
+                logger.info(f"Failed to parse message: {e}")
                 self.socket.send_string("Error processing command")
             
             await asyncio.sleep(0)

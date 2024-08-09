@@ -22,6 +22,10 @@ class TaskManager():
         self.curr_task_id = None
         self.transit_map = transit_map
         self.task_arg_map = task_arg_map
+        
+        
+        self.currentTask = None
+        self.taskCurrentCoroutinue = None
 
     ######################################################## TASK #############################################################
     def get_current_task(self):
@@ -58,7 +62,6 @@ class TaskManager():
             logger.info("TaskManager: taking off")
             await self.drone.takeOff()
             
-            
             # start
             self.start_task(start_task)
     
@@ -81,7 +84,7 @@ class TaskManager():
     
     def stop_task(self):
         logger.info(f'TaskManager: Stopping current task!')
-        if self.taskCurrentCoroutinue is not None:
+        if self.taskCurrentCoroutinue:
             # stop all the transitions of the task
             self.currentTask.stop_trans()
             logger.info(f'TaskManager: transitions in the current task stopped!')
@@ -112,6 +115,7 @@ class TaskManager():
             # main
             logger.info("TaskManager: go to the loop routine\n")
             while True:
+                # logger.info("TM")
                 # logger.info("TaskManager: loop routine\n")
                 if (not self.trigger_event_queue.empty()):
                     item = self.trigger_event_queue.get()

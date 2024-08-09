@@ -48,38 +48,35 @@ class DroneStub():
     def sender (self, request, driverRespond):
         # sequence number
         seqNum = self.seqNum
-        self.seqNum += 1
         request.seqNum = seqNum
+        self.seqNum += 1
         
         # map the sequence number with event
         self.seqNum_res[seqNum] = driverRespond
         
         # serialize the request and send it
         serialized_request = request.SerializeToString()
-        self.socket.send_multipart([b'', serialized_request])
+        self.socket.send_multipart([serialized_request])
         
     
     async def run(self):
         # constantly listen for the response
         while True:
-            # logger.info("DroneStub: waiting for the response")
+            # logger.info("DS")
             try:
                 # Receive a request
-                response_parts = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                
-                # Ensure response_parts has the expected number of elements
-                if len(response_parts) < 2:
-                    logger.info("DroneStub: Incomplete message received, skipping...")
-                    continue  # skip to the next iteration of the loop
-                
-                response = response_parts[1]
+                response_parts = self.socket.recv_multipart(flags=zmq.NOBLOCK)    
+                response = response_parts[0]
                
                 logger.info("DroneStub: received the response")
                 result = cnc_pb2.Driver()
                 result.ParseFromString(response)
                 status = result.resp
                 seqNum = result.seqNum
-                driverRespond = self.seqNum_res[seqNum]
+                driverRespond = self.seqNum_res[seqNum] 
+                logger.info("DroneStub: received the response")
+                logger.info("DroneStub: sequence number: " + str(seqNum))
+                logger.info("DroneStub: driverRespnd: " + str(driverRespond))
                 
                 if (status == cnc_pb2.ResponseStatus.OK):
                     logger.info("DroneStub: STAGE 1: OK")
@@ -133,6 +130,8 @@ class DroneStub():
         # wait for the event to be set
         await driverRespond.wait()
         
+        logger.info("DroneStub: take off proceed")
+        
         # return the result
         if (driverRespond.checkPermission()):
             res = driverRespond.getResult()
@@ -141,9 +140,9 @@ class DroneStub():
             logger.info("DroneStub: permission not granted")
             return False
         
-    
 
     async def setAttitude(self):
+        
         pass
     
     async def setVelocity(self):
@@ -161,7 +160,10 @@ class DroneStub():
     async def hover(self):
         pass
     
+    
+    
         ''' Streaming methods '''
+        
     async def getCameras(self):
         pass
 
