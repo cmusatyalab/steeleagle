@@ -38,7 +38,7 @@ class TestTask(Task):
             
     
     # test all the driver calls        
-    @Task.call_after_exit
+    # @Task.call_after_exit
     async def run(self):
         
         # self.create_transition()
@@ -72,6 +72,7 @@ class TestTask(Task):
         # await self.drone.hover()
 
         logger.info(f"**************Test Task {self.task_id}: Done**************\n")
-    
+        while(1):
+            await asyncio.sleep(1)
 
 
