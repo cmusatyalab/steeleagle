@@ -7,7 +7,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
+######################################################## DriverRespond ############################################################ 
 class DriverRespond:
     def __init__(self):
         self.event = asyncio.Event()
@@ -33,8 +33,10 @@ class DriverRespond:
         await self.event.wait()
 
 
+######################################################## DroneStub ############################################################
 class DroneStub:
 
+    ######################################################## Common ############################################################
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
@@ -75,7 +77,7 @@ class DroneStub:
                 logger.info(f"DroneStub: STAGE 2: {status.name}")
                 driverRespond.putResult(result)
                 driverRespond.set()
-
+    
     async def run(self):
         while True:
             try:
@@ -87,13 +89,16 @@ class DroneStub:
                 logger.error(f"DroneStub: Failed to parse message: {e}")
                 break
             await asyncio.sleep(0)
+    
 
+    ######################################################## RPC ############################################################
+    '''Helper method to send a request and wait for a response'''
     async def send_and_wait(self, request):
         driverRespond = DriverRespond()
         self.sender(request, driverRespond)
         await driverRespond.wait()
         return driverRespond.getResult() if driverRespond.checkPermission() else None
-
+    
     ''' Preemptive methods '''
     async def takeOff(self):
         logger.info("DroneStub: takeOff")
@@ -195,7 +200,6 @@ class DroneStub:
         else:    
             return False
 
-    
     async def switchCameras(self, camera_id):
         logger.info("DroneStub: switchCameras")
         request = cnc_pb2.Driver(switchCameras=camera_id)
