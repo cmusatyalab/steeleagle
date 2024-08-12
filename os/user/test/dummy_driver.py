@@ -29,6 +29,7 @@ def d_server():
             driver_req = cnc_pb2.Driver()
             driver_req.ParseFromString(message)
             print(f"Received the message: {driver_req}")
+            print(f"Request seqNum: {driver_req.seqNum}")
             
             # Print parsed message and determine the response
             if driver_req.takeOff:
@@ -42,6 +43,8 @@ def d_server():
             
             # Send a reply back to the client with the identity frame and empty delimiter
             socket.send_multipart([identity, serialized_response])
+            
+            print(f"done processing request")
         
         except Exception as e:
             print(f"Failed to process request: {e}")

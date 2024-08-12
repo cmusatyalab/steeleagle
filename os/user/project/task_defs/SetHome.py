@@ -12,7 +12,7 @@ class SetHome(Task):
     def __init__(self, drone, cloudlet, **kwargs):
         super().__init__(drone, cloudlet, **kwargs)
 
-    @Task.call_after_exit
+    # @Task.call_after_exit
     async def run(self):
         try:
             coords = ast.literal_eval(self.kwargs["coords"])

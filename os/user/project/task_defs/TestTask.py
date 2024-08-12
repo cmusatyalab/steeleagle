@@ -38,7 +38,7 @@ class TestTask(Task):
             
     
     # test all the driver calls        
-    @Task.call_after_exit
+    # @Task.call_after_exit
     async def run(self):
         
         # self.create_transition()
@@ -46,22 +46,27 @@ class TestTask(Task):
         logger.info(f"**************Test Task {self.task_id}: hi this is Test task {self.task_id}**************\n")
     
         ''' Camera methods '''
+        logger.info(f"**************Test Task {self.task_id}: Camera methods test **************\n")
         camera = await self.drone.getCameras()
-        await self.drone.switchCameras(0)
+        await self.drone.switchCamera(0)
 
         ''' Location methods '''
-        await self.drone.setHome('hi', 1, 1, 1, 1)
+        logger.info(f"**************Test Task {self.task_id}: Location methods test **************\n")
+        await self.drone.setHome('hi', 1, 1, 1)
         location = await self.drone.getHome()
-    
+        logger.info(f"Home location: {location}")
+        
         ''' Position methods '''
+        logger.info(f"**************Test Task {self.task_id}: Position methods test **************\n")
         await self.drone.setAttitude(1, 1, 1, 1)
         await self.drone.setVelocity()
         await self.drone.setRelativePosition(1, 1, 1, 1)
-        await self.drone.setTranslation(1, 1, 1, 1)
+        await self.drone.setTranslatedPosition(1, 1, 1, 1)
         await self.drone.setGlobalPosition(1, 1, 1, 1)
         
         
-        '''Preemptive methods'''        
+        '''Preemptive methods''' 
+        logger.info(f"**************Test Task {self.task_id}: Preemptive methods test **************\n")       
         await self.drone.hover()
         await self.drone.rth()
         await self.drone.land()
@@ -70,5 +75,6 @@ class TestTask(Task):
         logger.info(f"**************Test Task {self.task_id}: Done**************\n")
         while(1):
             await asyncio.sleep(1)
+    
 
 

@@ -109,33 +109,33 @@ async def handle(identity, message, resp, action, resp_sock):
             case "rth":
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setHome":
-                #await drone.setHome(args['lat'], args['lng'])
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "getHome":
-                resp.resp = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setAttitude":
-                attitude = message.setAttitude
-                await drone.setAttitude(attitude.roll, attitude.pitch,
-                    attitude.gaz, attitude.omega)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setVelocity":
-                resp.resp = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setRelativePosition":
-                resp.resp = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setGlobalPosition":
-                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setTranslatedPosition":
-                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "hover":
                 await drone.hover()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            case "setHome":
+                #await drone.setHome(args['lat'], args['lng'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "getHome":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setAttitude":
+                # attitude = message.setAttitude
+                # await drone.setAttitude(attitude.roll, attitude.pitch,
+                #     attitude.gaz, attitude.omega)
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setVelocity":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setRelativePosition":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setGlobalPosition":
+                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setTranslatedPosition":
+                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "getCameras":
-                resp.resp = cnc_protocol.ResponseStatus.NOT_SUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "switchCamera":
-                resp.resp = cnc_protocol.ResponseStatus.NOT_SUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED 

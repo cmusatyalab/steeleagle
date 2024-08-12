@@ -50,7 +50,7 @@ class DetectTask(Task):
             hsv.daemon = True
             hsv.start()
     
-    @Task.call_after_exit
+    # @Task.call_after_exit
     async def run(self):
         # init the cloudlet
         self.cloudlet.switchModel(self.task_attributes["model"])

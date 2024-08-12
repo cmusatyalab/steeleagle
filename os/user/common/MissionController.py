@@ -31,6 +31,11 @@ class MissionController():
         
     ######################################################## MISSION ############################################################ 
     def start_mission(self):
+        # check if the mission is already running
+        if self.tm:
+            logger.info(f"MissionController: mission already running")
+            return
+        
         # dynamic import the fsm
         logger.info(f"MissionController: start the mission")
         from user.project.Mission import Mission
