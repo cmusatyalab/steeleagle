@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces.Task import Task
+from user.project.interface.Task import Task
 import time
 import ast
 import asyncio
@@ -12,6 +12,7 @@ class SetHome(Task):
     def __init__(self, drone, cloudlet, **kwargs):
         super().__init__(drone, cloudlet, **kwargs)
 
+    @Task.call_after_exit
     async def run(self):
         try:
             coords = ast.literal_eval(self.kwargs["coords"])

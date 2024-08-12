@@ -8,15 +8,15 @@ from json import JSONDecodeError
 import time
 import asyncio
 import logging
-import math
 from gabriel_protocol import gabriel_pb2
-from transition_defs.TimerTransition import TimerTransition
-from interfaces.Task import Task
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
+from user.project.interface.Task import Task
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class AvoidTask(Task):
+        
 
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         super().__init__(drone, cloudlet, task_id, trigger_event_queue, task_args)
@@ -110,6 +110,7 @@ class AvoidTask(Task):
         else:
             self.setpt[1] = self.forwardspeed
 
+    @Task.call_after_exit
     async def run(self):
         logger.info("[ObstacleTask] Started run")
         await self.drone.setGimbalPose(0.0, 0.0, 0.0)
@@ -138,5 +139,4 @@ class AvoidTask(Task):
         except Exception as e:
             logger.info(f"[ObstacleTask] Task failed with exception {e}")
             await self.drone.hover()
-        self._exit()
 
