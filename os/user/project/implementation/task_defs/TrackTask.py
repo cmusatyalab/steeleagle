@@ -4,7 +4,7 @@ import sys
 import json
 import numpy as np
 import math
-from user.project.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
 from user.project.interface.Task import Task
 import time
 import logging

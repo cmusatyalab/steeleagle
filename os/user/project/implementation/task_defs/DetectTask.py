@@ -1,7 +1,7 @@
 
-from user.project.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
-from user.project.transition_defs.TimerTransition import TimerTransition
-from user.project.transition_defs.HSVDetectionTransition import HSVDetectionTransition
+from user.project.implementation.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.HSVDetectionTransition import HSVDetectionTransition
 from user.project.interface.Task import Task
 import asyncio
 import ast

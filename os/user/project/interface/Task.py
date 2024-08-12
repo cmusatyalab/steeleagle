@@ -46,17 +46,17 @@ class Task(ABC):
 
     def _exit(self):
         # kill all the transitions
-        logger.info(f"************** Task: exit the task**************\n")
+        logger.info(f"**************exit the task**************\n")
         self.stop_trans()
         self.trigger_event_queue.put((self.task_id,  "done"))
         
     def stop_trans(self):
-        logger.info(f"************** Task: stopping the transitions**************\n")
+        logger.info(f"**************stopping the transitions**************\n")
         for trans in self.trans_active:
             if trans.is_alive():
                 trans.stop()
                 trans.join()
-        logger.info(f"************** Task: the transitions stopped**************\n")
+        logger.info(f"**************the transitions stopped**************\n")
         
         
     @classmethod
