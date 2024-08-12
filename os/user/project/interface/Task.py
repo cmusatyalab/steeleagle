@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 from abc import ABC, abstractmethod
+import functools
 import logging
 import threading
 from aenum import Enum
@@ -46,13 +47,8 @@ class Task(ABC):
     def _exit(self):
         # kill all the transitions
         logger.info(f"************** Task: exit the task**************\n")
-        logger.info(f"************** Task: stopping the transitions**************\n")
-        for trans in self.trans_active:
-            if trans.is_alive():
-                trans.stop()
-                trans.join()
-        self.trigger_event_queue.put((self.task_id,  "done")) 
-        logger.info(f"************** Task: the transitions stopped**************\n")
+        self.stop_trans()
+        self.trigger_event_queue.put((self.task_id,  "done"))
         
     def stop_trans(self):
         logger.info(f"************** Task: stopping the transitions**************\n")
@@ -64,9 +60,19 @@ class Task(ABC):
         
         
     @classmethod
-    def call_after_exit():
+    def call_after_exit(cls, func):
         """Decorator to call _exit after the decorated function completes."""
-        pass
+        @functools.wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                # Call the decorated function
+                result = await func(self, *args, **kwargs)
+                return result
+            finally:
+                # Ensure _exit is called after the function completes
+                self._exit()
+
+        return wrapper
         
     def pause(self):
         pass
