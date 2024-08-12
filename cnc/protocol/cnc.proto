@@ -153,7 +153,7 @@ message Driver {
     bool rth = 7; //return to home
     Location setHome = 8;
     Location getHome = 9;
-    Position setVelocity = 10;
+    IMU setVelocity = 10;
     Position setRelativePosition = 11; //relative to home Position
     Position setGlobalPosition = 12;
     Position setTranslatedPosition = 13; //relative to current position
