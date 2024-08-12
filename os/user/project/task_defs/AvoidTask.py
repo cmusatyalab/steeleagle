@@ -110,7 +110,7 @@ class AvoidTask(Task):
         else:
             self.setpt[1] = self.forwardspeed
 
-    @Task.call_after_exit
+    # @Task.call_after_exit
     async def run(self):
         logger.info("[ObstacleTask] Started run")
         await self.drone.setGimbalPose(0.0, 0.0, 0.0)

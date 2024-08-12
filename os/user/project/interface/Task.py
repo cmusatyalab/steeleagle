@@ -64,26 +64,9 @@ class Task(ABC):
         
         
     @classmethod
-    def call_after_exit(cls, func):
+    def call_after_exit():
         """Decorator to call _exit after the decorated function completes."""
-        async def async_wrapper(*args, **kwargs):
-            try:
-                result = await func(*args, **kwargs)
-            finally:
-                cls._exit()  # Assuming _exit is a class method or static method
-            return result
-
-        def sync_wrapper(*args, **kwargs):
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                cls._exit()
-            return result
-
-        if inspect.iscoroutinefunction(func):
-            return async_wrapper
-        else:
-            return sync_wrapper
+        pass
         
     def pause(self):
         pass

@@ -91,55 +91,58 @@ async def telemetry_stream(drone, telemetry_sock):
             pass
         await asyncio.sleep(0)
 
-async def handle(message, resp, action, resp_sock):
+async def handle(identity, message, resp, action, resp_sock):
     try:
         match action:
             case "connectionStatus":
                 resp.connectionStatus.isConnected = await drone.isConnected()
                 resp.connectionStatus.wifi_rssi = await drone.getRSSI()
                 resp.connectionStatus.drone_name = await drone.getName()
-                resp.status = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.OK
             case "takeOff":
                 await drone.takeOff()
-                resp.status = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info('Drone has taken off!')
             case "land":
                 await drone.land()
-                resp.status = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "rth":
                 await drone.rth()
-                resp.status = cnc_protocol.ResponseStatus.OK
-            case "setHome":
-                #await drone.setHome(args['lat'], args['lng'])
-                resp.status = cnc_protocol.ResponseStatus.OK
-            case "getHome":
-                resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setAttitude":
-                attitude = message.setAttitude
-                await drone.setAttitude(attitude.roll, attitude.pitch,
-                    attitude.gaz, attitude.omega)
-                resp.status = cnc_protocol.ResponseStatus.OK
-            case "setVelocity":
-                resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setRelativePosition":
-                resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
-            case "setGlobalPosition":
-                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
-                resp.status = cnc_protocol.ResponseStatus.OK
-            case "setTranslatedPosition":
-                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
-                resp.status = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "hover":
                 await drone.hover()
-                resp.status = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            case "setHome":
+                #await drone.setHome(args['lat'], args['lng'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "getHome":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setAttitude":
+                # attitude = message.setAttitude
+                # await drone.setAttitude(attitude.roll, attitude.pitch,
+                #     attitude.gaz, attitude.omega)
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setVelocity":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setRelativePosition":
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setGlobalPosition":
+                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+            case "setTranslatedPosition":
+                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "getCameras":
-                resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "switchCamera":
-                resp.status = cnc_protocol.ResponseStatus.NOT_SUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
-        resp.status = cnc_protocol.ResponseStatus.FAILED 
-
-    resp_sock.send(resp.SerializeToString())
+        resp.resp = cnc_protocol.ResponseStatus.FAILED 
+        
+    
+    resp_sock.send_multipart([identity, resp.SerializeToString()])
+      
 
 async def main(drone, camera_sock, telemetry_sock, args):
     while True:
@@ -156,14 +159,17 @@ async def main(drone, camera_sock, telemetry_sock, args):
         
         while drone.isConnected():
             try:
-                data = command_socket.recv(flags=zmq.NOBLOCK)
+                message_parts = command_socket.recv_multipart(flags=zmq.NOBLOCK)
+                identity = message_parts[0]  
+                data = message_parts[1]
                 # Decode message via protobuf, then execute it
                 message = cnc_protocol.Driver()
                 message.ParseFromString(data)
+                logger.info(f"Received message: {message}")
                 action = message.WhichOneof("method")
                 # Create a driver response message
                 resp = message
-                asyncio.create_task(handle(message, resp, action, command_socket))
+                asyncio.create_task(handle(identity, message, resp, action, command_socket))
             except zmq.Again as e:
                 pass
             await asyncio.sleep(0)
