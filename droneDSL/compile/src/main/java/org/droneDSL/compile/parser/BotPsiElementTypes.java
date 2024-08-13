@@ -40,6 +40,7 @@ public interface BotPsiElementTypes {
   IElementType TASK_AVOID_KW = new BotPsiTokenType("TASK_AVOID_KW");
   IElementType TASK_DETECT_KW = new BotPsiTokenType("TASK_DETECT_KW");
   IElementType TASK_KW = new BotPsiTokenType("TASK_KW");
+  IElementType TASK_TEST_KW = new BotPsiTokenType("TASK_TEST_KW");
   IElementType TASK_TRACK_KW = new BotPsiTokenType("TASK_TRACK_KW");
   IElementType TRANSITION_KW = new BotPsiTokenType("TRANSITION_KW");
 }

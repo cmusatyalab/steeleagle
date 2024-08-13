@@ -32,7 +32,7 @@ public class Compiler implements Runnable {
   public record Pt(@NotNull String longitude, @NotNull String latitude, @NotNull String altitude) {
   }
 
-  @CommandLine.Option(names = {"-k", "--kmlFilePath"}, paramLabel = "<kmlFilePath>", defaultValue = "null", description = "File Path of the KML file")
+  @CommandLine.Option(names = {"-k", "--kmlFilePath"}, paramLabel = "<kmlFilePath>", defaultValue = "", description = "File Path of the KML file")
   String kmlFilePath;
 
   @CommandLine.Option(names = {"-d", "--dslFilePath"}, paramLabel = "<dslFilePath>", defaultValue = "null", description = "File Path of the DSL script")
@@ -44,13 +44,22 @@ public class Compiler implements Runnable {
   @CommandLine.Option(names = {"-a", "--altitude"}, paramLabel = "<altitude>", defaultValue = "15", description = "altitude of the waypoints specified")
   String altitude = "15";
 
-  @CommandLine.Option(names = {"-p", "--platform"}, paramLabel = "<platform>", defaultValue = "python", description = "compiled code platform")
-  String platform = "python";
+  @CommandLine.Option(names = {"-p", "--platform"}, paramLabel = "<platform>", defaultValue = "python/user/project", description = "compiled code platform")
+  String platform = "python/user/project";
 
   @Override
   public void run() {
     // preprocess
-    var waypointsMap = parseKML2Map(kmlFilePath, altitude);
+    // preprocess
+    Map<String, List<Compiler.Pt>> waypointsMap;
+    if (!kmlFilePath.isEmpty()) {
+      // Parse the KML file if kmlFilePath is provided
+      waypointsMap = parseKML2Map(kmlFilePath, altitude);
+    } else {
+      // Initialize an empty map or provide default values if kmlFilePath is not provided
+      waypointsMap = new HashMap<>();
+      System.out.println("No KML file provided. Proceeding without waypoints.");
+    }
 
     // get the DSL script file
     String fileContent;
@@ -72,6 +81,7 @@ public class Compiler implements Runnable {
 
     // code generate
     var platformPath = String.format("./%s", platform);
+    System.out.println(platformPath);
     try {
       ast.codeGenPython(platformPath);
     } catch (IOException e) {
@@ -81,7 +91,7 @@ public class Compiler implements Runnable {
     // build file generate
     try {
       ProcessBuilder builder = new ProcessBuilder();
-      var cmd = String.format("cd %s && pipreqs . --force", platform);
+      var cmd = String.format("cd %s/implementation && pipreqs . --force", platform);
       builder.command("bash", "-c", cmd);
       builder.start().waitFor(); // Wait for the command to complete
     } catch (IOException | InterruptedException e) {
@@ -93,13 +103,11 @@ public class Compiler implements Runnable {
       FileOutputStream fos = new FileOutputStream(outputFilePath);
       ZipOutputStream zos = new ZipOutputStream(fos);
 
-      // add a directory's files to the zip
-      addToZipFile(platformPath + "/task_defs", "./task_defs", zos);
-      addToZipFile(platformPath + "/mission", "./mission", zos);
-      addToZipFile(platformPath + "/transition_defs", "./transition_defs", zos);
+      // add directory's files to the zip
+      addToZipFile(platformPath + "/implementation", "./implementation", zos);
 
       // add build file to the zip
-      Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
+      Path buildFile = Paths.get(String.format("./%s/implementation/requirements.txt", platform));
       zos.putNextEntry(new ZipEntry("requirements.txt"));
       Files.copy(buildFile, zos);
       zos.closeEntry();

@@ -5,14 +5,13 @@ from user.project.interface.Task import TaskArguments, TaskType
 
 
 class Mission:
-
     # transition
     @staticmethod
     def start_transit(triggered_event):
-        return "tri"
-    
+        logger.info("start_transit\n")
+        return "dummy"
     @staticmethod
-    def tri_transit(triggered_event):
+    def dummy_transit(triggered_event):
         if (triggered_event == "done"):
             return "terminate"
 
@@ -25,19 +24,12 @@ class Mission:
         #define transition
         logger.info("define the transitMap\n")
         transitMap["start"] = Mission.start_transit
-        transitMap["tri"]= Mission.tri_transit
+        transitMap["dummy"]= Mission.dummy_transit
         transitMap["default"]= Mission.default_transit
         # define task
         logger.info("define the tasks\n")
-        # TASKtri
-        task_attr_tri = {}
-        task_attr_tri["gimbal_pitch"] = "-20.0"
-        task_attr_tri["drone_rotation"] = "0.0"
-        task_attr_tri["sample_rate"] = "2"
-        task_attr_tri["hover_delay"] = "0"
-        task_attr_tri["coords"] = "[{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 15.0},{'lng': -79.9502364, 'lat': 40.4152976, 'alt': 15.0},{'lng': -79.950054, 'lat': 40.4151098, 'alt': 15.0},{'lng': -79.9499065, 'lat': 40.4152976, 'alt': 15.0}]"
-        
-        transition_attr_tri = {}
-        
-        task_arg_map["tri"] = TaskArguments(TaskType.Test, transition_attr_tri, task_attr_tri)
+        # TASKdummy
+        task_attr_dummy = {}
+        transition_attr_dummy = {}
+        task_arg_map["dummy"] = TaskArguments(TaskType.Test, transition_attr_dummy, task_attr_dummy)
         logger.info("finish defining the tasks\n")
