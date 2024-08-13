@@ -28,21 +28,21 @@ interrupt = threading.Event()
 
 def listen_drones(args, drones):
     ctx = zmq.Context()
-    sock = ctx.socket(zmq.REP)
-    sock.bind(f'tcp://*:{args.droneport}')
+    sock = ctx.socket(zmq.REQ)
+    sock.connect(f'tcp://*:{args.droneport}')
     while not interrupt.isSet():
-        msg = sock.recv()
-        try:
-            extras = cnc_pb2.Extras()
-            extras.ParseFromString(msg)
-            d = drones[extras.drone_id]
-            sock.send(d.SerializeToString())
-            logger.info(f'Delivered request:\n{text_format.MessageToString(d)}')
-            del drones[extras.drone_id]
-        except KeyError:
-            sock.send(b'No commands.')
-        except DecodeError:
-            sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
+        if (drones[extras.drone_id] != None):
+            try:
+                extras = cnc_pb2.Extras()
+                extras.ParseFromString(msg)
+                d = drones[extras.drone_id]
+                sock.send(d.SerializeToString())
+                logger.info(f'Delivered request:\n{text_format.MessageToString(d)}')
+                del drones[extras.drone_id]
+            except KeyError:
+                sock.send(b'No commands.')
+            except DecodeError:
+                sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
     sock.close()
 
 def listen_cmdrs(args, drones, redis):
