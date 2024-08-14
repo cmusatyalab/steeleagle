@@ -19,7 +19,8 @@ public interface Parse {
   enum TaskKind {
     Detect,
     Track,
-    Avoid
+    Avoid,
+    Test,
   }
 
   class AttributeMap {
@@ -139,6 +140,15 @@ public interface Parse {
         yield Tuple.of(taskID, avoidTask);
       }
 
+      case Test -> {
+        // construct new task
+        var testTask = new TestTask(
+            taskID
+        );
+        yield Tuple.of(taskID, testTask);
+      }
+
+
     };
   }
 
@@ -185,6 +195,7 @@ public interface Parse {
   private static AttributeMap createMap(GenericNode<? extends GenericNode<?>> task) {
     var isDetect = task.peekChild(BotPsiElementTypes.TASK_DETECT_KW);
     var isTrack = task.peekChild(BotPsiElementTypes.TASK_TRACK_KW);
+    var isAvoid = task.peekChild(BotPsiElementTypes.TASK_AVOID_KW);
     var attrMap = new AttributeMap();
     task.child(BotPsiElementTypes.TASK_BODY).childrenOfType(BotPsiElementTypes.ATTRIBUTE)
         .forEach(attr -> attrMap.content.put(attr.child(BotPsiElementTypes.ID).tokenText(), attr.child(BotPsiElementTypes.ATTRIBUTE_EXPR)));
@@ -194,8 +205,10 @@ public interface Parse {
       attrMap.kind = TaskKind.Detect;
     } else if (isTrack!= null){
       attrMap.kind = TaskKind.Track;
-    } else{
+    } else if (isAvoid != null){
       attrMap.kind = TaskKind.Avoid;
+    } else {
+      attrMap.kind = TaskKind.Test;
     }
     return attrMap;
   }

@@ -1,7 +1,7 @@
 
-from user.project.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
-from user.project.transition_defs.TimerTransition import TimerTransition
-from user.project.transition_defs.HSVDetectionTransition import HSVDetectionTransition
+from user.project.implementation.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.HSVDetectionTransition import HSVDetectionTransition
 from user.project.interface.Task import Task
 import asyncio
 import ast
@@ -50,7 +50,7 @@ class DetectTask(Task):
             hsv.daemon = True
             hsv.start()
     
-    # @Task.call_after_exit
+    @Task.call_after_exit
     async def run(self):
         # init the cloudlet
         self.cloudlet.switchModel(self.task_attributes["model"])

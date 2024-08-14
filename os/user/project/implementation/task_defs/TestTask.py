@@ -1,7 +1,7 @@
 
-from user.project.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
-from user.project.transition_defs.TimerTransition import TimerTransition
-from user.project.transition_defs.HSVDetectionTransition import HSVDetectionTransition
+from user.project.implementation.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.HSVDetectionTransition import HSVDetectionTransition
 from user.project.interface.Task import Task
 import asyncio
 import ast
@@ -38,26 +38,26 @@ class TestTask(Task):
             
     
     # test all the driver calls        
-    # @Task.call_after_exit
+    @Task.call_after_exit
     async def run(self):
         
         # self.create_transition()
         
-        logger.info(f"**************Test Task {self.task_id}: hi this is Test task {self.task_id}**************\n")
+        logger.info(f"**************Test {self.task_id}: hi this is Test task {self.task_id}**************\n")
     
         ''' Camera methods '''
-        logger.info(f"**************Test Task {self.task_id}: Camera methods test **************\n")
+        logger.info(f"**************Test {self.task_id}: Camera methods test **************\n")
         camera = await self.drone.getCameras()
         await self.drone.switchCamera(0)
 
         ''' Location methods '''
-        logger.info(f"**************Test Task {self.task_id}: Location methods test **************\n")
+        logger.info(f"**************Test {self.task_id}: Location methods test **************\n")
         await self.drone.setHome('hi', 1, 1, 1)
         location = await self.drone.getHome()
         logger.info(f"Home location: {location}")
         
         ''' Position methods '''
-        logger.info(f"**************Test Task {self.task_id}: Position methods test **************\n")
+        logger.info(f"**************Test {self.task_id}: Position methods test **************\n")
         await self.drone.setAttitude(1, 1, 1, 1)
         await self.drone.setVelocity()
         await self.drone.setRelativePosition(1, 1, 1, 1)
@@ -66,15 +66,12 @@ class TestTask(Task):
         
         
         '''Preemptive methods''' 
-        logger.info(f"**************Test Task {self.task_id}: Preemptive methods test **************\n")       
+        logger.info(f"**************Test {self.task_id}: Preemptive methods test **************\n")       
         await self.drone.hover()
         await self.drone.rth()
         await self.drone.land()
         
 
-        logger.info(f"**************Test Task {self.task_id}: Done**************\n")
-        while(1):
-            await asyncio.sleep(1)
-    
+        logger.info(f"**************Test {self.task_id}: Done**************\n")
 
 

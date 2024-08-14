@@ -21,11 +21,11 @@ public final class MissionPlan {
 
   public void codeGenPython(String rootPath) throws IOException {
     var pRoot = Paths.get(rootPath);
-    var root = pRoot.resolve("mission");
-    Files.writeString(root.resolve("MissionCreator.py"), missionControllerContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    var root = pRoot.resolve("implementation");
+    Files.writeString(root.resolve("Mission.py"), missionContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  private String missionControllerContent() {
+  private String missionContent() {
 
     StringBuilder staticMethod = new StringBuilder();
     StringBuilder missionTrans = new StringBuilder();
@@ -44,12 +44,12 @@ public final class MissionPlan {
             @staticmethod
             def define_mission(transitMap, task_arg_map):
                 #define transition
-                logger.info("MissionCreator: define the transitMap\\n")
-                transitMap["start"] = MissionCreator.start_transit        
+                logger.info("define the transitMap\\n")
+                transitMap["start"] = Mission.start_transit  
         """);
     missionTask.append(String.format("""
                 # define task
-                logger.info("MissionCreator: define the tasks\\n")
+                logger.info("define the tasks\\n")
         """, this.startTaskID));
 
 
@@ -75,7 +75,7 @@ public final class MissionPlan {
 
 
       missionTrans.append(String.format("""
-                  transitMap["%s"]= MissionCreator.%s_transit
+                  transitMap["%s"]= Mission.%s_transit
           """, taskID, taskID));
 
       missionTask.append(taskContent.generateDefineTaskCode());
@@ -90,18 +90,18 @@ public final class MissionPlan {
     });
 
     missionTask.append(String.format("""
-                logger.info("MissionCreator: finish defining the tasks\\n")
+                logger.info("finish defining the tasks\\n")
         """));
 
 
     staticMethod.append("""
             @staticmethod
             def default_transit(triggered_event):
-                logger.info(f"MissionCreator: no matched up transition, triggered event {triggered_event}\\n", triggered_event)
+                logger.info(f"no matched up transition, triggered event {triggered_event}\\n", triggered_event)
         """);
 
     missionTrans.append("""
-                transitMap["default"]= MissionCreator.default_transit
+                transitMap["default"]= Mission.default_transit
         """);
 
     return
@@ -109,10 +109,10 @@ public final class MissionPlan {
             import logging
             logger = logging.getLogger(__name__)
             logger.setLevel(logging.INFO)
-            from interfaces.Task import TaskArguments, TaskType
+            from user.project.interface.Task import TaskArguments, TaskType
                         
                         
-            class MissionCreator:
+            class Mission:
 
             """ + staticMethod + missionTrans + missionTask;
   }

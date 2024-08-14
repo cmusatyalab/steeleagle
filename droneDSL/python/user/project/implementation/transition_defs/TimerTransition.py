@@ -1,6 +1,6 @@
 import logging
 import threading
-from interfaces.Transition import Transition
+from user.project.interface.Transition import Transition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

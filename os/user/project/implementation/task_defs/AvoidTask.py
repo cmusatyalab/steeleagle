@@ -9,7 +9,7 @@ import time
 import asyncio
 import logging
 from gabriel_protocol import gabriel_pb2
-from user.project.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
 from user.project.interface.Task import Task
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,7 @@ class AvoidTask(Task):
         else:
             self.setpt[1] = self.forwardspeed
 
-    # @Task.call_after_exit
+    @Task.call_after_exit
     async def run(self):
         logger.info("[ObstacleTask] Started run")
         await self.drone.setGimbalPose(0.0, 0.0, 0.0)

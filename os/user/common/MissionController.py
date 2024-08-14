@@ -13,7 +13,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -33,16 +33,16 @@ class MissionController():
     def start_mission(self):
         # check if the mission is already running
         if self.tm:
-            logger.info(f"MissionController: mission already running")
+            logger.info(f"mission already running")
             return
         
         # dynamic import the fsm
-        logger.info(f"MissionController: start the mission")
-        from user.project.Mission import Mission
+        logger.info(f"start the mission")
+        from user.project.implementation.Mission import Mission
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
-        logger.info(f"MissionController: start the task manager")
+        logger.info(f"start the task manager")
         self.tm = TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
@@ -52,7 +52,8 @@ class MissionController():
             self.tm_coroutine.cancel()
             self.tm = None
             self.tm_coroutine = None
-            
+        else:
+            logger.info(f"mission not running")
         
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):

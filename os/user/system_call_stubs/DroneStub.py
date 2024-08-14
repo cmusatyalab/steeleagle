@@ -46,7 +46,7 @@ class DroneStub:
 
     def sender(self, request, driverRespond):
         seqNum = self.seqNum
-        logger.info(f"DroneStub: Sending request with seqNum: {seqNum}")
+        logger.info(f"Sending request with seqNum: {seqNum}")
         request.seqNum = seqNum
         self.seqNum += 1
         self.seqNum_res[seqNum] = driverRespond
@@ -61,23 +61,23 @@ class DroneStub:
         driverRespond = self.seqNum_res[seqNum]
 
         if not driverRespond:
-            logger.warning("DroneStub: Unrecognized seqNum")
+            logger.warning("Unrecognized seqNum")
             return
 
         status = result.resp
         if status == cnc_pb2.ResponseStatus.OK:
-            logger.info("DroneStub: STAGE 1: OK")
+            logger.info("STAGE 1: OK")
         elif status == cnc_pb2.ResponseStatus.NOTSUPPORTED:
-            logger.info("DroneStub: STAGE 1: NOTSUPPORTED")
+            logger.info("STAGE 1: NOTSUPPORTED")
             driverRespond.set()
         elif status == cnc_pb2.ResponseStatus.DENIED:
-            logger.info("DroneStub: STAGE 1: DENIED")
+            logger.info("STAGE 1: DENIED")
             driverRespond.set()
         else:
             if status == cnc_pb2.ResponseStatus.FAILED:
-                logger.error("DroneStub: STAGE 2: FAILED")
+                logger.error("STAGE 2: FAILED")
             elif status == cnc_pb2.ResponseStatus.COMPLETED:
-                logger.info("DroneStub: STAGE 2: COMPLETED")    
+                logger.info("STAGE 2: COMPLETED")    
             driverRespond.grantPermission()
             driverRespond.putResult(result)
             driverRespond.set()   
@@ -90,7 +90,7 @@ class DroneStub:
             except zmq.Again:
                 pass
             except Exception as e:
-                logger.error(f"DroneStub: Failed to parse message: {e}")
+                logger.error(f"Failed to parse message: {e}")
                 break
             await asyncio.sleep(0)
     
@@ -105,39 +105,39 @@ class DroneStub:
     
     ''' Preemptive methods '''
     async def takeOff(self):
-        logger.info("DroneStub: takeOff")
+        logger.info("takeOff")
         request = cnc_pb2.Driver(takeOff=True)
         result = await self.send_and_wait(request)
         return result.takeOff if result else False
 
     async def land(self):
-        logger.info("DroneStub: land")
+        logger.info("land")
         request = cnc_pb2.Driver(land=True)
         result = await self.send_and_wait(request)
         return result.land if result else False
 
     async def rth(self):
-        logger.info("DroneStub: rth")
+        logger.info("rth")
         request = cnc_pb2.Driver(rth=True)
         result = await self.send_and_wait(request)
         return result.rth if result else False
     
     async def hover(self):
-        logger.info("DroneStub: hover")
+        logger.info("hover")
         request = cnc_pb2.Driver(hover=True)
         result = await self.send_and_wait(request)
         return result.hover if result else False
 
     ''' Location methods '''
     async def setHome(self, name, lat, lng, alt):
-        logger.info("DroneStub: setHome")
+        logger.info("setHome")
         location = cnc_pb2.Location(name=name, latitude=lat, longitude=lng, altitude=alt)
         request = cnc_pb2.Driver(setHome=location)
         result = await self.send_and_wait(request)
         return result.setHome if result else False
 
     async def getHome(self):
-        logger.info("DroneStub: getHome")
+        logger.info("getHome")
         request = cnc_pb2.Driver(getHome=cnc_pb2.Location())
         result = await self.send_and_wait(request)
         if result:
@@ -147,7 +147,7 @@ class DroneStub:
 
     ''' Attitude methods '''
     async def setAttitude(self, yaw, pitch, roll, thrust):
-        logger.info("DroneStub: setAttitude")
+        logger.info("setAttitude")
         attitude = cnc_pb2.Attitude(yaw = yaw, pitch = pitch, roll = roll, thrust = thrust)
         request = cnc_pb2.Driver(setAttitude=attitude)
         
@@ -156,13 +156,13 @@ class DroneStub:
     
     ''' Position methods '''
     async def setVelocity(self):
-        logger.info("DroneStub: setVelocity")
+        logger.info("setVelocity")
         request = cnc_pb2.Driver(setVelocity=cnc_pb2.Position(x= 1, y = 1, z = 1, theta = 1)) # not sure about the values
         result = await self.send_and_wait(request)
         return result.setVelocity if result else False
     
     async def setRelativePosition(self, x, y, z, theta):
-        logger.info("DroneStub: setRelativePosition")
+        logger.info("setRelativePosition")
         position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
         request = cnc_pb2.Driver(setRelativePosition=position)
         result = await self.send_and_wait(request)
@@ -170,14 +170,14 @@ class DroneStub:
     
     
     async def setTranslatedPosition(self, x, y, z, theta):
-        logger.info("DroneStub: setTranslatedPosition")
+        logger.info("setTranslatedPosition")
         position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
         request = cnc_pb2.Driver(setTranslatedPosition=position)
         result = await self.send_and_wait(request)
         return result.setTranslatedPosition if result else False
     
     async def setGlobalPosition(self, x, y, z, theta):
-        logger.info("DroneStub: setGlobalPosition")
+        logger.info("setGlobalPosition")
         position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
         request = cnc_pb2.Driver(setGlobalPosition=position)
         result = await self.send_and_wait(request)
@@ -194,7 +194,7 @@ class DroneStub:
     
         
     async def getCameras(self):
-        logger.info("DroneStub: getCameras")
+        logger.info("getCameras")
         request = cnc_pb2.Driver(getCameras=cnc_pb2.Camera())
         result = await self.send_and_wait(request)
         if result:
@@ -206,7 +206,7 @@ class DroneStub:
             return False
 
     async def switchCamera(self, camera_id):
-        logger.info("DroneStub: switchCamera")
+        logger.info("switchCamera")
         request = cnc_pb2.Driver(switchCamera=camera_id)
         result = await self.send_and_wait(request)
         return result.switchCameras if result else False    

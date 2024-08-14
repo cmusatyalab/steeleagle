@@ -4,8 +4,8 @@ import sys
 import json
 import numpy as np
 import math
-from transition_defs.TimerTransition import TimerTransition
-from interfaces.Task import Task
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
+from user.project.interface.Task import Task
 import time
 import logging
 from gabriel_protocol import gabriel_pb2
@@ -167,6 +167,7 @@ class TrackTask(Task):
         g = await self.drone.getGimbalPitch()
         await self.drone.setGimbalPose(0.0, g + float(vels[1]), 0.0)
 
+    @Task.call_after_exit
     async def run(self):
         logger.info("[TrackTask]: Starting tracking task")
 
@@ -216,4 +217,4 @@ class TrackTask(Task):
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")
             
             await asyncio.sleep(0.03)
-        self._exit()
+       

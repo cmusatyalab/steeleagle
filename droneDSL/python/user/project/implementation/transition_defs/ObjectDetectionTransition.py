@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from venv import logger
-from interfaces.Transition import Transition
+from user.project.interface.Transition import Transition
 from gabriel_protocol import gabriel_pb2
 
 logger = logging.getLogger(__name__)

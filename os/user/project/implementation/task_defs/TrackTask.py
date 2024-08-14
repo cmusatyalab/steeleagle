@@ -4,7 +4,7 @@ import sys
 import json
 import numpy as np
 import math
-from user.project.transition_defs.TimerTransition import TimerTransition
+from user.project.implementation.transition_defs.TimerTransition import TimerTransition
 from user.project.interface.Task import Task
 import time
 import logging
@@ -167,7 +167,7 @@ class TrackTask(Task):
         g = await self.drone.getGimbalPitch()
         await self.drone.setGimbalPose(0.0, g + float(vels[1]), 0.0)
 
-    # @Task.call_after_exit
+    @Task.call_after_exit
     async def run(self):
         logger.info("[TrackTask]: Starting tracking task")
 
