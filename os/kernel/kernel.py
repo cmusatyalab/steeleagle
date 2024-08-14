@@ -21,15 +21,27 @@ logger.addHandler(handler)
 
 context = zmq.Context()
 
-# Create socket endpoints for driver
-command_server = context.socket(zmq.REQ)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')
+# Create socket endpoints for commander
+commander_socket = context.socket(zmq.REQ)
+addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMANDER_ADDR')
 if addr:
-    command_server.bind(addr)
-    logger.info('Created command server endpoint')
+    commander_socket.connect(addr)
+    logger.info('Created commander_socket endpoint')
 else:
-    logger.error('Cannot get command endpoint from system')
+    logger.error('Cannot get commander_socket from system')
     quit()
+
+# Create socket endpoints for userspace
+user_socket = context.socket(zmq.REQ)
+addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_USER_ADDR')
+if addr:
+    user_socket.bind(addr)
+    logger.info('Created user_socket endpoint')
+else:
+    logger.error('Cannot get user_socket from system')
+    quit()
+
+
 
 # # Create a pub/sub socket that telemetry can be read from
 # telemetry_socket = context.socket(zmq.PUB)
@@ -57,9 +69,9 @@ user_path = './user/project/implementation'
 
 class Kernel:
     def __init__(self):
-        self.socket = command_server
-    ######################################################## MISSION ############################################################ 
-    ######################################################## DRIVER ############################################################ 
+        self.command_socket = commander_socket
+        self.user_socket = user_socket
+        self.drone_id = 'test'
     
     ######################################################## COMMAND ############################################################ 
     def install_prereqs(self) -> bool:
@@ -87,34 +99,18 @@ class Kernel:
                 subprocess.check_call(['rm', '-rf', user_path])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
-            z.extractall()
+            z.extractall(path = user_path)
             self.install_prereqs()
         except Exception as e:
             print(e)
-        
-    # Function to send a start mission command
-    def send_start_mission(self):
-        mission_command = cnc_pb2.Mission()
-        mission_command.startMission = True
-        message = mission_command.SerializeToString()
-        print(f'start_mission message:{message}')
-        self.socket.send(message)
-        reply = self.socket.recv_string()
-        print(f"Mission reply: {reply}")
 
-    # Function to send a stop mission command
-    def send_stop_mission(self):
-        mission_command = cnc_pb2.Mission()
-        mission_command.stopMission = True
-        message = mission_command.SerializeToString()
-        self.socket.send(message)
-        reply = self.socket.recv_string()
-        print(f"Mission reply: {reply}")
-
-    def command_handler(self):
+    async def command_handler(self):
+        req = cnc_pb2.Extras()
+        req.drone_id = self.drone_id
         while True:
             try:
-                req = self.socket.recv(flags=zmq.NOBLOCK)
+                self.command_socket.send(req.SerializeToString())
+                req = self.command_socket.recv(flags=zmq.NOBLOCK)
                 commander_req = cnc_pb2.Command()
                 commander_req.parseFromString(req)
                 if commander_req.script_url:
@@ -128,15 +124,48 @@ class Kernel:
             
             except Exception as e:
                 logger.debug(e)
-                
-    def run(self):
-        asyncio.create_task(self.command_handler())
-        while True:
-            asyncio.sleep(1)
+            
+            await asyncio.sleep(0)
+            
+    ######################################################## USER ############################################################ 
+        # Function to send a start mission command
+    def send_start_mission(self):
+        mission_command = cnc_pb2.Mission()
+        mission_command.startMission = True
+        message = mission_command.SerializeToString()
+        print(f'start_mission message:{message}')
+        self.user_socket.send(message)
+        reply = self.user_socket.recv_string()
+        print(f"Mission reply: {reply}")
+
+    # Function to send a stop mission command
+    def send_stop_mission(self):
+        mission_command = cnc_pb2.Mission()
+        mission_command.stopMission = True
+        message = mission_command.SerializeToString()
+        self.user_socket.send(message)
+        reply = self.user_socket.recv_string()
+        print(f"Mission reply: {reply}")
+        
+    ######################################################## DRIVER ############################################################ 
+    
+    ######################################################## MAIN ##############################################################             
+    async def run(self):
+        try:
+            command_coroutine = asyncio.create_task(self.command_handler())
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            print("Shutting down Kernel")
+            self.command_socket.close()
+            self.user_socket.close()
+            command_coroutine.cancel()
+            await command_coroutine
+            quit()
+        
     
 
 if __name__ == "__main__":
-    print("Starting client")
+    print("Starting Kernel")
     k = Kernel()
-    
     asyncio.run(k.run())
