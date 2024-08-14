@@ -25,18 +25,25 @@ from olympe.messages.battery import capacity
 from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class ArgumentOutOfBoundsException(Exception):
-    pass
-
-class ConnectionFailedException(Exception):
-    pass
-
 class ParrotDrone():
 
+    class ArgumentOutOfBoundsException(Exception):
+        pass
+
+    class ConnectionFailedException(Exception):
+        pass
+    
+    class FlightMode(Enum):
+        MANUAL = 1
+        ATTITUDE = 2
+        VELOCITY = 3
+        GUIDED = 4
+    
     def __init__(self, **kwargs):
         # Handle special arguments
         self.ip = '192.168.42.1'
@@ -48,8 +55,23 @@ class ParrotDrone():
         # Create the drone object
         self.drone = Drone(self.ip)
         self.active = False
+        # Drone flight modes and setpoints
+        self.attitudeSP = None
+        self.velocitySP = None
+        self.PIDTask = None
+        self.flightmode = ParrotDrone.FlightMode.MANUAL
 
     ''' Awaiting methods '''
+
+    async def switchModes(self, mode):
+        if self.flightmode == mode:
+            return
+        else:
+            # Cancel the running PID task
+            if self.PIDTask:
+                await self.PIDTask.cancel()
+            self.PIDTask = None
+            self.flightmode = mode
 
     async def hovering(self, timeout=None):
         # Let the task start before checking for hover state.
@@ -64,13 +86,146 @@ class ParrotDrone():
                 break
             else:
                 await asyncio.sleep(1)
+    
+    ''' Background PID tasks '''
+
+    async def _attitudePID(self):
+        try:
+            yaw_PID = {"Kp": 2.0, "Kd": 1.0, "Ki": 0.01, "PrevI": 0.0, "MaxI": 10.0}
+            ep = {"yaw": 0.0}
+            tp = None
+
+            tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
+            tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
+            
+            def clamp(val, mini, maxi):
+                return max(mini, min(val, maxi))
+
+            while self.flightmode == ParrotDrone.FlightMode.ATTITUDE:
+                ts = round(time.time() * 1000)
+                current = await self.getAttitude()
+                pitch, roll, thrust, theta = self.attitudeSP
+
+                error = {}
+                error["yaw"] = theta - current["yaw"]
+
+                # On first loop through, set previous timestamp and error
+                # to dummy values.
+                if tp is None or (ts - tp) > 1000:
+                    tp = ts - 1
+                    ep = error
+
+                Py = yaw_PID["Kp"] * error["yaw"]
+                Iy = yaw_PID["Ki"] * (ts - tp)
+                if error["yaw"] < 0:
+                    Iy *= -1
+                elif error["yaw"] == 0:
+                    Iy = 0
+                Iy = clamp(Iy, -1 * yaw_PID["MaxI"], yaw_PID["MaxI"])
+                Dy = yaw_PID["Kd"] * (error["yaw"] - ep["yaw"]) / (ts - tp)
+                yaw = Py + Iy + Dy
+                
+                roll = int((roll / tiltMax) * 100) if roll > 0 else int((roll / tiltMin) * 100)
+                pitch = int((pitch / tiltMax) * 100) if pitch > 0 else int((pitch / tiltMin) * 100)
+                yaw = int(clamp(yaw, -100, 100)) 
+                thrust = int(thrust * 100)
+                
+                self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
+                
+                # Set previous ts and error for next iteration
+                tp = ts
+                ep = error
+
+                await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            pass
+
+    async def _velocityPID(self):
+        try:
+            pitch_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
+            roll_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
+            thrust_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
+            yaw_PID = {"Kp": 5.0, "Kd": 3.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
+            ep = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
+            tp = None
+
+            def clamp(val, mini, maxi):
+                return max(mini, min(val, maxi))
+
+            while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
+                ts = round(time.time() * 1000)
+                current = await self.getVelocityBody()
+                pitch, roll, thrust, theta = self.velocitySP
+
+                error = {}
+                error["pitch"] = pitch - current["pitch"]
+                error["roll"] = roll - current["roll"]
+                error["thrust"] = thrust - current["thrust"]
+                error["yaw"] = yaw - current["yaw"]
+
+                # On first loop through, set previous timestamp and error
+                # to dummy values.
+                if tp is None or (ts - tp) > 1000:
+                    tp = ts - 1
+                    ep = error
+
+                Pp = pitch_PID["Kp"] * error["pitch"]
+                Ip = pitch_PID["Ki"] * (ts - tp)
+                if error["pitch"] < 0:
+                    Ip *= -1
+                elif error["pitch"] == 0:
+                    Ip = 0
+                Ip = clamp(Ip, -1 * pitch_PID["MaxI"], pitch_PID["MaxI"])
+                Dp = pitch_PID["Kd"] * (error["pitch"] - ep["pitch"]) / (ts - tp)
+                pitch = Pp + Ip + Dp
+                
+                Pr = _PID["Kp"] * error["roll"]
+                Ir = _PID["Ki"] * (ts - tp)
+                if error["roll"] < 0:
+                    Ir *= -1
+                elif error["roll"] == 0:
+                    Ir = 0
+                Ir = clamp(Ir, -1 * roll_PID["MaxI"], roll_PID["MaxI"])
+                Dr = roll_PID["Kd"] * (error["roll"] - ep["roll"]) / (ts - tp)
+                roll = Pr + Ir + Dr
+                
+                Pt = thrust_PID["Kp"] * error["thrust"]
+                It = thrust_PID["Ki"] * (ts - tp)
+                if error["thrust"] < 0:
+                    It *= -1
+                elif error["thrust"] == 0:
+                    It = 0
+                It = clamp(It, -1 * thrust_PID["MaxI"], thrust_PID["MaxI"])
+                Dt = thrust_PID["Kd"] * (error["thrust"] - ep["thrust"]) / (ts - tp)
+                thrust = Pt + It + Dt
+                
+                Py = yaw_PID["Kp"] * error["yaw"]
+                Iy = yaw_PID["Ki"] * (ts - tp)
+                if error["yaw"] < 0:
+                    Iy *= -1
+                elif error["yaw"] == 0:
+                    Iy = 0
+                Iy = clamp(Iy, -1 * yaw_PID["MaxI"], yaw_PID["MaxI"])
+                Dy = yaw_PID["Kd"] * (error["yaw"] - ep["yaw"]) / (ts - tp)
+                yaw = Py + Iy + Dy
+                
+                
+                self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
+                
+                # Set previous ts and error for next iteration
+                tp = ts
+                ep = error
+                
+                await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            pass
 
     ''' Connection methods '''
 
     async def connect(self):
         self.active = self.drone.connect()
         if not self.active:
-            raise ConnectionFailedException("Cannot connect to drone")
+            raise ParrotDrone.ConnectionFailedException("Cannot connect to drone")
 
     def isConnected(self):
         return self.drone.connection_state()
@@ -98,10 +253,12 @@ class ParrotDrone():
     ''' Take off / Landing methods '''
 
     async def takeOff(self):
+        await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(TakeOff())
         await self.hovering()
 
     async def land(self):
+        await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(Landing()).wait().success()
 
     async def setHome(self, lat, lng, alt):
@@ -109,6 +266,7 @@ class ParrotDrone():
 
     async def rth(self):
         await self.hover()
+        await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(return_to_home())
     
     async def toggleThermal(self, on):
@@ -119,32 +277,39 @@ class ParrotDrone():
             self.drone(set_mode(mode="disabled")).wait().success()
 
     ''' Movement methods '''
-
+    
     async def setAttitude(self, pitch, roll, thrust, theta):
+        await self.switchModes(ParrotDrone.FlightMode.ATTITUDE)
         # Get attitude bounds from the drone
         tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
         tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
+
+        if roll > tiltMax or pitch > tiltMax or roll < tiltMin or pitch < tiltMin:
+            raise ParrotDrone.ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
+
+        self.attitudeSP = (pitch, roll, thrust, theta)
+        if self.PIDTask is None:
+            self.PIDTask = asyncio.create_task(self._attitudePID())
+    
+    async def setVelocity(self, forward, right, up, omega):
+        await self.switchModes(ParrotDrone.FlightMode.VELOCITY)
+        
         rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
         rotMin = self.drone.get_state(MaxRotationSpeedChanged)["min"]
         vertMax = self.drone.get_state(MaxVerticalSpeedChanged)["max"]
         vertMin = self.drone.get_state(MaxVerticalSpeedChanged)["min"]
 
-        if roll > tiltMax or pitch > tiltMax or roll < tiltMin or pitch < tiltMin:
-            raise ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
         if omega > rotMax or omega < rotMin:
-            raise ArgumentOutOfBoundsException("Rotation speed outside bound")
-        if thrust > vertMax or thrust < vertMin:
-            raise ArgumentOutOfBoundsException("Vertical speed outside bound")
+            raise ParrotDrone.ArgumentOutOfBoundsException("Rotation speed outside bound")
+        if up > vertMax or up < vertMin:
+            raise ParrotDrone.ArgumentOutOfBoundsException("Vertical speed outside bound")
 
-        self.drone(
-            PCMD(1, int((roll * 100) / tiltMax), int((pitch * 100) / tiltMax), 
-                int((omega * 100) / rotMax), int((gaz * 100) / vertMax), timestampAndSeqNum=0)
-        )
-
-    async def setVelocity(self, forward, right, up, theta):
-        
+        self.velocitySP = (forward, right, up, omega)
+        if self.PIDTask is None:
+            self.PIDTask = asyncio.create_task(self._velocityPID())
 
     async def setGlobalPosition(self, lat, lng, alt, theta):
+        await self.switchModes(ParrotDrone.FlightMode.GUIDED)
         if theta is None:
             self.drone(
                 moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
@@ -156,6 +321,7 @@ class ParrotDrone():
         await self.hovering()
 
     async def setTranslatedPosition(self, forward, right, down, theta):
+        await self.switchModes(ParrotDrone.FlightMode.GUIDED)
         self.drone(
             moveBy(forward, right, down, theta)
         )
@@ -174,6 +340,7 @@ class ParrotDrone():
         )
 
     async def hover(self):
+        await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(PCMD(1, 0, 0, 0, 0, timestampAndSeqNum=0))
     
     ''' Status methods '''
