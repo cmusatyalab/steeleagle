@@ -5,7 +5,7 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
-from drivers.olympe.parrotdrone import ConnectionFailedException, ParrotDrone, ArgumentOutOfBoundsException
+from drivers.olympe.parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -67,9 +67,11 @@ async def camera_stream(drone, camera_sock):
         await asyncio.sleep(0)
 
 async def telemetry_stream(drone, telemetry_sock):
+    logger.info('Starting telemetry stream')
     tel_message = cnc_protocol.Telemetry()
     while drone.isConnected():
         try:
+            logger.info('Getting telemetry')
             telDict = await drone.getTelemetry()
             tel_message.global_position.latitude = telDict["gps"][0] 
             tel_message.global_position.longitude = telDict["gps"][1]
@@ -79,16 +81,17 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"][0]
             tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"][1]
             tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"][2]
-            tel_message.attitude.yaw = telDict["attitude"][0]
-            tel_message.attitude.pitch = telDict["attitude"][1]
-            tel_message.attitude.roll = telDict["attitude"][2]
+            tel_message.drone_attitude.yaw = telDict["attitude"][0]
+            tel_message.drone_attitude.pitch = telDict["attitude"][1]
+            tel_message.drone_attitude.roll = telDict["attitude"][2]
             tel_message.imu.xvel = telDict["imu"]["speedX"]
             tel_message.imu.yvel = telDict["imu"]["speedY"]
             tel_message.imu.zvel = telDict["imu"]["speedZ"]
             tel_message.satellites = telDict["satellites"]
-            telemetry_socket.send(tel_message.SerializeToString())
+            logger.info(f"Telemetry: {tel_message}")
+            telemetry_sock.send(tel_message.SerializeToString())
         except Exception as e:
-            pass
+            logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
 
 async def handle(identity, message, resp, action, resp_sock):
@@ -114,28 +117,28 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setHome":
                 #await drone.setHome(args['lat'], args['lng'])
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getHome":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setAttitude":
                 # attitude = message.setAttitude
                 # await drone.setAttitude(attitude.roll, attitude.pitch,
                 #     attitude.gaz, attitude.omega)
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "setGlobalPosition":
                 #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setTranslatedPosition":
                 #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getCameras":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "switchCamera":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED 
@@ -154,7 +157,7 @@ async def main(drone, camera_sock, telemetry_sock, args):
             continue
         await drone.startStreaming()
         
-        asyncio.create_task(camera_stream(drone, camera_sock))
+        # asyncio.create_task(camera_stream(drone, camera_sock))
         asyncio.create_task(telemetry_stream(drone, telemetry_sock))
         
         while drone.isConnected():
