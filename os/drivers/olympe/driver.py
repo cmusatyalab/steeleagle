@@ -74,6 +74,7 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.global_position.latitude = telDict["gps"][0] 
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
+            tel_message.relative_position.z = telDict["relAlt"]
             tel_message.mag = telDict["magnetometer"]
             tel_message.battery = telDict["battery"]
             tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"][0]

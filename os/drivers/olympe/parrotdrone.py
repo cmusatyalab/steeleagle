@@ -91,8 +91,10 @@ class ParrotDrone():
 
     async def _attitudePID(self):
         try:
+            pitch_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
+            roll_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
             yaw_PID = {"Kp": 2.0, "Kd": 1.0, "Ki": 0.01, "PrevI": 0.0, "MaxI": 10.0}
-            ep = {"yaw": 0.0}
+            ep = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
             tp = None
 
             tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
@@ -107,6 +109,8 @@ class ParrotDrone():
                 pitch, roll, thrust, theta = self.attitudeSP
 
                 error = {}
+                error["pitch"] = pitch - current["pitch"]
+                error["roll"] = roll - current["roll"]
                 error["yaw"] = theta - current["yaw"]
 
                 # On first loop through, set previous timestamp and error
@@ -114,6 +118,26 @@ class ParrotDrone():
                 if tp is None or (ts - tp) > 1000:
                     tp = ts - 1
                     ep = error
+
+                Pp = pitch_PID["Kp"] * error["pitch"]
+                Ip = pitch_PID["Ki"] * (ts - tp)
+                if error["pitch"] < 0:
+                    Ip *= -1
+                elif error["pitch"] == 0:
+                    Ip = 0
+                Ip = clamp(Ip, -1 * pitch_PID["MaxI"], pitch_PID["MaxI"])
+                Dp = pitch_PID["Kd"] * (error["pitch"] - ep["pitch"]) / (ts - tp)
+                pitch = Pp + Ip + Dp
+                
+                Pr = _PID["Kp"] * error["roll"]
+                Ir = _PID["Ki"] * (ts - tp)
+                if error["roll"] < 0:
+                    Ir *= -1
+                elif error["roll"] == 0:
+                    Ir = 0
+                Ir = clamp(Ir, -1 * roll_PID["MaxI"], roll_PID["MaxI"])
+                Dr = roll_PID["Kd"] * (error["roll"] - ep["roll"]) / (ts - tp)
+                roll = Pr + Ir + Dr
 
                 Py = yaw_PID["Kp"] * error["yaw"]
                 Iy = yaw_PID["Ki"] * (ts - tp)
@@ -125,10 +149,10 @@ class ParrotDrone():
                 Dy = yaw_PID["Kd"] * (error["yaw"] - ep["yaw"]) / (ts - tp)
                 yaw = Py + Iy + Dy
                 
-                roll = int((roll / tiltMax) * 100) if roll > 0 else int((roll / tiltMin) * 100)
-                pitch = int((pitch / tiltMax) * 100) if pitch > 0 else int((pitch / tiltMin) * 100)
-                yaw = int(clamp(yaw, -100, 100)) 
+                pitch = int(clamp(pitch, -100, 100)) 
+                roll = int(clamp(roll, -100, 100)) 
                 thrust = int(thrust * 100)
+                yaw = int(clamp(yaw, -100, 100)) 
                 
                 self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
                 
@@ -269,7 +293,12 @@ class ParrotDrone():
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(return_to_home())
     
-    async def toggleThermal(self, on):
+    ''' Camera methods '''
+
+    async def getCameras(self):
+        pass
+
+    async def switchCameras(self, camID):
         from olympe.messages.thermal import set_mode
         if on:
             self.drone(set_mode(mode="blended")).wait().success()
@@ -348,6 +377,7 @@ class ParrotDrone():
     async def getTelemetry(self):
         telDict = {}
         telDict["gps"] = await self.getGPS()
+        telDict["relAlt"] = await self.getAltitudeRel()
         telDict["satellites"] = await self.getSatellites()
         telDict["attitude"] = await self.getAttitude()
         telDict["magnetometer"] = await self.getMagnetometerReading()
@@ -361,8 +391,13 @@ class ParrotDrone():
         return self.drone._device_name
     
     async def getGPS(self):
-        return (self.drone.get_state(GpsLocationChanged)["latitude"],
-                self.drone.get_state(GpsLocationChanged)["longitude"])
+        try:
+            return (self.drone.get_state(GpsLocationChanged)["latitude"],
+                self.drone.get_state(GpsLocationChanged)["longitude"],
+                self.drone.get_state(GpsLocationChanged)["altitude"])
+        except Exception as e:
+            # If there is no GPS fix, return default values
+            return (500.0, 500.0, 0.0)
     
     async def getSatellites(self):
         return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
@@ -396,7 +431,8 @@ class ParrotDrone():
         R2 = np.array(((c,-s), (s, c)))
         vecr = np.dot(R2, vecr)
 
-        res = {"speedX": np.dot(vec, vecf) * -1, "speedY": np.dot(vec, vecr) * -1, "speedZ": NED["speedZ"]}
+        res = {"forward": np.dot(vec, vecf) * -1, "right": np.dot(vec, vecr) * -1, \
+                "up": NED["speedZ"], "rotation": None}
         return res
 
     async def getRSSI(self):
