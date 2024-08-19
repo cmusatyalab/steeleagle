@@ -58,15 +58,15 @@ else:
     quit()
 
 
-# # Create a pub/sub socket that telemetry can be read from
-# telemetry_socket = context.socket(zmq.SUB)
-# tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
-# if tel_pub_addr:
-#     telemetry_socket.connect(tel_pub_addr)
-#     logger.info('Connected to telemetry publish endpoint')
-# else:
-#     logger.error('Cannot get telemetry publish endpoint from system')
-#     quit()
+# Create a pub/sub socket that telemetry can be read from
+telemetry_socket = context.socket(zmq.SUB)
+tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
+if tel_pub_addr:
+    telemetry_socket.connect(tel_pub_addr)
+    logger.info('Connected to telemetry publish endpoint')
+else:
+    logger.error('Cannot get telemetry publish endpoint from system')
+    quit()
 
 # # Create a pub/sub socket that the camera stream can be read from
 # camera_socket = context.socket(zmq.PUB)
@@ -197,7 +197,7 @@ class Kernel:
                 pass
             
             except Exception as e:
-                logger.debug(f"telemetry: {e}")
+                logger.debug(f"Telemetry handler: {e}")
                 
             await asyncio.sleep(0)
             
@@ -247,29 +247,32 @@ class Kernel:
             extras = cnc_pb2.Extras()
             # test
             extras.drone_id = self.drone_id
+            extras.status.rssi = 0
             
-            # try:
-            #     extras.drone_id = self.telemetry_cache['drone_id']
-            #     extras.location.latitude = self.telemetry_cache['location']['latitude']
-            #     extras.location.longitude = self.telemetry_cache['location']['longitude']
-            #     extras.location.altitude = self.telemetry_cache['location']['altitude']
-            #     logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
+            try:
+                extras.drone_id = self.telemetry_cache['drone_id']
+                extras.location.latitude = self.telemetry_cache['location']['latitude']
+                extras.location.longitude = self.telemetry_cache['location']['longitude']
+                extras.location.altitude = self.telemetry_cache['location']['altitude']
+                logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
                     
-            #     extras.status.battery = self.telemetry_cache['battery']    
-            #     extras.status.mag = self.telemetry_cache['magnetometer']
-            #     extras.status.bearing = self.telemetry_cache['bearing']
-            #     result = await self.send_driver_command(ManualCommand.CONNECTION, None)
-            #     if self.drone_type == DroneType.VESPER:
-            #         extras.status.rssi = result.connectionStatus.radio_rssi
-            #     elif self.drone_type == DroneType.PARROT:
-            #         extras.status.rssi = result.connectionStatus.wifi_rssi
-            #     elif self.drone_type == DroneType.VXOL:
-            #         extras.status.rssi = result.connectionStatus.wifi_rssi
-            #     else:
-            #         extras.status.rssi = result.connectionStatus.cellular_rssi
-            #     logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
-            # except Exception as e:
-            #     logger.debug(f'Error getting telemetry: {e}')
+                extras.status.battery = self.telemetry_cache['battery']    
+                extras.status.mag = self.telemetry_cache['magnetometer']
+                extras.status.bearing = self.telemetry_cache['bearing']
+                
+                # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
+                # if self.drone_type == DroneType.VESPER:
+                #     extras.status.rssi = result.connectionStatus.radio_rssi
+                # elif self.drone_type == DroneType.PARROT:
+                #     extras.status.rssi = result.connectionStatus.wifi_rssi
+                # elif self.drone_type == DroneType.VXOL:
+                #     extras.status.rssi = result.connectionStatus.wifi_rssi
+                # else:
+                #     extras.status.rssi = result.connectionStatus.cellular_rssi
+                
+                logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
+            except Exception as e:
+                logger.debug(f'Error getting telemetry: {e}')
 
             # Register on the first frame
             if self.heartbeats == 1:
@@ -342,7 +345,7 @@ class Kernel:
         
         try:
             # command_coroutine = asyncio.create_task(self.command_handler())
-            # telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
+            telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
             gabriel_client.launch()
             # while True:
             #     # logger.info('Running Kernel')
@@ -353,9 +356,9 @@ class Kernel:
             self.command_socket.close()
             self.user_socket.close()
             # command_coroutine.cancel()
-            # telemetry_coroutine.cancel()
+            telemetry_coroutine.cancel()
             # await command_coroutine
-            # await telemetry_coroutine
+            await telemetry_coroutine
             sys.exit(0)
         
     

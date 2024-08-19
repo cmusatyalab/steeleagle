@@ -92,7 +92,7 @@ async def telemetry_stream(drone, telemetry_sock):
             telemetry_sock.send(tel_message.SerializeToString())
         except Exception as e:
             pass
-            # logger.error(f'Failed to get telemetry, error: {e}')
+            logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
 
 async def handle(identity, message, resp, action, resp_sock):
