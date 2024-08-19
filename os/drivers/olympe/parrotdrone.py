@@ -417,7 +417,7 @@ class ParrotDrone():
         return self.drone.get_state(SpeedChanged)
 
     async def getVelocityBody(self):
-        NED = await self.getSpeedNED()
+        NED = await self.getVelocityNED()
         vec = np.array([NED["speedX"], NED["speedY"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
