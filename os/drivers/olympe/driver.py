@@ -71,7 +71,6 @@ async def telemetry_stream(drone, telemetry_sock):
     tel_message = cnc_protocol.Telemetry()
     while drone.isConnected():
         try:
-            logger.info('Getting telemetry')
             telDict = await drone.getTelemetry()
             tel_message.global_position.latitude = telDict["gps"][0] 
             tel_message.global_position.longitude = telDict["gps"][1]
@@ -91,7 +90,8 @@ async def telemetry_stream(drone, telemetry_sock):
             logger.info(f"Telemetry: {tel_message}")
             telemetry_sock.send(tel_message.SerializeToString())
         except Exception as e:
-            logger.error(f'Failed to get telemetry, error: {e}')
+            pass
+            # logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
 
 async def handle(identity, message, resp, action, resp_sock):
