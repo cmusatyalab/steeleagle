@@ -22,7 +22,7 @@ class MissionController():
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.bind("tcp://*:5000") 
+        self.socket.bind("tcp://*:5002") 
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}

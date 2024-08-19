@@ -1,13 +1,17 @@
+from enum import Enum
 import subprocess
 import sys
 from zipfile import ZipFile
 import requests
+import validators
 import zmq
 import json
 import os
 import asyncio
 import logging
 from cnc_protocol import cnc_pb2
+from gabriel_protocol import gabriel_pb2
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -41,17 +45,26 @@ else:
     logger.error('Cannot get user_socket from system')
     quit()
 
+# Create socket endpoints for driver
+driver_socket = context.socket(zmq.DEALER)
+addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_DRIVER_ADDR')
+if addr:
+    driver_socket.bind(addr)
+    logger.info('Created driver_socket endpoint')
+else:
+    logger.error('Cannot get driver_socket from system')
+    quit()
 
 
-# # Create a pub/sub socket that telemetry can be read from
-# telemetry_socket = context.socket(zmq.PUB)
-# tel_pub_addr = 'udp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
-# if tel_pub_addr:
-#     telemetry_socket.connect(tel_pub_addr)
-#     logger.info('Connected to telemetry publish endpoint')
-# else:
-#     logger.error('Cannot get telemetry publish endpoint from system')
-#     quit()
+# Create a pub/sub socket that telemetry can be read from
+telemetry_socket = context.socket(zmq.SUB)
+tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
+if tel_pub_addr:
+    telemetry_socket.connect(tel_pub_addr)
+    logger.info('Connected to telemetry publish endpoint')
+else:
+    logger.error('Cannot get telemetry publish endpoint from system')
+    quit()
 
 # # Create a pub/sub socket that the camera stream can be read from
 # camera_socket = context.socket(zmq.PUB)
@@ -67,13 +80,47 @@ else:
 # shared volume for user and kernel space
 user_path = './user/project/implementation'
 
+class ManualCommand(Enum):
+    RTH = 1
+    HALT = 2
+    TAKEOFF = 4
+    LAND = 5
+    PCMD = 6
+    CONNECTION = 7
+
+class DroneType(Enum):
+    PARROT = 1
+    VXOL = 2
+    VESPER = 3
+
 class Kernel:
-    def __init__(self):
+        
+    def __init__(self, type=DroneType.PARROT, gabriel_server='localhost', gabriel_port=9098):
+        self.gabriel_server = gabriel_server
+        self.gabriel_port = gabriel_port
+        
+        self.drone_type = type
         self.command_socket = commander_socket
         self.user_socket = user_socket
+        self.driver_socket = driver_socket
         self.drone_id = 'test'
-    
-    ######################################################## COMMAND ############################################################ 
+        self.manual = True
+        self.heartbeats = 0
+        
+        self.telemetry_cache = {
+            "drone_id": None,
+            "location": {
+                "latitude": None,
+                "longitude": None,
+                "altitude": None
+            },
+            "battery": None,
+            "magnetometer": None,
+            "bearing": None
+        }
+        
+        
+    ######################################################## USER ############################################################ 
     def install_prereqs(self) -> bool:
         ret = False
         # Pip install prerequsites for flight script
@@ -103,32 +150,8 @@ class Kernel:
             self.install_prereqs()
         except Exception as e:
             print(e)
-
-    async def command_handler(self):
-        req = cnc_pb2.Extras()
-        req.drone_id = self.drone_id
-        while True:
-            try:
-                self.command_socket.send(req.SerializeToString())
-                req = self.command_socket.recv(flags=zmq.NOBLOCK)
-                commander_req = cnc_pb2.Command()
-                commander_req.parseFromString(req)
-                if commander_req.script_url:
-                    self.download_script(commander_req.script_url)
-                    self.send_start_mission()
-                elif commander_req.manual:
-                    self.send_stop_mission()
             
-            except zmq.Again:
-                pass
-            
-            except Exception as e:
-                logger.debug(e)
-            
-            await asyncio.sleep(0)
-            
-    ######################################################## USER ############################################################ 
-        # Function to send a start mission command
+    # Function to send a start mission command
     def send_start_mission(self):
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
@@ -146,26 +169,198 @@ class Kernel:
         self.user_socket.send(message)
         reply = self.user_socket.recv_string()
         print(f"Mission reply: {reply}")
+    
         
     ######################################################## DRIVER ############################################################ 
+    async def telemetry_handler(self):
+        logger.info('Telemetry handler started')
+        while True:
+            try:
+                msg = telemetry_socket.recv(flags=zmq.NOBLOCK)
+                telemetry = cnc_pb2.Telemetry()
+                telemetry.parseFromString(msg)
+                logger.info(f'Telemetry: {telemetry}')
+                self.telemetry_cache['drone_id'] = telemetry.drone_id
+                self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
+                self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
+                self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
+                self.telemetry_cache['battery'] = telemetry.battery
+                self.telemetry_cache['magnetometer'] = telemetry.magnetometer
+                self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
+                
+            except zmq.Again:
+                pass
+            
+            except Exception as e:
+                logger.debug("telemetry: " + e)
+                
+            await asyncio.sleep(0)
+            
+    # async not safe here because it is not called by await in CommandHandler
+    async def send_driver_command(self, command, params):
+        driver_command = cnc_pb2.Driver()
+
+        if command == ManualCommand.RTH:
+            driver_command.RTH = True
+        if command == ManualCommand.HALT:
+            driver_command.hover = True
+        elif command == ManualCommand.TAKEOFF:
+            driver_command.takeoff = True
+        elif command == ManualCommand.LAND:
+            driver_command.land = True
+        # elif command == self.ManualCommand.PCMD:
+        #     driver_command.set = True
+        elif command == ManualCommand.CONNECTION:
+            driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
+
+        message = driver_command.SerializeToString()
+        self.driver_socket.send(message)
+        
+        if (command == ManualCommand.CONNECTION):
+            result = cnc_pb2.Driver()
+            while (result.connectionStatus.isConnected == True):
+                response = self.driver_socket.recv()
+                result.ParseFromString(response)
+            return result
+
+        return None
+        
+
+    ######################################################## REMOTE COMPUTE ############################################################           
+    def processResults(self, result_wrapper):
+        if result_wrapper.result_producer_name.value == 'telemetry':
+            logger.info(f'Telemetry received: {result_wrapper.result}')
+
+    def get_producer_wrappers(self):
+        async def producer():
+            await asyncio.sleep(0)
+            self.heartbeats += 1
+            input_frame = gabriel_pb2.InputFrame()
+            input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+            input_frame.payloads.append('heartbeart'.encode('utf8'))
+
+            extras = cnc_pb2.Extras()
+            
+            try:
+                extras.drone_id = self.telemetry_cache['drone_id']
+                extras.location.latitude = self.telemetry_cache['location']['latitude']
+                extras.location.longitude = self.telemetry_cache['location']['longitude']
+                extras.location.altitude = self.telemetry_cache['location']['altitude']
+                logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
+                    
+                extras.status.battery = self.telemetry_cache['battery']    
+                extras.status.mag = self.telemetry_cache['magnetometer']
+                extras.status.bearing = self.telemetry_cache['bearing']
+                result = await self.send_driver_command(ManualCommand.CONNECTION, None)
+                if self.drone_type == DroneType.VESPER:
+                    extras.status.rssi = result.connectionStatus.radio_rssi
+                elif self.drone_type == DroneType.PARROT:
+                    extras.status.rssi = result.connectionStatus.wifi_rssi
+                elif self.drone_type == DroneType.VXOL:
+                    extras.status.rssi = result.connectionStatus.wifi_rssi
+                else:
+                    extras.status.rssi = result.connectionStatus.cellular_rssi
+                logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
+            except Exception as e:
+                logger.debug(f'Error getting telemetry: {e}')
+
+            # Register on the first frame
+            if self.heartbeats == 1:
+                extras.registering = True
+
+            logger.debug('Producing Gabriel frame!')
+            input_frame.extras.Pack(extras)
+            return input_frame
+
+        return ProducerWrapper(producer=producer, source_name='telemetry')
     
+    
+    ######################################################## COMMAND ############################################################ 
+    async def command_handler(self):
+        logger.info('Command handler started')
+        req = cnc_pb2.Extras()
+        req.drone_id = self.drone_id
+        while True:
+            try:
+                self.command_socket.send(req.SerializeToString())
+                rep = self.command_socket.recv(flags=zmq.NOBLOCK)
+                if b'No commands.' == rep:
+                    logger.info(f'No Command received from commander: {rep}')
+                else:
+                    extras  = cnc_pb2.Extras()
+                    extras.ParseFromString(rep)
+                    logger.info(f'Command received from commander: {extras}')
+                    if extras.cmd.rth:
+                        logger.info('RTH signaled from commander')
+                        self.send_stop_mission()
+                        asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
+                        self.manual = False
+                    elif extras.cmd.halt:
+                        logger.info('Killswitch signaled from commander')
+                        self.send_stop_mission()
+                        asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
+                        self.manual = True
+                        logger.info('Manual control is now active!')
+                    elif extras.cmd.script_url:
+                        # Validate url
+                        if validators.url(extras.cmd.script_url):
+                            logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
+                            self.manual = False
+                            self.download_script(extras.cmd.script_url)
+                            self.send_start_mission()
+                        else:
+                            logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
+                    elif self.manual:
+                        if extras.cmd.takeoff:
+                            logger.info(f'Received manual takeoff')
+                            asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
+                        elif extras.cmd.land:
+                            logger.info(f'Received manual land')
+                            asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
+                        else:
+                            logger.info(f'Received manual PCMD')
+            except zmq.Again:
+                pass
+            except Exception as e:
+                logger.debug("command: " + e)
+            
+            await asyncio.sleep(0)
+            
+        
     ######################################################## MAIN ##############################################################             
     async def run(self):
+        logger.info('Creating client')
+        gabriel_client = WebsocketClient(
+            self.gabriel_server, self.gabriel_port,
+            [self.get_producer_wrappers()],  self.processResults
+        )
+        logger.info('client created')
+        
         try:
             command_coroutine = asyncio.create_task(self.command_handler())
+            # telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
+            # gabriel_client.launch()
             while True:
-                await asyncio.sleep(1)
+                # logger.info('Running Kernel')
+                await asyncio.sleep(0)
+                
         except KeyboardInterrupt:
             print("Shutting down Kernel")
             self.command_socket.close()
             self.user_socket.close()
             command_coroutine.cancel()
+            # telemetry_coroutine.cancel()
             await command_coroutine
+            # await telemetry_coroutine
             quit()
         
     
 
 if __name__ == "__main__":
     print("Starting Kernel")
-    k = Kernel()
+    
+    gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
+    gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
+    
+    k = Kernel(gabriel_server, gabriel_port)
     asyncio.run(k.run())

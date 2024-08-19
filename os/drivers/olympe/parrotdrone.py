@@ -30,13 +30,15 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+class ArgumentOutOfBoundsException(Exception):
+    pass
+
+class ConnectionFailedException(Exception):
+    pass
+
 class ParrotDrone():
 
-    class ArgumentOutOfBoundsException(Exception):
-        pass
-
-    class ConnectionFailedException(Exception):
-        pass
     
     class FlightMode(Enum):
         MANUAL = 1
@@ -249,7 +251,7 @@ class ParrotDrone():
     async def connect(self):
         self.active = self.drone.connect()
         if not self.active:
-            raise ParrotDrone.ConnectionFailedException("Cannot connect to drone")
+            raise ConnectionFailedException("Cannot connect to drone")
 
     def isConnected(self):
         return self.drone.connection_state()
@@ -314,7 +316,7 @@ class ParrotDrone():
         tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
 
         if roll > tiltMax or pitch > tiltMax or roll < tiltMin or pitch < tiltMin:
-            raise ParrotDrone.ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
+            raise ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
 
         self.attitudeSP = (pitch, roll, thrust, theta)
         if self.PIDTask is None:
@@ -329,9 +331,9 @@ class ParrotDrone():
         vertMin = self.drone.get_state(MaxVerticalSpeedChanged)["min"]
 
         if omega > rotMax or omega < rotMin:
-            raise ParrotDrone.ArgumentOutOfBoundsException("Rotation speed outside bound")
+            raise ArgumentOutOfBoundsException("Rotation speed outside bound")
         if up > vertMax or up < vertMin:
-            raise ParrotDrone.ArgumentOutOfBoundsException("Vertical speed outside bound")
+            raise ArgumentOutOfBoundsException("Vertical speed outside bound")
 
         self.velocitySP = (forward, right, up, omega)
         if self.PIDTask is None:
