@@ -309,7 +309,7 @@ class ParrotDrone():
 
     ''' Movement methods '''
     
-    async def setAttitude(self, pitch, roll, thrust, theta):
+    async def setAttitude(self, pitch, roll, thrust, yaw):
         await self.switchModes(ParrotDrone.FlightMode.ATTITUDE)
         # Get attitude bounds from the drone
         tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
@@ -318,11 +318,11 @@ class ParrotDrone():
         if roll > tiltMax or pitch > tiltMax or roll < tiltMin or pitch < tiltMin:
             raise ArgumentOutOfBoundsException("Roll or pitch angle outside bounds")
 
-        self.attitudeSP = (pitch, roll, thrust, theta)
+        self.attitudeSP = (pitch, roll, thrust, yaw)
         if self.PIDTask is None:
             self.PIDTask = asyncio.create_task(self._attitudePID())
     
-    async def setVelocity(self, forward, right, up, omega):
+    async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         await self.switchModes(ParrotDrone.FlightMode.VELOCITY)
         
         rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
@@ -330,31 +330,31 @@ class ParrotDrone():
         vertMax = self.drone.get_state(MaxVerticalSpeedChanged)["max"]
         vertMin = self.drone.get_state(MaxVerticalSpeedChanged)["min"]
 
-        if omega > rotMax or omega < rotMin:
+        if angle_vel > rotMax or angle_vel < rotMin:
             raise ArgumentOutOfBoundsException("Rotation speed outside bound")
-        if up > vertMax or up < vertMin:
+        if up_vel > vertMax or up_vel < vertMin:
             raise ArgumentOutOfBoundsException("Vertical speed outside bound")
 
-        self.velocitySP = (forward, right, up, omega)
+        self.velocitySP = (forward_vel, right_vel, up_vel, angle_vel)
         if self.PIDTask is None:
             self.PIDTask = asyncio.create_task(self._velocityPID())
 
-    async def setGlobalPosition(self, lat, lng, alt, theta):
+    async def setGPSLocation(self, lat, lng, alt, bearing):
         await self.switchModes(ParrotDrone.FlightMode.GUIDED)
-        if theta is None:
+        if bearing is None:
             self.drone(
                 moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
             )
         else:
             self.drone(
-                moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, theta)
+                moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, bearing)
             )
         await self.hovering()
 
-    async def setTranslatedPosition(self, forward, right, down, theta):
+    async def setTranslatedPosition(self, forward, right, up, angle):
         await self.switchModes(ParrotDrone.FlightMode.GUIDED)
         self.drone(
-            moveBy(forward, right, down, theta)
+            moveBy(forward, right, -1 * up, angle)
         )
         await self.hovering()
 

@@ -134,7 +134,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
-            case "setGlobalPosition":
+            case "setGPSLocation":
                 position = message.setGlobalPosition
                 await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
