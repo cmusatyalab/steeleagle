@@ -16,11 +16,11 @@ import nest_asyncio
 nest_asyncio.apply()
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Write log messages to stdout so they are readable in Docker logs
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -60,9 +60,11 @@ else:
 
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.SUB)
-tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
-if tel_pub_addr:
-    telemetry_socket.connect(tel_pub_addr)
+telemetry_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
+logger.info(f'Telemetry address: {addr}')
+if addr:
+    telemetry_socket.connect(addr)
     logger.info('Connected to telemetry publish endpoint')
 else:
     logger.error('Cannot get telemetry publish endpoint from system')
@@ -97,7 +99,7 @@ class DroneType(Enum):
 
 class Kernel:
         
-    def __init__(self, gabriel_server, gabriel_port, type=DroneType.PARROT,):
+    def __init__(self, gabriel_server, gabriel_port, type=DroneType.PARROT):
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
         
@@ -105,12 +107,12 @@ class Kernel:
         self.command_socket = commander_socket
         self.user_socket = user_socket
         self.driver_socket = driver_socket
-        self.drone_id = 'test'
+        self.telemetry_socket = telemetry_socket
+        
         self.manual = True
         self.heartbeats = 0
         
         self.telemetry_cache = {
-            "drone_id": None,
             "location": {
                 "latitude": None,
                 "longitude": None,
@@ -121,7 +123,7 @@ class Kernel:
             "bearing": None
         }
         
-        self.drone_id = "test"
+        self.drone_id = "ant"
         
         
     ######################################################## USER ############################################################ 
@@ -181,23 +183,26 @@ class Kernel:
         
         while True:
             try:
-                msg = telemetry_socket.recv(flags=zmq.NOBLOCK)
+                msg = self.telemetry_socket.recv(flags=zmq.NOBLOCK)
                 telemetry = cnc_pb2.Telemetry()
-                telemetry.parseFromString(msg)
-                logger.info(f'Telemetry: {telemetry}')
-                self.telemetry_cache['drone_id'] = telemetry.drone_id
+                telemetry.ParseFromString(msg)
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
                 self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
                 self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
                 self.telemetry_cache['battery'] = telemetry.battery
-                self.telemetry_cache['magnetometer'] = telemetry.magnetometer
+                self.telemetry_cache['magnetometer'] = telemetry.mag
                 self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
                 
+                logger.debug(f'Telemetry Handler: Latitude: {self.telemetry_cache["location"]["latitude"]} Longitude: {self.telemetry_cache["location"]["longitude"]} Altitude: {self.telemetry_cache["location"]["altitude"]}')
+                logger.debug(f'Telemetry Handler: Battery: {self.telemetry_cache["battery"]}')
+                logger.debug(f'Telemetry Handler: Magnetometer: {self.telemetry_cache["magnetometer"]}')
+                logger.debug(f'Telemetry Handler: Bearing: {self.telemetry_cache["bearing"]}')
             except zmq.Again:
+                logger.debug('Telemetry handler no received telemetry')
                 pass
             
             except Exception as e:
-                logger.debug(f"Telemetry handler: {e}")
+                logger.error(f"Telemetry Handler: {e}")
                 
             await asyncio.sleep(0)
             
@@ -206,11 +211,11 @@ class Kernel:
         driver_command = cnc_pb2.Driver()
 
         if command == ManualCommand.RTH:
-            driver_command.RTH = True
+            driver_command.rth = True
         if command == ManualCommand.HALT:
             driver_command.hover = True
         elif command == ManualCommand.TAKEOFF:
-            driver_command.takeoff = True
+            driver_command.takeOff = True
         elif command == ManualCommand.LAND:
             driver_command.land = True
         # elif command == self.ManualCommand.PCMD:
@@ -234,7 +239,7 @@ class Kernel:
     ######################################################## REMOTE COMPUTE ############################################################           
     def processResults(self, result_wrapper):
         if result_wrapper.result_producer_name.value == 'telemetry':
-            logger.info(f'Telemetry received: {result_wrapper}')
+            logger.debug(f'Telemetry received: {result_wrapper}')
 
     def get_producer_wrappers(self):
         async def producer():
@@ -250,15 +255,15 @@ class Kernel:
             extras.status.rssi = 0
             
             try:
-                extras.drone_id = self.telemetry_cache['drone_id']
                 extras.location.latitude = self.telemetry_cache['location']['latitude']
                 extras.location.longitude = self.telemetry_cache['location']['longitude']
                 extras.location.altitude = self.telemetry_cache['location']['altitude']
-                logger.debug(f'Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
+                logger.debug(f'Gabriel Client Telemetry Producer: Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
                     
                 extras.status.battery = self.telemetry_cache['battery']    
                 extras.status.mag = self.telemetry_cache['magnetometer']
                 extras.status.bearing = self.telemetry_cache['bearing']
+                logger.debug(f'Gabriel Client Telemetry Producer:: Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
                 
                 # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
                 # if self.drone_type == DroneType.VESPER:
@@ -270,15 +275,15 @@ class Kernel:
                 # else:
                 #     extras.status.rssi = result.connectionStatus.cellular_rssi
                 
-                logger.debug(f'Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
+                
             except Exception as e:
-                logger.debug(f'Error getting telemetry: {e}')
+                logger.debug(f'Gabriel Client Telemetry Producer: {e}')
 
             # Register on the first frame
             if self.heartbeats == 1:
                 extras.registering = True
 
-            logger.info('Producing Gabriel frame!')
+            logger.debug('Gabriel Client Telemetry Producer: producing Gabriel frame!')
             input_frame.extras.Pack(extras)
             return input_frame
 
@@ -289,12 +294,13 @@ class Kernel:
     async def command_handler(self):
         logger.info('Command handler started')
         req = cnc_pb2.Extras()
+        req.drone_id  = self.drone_id
         while True:
             try:
                 self.command_socket.send(req.SerializeToString())
                 rep = self.command_socket.recv()
                 if b'No commands.' == rep:
-                    logger.info(f'No Command received from commander: {rep}')
+                    logger.debug(f'No Command received from commander: {rep}')
                 else:
                     extras  = cnc_pb2.Extras()
                     extras.ParseFromString(rep)
@@ -329,46 +335,43 @@ class Kernel:
                         else:
                             logger.info(f'Received manual PCMD')
             except Exception as e:
-                logger.debug(f"command: {e}")
+                logger.error(f"command: {e}")
             
             await asyncio.sleep(0)
             
         
     ######################################################## MAIN ##############################################################             
     async def run(self):
-        logger.info('Creating client')
+        logger.info('Main: creating gabriel client')
         gabriel_client = WebsocketClient(
             self.gabriel_server, self.gabriel_port,
             [self.get_producer_wrappers()],  self.processResults
         )
-        logger.info('client created')
+        logger.info('Main: gabriel client created')
         
         try:
-            # command_coroutine = asyncio.create_task(self.command_handler())
+            command_coroutine = asyncio.create_task(self.command_handler())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
             gabriel_client.launch()
-            # while True:
-            #     # logger.info('Running Kernel')
-            #     await asyncio.sleep(0)
                 
         except KeyboardInterrupt:
-            print("Shutting down Kernel")
+            logger.info("Main: Shutting down Kernel")
             self.command_socket.close()
             self.user_socket.close()
-            # command_coroutine.cancel()
+            command_coroutine.cancel()
             telemetry_coroutine.cancel()
-            # await command_coroutine
+            await command_coroutine
             await telemetry_coroutine
+            logger.info("Main: Kernel shutdown complete")
             sys.exit(0)
         
     
 
 if __name__ == "__main__":
-    print("Starting Kernel")
-    
+    logger.info("Main: starting Kernel")
     gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
-    logger.info(f'Gabriel server: {gabriel_server}')
+    logger.info(f'Main: Gabriel server: {gabriel_server}')
     gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
-    logger.info(f'Gabriel port: {gabriel_port}')
+    logger.info(f'Main: Gabriel port: {gabriel_port}')
     k = Kernel(gabriel_server, gabriel_port, DroneType.PARROT)
     asyncio.run(k.run())
