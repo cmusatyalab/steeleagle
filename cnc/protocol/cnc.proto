@@ -95,18 +95,18 @@ message Attitude {
   double thrust = 4;
 }
 
-message IMU {
-  double xvel = 1;
-  double yvel = 2;
-  double zvel = 3;
-  double rotvel = 4;
+message Velocity {
+  double forward_vel = 1;
+  double right_vel = 2;
+  double up_vel = 3;
+  double angle_vel = 4;
 }
 
 message Position {
-  double x = 1;
-  double y = 2;
-  double z = 3;
-  double theta = 4;
+  double forward = 1;
+  double right = 2;
+  double up = 3;
+  double angle = 4;
 }
 
 // Pub/Sub for telemetry
@@ -116,7 +116,7 @@ message Telemetry {
   int64 battery = 3;
   Attitude gimbal_attitude = 4;
   Attitude drone_attitude = 5;
-  IMU imu = 6;
+  Velocity velocity = 6;
   Position relative_position = 7;
   int64 satellites = 8;
 }
@@ -153,9 +153,9 @@ message Driver {
     bool rth = 7; //return to home
     Location setHome = 8;
     Location getHome = 9;
-    IMU setVelocity = 10;
+    Velocity setVelocity = 10;
     Position setRelativePosition = 11; //relative to home Position
-    Position setGlobalPosition = 12;
+    Location setLocation = 12;
     Position setTranslatedPosition = 13; //relative to current position
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;

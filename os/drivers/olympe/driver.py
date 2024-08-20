@@ -139,8 +139,8 @@ async def handle(identity, message, resp, action, resp_sock):
                 await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setTranslatedPosition":
-                position = message.setGlobalPosition
-                await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
+                position = message.setTranslatedPosition
+                await drone.setTranslatedPosition(position.x, position.y, position.z, position.theta)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getCameras":
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
@@ -177,6 +177,10 @@ async def main(drone, camera_sock, telemetry_sock, args):
                 message.ParseFromString(data)
                 logger.info(f"Received message: {message}")
                 action = message.WhichOneof("method")
+                
+                # send a okay message
+                
+                
                 # Create a driver response message
                 resp = message
                 asyncio.create_task(handle(identity, message, resp, action, command_socket))
