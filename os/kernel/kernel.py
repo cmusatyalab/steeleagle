@@ -218,8 +218,17 @@ class Kernel:
             driver_command.takeOff = True
         elif command == ManualCommand.LAND:
             driver_command.land = True
-        # elif command == self.ManualCommand.PCMD:
-        #     driver_command.set = True
+        elif command == ManualCommand.PCMD:
+            vel = cnc_pb2.Velocity()
+            if params["pitch"] != 0:
+                vel.pitch = 1
+            if params["yaw"] != 0:
+                vel.yaw = 1
+            if params["roll"] != 0:
+                vel.roll = 1
+            if params["thrust"] != 0:
+                vel.thrust = 1
+            driver_command.setVelocity = vel
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -334,6 +343,16 @@ class Kernel:
                             asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
                         else:
                             logger.info(f'Received manual PCMD')
+                            pitch = extras.cmd.pcmd.pitch
+                            yaw = extras.cmd.pcmd.yaw
+                            roll = extras.cmd.pcmd.roll
+                            thrust = extras.cmd.pcmd.gaz
+                            gimbal_pitch = extras.cmd.pcmd.gimbal_pitch
+                            logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {thrust} {gimbal_pitch}')
+                            paras = {"pitch": pitch, "yaw": yaw, "roll":roll, "thrust":thrust}
+                            asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, paras))
+                            # asyncio.create_task(self.send_driver_command(ManualCommand.Gimbal, paras))
+
             except Exception as e:
                 logger.error(f"command: {e}")
             
