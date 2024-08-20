@@ -218,17 +218,23 @@ class Kernel:
             driver_command.takeOff = True
         elif command == ManualCommand.LAND:
             driver_command.land = True
+            
         elif command == ManualCommand.PCMD:
-            vel = cnc_pb2.Velocity()
+            
             if params["pitch"] != 0:
-                vel.pitch = 1
+                driver_command.setVelocity.forward_vel = 1
+                logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
             if params["yaw"] != 0:
-                vel.yaw = 1
+                driver_command.setVelocity.angle_vel = 1
+                logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
             if params["roll"] != 0:
-                vel.roll = 1
+                driver_command.setVelocity.right_vel = 1
+                logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
             if params["thrust"] != 0:
-                vel.thrust = 1
-            driver_command.setVelocity = vel
+                driver_command.setVelocity.up_vel = 1
+                logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
+           
+        
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -330,7 +336,7 @@ class Kernel:
                         if validators.url(extras.cmd.script_url):
                             logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
                             self.manual = False
-                            self.download_script(extras.cmd.script_url)
+                            # self.download_script(extras.cmd.script_url)
                             self.send_start_mission()
                         else:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
