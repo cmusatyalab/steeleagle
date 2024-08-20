@@ -8,11 +8,11 @@ import cnc_protocol.cnc_pb2 as cnc_protocol
 from drivers.olympe.parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Write log messages to stdout so they are readable in Docker logs
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -32,6 +32,7 @@ else:
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.PUB)
 tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
+logger.info(f"Telemetry publish address: {tel_pub_addr}")
 if tel_pub_addr:
     telemetry_socket.bind(tel_pub_addr)
     logger.info('Created telemetry publish endpoint')
@@ -88,10 +89,10 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.imu.yvel = telDict["imu"]["right"]
             tel_message.imu.zvel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
-            logger.info(f"Telemetry: {tel_message}")
+            logger.debug(f"Telemetry: {tel_message}")
             telemetry_sock.send(tel_message.SerializeToString())
+            logger.debug('Sent telemetry')
         except Exception as e:
-            pass
             logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
 
@@ -102,7 +103,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.connectionStatus.isConnected = await drone.isConnected()
                 resp.connectionStatus.wifi_rssi = await drone.getRSSI()
                 resp.connectionStatus.drone_name = await drone.getName()
-                resp.resp = cnc_protocol.ResponseStatus.OK
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "takeOff":
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
@@ -117,24 +118,29 @@ async def handle(identity, message, resp, action, resp_sock):
                 await drone.hover()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setHome":
-                #await drone.setHome(args['lat'], args['lng'])
+                location  = message.setHome
+                await drone.setHome(location.latitude, location.longitude, location.altitude)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getHome":
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "setAttitude":
-                # attitude = message.setAttitude
-                # await drone.setAttitude(attitude.roll, attitude.pitch,
-                #     attitude.gaz, attitude.omega)
+                attitude = message.setAttitude
+                await drone.setAttitude(attitude.roll, attitude.pitch,
+                    attitude.thrust, attitude.yaw)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
+                imu = message.setVelocity
+                await drone.setVelocity(imu.xvel, imu.yvel, imu.zvel, imu.rotvel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "setGlobalPosition":
-                #await drone.setGlobalPosition(args['lat'], args['lng'], args['alt'], args['theta'])
+                position = message.setGlobalPosition
+                await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setTranslatedPosition":
-                #await drone.setTranslatedPosition(args['x'], args['y'], args['z'], args['theta'])
+                position = message.setGlobalPosition
+                await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getCameras":
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
