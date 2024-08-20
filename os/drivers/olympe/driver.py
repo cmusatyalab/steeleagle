@@ -129,23 +129,23 @@ async def handle(identity, message, resp, action, resp_sock):
                     attitude.thrust, attitude.yaw)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
-                imu = message.setVelocity
-                await drone.setVelocity(imu.xvel, imu.yvel, imu.zvel, imu.rotvel)
+                velocity = message.setVelocity
+                await drone.setVelocity(velocity.forward_vel,velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
-            case "setGPSLocation":
-                position = message.setGlobalPosition
-                await drone.setGlobalPosition(position.x, position.y, position.z, position.theta)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setTranslatedPosition":
                 position = message.setTranslatedPosition
-                await drone.setTranslatedPosition(position.x, position.y, position.z, position.theta)
+                await drone.setTranslatedPosition(position.forward, position.right, position.up, position.angle)
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            case "setGPSLocation":
+                location = message.setGPSLocation
+                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, location.bearing)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "getCameras":
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
             case "switchCamera":
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED 
