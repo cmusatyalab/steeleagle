@@ -23,7 +23,7 @@ context = zmq.Context()
 command_socket = context.socket(zmq.ROUTER)
 kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')
 if kernel_addr:
-    command_socket.connect(kernel_addr)
+    command_socket.bind(kernel_addr)
     logger.info('Connected to kernel endpoint')
 else:
     logger.error('Cannot get kernel endpoint from system')
@@ -34,7 +34,7 @@ telemetry_socket = context.socket(zmq.PUB)
 tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
 logger.info(f"Telemetry publish address: {tel_pub_addr}")
 if tel_pub_addr:
-    telemetry_socket.bind(tel_pub_addr)
+    telemetry_socket.connect(tel_pub_addr)
     logger.info('Created telemetry publish endpoint')
 else:
     logger.error('Cannot get telemetry publish endpoint from system')
@@ -171,8 +171,10 @@ async def main(drone, camera_sock, telemetry_sock, args):
         while drone.isConnected():
             try:
                 message_parts = command_socket.recv_multipart(flags=zmq.NOBLOCK)
-                identity = message_parts[0]  
+                identity = message_parts[0]
+                logger.info(f"Received identity: {identity }")  
                 data = message_parts[1]
+                logger.info(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
                 message = cnc_protocol.Driver()
                 message.ParseFromString(data)

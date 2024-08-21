@@ -1,4 +1,5 @@
 
+import os
 import sys
 import zmq
 import asyncio
@@ -22,7 +23,7 @@ class MissionController():
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.bind("tcp://*:5002") 
+        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')) 
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}

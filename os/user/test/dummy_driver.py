@@ -1,10 +1,11 @@
+import os
 import zmq
 from cnc_protocol import cnc_pb2
 
 def d_server():
     context = zmq.Context()
     socket = context.socket(zmq.ROUTER)
-    socket.connect("tcp://127.0.0.1:5001")
+    socket.connect('tcp://' + os.environ.get('STEELEAGLE_DRIVER_COMMAND_ADDR'))
         
     while True:
         try:

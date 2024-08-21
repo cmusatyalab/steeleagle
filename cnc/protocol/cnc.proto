@@ -156,7 +156,7 @@ message Driver {
     Location getHome = 9;
     Velocity setVelocity = 10;
     Position setRelativePosition = 11; //relative to home Position
-    Location setLocation = 12;
+    Location setGPSLocation = 12;
     Position setTranslatedPosition = 13; //relative to current position
     int64 switchCamera = 14; //change current switchCamera
     Camera getCameras = 15;

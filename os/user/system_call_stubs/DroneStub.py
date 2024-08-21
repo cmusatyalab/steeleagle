@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import zmq
 from cnc_protocol import cnc_pb2
 from enum import Enum
@@ -40,7 +41,7 @@ class DroneStub:
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.bind("tcp://127.0.0.1:5001")
+        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_DRIVER_COMMAND_ADDR'))
         self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
         self.seqNum_res = {}
 
@@ -53,7 +54,7 @@ class DroneStub:
         serialized_request = request.SerializeToString()
         self.socket.send_multipart([serialized_request])
 
-    def process_response(self, response_parts):
+    def receiver(self, response_parts):
         response = response_parts[0]
         result = cnc_pb2.Driver()
         result.ParseFromString(response)
@@ -86,7 +87,7 @@ class DroneStub:
         while True:
             try:
                 response_parts = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                self.process_response(response_parts)
+                self.receiver(response_parts)
             except zmq.Again:
                 pass
             except Exception as e:
@@ -181,10 +182,10 @@ class DroneStub:
     
     async def setGPSLocation(self, latitude, longitude, altitude, bearing):
         logger.info("setGlobalPosition")
-        position = cnc_pb2.Location(latitude=latitude, longitude=longitude, altitude=altitude, bearing=bearing)
-        request = cnc_pb2.Driver(setGlobalPosition=position)
+        location = cnc_pb2.Location(latitude=latitude, longitude=longitude, altitude=altitude, bearing=bearing)
+        request = cnc_pb2.Driver(setGPSLocation=location)
         result = await self.send_and_wait(request)
-        return result.setGlobalPosition if result else False
+        return result.setGPSLocation if result else False
     
     
     ''' Camera methods '''

@@ -59,10 +59,10 @@ class TestTask(Task):
         ''' Position methods '''
         logger.info(f"**************Test {self.task_id}: Position methods test **************\n")
         await self.drone.setAttitude(1, 1, 1, 1)
-        await self.drone.setVelocity()
+        await self.drone.setVelocity(1, 1, 1, 1)
         await self.drone.setRelativePosition(1, 1, 1, 1)
         await self.drone.setTranslatedPosition(1, 1, 1, 1)
-        await self.drone.setGlobalPosition(1, 1, 1, 1)
+        await self.drone.setGPSLocation(1, 1, 1, 1)
         
         
         '''Preemptive methods''' 
