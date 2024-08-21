@@ -51,7 +51,7 @@ else:
 driver_socket = context.socket(zmq.DEALER)
 addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_DRIVER_ADDR')
 if addr:
-    driver_socket.bind(addr)
+    driver_socket.connect(addr)
     logger.info('Created driver_socket endpoint')
 else:
     logger.error('Cannot get driver_socket from system')
@@ -64,7 +64,7 @@ telemetry_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
 logger.info(f'Telemetry address: {addr}')
 if addr:
-    telemetry_socket.connect(addr)
+    telemetry_socket.bind(addr)
     logger.info('Connected to telemetry publish endpoint')
 else:
     logger.error('Cannot get telemetry publish endpoint from system')
@@ -99,11 +99,12 @@ class DroneType(Enum):
 
 class Kernel:
         
-    def __init__(self, gabriel_server, gabriel_port, type=DroneType.PARROT):
+    def __init__(self, gabriel_server, gabriel_port, type):
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
-        
         self.drone_type = type
+        self.drone_id = "ant"
+        
         self.command_socket = commander_socket
         self.user_socket = user_socket
         self.driver_socket = driver_socket
@@ -123,7 +124,7 @@ class Kernel:
             "bearing": None
         }
         
-        self.drone_id = "ant"
+        
         
         
     ######################################################## USER ############################################################ 
@@ -206,7 +207,6 @@ class Kernel:
                 
             await asyncio.sleep(0)
             
-    # async not safe here because it is not called by await in CommandHandler
     async def send_driver_command(self, command, params):
         driver_command = cnc_pb2.Driver()
 
@@ -234,12 +234,11 @@ class Kernel:
                 driver_command.setVelocity.up_vel = 1
                 logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
            
-        
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
         message = driver_command.SerializeToString()
-        self.driver_socket.send(message)
+        self.driver_socket.send_multipart([message])
         
         if (command == ManualCommand.CONNECTION):
             result = cnc_pb2.Driver()
@@ -298,14 +297,14 @@ class Kernel:
             if self.heartbeats == 1:
                 extras.registering = True
 
-            logger.debug('Gabriel Client Telemetry Producer: producing Gabriel frame!')
+            logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
     
     
-    ######################################################## COMMAND ############################################################ 
+    ######################################################## COMMANDER ############################################################ 
     async def command_handler(self):
         logger.info('Command handler started')
         req = cnc_pb2.Extras()

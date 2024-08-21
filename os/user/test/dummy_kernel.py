@@ -1,3 +1,4 @@
+import os
 import zmq
 import time
 from cnc_protocol import cnc_pb2
@@ -6,7 +7,7 @@ def k_client():
     # Create a ZMQ context and a REQ (request) socket
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect("tcp://localhost:5000")  # Connect to the server
+    socket.bind('tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR'))  # Connect to the server
 
     # Function to send a start mission command
     def send_start_mission():
