@@ -2,6 +2,7 @@ from enum import Enum
 import subprocess
 import sys
 from zipfile import ZipFile
+import cv2
 import requests
 import validators
 import zmq
@@ -29,7 +30,7 @@ context = zmq.Context()
 
 # Create socket endpoints for commander
 commander_socket = context.socket(zmq.REQ)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMANDER_ADDR')
+addr = 'tcp://' + os.environ.get('STEELEAGLE_COMMANDER_CMD_REQ_ADDR')
 if addr:
     commander_socket.connect(addr)
     logger.info('Created commander_socket endpoint')
@@ -39,7 +40,7 @@ else:
 
 # Create socket endpoints for userspace
 user_socket = context.socket(zmq.REQ)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_USER_ADDR')
+addr = 'tcp://' + os.environ.get('STEELEAGLE_USER_CMD_REQ_ADDR')
 if addr:
     user_socket.bind(addr)
     logger.info('Created user_socket endpoint')
@@ -49,7 +50,7 @@ else:
 
 # Create socket endpoints for driver
 driver_socket = context.socket(zmq.DEALER)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_DRIVER_ADDR')
+addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CMD_DEALER_ADDR')
 if addr:
     driver_socket.connect(addr)
     logger.info('Created driver_socket endpoint')
@@ -70,15 +71,16 @@ else:
     logger.error('Cannot get telemetry publish endpoint from system')
     quit()
 
-# # Create a pub/sub socket that the camera stream can be read from
-# camera_socket = context.socket(zmq.PUB)
-# cam_pub_addr = 'udp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
-# if cam_pub_addr:
-#     camera_socket.connect(cam_pub_addr)
-#     logger.info('Connected to camera publish endpoint')
-# else:
-#     logger.error('Cannot get camera publish endpoint from system')
-#     quit()
+# Create a pub/sub socket that the camera stream can be read from
+camera_socket = context.socket(zmq.SUB)
+camera_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_SUB_ADDR')
+if addr:
+    camera_socket.connect(addr)
+    logger.info('Connected to camera publish endpoint')
+else:
+    logger.error('Cannot get camera publish endpoint from system')
+    quit()
 
 
 # shared volume for user and kernel space
@@ -109,6 +111,7 @@ class Kernel:
         self.user_socket = user_socket
         self.driver_socket = driver_socket
         self.telemetry_socket = telemetry_socket
+        self.camera_socket = camera_socket
         
         self.manual = True
         self.heartbeats = 0
@@ -124,6 +127,14 @@ class Kernel:
             "bearing": None
         }
         
+        self.frame_cache = {
+            "data": None,
+            "height": None,
+            "width": None,
+            "channels": None
+        }
+        
+        self.engine_results = {}
         
         
         
@@ -206,6 +217,27 @@ class Kernel:
                 logger.error(f"Telemetry Handler: {e}")
                 
             await asyncio.sleep(0)
+    
+    async def camera_handler(self):
+        logger.info('Camera handler started')
+        while True:
+            try:
+                msg = self.camera_socket.recv(flags=zmq.NOBLOCK)
+                frame = cnc_pb2.Frame()
+                frame.ParseFromString(msg)
+                self.frame_cache['data'] = frame.data
+                self.frame_cache['height'] = frame.height
+                self.frame_cache['width'] = frame.width
+                self.frame_cache['channels'] = frame.channels
+                logger.debug(f'Camera Handler: Frame received: {frame}')
+                
+            except zmq.Again:
+                logger.debug('Camera handler no received camera')
+                pass
+            except Exception as e:
+                logger.error(f"Camera Handler: {e}")
+            await asyncio.sleep(0)
+            
             
     async def send_driver_command(self, command, params):
         driver_command = cnc_pb2.Driver()
@@ -252,10 +284,54 @@ class Kernel:
 
     ######################################################## REMOTE COMPUTE ############################################################           
     def processResults(self, result_wrapper):
-        if result_wrapper.result_producer_name.value == 'telemetry':
+        engine_name = result_wrapper.result_producer_name.value
+        if engine_name == 'telemetry':
             logger.debug(f'Telemetry received: {result_wrapper}')
+        else:
+            if len(result_wrapper.results) != 1:
+                return
 
-    def get_producer_wrappers(self):
+            for result in result_wrapper.results:
+                if result.payload_type == gabriel_pb2.PayloadType.TEXT:
+                    payload = result.payload.decode('utf-8')
+                    data = ""
+                    try:
+                        if len(payload) != 0:
+                            data = json.loads(payload)
+                            self.engine_results[engine_name] = result
+                    except json.JSONDecodeError as e:
+                        logger.debug(f'Error decoding json: {payload}')
+                    except Exception as e:
+                        print(e)
+                else:
+                    logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
+
+    def get_frame_producer(self):
+        async def producer():
+            await asyncio.sleep(0)
+            input_frame = gabriel_pb2.InputFrame()
+            
+            if self.frame_cache['data'] is not None:
+                try:
+                    f = self.frame_cache['data']
+                    _, frame = cv2.imencode('.jpg', f)
+                    input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
+                    input_frame.payloads.append(frame.tobytes())
+                    extras = self.produce_extras()
+                    if extras is not None:
+                        input_frame.extras.Pack(extras)
+                except Exception as e:
+                    input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
+                    logger.debug(f'Unable to produce a frame: {e}')
+            else:
+                input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
+                input_frame.payloads.append("Streaming not started, no frame to show.")
+            return input_frame
+
+        return ProducerWrapper(producer=producer, source_name='telemetry')
+    
+    def get_telemetry_producer(self):
         async def producer():
             await asyncio.sleep(0)
             self.heartbeats += 1
@@ -369,23 +445,32 @@ class Kernel:
         logger.info('Main: creating gabriel client')
         gabriel_client = WebsocketClient(
             self.gabriel_server, self.gabriel_port,
-            [self.get_producer_wrappers()],  self.processResults
+            [self.get_telemetry_producer(), self.get_frame_producer()],  self.processResults
         )
         logger.info('Main: gabriel client created')
         
         try:
             command_coroutine = asyncio.create_task(self.command_handler())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
+            camera_coroutine = asyncio.create_task(self.camera_handler())
             gabriel_client.launch()
                 
         except KeyboardInterrupt:
             logger.info("Main: Shutting down Kernel")
             self.command_socket.close()
             self.user_socket.close()
+            self.driver_socket.close()
+            self.telemetry_socket.close()
+            self.camera_socket.close()
+            
             command_coroutine.cancel()
             telemetry_coroutine.cancel()
+            camera_coroutine.cancel()
+            
             await command_coroutine
             await telemetry_coroutine
+            await camera_coroutine
+            
             logger.info("Main: Kernel shutdown complete")
             sys.exit(0)
         
