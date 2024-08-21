@@ -76,7 +76,7 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.global_position.latitude = telDict["gps"][0] 
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
-            tel_message.relative_position.z = telDict["relAlt"]
+            tel_message.relative_position.up = telDict["relAlt"]
             tel_message.mag = telDict["magnetometer"]
             tel_message.battery = telDict["battery"]
             tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
@@ -85,9 +85,9 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
             tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
-            tel_message.imu.xvel = telDict["imu"]["forward"]
-            tel_message.imu.yvel = telDict["imu"]["right"]
-            tel_message.imu.zvel = telDict["imu"]["up"]
+            tel_message.velocity.forward_vel = telDict["imu"]["forward"]
+            tel_message.velocity.right_vel = telDict["imu"]["right"]
+            tel_message.velocity.up_vel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
             logger.debug(f"Telemetry: {tel_message}")
             telemetry_sock.send(tel_message.SerializeToString())
@@ -130,7 +130,8 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
                 velocity = message.setVelocity
-                await drone.setVelocity(velocity.forward_vel,velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                logger.info(f"Setting velocity: {velocity}")
+                # await drone.setVelocity(velocity.forward_vel,velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED

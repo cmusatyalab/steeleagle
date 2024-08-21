@@ -137,13 +137,15 @@ class DroneStub:
         return result.setHome if result else False
 
     async def getHome(self):
-        logger.info("getHome")
-        request = cnc_pb2.Driver(getHome=cnc_pb2.Location())
-        result = await self.send_and_wait(request)
-        if result:
-            return [result.getHome.name, result.getHome.lat, result.getHome.lng, result.getHome.alt]
-        else:
-            return False
+        pass
+    
+        # logger.info("getHome")
+        # request = cnc_pb2.Driver(getHome=cnc_pb2.Location())
+        # result = await self.send_and_wait(request)
+        # if result:
+        #     return [result.getHome.name, result.getHome.lat, result.getHome.lng, result.getHome.alt]
+        # else:
+        #     return False
 
     ''' Attitude methods '''
     async def setAttitude(self, yaw, pitch, roll, thrust):
@@ -155,30 +157,31 @@ class DroneStub:
         return result.setAttitude if result else False
     
     ''' Position methods '''
-    async def setVelocity(self):
+    async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info("setVelocity")
-        request = cnc_pb2.Driver(setVelocity=cnc_pb2.Position(x= 1, y = 1, z = 1, theta = 1)) # not sure about the values
+        velocity = cnc_pb2.Velocity(forward_vel=forward_vel, right_vel=right_vel, up_vel=up_vel, angle_vel=angle_vel)
+        request = cnc_pb2.Driver(setVelocity=velocity)
         result = await self.send_and_wait(request)
         return result.setVelocity if result else False
     
-    async def setRelativePosition(self, x, y, z, theta):
+    async def setRelativePosition(self, forward, right, up, angle):
         logger.info("setRelativePosition")
-        position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
+        position = cnc_pb2.Position(forward=forward, right=right, up=up, angle=angle)
         request = cnc_pb2.Driver(setRelativePosition=position)
         result = await self.send_and_wait(request)
         return result.setRelativePosition if result else False
     
     
-    async def setTranslatedPosition(self, x, y, z, theta):
+    async def setTranslatedPosition(self, forward, right, up, angle):
         logger.info("setTranslatedPosition")
-        position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
+        position = cnc_pb2.Position(forward=forward, right=right, up=up, angle=angle)
         request = cnc_pb2.Driver(setTranslatedPosition=position)
         result = await self.send_and_wait(request)
         return result.setTranslatedPosition if result else False
     
-    async def setGlobalPosition(self, x, y, z, theta):
+    async def setGPSLocation(self, latitude, longitude, altitude, bearing):
         logger.info("setGlobalPosition")
-        position = cnc_pb2.Position(x=x, y=y, z=z, theta=theta)
+        position = cnc_pb2.Location(latitude=latitude, longitude=longitude, altitude=altitude, bearing=bearing)
         request = cnc_pb2.Driver(setGlobalPosition=position)
         result = await self.send_and_wait(request)
         return result.setGlobalPosition if result else False

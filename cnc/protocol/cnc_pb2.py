@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'\n\025edu.cmu.cs.steeleagleB\006Protos',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\tcnc.proto\x12\x03\x63nc\"O\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08latitude\x18\x02 \x01(\x01\x12\x11\n\tlongitude\x18\x03 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\x04 \x01(\x01\"S\n\x04PCMD\x12\x0b\n\x03gaz\x18\x01 \x01(\x05\x12\x0b\n\x03yaw\x18\x02 \x01(\x05\x12\r\n\x05pitch\x18\x03 \x01(\x05\x12\x0c\n\x04roll\x18\x04 \x01(\x05\x12\x14\n\x0cgimbal_pitch\x18\x05 \x01(\x05\"\x96\x01\n\x07\x43ommand\x12\x14\n\x0c\x66or_drone_id\x18\x01 \x01(\t\x12\x12\n\nscript_url\x18\x02 \x01(\t\x12\x0c\n\x04halt\x18\x03 \x01(\x08\x12\x17\n\x04pcmd\x18\x04 \x01(\x0b\x32\t.cnc.PCMD\x12\x0f\n\x07takeoff\x18\x05 \x01(\x08\x12\x0c\n\x04land\x18\x06 \x01(\x08\x12\x0e\n\x06manual\x18\x07 \x01(\x08\x12\x0b\n\x03rth\x18\x08 \x01(\x08\"`\n\x0b\x44roneStatus\x12\x0f\n\x07\x62\x61ttery\x18\x01 \x01(\x03\x12\x14\n\x0cgimbal_pitch\x18\x02 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x03 \x01(\x01\x12\x0c\n\x04rssi\x18\x04 \x01(\x03\x12\x0b\n\x03mag\x18\x05 \x01(\x03\"&\n\x03HSV\x12\t\n\x01H\x18\x01 \x01(\x03\x12\t\n\x01S\x18\x02 \x01(\x03\x12\t\n\x01V\x18\x03 \x01(\x03\"\xfa\x01\n\x06\x45xtras\x12\x13\n\x0bregistering\x18\x01 \x01(\x08\x12\x10\n\x08\x64rone_id\x18\x02 \x01(\t\x12\x14\n\x0c\x63ommander_id\x18\x03 \x01(\t\x12\x19\n\x03\x63md\x18\x04 \x01(\x0b\x32\x0c.cnc.Command\x12\x1f\n\x08location\x18\x05 \x01(\x0b\x32\r.cnc.Location\x12 \n\x06status\x18\x06 \x01(\x0b\x32\x10.cnc.DroneStatus\x12\x17\n\x0f\x64\x65tection_model\x18\x07 \x01(\t\x12\x1d\n\x0blower_bound\x18\x08 \x01(\x0b\x32\x08.cnc.HSV\x12\x1d\n\x0bupper_bound\x18\t \x01(\x0b\x32\x08.cnc.HSV\"R\n\x05\x46rame\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\r\n\x05width\x18\x02 \x01(\x03\x12\x0e\n\x06height\x18\x03 \x01(\x03\x12\x10\n\x08\x63hannels\x18\x04 \x01(\x03\x12\n\n\x02id\x18\x05 \x01(\x03\"D\n\x08\x41ttitude\x12\x0b\n\x03yaw\x18\x01 \x01(\x01\x12\r\n\x05pitch\x18\x02 \x01(\x01\x12\x0c\n\x04roll\x18\x03 \x01(\x01\x12\x0e\n\x06thrust\x18\x04 \x01(\x01\"?\n\x03IMU\x12\x0c\n\x04xvel\x18\x01 \x01(\x01\x12\x0c\n\x04yvel\x18\x02 \x01(\x01\x12\x0c\n\x04zvel\x18\x03 \x01(\x01\x12\x0e\n\x06rotvel\x18\x04 \x01(\x01\":\n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\r\n\x05theta\x18\x04 \x01(\x01\"\x88\x02\n\tTelemetry\x12&\n\x0fglobal_position\x18\x01 \x01(\x0b\x32\r.cnc.Location\x12\x1e\n\x03mag\x18\x02 \x01(\x0e\x32\x11.cnc.Magnetometer\x12\x0f\n\x07\x62\x61ttery\x18\x03 \x01(\x03\x12&\n\x0fgimbal_attitude\x18\x04 \x01(\x0b\x32\r.cnc.Attitude\x12%\n\x0e\x64rone_attitude\x18\x05 \x01(\x0b\x32\r.cnc.Attitude\x12\x15\n\x03imu\x18\x06 \x01(\x0b\x32\x08.cnc.IMU\x12(\n\x11relative_position\x18\x07 \x01(\x0b\x32\r.cnc.Position\x12\x12\n\nsatellites\x18\x08 \x01(\x03\"y\n\x10\x43onnectionStatus\x12\x13\n\x0bisConnected\x18\x01 \x01(\x08\x12\x11\n\twifi_rssi\x18\x02 \x01(\x03\x12\x15\n\rcellular_rssi\x18\x03 \x01(\x03\x12\x12\n\nradio_rssi\x18\x04 \x01(\x03\x12\x12\n\ndrone_name\x18\x05 \x01(\t\"3\n\x06\x43\x61mera\x12\n\n\x02id\x18\x01 \x03(\x03\x12\x1d\n\x04type\x18\x02 \x03(\x0e\x32\x0f.cnc.CameraType\"\xa0\x04\n\x06\x44river\x12$\n\x0bsetAttitude\x18\x01 \x01(\x0b\x32\r.cnc.AttitudeH\x00\x12\x31\n\x10\x63onnectionStatus\x18\x02 \x01(\x0b\x32\x15.cnc.ConnectionStatusH\x00\x12\x11\n\x07takeOff\x18\x03 \x01(\x08H\x00\x12\x0e\n\x04land\x18\x04 \x01(\x08H\x00\x12\x0f\n\x05hover\x18\x05 \x01(\x08H\x00\x12\x0e\n\x04kill\x18\x06 \x01(\x08H\x00\x12\r\n\x03rth\x18\x07 \x01(\x08H\x00\x12 \n\x07setHome\x18\x08 \x01(\x0b\x32\r.cnc.LocationH\x00\x12 \n\x07getHome\x18\t \x01(\x0b\x32\r.cnc.LocationH\x00\x12$\n\x0bsetVelocity\x18\n \x01(\x0b\x32\r.cnc.PositionH\x00\x12,\n\x13setRelativePosition\x18\x0b \x01(\x0b\x32\r.cnc.PositionH\x00\x12*\n\x11setGlobalPosition\x18\x0c \x01(\x0b\x32\r.cnc.PositionH\x00\x12.\n\x15setTranslatedPosition\x18\r \x01(\x0b\x32\r.cnc.PositionH\x00\x12\x16\n\x0cswitchCamera\x18\x0e \x01(\x03H\x00\x12!\n\ngetCameras\x18\x0f \x01(\x0b\x32\x0b.cnc.CameraH\x00\x12!\n\x04resp\x18\x10 \x01(\x0e\x32\x13.cnc.ResponseStatus\x12\x0e\n\x06seqNum\x18\x11 \x01(\x03\x42\x08\n\x06method\"\x9c\x01\n\x07Mission\x12\x16\n\x0cstartMission\x18\x01 \x01(\x08H\x00\x12\x16\n\x0cpauseMission\x18\x02 \x01(\x08H\x00\x12\x17\n\rresumeMission\x18\x03 \x01(\x08H\x00\x12\x15\n\x0bstopMission\x18\x04 \x01(\x08H\x00\x12\x19\n\x0f\x64ownloadMission\x18\x05 \x01(\tH\x00\x12\x0c\n\x04UUID\x18\x06 \x01(\tB\x08\n\x06method\"0\n\rComputeResult\x12\x0e\n\x06result\x18\x01 \x01(\t\x12\x0f\n\x07\x66rameId\x18\x02 \x01(\x03*Q\n\x0eResponseStatus\x12\x06\n\x02OK\x10\x00\x12\n\n\x06\x46\x41ILED\x10\x01\x12\x10\n\x0cNOTSUPPORTED\x10\x02\x12\r\n\tCOMPLETED\x10\x03\x12\n\n\x06\x44\x45NIED\x10\x04*[\n\x0cMagnetometer\x12\x0e\n\nCALIBRATED\x10\x00\x12\x0f\n\x0bRECOMMENDED\x10\x01\x12\x0c\n\x08REQUIRED\x10\x02\x12\n\n\x06UNUSED\x10\x03\x12\x10\n\x0cPERTURBATION\x10\x04*9\n\nCameraType\x12\x07\n\x03RGB\x10\x00\x12\n\n\x06STEREO\x10\x01\x12\x0b\n\x07THERMAL\x10\x02\x12\t\n\x05NIGHT\x10\x03\x42\x1f\n\x15\x65\x64u.cmu.cs.steeleagleB\x06Protosb\x06proto3'
+  serialized_pb=b'\n\tcnc.proto\x12\x03\x63nc\"`\n\x08Location\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08latitude\x18\x02 \x01(\x01\x12\x11\n\tlongitude\x18\x03 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\x04 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x05 \x01(\x01\"S\n\x04PCMD\x12\x0b\n\x03gaz\x18\x01 \x01(\x05\x12\x0b\n\x03yaw\x18\x02 \x01(\x05\x12\r\n\x05pitch\x18\x03 \x01(\x05\x12\x0c\n\x04roll\x18\x04 \x01(\x05\x12\x14\n\x0cgimbal_pitch\x18\x05 \x01(\x05\"\x96\x01\n\x07\x43ommand\x12\x14\n\x0c\x66or_drone_id\x18\x01 \x01(\t\x12\x12\n\nscript_url\x18\x02 \x01(\t\x12\x0c\n\x04halt\x18\x03 \x01(\x08\x12\x17\n\x04pcmd\x18\x04 \x01(\x0b\x32\t.cnc.PCMD\x12\x0f\n\x07takeoff\x18\x05 \x01(\x08\x12\x0c\n\x04land\x18\x06 \x01(\x08\x12\x0e\n\x06manual\x18\x07 \x01(\x08\x12\x0b\n\x03rth\x18\x08 \x01(\x08\"`\n\x0b\x44roneStatus\x12\x0f\n\x07\x62\x61ttery\x18\x01 \x01(\x03\x12\x14\n\x0cgimbal_pitch\x18\x02 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x03 \x01(\x01\x12\x0c\n\x04rssi\x18\x04 \x01(\x03\x12\x0b\n\x03mag\x18\x05 \x01(\x03\"&\n\x03HSV\x12\t\n\x01H\x18\x01 \x01(\x03\x12\t\n\x01S\x18\x02 \x01(\x03\x12\t\n\x01V\x18\x03 \x01(\x03\"\xfa\x01\n\x06\x45xtras\x12\x13\n\x0bregistering\x18\x01 \x01(\x08\x12\x10\n\x08\x64rone_id\x18\x02 \x01(\t\x12\x14\n\x0c\x63ommander_id\x18\x03 \x01(\t\x12\x19\n\x03\x63md\x18\x04 \x01(\x0b\x32\x0c.cnc.Command\x12\x1f\n\x08location\x18\x05 \x01(\x0b\x32\r.cnc.Location\x12 \n\x06status\x18\x06 \x01(\x0b\x32\x10.cnc.DroneStatus\x12\x17\n\x0f\x64\x65tection_model\x18\x07 \x01(\t\x12\x1d\n\x0blower_bound\x18\x08 \x01(\x0b\x32\x08.cnc.HSV\x12\x1d\n\x0bupper_bound\x18\t \x01(\x0b\x32\x08.cnc.HSV\"R\n\x05\x46rame\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\r\n\x05width\x18\x02 \x01(\x03\x12\x0e\n\x06height\x18\x03 \x01(\x03\x12\x10\n\x08\x63hannels\x18\x04 \x01(\x03\x12\n\n\x02id\x18\x05 \x01(\x03\"D\n\x08\x41ttitude\x12\x0b\n\x03yaw\x18\x01 \x01(\x01\x12\r\n\x05pitch\x18\x02 \x01(\x01\x12\x0c\n\x04roll\x18\x03 \x01(\x01\x12\x0e\n\x06thrust\x18\x04 \x01(\x01\"U\n\x08Velocity\x12\x13\n\x0b\x66orward_vel\x18\x01 \x01(\x01\x12\x11\n\tright_vel\x18\x02 \x01(\x01\x12\x0e\n\x06up_vel\x18\x03 \x01(\x01\x12\x11\n\tangle_vel\x18\x04 \x01(\x01\"E\n\x08Position\x12\x0f\n\x07\x66orward\x18\x01 \x01(\x01\x12\r\n\x05right\x18\x02 \x01(\x01\x12\n\n\x02up\x18\x03 \x01(\x01\x12\r\n\x05\x61ngle\x18\x04 \x01(\x01\"\x92\x02\n\tTelemetry\x12&\n\x0fglobal_position\x18\x01 \x01(\x0b\x32\r.cnc.Location\x12\x1e\n\x03mag\x18\x02 \x01(\x0e\x32\x11.cnc.Magnetometer\x12\x0f\n\x07\x62\x61ttery\x18\x03 \x01(\x03\x12&\n\x0fgimbal_attitude\x18\x04 \x01(\x0b\x32\r.cnc.Attitude\x12%\n\x0e\x64rone_attitude\x18\x05 \x01(\x0b\x32\r.cnc.Attitude\x12\x1f\n\x08velocity\x18\x06 \x01(\x0b\x32\r.cnc.Velocity\x12(\n\x11relative_position\x18\x07 \x01(\x0b\x32\r.cnc.Position\x12\x12\n\nsatellites\x18\x08 \x01(\x03\"y\n\x10\x43onnectionStatus\x12\x13\n\x0bisConnected\x18\x01 \x01(\x08\x12\x11\n\twifi_rssi\x18\x02 \x01(\x03\x12\x15\n\rcellular_rssi\x18\x03 \x01(\x03\x12\x12\n\nradio_rssi\x18\x04 \x01(\x03\x12\x12\n\ndrone_name\x18\x05 \x01(\t\"3\n\x06\x43\x61mera\x12\n\n\x02id\x18\x01 \x03(\x03\x12\x1d\n\x04type\x18\x02 \x03(\x0e\x32\x0f.cnc.CameraType\"\x9a\x04\n\x06\x44river\x12$\n\x0bsetAttitude\x18\x01 \x01(\x0b\x32\r.cnc.AttitudeH\x00\x12\x31\n\x10\x63onnectionStatus\x18\x02 \x01(\x0b\x32\x15.cnc.ConnectionStatusH\x00\x12\x11\n\x07takeOff\x18\x03 \x01(\x08H\x00\x12\x0e\n\x04land\x18\x04 \x01(\x08H\x00\x12\x0f\n\x05hover\x18\x05 \x01(\x08H\x00\x12\x0e\n\x04kill\x18\x06 \x01(\x08H\x00\x12\r\n\x03rth\x18\x07 \x01(\x08H\x00\x12 \n\x07setHome\x18\x08 \x01(\x0b\x32\r.cnc.LocationH\x00\x12 \n\x07getHome\x18\t \x01(\x0b\x32\r.cnc.LocationH\x00\x12$\n\x0bsetVelocity\x18\n \x01(\x0b\x32\r.cnc.VelocityH\x00\x12,\n\x13setRelativePosition\x18\x0b \x01(\x0b\x32\r.cnc.PositionH\x00\x12$\n\x0bsetLocation\x18\x0c \x01(\x0b\x32\r.cnc.LocationH\x00\x12.\n\x15setTranslatedPosition\x18\r \x01(\x0b\x32\r.cnc.PositionH\x00\x12\x16\n\x0cswitchCamera\x18\x0e \x01(\x03H\x00\x12!\n\ngetCameras\x18\x0f \x01(\x0b\x32\x0b.cnc.CameraH\x00\x12!\n\x04resp\x18\x10 \x01(\x0e\x32\x13.cnc.ResponseStatus\x12\x0e\n\x06seqNum\x18\x11 \x01(\x03\x42\x08\n\x06method\"\x9c\x01\n\x07Mission\x12\x16\n\x0cstartMission\x18\x01 \x01(\x08H\x00\x12\x16\n\x0cpauseMission\x18\x02 \x01(\x08H\x00\x12\x17\n\rresumeMission\x18\x03 \x01(\x08H\x00\x12\x15\n\x0bstopMission\x18\x04 \x01(\x08H\x00\x12\x19\n\x0f\x64ownloadMission\x18\x05 \x01(\tH\x00\x12\x0c\n\x04UUID\x18\x06 \x01(\tB\x08\n\x06method\"0\n\rComputeResult\x12\x0e\n\x06result\x18\x01 \x01(\t\x12\x0f\n\x07\x66rameId\x18\x02 \x01(\x03*Q\n\x0eResponseStatus\x12\x06\n\x02OK\x10\x00\x12\n\n\x06\x46\x41ILED\x10\x01\x12\x10\n\x0cNOTSUPPORTED\x10\x02\x12\r\n\tCOMPLETED\x10\x03\x12\n\n\x06\x44\x45NIED\x10\x04*[\n\x0cMagnetometer\x12\x0e\n\nCALIBRATED\x10\x00\x12\x0f\n\x0bRECOMMENDED\x10\x01\x12\x0c\n\x08REQUIRED\x10\x02\x12\n\n\x06UNUSED\x10\x03\x12\x10\n\x0cPERTURBATION\x10\x04*9\n\nCameraType\x12\x07\n\x03RGB\x10\x00\x12\n\n\x06STEREO\x10\x01\x12\x0b\n\x07THERMAL\x10\x02\x12\t\n\x05NIGHT\x10\x03\x42\x1f\n\x15\x65\x64u.cmu.cs.steeleagleB\x06Protosb\x06proto3'
 )
 
 _RESPONSESTATUS = _descriptor.EnumDescriptor(
@@ -58,8 +58,8 @@ _RESPONSESTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2206,
-  serialized_end=2287,
+  serialized_start=2260,
+  serialized_end=2341,
 )
 _sym_db.RegisterEnumDescriptor(_RESPONSESTATUS)
 
@@ -99,8 +99,8 @@ _MAGNETOMETER = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2289,
-  serialized_end=2380,
+  serialized_start=2343,
+  serialized_end=2434,
 )
 _sym_db.RegisterEnumDescriptor(_MAGNETOMETER)
 
@@ -135,8 +135,8 @@ _CAMERATYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2382,
-  serialized_end=2439,
+  serialized_start=2436,
+  serialized_end=2493,
 )
 _sym_db.RegisterEnumDescriptor(_CAMERATYPE)
 
@@ -194,6 +194,13 @@ _LOCATION = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='bearing', full_name='cnc.Location.bearing', index=4,
+      number=5, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -207,7 +214,7 @@ _LOCATION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=18,
-  serialized_end=97,
+  serialized_end=114,
 )
 
 
@@ -266,8 +273,8 @@ _PCMD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=99,
-  serialized_end=182,
+  serialized_start=116,
+  serialized_end=199,
 )
 
 
@@ -347,8 +354,8 @@ _COMMAND = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=185,
-  serialized_end=335,
+  serialized_start=202,
+  serialized_end=352,
 )
 
 
@@ -407,8 +414,8 @@ _DRONESTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=337,
-  serialized_end=433,
+  serialized_start=354,
+  serialized_end=450,
 )
 
 
@@ -453,8 +460,8 @@ _HSV = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=435,
-  serialized_end=473,
+  serialized_start=452,
+  serialized_end=490,
 )
 
 
@@ -541,8 +548,8 @@ _EXTRAS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=476,
-  serialized_end=726,
+  serialized_start=493,
+  serialized_end=743,
 )
 
 
@@ -601,8 +608,8 @@ _FRAME = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=728,
-  serialized_end=810,
+  serialized_start=745,
+  serialized_end=827,
 )
 
 
@@ -654,42 +661,42 @@ _ATTITUDE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=812,
-  serialized_end=880,
+  serialized_start=829,
+  serialized_end=897,
 )
 
 
-_IMU = _descriptor.Descriptor(
-  name='IMU',
-  full_name='cnc.IMU',
+_VELOCITY = _descriptor.Descriptor(
+  name='Velocity',
+  full_name='cnc.Velocity',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='xvel', full_name='cnc.IMU.xvel', index=0,
+      name='forward_vel', full_name='cnc.Velocity.forward_vel', index=0,
       number=1, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='yvel', full_name='cnc.IMU.yvel', index=1,
+      name='right_vel', full_name='cnc.Velocity.right_vel', index=1,
       number=2, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='zvel', full_name='cnc.IMU.zvel', index=2,
+      name='up_vel', full_name='cnc.Velocity.up_vel', index=2,
       number=3, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='rotvel', full_name='cnc.IMU.rotvel', index=3,
+      name='angle_vel', full_name='cnc.Velocity.angle_vel', index=3,
       number=4, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
@@ -707,8 +714,8 @@ _IMU = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=882,
-  serialized_end=945,
+  serialized_start=899,
+  serialized_end=984,
 )
 
 
@@ -721,28 +728,28 @@ _POSITION = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='x', full_name='cnc.Position.x', index=0,
+      name='forward', full_name='cnc.Position.forward', index=0,
       number=1, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='y', full_name='cnc.Position.y', index=1,
+      name='right', full_name='cnc.Position.right', index=1,
       number=2, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='z', full_name='cnc.Position.z', index=2,
+      name='up', full_name='cnc.Position.up', index=2,
       number=3, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='theta', full_name='cnc.Position.theta', index=3,
+      name='angle', full_name='cnc.Position.angle', index=3,
       number=4, type=1, cpp_type=5, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
@@ -760,8 +767,8 @@ _POSITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=947,
-  serialized_end=1005,
+  serialized_start=986,
+  serialized_end=1055,
 )
 
 
@@ -809,7 +816,7 @@ _TELEMETRY = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='imu', full_name='cnc.Telemetry.imu', index=5,
+      name='velocity', full_name='cnc.Telemetry.velocity', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -841,8 +848,8 @@ _TELEMETRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1008,
-  serialized_end=1272,
+  serialized_start=1058,
+  serialized_end=1332,
 )
 
 
@@ -901,8 +908,8 @@ _CONNECTIONSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1274,
-  serialized_end=1395,
+  serialized_start=1334,
+  serialized_end=1455,
 )
 
 
@@ -940,8 +947,8 @@ _CAMERA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1397,
-  serialized_end=1448,
+  serialized_start=1457,
+  serialized_end=1508,
 )
 
 
@@ -1031,7 +1038,7 @@ _DRIVER = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='setGlobalPosition', full_name='cnc.Driver.setGlobalPosition', index=11,
+      name='setLocation', full_name='cnc.Driver.setLocation', index=11,
       number=12, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1089,8 +1096,8 @@ _DRIVER = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=1451,
-  serialized_end=1995,
+  serialized_start=1511,
+  serialized_end=2049,
 )
 
 
@@ -1161,8 +1168,8 @@ _MISSION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=1998,
-  serialized_end=2154,
+  serialized_start=2052,
+  serialized_end=2208,
 )
 
 
@@ -1200,8 +1207,8 @@ _COMPUTERESULT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2156,
-  serialized_end=2204,
+  serialized_start=2210,
+  serialized_end=2258,
 )
 
 _COMMAND.fields_by_name['pcmd'].message_type = _PCMD
@@ -1214,16 +1221,16 @@ _TELEMETRY.fields_by_name['global_position'].message_type = _LOCATION
 _TELEMETRY.fields_by_name['mag'].enum_type = _MAGNETOMETER
 _TELEMETRY.fields_by_name['gimbal_attitude'].message_type = _ATTITUDE
 _TELEMETRY.fields_by_name['drone_attitude'].message_type = _ATTITUDE
-_TELEMETRY.fields_by_name['imu'].message_type = _IMU
+_TELEMETRY.fields_by_name['velocity'].message_type = _VELOCITY
 _TELEMETRY.fields_by_name['relative_position'].message_type = _POSITION
 _CAMERA.fields_by_name['type'].enum_type = _CAMERATYPE
 _DRIVER.fields_by_name['setAttitude'].message_type = _ATTITUDE
 _DRIVER.fields_by_name['connectionStatus'].message_type = _CONNECTIONSTATUS
 _DRIVER.fields_by_name['setHome'].message_type = _LOCATION
 _DRIVER.fields_by_name['getHome'].message_type = _LOCATION
-_DRIVER.fields_by_name['setVelocity'].message_type = _POSITION
+_DRIVER.fields_by_name['setVelocity'].message_type = _VELOCITY
 _DRIVER.fields_by_name['setRelativePosition'].message_type = _POSITION
-_DRIVER.fields_by_name['setGlobalPosition'].message_type = _POSITION
+_DRIVER.fields_by_name['setLocation'].message_type = _LOCATION
 _DRIVER.fields_by_name['setTranslatedPosition'].message_type = _POSITION
 _DRIVER.fields_by_name['getCameras'].message_type = _CAMERA
 _DRIVER.fields_by_name['resp'].enum_type = _RESPONSESTATUS
@@ -1261,8 +1268,8 @@ _DRIVER.oneofs_by_name['method'].fields.append(
   _DRIVER.fields_by_name['setRelativePosition'])
 _DRIVER.fields_by_name['setRelativePosition'].containing_oneof = _DRIVER.oneofs_by_name['method']
 _DRIVER.oneofs_by_name['method'].fields.append(
-  _DRIVER.fields_by_name['setGlobalPosition'])
-_DRIVER.fields_by_name['setGlobalPosition'].containing_oneof = _DRIVER.oneofs_by_name['method']
+  _DRIVER.fields_by_name['setLocation'])
+_DRIVER.fields_by_name['setLocation'].containing_oneof = _DRIVER.oneofs_by_name['method']
 _DRIVER.oneofs_by_name['method'].fields.append(
   _DRIVER.fields_by_name['setTranslatedPosition'])
 _DRIVER.fields_by_name['setTranslatedPosition'].containing_oneof = _DRIVER.oneofs_by_name['method']
@@ -1295,7 +1302,7 @@ DESCRIPTOR.message_types_by_name['HSV'] = _HSV
 DESCRIPTOR.message_types_by_name['Extras'] = _EXTRAS
 DESCRIPTOR.message_types_by_name['Frame'] = _FRAME
 DESCRIPTOR.message_types_by_name['Attitude'] = _ATTITUDE
-DESCRIPTOR.message_types_by_name['IMU'] = _IMU
+DESCRIPTOR.message_types_by_name['Velocity'] = _VELOCITY
 DESCRIPTOR.message_types_by_name['Position'] = _POSITION
 DESCRIPTOR.message_types_by_name['Telemetry'] = _TELEMETRY
 DESCRIPTOR.message_types_by_name['ConnectionStatus'] = _CONNECTIONSTATUS
@@ -1364,12 +1371,12 @@ Attitude = _reflection.GeneratedProtocolMessageType('Attitude', (_message.Messag
   })
 _sym_db.RegisterMessage(Attitude)
 
-IMU = _reflection.GeneratedProtocolMessageType('IMU', (_message.Message,), {
-  'DESCRIPTOR' : _IMU,
+Velocity = _reflection.GeneratedProtocolMessageType('Velocity', (_message.Message,), {
+  'DESCRIPTOR' : _VELOCITY,
   '__module__' : 'cnc_pb2'
-  # @@protoc_insertion_point(class_scope:cnc.IMU)
+  # @@protoc_insertion_point(class_scope:cnc.Velocity)
   })
-_sym_db.RegisterMessage(IMU)
+_sym_db.RegisterMessage(Velocity)
 
 Position = _reflection.GeneratedProtocolMessageType('Position', (_message.Message,), {
   'DESCRIPTOR' : _POSITION,

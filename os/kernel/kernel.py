@@ -218,8 +218,23 @@ class Kernel:
             driver_command.takeOff = True
         elif command == ManualCommand.LAND:
             driver_command.land = True
-        # elif command == self.ManualCommand.PCMD:
-        #     driver_command.set = True
+            
+        elif command == ManualCommand.PCMD:
+            
+            if params["pitch"] != 0:
+                driver_command.setVelocity.forward_vel = 1
+                logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
+            if params["yaw"] != 0:
+                driver_command.setVelocity.angle_vel = 1
+                logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
+            if params["roll"] != 0:
+                driver_command.setVelocity.right_vel = 1
+                logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
+            if params["thrust"] != 0:
+                driver_command.setVelocity.up_vel = 1
+                logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
+           
+        
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -321,7 +336,7 @@ class Kernel:
                         if validators.url(extras.cmd.script_url):
                             logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
                             self.manual = False
-                            self.download_script(extras.cmd.script_url)
+                            # self.download_script(extras.cmd.script_url)
                             self.send_start_mission()
                         else:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
@@ -334,6 +349,16 @@ class Kernel:
                             asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
                         else:
                             logger.info(f'Received manual PCMD')
+                            pitch = extras.cmd.pcmd.pitch
+                            yaw = extras.cmd.pcmd.yaw
+                            roll = extras.cmd.pcmd.roll
+                            thrust = extras.cmd.pcmd.gaz
+                            gimbal_pitch = extras.cmd.pcmd.gimbal_pitch
+                            logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {thrust} {gimbal_pitch}')
+                            paras = {"pitch": pitch, "yaw": yaw, "roll":roll, "thrust":thrust}
+                            asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, paras))
+                            # asyncio.create_task(self.send_driver_command(ManualCommand.Gimbal, paras))
+
             except Exception as e:
                 logger.error(f"command: {e}")
             
