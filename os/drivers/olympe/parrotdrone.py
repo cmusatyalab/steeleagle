@@ -184,9 +184,9 @@ class ParrotDrone():
 
     async def _velocityPID(self):
         try:
-            forward_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            right_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            up_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            forward_PID = {"Kp": 0.7, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            right_PID = {"Kp": 0.7, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            up_PID = {"Kp": 2.5, "Kd": 1.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
             ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
             rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
             tp = None
@@ -433,12 +433,13 @@ class ParrotDrone():
     async def getAltitudeAbs(self):
         return self.drone.get_state(GpsLocationChanged)["altitude"]
 
-    async def getVelocityNED(self):
-        return self.drone.get_state(SpeedChanged)
+    async def getVelocityNEU(self):
+        NED = self.drone.get_state(SpeedChanged)
+        return {"north": NED["speedX"], "east": NED["speedY"], "up": NED["speedZ"] * -1}
 
     async def getVelocityBody(self):
-        NED = await self.getVelocityNED()
-        vec = np.array([NED["speedX"], NED["speedY"]], dtype=float)
+        NEU = await self.getVelocityNEU()
+        vec = np.array([NEU["north"], NEU["east"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
         hd = (await self.getHeading()) + 90
@@ -454,7 +455,7 @@ class ParrotDrone():
         vecr = np.dot(R2, vecr)
 
         res = {"forward": np.dot(vec, vecf) * -1, "right": np.dot(vec, vecr) * -1, \
-                "up": NED["speedZ"], "rotation": None}
+                "up": NEU["up"]}
         return res
 
     async def getRSSI(self):
