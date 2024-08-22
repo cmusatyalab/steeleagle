@@ -21,7 +21,7 @@ context = zmq.Context()
 
 # Create a response socket connected to the kernel
 command_socket = context.socket(zmq.ROUTER)
-kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')
+kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CMD_ROUTER_ADDR')
 if kernel_addr:
     command_socket.bind(kernel_addr)
     logger.info('Connected to kernel endpoint')
@@ -165,7 +165,7 @@ async def main(drone, camera_sock, telemetry_sock, args):
             continue
         await drone.startStreaming()
         
-        # asyncio.create_task(camera_stream(drone, camera_sock))
+        asyncio.create_task(camera_stream(drone, camera_sock))
         asyncio.create_task(telemetry_stream(drone, telemetry_sock))
         
         while drone.isConnected():
