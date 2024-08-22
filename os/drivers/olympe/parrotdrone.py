@@ -51,6 +51,8 @@ class ParrotDrone():
         self.ip = '192.168.42.1'
         if 'sim' in kwargs and kwargs['sim']:
             self.ip = '10.202.0.1'
+        if 'ip' in kwargs:
+            self.ip = kwargs['ip']
         self.ffmpeg = False
         if 'ffmpeg' in kwargs and kwargs['ffmpeg']:
             self.ffmpeg = True
@@ -96,7 +98,7 @@ class ParrotDrone():
         try:
             pitch_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0}
             roll_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0}
-            yaw_PID = {"Kp": 2.5, "Kd": 1.0, "Ki": 0.001, "PrevI": 0.0}
+            yaw_PID = {"Kp": 2.2, "Kd": 1.0, "Ki": 0.001, "PrevI": 0.0}
             ep = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
             tp = None
             prevVal = None
@@ -133,7 +135,6 @@ class ParrotDrone():
                 if abs(error["roll"]) < 1.0:
                     error["roll"] = 0.0
                 error["yaw"] = theta - current["yaw"]
-                print(error["yaw"], current["yaw"])
                 if abs(error["yaw"]) < 1.0:
                     error["yaw"] = 0.0
 
@@ -183,11 +184,11 @@ class ParrotDrone():
 
     async def _velocityPID(self):
         try:
-            pitch_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
-            roll_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
-            thrust_PID = {"Kp": 3.0, "Kd": 1.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
-            yaw_PID = {"Kp": 5.0, "Kd": 3.0, "Ki": 0.1, "PrevI": 0.0, "MaxI": 10.0}
-            ep = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
+            forward_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            right_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            up_PID = {"Kp": 0.4, "Kd": 0.1, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
+            rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
             tp = None
             prevVal = None
 
@@ -203,19 +204,23 @@ class ParrotDrone():
                     I = 0.0
                 D = pidDict["Kd"] * (e - ep) / (ts - tp)
                 
-                print(P, I, D)
                 return P, I, D
             
             while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
                 ts = round(time.time() * 1000)
                 current = await self.getVelocityBody()
-                pitch, roll, thrust, theta = self.velocitySP
+                forward, right, up, ang = self.velocitySP
 
                 error = {}
-                error["pitch"] = pitch - current["pitch"]
-                error["roll"] = roll - current["roll"]
-                error["yaw"] = yaw - current["yaw"]
-                error["thrust"] = thrust - current["thrust"]
+                error["forward"] = forward - current["forward"]
+                if error["forward"] < 1:
+                    error["forward"] = 0
+                error["right"] = right - current["right"]
+                if error["right"] < 1:
+                    error["right"] = 0
+                error["up"] = up - current["up"]
+                if error["up"] < 1:
+                    error["up"] = 0
 
                 # On first loop through, set previous timestamp and error
                 # to dummy values.
@@ -223,45 +228,38 @@ class ParrotDrone():
                     tp = ts - 1
                     ep = error
 
-                P, I, D = updatePID(error["pitch"], ep["pitch"], tp, ts, pitch_PID)
-                pitch_PID["PrevI"] += I
-                pitch = P + I + D
+                P, I, D = updatePID(error["forward"], ep["forward"], tp, ts, forward_PID)
+                forward_PID["PrevI"] += I
+                forward = P + I + D
                 
-                P, I, D = updatePID(error["roll"], ep["roll"], tp, ts, roll_PID)
-                roll_PID["PrevI"] += I
-                roll = P + I + D
-
-                P, I, D = updatePID(error["yaw"], ep["yaw"], tp, ts, yaw_PID)
-                yaw_PID["PrevI"] += I
-                yaw = P + I + D
+                P, I, D = updatePID(error["right"], ep["right"], tp, ts, right_PID)
+                right_PID["PrevI"] += I
+                right = P + I + D
                  
-                P, I, D = updatePID(error["thrust"], ep["thrust"], tp, ts, yaw_PID)
-                thrust_PID["PrevI"] += I
-                thrust = P + I + D
+                P, I, D = updatePID(error["up"], ep["up"], tp, ts, up_PID)
+                up_PID["PrevI"] += I
+                up = P + I + D
                 
-                prevPitch = 0
-                prevRoll = 0
-                prevThrust = 0
-                prevYaw = 0
+                prevForward = 0
+                prevRight = 0
+                prevUp = 0
                 if prevVal is not None:
-                    prevPitch = prevVal["pitch"]
-                    prevRoll = prevVal["roll"]
-                    prevThrust = prevVal["thrust"]
-                    prevYaw = prevVal["yaw"]
+                    prevForward = prevVal["forward"]
+                    prevRight = prevVal["right"]
+                    prevUp = prevVal["up"]
                 
-                pitch = int(clamp(pitch + prevPitch, -100, 100)) 
-                roll = int(clamp(roll + prevRoll, -100, 100)) 
-                thrust = int(clamp(thrust + prevThrust, -100, 100))
-                yaw = int(clamp(yaw + prevYaw, -100, 100)) 
+                forward = int(clamp(forward + prevForward, -100, 100)) 
+                right = int(clamp(right + prevRight, -100, 100)) 
+                up = int(clamp(up + prevUp, -100, 100))
+                ang = int(clamp((ang / rotMax) * 100, -100, 100)) 
                 
-                self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
+                self.drone(PCMD(1, right, forward, ang, up, timestampAndSeqNum=0))
                 
                 if prevVal is None:
                     prevVal = {}
-                prevVal["pitch"] = pitch
-                prevVal["roll"] = roll
-                prevVal["thrust"] = thrust
-                prevVal["yaw"] = yaw
+                prevVal["forward"] = forward
+                prevVal["right"] = right
+                prevVal["up"] = up
                 
                 # Set previous ts and error for next iteration
                 tp = ts
@@ -502,7 +500,7 @@ class FFMPEGStreamingThread(threading.Thread):
             while(self.isRunning):
                 ret, self.currentFrame = self.cap.read()
         except Exception as e:
-            print(e)
+            logger.error(e)
 
     def grabFrame(self):
         try:
