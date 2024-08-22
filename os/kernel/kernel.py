@@ -3,6 +3,7 @@ import subprocess
 import sys
 from zipfile import ZipFile
 import cv2
+import numpy as np
 import requests
 import validators
 import zmq
@@ -102,20 +103,18 @@ class DroneType(Enum):
 class Kernel:
         
     def __init__(self, gabriel_server, gabriel_port, type):
-        self.gabriel_server = gabriel_server
-        self.gabriel_port = gabriel_port
-        self.drone_type = type
-        self.drone_id = "ant"
         
+        # sockect endpoints
         self.command_socket = commander_socket
         self.user_socket = user_socket
         self.driver_socket = driver_socket
         self.telemetry_socket = telemetry_socket
         self.camera_socket = camera_socket
-        
+            
+        # drone info
+        self.drone_type = type
+        self.drone_id = "ant"
         self.manual = True
-        self.heartbeats = 0
-        
         self.telemetry_cache = {
             "location": {
                 "latitude": None,
@@ -126,7 +125,6 @@ class Kernel:
             "magnetometer": None,
             "bearing": None
         }
-        
         self.frame_cache = {
             "data": None,
             "height": None,
@@ -134,7 +132,17 @@ class Kernel:
             "channels": None
         }
         
+        
+        # remote compute
+        self.gabriel_server = gabriel_server
+        self.gabriel_port = gabriel_port
         self.engine_results = {}
+        self.gabriel_client_heartbeats = 0
+        
+        # user defined parameters
+        self.model = 'coco'
+        self.hsv_upper = [50,255,255]
+        self.hsv_lower = [30,100,100]
         
         
         
@@ -312,21 +320,38 @@ class Kernel:
             input_frame = gabriel_pb2.InputFrame()
             
             if self.frame_cache['data'] is not None:
+                logger.info('Frame producer: Frame is not None')
                 try:
-                    f = self.frame_cache['data']
-                    _, frame = cv2.imencode('.jpg', f)
+                    frame_bytes = self.frame_cache['data']
+                    nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+                    frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
-                    extras = self.produce_extras()
+                    
+                    # produce extras
+                    extras = cnc_pb2.Extras()
+                    extras.drone_id = self.drone_id
+                    extras.location.latitude = self.telemetry_cache['location']['latitude']
+                    extras.location.longitude = self.telemetry_cache['location']['longitude']
+                    extras.detection_model = self.model
+                    extras.lower_bound.H = self.hsv_lower[0]
+                    extras.lower_bound.S = self.hsv_lower[1]
+                    extras.lower_bound.V = self.hsv_lower[2]
+                    extras.upper_bound.H = self.hsv_upper[0]
+                    extras.upper_bound.S = self.hsv_upper[1]
+                    extras.upper_bound.V = self.hsv_upper[2]
                     if extras is not None:
                         input_frame.extras.Pack(extras)
+                    # print the input frame
+                    logger.info(f'Frame producer: Frame produced! {input_frame}')
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.debug(f'Unable to produce a frame: {e}')
+                    logger.info(f'Unable to produce a frame: {e}')
             else:
+                logger.info('Frame producer: Frame is None')
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append("Streaming not started, no frame to show.")
+                input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -334,7 +359,7 @@ class Kernel:
     def get_telemetry_producer(self):
         async def producer():
             await asyncio.sleep(0)
-            self.heartbeats += 1
+            self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
@@ -370,7 +395,7 @@ class Kernel:
                 logger.debug(f'Gabriel Client Telemetry Producer: {e}')
 
             # Register on the first frame
-            if self.heartbeats == 1:
+            if self.gabriel_client_heartbeats == 1:
                 extras.registering = True
 
             logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
