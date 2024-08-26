@@ -4,9 +4,9 @@ import sys
 import zmq
 import asyncio
 import logging
-from user.system_call_stubs.DroneStub import DroneStub
-from user.system_call_stubs.ComputeStub import ComputeStub
-from user.common.TaskManager import TaskManager
+from system_call_stubs.DroneStub import DroneStub
+from system_call_stubs.ComputeStub import ComputeStub
+from common.TaskManager import TaskManager
 from cnc_protocol import cnc_pb2
 
 
@@ -39,7 +39,7 @@ class MissionController():
         
         # dynamic import the fsm
         logger.info(f"start the mission")
-        from user.project.implementation.Mission import Mission
+        from project.implementation.Mission import Mission
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
@@ -48,14 +48,21 @@ class MissionController():
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
     
-    def end_mission(self):
+    async def end_mission(self):
         if self.tm and not self.tm_coroutine.cancelled():
             self.tm_coroutine.cancel()
-            self.tm = None
-            self.tm_coroutine = None
+            try:
+                await self.tm_coroutine 
+            except asyncio.CancelledError:
+                logger.info("Mission coroutine was cancelled successfully.")
+            except Exception as e:
+                logger.error(f"An error occurred while ending the mission: {e}")
+            finally:
+                self.tm = None
+                self.tm_coroutine = None
+                logger.info("Mission has been ended and cleaned up.")
         else:
-            logger.info(f"mission not running")
-        
+            logger.info("Mission not running or already cancelled.")
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
         self.drone = DroneStub()
@@ -63,7 +70,7 @@ class MissionController():
         
         # self.compute = ComputeStub()
         while True:
-            # logger.info("MC")
+            logger.debug("MC")
             try:
                 # Receive a message
                 message = self.socket.recv(flags=zmq.NOBLOCK)
@@ -78,10 +85,10 @@ class MissionController():
                 
                 if mission_command.startMission:
                     self.start_mission()
-                    response = "Mission starting"
+                    response = "Mission started"
                 elif mission_command.stopMission:
-                    self.end_mission()
-                    response = "Mission stopping"
+                    await self.end_mission()
+                    response = "Mission stopped"
                 else:
                     response = "Unknown command"
 

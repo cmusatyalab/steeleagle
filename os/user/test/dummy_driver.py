@@ -5,7 +5,7 @@ from cnc_protocol import cnc_pb2
 def d_server():
     context = zmq.Context()
     socket = context.socket(zmq.ROUTER)
-    socket.connect('tcp://' + os.environ.get('STEELEAGLE_DRIVER_COMMAND_ADDR'))
+    socket.bind('tcp://' + os.environ.get('STEELEAGLE_DRIVER_COMMAND_ADDR'))
         
     while True:
         try:
@@ -38,7 +38,7 @@ def d_server():
                 driver_req.resp = cnc_pb2.ResponseStatus.COMPLETED
             else:
                 print("Unknown request")
-                driver_req.resp = cnc_pb2.ResponseStatus.UNSUPPORTED
+                driver_req.resp = cnc_pb2.ResponseStatus.NOTSUPPORTED
             
             serialized_response = driver_req.SerializeToString()
             
@@ -49,7 +49,6 @@ def d_server():
         
         except Exception as e:
             print(f"Failed to process request: {e}")
-            socket.send_string("Error processing request")
 
 if __name__ == "__main__":
     d_server()
