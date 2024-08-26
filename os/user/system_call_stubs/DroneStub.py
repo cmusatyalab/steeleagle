@@ -181,7 +181,7 @@ class DroneStub:
         return result.setTranslatedPosition if result else False
     
     async def setGPSLocation(self, latitude, longitude, altitude, bearing):
-        logger.info("setGlobalPosition")
+        logger.info("setGPSLocation")
         location = cnc_pb2.Location(latitude=latitude, longitude=longitude, altitude=altitude, bearing=bearing)
         request = cnc_pb2.Driver(setGPSLocation=location)
         result = await self.send_and_wait(request)

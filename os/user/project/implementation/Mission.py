@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-from user.project.interface.Task import TaskArguments, TaskType
+from project.interface.Task import TaskArguments, TaskType
 
 
 class Mission:

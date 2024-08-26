@@ -5,7 +5,7 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
-from drivers.olympe.parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
+from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -116,7 +116,9 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "hover":
                 await drone.hover()
+                logger.info("hovering !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                
             case "setHome":
                 location  = message.setHome
                 await drone.setHome(location.latitude, location.longitude, location.altitude)
@@ -130,8 +132,8 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
                 velocity = message.setVelocity
-                logger.info(f"Setting velocity: {velocity}")
-                # await drone.setVelocity(velocity.forward_vel,velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                logger.debug(f"Setting velocity: {velocity}")
+                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED

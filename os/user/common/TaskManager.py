@@ -1,9 +1,9 @@
 import asyncio
-from  user.project.interface.Task import TaskType      
-from user.project.implementation.task_defs.TrackTask import TrackTask
-from user.project.implementation.task_defs.DetectTask import DetectTask
-from user.project.implementation.task_defs.AvoidTask import AvoidTask
-from user.project.implementation.task_defs.TestTask import TestTask
+from  project.interface.Task import TaskType      
+from project.implementation.task_defs.TrackTask import TrackTask
+from project.implementation.task_defs.DetectTask import DetectTask
+from project.implementation.task_defs.AvoidTask import AvoidTask
+from project.implementation.task_defs.TestTask import TestTask
 import queue
 import logging
 

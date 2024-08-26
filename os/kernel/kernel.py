@@ -261,18 +261,28 @@ class Kernel:
             
         elif command == ManualCommand.PCMD:
             
+            driver_command.setVelocity.forward_vel = 0.0
+            driver_command.setVelocity.right_vel = 0.0
+            driver_command.setVelocity.up_vel = 0.0
+            driver_command.setVelocity.angle_vel = 0.0
+            
             if params["pitch"] != 0:
-                driver_command.setVelocity.forward_vel = 1
-                logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
+                driver_command.setVelocity.forward_vel = 10
+                
             if params["yaw"] != 0:
-                driver_command.setVelocity.angle_vel = 1
-                logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
+                driver_command.setVelocity.angle_vel = 10
+                
             if params["roll"] != 0:
-                driver_command.setVelocity.right_vel = 1
-                logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
+                driver_command.setVelocity.right_vel = 10
+                
             if params["thrust"] != 0:
-                driver_command.setVelocity.up_vel = 1
-                logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
+                driver_command.setVelocity.up_vel = 10
+            
+            
+            logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
+            logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
+            logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
+            logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
            
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
@@ -320,7 +330,7 @@ class Kernel:
             input_frame = gabriel_pb2.InputFrame()
             
             if self.frame_cache['data'] is not None:
-                logger.info('Frame producer: Frame is not None')
+                #logger.info('Frame producer: Frame is not None')
                 try:
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
@@ -343,7 +353,7 @@ class Kernel:
                     if extras is not None:
                         input_frame.extras.Pack(extras)
                     # print the input frame
-                    logger.info(f'Frame producer: Frame produced! {input_frame}')
+                    # logger.info(f'Frame producer: Frame produced! {input_frame}')
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
