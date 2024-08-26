@@ -114,27 +114,30 @@ class ParrotDrone():
                 I = pidDict["Ki"] * (ts - tp)
                 if e < 0.0:
                     I *= -1
-                elif e == 0.0 or I * pidDict["PrevI"] < 0:
+                elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                D = pidDict["Kd"] * (e - ep) / (ts - tp)
+                if abs(e) > 0.01:
+                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
+                else:
+                    D = 0
                 
                 return P, I, D
 
             while self.flightmode == ParrotDrone.FlightMode.ATTITUDE:
                 ts = round(time.time() * 1000)
                 current = await self.getAttitude()
-                pitch, roll, thrust, theta = self.attitudeSP
-                if theta is None:
-                    theta = current["yaw"]
+                pitchSP, rollSP, thrustSP, thetaSP = self.attitudeSP
+                if thetaSP is None:
+                    thetaSP = current["yaw"]
 
                 error = {}
-                error["pitch"] = -1 * (pitch - current["pitch"])
+                error["pitch"] = -1 * (pitchSP - current["pitch"])
                 if abs(error["pitch"]) < 1.0:
                     error["pitch"] = 0.0
-                error["roll"] = roll - current["roll"]
+                error["roll"] = rollSP - current["roll"]
                 if abs(error["roll"]) < 1.0:
                     error["roll"] = 0.0
-                error["yaw"] = theta - current["yaw"]
+                error["yaw"] = thetaSP - current["yaw"]
                 if abs(error["yaw"]) < 1.0:
                     error["yaw"] = 0.0
 
@@ -164,7 +167,7 @@ class ParrotDrone():
                 
                 pitch = int(clamp(pitch + prevPitch, -100, 100)) 
                 roll = int(clamp(roll + prevRoll, -100, 100)) 
-                thrust = int(thrust * 100)
+                thrust = int(thrustSP * 100)
                 yaw = int(clamp(yaw, -100, 100)) 
                 
                 self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
@@ -184,8 +187,8 @@ class ParrotDrone():
 
     async def _velocityPID(self):
         try:
-            forward_PID = {"Kp": 0.7, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            right_PID = {"Kp": 0.7, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            forward_PID = {"Kp": 0.5, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            right_PID = {"Kp": 0.5, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
             up_PID = {"Kp": 2.5, "Kd": 1.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
             ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
             rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
@@ -200,26 +203,29 @@ class ParrotDrone():
                 I = pidDict["Ki"] * (ts - tp)
                 if e < 0.0:
                     I *= -1
-                elif e == 0.0 or I * pidDict["PrevI"] < 0:
+                elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                D = pidDict["Kd"] * (e - ep) / (ts - tp)
+                if abs(e) > 0.01:
+                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
+                else:
+                    D = 0
                 
                 return P, I, D
             
             while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
                 ts = round(time.time() * 1000)
                 current = await self.getVelocityBody()
-                forward, right, up, ang = self.velocitySP
+                forwardSP, rightSP, upSP, angSP = self.velocitySP
 
                 error = {}
-                error["forward"] = forward - current["forward"]
-                if error["forward"] < 1:
+                error["forward"] = forwardSP - current["forward"]
+                if abs(error["forward"]) < 0.1:
                     error["forward"] = 0
-                error["right"] = right - current["right"]
-                if error["right"] < 1:
+                error["right"] = rightSP - current["right"]
+                if abs(error["right"]) < 0.1:
                     error["right"] = 0
-                error["up"] = up - current["up"]
-                if error["up"] < 1:
+                error["up"] = upSP - current["up"]
+                if abs(error["up"]) < 0.1:
                     error["up"] = 0
 
                 # On first loop through, set previous timestamp and error
@@ -251,8 +257,8 @@ class ParrotDrone():
                 forward = int(clamp(forward + prevForward, -100, 100)) 
                 right = int(clamp(right + prevRight, -100, 100)) 
                 up = int(clamp(up + prevUp, -100, 100))
-                ang = int(clamp((ang / rotMax) * 100, -100, 100)) 
-                
+                ang = int(clamp((angSP / rotMax) * 100, -100, 100)) 
+
                 self.drone(PCMD(1, right, forward, ang, up, timestampAndSeqNum=0))
                 
                 if prevVal is None:
