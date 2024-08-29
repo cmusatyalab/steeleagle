@@ -35,7 +35,8 @@ services:
       - ./steeleagle-vol:/cnc/server/images/
 
   control-plane:
-    image: cmusatyalab/steeleagle:${TAG}
+    # image: cmusatyalab/steeleagle:${TAG}
+    image: xianglic/steeleagle:latest
     container_name: control-plane
     restart: unless-stopped
     ports:

@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+from datetime import datetime
 import sys
 import threading
 import time
@@ -38,6 +39,7 @@ def listen_drones(args, drones):
             d = drones[extras.drone_id]
             sock.send(d.SerializeToString())
             logger.info(f'Delivered request:\n{text_format.MessageToString(d)}')
+            logger.info(f"request started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
             del drones[extras.drone_id]
         except KeyError:
             sock.send(b'No commands.')
@@ -55,6 +57,7 @@ def listen_cmdrs(args, drones, redis):
             extras = cnc_pb2.Extras()
             extras.ParseFromString(msg)
             logger.info(f'Request received:\n{text_format.MessageToString(extras)}')
+            logger.info(f"request received at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
             drones[extras.cmd.for_drone_id] = extras
             sock.send(b'ACK')
             key = redis.xadd(

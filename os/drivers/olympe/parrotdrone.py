@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+from datetime import datetime
 import logging
 import asyncio
 import threading
@@ -26,7 +27,6 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
-
 
 
 logger = logging.getLogger(__name__)
@@ -106,6 +106,8 @@ class ParrotDrone():
             self.flightmode = mode
 
     async def hovering(self, timeout=None):
+        logger.info(f"Hovering function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+
         # Let the task start before checking for hover state.
         await asyncio.sleep(3)
         start = None
@@ -118,6 +120,8 @@ class ParrotDrone():
                 break
             else:
                 await asyncio.sleep(1)
+        
+        logger.info(f"Hovering function finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
     
     ''' Background PID tasks '''
 
@@ -335,6 +339,7 @@ class ParrotDrone():
     ''' Take off / Landing methods '''
 
     async def takeOff(self):
+        logger.info(f"takeoff function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
         logger.info("taking off before switch mode")
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         logger.info("taking off after switch mode")
@@ -342,18 +347,23 @@ class ParrotDrone():
         logger.info("taking off after take off")
         await self.hovering()
         logger.info("taking off after hovering")
+        logger.info(f"takeoff function finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
     async def land(self):
+        logger.info(f"land function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(Landing()).wait().success()
+        logger.info(f"land function finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
     async def setHome(self, lat, lng, alt):
         self.drone(set_custom_location(lat, lng, alt)).wait().success()
 
     async def rth(self):
+        logger.info(f"rth function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
         await self.hover()
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(return_to_home())
+        logger.info(f"rth function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
     
     ''' Camera methods '''
 
@@ -382,6 +392,7 @@ class ParrotDrone():
             self.PIDTask = asyncio.create_task(self._attitudePID())
     
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
+        logger.info(f"setVelocity function started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
         await self.switchModes(ParrotDrone.FlightMode.VELOCITY)
         
         rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
@@ -395,6 +406,8 @@ class ParrotDrone():
         self.velocitySP = (forward_vel, right_vel, up_vel, angle_vel)
         if self.PIDTask is None:
             self.PIDTask = asyncio.create_task(self._velocityPID())
+        
+        logger.info(f"setVelocity function finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
     async def setGPSLocation(self, lat, lng, alt, bearing):
         await self.switchModes(ParrotDrone.FlightMode.GUIDED)

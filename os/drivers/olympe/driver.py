@@ -1,3 +1,4 @@
+import time
 import zmq
 import json
 import os
@@ -6,7 +7,7 @@ import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
-import datetime
+from datetime import datetime
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -113,20 +114,28 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.connectionStatus.drone_name = await drone.getName()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "takeOff":
+                logger.info(f"takeoff function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
+                logger.info(f"Hovering function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
             case "land":
+                logger.info(f"land function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Landing#######################################################################')
+                logger.info(f"land function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
             case "rth":
+                logger.info(f"rth function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info(f"rth function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
             case "hover":
+                logger.info(f"hover function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                 await drone.hover()
-                logger.debug("hovering !")
+                logger.debug("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info(f"hover function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                 
             case "setHome":
                 location  = message.setHome

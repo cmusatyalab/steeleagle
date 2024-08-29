@@ -1,6 +1,7 @@
 from enum import Enum
 import subprocess
 import sys
+import time
 from zipfile import ZipFile
 import cv2
 import numpy as np
@@ -15,7 +16,7 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 import nest_asyncio
-import datetime
+from datetime import datetime
 
 nest_asyncio.apply()
 
@@ -245,7 +246,7 @@ class Kernel:
                 self.frame_cache['id'] = frame.id
                 id = self.frame_cache['id']
                 logger.debug(f'Camera Handler: Frame received: {frame}')
-                logger.debug('Camera Handler: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
+                logger.debug('Camera Handler: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.now()))
                 logger.debug(f'Camera Handler: ID: frame_id {id}')
                 
             except zmq.Again:
@@ -269,13 +270,6 @@ class Kernel:
             driver_command.land = True
             
         elif command == ManualCommand.PCMD:
-            
-            # driver_command.setVelocity.forward_vel = 0.0
-            # driver_command.setVelocity.right_vel = 0.0
-            # driver_command.setVelocity.up_vel = 0.0
-            # driver_command.setVelocity.angle_vel = 0.0
-            
-            
             
             if ( params["pitch"] == 0 and params["yaw"] == 0 and params["roll"] == 0 and params["thrust"] == 0):
                 driver_command.hover = True
@@ -452,11 +446,13 @@ class Kernel:
                     extras.ParseFromString(rep)
                     logger.debug(f'Command received from commander: {extras}')
                     if extras.cmd.rth:
+                        logger.info(f"RTH signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                         logger.info('RTH signaled from commander')
                         self.send_stop_mission()
                         asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
                         self.manual = False
                     elif extras.cmd.halt:
+                        logger.info(f"Halt signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                         logger.info('Killswitch signaled from commander')
                         self.send_stop_mission()
                         asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
@@ -473,12 +469,15 @@ class Kernel:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
                     elif self.manual:
                         if extras.cmd.takeoff:
+                            logger.info(f"takeoff signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                             logger.info(f'Received manual takeoff')
                             asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
                         elif extras.cmd.land:
+                            logger.info(f"land signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                             logger.info(f'Received manual land')
                             asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
                         else:
+                            logger.info(f"setVelocity signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                             logger.debug(f'Received manual PCMD')
                             pitch = extras.cmd.pcmd.pitch
                             yaw = extras.cmd.pcmd.yaw
