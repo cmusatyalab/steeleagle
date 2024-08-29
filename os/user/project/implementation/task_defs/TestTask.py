@@ -45,18 +45,20 @@ class TestTask(Task):
         
         logger.info(f"**************Test Task 2{self.task_id}: hi this is Test task2 {self.task_id}**************\n")
     
-        coords = [
-            {"lat": 37.7749, "lng": -122.4194, "alt": 30, "bear": 0},  # San Francisco
-            {"lat": 34.0522, "lng": -118.2437, "alt": 50, "bear": 0},  # Los Angeles
-            {"lat": 40.7128, "lng": -74.0060, "alt": 100, "bear": 0}   # New York
-        ]
+        # coords = [
+        #     {"lat": 37.7749, "lng": -122.4194, "alt": 30, "bear": 0},  # San Francisco
+        #     {"lat": 34.0522, "lng": -118.2437, "alt": 50, "bear": 0},  # Los Angeles
+        #     {"lat": 40.7128, "lng": -74.0060, "alt": 100, "bear": 0}   # New York
+        # ]
+        coords = ast.literal_eval(self.task_attributes["coords"])
 
         logger.info(f"**************Test Task 2{self.task_id}: hi this is Test task2 {self.task_id}**************\n")
         for dest in coords:
             lng = dest["lng"]
             lat = dest["lat"]
             alt = dest["alt"]
-            bear = dest["bear"]
+            # bear = dest["bear"]
+            bear = 0
             logger.info(f"**************Test Task 2{self.task_id}: setGPSLocation **************\n")
             logger.info(f"**************Test Task 2{self.task_id}: GPSLocation: {lat}, {lng}, {alt} {bear}**************\n")
             await self.drone.setGPSLocation(lat, lng, alt, bear)

@@ -15,6 +15,8 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 import nest_asyncio
+import datetime
+
 nest_asyncio.apply()
 
 logger = logging.getLogger(__name__)
@@ -63,6 +65,7 @@ else:
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.SUB)
 telemetry_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+telemetry_socket.setsockopt(zmq.CONFLATE, 1)
 addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
 logger.info(f'Telemetry address: {addr}')
 if addr:
@@ -75,6 +78,7 @@ else:
 # Create a pub/sub socket that the camera stream can be read from
 camera_socket = context.socket(zmq.SUB)
 camera_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+camera_socket.setsockopt(zmq.CONFLATE, 1)
 addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_SUB_ADDR')
 if addr:
     camera_socket.connect(addr)
@@ -129,7 +133,8 @@ class Kernel:
             "data": None,
             "height": None,
             "width": None,
-            "channels": None
+            "channels": None,
+            "id": None
         }
         
         
@@ -237,7 +242,11 @@ class Kernel:
                 self.frame_cache['height'] = frame.height
                 self.frame_cache['width'] = frame.width
                 self.frame_cache['channels'] = frame.channels
+                self.frame_cache['id'] = frame.id
+                id = self.frame_cache['id']
                 logger.debug(f'Camera Handler: Frame received: {frame}')
+                logger.debug('Camera Handler: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
+                logger.debug(f'Camera Handler: ID: frame_id {id}')
                 
             except zmq.Again:
                 logger.debug('Camera handler no received camera')
@@ -261,29 +270,41 @@ class Kernel:
             
         elif command == ManualCommand.PCMD:
             
-            driver_command.setVelocity.forward_vel = 0.0
-            driver_command.setVelocity.right_vel = 0.0
-            driver_command.setVelocity.up_vel = 0.0
-            driver_command.setVelocity.angle_vel = 0.0
-            
-            if params["pitch"] != 0:
-                driver_command.setVelocity.forward_vel = 10
-                
-            if params["yaw"] != 0:
-                driver_command.setVelocity.angle_vel = 10
-                
-            if params["roll"] != 0:
-                driver_command.setVelocity.right_vel = 10
-                
-            if params["thrust"] != 0:
-                driver_command.setVelocity.up_vel = 10
+            # driver_command.setVelocity.forward_vel = 0.0
+            # driver_command.setVelocity.right_vel = 0.0
+            # driver_command.setVelocity.up_vel = 0.0
+            # driver_command.setVelocity.angle_vel = 0.0
             
             
-            logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
-            logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
-            logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
-            logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
-           
+            
+            if ( params["pitch"] == 0 and params["yaw"] == 0 and params["roll"] == 0 and params["thrust"] == 0):
+                driver_command.hover = True
+            else:
+                if params["pitch"] > 0:
+                    driver_command.setVelocity.forward_vel = 2
+                elif params["pitch"] < 0:
+                    driver_command.setVelocity.forward_vel = -2
+                
+                if params["yaw"] > 0:
+                    driver_command.setVelocity.angle_vel = 20
+                elif params["yaw"] < 0:
+                    driver_command.setVelocity.angle_vel = -20
+                
+                if params["roll"] > 0:
+                    driver_command.setVelocity.right_vel = 2
+                elif params["roll"] < 0:
+                    driver_command.setVelocity.right_vel = -2
+                
+                if params["thrust"] > 0:
+                    driver_command.setVelocity.up_vel = 2
+                elif params["thrust"] < 0:
+                    driver_command.setVelocity.up_vel = -2
+                                
+                logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
+                logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
+                logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
+                logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
+            
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -429,7 +450,7 @@ class Kernel:
                 else:
                     extras  = cnc_pb2.Extras()
                     extras.ParseFromString(rep)
-                    logger.info(f'Command received from commander: {extras}')
+                    logger.debug(f'Command received from commander: {extras}')
                     if extras.cmd.rth:
                         logger.info('RTH signaled from commander')
                         self.send_stop_mission()
@@ -458,7 +479,7 @@ class Kernel:
                             logger.info(f'Received manual land')
                             asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
                         else:
-                            logger.info(f'Received manual PCMD')
+                            logger.debug(f'Received manual PCMD')
                             pitch = extras.cmd.pcmd.pitch
                             yaw = extras.cmd.pcmd.yaw
                             roll = extras.cmd.pcmd.roll
@@ -470,7 +491,7 @@ class Kernel:
                             # asyncio.create_task(self.send_driver_command(ManualCommand.Gimbal, paras))
 
             except Exception as e:
-                logger.error(f"command: {e}")
+                logger.error(f"command handler: {e}")
             
             await asyncio.sleep(0)
             
@@ -487,6 +508,7 @@ class Kernel:
         try:
             command_coroutine = asyncio.create_task(self.command_handler())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
+            camera_coroutine = None
             camera_coroutine = asyncio.create_task(self.camera_handler())
             gabriel_client.launch()
                 

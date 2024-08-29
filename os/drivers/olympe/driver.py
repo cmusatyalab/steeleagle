@@ -6,19 +6,21 @@ import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
+import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-# Write log messages to stdout so they are readable in Docker logs
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-context = zmq.Context()
+driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
+droneArgs = json.loads(os.environ.get('STEELEAGLE_DRONE_ARGS'))
+drone = ParrotDrone(**droneArgs)
 
+context = zmq.Context()
 # Create a response socket connected to the kernel
 command_socket = context.socket(zmq.ROUTER)
 kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CMD_ROUTER_ADDR')
@@ -31,6 +33,7 @@ else:
 
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.PUB)
+telemetry_socket.setsockopt(zmq.CONFLATE, 1)
 tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
 logger.info(f"Telemetry publish address: {tel_pub_addr}")
 if tel_pub_addr:
@@ -42,6 +45,7 @@ else:
 
 # Create a pub/sub socket that the camera stream can be read from
 camera_socket = context.socket(zmq.PUB)
+camera_socket.setsockopt(zmq.CONFLATE, 1)
 cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
 if cam_pub_addr:
     camera_socket.bind(cam_pub_addr)
@@ -50,11 +54,11 @@ else:
     logger.error('Cannot get camera publish endpoint from system')
     quit()
 
-driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
-droneArgs = json.loads(os.environ.get('STEELEAGLE_DRONE_ARGS'))
-drone = ParrotDrone(**droneArgs)
+
+
 
 async def camera_stream(drone, camera_sock):
+    frame_id = 0
     cam_message = cnc_protocol.Frame() 
     while drone.isConnected():
         try:
@@ -62,10 +66,14 @@ async def camera_stream(drone, camera_sock):
             cam_message.height = 720
             cam_message.width = 1280
             cam_message.channels = 3
+            cam_message.id = frame_id
+            frame_id = frame_id + 1 
             camera_sock.send(cam_message.SerializeToString())
+            logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
+            logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
             pass
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.033)
 
 async def telemetry_stream(drone, telemetry_sock):
     logger.info('Starting telemetry stream')
@@ -107,16 +115,17 @@ async def handle(identity, message, resp, action, resp_sock):
             case "takeOff":
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('Drone has taken off!')
+                logger.info('####################################Drone Took OFF################################################################')
             case "land":
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info('####################################Drone Landing#######################################################################')
             case "rth":
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "hover":
                 await drone.hover()
-                logger.info("hovering !")
+                logger.debug("hovering !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 
             case "setHome":
@@ -174,13 +183,13 @@ async def main(drone, camera_sock, telemetry_sock, args):
             try:
                 message_parts = command_socket.recv_multipart(flags=zmq.NOBLOCK)
                 identity = message_parts[0]
-                logger.info(f"Received identity: {identity }")  
+                logger.debug(f"Received identity: {identity }")  
                 data = message_parts[1]
-                logger.info(f"Received data: {data}")
+                logger.debug(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
                 message = cnc_protocol.Driver()
                 message.ParseFromString(data)
-                logger.info(f"Received message: {message}")
+                logger.debug(f"Received message: {message}")
                 action = message.WhichOneof("method")
                 
                 # send a okay message
@@ -193,4 +202,5 @@ async def main(drone, camera_sock, telemetry_sock, args):
                 pass
             await asyncio.sleep(0)
 
-asyncio.run(main(drone, camera_socket, telemetry_socket, driverArgs))
+if __name__ == "__main__":
+    asyncio.run(main(drone, camera_socket, telemetry_socket, driverArgs))

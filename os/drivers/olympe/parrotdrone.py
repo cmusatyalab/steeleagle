@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import logging
 import asyncio
 import threading
 import math
-import logging
 import time
 
 import olympe
@@ -27,9 +27,36 @@ import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
 
+
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+import logness
+logness.update_config({
+    "handlers": {
+        "olympe_log_file": {
+            "class": "logness.FileHandler",
+            "formatter": "default_formatter",
+            "filename": "olympe.log"
+        },
+        "ulog_log_file": {
+            "class": "logness.FileHandler",
+            "formatter": "default_formatter",
+            "filename": "ulog.log"
+        },
+    },
+    "loggers": {
+        "olympe": {
+            "level": "ERROR",
+            "handlers": ["console","olympe_log_file"]
+        },
+        "ulog": {
+            "level": "ERROR",
+            "handlers": ["console", "ulog_log_file"],
+        }
+    }
+})
 
 class ArgumentOutOfBoundsException(Exception):
     pass
@@ -39,7 +66,6 @@ class ConnectionFailedException(Exception):
 
 class ParrotDrone():
 
-    
     class FlightMode(Enum):
         MANUAL = 1
         ATTITUDE = 2
@@ -64,6 +90,7 @@ class ParrotDrone():
         self.velocitySP = None
         self.PIDTask = None
         self.flightmode = ParrotDrone.FlightMode.MANUAL
+        logger.info("#####################parrot init##########################")
 
     ''' Awaiting methods '''
 
@@ -308,9 +335,13 @@ class ParrotDrone():
     ''' Take off / Landing methods '''
 
     async def takeOff(self):
+        logger.info("taking off before switch mode")
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
+        logger.info("taking off after switch mode")
         self.drone(TakeOff())
+        logger.info("taking off after take off")
         await self.hovering()
+        logger.info("taking off after hovering")
 
     async def land(self):
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)

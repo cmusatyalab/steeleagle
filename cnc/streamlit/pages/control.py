@@ -360,6 +360,7 @@ with c3:
     #st.write(f":keyboard: {st.session_state.key_pressed}")
     st.session_state.key_pressed = st_keypressed()
     if st.session_state.manual_control and st.session_state.selected_drone is not None:
+        st.write(st.session_state.key_pressed)
         req = cnc_pb2.Extras()
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = st.session_state.selected_drone
@@ -392,7 +393,7 @@ with c3:
                 gimbal_pitch = 1 * st.session_state.gimbal_speed
             elif st.session_state.key_pressed == "f":
                 gimbal_pitch = -1 * st.session_state.gimbal_speed
-            #st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
+            st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
             req.cmd.pcmd.yaw = yaw
             req.cmd.pcmd.pitch = pitch
             req.cmd.pcmd.roll = roll
