@@ -49,7 +49,7 @@ camera_socket = context.socket(zmq.PUB)
 camera_socket.setsockopt(zmq.CONFLATE, 1)
 cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
 if cam_pub_addr:
-    camera_socket.bind(cam_pub_addr)
+    camera_socket.connect(cam_pub_addr)
     logger.info('Created camera publish endpoint')
 else:
     logger.error('Cannot get camera publish endpoint from system')
@@ -74,7 +74,7 @@ async def camera_stream(drone, camera_sock):
             logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
             pass
-        await asyncio.sleep(0.033)
+        await asyncio.sleep(0)
 
 async def telemetry_stream(drone, telemetry_sock):
     logger.info('Starting telemetry stream')
@@ -114,28 +114,28 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.connectionStatus.drone_name = await drone.getName()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "takeOff":
-                logger.info(f"takeoff function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"takeoff function call started at: {time.time()}")
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
-                logger.info(f"Hovering function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"Hovering function call finished at: {time.time()}")
             case "land":
-                logger.info(f"land function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Landing#######################################################################')
-                logger.info(f"land function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"land function call finished at: {time.time()}")
             case "rth":
-                logger.info(f"rth function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"rth function call started at: {time.time()}")
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"rth function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"rth function call finished at: {time.time()}")
             case "hover":
-                logger.info(f"hover function call started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"hover function call started at: {time.time()}")
                 await drone.hover()
                 logger.debug("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"hover function call finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                logger.info(f"hover function call finished at: {time.time()}")
                 
             case "setHome":
                 location  = message.setHome

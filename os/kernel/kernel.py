@@ -82,7 +82,7 @@ camera_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 camera_socket.setsockopt(zmq.CONFLATE, 1)
 addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_SUB_ADDR')
 if addr:
-    camera_socket.connect(addr)
+    camera_socket.bind(addr)
     logger.info('Connected to camera publish endpoint')
 else:
     logger.error('Cannot get camera publish endpoint from system')
@@ -374,7 +374,7 @@ class Kernel:
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
                     logger.info(f'Unable to produce a frame: {e}')
             else:
-                logger.info('Frame producer: Frame is None')
+                logger.debug('Frame producer: Frame is None')
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
             return input_frame
@@ -446,13 +446,13 @@ class Kernel:
                     extras.ParseFromString(rep)
                     logger.debug(f'Command received from commander: {extras}')
                     if extras.cmd.rth:
-                        logger.info(f"RTH signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                        logger.info(f"RTH signal started at: {time.time()}")
                         logger.info('RTH signaled from commander')
                         self.send_stop_mission()
                         asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
                         self.manual = False
                     elif extras.cmd.halt:
-                        logger.info(f"Halt signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                        logger.info(f"Halt signal started at: {time.time()}")
                         logger.info('Killswitch signaled from commander')
                         self.send_stop_mission()
                         asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
@@ -469,15 +469,15 @@ class Kernel:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
                     elif self.manual:
                         if extras.cmd.takeoff:
-                            logger.info(f"takeoff signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                            logger.info(f"takeoff signal started at: {time.time()}")
                             logger.info(f'Received manual takeoff')
                             asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
                         elif extras.cmd.land:
-                            logger.info(f"land signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                            logger.info(f"land signal started at: {time.time()}")
                             logger.info(f'Received manual land')
                             asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
                         else:
-                            logger.info(f"setVelocity signal started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                            logger.info(f"setVelocity signal started at: {time.time()}")
                             logger.debug(f'Received manual PCMD')
                             pitch = extras.cmd.pcmd.pitch
                             yaw = extras.cmd.pcmd.yaw
