@@ -25,54 +25,57 @@ if cam_pub_addr:
 
 async def camera_stream(drone, camera_sock):
     frame_id = 0
-    cam_message = cnc_protocol.Frame() 
-    while drone.isConnected():
+    cam_message = cnc_pb2.Frame() 
+    # while drone.isConnected():
+    while True:
         try:
-            cam_message.data = await drone.getVideoFrame()
-            cam_message.height = 720
-            cam_message.width = 1280
-            cam_message.channels = 3
-            cam_message.id = frame_id
-            frame_id = frame_id + 1 
-            camera_sock.send(cam_message.SerializeToString())
-            logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-            logger.debug(f'Camera stream: ID: frame_id {frame_id}')
+            # cam_message.data = await drone.getVideoFrame()
+            # cam_message.height = 720
+            # cam_message.width = 1280
+            # cam_message.channels = 3
+            # cam_message.id = frame_id
+            # frame_id = frame_id + 1 
+            # camera_sock.send(cam_message.SerializeToString())
+            x = 1
         except Exception as e:
             pass
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.033)
 
 async def telemetry_stream(drone, telemetry_sock):
-    logger.info('Starting telemetry stream')
-    tel_message = cnc_protocol.Telemetry()
-    while drone.isConnected():
+    tel_message = cnc_pb2.Telemetry()
+    # while drone.isConnected():
+    while True:
         try:
-            telDict = await drone.getTelemetry()
-            tel_message.global_position.latitude = telDict["gps"][0] 
-            tel_message.global_position.longitude = telDict["gps"][1]
-            tel_message.global_position.altitude = telDict["gps"][2]
-            tel_message.relative_position.up = telDict["relAlt"]
-            tel_message.mag = telDict["magnetometer"]
-            tel_message.battery = telDict["battery"]
-            tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
-            tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
-            tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
-            tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-            tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-            tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
-            tel_message.velocity.forward_vel = telDict["imu"]["forward"]
-            tel_message.velocity.right_vel = telDict["imu"]["right"]
-            tel_message.velocity.up_vel = telDict["imu"]["up"]
-            tel_message.satellites = telDict["satellites"]
-            logger.debug(f"Telemetry: {tel_message}")
-            telemetry_sock.send(tel_message.SerializeToString())
-            logger.debug('Sent telemetry')
+            # telDict = await drone.getTelemetry()
+            # tel_message.global_position.latitude = telDict["gps"][0] 
+            # tel_message.global_position.longitude = telDict["gps"][1]
+            # tel_message.global_position.altitude = telDict["gps"][2]
+            # tel_message.relative_position.up = telDict["relAlt"]
+            # tel_message.mag = telDict["magnetometer"]
+            # tel_message.battery = telDict["battery"]
+            # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
+            # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
+            # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
+            # tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
+            # tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
+            # tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            # tel_message.velocity.forward_vel = telDict["imu"]["forward"]
+            # tel_message.velocity.right_vel = telDict["imu"]["right"]
+            # tel_message.velocity.up_vel = telDict["imu"]["up"]
+            # tel_message.satellites = telDict["satellites"]
+            # print(f"Telemetry: {tel_message}")
+            # telemetry_sock.send(tel_message.SerializeToString())
+            # print('Sent telemetry')
+            x = 2
         except Exception as e:
-            logger.error(f'Failed to get telemetry, error: {e}')
+            print(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
         
 class d_server():
 
-    async def a_run(self):    
+    async def a_run(self):
+        asyncio.create_task(telemetry_stream(None, telemetry_socket))
+        asyncio.create_task(camera_stream(None, camera_socket))    
         while True:
             try:
                 # Receive a message from the DEALER socket

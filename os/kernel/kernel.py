@@ -266,6 +266,7 @@ class Kernel:
             driver_command.hover = True
         elif command == ManualCommand.TAKEOFF:
             driver_command.takeOff = True
+            logger.info(f"takeoff signal sent at: {time.time()}")
         elif command == ManualCommand.LAND:
             driver_command.land = True
             
@@ -302,6 +303,7 @@ class Kernel:
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
+        
         message = driver_command.SerializeToString()
         self.driver_socket.send_multipart([message])
         

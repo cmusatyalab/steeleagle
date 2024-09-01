@@ -118,7 +118,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
-                logger.info(f"Hovering function call finished at: {time.time()}")
+                logger.info(f"tookoff function call finished at: {time.time()}")
             case "land":
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
@@ -131,11 +131,11 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
             case "hover":
-                logger.info(f"hover function call started at: {time.time()}")
+                logger.debug(f"hover function call started at: {time.time()}")
                 await drone.hover()
                 logger.debug("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"hover function call finished at: {time.time()}")
+                logger.debug(f"hover function call finished at: {time.time()}")
                 
             case "setHome":
                 location  = message.setHome
