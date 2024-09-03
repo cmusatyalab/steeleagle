@@ -74,7 +74,7 @@ async def camera_stream(drone, camera_sock):
             logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
             pass
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.033)
 
 async def telemetry_stream(drone, telemetry_sock):
     logger.info('Starting telemetry stream')
@@ -114,7 +114,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.connectionStatus.drone_name = await drone.getName()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "takeOff":
-                logger.info(f"takeoff function call started at: {time.time()}")
+                logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')

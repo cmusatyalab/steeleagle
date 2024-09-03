@@ -8,6 +8,7 @@ import numpy as np
 import requests
 import validators
 import zmq
+import zmq.asyncio
 import json
 import os
 import asyncio
@@ -16,82 +17,53 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 import nest_asyncio
-from datetime import datetime
 
+# Apply nest_asyncio to avoid conflicts in asyncio
 nest_asyncio.apply()
 
+# Configure logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-# Write log messages to stdout so they are readable in Docker logs
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-context = zmq.Context()
-
-# Create socket endpoints for commander
+# Constants and Environment Variables
+user_path = './user/project/implementation'
+context = zmq.asyncio.Context()
 commander_socket = context.socket(zmq.REQ)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_COMMANDER_CMD_REQ_ADDR')
-if addr:
-    commander_socket.connect(addr)
-    logger.info('Created commander_socket endpoint')
-else:
-    logger.error('Cannot get commander_socket from system')
-    quit()
-
-# Create socket endpoints for userspace
 user_socket = context.socket(zmq.REQ)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_USER_CMD_REQ_ADDR')
-if addr:
-    user_socket.bind(addr)
-    logger.info('Created user_socket endpoint')
-else:
-    logger.error('Cannot get user_socket from system')
-    quit()
-
-# Create socket endpoints for driver
 driver_socket = context.socket(zmq.DEALER)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CMD_DEALER_ADDR')
-if addr:
-    driver_socket.connect(addr)
-    logger.info('Created driver_socket endpoint')
-else:
-    logger.error('Cannot get driver_socket from system')
-    quit()
-
-
-# Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.SUB)
+camera_socket = context.socket(zmq.SUB)
+
+# Connect Sockets to Addresses from Environment Variables
+def setup_socket(socket, socket_type, env_var, logger_message):
+    addr = 'tcp://' + os.environ.get(env_var)
+    if addr:
+        if socket_type == 'connect':
+            socket.connect(addr)
+        elif socket_type == 'bind':
+            socket.bind(addr)
+        logger.info(logger_message)
+    else:
+        logger.error(f'Cannot get {env_var} from system')
+        quit()
+
+# Setting up sockets
 telemetry_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 telemetry_socket.setsockopt(zmq.CONFLATE, 1)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_SUB_ADDR')
-logger.info(f'Telemetry address: {addr}')
-if addr:
-    telemetry_socket.bind(addr)
-    logger.info('Connected to telemetry publish endpoint')
-else:
-    logger.error('Cannot get telemetry publish endpoint from system')
-    quit()
-
-# Create a pub/sub socket that the camera stream can be read from
-camera_socket = context.socket(zmq.SUB)
-camera_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+camera_socket.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 camera_socket.setsockopt(zmq.CONFLATE, 1)
-addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_SUB_ADDR')
-if addr:
-    camera_socket.bind(addr)
-    logger.info('Connected to camera publish endpoint')
-else:
-    logger.error('Cannot get camera publish endpoint from system')
-    quit()
+setup_socket(commander_socket, 'connect', 'STEELEAGLE_COMMANDER_CMD_REQ_ADDR', 'Created commander_socket endpoint')
+setup_socket(user_socket, 'bind', 'STEELEAGLE_USER_CMD_REQ_ADDR', 'Created user_socket endpoint')
+setup_socket(driver_socket, 'connect', 'STEELEAGLE_DRIVER_CMD_DEALER_ADDR', 'Created driver_socket endpoint')
+setup_socket(telemetry_socket, 'bind', 'STEELEAGLE_DRIVER_TEL_SUB_ADDR', 'Connected to telemetry publish endpoint')
+setup_socket(camera_socket, 'bind', 'STEELEAGLE_DRIVER_CAM_SUB_ADDR', 'Connected to camera publish endpoint')
 
-
-# shared volume for user and kernel space
-user_path = './user/project/implementation'
-
+# Enumerations for Commands and Drone Types
 class ManualCommand(Enum):
     RTH = 1
     HALT = 2
@@ -150,6 +122,8 @@ class Kernel:
         self.hsv_upper = [50,255,255]
         self.hsv_lower = [30,100,100]
         
+        self.command_seq = 1
+        
         
         
     ######################################################## USER ############################################################ 
@@ -206,10 +180,10 @@ class Kernel:
     ######################################################## DRIVER ############################################################ 
     async def telemetry_handler(self):
         logger.info('Telemetry handler started')
-        
         while True:
             try:
-                msg = self.telemetry_socket.recv(flags=zmq.NOBLOCK)
+                logger.debug(f"telemetry_handler: started time {time.time()}")
+                msg = await self.telemetry_socket.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
@@ -218,25 +192,17 @@ class Kernel:
                 self.telemetry_cache['battery'] = telemetry.battery
                 self.telemetry_cache['magnetometer'] = telemetry.mag
                 self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
-                
-                logger.debug(f'Telemetry Handler: Latitude: {self.telemetry_cache["location"]["latitude"]} Longitude: {self.telemetry_cache["location"]["longitude"]} Altitude: {self.telemetry_cache["location"]["altitude"]}')
-                logger.debug(f'Telemetry Handler: Battery: {self.telemetry_cache["battery"]}')
-                logger.debug(f'Telemetry Handler: Magnetometer: {self.telemetry_cache["magnetometer"]}')
-                logger.debug(f'Telemetry Handler: Bearing: {self.telemetry_cache["bearing"]}')
-            except zmq.Again:
-                logger.debug('Telemetry handler no received telemetry')
-                pass
-            
+                logger.debug(f'Telemetry Data: {self.telemetry_cache}')
+                logger.debug(f"telemetry_handler: finished time {time.time()}")
             except Exception as e:
                 logger.error(f"Telemetry Handler: {e}")
-                
-            await asyncio.sleep(0)
     
     async def camera_handler(self):
         logger.info('Camera handler started')
         while True:
             try:
-                msg = self.camera_socket.recv(flags=zmq.NOBLOCK)
+                logger.debug(f"Camera Handler: started time {time.time()}")
+                msg = await self.camera_socket.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
                 self.frame_cache['data'] = frame.data
@@ -244,73 +210,45 @@ class Kernel:
                 self.frame_cache['width'] = frame.width
                 self.frame_cache['channels'] = frame.channels
                 self.frame_cache['id'] = frame.id
-                id = self.frame_cache['id']
-                logger.debug(f'Camera Handler: Frame received: {frame}')
-                logger.debug('Camera Handler: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.now()))
-                logger.debug(f'Camera Handler: ID: frame_id {id}')
-                
-            except zmq.Again:
-                logger.debug('Camera handler no received camera')
-                pass
+                logger.debug(f'Camera Frame ID: {self.frame_cache["id"]}')
+                logger.debug(f"Camera Handler: finished time {time.time()}")
             except Exception as e:
                 logger.error(f"Camera Handler: {e}")
-            await asyncio.sleep(0)
-            
-            
+
     async def send_driver_command(self, command, params):
         driver_command = cnc_pb2.Driver()
-
+        driver_command.seqNum = self.command_seq
+        
         if command == ManualCommand.RTH:
             driver_command.rth = True
         if command == ManualCommand.HALT:
             driver_command.hover = True
         elif command == ManualCommand.TAKEOFF:
             driver_command.takeOff = True
-            logger.info(f"takeoff signal sent at: {time.time()}")
+            logger.info(f"takeoff signal sent at: {time.time()}, seq id  {driver_command.seqNum}")
         elif command == ManualCommand.LAND:
             driver_command.land = True
             
         elif command == ManualCommand.PCMD:
-            
-            if ( params["pitch"] == 0 and params["yaw"] == 0 and params["roll"] == 0 and params["thrust"] == 0):
+            if params and all(value == 0 for value in params.values()):
                 driver_command.hover = True
             else:
-                if params["pitch"] > 0:
-                    driver_command.setVelocity.forward_vel = 2
-                elif params["pitch"] < 0:
-                    driver_command.setVelocity.forward_vel = -2
-                
-                if params["yaw"] > 0:
-                    driver_command.setVelocity.angle_vel = 20
-                elif params["yaw"] < 0:
-                    driver_command.setVelocity.angle_vel = -20
-                
-                if params["roll"] > 0:
-                    driver_command.setVelocity.right_vel = 2
-                elif params["roll"] < 0:
-                    driver_command.setVelocity.right_vel = -2
-                
-                if params["thrust"] > 0:
-                    driver_command.setVelocity.up_vel = 2
-                elif params["thrust"] < 0:
-                    driver_command.setVelocity.up_vel = -2
-                                
-                logger.debug(f'Thrust: {driver_command.setVelocity.up_vel}')
-                logger.debug(f'Pitch: {driver_command.setVelocity.forward_vel }')
-                logger.debug(f'Yaw: {driver_command.setVelocity.angle_vel}')
-                logger.debug(f'Roll: {driver_command.setVelocity.right_vel}')
-            
+                driver_command.setVelocity.forward_vel = 2 if params["pitch"] > 0 else -2 if params["pitch"] < 0 else 0
+                driver_command.setVelocity.angle_vel = 20 if params["yaw"] > 0 else -20 if params["yaw"] < 0 else 0
+                driver_command.setVelocity.right_vel = 2 if params["roll"] > 0 else -2 if params["roll"] < 0 else 0
+                driver_command.setVelocity.up_vel = 2 if params["thrust"] > 0 else -2 if params["thrust"] < 0 else 0
+                logger.debug(f'Driver Command Velocities: {driver_command.setVelocity}')
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
         
         message = driver_command.SerializeToString()
-        self.driver_socket.send_multipart([message])
+        await self.driver_socket.send_multipart([message])
         
         if (command == ManualCommand.CONNECTION):
             result = cnc_pb2.Driver()
             while (result.connectionStatus.isConnected == True):
-                response = self.driver_socket.recv()
+                response = await self.driver_socket.recv()
                 result.ParseFromString(response)
             return result
 
@@ -337,21 +275,22 @@ class Kernel:
                     except json.JSONDecodeError as e:
                         logger.debug(f'Error decoding json: {payload}')
                     except Exception as e:
-                        print(e)
+                        logger.error(e)
                 else:
                     logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
 
     def get_frame_producer(self):
         async def producer():
             await asyncio.sleep(0)
-            input_frame = gabriel_pb2.InputFrame()
             
+            logger.debug(f"Frame Producer: starting converting {time.time()}")
+            input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None:
-                #logger.info('Frame producer: Frame is not None')
                 try:
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                     frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+                    
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
                     
@@ -369,16 +308,17 @@ class Kernel:
                     extras.upper_bound.V = self.hsv_upper[2]
                     if extras is not None:
                         input_frame.extras.Pack(extras)
-                    # print the input frame
-                    # logger.info(f'Frame producer: Frame produced! {input_frame}')
+
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.info(f'Unable to produce a frame: {e}')
+                    logger.error(f'frame_producer: Unable to produce a frame: {e}')
             else:
                 logger.debug('Frame producer: Frame is None')
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
+                
+            logger.debug(f"Frame Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -386,6 +326,8 @@ class Kernel:
     def get_telemetry_producer(self):
         async def producer():
             await asyncio.sleep(0)
+            
+            logger.debug(f"tel Producer: starting time {time.time()}")
             self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -397,15 +339,19 @@ class Kernel:
             extras.status.rssi = 0
             
             try:
-                extras.location.latitude = self.telemetry_cache['location']['latitude']
-                extras.location.longitude = self.telemetry_cache['location']['longitude']
-                extras.location.altitude = self.telemetry_cache['location']['altitude']
-                logger.debug(f'Gabriel Client Telemetry Producer: Latitude: {extras.location.latitude} Longitude: {extras.location.longitude} Altitude: {extras.location.altitude}')
+                if all(value is None for value in self.telemetry_cache.values()):
+                    logger.debug('All telemetry_cache values are None')
+                else:
+                    # Proceed with normal assignments
+                    extras.location.latitude = self.telemetry_cache['location']['latitude']
+                    extras.location.longitude = self.telemetry_cache['location']['longitude']
+                    extras.location.altitude = self.telemetry_cache['location']['altitude']
+
+                    extras.status.battery = self.telemetry_cache['battery']    
+                    extras.status.mag = self.telemetry_cache['magnetometer']
+                    extras.status.bearing = self.telemetry_cache['bearing']
                     
-                extras.status.battery = self.telemetry_cache['battery']    
-                extras.status.mag = self.telemetry_cache['magnetometer']
-                extras.status.bearing = self.telemetry_cache['bearing']
-                logger.debug(f'Gabriel Client Telemetry Producer:: Battery: {extras.status.battery} RSSI: {extras.status.rssi}  Magnetometer: {extras.status.mag} Heading: {extras.status.bearing}')
+                    logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
                 
                 # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
                 # if self.drone_type == DroneType.VESPER:
@@ -427,6 +373,8 @@ class Kernel:
 
             logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
+            
+            logger.debug(f"tel Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -436,65 +384,57 @@ class Kernel:
     async def command_handler(self):
         logger.info('Command handler started')
         req = cnc_pb2.Extras()
-        req.drone_id  = self.drone_id
+        req.drone_id = self.drone_id
         while True:
             try:
-                self.command_socket.send(req.SerializeToString())
-                rep = self.command_socket.recv()
-                if b'No commands.' == rep:
-                    logger.debug(f'No Command received from commander: {rep}')
+                await self.command_socket.send(req.SerializeToString())
+                rep = await self.command_socket.recv()
+                if rep == b'No commands.':
+                    logger.debug('No Command received from commander')
                 else:
-                    extras  = cnc_pb2.Extras()
+                    extras = cnc_pb2.Extras()
                     extras.ParseFromString(rep)
-                    logger.debug(f'Command received from commander: {extras}')
-                    if extras.cmd.rth:
-                        logger.info(f"RTH signal started at: {time.time()}")
-                        logger.info('RTH signaled from commander')
-                        self.send_stop_mission()
-                        asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
-                        self.manual = False
-                    elif extras.cmd.halt:
-                        logger.info(f"Halt signal started at: {time.time()}")
-                        logger.info('Killswitch signaled from commander')
-                        self.send_stop_mission()
-                        asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
-                        self.manual = True
-                        logger.info('Manual control is now active!')
-                    elif extras.cmd.script_url:
-                        # Validate url
-                        if validators.url(extras.cmd.script_url):
-                            logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
-                            self.manual = False
-                            # self.download_script(extras.cmd.script_url)
-                            self.send_start_mission()
-                        else:
-                            logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
-                    elif self.manual:
-                        if extras.cmd.takeoff:
-                            logger.info(f"takeoff signal started at: {time.time()}")
-                            logger.info(f'Received manual takeoff')
-                            asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
-                        elif extras.cmd.land:
-                            logger.info(f"land signal started at: {time.time()}")
-                            logger.info(f'Received manual land')
-                            asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
-                        else:
-                            logger.info(f"setVelocity signal started at: {time.time()}")
-                            logger.debug(f'Received manual PCMD')
-                            pitch = extras.cmd.pcmd.pitch
-                            yaw = extras.cmd.pcmd.yaw
-                            roll = extras.cmd.pcmd.roll
-                            thrust = extras.cmd.pcmd.gaz
-                            gimbal_pitch = extras.cmd.pcmd.gimbal_pitch
-                            logger.debug(f'Got PCMD values: {pitch} {yaw} {roll} {thrust} {gimbal_pitch}')
-                            paras = {"pitch": pitch, "yaw": yaw, "roll":roll, "thrust":thrust}
-                            asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, paras))
-                            # asyncio.create_task(self.send_driver_command(ManualCommand.Gimbal, paras))
-
+                    self.command_seq = self.command_seq + 1
+                    self.process_command(extras)
             except Exception as e:
-                logger.error(f"command handler: {e}")
-            
+                logger.error(f"Command handler error: {e}")
             await asyncio.sleep(0)
+
+    def process_command(self, extras):
+        if extras.cmd.rth:
+            logger.info(f"RTH signal started at: {time.time()}")
+            self.send_stop_mission()
+            asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
+            self.manual = False
+        elif extras.cmd.halt:
+            logger.info(f"Halt signal started at: {time.time()}")
+            self.send_stop_mission()
+            asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
+            self.manual = True
+            logger.info('Manual control is now active!')
+        elif extras.cmd.script_url:
+            if validators.url(extras.cmd.script_url):
+                logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
+                self.manual = False
+                self.send_start_mission()
+            else:
+                logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
+        elif self.manual:
+            if extras.cmd.takeoff:
+                logger.info(f"takeoff signal started at: {time.time()} seq id {self.command_seq}")
+                asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
+            elif extras.cmd.land:
+                logger.info(f"land signal started at: {time.time()}")
+                asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
+            else:
+                self.handle_pcmd_command(extras.cmd.pcmd)
+
+    def handle_pcmd_command(self, pcmd):
+        logger.info(f"PCMD signal started at: {time.time()}")
+        pitch, yaw, roll, thrust = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz
+        params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust}
+        logger.debug(f'PCMD values: {params}')
+        asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
             
         
     ######################################################## MAIN ##############################################################             
@@ -502,38 +442,35 @@ class Kernel:
         logger.info('Main: creating gabriel client')
         gabriel_client = WebsocketClient(
             self.gabriel_server, self.gabriel_port,
-            [self.get_telemetry_producer(), self.get_frame_producer()],  self.processResults
+            [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
         )
         logger.info('Main: gabriel client created')
         
         try:
             command_coroutine = asyncio.create_task(self.command_handler())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
-            camera_coroutine = None
             camera_coroutine = asyncio.create_task(self.camera_handler())
             gabriel_client.launch()
                 
         except KeyboardInterrupt:
-            logger.info("Main: Shutting down Kernel")
-            self.command_socket.close()
-            self.user_socket.close()
-            self.driver_socket.close()
-            self.telemetry_socket.close()
-            self.camera_socket.close()
-            
-            command_coroutine.cancel()
-            telemetry_coroutine.cancel()
-            camera_coroutine.cancel()
-            
-            await command_coroutine
-            await telemetry_coroutine
-            await camera_coroutine
-            
-            logger.info("Main: Kernel shutdown complete")
-            sys.exit(0)
+            await self.shutdown(command_coroutine, telemetry_coroutine, camera_coroutine)
         
-    
+    async def shutdown(self, *tasks):
+        logger.info("Main: Shutting down Kernel")
+        self.command_socket.close()
+        self.user_socket.close()
+        self.driver_socket.close()
+        self.telemetry_socket.close()
+        self.camera_socket.close()
 
+        for task in tasks:
+            task.cancel()
+            await task
+        
+        logger.info("Main: Kernel shutdown complete")
+        sys.exit(0)
+
+# Main Execution Block
 if __name__ == "__main__":
     logger.info("Main: starting Kernel")
     gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
