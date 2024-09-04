@@ -23,7 +23,7 @@ class MissionController():
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_KERNEL_COMMAND_ADDR')) 
+        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_KERNEL_MISSION_REP_ADDR')) 
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}

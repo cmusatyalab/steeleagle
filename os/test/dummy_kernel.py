@@ -42,6 +42,35 @@ class k_client():
         message = driver_command.SerializeToString()
         print(f"take off sent at: {time.time()}")
         driver_socket.send_multipart([message])
+    
+    async def user_driver_cmd_proxy(self):
+        print('user_driver_cmd_proxy started')
+        poller = zmq.asyncio.Poller()
+        poller.register(self.user_cmd_socket, zmq.POLLIN)
+        poller.register(self.driver_user_cmd_socket, zmq.POLLIN)
+        
+        while True:
+            try:
+                socks = dict(await poller.poll())
+
+                # Check for messages on the ROUTER socket
+                if user_cmd_socket in socks:
+                    message = await self.user_cmd_socket.recv_multipart()
+                    print("Received message from ROUTER:", message)
+
+                    # Filter the message
+                    # if should_forward_message(message):
+                    await self.driver_user_cmd_socket.send_multipart(message)
+
+
+                # Check for messages on the DEALER socket
+                if driver_user_cmd_socket in socks:
+                    message = await self.driver_user_cmd_socket.recv_multipart()
+                    print("Received message from DEALER:", message)
+                    await user_cmd_socket.send_multipart(message)
+                    
+            except Exception as e:
+                logger.error(f"user_driver_cmd_proxy: {e}")
 
     async def a_run(self):
         # Interactive command input loop
