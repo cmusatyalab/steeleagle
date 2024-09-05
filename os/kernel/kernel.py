@@ -15,7 +15,7 @@ import asyncio
 import logging
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 import nest_asyncio
 
 # Apply nest_asyncio to avoid conflicts in asyncio
@@ -33,14 +33,12 @@ logger.addHandler(handler)
 # Constants and Environment Variables
 user_path = './user/project/implementation'
 context = zmq.asyncio.Context()
-commander_socket = context.socket(zmq.REQ)
-user_mission_socket= context.socket(zmq.REQ)
-user_cmd_socket = context.socket(zmq.ROUTER)
-driver_user_cmd_socket = context.socket(zmq.DEALER)
-driver_man_cmd_socket = context.socket(zmq.DEALER)
-driver_telemetry_socket = context.socket(zmq.SUB)
-driver_camera_socket = context.socket(zmq.SUB)
 
+tel_sock = context.socket(zmq.SUB)
+cam_sock = context.socket(zmq.SUB)
+cmd_front_sock = context.socket(zmq.ROUTER)
+cmd_back_sock = context.socket(zmq.DEALER)
+msn_sock = context.socket(zmq.REQ)
 
 # Connect Sockets to Addresses from Environment Variables
 def setup_socket(socket, socket_type, env_var, logger_message):
@@ -56,18 +54,17 @@ def setup_socket(socket, socket_type, env_var, logger_message):
         quit()
 
 # Setting up sockets
-driver_telemetry_socket.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
-driver_telemetry_socket.setsockopt(zmq.CONFLATE, 1)
-driver_camera_socket.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
-driver_camera_socket.setsockopt(zmq.CONFLATE, 1)
-setup_socket(commander_socket, 'connect', 'STEELEAGLE_COMMANDER_CMD_REQ_ADDR', 'Created commander_socket endpoint')
-setup_socket(user_mission_socket, 'bind', 'STEELEAGLE_USER_MISSION_REQ_ADDR', 'Created user_mission_socket endpoint')
-setup_socket(user_cmd_socket, 'bind', 'STEELEAGLE_USER_CMD_ROUTER_ADDR', 'Created user_cmd_socket endpoint')
+tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+tel_sock.setsockopt(zmq.CONFLATE, 1)
+cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-setup_socket(driver_user_cmd_socket, 'connect', 'STEELEAGLE_DRIVER_CMD_DEALER_ADDR', 'Created driver_man_cmd_socket endpoint')
-setup_socket(driver_man_cmd_socket, 'connect', 'STEELEAGLE_DRIVER_CMD_DEALER_ADDR', 'Created driver_man_cmd_socket endpoint')
-setup_socket(driver_telemetry_socket, 'bind', 'STEELEAGLE_DRIVER_TEL_SUB_ADDR', 'Connected to telemetry publish endpoint')
-setup_socket(driver_camera_socket, 'bind', 'STEELEAGLE_DRIVER_CAM_SUB_ADDR', 'Connected to camera publish endpoint')
+setup_socket(tel_sock, 'bind', 'STEELEAGLE_TEL_SOCKET_ADDR', 'Created telemetry socket endpoint')
+setup_socket(cam_sock, 'bind', 'STEELEAGLE_CAM_SOCKET_ADDR', 'Created camera socket endpoint')
+setup_socket(cmd_front_sock, 'bind', 'STEELEAGLE_CMD_FRONT_SOCKET_ADDR', 'Created command frontend socket endpoint')
+setup_socket(cmd_back_sock, 'bind', 'STEELEAGLE_CMD_BACK_SOCKET_ADDR', 'Created command backend socket endpoint')
+setup_socket(msn_sock, 'bind', 'STEELEAGLE_MSN_SOCKET_ADDR', 'Created user space mission control socket endpoint')
+
 
 # Enumerations for Commands and Drone Types
 class ManualCommand(Enum):
@@ -86,16 +83,6 @@ class DroneType(Enum):
 class Kernel:
         
     def __init__(self, gabriel_server, gabriel_port, type):
-        
-        # sockect endpoints
-        self.command_socket = commander_socket
-        self.user_mission_socket = user_mission_socket
-        self.user_cmd_socket = user_cmd_socket
-        self.driver_user_cmd_socket = driver_user_cmd_socket
-        self.driver_man_cmd_socket = driver_man_cmd_socket
-        self.driver_telemetry_socket = driver_telemetry_socket
-        self.driver_camera_socket = driver_camera_socket
-        
             
         # drone info
         self.drone_type = type
@@ -131,40 +118,57 @@ class Kernel:
         self.hsv_upper = [50,255,255]
         self.hsv_lower = [30,100,100]
         
-        self.command_seq = 1
         
+        # init cmd seq
+        self.command_seq = 0
         
-        
-    ######################################################## USER ############################################################
-    async def user_driver_cmd_proxy(self):
-        logger.info('user_driver_cmd_proxy started')
+    ######################################################## COMMON ############################################################
+    async def cmd_proxy(self):
+        logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
-        poller.register(self.user_cmd_socket, zmq.POLLIN)
-        poller.register(self.driver_user_cmd_socket, zmq.POLLIN)
+        poller.register(cmd_front_sock, zmq.POLLIN)
+        poller.register(cmd_back_sock, zmq.POLLIN)
         
         while True:
             try:
                 socks = dict(await poller.poll())
 
                 # Check for messages on the ROUTER socket
-                if self.user_cmd_socket in socks:
-                    message = await self.user_cmd_socket.recv_multipart()
+                if cmd_front_sock in socks:
+                    message = await cmd_front_sock.recv_multipart()
                     print("Received message from ROUTER:", message)
 
                     # Filter the message
-                    # if should_forward_message(message):
-                    await self.driver_user_cmd_socket.send_multipart(message)
+                    identity = message[0]
+                    cmd = message[1]
+                    if identity == 'cmdr':
+                        self.process_command(cmd)
+                    elif identity == 'usr':
+                        await cmd_back_sock.send_multipart(message)
+                    else:
+                        logger.error(f"cmd_proxy: invalid identity")
 
 
                 # Check for messages on the DEALER socket
-                if self.driver_user_cmd_socket in socks:
-                    message = await self.driver_user_cmd_socket.recv_multipart()
+                if cmd_back_sock in socks:
+                    message = await cmd_back_sock.recv_multipart()
                     print("Received message from DEALER:", message)
-                    await user_cmd_socket.send_multipart(message)
+                    
+                    # Filter the message
+                    identity = message[0] 
+                    
+                    if identity == 'cmdr':
+                        pass
+                    elif identity == 'usr':
+                        await cmd_front_sock.send_multipart(message)
+                    else:
+                        logger.error(f"cmd_proxy: invalid identity")
                     
             except Exception as e:
-                logger.error(f"user_driver_cmd_proxy: {e}")
+                logger.error(f"cmd_proxy: {e}")
                 
+                
+    ######################################################## USER ############################################################
     def install_prereqs(self) -> bool:
         ret = False
         # Pip install prerequsites for flight script
@@ -201,8 +205,8 @@ class Kernel:
         mission_command.startMission = True
         message = mission_command.SerializeToString()
         print(f'start_mission message:{message}')
-        self.user_mission_socket.send(message)
-        reply = self.user_mission_socket.recv_string()
+        msn_sock.send(message)
+        reply = msn_sock.recv_string()
         print(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
@@ -210,8 +214,8 @@ class Kernel:
         mission_command = cnc_pb2.Mission()
         mission_command.stopMission = True
         message = mission_command.SerializeToString()
-        self.user_mission_socket.send(message)
-        reply = self.user_mission_socket.recv_string()
+        msn_sock.send(message)
+        reply = msn_sock.recv_string()
         print(f"Mission reply: {reply}")
     
         
@@ -221,7 +225,7 @@ class Kernel:
         while True:
             try:
                 logger.debug(f"telemetry_handler: started time {time.time()}")
-                msg = await self.driver_telemetry_socket.recv()
+                msg = await tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
@@ -240,7 +244,7 @@ class Kernel:
         while True:
             try:
                 logger.debug(f"Camera Handler: started time {time.time()}")
-                msg = await self.driver_camera_socket.recv()
+                msg = await cam_sock.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
                 self.frame_cache['data'] = frame.data
@@ -281,14 +285,14 @@ class Kernel:
 
         
         message = driver_command.SerializeToString()
-        await self.driver_man_cmd_socket.send_multipart([message])
+        await cmd_back_sock.send_multipart([message])
         
-        if (command == ManualCommand.CONNECTION):
-            result = cnc_pb2.Driver()
-            while (result.connectionStatus.isConnected == True):
-                response = await self.driver_man_cmd_socket.recv()
-                result.ParseFromString(response)
-            return result
+        # if (command == ManualCommand.CONNECTION):
+        #     result = cnc_pb2.Driver()
+        #     while (result.connectionStatus.isConnected == True):
+        #         response = await self.driver_man_cmd_socket.recv()
+        #         result.ParseFromString(response)
+        #     return result
 
         return None
         
@@ -419,26 +423,11 @@ class Kernel:
     
     
     ######################################################## COMMANDER ############################################################ 
-    async def command_handler(self):
-        logger.info('Command handler started')
-        req = cnc_pb2.Extras()
-        req.drone_id = self.drone_id
-        while True:
-            try:
-                await self.command_socket.send(req.SerializeToString())
-                rep = await self.command_socket.recv()
-                if rep == b'No commands.':
-                    logger.debug('No Command received from commander')
-                else:
-                    extras = cnc_pb2.Extras()
-                    extras.ParseFromString(rep)
-                    self.command_seq = self.command_seq + 1
-                    self.process_command(extras)
-            except Exception as e:
-                logger.error(f"Command handler error: {e}")
-            await asyncio.sleep(0)
-
-    def process_command(self, extras):
+    def process_command(self, cmd):
+        extras = cnc_pb2.Extras()
+        extras.ParseFromString(cmd)
+        self.command_seq = self.command_seq + 1
+               
         if extras.cmd.rth:
             logger.info(f"RTH signal started at: {time.time()}")
             self.send_stop_mission()
@@ -478,28 +467,34 @@ class Kernel:
     ######################################################## MAIN ##############################################################             
     async def run(self):
         logger.info('Main: creating gabriel client')
-        gabriel_client = WebsocketClient(
+        gabriel_client = ZeroMQClient(
             self.gabriel_server, self.gabriel_port,
             [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
         )
         logger.info('Main: gabriel client created')
         
         try:
-            command_coroutine = asyncio.create_task(self.command_handler())
+            command_coroutine = asyncio.create_task(self.cmd_proxy())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
             camera_coroutine = asyncio.create_task(self.camera_handler())
-            gabriel_client.launch()
+            gabriel_coroutine = asyncio.create_task(gabriel_client.launch_async())
+            
+            while True:
+                await asyncio.sleep(0)
+                
         except KeyboardInterrupt:
-            await self.shutdown(command_coroutine, telemetry_coroutine, camera_coroutine)
+            await self.shutdown(command_coroutine, telemetry_coroutine, camera_coroutine, gabriel_coroutine)
         
     async def shutdown(self, *tasks):
         logger.info("Main: Shutting down Kernel")
-        self.command_socket.close()
-        self.user_mission_socket.close()
-        self.driver_man_cmd_socket.close()
-        self.driver_telemetry_socket.close()
-        self.driver_camera_socket.close()
+        
+        tel_sock.close()
+        cam_sock.close()
+        cmd_front_sock.close()  
+        cmd_back_sock.close()
+        msn_sock.close()
         context.term()
+        
         for task in tasks:
             task.cancel()
             await task

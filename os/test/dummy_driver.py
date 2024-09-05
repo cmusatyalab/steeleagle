@@ -4,23 +4,23 @@ import time
 import zmq
 from cnc_protocol import cnc_pb2
 
-context = zmq.Context()
-socket = context.socket(zmq.ROUTER)
-socket.bind('tcp://' + os.environ.get('STEELEAGLE_DRIVER_COMMAND_ADDR'))
+context = zmq.asyncio.Context()
+socket = context.socket(zmq.DEALER)
+socket.connect('tcp://' + os.environ.get('STEELEAGLE_CMD_BACK_SOCKET_ADDR'))
 
 # Create a pub/sub socket that telemetry can be read from
 telemetry_socket = context.socket(zmq.PUB)
 telemetry_socket.setsockopt(zmq.CONFLATE, 1)
-tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
+tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_TEL_SOCKET_ADDR')
 if tel_pub_addr:
     telemetry_socket.connect(tel_pub_addr)
 
 # Create a pub/sub socket that the camera stream can be read from
 camera_socket = context.socket(zmq.PUB)
 camera_socket.setsockopt(zmq.CONFLATE, 1)
-cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
+cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_CAM_SOCKET_ADDR')
 if cam_pub_addr:
-    camera_socket.bind(cam_pub_addr)
+    camera_socket.connect(cam_pub_addr)
 
 
 async def camera_stream(drone, camera_sock):
@@ -29,13 +29,6 @@ async def camera_stream(drone, camera_sock):
     # while drone.isConnected():
     while True:
         try:
-            # cam_message.data = await drone.getVideoFrame()
-            # cam_message.height = 720
-            # cam_message.width = 1280
-            # cam_message.channels = 3
-            # cam_message.id = frame_id
-            # frame_id = frame_id + 1 
-            # camera_sock.send(cam_message.SerializeToString())
             x = 1
         except Exception as e:
             pass
@@ -46,26 +39,6 @@ async def telemetry_stream(drone, telemetry_sock):
     # while drone.isConnected():
     while True:
         try:
-            # telDict = await drone.getTelemetry()
-            # tel_message.global_position.latitude = telDict["gps"][0] 
-            # tel_message.global_position.longitude = telDict["gps"][1]
-            # tel_message.global_position.altitude = telDict["gps"][2]
-            # tel_message.relative_position.up = telDict["relAlt"]
-            # tel_message.mag = telDict["magnetometer"]
-            # tel_message.battery = telDict["battery"]
-            # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
-            # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
-            # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
-            # tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-            # tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-            # tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
-            # tel_message.velocity.forward_vel = telDict["imu"]["forward"]
-            # tel_message.velocity.right_vel = telDict["imu"]["right"]
-            # tel_message.velocity.up_vel = telDict["imu"]["up"]
-            # tel_message.satellites = telDict["satellites"]
-            # print(f"Telemetry: {tel_message}")
-            # telemetry_sock.send(tel_message.SerializeToString())
-            # print('Sent telemetry')
             x = 2
         except Exception as e:
             print(f'Failed to get telemetry, error: {e}')

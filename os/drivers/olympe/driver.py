@@ -1,5 +1,6 @@
 import time
 import zmq
+import zmq.asyncio
 import json
 import os
 import sys
@@ -18,47 +19,38 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
-droneArgs = json.loads(os.environ.get('STEELEAGLE_DRONE_ARGS'))
+droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
 drone = ParrotDrone(**droneArgs)
 
-context = zmq.Context()
-# Create a response socket connected to the kernel
-command_socket = context.socket(zmq.ROUTER)
-kernel_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CMD_ROUTER_ADDR')
-if kernel_addr:
-    command_socket.bind(kernel_addr)
-    logger.info('Connected to kernel endpoint')
-else:
-    logger.error('Cannot get kernel endpoint from system')
-    quit()
+context = zmq.asyncio.Context()
 
-# Create a pub/sub socket that telemetry can be read from
-telemetry_socket = context.socket(zmq.PUB)
-telemetry_socket.setsockopt(zmq.CONFLATE, 1)
-tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_TEL_PUB_ADDR')
-logger.info(f"Telemetry publish address: {tel_pub_addr}")
-if tel_pub_addr:
-    telemetry_socket.connect(tel_pub_addr)
-    logger.info('Created telemetry publish endpoint')
-else:
-    logger.error('Cannot get telemetry publish endpoint from system')
-    quit()
+cmd_back_sock = context.socket(zmq.DEALER)
+tel_sock = context.socket(zmq.PUB)
+cam_sock = context.socket(zmq.PUB)
 
-# Create a pub/sub socket that the camera stream can be read from
-camera_socket = context.socket(zmq.PUB)
-camera_socket.setsockopt(zmq.CONFLATE, 1)
-cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_DRIVER_CAM_PUB_ADDR')
-if cam_pub_addr:
-    camera_socket.connect(cam_pub_addr)
-    logger.info('Created camera publish endpoint')
-else:
-    logger.error('Cannot get camera publish endpoint from system')
-    quit()
+def setup_socket(socket, socket_type, env_var, logger_message):
+    addr = 'tcp://' + os.environ.get(env_var)
+    if addr:
+        if socket_type == 'connect':
+            socket.connect(addr)
+        elif socket_type == 'bind':
+            socket.bind(addr)
+        logger.info(logger_message)
+    else:
+        logger.error(f'Cannot get {env_var} from system')
+        quit()
+
+tel_sock.setsockopt(zmq.CONFLATE, 1)
+cam_sock.setsockopt(zmq.CONFLATE, 1)
+
+setup_socket(tel_sock, 'connect', 'STEELEAGLE_TEL_SOCKET_ADDR', 'Created telemetry socket endpoint')
+setup_socket(cam_sock, 'connect', 'STEELEAGLE_CAM_SOCKET_ADDR', 'Created camera socket endpoint')
+setup_socket(cmd_back_sock, 'connect', 'STEELEAGLE_CMD_BACK_SOCKET_ADDR', 'Created command backend socket endpoint')
 
 
 
 
-async def camera_stream(drone, camera_sock):
+async def camera_stream(drone, cam_sock):
     frame_id = 0
     cam_message = cnc_protocol.Frame() 
     while drone.isConnected():
@@ -69,14 +61,14 @@ async def camera_stream(drone, camera_sock):
             cam_message.channels = 3
             cam_message.id = frame_id
             frame_id = frame_id + 1 
-            camera_sock.send(cam_message.SerializeToString())
+            cam_sock.send(cam_message.SerializeToString())
             logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
             logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
             pass
         await asyncio.sleep(0.033)
 
-async def telemetry_stream(drone, telemetry_sock):
+async def telemetry_stream(drone, tel_sock):
     logger.info('Starting telemetry stream')
     tel_message = cnc_protocol.Telemetry()
     while drone.isConnected():
@@ -99,7 +91,7 @@ async def telemetry_stream(drone, telemetry_sock):
             tel_message.velocity.up_vel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
             logger.debug(f"Telemetry: {tel_message}")
-            telemetry_sock.send(tel_message.SerializeToString())
+            tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
@@ -175,7 +167,7 @@ async def handle(identity, message, resp, action, resp_sock):
     resp_sock.send_multipart([identity, resp.SerializeToString()])
       
 
-async def main(drone, camera_sock, telemetry_sock, args):
+async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
             await drone.connect()
@@ -185,14 +177,14 @@ async def main(drone, camera_sock, telemetry_sock, args):
             continue
         await drone.startStreaming()
         
-        asyncio.create_task(camera_stream(drone, camera_sock))
-        asyncio.create_task(telemetry_stream(drone, telemetry_sock))
+        asyncio.create_task(camera_stream(drone, cam_sock))
+        asyncio.create_task(telemetry_stream(drone, tel_sock))
         
         while drone.isConnected():
             try:
-                message_parts = command_socket.recv_multipart(flags=zmq.NOBLOCK)
+                message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
-                logger.debug(f"Received identity: {identity }")  
+                logger.debug(f"Received identity: {identity}")  
                 data = message_parts[1]
                 logger.debug(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
@@ -206,10 +198,10 @@ async def main(drone, camera_sock, telemetry_sock, args):
                 
                 # Create a driver response message
                 resp = message
-                asyncio.create_task(handle(identity, message, resp, action, command_socket))
-            except zmq.Again as e:
-                pass
-            await asyncio.sleep(0)
+                asyncio.create_task(handle(identity, message, resp, action, cmd_back_sock))
+            except Exception as e:
+                logger.info(f'cmd received error: {e}')
+                
 
 if __name__ == "__main__":
-    asyncio.run(main(drone, camera_socket, telemetry_socket, driverArgs))
+    asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))

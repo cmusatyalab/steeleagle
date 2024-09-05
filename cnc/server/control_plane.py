@@ -25,53 +25,43 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-interrupt = threading.Event()
 
-def listen_drones(args, drones):
+def listen_cmdrs(args, redis, interrupt):
     ctx = zmq.Context()
-    sock = ctx.socket(zmq.REP)
-    sock.bind(f'tcp://*:{args.droneport}')
+    
+    cmd_sock = ctx.socket(zmq.REP)
+    cmd_sock.bind(f'tcp://*:{args.cmdrport}')
+    
+    kernel_sock = ctx.socket(zmq.DEALER)
+    kernel_sock_identity = b'cmdr'
+    kernel_sock.setsockopt(zmq.IDENTITY, kernel_sock_identity)
+    kernel_sock.connect(f'tcp://*:{args.droneport}')
+    
+    
     while not interrupt.isSet():
-        msg = sock.recv()
-        try:
-            extras = cnc_pb2.Extras()
-            extras.ParseFromString(msg)
-            d = drones[extras.drone_id]
-            sock.send(d.SerializeToString())
-            logger.info(f'request sent:\n{text_format.MessageToString(d)}')
-            logger.info(f"request sent at: {time.monotonic()}")
-            del drones[extras.drone_id]
-        except KeyError:
-            sock.send(b'No commands.')
-        except DecodeError:
-            sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
-    sock.close()
-
-def listen_cmdrs(args, drones, redis):
-    ctx = zmq.Context()
-    sock = ctx.socket(zmq.REP)
-    sock.bind(f'tcp://*:{args.cmdrport}')
-    while not interrupt.isSet():
-        msg = sock.recv()
+        msg = cmd_sock.recv()
         try:
             extras = cnc_pb2.Extras()
             extras.ParseFromString(msg)
             logger.info(f'Request received:\n{text_format.MessageToString(extras)}')
-            logger.info(f"request received at: {time.monotonic()}")
-            drones[extras.cmd.for_drone_id] = extras
-            sock.send(b'ACK')
+            logger.info(f"request received at: {time.time()}")
+            kernel_sock.send_multipart([msg])
+            cmd_sock.send(b'ACK')
             key = redis.xadd(
                     f"commands",
                     {"commander": extras.commander_id, "drone": extras.cmd.for_drone_id, "value": text_format.MessageToString(extras),}
                 )
             logger.debug(f"Updated redis under stream commands at key {key}")
         except DecodeError:
-            sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
-    sock.close()
-
+            cmd_sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
+    
+    kernel_sock.close()
+    cmd_sock.close()
+    ctx.term()
+    
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--droneport', type=int, default=6000, help='Specify port to listen for drone requests [default: 6000]')
+    parser.add_argument('-d', '--droneport', type=int, default=5003, help='Specify port to listen for drone requests [default: 6000]')
     parser.add_argument('-c', '--cmdrport', type=int, default=6001, help='Specify port to listen for commander requests [default: 6001]')
     parser.add_argument(
         "-r", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
@@ -83,24 +73,17 @@ def main():
 
     r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
     logger.info(f"Connected to redis on port {args.redis}...")
-    drones = {}
 
     logger.info(f'Listening on tcp://*:{args.droneport} for drone requests...')
     logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
     
-    d = threading.Thread(target=listen_drones, args=[args, drones])
-    c = threading.Thread(target=listen_cmdrs, args=[args, drones, r])
-    d.start()
-    c.start()
 
     try:
-        while d.is_alive():
-            time.sleep(0.1)
+        interrupt = threading.Event()
+        listen_cmdrs(args, r, interrupt)
     except KeyboardInterrupt:
         interrupt.set()
         logging.info("Waiting for threads to join...")
-        c.join()
-        d.join()
 
 if __name__ == '__main__':
     main()
