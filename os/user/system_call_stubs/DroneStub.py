@@ -41,7 +41,11 @@ class DroneStub:
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_CMD_FRONT_SOCKET_ADDR'))
+        sock_identity = b'usr'
+        self.socket.setsockopt(zmq.IDENTITY, sock_identity)
+        addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get('CMD_FRONT_PORT')
+        logger.info(f"addr: {addr}")
+        self.socket.connect(addr)
         self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
         self.seqNum_res = {}
 

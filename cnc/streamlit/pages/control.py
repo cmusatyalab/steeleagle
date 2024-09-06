@@ -399,5 +399,6 @@ with c3:
             req.cmd.pcmd.roll = roll
             req.cmd.pcmd.gaz = gaz
             req.cmd.pcmd.gimbal_pitch = gimbal_pitch
+        st.session_state.key_pressed = None
         z.send(req.SerializeToString())
         rep = z.recv()

@@ -28,8 +28,9 @@ cmd_back_sock = context.socket(zmq.DEALER)
 tel_sock = context.socket(zmq.PUB)
 cam_sock = context.socket(zmq.PUB)
 
-def setup_socket(socket, socket_type, env_var, logger_message):
-    addr = 'tcp://' + os.environ.get(env_var)
+def setup_socket(socket, socket_type, port_num, logger_message):
+    addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get(port_num)
+    logger.info(f"addr: {addr}")
     if addr:
         if socket_type == 'connect':
             socket.connect(addr)
@@ -37,15 +38,15 @@ def setup_socket(socket, socket_type, env_var, logger_message):
             socket.bind(addr)
         logger.info(logger_message)
     else:
-        logger.error(f'Cannot get {env_var} from system')
+        logger.error(f'Cannot get {port_num} from system')
         quit()
 
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-setup_socket(tel_sock, 'connect', 'STEELEAGLE_TEL_SOCKET_ADDR', 'Created telemetry socket endpoint')
-setup_socket(cam_sock, 'connect', 'STEELEAGLE_CAM_SOCKET_ADDR', 'Created camera socket endpoint')
-setup_socket(cmd_back_sock, 'connect', 'STEELEAGLE_CMD_BACK_SOCKET_ADDR', 'Created command backend socket endpoint')
+setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint')
+setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint')
+setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
 
 
 

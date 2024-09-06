@@ -10,7 +10,8 @@
 version: '2.3'
 services:
   gabriel-server:
-    image: cmusatyalab/steeleagle:${TAG}
+    # image: cmusatyalab/steeleagle:${TAG}
+    image: gabriel-server-new:${TAG}
     container_name: gabriel-server
     ports:
       - "9099:9099"
@@ -40,7 +41,7 @@ services:
     container_name: control-plane
     restart: unless-stopped
     ports:
-      - "6000:6000"
+      # - "5003:5003"
       - "6001:6001"
     privileged: true
     entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]

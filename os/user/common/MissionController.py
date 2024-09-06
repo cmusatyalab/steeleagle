@@ -23,7 +23,9 @@ class MissionController():
     def __init__(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
-        self.socket.connect('tcp://' + os.environ.get('STEELEAGLE_MSN_SOCKET_ADDR')) 
+        addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get('MSN_PORT')
+        logger.info(f"addr: {addr}")
+        self.socket.connect(addr)
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}

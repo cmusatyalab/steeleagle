@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 import zmq
+import zmq.asyncio
 from cnc_protocol import cnc_pb2
 
 context = zmq.asyncio.Context()
@@ -52,7 +53,7 @@ class d_server():
         while True:
             try:
                 # Receive a message from the DEALER socket
-                message_parts = socket.recv_multipart(flags=zmq.NOBLOCK)
+                message_parts = await socket.recv_multipart()
                 
                 # Expecting three parts: [identity, empty, message]
                 if len(message_parts) != 2:
@@ -89,11 +90,9 @@ class d_server():
                 socket.send_multipart([identity, serialized_response])
                 
                 print(f"done processing request")
-            
-            except zmq.Again as e:
-                pass
-            await asyncio.sleep(0)
-
+            except Exception as e:
+                print(f"error: {e}")
+                
 if __name__ == "__main__":
     print("Starting server")
     d= d_server()

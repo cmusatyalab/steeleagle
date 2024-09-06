@@ -18,8 +18,8 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 import nest_asyncio
 
-# Apply nest_asyncio to avoid conflicts in asyncio
-nest_asyncio.apply()
+# # Apply nest_asyncio to avoid conflicts in asyncio
+# nest_asyncio.apply()
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -41,8 +41,9 @@ cmd_back_sock = context.socket(zmq.DEALER)
 msn_sock = context.socket(zmq.REQ)
 
 # Connect Sockets to Addresses from Environment Variables
-def setup_socket(socket, socket_type, env_var, logger_message):
-    addr = 'tcp://' + os.environ.get(env_var)
+def setup_socket(socket, socket_type, port_num, logger_message):
+    addr = 'tcp://*:' + os.environ.get(port_num)
+    logger.info(f"addr: {addr}")
     if addr:
         if socket_type == 'connect':
             socket.connect(addr)
@@ -50,7 +51,7 @@ def setup_socket(socket, socket_type, env_var, logger_message):
             socket.bind(addr)
         logger.info(logger_message)
     else:
-        logger.error(f'Cannot get {env_var} from system')
+        logger.error(f'Cannot get {port_num} from system')
         quit()
 
 # Setting up sockets
@@ -59,11 +60,11 @@ tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-setup_socket(tel_sock, 'bind', 'STEELEAGLE_TEL_SOCKET_ADDR', 'Created telemetry socket endpoint')
-setup_socket(cam_sock, 'bind', 'STEELEAGLE_CAM_SOCKET_ADDR', 'Created camera socket endpoint')
-setup_socket(cmd_front_sock, 'bind', 'STEELEAGLE_CMD_FRONT_SOCKET_ADDR', 'Created command frontend socket endpoint')
-setup_socket(cmd_back_sock, 'bind', 'STEELEAGLE_CMD_BACK_SOCKET_ADDR', 'Created command backend socket endpoint')
-setup_socket(msn_sock, 'bind', 'STEELEAGLE_MSN_SOCKET_ADDR', 'Created user space mission control socket endpoint')
+setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
+setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
+setup_socket(cmd_front_sock, 'bind', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint')
+setup_socket(cmd_back_sock, 'bind', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+setup_socket(msn_sock, 'bind', 'MSN_PORT', 'Created user space mission control socket endpoint')
 
 
 # Enumerations for Commands and Drone Types
@@ -81,9 +82,9 @@ class DroneType(Enum):
     VESPER = 3
 
 class Kernel:
-        
+    
+    ######################################################## COMMON ############################################################
     def __init__(self, gabriel_server, gabriel_port, type):
-            
         # drone info
         self.drone_type = type
         self.drone_id = "ant"
@@ -106,7 +107,6 @@ class Kernel:
             "id": None
         }
         
-        
         # remote compute
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
@@ -122,7 +122,7 @@ class Kernel:
         # init cmd seq
         self.command_seq = 0
         
-    ######################################################## COMMON ############################################################
+
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
@@ -131,19 +131,22 @@ class Kernel:
         
         while True:
             try:
+                logger.debug('proxy loop')
                 socks = dict(await poller.poll())
 
                 # Check for messages on the ROUTER socket
                 if cmd_front_sock in socks:
                     message = await cmd_front_sock.recv_multipart()
-                    print("Received message from ROUTER:", message)
+                    logger.debug(f"proxy : 1 Received message from BACKEND: {message}")
 
                     # Filter the message
                     identity = message[0]
                     cmd = message[1]
-                    if identity == 'cmdr':
+                    logger.debug(f"proxy : 2 Received message from BACKEND: identity: {identity}")
+                    
+                    if identity == b'cmdr':
                         self.process_command(cmd)
-                    elif identity == 'usr':
+                    elif identity == b'usr':
                         await cmd_back_sock.send_multipart(message)
                     else:
                         logger.error(f"cmd_proxy: invalid identity")
@@ -152,14 +155,18 @@ class Kernel:
                 # Check for messages on the DEALER socket
                 if cmd_back_sock in socks:
                     message = await cmd_back_sock.recv_multipart()
-                    print("Received message from DEALER:", message)
-                    
+                    logger.debug(f"proxy : 3 Received message from FRONTEND: {message}")
+
                     # Filter the message
-                    identity = message[0] 
+                    identity = message[0]
+                    cmd = message[1]
+                    logger.debug(f"proxy : 4 Received message from FRONTEND: identity: {identity}")
                     
-                    if identity == 'cmdr':
+                    if identity == b'cmdr':
+                        logger.debug(f"proxy : 5 Received message from FRONTEND: discard bc of cmdr")
                         pass
-                    elif identity == 'usr':
+                    elif identity == b'usr':
+                        logger.debug(f"proxy : 5 Received message from FRONTEND: sent back bc of user")
                         await cmd_front_sock.send_multipart(message)
                     else:
                         logger.error(f"cmd_proxy: invalid identity")
@@ -285,7 +292,8 @@ class Kernel:
 
         
         message = driver_command.SerializeToString()
-        await cmd_back_sock.send_multipart([message])
+        identity = b'cmdr'
+        await cmd_back_sock.send_multipart([identity, message])
         
         # if (command == ManualCommand.CONNECTION):
         #     result = cnc_pb2.Driver()
@@ -325,7 +333,7 @@ class Kernel:
         async def producer():
             await asyncio.sleep(0)
             
-            logger.debug(f"Frame Producer: starting converting {time.time()}")
+            logger.info(f"Frame Producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None:
                 try:
@@ -360,7 +368,7 @@ class Kernel:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
                 
-            logger.debug(f"Frame Producer: finished time {time.time()}")
+            logger.info(f"Frame Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -369,7 +377,7 @@ class Kernel:
         async def producer():
             await asyncio.sleep(0)
             
-            logger.debug(f"tel Producer: starting time {time.time()}")
+            logger.info(f"tel Producer: starting time {time.time()}")
             self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -393,7 +401,7 @@ class Kernel:
                     extras.status.mag = self.telemetry_cache['magnetometer']
                     extras.status.bearing = self.telemetry_cache['bearing']
                     
-                    logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
+                    logger.info(f'Gabriel Client Telemetry Producer: {extras}')
                 
                 # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
                 # if self.drone_type == DroneType.VESPER:
@@ -416,7 +424,7 @@ class Kernel:
             logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
             
-            logger.debug(f"tel Producer: finished time {time.time()}")
+            logger.info(f"tel Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')

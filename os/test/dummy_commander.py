@@ -6,21 +6,30 @@ import asyncio
 import zmq.asyncio
 
 
-context = zmq.asyncio.Context()
+context = zmq.Context()
 
 # Create socket endpoints for driver
 cmd_front_socket = context.socket(zmq.DEALER)
-cmd_front_socket.connect('tcp://' + os.environ.get('STEELEAGLE_CMD_FRONT_SOCKET_ADDR'))
+kernel_sock_identity = b'cmdr'
+cmd_front_socket.setsockopt(zmq.IDENTITY, kernel_sock_identity)
+cmd_front_socket.connect('tcp://' + os.environ.get('TEST_SOCK_ADDR'))
 
 
 
 class c_client():
-    async def send_takeOff(self):
-        driver_command = cnc_pb2.Driver()
-        driver_command.takeOff = True
+    def send_takeOff(self):
+        driver_command = cnc_pb2.Extras()
+        driver_command.cmd.takeoff = True
         message = driver_command.SerializeToString()
-        await cmd_front_socket.send_multipart([message])
+        cmd_front_socket.send_multipart([message])
         print(f"commander: take off sent at: {time.time()}")
+        
+    def send_startM(self):
+        driver_command = cnc_pb2.Extras()
+        driver_command.cmd.script_url = "https://www.ant.com"
+        message = driver_command.SerializeToString()
+        cmd_front_socket.send_multipart([message])
+        print(f"commander: mission sent at: {time.time()}")
         
     async def a_run(self):
         # Interactive command input loop
@@ -29,7 +38,9 @@ class c_client():
             user_input = input("Enter 'takeoff' to send the take off cmd: ").strip().lower()
  
             if user_input == 'takeoff':
-                asyncio.create_task(self.send_takeOff())
+                self.send_takeOff()
+            elif user_input == 'start':
+                self.send_startM()
             elif user_input == "exit":
                 print("Exiting client.")
                 break
