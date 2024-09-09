@@ -1,6 +1,9 @@
+#!/bin/bash
+# Get the directory where this script is located, even if sourced
+SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
-# common
-export PYTHONPATH=~/Documents/steeleagle/os/
+# Export PYTHONPATH as os/
+export PYTHONPATH=$SCRIPT_DIR
 
 # driver
 export STEELEAGLE_DRIVER_ARGS='{}'
@@ -23,13 +26,3 @@ export MSN_PORT="5005"
 
 # ADDR
 export LOCALHOST="127.0.0.1"
-
-# socket
-# export STEELEAGLE_TEL_SOCKET_ADDR="127.0.0.1:5001"
-# export STEELEAGLE_CAM_SOCKET_ADDR="127.0.0.1:5002"
-# export STEELEAGLE_CMD_FRONT_SOCKET_ADDR="127.0.0.1:5003"
-# export STEELEAGLE_CMD_BACK_SOCKET_ADDR="127.0.0.1:5004"
-# export STEELEAGLE_MSN_SOCKET_ADDR="127.0.0.1:5005"
-
-# export TEST_SOCK_ADDR="vm039.elijah.cs.cmu.edu:5003"
-# export TEST_SOCK_ADDR="128.2.213.139:5003"

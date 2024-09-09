@@ -4,9 +4,16 @@ import os
 import zmq
 from cnc_protocol import cnc_pb2
 from enum import Enum
+from util.utils import setup_socket
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+context = zmq.Context()
+cmd_front_sock = context.socket(zmq.DEALER)
+sock_identity = b'usr'
+cmd_front_sock.setsockopt(zmq.IDENTITY, sock_identity)
+setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint', os.environ.get("LOCALHOST"))
 
 ######################################################## DriverRespond ############################################################ 
 class DriverRespond:
@@ -39,13 +46,6 @@ class DroneStub:
 
     ######################################################## Common ############################################################
     def __init__(self):
-        context = zmq.Context()
-        self.socket = context.socket(zmq.DEALER)
-        sock_identity = b'usr'
-        self.socket.setsockopt(zmq.IDENTITY, sock_identity)
-        addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get('CMD_FRONT_PORT')
-        logger.info(f"addr: {addr}")
-        self.socket.connect(addr)
         self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
         self.seqNum_res = {}
 
@@ -56,7 +56,7 @@ class DroneStub:
         self.seqNum += 1
         self.seqNum_res[seqNum] = driverRespond
         serialized_request = request.SerializeToString()
-        self.socket.send_multipart([serialized_request])
+        cmd_front_sock.send_multipart([serialized_request])
 
     def receiver(self, response_parts):
         response = response_parts[0]
@@ -90,7 +90,7 @@ class DroneStub:
     async def run(self):
         while True:
             try:
-                response_parts = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                response_parts = cmd_front_sock.recv_multipart(flags=zmq.NOBLOCK)
                 self.receiver(response_parts)
             except zmq.Again:
                 pass

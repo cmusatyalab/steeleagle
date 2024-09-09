@@ -8,7 +8,7 @@ from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
 from common.TaskManager import TaskManager
 from cnc_protocol import cnc_pb2
-
+from util.utils import setup_socket
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,14 +18,12 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+context = zmq.Context()
+msn_sock = context.socket(zmq.REP)
+setup_socket(msn_sock, 'connect', 'MSN_PORT', 'Created user space mission control socket endpoint', os.environ.get("LOCALHOST"))
 
 class MissionController():
     def __init__(self):
-        context = zmq.Context()
-        self.socket = context.socket(zmq.REP)
-        addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get('MSN_PORT')
-        logger.info(f"addr: {addr}")
-        self.socket.connect(addr)
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}
@@ -75,7 +73,7 @@ class MissionController():
             logger.debug("MC")
             try:
                 # Receive a message
-                message = self.socket.recv(flags=zmq.NOBLOCK)
+                message = msn_sock.recv(flags=zmq.NOBLOCK)
                 
                 # Log the raw received message
                 logger.info(f"Received raw message: {message}")
@@ -95,14 +93,14 @@ class MissionController():
                     response = "Unknown command"
 
                 # Send a reply back to the client
-                self.socket.send_string(response)
+                msn_sock.send_string(response)
                 
             except zmq.Again:
                 pass
                 
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
-                self.socket.send_string("Error processing command")
+                msn_sock.send_string("Error processing command")
             
             await asyncio.sleep(0)
             

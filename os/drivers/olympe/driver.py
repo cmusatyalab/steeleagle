@@ -7,6 +7,7 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
+from util.utils import setup_socket
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 from datetime import datetime
 
@@ -23,30 +24,14 @@ droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
 drone = ParrotDrone(**droneArgs)
 
 context = zmq.asyncio.Context()
-
 cmd_back_sock = context.socket(zmq.DEALER)
 tel_sock = context.socket(zmq.PUB)
 cam_sock = context.socket(zmq.PUB)
-
-def setup_socket(socket, socket_type, port_num, logger_message):
-    addr = 'tcp://'+os.environ.get("LOCALHOST")+":"+ os.environ.get(port_num)
-    logger.info(f"addr: {addr}")
-    if addr:
-        if socket_type == 'connect':
-            socket.connect(addr)
-        elif socket_type == 'bind':
-            socket.bind(addr)
-        logger.info(logger_message)
-    else:
-        logger.error(f'Cannot get {port_num} from system')
-        quit()
-
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-
-setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint')
-setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint')
-setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("LOCALHOST"))
 
 
 

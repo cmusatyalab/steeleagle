@@ -16,13 +16,15 @@ import logging
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
-import nest_asyncio
+from util.utils import setup_socket
 
-# # Apply nest_asyncio to avoid conflicts in asyncio
+# # Gabriel websocket ver
+# import nest_asyncio
 # nest_asyncio.apply()
+# from gabriel_client.websocket_client import WebsocketClient
 
 # Configure logger
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
@@ -32,34 +34,18 @@ logger.addHandler(handler)
 
 # Constants and Environment Variables
 user_path = './user/project/implementation'
-context = zmq.asyncio.Context()
 
+# Setting up sockets
+context = zmq.asyncio.Context()
 tel_sock = context.socket(zmq.SUB)
 cam_sock = context.socket(zmq.SUB)
 cmd_front_sock = context.socket(zmq.ROUTER)
 cmd_back_sock = context.socket(zmq.DEALER)
 msn_sock = context.socket(zmq.REQ)
-
-# Connect Sockets to Addresses from Environment Variables
-def setup_socket(socket, socket_type, port_num, logger_message):
-    addr = 'tcp://*:' + os.environ.get(port_num)
-    logger.info(f"addr: {addr}")
-    if addr:
-        if socket_type == 'connect':
-            socket.connect(addr)
-        elif socket_type == 'bind':
-            socket.bind(addr)
-        logger.info(logger_message)
-    else:
-        logger.error(f'Cannot get {port_num} from system')
-        quit()
-
-# Setting up sockets
 tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-
 setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
 setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
 setup_socket(cmd_front_sock, 'bind', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint')
@@ -390,7 +376,7 @@ class Kernel:
             
             try:
                 if all(value is None for value in self.telemetry_cache.values()):
-                    logger.debug('All telemetry_cache values are None')
+                    logger.info('All telemetry_cache values are None')
                 else:
                     # Proceed with normal assignments
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
@@ -421,7 +407,7 @@ class Kernel:
             if self.gabriel_client_heartbeats == 1:
                 extras.registering = True
 
-            logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
+            logger.info('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
             
             logger.info(f"tel Producer: finished time {time.time()}")
@@ -479,13 +465,19 @@ class Kernel:
             self.gabriel_server, self.gabriel_port,
             [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
         )
+        # gabriel_client = WebsocketClient(
+        #     self.gabriel_server, self.gabriel_port,
+        #     [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
+        # )
         logger.info('Main: gabriel client created')
         
         try:
             command_coroutine = asyncio.create_task(self.cmd_proxy())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
             camera_coroutine = asyncio.create_task(self.camera_handler())
+            gabriel_coroutine = None
             gabriel_coroutine = asyncio.create_task(gabriel_client.launch_async())
+            # gabriel_client.launch()
             
             while True:
                 await asyncio.sleep(0)
