@@ -211,15 +211,15 @@ class ParrotDrone():
                 tp = ts
                 ep = error
 
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.15)
         except asyncio.CancelledError:
             pass
 
     async def _velocityPID(self):
         try:
-            forward_PID = {"Kp": 0.6, "Kd": 0.2, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            right_PID = {"Kp": 0.6, "Kd": 0.2, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            up_PID = {"Kp": 2.5, "Kd": 1.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            forward_PID = {"Kp": 0.925, "Kd": 0.0, "Ki": 0.0, "PrevI": 0.0, "MaxI": 10.0}
+            right_PID = {"Kp": 0.925, "Kd": 0.0, "Ki": 0.0, "PrevI": 0.0, "MaxI": 10.0}
+            up_PID = {"Kp": 2.5, "Kd": 1.5, "Ki": 0.0, "PrevI": 0.0, "MaxI": 10.0}
             ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
             rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
             tp = None
@@ -233,51 +233,63 @@ class ParrotDrone():
                 I = pidDict["Ki"] * (ts - tp)
                 if e < 0.0:
                     I *= -1
-                elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
+                elif abs(e) <= 0.05 or I * pidDict["PrevI"] < 0:
                     I = 0.0
                 if abs(e) > 0.01:
                     D = pidDict["Kd"] * (e - ep) / (ts - tp)
                 else:
-                    D = 0
+                    D = 0.0
                 
                 # For testing Integral component
                 I = 0.0
                 return P, I, D
             
+            counter = 0
             while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
-                ts = round(time.time() * 1000)
                 current = await self.getVelocityBody()
                 forwardSP, rightSP, upSP, angSP = self.velocitySP
+                
+                forward = 0
+                right = 0
+                up = 0
 
-                error = {}
-                error["forward"] = forwardSP - current["forward"]
-                if abs(error["forward"]) < 0.01:
-                    error["forward"] = 0
-                error["right"] = rightSP - current["right"]
-                if abs(error["right"]) < 0.01:
-                    error["right"] = 0
-                error["up"] = upSP - current["up"]
-                if abs(error["up"]) < 0.01:
-                    error["up"] = 0
+                if counter % 5 == 0:
+                    ts = round(time.time() * 1000)
 
-                # On first loop through, set previous timestamp and error
-                # to dummy values.
-                if tp is None or (ts - tp) > 1000:
-                    tp = ts - 1
+                    error = {}
+                    error["forward"] = forwardSP - current["forward"]
+                    if abs(error["forward"]) < 0.01:
+                        error["forward"] = 0
+                    error["right"] = rightSP - current["right"]
+                    if abs(error["right"]) < 0.01:
+                        error["right"] = 0
+                    error["up"] = upSP - current["up"]
+                    if abs(error["up"]) < 0.01:
+                        error["up"] = 0
+
+                    # On first loop through, set previous timestamp and error
+                    # to dummy values.
+                    if tp is None or (ts - tp) > 1000:
+                        tp = ts - 1
+                        ep = error
+
+                    P, I, D = updatePID(error["forward"], ep["forward"], tp, ts, forward_PID)
+                    forward_PID["PrevI"] += I
+                    forward = P + I + D
+                    
+                    P, I, D = updatePID(error["right"], ep["right"], tp, ts, right_PID)
+                    right_PID["PrevI"] += I
+                    right = P + I + D
+                     
+                    P, I, D = updatePID(error["up"], ep["up"], tp, ts, up_PID)
+                    up_PID["PrevI"] += I
+                    up = P + I + D
+                    
+                    # Set previous ts and error for next iteration
+                    tp = ts
                     ep = error
+                    counter = 0
 
-                P, I, D = updatePID(error["forward"], ep["forward"], tp, ts, forward_PID)
-                forward_PID["PrevI"] += I
-                forward = P + I + D
-                
-                P, I, D = updatePID(error["right"], ep["right"], tp, ts, right_PID)
-                right_PID["PrevI"] += I
-                right = P + I + D
-                 
-                P, I, D = updatePID(error["up"], ep["up"], tp, ts, up_PID)
-                up_PID["PrevI"] += I
-                up = P + I + D
-                
                 prevForward = 0
                 prevRight = 0
                 prevUp = 0
@@ -299,11 +311,9 @@ class ParrotDrone():
                 prevVal["right"] = right
                 prevVal["up"] = up
                 
-                # Set previous ts and error for next iteration
-                tp = ts
-                ep = error
+                counter += 1
                 
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             pass
 
