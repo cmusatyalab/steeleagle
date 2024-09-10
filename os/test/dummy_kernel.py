@@ -5,6 +5,17 @@ from cnc_protocol import cnc_pb2
 import asyncio
 import zmq.asyncio
 from util.utils import setup_socket
+import logging 
+import sys
+
+# Configure logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Setting up sockets
 context = zmq.asyncio.Context()
@@ -23,17 +34,6 @@ setup_socket(cmd_front_sock, 'bind', 'CMD_FRONT_PORT', 'Created command frontend
 setup_socket(cmd_back_sock, 'bind', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
 setup_socket(msn_sock, 'bind', 'MSN_PORT', 'Created user space mission control socket endpoint')
 
-# # Create a ZMQ context and a REQ (request) socket
-# context = zmq.asyncio.Context()
-# cmd_front_sock = context.socket(zmq.ROUTER)
-# cmd_front_sock.bind('tcp://' + os.environ.get('STEELEAGLE_cmd_front_sock_ADDR'))  # Connect to the server
-
-# # Create socket endpoints for driver
-# cmd_back_sock = context.socket(zmq.DEALER)
-# cmd_back_sock.bind('tcp://' + os.environ.get('STEELEAGLE_cmd_back_sock_ADDR'))
-
-# msn_sock = context.socket(zmq.REQ)
-# msn_sock.bind('tcp://' + os.environ.get('STEELEAGLE_msn_sock_ADDR'))
 
 class k_client():
 
@@ -77,24 +77,41 @@ class k_client():
 
                 # Check for messages on the ROUTER socket
                 if cmd_front_sock in socks:
-                    print("Proxy: Message received at ROUTER (Frontend)")
-                    message_parts = await cmd_front_sock.recv_multipart()
-                    identity = message_parts[0]
-                    msg = message_parts[1]
-                    print(f"Proxy: Received message from commander, identity: {identity}, message: {msg}")
+                    message = await cmd_front_sock.recv_multipart()
+                    print(f"proxy : 1 Received message from BACKEND: {message}")
 
-                    # Forward message to backend
-                    await cmd_back_sock.send_multipart([identity, msg])
+                    # Filter the message
+                    identity = message[0]
+                    cmd = message[1]
+                    print(f"proxy : 2 Received message from BACKEND: identity: {identity}")
+                    
+                    if identity == b'cmdr':
+                        await self.send_takeOff()
+                    elif identity == b'usr':
+                        await cmd_back_sock.send_multipart(message)
+                    else:
+                        print(f"cmd_proxy: invalid identity")
+
 
                 # Check for messages on the DEALER socket
                 if cmd_back_sock in socks:
-                    print("Proxy: Message received at DEALER (Backend)")
-                    message_parts = await cmd_back_sock.recv_multipart()
-                    identity = message_parts[0]
-                    msg = message_parts[1]
-                    print(f"Proxy: Forwarding message back to commander, identity: {identity}, message: {msg}")
-                    await cmd_front_sock.send_multipart([identity, msg])
+                    message = await cmd_back_sock.recv_multipart()
+                    print(f"proxy : 3 Received message from FRONTEND: {message}")
 
+                    # Filter the message
+                    identity = message[0]
+                    cmd = message[1]
+                    print(f"proxy : 4 Received message from FRONTEND: identity: {identity}")
+                    
+                    if identity == b'cmdr':
+                        print(f"proxy : 5 Received message from FRONTEND: discard bc of cmdr")
+                        pass
+                    elif identity == b'usr':
+                        print(f"proxy : 5 Received message from FRONTEND: sent back bc of user")
+                        await cmd_front_sock.send_multipart(message)
+                    else:
+                        print(f"cmd_proxy: invalid identity")
+                        
             except Exception as e:
                 print(f"Proxy error: {e}")
 

@@ -10,9 +10,9 @@ context = zmq.Context()
 
 # Create socket endpoints for driver
 cmd_front_sock = context.socket(zmq.DEALER)
-kernel_sock_identity = b'cmdr'
-cmd_front_sock.setsockopt(zmq.IDENTITY, kernel_sock_identity)
-setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command backend socket endpoint', os.environ.get("LOCALHOST"))
+cmdr_identity = b'cmdr'
+cmd_front_sock.setsockopt(zmq.IDENTITY, cmdr_identity)
+setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint', os.environ.get("LOCALHOST"))
 
 
 
