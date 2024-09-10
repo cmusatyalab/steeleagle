@@ -4,24 +4,19 @@ import time
 import zmq
 import zmq.asyncio
 from cnc_protocol import cnc_pb2
+from util.utils import setup_socket
 
 context = zmq.asyncio.Context()
-socket = context.socket(zmq.DEALER)
-socket.connect('tcp://' + os.environ.get('STEELEAGLE_CMD_BACK_SOCKET_ADDR'))
+cmd_back_sock = context.socket(zmq.DEALER)
+tel_sock = context.socket(zmq.PUB)
+cam_sock = context.socket(zmq.PUB)
+tel_sock.setsockopt(zmq.CONFLATE, 1)
+cam_sock.setsockopt(zmq.CONFLATE, 1)
+setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("LOCALHOST"))
 
-# Create a pub/sub socket that telemetry can be read from
-telemetry_socket = context.socket(zmq.PUB)
-telemetry_socket.setsockopt(zmq.CONFLATE, 1)
-tel_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_TEL_SOCKET_ADDR')
-if tel_pub_addr:
-    telemetry_socket.connect(tel_pub_addr)
 
-# Create a pub/sub socket that the camera stream can be read from
-camera_socket = context.socket(zmq.PUB)
-camera_socket.setsockopt(zmq.CONFLATE, 1)
-cam_pub_addr = 'tcp://' + os.environ.get('STEELEAGLE_CAM_SOCKET_ADDR')
-if cam_pub_addr:
-    camera_socket.connect(cam_pub_addr)
 
 
 async def camera_stream(drone, camera_sock):
@@ -48,12 +43,12 @@ async def telemetry_stream(drone, telemetry_sock):
 class d_server():
 
     async def a_run(self):
-        asyncio.create_task(telemetry_stream(None, telemetry_socket))
-        asyncio.create_task(camera_stream(None, camera_socket))    
+        asyncio.create_task(telemetry_stream(None, tel_sock))
+        asyncio.create_task(camera_stream(None, cam_sock))    
         while True:
             try:
                 # Receive a message from the DEALER socket
-                message_parts = await socket.recv_multipart()
+                message_parts = await cmd_back_sock.recv_multipart()
                 
                 # Expecting three parts: [identity, empty, message]
                 if len(message_parts) != 2:
@@ -87,7 +82,7 @@ class d_server():
                 serialized_response = driver_req.SerializeToString()
                 
                 # Send a reply back to the client with the identity frame and empty delimiter
-                socket.send_multipart([identity, serialized_response])
+                cmd_back_sock.send_multipart([identity, serialized_response])
                 
                 print(f"done processing request")
             except Exception as e:
