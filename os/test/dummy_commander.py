@@ -4,15 +4,15 @@ import time
 from cnc_protocol import cnc_pb2
 import asyncio
 import zmq.asyncio
-
+from util.utils import setup_socket
 
 context = zmq.Context()
 
 # Create socket endpoints for driver
-cmd_front_socket = context.socket(zmq.DEALER)
+cmd_front_sock = context.socket(zmq.DEALER)
 kernel_sock_identity = b'cmdr'
-cmd_front_socket.setsockopt(zmq.IDENTITY, kernel_sock_identity)
-cmd_front_socket.connect('tcp://' + os.environ.get('TEST_SOCK_ADDR'))
+cmd_front_sock.setsockopt(zmq.IDENTITY, kernel_sock_identity)
+setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command backend socket endpoint', os.environ.get("LOCALHOST"))
 
 
 
@@ -21,14 +21,14 @@ class c_client():
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.takeoff = True
         message = driver_command.SerializeToString()
-        cmd_front_socket.send_multipart([message])
+        cmd_front_sock.send_multipart([message])
         print(f"commander: take off sent at: {time.time()}")
         
     def send_startM(self):
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.script_url = "https://www.ant.com"
         message = driver_command.SerializeToString()
-        cmd_front_socket.send_multipart([message])
+        cmd_front_sock.send_multipart([message])
         print(f"commander: mission sent at: {time.time()}")
         
     async def a_run(self):
