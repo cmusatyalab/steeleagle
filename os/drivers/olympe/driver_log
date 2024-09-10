@@ -1,0 +1,546 @@
+2024-09-10 15:16:52,834 - parrotdrone - INFO - #####################parrot init##########################
+2024-09-10 15:16:52,835 - util.utils - INFO - addr: tcp://127.0.0.1:5001
+2024-09-10 15:16:52,835 - util.utils - INFO - Created telemetry socket endpoint
+2024-09-10 15:16:52,835 - util.utils - INFO - addr: tcp://127.0.0.1:5002
+2024-09-10 15:16:52,835 - util.utils - INFO - Created camera socket endpoint
+2024-09-10 15:16:52,835 - util.utils - INFO - addr: tcp://127.0.0.1:5004
+2024-09-10 15:16:52,835 - util.utils - INFO - Created command backend socket endpoint
+2024-09-10 15:16:54,141 - olympe.drone.ANAFI-0000000 - ERROR - Failed to decode message <olympe.arsdkng.messages.wifi.ap_channel_changed object at 0x7f7e5e8ce950>
+Traceback (most recent call last):
+  File "/home/ubuntu/steeleagle-os-venv/lib/python3.10/site-packages/olympe/arsdkng/cmd_itf.py", line 372, in _recv_cmd_cb
+    res, message_args = message._decode_args(command)
+  File "/home/ubuntu/steeleagle-os-venv/lib/python3.10/site-packages/olympe/arsdkng/messages.py", line 1214, in _decode_args
+    decoded_args[i] = arg = cls.args_enum[name](arg)
+  File "/home/ubuntu/steeleagle-os-venv/lib/python3.10/site-packages/aenum/_enum.py", line 1784, in __call__
+    return cls.__new__(cls, value)
+  File "/home/ubuntu/steeleagle-os-venv/lib/python3.10/site-packages/aenum/_enum.py", line 2245, in __new__
+    raise ValueError("%r is not a valid %s" % (value, cls.__name__))
+ValueError: -1 is not a valid band
+2024-09-10 15:16:54,155 - root - INFO - Established connection to drone, ready to receive commands!
+2024-09-10 15:16:55,789 - root - INFO - Starting telemetry stream
+2024-09-10 15:20:11,983 - root - INFO - takeoff function call started at: 1725981611.982977, seq id 18
+2024-09-10 15:20:11,983 - parrotdrone - INFO - takeoff function started at: 1725981611.9839442
+2024-09-10 15:20:11,993 - parrotdrone - INFO - taking off before switch mode
+2024-09-10 15:20:11,993 - parrotdrone - INFO - taking off after switch mode
+2024-09-10 15:20:11,995 - parrotdrone - INFO - taking off after take off
+2024-09-10 15:20:11,996 - parrotdrone - INFO - Hovering function started at: 1725981611.9959965
+2024-09-10 15:20:18,704 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981618.704793, seq id 32
+2024-09-10 15:20:18,705 - parrotdrone - INFO - setVelocity function started at: 1725981618.705248
+2024-09-10 15:20:18,705 - parrotdrone - INFO - setVelocity function finished at: 1725981618.705414
+2024-09-10 15:20:18,859 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981618.8596625, seq id 33
+2024-09-10 15:20:18,859 - parrotdrone - INFO - setVelocity function started at: 1725981618.8597972
+2024-09-10 15:20:18,859 - parrotdrone - INFO - setVelocity function finished at: 1725981618.8598907
+2024-09-10 15:20:19,198 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981619.1983788, seq id 34
+2024-09-10 15:20:19,198 - parrotdrone - INFO - setVelocity function started at: 1725981619.1985974
+2024-09-10 15:20:19,198 - parrotdrone - INFO - setVelocity function finished at: 1725981619.1986852
+2024-09-10 15:20:19,357 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981619.3571818, seq id 35
+2024-09-10 15:20:19,357 - parrotdrone - INFO - setVelocity function started at: 1725981619.3575914
+2024-09-10 15:20:19,357 - parrotdrone - INFO - setVelocity function finished at: 1725981619.3578753
+2024-09-10 15:20:19,712 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981619.712414, seq id 36
+2024-09-10 15:20:19,714 - parrotdrone - INFO - setVelocity function started at: 1725981619.7146468
+2024-09-10 15:20:19,714 - parrotdrone - INFO - setVelocity function finished at: 1725981619.714795
+2024-09-10 15:20:19,957 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981619.9579244, seq id 37
+2024-09-10 15:20:19,958 - parrotdrone - INFO - setVelocity function started at: 1725981619.9581065
+2024-09-10 15:20:19,958 - parrotdrone - INFO - setVelocity function finished at: 1725981619.958203
+2024-09-10 15:20:20,245 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981620.245342, seq id 38
+2024-09-10 15:20:20,245 - parrotdrone - INFO - setVelocity function started at: 1725981620.2455382
+2024-09-10 15:20:20,245 - parrotdrone - INFO - setVelocity function finished at: 1725981620.245629
+2024-09-10 15:20:20,489 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981620.4890618, seq id 39
+2024-09-10 15:20:20,489 - parrotdrone - INFO - setVelocity function started at: 1725981620.489418
+2024-09-10 15:20:20,489 - parrotdrone - INFO - setVelocity function finished at: 1725981620.4895308
+2024-09-10 15:20:20,748 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981620.748054, seq id 40
+2024-09-10 15:20:20,751 - parrotdrone - INFO - setVelocity function started at: 1725981620.7516642
+2024-09-10 15:20:20,751 - parrotdrone - INFO - setVelocity function finished at: 1725981620.7518477
+2024-09-10 15:20:21,014 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981621.014274, seq id 41
+2024-09-10 15:20:21,014 - parrotdrone - INFO - setVelocity function started at: 1725981621.0146732
+2024-09-10 15:20:21,014 - parrotdrone - INFO - setVelocity function finished at: 1725981621.0148726
+2024-09-10 15:20:21,256 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981621.256292, seq id 42
+2024-09-10 15:20:21,256 - parrotdrone - INFO - setVelocity function started at: 1725981621.2564914
+2024-09-10 15:20:21,256 - parrotdrone - INFO - setVelocity function finished at: 1725981621.2566195
+2024-09-10 15:20:21,520 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981621.520872, seq id 43
+2024-09-10 15:20:21,521 - parrotdrone - INFO - setVelocity function started at: 1725981621.5210702
+2024-09-10 15:20:21,521 - parrotdrone - INFO - setVelocity function finished at: 1725981621.5211668
+2024-09-10 15:20:21,796 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981621.79646, seq id 44
+2024-09-10 15:20:21,797 - parrotdrone - INFO - setVelocity function started at: 1725981621.7971017
+2024-09-10 15:20:21,797 - parrotdrone - INFO - setVelocity function finished at: 1725981621.797562
+2024-09-10 15:20:22,022 - root - INFO - Setting velocity: up_vel: 2.0
+ started at 1725981622.022556, seq id 45
+2024-09-10 15:20:22,022 - parrotdrone - INFO - setVelocity function started at: 1725981622.0227334
+2024-09-10 15:20:22,022 - parrotdrone - INFO - setVelocity function finished at: 1725981622.0228295
+2024-09-10 15:20:22,701 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981622.7017217, seq id 48
+2024-09-10 15:20:22,702 - parrotdrone - INFO - setVelocity function started at: 1725981622.7020824
+2024-09-10 15:20:22,702 - parrotdrone - INFO - setVelocity function finished at: 1725981622.7022376
+2024-09-10 15:20:23,113 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981623.113561, seq id 49
+2024-09-10 15:20:23,113 - parrotdrone - INFO - setVelocity function started at: 1725981623.1137109
+2024-09-10 15:20:23,113 - parrotdrone - INFO - setVelocity function finished at: 1725981623.1137896
+2024-09-10 15:20:23,384 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981623.3844428, seq id 50
+2024-09-10 15:20:23,384 - parrotdrone - INFO - setVelocity function started at: 1725981623.3846374
+2024-09-10 15:20:23,384 - parrotdrone - INFO - setVelocity function finished at: 1725981623.3847167
+2024-09-10 15:20:23,625 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981623.625487, seq id 51
+2024-09-10 15:20:23,625 - parrotdrone - INFO - setVelocity function started at: 1725981623.6257172
+2024-09-10 15:20:23,625 - parrotdrone - INFO - setVelocity function finished at: 1725981623.6258976
+2024-09-10 15:20:23,907 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981623.9072375, seq id 52
+2024-09-10 15:20:23,907 - parrotdrone - INFO - setVelocity function started at: 1725981623.9074514
+2024-09-10 15:20:23,907 - parrotdrone - INFO - setVelocity function finished at: 1725981623.907564
+2024-09-10 15:20:24,159 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981624.159707, seq id 53
+2024-09-10 15:20:24,159 - parrotdrone - INFO - setVelocity function started at: 1725981624.1599078
+2024-09-10 15:20:24,160 - parrotdrone - INFO - setVelocity function finished at: 1725981624.1600235
+2024-09-10 15:20:24,431 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981624.4316835, seq id 54
+2024-09-10 15:20:24,431 - parrotdrone - INFO - setVelocity function started at: 1725981624.4318485
+2024-09-10 15:20:24,431 - parrotdrone - INFO - setVelocity function finished at: 1725981624.431934
+2024-09-10 15:20:24,673 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981624.673328, seq id 55
+2024-09-10 15:20:24,673 - parrotdrone - INFO - setVelocity function started at: 1725981624.6735237
+2024-09-10 15:20:24,673 - parrotdrone - INFO - setVelocity function finished at: 1725981624.673626
+2024-09-10 15:20:24,924 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981624.9245317, seq id 56
+2024-09-10 15:20:24,924 - parrotdrone - INFO - setVelocity function started at: 1725981624.9247339
+2024-09-10 15:20:24,924 - parrotdrone - INFO - setVelocity function finished at: 1725981624.924836
+2024-09-10 15:20:25,150 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981625.1503026, seq id 57
+2024-09-10 15:20:25,150 - parrotdrone - INFO - setVelocity function started at: 1725981625.1504946
+2024-09-10 15:20:25,150 - parrotdrone - INFO - setVelocity function finished at: 1725981625.1506035
+2024-09-10 15:20:25,462 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981625.4621346, seq id 58
+2024-09-10 15:20:25,462 - parrotdrone - INFO - setVelocity function started at: 1725981625.4623048
+2024-09-10 15:20:25,462 - parrotdrone - INFO - setVelocity function finished at: 1725981625.4623988
+2024-09-10 15:20:25,703 - root - INFO - Setting velocity: forward_vel: 2.0
+ started at 1725981625.7036812, seq id 59
+2024-09-10 15:20:25,703 - parrotdrone - INFO - setVelocity function started at: 1725981625.7039173
+2024-09-10 15:20:25,704 - parrotdrone - INFO - setVelocity function finished at: 1725981625.704118
+2024-09-10 15:20:26,379 - root - INFO - Setting velocity: angle_vel: 20.0
+ started at 1725981626.3793082, seq id 62
+2024-09-10 15:20:26,379 - parrotdrone - INFO - setVelocity function started at: 1725981626.379513
+2024-09-10 15:20:26,379 - parrotdrone - INFO - setVelocity function finished at: 1725981626.379656
+2024-09-10 15:20:26,794 - root - INFO - Setting velocity: angle_vel: 20.0
+ started at 1725981626.794755, seq id 63
+2024-09-10 15:20:26,795 - parrotdrone - INFO - setVelocity function started at: 1725981626.79536
+2024-09-10 15:20:26,795 - parrotdrone - INFO - setVelocity function finished at: 1725981626.7955601
+2024-09-10 15:20:26,953 - root - INFO - Setting velocity: angle_vel: 20.0
+ started at 1725981626.9533982, seq id 64
+2024-09-10 15:20:26,971 - parrotdrone - INFO - setVelocity function started at: 1725981626.971627
+2024-09-10 15:20:26,971 - parrotdrone - INFO - setVelocity function finished at: 1725981626.9719343
+2024-09-10 15:20:27,343 - root - INFO - Setting velocity: angle_vel: 20.0
+ started at 1725981627.3434453, seq id 65
+2024-09-10 15:20:27,343 - parrotdrone - INFO - setVelocity function started at: 1725981627.3439126
+2024-09-10 15:20:27,344 - parrotdrone - INFO - setVelocity function finished at: 1725981627.3440654
+2024-09-10 15:20:27,581 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981627.5810218, seq id 66
+2024-09-10 15:20:27,581 - parrotdrone - INFO - setVelocity function started at: 1725981627.5812204
+2024-09-10 15:20:27,581 - parrotdrone - INFO - setVelocity function finished at: 1725981627.5813158
+2024-09-10 15:20:28,838 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981628.8389518, seq id 70
+2024-09-10 15:20:28,839 - parrotdrone - INFO - setVelocity function started at: 1725981628.8393388
+2024-09-10 15:20:28,839 - parrotdrone - INFO - setVelocity function finished at: 1725981628.8394966
+2024-09-10 15:20:29,010 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981629.010898, seq id 71
+2024-09-10 15:20:29,011 - parrotdrone - INFO - setVelocity function started at: 1725981629.011181
+2024-09-10 15:20:29,011 - parrotdrone - INFO - setVelocity function finished at: 1725981629.011294
+2024-09-10 15:20:29,373 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981629.3729982, seq id 72
+2024-09-10 15:20:29,373 - parrotdrone - INFO - setVelocity function started at: 1725981629.3732765
+2024-09-10 15:20:29,373 - parrotdrone - INFO - setVelocity function finished at: 1725981629.3733764
+2024-09-10 15:20:29,530 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981629.5301144, seq id 73
+2024-09-10 15:20:29,530 - parrotdrone - INFO - setVelocity function started at: 1725981629.530316
+2024-09-10 15:20:29,530 - parrotdrone - INFO - setVelocity function finished at: 1725981629.5304108
+2024-09-10 15:20:29,883 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981629.88394, seq id 74
+2024-09-10 15:20:29,884 - parrotdrone - INFO - setVelocity function started at: 1725981629.8841186
+2024-09-10 15:20:29,884 - parrotdrone - INFO - setVelocity function finished at: 1725981629.8842046
+2024-09-10 15:20:30,056 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981630.0561764, seq id 75
+2024-09-10 15:20:30,056 - parrotdrone - INFO - setVelocity function started at: 1725981630.0565383
+2024-09-10 15:20:30,056 - parrotdrone - INFO - setVelocity function finished at: 1725981630.056642
+2024-09-10 15:20:30,392 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981630.392208, seq id 76
+2024-09-10 15:20:30,392 - parrotdrone - INFO - setVelocity function started at: 1725981630.392427
+2024-09-10 15:20:30,392 - parrotdrone - INFO - setVelocity function finished at: 1725981630.3925405
+2024-09-10 15:20:30,668 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981630.6679578, seq id 77
+2024-09-10 15:20:30,669 - parrotdrone - INFO - setVelocity function started at: 1725981630.6691313
+2024-09-10 15:20:30,669 - parrotdrone - INFO - setVelocity function finished at: 1725981630.6694677
+2024-09-10 15:20:30,931 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981630.9313364, seq id 78
+2024-09-10 15:20:30,931 - parrotdrone - INFO - setVelocity function started at: 1725981630.9315495
+2024-09-10 15:20:30,931 - parrotdrone - INFO - setVelocity function finished at: 1725981630.931683
+2024-09-10 15:20:31,150 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981631.1499832, seq id 79
+2024-09-10 15:20:31,150 - parrotdrone - INFO - setVelocity function started at: 1725981631.150179
+2024-09-10 15:20:31,150 - parrotdrone - INFO - setVelocity function finished at: 1725981631.1502726
+2024-09-10 15:20:31,411 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981631.4118683, seq id 80
+2024-09-10 15:20:31,412 - parrotdrone - INFO - setVelocity function started at: 1725981631.412059
+2024-09-10 15:20:31,412 - parrotdrone - INFO - setVelocity function finished at: 1725981631.412182
+2024-09-10 15:20:31,647 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981631.647348, seq id 81
+2024-09-10 15:20:31,647 - parrotdrone - INFO - setVelocity function started at: 1725981631.647567
+2024-09-10 15:20:31,647 - parrotdrone - INFO - setVelocity function finished at: 1725981631.647663
+2024-09-10 15:20:31,975 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981631.975009, seq id 82
+2024-09-10 15:20:31,975 - parrotdrone - INFO - setVelocity function started at: 1725981631.9751854
+2024-09-10 15:20:31,975 - parrotdrone - INFO - setVelocity function finished at: 1725981631.9754143
+2024-09-10 15:20:32,267 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981632.2675548, seq id 83
+2024-09-10 15:20:32,267 - parrotdrone - INFO - setVelocity function started at: 1725981632.2678158
+2024-09-10 15:20:32,267 - parrotdrone - INFO - setVelocity function finished at: 1725981632.2679482
+2024-09-10 15:20:32,473 - root - INFO - Setting velocity: forward_vel: -2.0
+ started at 1725981632.4734697, seq id 84
+2024-09-10 15:20:32,473 - parrotdrone - INFO - setVelocity function started at: 1725981632.4736972
+2024-09-10 15:20:32,473 - parrotdrone - INFO - setVelocity function finished at: 1725981632.4737978
+2024-09-10 15:20:33,212 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981633.2127585, seq id 86
+2024-09-10 15:20:33,213 - parrotdrone - INFO - setVelocity function started at: 1725981633.2131639
+2024-09-10 15:20:33,213 - parrotdrone - INFO - setVelocity function finished at: 1725981633.2133274
+2024-09-10 15:20:33,360 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981633.3606966, seq id 87
+2024-09-10 15:20:33,360 - parrotdrone - INFO - setVelocity function started at: 1725981633.3608828
+2024-09-10 15:20:33,360 - parrotdrone - INFO - setVelocity function finished at: 1725981633.360977
+2024-09-10 15:20:33,729 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981633.7289634, seq id 88
+2024-09-10 15:20:33,729 - parrotdrone - INFO - setVelocity function started at: 1725981633.7293274
+2024-09-10 15:20:33,729 - parrotdrone - INFO - setVelocity function finished at: 1725981633.7294574
+2024-09-10 15:20:33,885 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981633.8855627, seq id 89
+2024-09-10 15:20:33,885 - parrotdrone - INFO - setVelocity function started at: 1725981633.885924
+2024-09-10 15:20:33,886 - parrotdrone - INFO - setVelocity function finished at: 1725981633.8860617
+2024-09-10 15:20:34,300 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981634.300593, seq id 90
+2024-09-10 15:20:34,301 - parrotdrone - INFO - setVelocity function started at: 1725981634.3010361
+2024-09-10 15:20:34,301 - parrotdrone - INFO - setVelocity function finished at: 1725981634.301333
+2024-09-10 15:20:34,453 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981634.4538777, seq id 91
+2024-09-10 15:20:34,454 - parrotdrone - INFO - setVelocity function started at: 1725981634.454069
+2024-09-10 15:20:34,454 - parrotdrone - INFO - setVelocity function finished at: 1725981634.454332
+2024-09-10 15:20:34,792 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981634.7921784, seq id 92
+2024-09-10 15:20:34,792 - parrotdrone - INFO - setVelocity function started at: 1725981634.7924619
+2024-09-10 15:20:34,795 - parrotdrone - INFO - setVelocity function finished at: 1725981634.7956598
+2024-09-10 15:20:34,975 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981634.975242, seq id 93
+2024-09-10 15:20:34,975 - parrotdrone - INFO - setVelocity function started at: 1725981634.9756222
+2024-09-10 15:20:34,975 - parrotdrone - INFO - setVelocity function finished at: 1725981634.9758399
+2024-09-10 15:20:35,319 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981635.319779, seq id 94
+2024-09-10 15:20:35,319 - parrotdrone - INFO - setVelocity function started at: 1725981635.3199668
+2024-09-10 15:20:35,320 - parrotdrone - INFO - setVelocity function finished at: 1725981635.320061
+2024-09-10 15:20:35,530 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981635.5308225, seq id 95
+2024-09-10 15:20:35,531 - parrotdrone - INFO - setVelocity function started at: 1725981635.5311184
+2024-09-10 15:20:35,531 - parrotdrone - INFO - setVelocity function finished at: 1725981635.5313005
+2024-09-10 15:20:35,811 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981635.8114288, seq id 96
+2024-09-10 15:20:35,811 - parrotdrone - INFO - setVelocity function started at: 1725981635.8116715
+2024-09-10 15:20:35,811 - parrotdrone - INFO - setVelocity function finished at: 1725981635.8117652
+2024-09-10 15:20:46,402 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981646.4022784, seq id 118
+2024-09-10 15:20:46,402 - parrotdrone - INFO - setVelocity function started at: 1725981646.4025931
+2024-09-10 15:20:46,402 - parrotdrone - INFO - setVelocity function finished at: 1725981646.4027567
+2024-09-10 15:20:46,796 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981646.796224, seq id 119
+2024-09-10 15:20:46,796 - parrotdrone - INFO - setVelocity function started at: 1725981646.7965407
+2024-09-10 15:20:46,796 - parrotdrone - INFO - setVelocity function finished at: 1725981646.796718
+2024-09-10 15:20:46,951 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981646.9513426, seq id 120
+2024-09-10 15:20:46,951 - parrotdrone - INFO - setVelocity function started at: 1725981646.9516985
+2024-09-10 15:20:46,951 - parrotdrone - INFO - setVelocity function finished at: 1725981646.9518595
+2024-09-10 15:20:47,369 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981647.3694978, seq id 121
+2024-09-10 15:20:47,369 - parrotdrone - INFO - setVelocity function started at: 1725981647.369738
+2024-09-10 15:20:47,369 - parrotdrone - INFO - setVelocity function finished at: 1725981647.3698845
+2024-09-10 15:20:47,539 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981647.539691, seq id 122
+2024-09-10 15:20:47,539 - parrotdrone - INFO - setVelocity function started at: 1725981647.5399675
+2024-09-10 15:20:47,540 - parrotdrone - INFO - setVelocity function finished at: 1725981647.5401447
+2024-09-10 15:20:47,882 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981647.8821642, seq id 123
+2024-09-10 15:20:47,882 - parrotdrone - INFO - setVelocity function started at: 1725981647.8823287
+2024-09-10 15:20:47,882 - parrotdrone - INFO - setVelocity function finished at: 1725981647.8825247
+2024-09-10 15:20:48,048 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981648.0487828, seq id 124
+2024-09-10 15:20:48,049 - parrotdrone - INFO - setVelocity function started at: 1725981648.0492253
+2024-09-10 15:20:48,049 - parrotdrone - INFO - setVelocity function finished at: 1725981648.0493815
+2024-09-10 15:20:48,478 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981648.4787605, seq id 125
+2024-09-10 15:20:48,479 - parrotdrone - INFO - setVelocity function started at: 1725981648.4790256
+2024-09-10 15:20:48,479 - parrotdrone - INFO - setVelocity function finished at: 1725981648.4791508
+2024-09-10 15:20:48,605 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981648.605512, seq id 126
+2024-09-10 15:20:48,605 - parrotdrone - INFO - setVelocity function started at: 1725981648.6057727
+2024-09-10 15:20:48,605 - parrotdrone - INFO - setVelocity function finished at: 1725981648.605873
+2024-09-10 15:20:49,019 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981649.0197775, seq id 127
+2024-09-10 15:20:49,020 - parrotdrone - INFO - setVelocity function started at: 1725981649.019993
+2024-09-10 15:20:49,022 - parrotdrone - INFO - setVelocity function finished at: 1725981649.022365
+2024-09-10 15:20:49,189 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981649.1891096, seq id 128
+2024-09-10 15:20:49,189 - parrotdrone - INFO - setVelocity function started at: 1725981649.189294
+2024-09-10 15:20:49,189 - parrotdrone - INFO - setVelocity function finished at: 1725981649.189387
+2024-09-10 15:20:49,622 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981649.622151, seq id 129
+2024-09-10 15:20:49,622 - parrotdrone - INFO - setVelocity function started at: 1725981649.6226792
+2024-09-10 15:20:49,622 - parrotdrone - INFO - setVelocity function finished at: 1725981649.6228182
+2024-09-10 15:20:49,744 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981649.744407, seq id 130
+2024-09-10 15:20:49,744 - parrotdrone - INFO - setVelocity function started at: 1725981649.744614
+2024-09-10 15:20:49,744 - parrotdrone - INFO - setVelocity function finished at: 1725981649.7447062
+2024-09-10 15:20:50,157 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981650.1571326, seq id 131
+2024-09-10 15:20:50,157 - parrotdrone - INFO - setVelocity function started at: 1725981650.1573193
+2024-09-10 15:20:50,157 - parrotdrone - INFO - setVelocity function finished at: 1725981650.1574967
+2024-09-10 15:20:50,338 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981650.3387654, seq id 132
+2024-09-10 15:20:50,339 - parrotdrone - INFO - setVelocity function started at: 1725981650.3391922
+2024-09-10 15:20:50,339 - parrotdrone - INFO - setVelocity function finished at: 1725981650.339464
+2024-09-10 15:20:50,718 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981650.7183018, seq id 133
+2024-09-10 15:20:50,719 - parrotdrone - INFO - setVelocity function started at: 1725981650.7196226
+2024-09-10 15:20:50,719 - parrotdrone - INFO - setVelocity function finished at: 1725981650.7197242
+2024-09-10 15:20:50,988 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981650.9886944, seq id 134
+2024-09-10 15:20:50,988 - parrotdrone - INFO - setVelocity function started at: 1725981650.9888775
+2024-09-10 15:20:50,988 - parrotdrone - INFO - setVelocity function finished at: 1725981650.9889684
+2024-09-10 15:20:51,239 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981651.2393973, seq id 135
+2024-09-10 15:20:51,239 - parrotdrone - INFO - setVelocity function started at: 1725981651.2395597
+2024-09-10 15:20:51,239 - parrotdrone - INFO - setVelocity function finished at: 1725981651.2396522
+2024-09-10 15:20:51,484 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981651.4847353, seq id 136
+2024-09-10 15:20:51,484 - parrotdrone - INFO - setVelocity function started at: 1725981651.484978
+2024-09-10 15:20:51,485 - parrotdrone - INFO - setVelocity function finished at: 1725981651.4851012
+2024-09-10 15:20:57,952 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981657.952559, seq id 149
+2024-09-10 15:20:57,952 - parrotdrone - INFO - setVelocity function started at: 1725981657.9529402
+2024-09-10 15:20:57,953 - parrotdrone - INFO - setVelocity function finished at: 1725981657.9531498
+2024-09-10 15:20:59,794 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981659.794764, seq id 154
+2024-09-10 15:20:59,794 - parrotdrone - INFO - setVelocity function started at: 1725981659.7949352
+2024-09-10 15:20:59,795 - parrotdrone - INFO - setVelocity function finished at: 1725981659.7950418
+2024-09-10 15:21:00,129 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981660.1296082, seq id 155
+2024-09-10 15:21:00,129 - parrotdrone - INFO - setVelocity function started at: 1725981660.1299589
+2024-09-10 15:21:00,130 - parrotdrone - INFO - setVelocity function finished at: 1725981660.1300862
+2024-09-10 15:21:00,328 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981660.3282082, seq id 156
+2024-09-10 15:21:00,328 - parrotdrone - INFO - setVelocity function started at: 1725981660.3284824
+2024-09-10 15:21:00,328 - parrotdrone - INFO - setVelocity function finished at: 1725981660.3286166
+2024-09-10 15:21:00,640 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981660.640395, seq id 157
+2024-09-10 15:21:00,640 - parrotdrone - INFO - setVelocity function started at: 1725981660.6405842
+2024-09-10 15:21:00,640 - parrotdrone - INFO - setVelocity function finished at: 1725981660.6406856
+2024-09-10 15:21:00,802 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981660.8024573, seq id 158
+2024-09-10 15:21:00,802 - parrotdrone - INFO - setVelocity function started at: 1725981660.8026202
+2024-09-10 15:21:00,802 - parrotdrone - INFO - setVelocity function finished at: 1725981660.8027048
+2024-09-10 15:21:01,155 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981661.1555688, seq id 159
+2024-09-10 15:21:01,155 - parrotdrone - INFO - setVelocity function started at: 1725981661.1558075
+2024-09-10 15:21:01,155 - parrotdrone - INFO - setVelocity function finished at: 1725981661.1559465
+2024-09-10 15:21:01,385 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981661.3856108, seq id 160
+2024-09-10 15:21:01,385 - parrotdrone - INFO - setVelocity function started at: 1725981661.385808
+2024-09-10 15:21:01,385 - parrotdrone - INFO - setVelocity function finished at: 1725981661.3858976
+2024-09-10 15:21:01,662 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981661.6625082, seq id 161
+2024-09-10 15:21:01,662 - parrotdrone - INFO - setVelocity function started at: 1725981661.6626964
+2024-09-10 15:21:01,662 - parrotdrone - INFO - setVelocity function finished at: 1725981661.6628141
+2024-09-10 15:21:01,884 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981661.8839686, seq id 162
+2024-09-10 15:21:01,884 - parrotdrone - INFO - setVelocity function started at: 1725981661.8841674
+2024-09-10 15:21:01,884 - parrotdrone - INFO - setVelocity function finished at: 1725981661.884282
+2024-09-10 15:21:02,198 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981662.1982179, seq id 163
+2024-09-10 15:21:02,198 - parrotdrone - INFO - setVelocity function started at: 1725981662.1984556
+2024-09-10 15:21:02,198 - parrotdrone - INFO - setVelocity function finished at: 1725981662.1985736
+2024-09-10 15:21:02,365 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981662.3652394, seq id 164
+2024-09-10 15:21:02,368 - parrotdrone - INFO - setVelocity function started at: 1725981662.3685024
+2024-09-10 15:21:02,368 - parrotdrone - INFO - setVelocity function finished at: 1725981662.3686335
+2024-09-10 15:21:02,710 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981662.7103736, seq id 165
+2024-09-10 15:21:02,710 - parrotdrone - INFO - setVelocity function started at: 1725981662.710953
+2024-09-10 15:21:02,711 - parrotdrone - INFO - setVelocity function finished at: 1725981662.7111912
+2024-09-10 15:21:02,939 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981662.9399045, seq id 166
+2024-09-10 15:21:02,940 - parrotdrone - INFO - setVelocity function started at: 1725981662.9401257
+2024-09-10 15:21:02,940 - parrotdrone - INFO - setVelocity function finished at: 1725981662.9402425
+2024-09-10 15:21:04,022 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981664.0222924, seq id 169
+2024-09-10 15:21:04,023 - parrotdrone - INFO - setVelocity function started at: 1725981664.02364
+2024-09-10 15:21:04,023 - parrotdrone - INFO - setVelocity function finished at: 1725981664.0238025
+2024-09-10 15:21:04,247 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981664.2471392, seq id 170
+2024-09-10 15:21:04,247 - parrotdrone - INFO - setVelocity function started at: 1725981664.2473283
+2024-09-10 15:21:04,247 - parrotdrone - INFO - setVelocity function finished at: 1725981664.247459
+2024-09-10 15:21:04,559 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981664.559621, seq id 171
+2024-09-10 15:21:04,559 - parrotdrone - INFO - setVelocity function started at: 1725981664.5597646
+2024-09-10 15:21:04,559 - parrotdrone - INFO - setVelocity function finished at: 1725981664.55984
+2024-09-10 15:21:04,768 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981664.7680986, seq id 172
+2024-09-10 15:21:04,768 - parrotdrone - INFO - setVelocity function started at: 1725981664.7682998
+2024-09-10 15:21:04,768 - parrotdrone - INFO - setVelocity function finished at: 1725981664.76842
+2024-09-10 15:21:05,054 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981665.0539818, seq id 173
+2024-09-10 15:21:05,054 - parrotdrone - INFO - setVelocity function started at: 1725981665.0542603
+2024-09-10 15:21:05,054 - parrotdrone - INFO - setVelocity function finished at: 1725981665.054439
+2024-09-10 15:21:05,310 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981665.3104339, seq id 174
+2024-09-10 15:21:05,310 - parrotdrone - INFO - setVelocity function started at: 1725981665.3106363
+2024-09-10 15:21:05,310 - parrotdrone - INFO - setVelocity function finished at: 1725981665.310746
+2024-09-10 15:21:19,299 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981679.2994022, seq id 203
+2024-09-10 15:21:19,299 - parrotdrone - INFO - setVelocity function started at: 1725981679.2998984
+2024-09-10 15:21:19,300 - parrotdrone - INFO - setVelocity function finished at: 1725981679.3001595
+2024-09-10 15:21:19,661 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981679.6610627, seq id 204
+2024-09-10 15:21:19,661 - parrotdrone - INFO - setVelocity function started at: 1725981679.661332
+2024-09-10 15:21:19,661 - parrotdrone - INFO - setVelocity function finished at: 1725981679.661492
+2024-09-10 15:21:19,785 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981679.7855623, seq id 205
+2024-09-10 15:21:19,785 - parrotdrone - INFO - setVelocity function started at: 1725981679.7857456
+2024-09-10 15:21:19,785 - parrotdrone - INFO - setVelocity function finished at: 1725981679.7858372
+2024-09-10 15:21:20,204 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981680.2049565, seq id 206
+2024-09-10 15:21:20,205 - parrotdrone - INFO - setVelocity function started at: 1725981680.2051337
+2024-09-10 15:21:20,205 - parrotdrone - INFO - setVelocity function finished at: 1725981680.2052276
+2024-09-10 15:21:20,708 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981680.7085605, seq id 207
+2024-09-10 15:21:20,708 - parrotdrone - INFO - setVelocity function started at: 1725981680.7088196
+2024-09-10 15:21:20,708 - parrotdrone - INFO - setVelocity function finished at: 1725981680.7089381
+2024-09-10 15:21:21,373 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981681.373514, seq id 209
+2024-09-10 15:21:21,373 - parrotdrone - INFO - setVelocity function started at: 1725981681.373752
+2024-09-10 15:21:21,373 - parrotdrone - INFO - setVelocity function finished at: 1725981681.3738773
+2024-09-10 15:21:21,816 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981681.816437, seq id 210
+2024-09-10 15:21:21,816 - parrotdrone - INFO - setVelocity function started at: 1725981681.8167984
+2024-09-10 15:21:21,816 - parrotdrone - INFO - setVelocity function finished at: 1725981681.816917
+2024-09-10 15:21:21,970 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981681.970228, seq id 211
+2024-09-10 15:21:21,970 - parrotdrone - INFO - setVelocity function started at: 1725981681.9704347
+2024-09-10 15:21:21,970 - parrotdrone - INFO - setVelocity function finished at: 1725981681.970537
+2024-09-10 15:21:22,330 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981682.330785, seq id 212
+2024-09-10 15:21:22,331 - parrotdrone - INFO - setVelocity function started at: 1725981682.3316944
+2024-09-10 15:21:22,332 - parrotdrone - INFO - setVelocity function finished at: 1725981682.332779
+2024-09-10 15:21:22,474 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981682.4748168, seq id 213
+2024-09-10 15:21:22,474 - parrotdrone - INFO - setVelocity function started at: 1725981682.4749827
+2024-09-10 15:21:22,475 - parrotdrone - INFO - setVelocity function finished at: 1725981682.475068
+2024-09-10 15:21:22,821 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981682.821697, seq id 214
+2024-09-10 15:21:22,822 - parrotdrone - INFO - setVelocity function started at: 1725981682.822004
+2024-09-10 15:21:22,822 - parrotdrone - INFO - setVelocity function finished at: 1725981682.8221922
+2024-09-10 15:21:22,958 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981682.9585161, seq id 215
+2024-09-10 15:21:22,958 - parrotdrone - INFO - setVelocity function started at: 1725981682.9587812
+2024-09-10 15:21:22,958 - parrotdrone - INFO - setVelocity function finished at: 1725981682.9589612
+2024-09-10 15:21:23,338 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981683.3388553, seq id 216
+2024-09-10 15:21:23,339 - parrotdrone - INFO - setVelocity function started at: 1725981683.339132
+2024-09-10 15:21:23,339 - parrotdrone - INFO - setVelocity function finished at: 1725981683.3392315
+2024-09-10 15:21:23,512 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981683.512675, seq id 217
+2024-09-10 15:21:23,512 - parrotdrone - INFO - setVelocity function started at: 1725981683.512825
+2024-09-10 15:21:23,512 - parrotdrone - INFO - setVelocity function finished at: 1725981683.5129273
+2024-09-10 15:21:23,916 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981683.9162617, seq id 218
+2024-09-10 15:21:23,916 - parrotdrone - INFO - setVelocity function started at: 1725981683.916446
+2024-09-10 15:21:23,916 - parrotdrone - INFO - setVelocity function finished at: 1725981683.9165933
+2024-09-10 15:21:24,675 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981684.6755826, seq id 220
+2024-09-10 15:21:24,675 - parrotdrone - INFO - setVelocity function started at: 1725981684.6758373
+2024-09-10 15:21:24,676 - parrotdrone - INFO - setVelocity function finished at: 1725981684.6760397
+2024-09-10 15:21:25,071 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981685.0712492, seq id 221
+2024-09-10 15:21:25,071 - parrotdrone - INFO - setVelocity function started at: 1725981685.0714161
+2024-09-10 15:21:25,071 - parrotdrone - INFO - setVelocity function finished at: 1725981685.0715015
+2024-09-10 15:21:25,193 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981685.1936774, seq id 222
+2024-09-10 15:21:25,193 - parrotdrone - INFO - setVelocity function started at: 1725981685.1938517
+2024-09-10 15:21:25,193 - parrotdrone - INFO - setVelocity function finished at: 1725981685.1939425
+2024-09-10 15:21:25,563 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981685.563084, seq id 223
+2024-09-10 15:21:25,563 - parrotdrone - INFO - setVelocity function started at: 1725981685.5634408
+2024-09-10 15:21:25,563 - parrotdrone - INFO - setVelocity function finished at: 1725981685.5635786
+2024-09-10 15:21:25,670 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981685.6700733, seq id 224
+2024-09-10 15:21:25,670 - parrotdrone - INFO - setVelocity function started at: 1725981685.6702104
+2024-09-10 15:21:25,670 - parrotdrone - INFO - setVelocity function finished at: 1725981685.6702836
+2024-09-10 15:21:25,989 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981685.9897048, seq id 225
+2024-09-10 15:21:25,989 - parrotdrone - INFO - setVelocity function started at: 1725981685.9899056
+2024-09-10 15:21:25,992 - parrotdrone - INFO - setVelocity function finished at: 1725981685.9927745
+2024-09-10 15:21:26,154 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981686.154263, seq id 226
+2024-09-10 15:21:26,154 - parrotdrone - INFO - setVelocity function started at: 1725981686.1544502
+2024-09-10 15:21:26,154 - parrotdrone - INFO - setVelocity function finished at: 1725981686.1545753
+2024-09-10 15:21:26,540 - root - INFO - Setting velocity: right_vel: 2.0
+ started at 1725981686.5406222, seq id 227
+2024-09-10 15:21:26,544 - parrotdrone - INFO - setVelocity function started at: 1725981686.5442734
+2024-09-10 15:21:26,544 - parrotdrone - INFO - setVelocity function finished at: 1725981686.5444777
+2024-09-10 15:21:34,050 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981694.050589, seq id 243
+2024-09-10 15:21:34,050 - parrotdrone - INFO - setVelocity function started at: 1725981694.0509496
+2024-09-10 15:21:34,051 - parrotdrone - INFO - setVelocity function finished at: 1725981694.051114
+2024-09-10 15:21:34,321 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981694.3212068, seq id 244
+2024-09-10 15:21:34,321 - parrotdrone - INFO - setVelocity function started at: 1725981694.321353
+2024-09-10 15:21:34,321 - parrotdrone - INFO - setVelocity function finished at: 1725981694.3214297
+2024-09-10 15:21:34,549 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981694.5492392, seq id 245
+2024-09-10 15:21:34,549 - parrotdrone - INFO - setVelocity function started at: 1725981694.5494444
+2024-09-10 15:21:34,549 - parrotdrone - INFO - setVelocity function finished at: 1725981694.549629
+2024-09-10 15:21:34,860 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981694.8607965, seq id 246
+2024-09-10 15:21:34,860 - parrotdrone - INFO - setVelocity function started at: 1725981694.8609493
+2024-09-10 15:21:34,861 - parrotdrone - INFO - setVelocity function finished at: 1725981694.8610256
+2024-09-10 15:21:35,095 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981695.0957263, seq id 247
+2024-09-10 15:21:35,095 - parrotdrone - INFO - setVelocity function started at: 1725981695.0959272
+2024-09-10 15:21:35,096 - parrotdrone - INFO - setVelocity function finished at: 1725981695.0960422
+2024-09-10 15:21:35,380 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981695.3806765, seq id 248
+2024-09-10 15:21:35,381 - parrotdrone - INFO - setVelocity function started at: 1725981695.3810494
+2024-09-10 15:21:35,381 - parrotdrone - INFO - setVelocity function finished at: 1725981695.3813071
+2024-09-10 15:21:35,583 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981695.5837684, seq id 249
+2024-09-10 15:21:35,588 - parrotdrone - INFO - setVelocity function started at: 1725981695.5885732
+2024-09-10 15:21:35,588 - parrotdrone - INFO - setVelocity function finished at: 1725981695.5887523
+2024-09-10 15:21:35,888 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981695.888178, seq id 250
+2024-09-10 15:21:35,888 - parrotdrone - INFO - setVelocity function started at: 1725981695.8883238
+2024-09-10 15:21:35,888 - parrotdrone - INFO - setVelocity function finished at: 1725981695.8884032
+2024-09-10 15:21:36,128 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981696.1280348, seq id 251
+2024-09-10 15:21:36,128 - parrotdrone - INFO - setVelocity function started at: 1725981696.1284146
+2024-09-10 15:21:36,128 - parrotdrone - INFO - setVelocity function finished at: 1725981696.1286213
+2024-09-10 15:21:36,405 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981696.4054642, seq id 252
+2024-09-10 15:21:36,405 - parrotdrone - INFO - setVelocity function started at: 1725981696.4056048
+2024-09-10 15:21:36,405 - parrotdrone - INFO - setVelocity function finished at: 1725981696.405681
+2024-09-10 15:21:36,633 - root - INFO - Setting velocity: right_vel: -2.0
+ started at 1725981696.63387, seq id 253
+2024-09-10 15:21:36,634 - parrotdrone - INFO - setVelocity function started at: 1725981696.6341054
+2024-09-10 15:21:36,634 - parrotdrone - INFO - setVelocity function finished at: 1725981696.6341894

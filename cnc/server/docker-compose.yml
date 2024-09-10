@@ -16,7 +16,7 @@ services:
     ports:
       - "9099:9099"
       - "5555:5555"
-    entrypoint: [ "./main.py", "-t", "30" ]
+    entrypoint: [ "./main.py", "-t", "30", "-z"]
     restart: unless-stopped
     networks:
       - cnc-net
@@ -238,6 +238,10 @@ networks:
       config:
         - subnet: 11.11.0.0/24
   redis:
+    ipam:
+      driver: default
+      config:
+        - subnet: 12.12.0.0/24
 volumes:
   training-vol:
 

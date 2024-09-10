@@ -109,7 +109,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
             case "hover":
-                logger.debug(f"hover function call started at: {time.time()}")
+                logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.hover()
                 logger.debug("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
@@ -128,7 +128,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setVelocity":
                 velocity = message.setVelocity
-                logger.debug(f"Setting velocity: {velocity}")
+                logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":

@@ -217,8 +217,8 @@ class ParrotDrone():
 
     async def _velocityPID(self):
         try:
-            forward_PID = {"Kp": 0.5, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
-            right_PID = {"Kp": 0.5, "Kd": 0.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            forward_PID = {"Kp": 0.6, "Kd": 0.2, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
+            right_PID = {"Kp": 0.6, "Kd": 0.2, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
             up_PID = {"Kp": 2.5, "Kd": 1.5, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
             ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
             rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
@@ -240,6 +240,8 @@ class ParrotDrone():
                 else:
                     D = 0
                 
+                # For testing Integral component
+                I = 0.0
                 return P, I, D
             
             while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
@@ -249,13 +251,13 @@ class ParrotDrone():
 
                 error = {}
                 error["forward"] = forwardSP - current["forward"]
-                if abs(error["forward"]) < 0.1:
+                if abs(error["forward"]) < 0.01:
                     error["forward"] = 0
                 error["right"] = rightSP - current["right"]
-                if abs(error["right"]) < 0.1:
+                if abs(error["right"]) < 0.01:
                     error["right"] = 0
                 error["up"] = upSP - current["up"]
-                if abs(error["up"]) < 0.1:
+                if abs(error["up"]) < 0.01:
                     error["up"] = 0
 
                 # On first loop through, set previous timestamp and error

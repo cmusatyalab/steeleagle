@@ -1,0 +1,555 @@
+2024-09-10 15:19:15,771 - util.utils - INFO - addr: tcp://*:5001
+2024-09-10 15:19:15,771 - util.utils - INFO - Created telemetry socket endpoint
+2024-09-10 15:19:15,772 - util.utils - INFO - addr: tcp://*:5002
+2024-09-10 15:19:15,772 - util.utils - INFO - Created camera socket endpoint
+2024-09-10 15:19:15,772 - util.utils - INFO - addr: tcp://*:5003
+2024-09-10 15:19:15,772 - util.utils - INFO - Created command frontend socket endpoint
+2024-09-10 15:19:15,772 - util.utils - INFO - addr: tcp://*:5004
+2024-09-10 15:19:15,772 - util.utils - INFO - Created command backend socket endpoint
+2024-09-10 15:19:15,772 - util.utils - INFO - addr: tcp://*:5005
+2024-09-10 15:19:15,772 - util.utils - INFO - Created user space mission control socket endpoint
+2024-09-10 15:19:15,773 - root - INFO - Main: starting Kernel
+2024-09-10 15:19:15,773 - root - INFO - Main: Gabriel server: 128.2.213.139
+2024-09-10 15:19:15,773 - root - INFO - Main: Gabriel port: 9099
+2024-09-10 15:19:15,773 - root - INFO - Main: creating gabriel client
+2024-09-10 15:19:15,773 - root - INFO - Main: gabriel client created
+2024-09-10 15:19:15,774 - root - INFO - cmd_proxy started
+2024-09-10 15:19:15,774 - root - INFO - Telemetry handler started
+2024-09-10 15:19:15,774 - root - INFO - Camera handler started
+2024-09-10 15:19:15,774 - gabriel_client.zeromq_client - INFO - Connecting to server at tcp://128.2.213.139:9099
+2024-09-10 15:19:15,774 - gabriel_client.zeromq_client - INFO - Sent hello message to server
+2024-09-10 15:19:15,776 - gabriel_client.zeromq_client - INFO - Received welcome from server
+2024-09-10 15:20:03,157 - root - INFO - PCMD signal started at: 1725981603.1577756 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 1
+2024-09-10 15:20:03,892 - root - INFO - PCMD signal started at: 1725981603.8927836 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 2
+2024-09-10 15:20:04,409 - root - INFO - PCMD signal started at: 1725981604.4092863 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 3
+2024-09-10 15:20:04,965 - root - INFO - PCMD signal started at: 1725981604.965863 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 4
+2024-09-10 15:20:05,503 - root - INFO - PCMD signal started at: 1725981605.503683 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 5
+2024-09-10 15:20:06,020 - root - INFO - PCMD signal started at: 1725981606.020335 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 6
+2024-09-10 15:20:06,528 - root - INFO - PCMD signal started at: 1725981606.5280678 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 7
+2024-09-10 15:20:07,011 - root - INFO - PCMD signal started at: 1725981607.0112302 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 8
+2024-09-10 15:20:07,531 - root - INFO - PCMD signal started at: 1725981607.5313911 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 9
+2024-09-10 15:20:08,028 - root - INFO - PCMD signal started at: 1725981608.0282476 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 10
+2024-09-10 15:20:08,540 - root - INFO - PCMD signal started at: 1725981608.5406778 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 11
+2024-09-10 15:20:09,031 - root - INFO - PCMD signal started at: 1725981609.0318744 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 12
+2024-09-10 15:20:09,527 - root - INFO - PCMD signal started at: 1725981609.5276895 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 13
+2024-09-10 15:20:10,045 - root - INFO - PCMD signal started at: 1725981610.0456753 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 14
+2024-09-10 15:20:10,549 - root - INFO - PCMD signal started at: 1725981610.5495353 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 15
+2024-09-10 15:20:11,051 - root - INFO - PCMD signal started at: 1725981611.0517743 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 16
+2024-09-10 15:20:11,571 - root - INFO - PCMD signal started at: 1725981611.5714264 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 17
+2024-09-10 15:20:11,979 - root - INFO - takeoff signal started at: 1725981611.9798932 seq id 18
+2024-09-10 15:20:11,980 - root - INFO - takeoff signal sent at: 1725981611.9803028, seq id  18
+2024-09-10 15:20:12,241 - root - INFO - PCMD signal started at: 1725981612.2410324 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 19
+2024-09-10 15:20:12,666 - root - INFO - PCMD signal started at: 1725981612.666318 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 20
+2024-09-10 15:20:13,194 - root - INFO - PCMD signal started at: 1725981613.194806 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 21
+2024-09-10 15:20:13,680 - root - INFO - PCMD signal started at: 1725981613.680968 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 22
+2024-09-10 15:20:14,211 - root - INFO - PCMD signal started at: 1725981614.2117438 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 23
+2024-09-10 15:20:14,771 - root - INFO - PCMD signal started at: 1725981614.7712655 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 24
+2024-09-10 15:20:15,286 - root - INFO - PCMD signal started at: 1725981615.2860763 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 25
+2024-09-10 15:20:15,791 - root - INFO - PCMD signal started at: 1725981615.7913566 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 26
+2024-09-10 15:20:16,284 - root - INFO - PCMD signal started at: 1725981616.2847888 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 27
+2024-09-10 15:20:16,763 - root - INFO - PCMD signal started at: 1725981616.763756 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 28
+2024-09-10 15:20:17,282 - root - INFO - PCMD signal started at: 1725981617.2824502 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 29
+2024-09-10 15:20:17,806 - root - INFO - PCMD signal started at: 1725981617.8068776 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 30
+2024-09-10 15:20:18,329 - root - INFO - PCMD signal started at: 1725981618.329345 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 31
+2024-09-10 15:20:18,700 - root - INFO - PCMD signal started at: 1725981618.7009485 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 32
+2024-09-10 15:20:18,701 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981618.7014136, seq id 32
+2024-09-10 15:20:18,854 - root - INFO - PCMD signal started at: 1725981618.854335 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 33
+2024-09-10 15:20:18,854 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981618.8547783, seq id 33
+2024-09-10 15:20:19,193 - root - INFO - PCMD signal started at: 1725981619.1936154 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 34
+2024-09-10 15:20:19,194 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981619.194076, seq id 34
+2024-09-10 15:20:19,354 - root - INFO - PCMD signal started at: 1725981619.3549294 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 35
+2024-09-10 15:20:19,355 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981619.3558958, seq id 35
+2024-09-10 15:20:19,707 - root - INFO - PCMD signal started at: 1725981619.7076535 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 36
+2024-09-10 15:20:19,708 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981619.7081811, seq id 36
+2024-09-10 15:20:19,955 - root - INFO - PCMD signal started at: 1725981619.955608 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 37
+2024-09-10 15:20:19,956 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981619.9561074, seq id 37
+2024-09-10 15:20:20,232 - root - INFO - PCMD signal started at: 1725981620.2320588 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 38
+2024-09-10 15:20:20,232 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981620.2325184, seq id 38
+2024-09-10 15:20:20,475 - root - INFO - PCMD signal started at: 1725981620.4756916 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 39
+2024-09-10 15:20:20,476 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981620.476171, seq id 39
+2024-09-10 15:20:20,740 - root - INFO - PCMD signal started at: 1725981620.7406287 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 40
+2024-09-10 15:20:20,741 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981620.7410028, seq id 40
+2024-09-10 15:20:21,008 - root - INFO - PCMD signal started at: 1725981621.0087879 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 41
+2024-09-10 15:20:21,009 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981621.0092483, seq id 41
+2024-09-10 15:20:21,251 - root - INFO - PCMD signal started at: 1725981621.2517009 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 42
+2024-09-10 15:20:21,252 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981621.2520928, seq id 42
+2024-09-10 15:20:21,511 - root - INFO - PCMD signal started at: 1725981621.5110788 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 43
+2024-09-10 15:20:21,511 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981621.5116081, seq id 43
+2024-09-10 15:20:21,784 - root - INFO - PCMD signal started at: 1725981621.784936 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 44
+2024-09-10 15:20:21,785 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981621.7853258, seq id 44
+2024-09-10 15:20:22,016 - root - INFO - PCMD signal started at: 1725981622.0166597 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 75} seq id 45
+2024-09-10 15:20:22,017 - root - INFO - Driver Command setVelocities: up_vel: 2.0
+ sent at:1725981622.0173528, seq id 45
+2024-09-10 15:20:22,182 - root - INFO - PCMD signal started at: 1725981622.182314 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 46
+2024-09-10 15:20:22,511 - root - INFO - PCMD signal started at: 1725981622.5119376 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 47
+2024-09-10 15:20:22,696 - root - INFO - PCMD signal started at: 1725981622.696027 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 48
+2024-09-10 15:20:22,696 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981622.6964107, seq id 48
+2024-09-10 15:20:23,111 - root - INFO - PCMD signal started at: 1725981623.1115587 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 49
+2024-09-10 15:20:23,112 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981623.1123345, seq id 49
+2024-09-10 15:20:23,382 - root - INFO - PCMD signal started at: 1725981623.382341 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 50
+2024-09-10 15:20:23,382 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981623.3828068, seq id 50
+2024-09-10 15:20:23,622 - root - INFO - PCMD signal started at: 1725981623.622252 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 51
+2024-09-10 15:20:23,623 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981623.6229951, seq id 51
+2024-09-10 15:20:23,898 - root - INFO - PCMD signal started at: 1725981623.8984957 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 52
+2024-09-10 15:20:23,898 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981623.8988895, seq id 52
+2024-09-10 15:20:24,157 - root - INFO - PCMD signal started at: 1725981624.1573281 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 53
+2024-09-10 15:20:24,157 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981624.157863, seq id 53
+2024-09-10 15:20:24,427 - root - INFO - PCMD signal started at: 1725981624.427619 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 54
+2024-09-10 15:20:24,428 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981624.4280748, seq id 54
+2024-09-10 15:20:24,665 - root - INFO - PCMD signal started at: 1725981624.6650226 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 55
+2024-09-10 15:20:24,665 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981624.6655905, seq id 55
+2024-09-10 15:20:24,918 - root - INFO - PCMD signal started at: 1725981624.918234 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 56
+2024-09-10 15:20:24,918 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981624.918825, seq id 56
+2024-09-10 15:20:25,148 - root - INFO - PCMD signal started at: 1725981625.148488 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 57
+2024-09-10 15:20:25,148 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981625.1489613, seq id 57
+2024-09-10 15:20:25,439 - root - INFO - PCMD signal started at: 1725981625.439764 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 58
+2024-09-10 15:20:25,440 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981625.4402487, seq id 58
+2024-09-10 15:20:25,695 - root - INFO - PCMD signal started at: 1725981625.6959057 PCMD values: {'pitch': 25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 59
+2024-09-10 15:20:25,696 - root - INFO - Driver Command setVelocities: forward_vel: 2.0
+ sent at:1725981625.6963084, seq id 59
+2024-09-10 15:20:25,867 - root - INFO - PCMD signal started at: 1725981625.8678696 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 60
+2024-09-10 15:20:26,239 - root - INFO - PCMD signal started at: 1725981626.2398546 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 61
+2024-09-10 15:20:26,375 - root - INFO - PCMD signal started at: 1725981626.3757308 PCMD values: {'pitch': 0, 'yaw': 75, 'roll': 0, 'thrust': 0} seq id 62
+2024-09-10 15:20:26,376 - root - INFO - Driver Command setVelocities: angle_vel: 20.0
+ sent at:1725981626.3760722, seq id 62
+2024-09-10 15:20:26,792 - root - INFO - PCMD signal started at: 1725981626.7926283 PCMD values: {'pitch': 0, 'yaw': 75, 'roll': 0, 'thrust': 0} seq id 63
+2024-09-10 15:20:26,793 - root - INFO - Driver Command setVelocities: angle_vel: 20.0
+ sent at:1725981626.7932093, seq id 63
+2024-09-10 15:20:26,938 - root - INFO - PCMD signal started at: 1725981626.9389324 PCMD values: {'pitch': 0, 'yaw': 75, 'roll': 0, 'thrust': 0} seq id 64
+2024-09-10 15:20:26,939 - root - INFO - Driver Command setVelocities: angle_vel: 20.0
+ sent at:1725981626.9392228, seq id 64
+2024-09-10 15:20:27,331 - root - INFO - PCMD signal started at: 1725981627.331669 PCMD values: {'pitch': 0, 'yaw': 75, 'roll': 0, 'thrust': 0} seq id 65
+2024-09-10 15:20:27,332 - root - INFO - Driver Command setVelocities: angle_vel: 20.0
+ sent at:1725981627.3325095, seq id 65
+2024-09-10 15:20:27,572 - root - INFO - PCMD signal started at: 1725981627.5720608 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 66
+2024-09-10 15:20:27,572 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981627.5727794, seq id 66
+2024-09-10 15:20:27,961 - root - INFO - PCMD signal started at: 1725981627.9615004 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 67
+2024-09-10 15:20:28,299 - root - INFO - PCMD signal started at: 1725981628.2990768 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 68
+2024-09-10 15:20:28,444 - root - INFO - PCMD signal started at: 1725981628.444928 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 69
+2024-09-10 15:20:28,835 - root - INFO - PCMD signal started at: 1725981628.8353505 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 70
+2024-09-10 15:20:28,836 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981628.8361177, seq id 70
+2024-09-10 15:20:29,002 - root - INFO - PCMD signal started at: 1725981629.0025146 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 71
+2024-09-10 15:20:29,002 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981629.0029683, seq id 71
+2024-09-10 15:20:29,363 - root - INFO - PCMD signal started at: 1725981629.3636374 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 72
+2024-09-10 15:20:29,364 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981629.3641756, seq id 72
+2024-09-10 15:20:29,524 - root - INFO - PCMD signal started at: 1725981629.523974 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 73
+2024-09-10 15:20:29,524 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981629.524357, seq id 73
+2024-09-10 15:20:29,875 - root - INFO - PCMD signal started at: 1725981629.875721 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 74
+2024-09-10 15:20:29,876 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981629.876276, seq id 74
+2024-09-10 15:20:30,047 - root - INFO - PCMD signal started at: 1725981630.047445 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 75
+2024-09-10 15:20:30,047 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981630.0478537, seq id 75
+2024-09-10 15:20:30,380 - root - INFO - PCMD signal started at: 1725981630.3800378 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 76
+2024-09-10 15:20:30,380 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981630.380516, seq id 76
+2024-09-10 15:20:30,658 - root - INFO - PCMD signal started at: 1725981630.6579847 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 77
+2024-09-10 15:20:30,658 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981630.6586204, seq id 77
+2024-09-10 15:20:30,907 - root - INFO - PCMD signal started at: 1725981630.907505 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 78
+2024-09-10 15:20:30,908 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981630.9080067, seq id 78
+2024-09-10 15:20:31,141 - root - INFO - PCMD signal started at: 1725981631.1413302 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 79
+2024-09-10 15:20:31,142 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981631.1422584, seq id 79
+2024-09-10 15:20:31,407 - root - INFO - PCMD signal started at: 1725981631.4076622 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 80
+2024-09-10 15:20:31,408 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981631.40807, seq id 80
+2024-09-10 15:20:31,645 - root - INFO - PCMD signal started at: 1725981631.6452062 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 81
+2024-09-10 15:20:31,645 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981631.645717, seq id 81
+2024-09-10 15:20:31,972 - root - INFO - PCMD signal started at: 1725981631.9720235 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 82
+2024-09-10 15:20:31,972 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981631.972614, seq id 82
+2024-09-10 15:20:32,245 - root - INFO - PCMD signal started at: 1725981632.2454102 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 83
+2024-09-10 15:20:32,245 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981632.2457886, seq id 83
+2024-09-10 15:20:32,464 - root - INFO - PCMD signal started at: 1725981632.4640672 PCMD values: {'pitch': -25, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 84
+2024-09-10 15:20:32,464 - root - INFO - Driver Command setVelocities: forward_vel: -2.0
+ sent at:1725981632.4645667, seq id 84
+2024-09-10 15:20:32,794 - root - INFO - PCMD signal started at: 1725981632.7945457 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 85
+2024-09-10 15:20:33,203 - root - INFO - PCMD signal started at: 1725981633.2039158 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 86
+2024-09-10 15:20:33,204 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981633.2044053, seq id 86
+2024-09-10 15:20:33,358 - root - INFO - PCMD signal started at: 1725981633.358244 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 87
+2024-09-10 15:20:33,358 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981633.3586385, seq id 87
+2024-09-10 15:20:33,724 - root - INFO - PCMD signal started at: 1725981633.724309 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 88
+2024-09-10 15:20:33,724 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981633.7248974, seq id 88
+2024-09-10 15:20:33,878 - root - INFO - PCMD signal started at: 1725981633.8786175 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 89
+2024-09-10 15:20:33,878 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981633.8789687, seq id 89
+2024-09-10 15:20:34,295 - root - INFO - PCMD signal started at: 1725981634.2953236 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 90
+2024-09-10 15:20:34,296 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981634.2961524, seq id 90
+2024-09-10 15:20:34,445 - root - INFO - PCMD signal started at: 1725981634.4455447 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 91
+2024-09-10 15:20:34,446 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981634.446019, seq id 91
+2024-09-10 15:20:34,777 - root - INFO - PCMD signal started at: 1725981634.777745 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 92
+2024-09-10 15:20:34,778 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981634.778286, seq id 92
+2024-09-10 15:20:34,972 - root - INFO - PCMD signal started at: 1725981634.9719856 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 93
+2024-09-10 15:20:34,972 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981634.972364, seq id 93
+2024-09-10 15:20:35,304 - root - INFO - PCMD signal started at: 1725981635.3046467 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 94
+2024-09-10 15:20:35,305 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981635.3051383, seq id 94
+2024-09-10 15:20:35,527 - root - INFO - PCMD signal started at: 1725981635.52794 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 95
+2024-09-10 15:20:35,528 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981635.5283868, seq id 95
+2024-09-10 15:20:35,809 - root - INFO - PCMD signal started at: 1725981635.8099468 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 96
+2024-09-10 15:20:35,810 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981635.810262, seq id 96
+2024-09-10 15:20:36,071 - root - INFO - PCMD signal started at: 1725981636.071851 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 97
+2024-09-10 15:20:36,508 - root - INFO - PCMD signal started at: 1725981636.5080864 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 98
+2024-09-10 15:20:37,027 - root - INFO - PCMD signal started at: 1725981637.0271852 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 99
+2024-09-10 15:20:37,534 - root - INFO - PCMD signal started at: 1725981637.5344331 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 100
+2024-09-10 15:20:38,068 - root - INFO - PCMD signal started at: 1725981638.068831 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 101
+2024-09-10 15:20:38,571 - root - INFO - PCMD signal started at: 1725981638.5711355 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 102
+2024-09-10 15:20:39,098 - root - INFO - PCMD signal started at: 1725981639.0987217 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 103
+2024-09-10 15:20:39,619 - root - INFO - PCMD signal started at: 1725981639.6198034 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 104
+2024-09-10 15:20:40,110 - root - INFO - PCMD signal started at: 1725981640.110076 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 105
+2024-09-10 15:20:40,600 - root - INFO - PCMD signal started at: 1725981640.600274 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 106
+2024-09-10 15:20:41,139 - root - INFO - PCMD signal started at: 1725981641.1395187 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 107
+2024-09-10 15:20:41,617 - root - INFO - PCMD signal started at: 1725981641.6169708 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 108
+2024-09-10 15:20:42,119 - root - INFO - PCMD signal started at: 1725981642.1199439 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 109
+2024-09-10 15:20:42,618 - root - INFO - PCMD signal started at: 1725981642.6187065 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 110
+2024-09-10 15:20:43,112 - root - INFO - PCMD signal started at: 1725981643.1125898 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 111
+2024-09-10 15:20:43,607 - root - INFO - PCMD signal started at: 1725981643.607548 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 112
+2024-09-10 15:20:44,140 - root - INFO - PCMD signal started at: 1725981644.1403983 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 113
+2024-09-10 15:20:44,628 - root - INFO - PCMD signal started at: 1725981644.6280708 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 114
+2024-09-10 15:20:45,108 - root - INFO - PCMD signal started at: 1725981645.108318 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 115
+2024-09-10 15:20:45,654 - root - INFO - PCMD signal started at: 1725981645.6542053 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 116
+2024-09-10 15:20:46,131 - root - INFO - PCMD signal started at: 1725981646.1317415 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 117
+2024-09-10 15:20:46,395 - root - INFO - PCMD signal started at: 1725981646.395805 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 118
+2024-09-10 15:20:46,396 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981646.3962605, seq id 118
+2024-09-10 15:20:46,782 - root - INFO - PCMD signal started at: 1725981646.782064 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 119
+2024-09-10 15:20:46,782 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981646.7824478, seq id 119
+2024-09-10 15:20:46,944 - root - INFO - PCMD signal started at: 1725981646.9449675 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 120
+2024-09-10 15:20:46,945 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981646.945331, seq id 120
+2024-09-10 15:20:47,365 - root - INFO - PCMD signal started at: 1725981647.3651407 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 121
+2024-09-10 15:20:47,365 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981647.3657997, seq id 121
+2024-09-10 15:20:47,533 - root - INFO - PCMD signal started at: 1725981647.5336177 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 122
+2024-09-10 15:20:47,534 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981647.5343344, seq id 122
+2024-09-10 15:20:47,880 - root - INFO - PCMD signal started at: 1725981647.8800256 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 123
+2024-09-10 15:20:47,880 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981647.880636, seq id 123
+2024-09-10 15:20:48,046 - root - INFO - PCMD signal started at: 1725981648.046136 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 124
+2024-09-10 15:20:48,046 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981648.0465975, seq id 124
+2024-09-10 15:20:48,465 - root - INFO - PCMD signal started at: 1725981648.4658918 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 125
+2024-09-10 15:20:48,466 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981648.4663546, seq id 125
+2024-09-10 15:20:48,603 - root - INFO - PCMD signal started at: 1725981648.6035764 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 126
+2024-09-10 15:20:48,604 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981648.6041582, seq id 126
+2024-09-10 15:20:49,004 - root - INFO - PCMD signal started at: 1725981649.004397 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 127
+2024-09-10 15:20:49,004 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981649.0047922, seq id 127
+2024-09-10 15:20:49,181 - root - INFO - PCMD signal started at: 1725981649.1810124 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 128
+2024-09-10 15:20:49,181 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981649.18139, seq id 128
+2024-09-10 15:20:49,594 - root - INFO - PCMD signal started at: 1725981649.5948699 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 129
+2024-09-10 15:20:49,595 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981649.5954337, seq id 129
+2024-09-10 15:20:49,741 - root - INFO - PCMD signal started at: 1725981649.7416694 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 130
+2024-09-10 15:20:49,742 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981649.7420309, seq id 130
+2024-09-10 15:20:50,148 - root - INFO - PCMD signal started at: 1725981650.148118 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 131
+2024-09-10 15:20:50,148 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981650.148516, seq id 131
+2024-09-10 15:20:50,334 - root - INFO - PCMD signal started at: 1725981650.3341224 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 132
+2024-09-10 15:20:50,334 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981650.3348124, seq id 132
+2024-09-10 15:20:50,712 - root - INFO - PCMD signal started at: 1725981650.712674 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 133
+2024-09-10 15:20:50,713 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981650.7130601, seq id 133
+2024-09-10 15:20:50,981 - root - INFO - PCMD signal started at: 1725981650.9811578 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 134
+2024-09-10 15:20:50,981 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981650.981614, seq id 134
+2024-09-10 15:20:51,237 - root - INFO - PCMD signal started at: 1725981651.2375731 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 135
+2024-09-10 15:20:51,238 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981651.2381635, seq id 135
+2024-09-10 15:20:51,481 - root - INFO - PCMD signal started at: 1725981651.4810379 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 136
+2024-09-10 15:20:51,481 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981651.4814107, seq id 136
+2024-09-10 15:20:52,035 - root - INFO - PCMD signal started at: 1725981652.0353692 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 137
+2024-09-10 15:20:52,422 - root - INFO - PCMD signal started at: 1725981652.422486 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 138
+2024-09-10 15:20:52,940 - root - INFO - PCMD signal started at: 1725981652.940953 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 139
+2024-09-10 15:20:53,448 - root - INFO - PCMD signal started at: 1725981653.4489305 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 140
+2024-09-10 15:20:53,967 - root - INFO - PCMD signal started at: 1725981653.9672287 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 141
+2024-09-10 15:20:54,458 - root - INFO - PCMD signal started at: 1725981654.4582698 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 142
+2024-09-10 15:20:54,955 - root - INFO - PCMD signal started at: 1725981654.9558222 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 143
+2024-09-10 15:20:55,447 - root - INFO - PCMD signal started at: 1725981655.4477875 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 144
+2024-09-10 15:20:55,955 - root - INFO - PCMD signal started at: 1725981655.9552794 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 145
+2024-09-10 15:20:56,450 - root - INFO - PCMD signal started at: 1725981656.4509447 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 146
+2024-09-10 15:20:56,966 - root - INFO - PCMD signal started at: 1725981656.9664557 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 147
+2024-09-10 15:20:57,484 - root - INFO - PCMD signal started at: 1725981657.48409 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 148
+2024-09-10 15:20:57,948 - root - INFO - PCMD signal started at: 1725981657.9479878 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 149
+2024-09-10 15:20:57,948 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981657.9484806, seq id 149
+2024-09-10 15:20:58,142 - root - INFO - PCMD signal started at: 1725981658.1428196 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 150
+2024-09-10 15:20:58,575 - root - INFO - PCMD signal started at: 1725981658.5757945 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 151
+2024-09-10 15:20:59,069 - root - INFO - PCMD signal started at: 1725981659.0698676 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 152
+2024-09-10 15:20:59,562 - root - INFO - PCMD signal started at: 1725981659.562884 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 153
+2024-09-10 15:20:59,791 - root - INFO - PCMD signal started at: 1725981659.7910504 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 154
+2024-09-10 15:20:59,791 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981659.7914295, seq id 154
+2024-09-10 15:21:00,120 - root - INFO - PCMD signal started at: 1725981660.1201403 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 155
+2024-09-10 15:21:00,120 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981660.120603, seq id 155
+2024-09-10 15:21:00,324 - root - INFO - PCMD signal started at: 1725981660.324004 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 156
+2024-09-10 15:21:00,324 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981660.324313, seq id 156
+2024-09-10 15:21:00,638 - root - INFO - PCMD signal started at: 1725981660.6385086 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 157
+2024-09-10 15:21:00,638 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981660.6389163, seq id 157
+2024-09-10 15:21:00,800 - root - INFO - PCMD signal started at: 1725981660.8005788 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 158
+2024-09-10 15:21:00,801 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981660.8012698, seq id 158
+2024-09-10 15:21:01,153 - root - INFO - PCMD signal started at: 1725981661.1531122 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 159
+2024-09-10 15:21:01,153 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981661.1535454, seq id 159
+2024-09-10 15:21:01,376 - root - INFO - PCMD signal started at: 1725981661.3764496 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 160
+2024-09-10 15:21:01,376 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981661.3768766, seq id 160
+2024-09-10 15:21:01,660 - root - INFO - PCMD signal started at: 1725981661.6602063 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 161
+2024-09-10 15:21:01,661 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981661.6611476, seq id 161
+2024-09-10 15:21:01,873 - root - INFO - PCMD signal started at: 1725981661.873032 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 162
+2024-09-10 15:21:01,873 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981661.873438, seq id 162
+2024-09-10 15:21:02,194 - root - INFO - PCMD signal started at: 1725981662.1945772 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 163
+2024-09-10 15:21:02,195 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981662.1951013, seq id 163
+2024-09-10 15:21:02,356 - root - INFO - PCMD signal started at: 1725981662.3559916 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 164
+2024-09-10 15:21:02,356 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981662.3563504, seq id 164
+2024-09-10 15:21:02,706 - root - INFO - PCMD signal started at: 1725981662.7065938 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 165
+2024-09-10 15:21:02,707 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981662.7070122, seq id 165
+2024-09-10 15:21:02,933 - root - INFO - PCMD signal started at: 1725981662.933608 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 166
+2024-09-10 15:21:02,934 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981662.9339979, seq id 166
+2024-09-10 15:21:03,254 - root - INFO - PCMD signal started at: 1725981663.254206 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 167
+2024-09-10 15:21:03,693 - root - INFO - PCMD signal started at: 1725981663.693665 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 168
+2024-09-10 15:21:04,019 - root - INFO - PCMD signal started at: 1725981664.0194309 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 169
+2024-09-10 15:21:04,019 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981664.0198212, seq id 169
+2024-09-10 15:21:04,241 - root - INFO - PCMD signal started at: 1725981664.241025 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 170
+2024-09-10 15:21:04,241 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981664.24149, seq id 170
+2024-09-10 15:21:04,556 - root - INFO - PCMD signal started at: 1725981664.556653 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 171
+2024-09-10 15:21:04,557 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981664.557369, seq id 171
+2024-09-10 15:21:04,757 - root - INFO - PCMD signal started at: 1725981664.7575223 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 172
+2024-09-10 15:21:04,758 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981664.758012, seq id 172
+2024-09-10 15:21:05,051 - root - INFO - PCMD signal started at: 1725981665.0519176 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 173
+2024-09-10 15:21:05,052 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981665.0523624, seq id 173
+2024-09-10 15:21:05,305 - root - INFO - PCMD signal started at: 1725981665.3050525 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 174
+2024-09-10 15:21:05,305 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981665.305443, seq id 174
+2024-09-10 15:21:05,469 - root - INFO - PCMD signal started at: 1725981665.469257 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 175
+2024-09-10 15:21:05,824 - root - INFO - PCMD signal started at: 1725981665.8247268 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 176
+2024-09-10 15:21:06,367 - root - INFO - PCMD signal started at: 1725981666.3670259 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 177
+2024-09-10 15:21:06,878 - root - INFO - PCMD signal started at: 1725981666.8789365 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 178
+2024-09-10 15:21:07,376 - root - INFO - PCMD signal started at: 1725981667.376885 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 179
+2024-09-10 15:21:07,897 - root - INFO - PCMD signal started at: 1725981667.8977137 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 180
+2024-09-10 15:21:08,430 - root - INFO - PCMD signal started at: 1725981668.4308145 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 181
+2024-09-10 15:21:08,931 - root - INFO - PCMD signal started at: 1725981668.9315934 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 182
+2024-09-10 15:21:09,430 - root - INFO - PCMD signal started at: 1725981669.4303873 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 183
+2024-09-10 15:21:09,914 - root - INFO - PCMD signal started at: 1725981669.9141107 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 184
+2024-09-10 15:21:10,448 - root - INFO - PCMD signal started at: 1725981670.4485898 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 185
+2024-09-10 15:21:11,022 - root - INFO - PCMD signal started at: 1725981671.0229506 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 186
+2024-09-10 15:21:11,539 - root - INFO - PCMD signal started at: 1725981671.5399501 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 187
+2024-09-10 15:21:12,020 - root - INFO - PCMD signal started at: 1725981672.0207472 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 188
+2024-09-10 15:21:12,528 - root - INFO - PCMD signal started at: 1725981672.5287278 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 189
+2024-09-10 15:21:13,039 - root - INFO - PCMD signal started at: 1725981673.0392072 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 190
+2024-09-10 15:21:13,565 - root - INFO - PCMD signal started at: 1725981673.5654345 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 191
+2024-09-10 15:21:14,074 - root - INFO - PCMD signal started at: 1725981674.0748699 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 192
+2024-09-10 15:21:14,584 - root - INFO - PCMD signal started at: 1725981674.5847387 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 193
+2024-09-10 15:21:15,095 - root - INFO - PCMD signal started at: 1725981675.095185 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 194
+2024-09-10 15:21:15,589 - root - INFO - PCMD signal started at: 1725981675.5891669 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 195
+2024-09-10 15:21:16,087 - root - INFO - PCMD signal started at: 1725981676.0874481 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 196
+2024-09-10 15:21:16,591 - root - INFO - PCMD signal started at: 1725981676.5919054 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 197
+2024-09-10 15:21:17,081 - root - INFO - PCMD signal started at: 1725981677.0811648 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 198
+2024-09-10 15:21:17,591 - root - INFO - PCMD signal started at: 1725981677.5917497 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 199
+2024-09-10 15:21:18,095 - root - INFO - PCMD signal started at: 1725981678.0958593 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 200
+2024-09-10 15:21:18,629 - root - INFO - PCMD signal started at: 1725981678.629962 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 201
+2024-09-10 15:21:19,129 - root - INFO - PCMD signal started at: 1725981679.1296504 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 202
+2024-09-10 15:21:19,297 - root - INFO - PCMD signal started at: 1725981679.297326 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 203
+2024-09-10 15:21:19,297 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981679.2976642, seq id 203
+2024-09-10 15:21:19,643 - root - INFO - PCMD signal started at: 1725981679.6437187 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 204
+2024-09-10 15:21:19,644 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981679.6441722, seq id 204
+2024-09-10 15:21:19,779 - root - INFO - PCMD signal started at: 1725981679.7792795 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 205
+2024-09-10 15:21:19,779 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981679.7797318, seq id 205
+2024-09-10 15:21:20,190 - root - INFO - PCMD signal started at: 1725981680.1908603 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 206
+2024-09-10 15:21:20,191 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981680.191185, seq id 206
+2024-09-10 15:21:20,706 - root - INFO - PCMD signal started at: 1725981680.7068717 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 207
+2024-09-10 15:21:20,707 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981680.7072308, seq id 207
+2024-09-10 15:21:21,067 - root - INFO - PCMD signal started at: 1725981681.0673034 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 208
+2024-09-10 15:21:21,370 - root - INFO - PCMD signal started at: 1725981681.3703098 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 209
+2024-09-10 15:21:21,370 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981681.370816, seq id 209
+2024-09-10 15:21:21,806 - root - INFO - PCMD signal started at: 1725981681.8061683 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 210
+2024-09-10 15:21:21,806 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981681.8066049, seq id 210
+2024-09-10 15:21:21,957 - root - INFO - PCMD signal started at: 1725981681.9574294 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 211
+2024-09-10 15:21:21,957 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981681.9578686, seq id 211
+2024-09-10 15:21:22,324 - root - INFO - PCMD signal started at: 1725981682.3246727 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 212
+2024-09-10 15:21:22,325 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981682.325033, seq id 212
+2024-09-10 15:21:22,465 - root - INFO - PCMD signal started at: 1725981682.465019 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 213
+2024-09-10 15:21:22,465 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981682.4654925, seq id 213
+2024-09-10 15:21:22,819 - root - INFO - PCMD signal started at: 1725981682.8198285 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 214
+2024-09-10 15:21:22,820 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981682.8202965, seq id 214
+2024-09-10 15:21:22,948 - root - INFO - PCMD signal started at: 1725981682.9480946 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 215
+2024-09-10 15:21:22,948 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981682.9484687, seq id 215
+2024-09-10 15:21:23,335 - root - INFO - PCMD signal started at: 1725981683.3354592 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 216
+2024-09-10 15:21:23,335 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981683.3357968, seq id 216
+2024-09-10 15:21:23,509 - root - INFO - PCMD signal started at: 1725981683.5098157 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 217
+2024-09-10 15:21:23,510 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981683.5101786, seq id 217
+2024-09-10 15:21:23,911 - root - INFO - PCMD signal started at: 1725981683.9110174 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 218
+2024-09-10 15:21:23,911 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981683.9118268, seq id 218
+2024-09-10 15:21:24,143 - root - INFO - PCMD signal started at: 1725981684.1432266 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 219
+2024-09-10 15:21:24,668 - root - INFO - PCMD signal started at: 1725981684.6688576 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 220
+2024-09-10 15:21:24,669 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981684.6695664, seq id 220
+2024-09-10 15:21:25,051 - root - INFO - PCMD signal started at: 1725981685.051722 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 221
+2024-09-10 15:21:25,052 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981685.0521111, seq id 221
+2024-09-10 15:21:25,187 - root - INFO - PCMD signal started at: 1725981685.1876998 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 222
+2024-09-10 15:21:25,188 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981685.1880877, seq id 222
+2024-09-10 15:21:25,560 - root - INFO - PCMD signal started at: 1725981685.5600932 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 223
+2024-09-10 15:21:25,560 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981685.5605302, seq id 223
+2024-09-10 15:21:25,668 - root - INFO - PCMD signal started at: 1725981685.6687036 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 224
+2024-09-10 15:21:25,668 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981685.6689827, seq id 224
+2024-09-10 15:21:25,985 - root - INFO - PCMD signal started at: 1725981685.9855134 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 225
+2024-09-10 15:21:25,986 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981685.9859977, seq id 225
+2024-09-10 15:21:26,143 - root - INFO - PCMD signal started at: 1725981686.143904 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 226
+2024-09-10 15:21:26,144 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981686.1442978, seq id 226
+2024-09-10 15:21:26,538 - root - INFO - PCMD signal started at: 1725981686.538596 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 25, 'thrust': 0} seq id 227
+2024-09-10 15:21:26,538 - root - INFO - Driver Command setVelocities: right_vel: 2.0
+ sent at:1725981686.5389712, seq id 227
+2024-09-10 15:21:26,739 - root - INFO - PCMD signal started at: 1725981686.7396698 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 228
+2024-09-10 15:21:27,224 - root - INFO - PCMD signal started at: 1725981687.2246327 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 229
+2024-09-10 15:21:27,742 - root - INFO - PCMD signal started at: 1725981687.7420359 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 230
+2024-09-10 15:21:28,273 - root - INFO - PCMD signal started at: 1725981688.273488 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 231
+2024-09-10 15:21:28,759 - root - INFO - PCMD signal started at: 1725981688.7592256 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 232
+2024-09-10 15:21:29,252 - root - INFO - PCMD signal started at: 1725981689.252662 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 233
+2024-09-10 15:21:29,773 - root - INFO - PCMD signal started at: 1725981689.7731183 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 234
+2024-09-10 15:21:30,278 - root - INFO - PCMD signal started at: 1725981690.2782629 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 235
+2024-09-10 15:21:30,790 - root - INFO - PCMD signal started at: 1725981690.790436 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 236
+2024-09-10 15:21:31,292 - root - INFO - PCMD signal started at: 1725981691.2919722 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 237
+2024-09-10 15:21:31,765 - root - INFO - PCMD signal started at: 1725981691.765708 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 238
+2024-09-10 15:21:32,272 - root - INFO - PCMD signal started at: 1725981692.2721207 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 239
+2024-09-10 15:21:32,776 - root - INFO - PCMD signal started at: 1725981692.77631 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 240
+2024-09-10 15:21:33,272 - root - INFO - PCMD signal started at: 1725981693.272133 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 241
+2024-09-10 15:21:33,786 - root - INFO - PCMD signal started at: 1725981693.7864876 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 242
+2024-09-10 15:21:34,040 - root - INFO - PCMD signal started at: 1725981694.0406058 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 243
+2024-09-10 15:21:34,041 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981694.0412922, seq id 243
+2024-09-10 15:21:34,316 - root - INFO - PCMD signal started at: 1725981694.3168879 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 244
+2024-09-10 15:21:34,317 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981694.3172634, seq id 244
+2024-09-10 15:21:34,543 - root - INFO - PCMD signal started at: 1725981694.5432706 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 245
+2024-09-10 15:21:34,543 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981694.5435717, seq id 245
+2024-09-10 15:21:34,856 - root - INFO - PCMD signal started at: 1725981694.8561597 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 246
+2024-09-10 15:21:34,856 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981694.8565538, seq id 246
+2024-09-10 15:21:35,091 - root - INFO - PCMD signal started at: 1725981695.091373 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 247
+2024-09-10 15:21:35,091 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981695.091789, seq id 247
+2024-09-10 15:21:35,369 - root - INFO - PCMD signal started at: 1725981695.3698688 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 248
+2024-09-10 15:21:35,370 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981695.3704412, seq id 248
+2024-09-10 15:21:35,578 - root - INFO - PCMD signal started at: 1725981695.5789375 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 249
+2024-09-10 15:21:35,579 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981695.579254, seq id 249
+2024-09-10 15:21:35,881 - root - INFO - PCMD signal started at: 1725981695.8810706 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 250
+2024-09-10 15:21:35,881 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981695.8814542, seq id 250
+2024-09-10 15:21:36,125 - root - INFO - PCMD signal started at: 1725981696.125765 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 251
+2024-09-10 15:21:36,126 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981696.1262712, seq id 251
+2024-09-10 15:21:36,404 - root - INFO - PCMD signal started at: 1725981696.4040358 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 252
+2024-09-10 15:21:36,404 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981696.404459, seq id 252
+2024-09-10 15:21:36,630 - root - INFO - PCMD signal started at: 1725981696.6304839 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': -25, 'thrust': 0} seq id 253
+2024-09-10 15:21:36,630 - root - INFO - Driver Command setVelocities: right_vel: -2.0
+ sent at:1725981696.6308732, seq id 253
+2024-09-10 15:21:36,863 - root - INFO - PCMD signal started at: 1725981696.8635244 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 254
+2024-09-10 15:21:37,005 - root - INFO - PCMD signal started at: 1725981697.0050697 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 255
+2024-09-10 15:21:37,497 - root - INFO - PCMD signal started at: 1725981697.497359 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 256
+2024-09-10 15:21:38,027 - root - INFO - PCMD signal started at: 1725981698.0270622 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 257
+2024-09-10 15:21:38,524 - root - INFO - PCMD signal started at: 1725981698.5242627 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 258
+2024-09-10 15:21:39,047 - root - INFO - PCMD signal started at: 1725981699.0472014 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 259
+2024-09-10 15:21:39,531 - root - INFO - PCMD signal started at: 1725981699.5310965 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 260
+2024-09-10 15:21:40,033 - root - INFO - PCMD signal started at: 1725981700.033047 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 261
+2024-09-10 15:21:40,531 - root - INFO - PCMD signal started at: 1725981700.5316732 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 262
+2024-09-10 15:21:41,046 - root - INFO - PCMD signal started at: 1725981701.0463555 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 263
+2024-09-10 15:21:41,564 - root - INFO - PCMD signal started at: 1725981701.5646224 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 264
+2024-09-10 15:21:42,059 - root - INFO - PCMD signal started at: 1725981702.0596404 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 265
+2024-09-10 15:21:42,551 - root - INFO - PCMD signal started at: 1725981702.551536 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 266
+2024-09-10 15:21:43,067 - root - INFO - PCMD signal started at: 1725981703.0670326 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 267
+2024-09-10 15:21:43,566 - root - INFO - PCMD signal started at: 1725981703.5665932 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 268
+2024-09-10 15:21:44,056 - root - INFO - PCMD signal started at: 1725981704.0568588 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 269
+2024-09-10 15:21:44,582 - root - INFO - PCMD signal started at: 1725981704.5820463 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 270
+2024-09-10 15:21:45,065 - root - INFO - PCMD signal started at: 1725981705.0655718 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 271
+2024-09-10 15:21:45,579 - root - INFO - PCMD signal started at: 1725981705.5798693 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 272
+2024-09-10 15:21:46,083 - root - INFO - PCMD signal started at: 1725981706.0834904 PCMD values: {'pitch': 0, 'yaw': 0, 'roll': 0, 'thrust': 0} seq id 273

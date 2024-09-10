@@ -18,7 +18,7 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from util.utils import setup_socket
 
-# # Gabriel websocket ver
+# Gabriel websocket ver
 # import nest_asyncio
 # nest_asyncio.apply()
 # from gabriel_client.websocket_client import WebsocketClient
@@ -267,12 +267,16 @@ class Kernel:
         elif command == ManualCommand.PCMD:
             if params and all(value == 0 for value in params.values()):
                 driver_command.hover = True
+                # driver_command.setVelocity.forward_vel = 0
+                # driver_command.setVelocity.angle_vel = 0
+                # driver_command.setVelocity.right_vel = 0
+                # driver_command.setVelocity.up_vel = 0
             else:
                 driver_command.setVelocity.forward_vel = 2 if params["pitch"] > 0 else -2 if params["pitch"] < 0 else 0
                 driver_command.setVelocity.angle_vel = 20 if params["yaw"] > 0 else -20 if params["yaw"] < 0 else 0
                 driver_command.setVelocity.right_vel = 2 if params["roll"] > 0 else -2 if params["roll"] < 0 else 0
                 driver_command.setVelocity.up_vel = 2 if params["thrust"] > 0 else -2 if params["thrust"] < 0 else 0
-                logger.debug(f'Driver Command Velocities: {driver_command.setVelocity}')
+                logger.info(f'Driver Command setVelocities: {driver_command.setVelocity} sent at:{time.time()}, seq id {driver_command.seqNum}')
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -319,7 +323,7 @@ class Kernel:
         async def producer():
             await asyncio.sleep(0)
             
-            logger.info(f"Frame Producer: starting converting {time.time()}")
+            logger.debug(f"Frame Producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None:
                 try:
@@ -354,7 +358,7 @@ class Kernel:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
                 
-            logger.info(f"Frame Producer: finished time {time.time()}")
+            logger.debug(f"Frame Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -363,7 +367,7 @@ class Kernel:
         async def producer():
             await asyncio.sleep(0)
             
-            logger.info(f"tel Producer: starting time {time.time()}")
+            logger.debug(f"tel Producer: starting time {time.time()}")
             self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -387,7 +391,7 @@ class Kernel:
                     extras.status.mag = self.telemetry_cache['magnetometer']
                     extras.status.bearing = self.telemetry_cache['bearing']
                     
-                    logger.info(f'Gabriel Client Telemetry Producer: {extras}')
+                    logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
                 
                 # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
                 # if self.drone_type == DroneType.VESPER:
@@ -407,10 +411,10 @@ class Kernel:
             if self.gabriel_client_heartbeats == 1:
                 extras.registering = True
 
-            logger.info('Gabriel Client Telemetry Producer: sending Gabriel frame!')
+            logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
             
-            logger.info(f"tel Producer: finished time {time.time()}")
+            logger.debug(f"tel Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -451,10 +455,9 @@ class Kernel:
                 self.handle_pcmd_command(extras.cmd.pcmd)
 
     def handle_pcmd_command(self, pcmd):
-        logger.info(f"PCMD signal started at: {time.time()}")
         pitch, yaw, roll, thrust = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz
         params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust}
-        logger.debug(f'PCMD values: {params}')
+        logger.info(f"PCMD signal started at: {time.time()} PCMD values: {params} seq id {self.command_seq}")
         asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
             
         
