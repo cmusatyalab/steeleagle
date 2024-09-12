@@ -478,17 +478,15 @@ class Kernel:
             command_coroutine = asyncio.create_task(self.cmd_proxy())
             telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
             camera_coroutine = asyncio.create_task(self.camera_handler())
-            gabriel_coroutine = None
             gabriel_coroutine = asyncio.create_task(gabriel_client.launch_async())
-            # gabriel_client.launch()
-            
-            while True:
-                await asyncio.sleep(0)
+            tasks = [command_coroutine, telemetry_coroutine, camera_coroutine, gabriel_coroutine]
+
+            await asyncio.gather(*tasks)
                 
-        except KeyboardInterrupt:
-            await self.shutdown(command_coroutine, telemetry_coroutine, camera_coroutine, gabriel_coroutine)
+        except Exception:
+            await self.shutdown(tasks)
         
-    async def shutdown(self, *tasks):
+    async def shutdown(self, tasks):
         logger.info("Main: Shutting down Kernel")
         
         tel_sock.close()
@@ -499,8 +497,20 @@ class Kernel:
         context.term()
         
         for task in tasks:
-            task.cancel()
-            await task
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            else:
+                try:
+                    task.result()
+                except asyncio.CancelledError:
+                    pass
+                except Exception as err:
+                    logger.error(f"Task raised exception: {err}")
+                
         
         logger.info("Main: Kernel shutdown complete")
         sys.exit(0)
