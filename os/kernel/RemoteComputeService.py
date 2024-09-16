@@ -11,6 +11,7 @@ from util.utils import setup_socket
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from kernel.Service import Service
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -20,20 +21,13 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-context = zmq.asyncio.Context()
-tel_sock = context.socket(zmq.SUB)
-cam_sock = context.socket(zmq.SUB)
-tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
-tel_sock.setsockopt(zmq.CONFLATE, 1)
-cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
-cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
-setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
 
 
-
-class RemoteComputeService:
+class RemoteComputeService(Service):
     def __init__(self, gabriel_server, gabriel_port):
+        super().__init__()
+        
+        # setting up args
         self.telemetry_cache = {
             "location": {
                 "latitude": None,
@@ -51,19 +45,49 @@ class RemoteComputeService:
             "channels": None,
             "id": None
         }
-        
-        # remote compute
+        # Gabriel
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
         self.engine_results = {}
         self.gabriel_client_heartbeats = 0
-        
+        self.gabriel_client = ZeroMQClient(
+            self.gabriel_server, self.gabriel_port,
+            [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
+        )
         # user defined parameters
         self.model = 'coco'
         self.hsv_upper = [50,255,255]
         self.hsv_lower = [30,100,100]
-        
+        # drone id
         self.drone_id = "ant"
+        
+        # Setting up conetxt
+        context = zmq.asyncio.Context()
+        
+        # Setting up sockets
+        tel_sock = context.socket(zmq.SUB)
+        cam_sock = context.socket(zmq.SUB)
+        tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+        tel_sock.setsockopt(zmq.CONFLATE, 1)
+        cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+        cam_sock.setsockopt(zmq.CONFLATE, 1)
+        self.cam_sock = cam_sock
+        self.tel_sock = tel_sock
+        setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
+        setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
+        
+        # setting up tasks
+        tel_task = asyncio.create_task(self.telemetry_handler())
+        cam_task = asyncio.create_task(self.camera_handler())
+        gab_task = asyncio.create_task(self.gabriel_client.launch_async())
+        
+        # registering context, sockets and tasks to service
+        self.register_context(context)
+        self.register_socket(tel_sock)
+        self.register_socket(cam_sock)
+        self.register_task(tel_task)
+        self.register_task(cam_task)
+        self.register_task(gab_task)
     
     ######################################################## DRIVER ############################################################  
     async def telemetry_handler(self):
@@ -71,7 +95,7 @@ class RemoteComputeService:
         while True:
             try:
                 logger.debug(f"telemetry_handler: started time {time.time()}")
-                msg = await tel_sock.recv()
+                msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
@@ -90,7 +114,7 @@ class RemoteComputeService:
         while True:
             try:
                 logger.debug(f"Camera Handler: started time {time.time()}")
-                msg = await cam_sock.recv()
+                msg = await self.cam_sock.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
                 self.frame_cache['data'] = frame.data
@@ -207,56 +231,22 @@ class RemoteComputeService:
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
     
-    ######################################################## MAIN ##############################################################             
-    async def run(self):
-        logger.info('Main: creating gabriel client')
-        gabriel_client = ZeroMQClient(
-            self.gabriel_server, self.gabriel_port,
-            [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
-        )
-        logger.info('Main: gabriel client created')
-        
-        try:
-            telemetry_coroutine = asyncio.create_task(self.telemetry_handler())
-            camera_coroutine = asyncio.create_task(self.camera_handler())
-            gabriel_coroutine = asyncio.create_task(gabriel_client.launch_async())
-            tasks = [telemetry_coroutine, camera_coroutine, gabriel_coroutine]
-            await asyncio.gather(*tasks)
-                
-        except Exception:
-            await self.shutdown(tasks)
-        
-    async def shutdown(self, tasks):
-        logger.info("Main: Shutting down RemoteComputeService")
-        tel_sock.close()
-        cam_sock.close()
-        context.term()
-        
-        for task in tasks:
-            if not task.done():
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-            else:
-                try:
-                    task.result()
-                except asyncio.CancelledError:
-                    pass
-                except Exception as err:
-                    logger.error(f"Task raised exception: {err}")
-                
-        
-        logger.info("Main: RemoteComputeService shutdown complete")
-        sys.exit(0)
-
-# Main Execution Block
-if __name__ == "__main__":
+######################################################## MAIN ##############################################################             
+async def async_main():
     logger.info("Main: starting RemoteComputeService")
     gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
     logger.info(f'Main: Gabriel server: {gabriel_server}')
     gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
     logger.info(f'Main: Gabriel port: {gabriel_port}')
+
+    # init RemoteComputeService
     rc_service = RemoteComputeService(gabriel_server, gabriel_port)
-    asyncio.run(rc_service.run())
+    
+    # run RemoteComputeService
+    await rc_service.start()
+                 
+        
+    
+if __name__ == "__main__":
+
+    asyncio.run(async_main())

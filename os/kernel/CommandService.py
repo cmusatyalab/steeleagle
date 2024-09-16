@@ -11,6 +11,7 @@ import os
 import asyncio
 import logging
 from cnc_protocol import cnc_pb2
+from kernel.Service import Service
 from util.utils import setup_socket
 
 # Configure logger
@@ -22,17 +23,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Constants and Environment Variables
-user_path = './user/project/implementation'
-
-# Setting up sockets
-context = zmq.asyncio.Context()
-cmd_front_sock = context.socket(zmq.ROUTER)
-cmd_back_sock = context.socket(zmq.DEALER)
-msn_sock = context.socket(zmq.REQ)
-setup_socket(cmd_front_sock, 'bind', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint')
-setup_socket(cmd_back_sock, 'bind', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
-setup_socket(msn_sock, 'bind', 'MSN_PORT', 'Created user space mission control socket endpoint')
 
 
 # Enumerations for Commands and Drone Types
@@ -49,20 +39,51 @@ class DroneType(Enum):
     VXOL = 2
     VESPER = 3
 
-class CommandService:
-    def __init__(self, type):
+class CommandService(Service):
+    def __init__(self, type, user_path):
+        super().__init__()
+        
+        # setting args
         # drone info
         self.drone_type = type
         self.manual = True
-        
         # init cmd seq
         self.command_seq = 0
+        # user path
+        self.user_path = user_path
+        
+        # Setting up conetxt
+        context = zmq.asyncio.Context()
+        
+        # Setting up sockets
+        cmd_front_sock = context.socket(zmq.ROUTER)
+        cmd_back_sock = context.socket(zmq.DEALER)
+        msn_sock = context.socket(zmq.REQ)
+        self.cmd_front_sock = cmd_front_sock
+        self.cmd_back_sock = cmd_back_sock
+        self.msn_sock = msn_sock
+        setup_socket(cmd_front_sock, 'bind', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint')
+        setup_socket(cmd_back_sock, 'bind', 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+        setup_socket(msn_sock, 'bind', 'MSN_PORT', 'Created user space mission control socket endpoint')
+        
+        # setting up tasks
+        cmd_task = asyncio.create_task(self.cmd_proxy())
+        
+        # registering context, sockets and tasks to service
+        self.register_context(context)
+        self.register_socket(cmd_front_sock)
+        self.register_socket(cmd_back_sock)
+        self.register_socket(msn_sock)
+        self.register_task(cmd_task)
+ 
+        
+        
                         
     ######################################################## USER ############################################################
     def install_prereqs(self) -> bool:
         ret = False
         # Pip install prerequsites for flight script
-        requirements_path = os.path.join(user_path, 'requirements.txt')
+        requirements_path = os.path.join(self.user_path, 'requirements.txt')
         try:
             subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', requirements_path])
             ret = True
@@ -81,10 +102,10 @@ class CommandService:
                     f.write(chunk)
             z = ZipFile(filename)
             try:
-                subprocess.check_call(['rm', '-rf', user_path])
+                subprocess.check_call(['rm', '-rf', self.user_path])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
-            z.extractall(path = user_path)
+            z.extractall(path = self.user_path)
             self.install_prereqs()
         except Exception as e:
             print(e)
@@ -95,8 +116,8 @@ class CommandService:
         mission_command.startMission = True
         message = mission_command.SerializeToString()
         print(f'start_mission message:{message}')
-        msn_sock.send(message)
-        reply = msn_sock.recv_string()
+        self.msn_sock.send(message)
+        reply = self.msn_sock.recv_string()
         print(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
@@ -104,8 +125,8 @@ class CommandService:
         mission_command = cnc_pb2.Mission()
         mission_command.stopMission = True
         message = mission_command.SerializeToString()
-        msn_sock.send(message)
-        reply = msn_sock.recv_string()
+        self.msn_sock.send(message)
+        reply = self.msn_sock.recv_string()
         print(f"Mission reply: {reply}")
     
         
@@ -143,7 +164,7 @@ class CommandService:
         
         message = driver_command.SerializeToString()
         identity = b'cmdr'
-        await cmd_back_sock.send_multipart([identity, message])
+        await self.cmd_back_sock.send_multipart([identity, message])
         
         # if (command == ManualCommand.CONNECTION):
         #     result = cnc_pb2.Driver()
@@ -158,8 +179,8 @@ class CommandService:
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
-        poller.register(cmd_front_sock, zmq.POLLIN)
-        poller.register(cmd_back_sock, zmq.POLLIN)
+        poller.register(self.cmd_front_sock, zmq.POLLIN)
+        poller.register(self.cmd_back_sock, zmq.POLLIN)
         
         while True:
             try:
@@ -167,8 +188,8 @@ class CommandService:
                 socks = dict(await poller.poll())
 
                 # Check for messages on the ROUTER socket
-                if cmd_front_sock in socks:
-                    message = await cmd_front_sock.recv_multipart()
+                if self.cmd_front_sock in socks:
+                    message = await self.cmd_front_sock.recv_multipart()
                     logger.debug(f"proxy : 1 Received message from BACKEND: {message}")
 
                     # Filter the message
@@ -179,14 +200,14 @@ class CommandService:
                     if identity == b'cmdr':
                         self.process_command(cmd)
                     elif identity == b'usr':
-                        await cmd_back_sock.send_multipart(message)
+                        await self.cmd_back_sock.send_multipart(message)
                     else:
                         logger.error(f"cmd_proxy: invalid identity")
 
 
                 # Check for messages on the DEALER socket
-                if cmd_back_sock in socks:
-                    message = await cmd_back_sock.recv_multipart()
+                if self.cmd_back_sock in socks:
+                    message = await self.cmd_back_sock.recv_multipart()
                     logger.debug(f"proxy : 3 Received message from FRONTEND: {message}")
 
                     # Filter the message
@@ -199,7 +220,7 @@ class CommandService:
                         pass
                     elif identity == b'usr':
                         logger.debug(f"proxy : 5 Received message from FRONTEND: sent back bc of user")
-                        await cmd_front_sock.send_multipart(message)
+                        await self.cmd_front_sock.send_multipart(message)
                     else:
                         logger.error(f"cmd_proxy: invalid identity")
                     
@@ -246,48 +267,23 @@ class CommandService:
         asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
             
         
-    ######################################################## MAIN ##############################################################             
-    async def run(self):
-        logger.info('Main: CommandService started')
-        
-        try:
-            command_coroutine = asyncio.create_task(self.cmd_proxy())
-            tasks = [command_coroutine]
+######################################################## MAIN ##############################################################             
+async def async_main():
+    type = DroneType.PARROT
+    
+    # Constants and Environment Variables
+    user_path = './user/project/implementation'
 
-            await asyncio.gather(*tasks)
-                
-        except Exception:
-            await self.shutdown(tasks)
-        
-    async def shutdown(self, tasks):
-        logger.info("Main: Shutting down CommandService")
-        
-        cmd_front_sock.close()  
-        cmd_back_sock.close()
-        msn_sock.close()
-        context.term()
-        
-        for task in tasks:
-            if not task.done():
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-            else:
-                try:
-                    task.result()
-                except asyncio.CancelledError:
-                    pass
-                except Exception as err:
-                    logger.error(f"Task raised exception: {err}")
-                
-        
-        logger.info("Main: CommandService shutdown complete")
-        sys.exit(0)
+    # init CommandService
+    cmd_service = CommandService(type, user_path)
+    
+    # run CommandService
+    await cmd_service.start()
+    
+    
 
 # Main Execution Block
 if __name__ == "__main__":
     logger.info("Main: starting CommandService")
-    cmd_service = CommandService(DroneType.PARROT)
-    asyncio.run(cmd_service.run())
+    
+    asyncio.run(async_main())
