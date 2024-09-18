@@ -116,20 +116,12 @@ public class Compiler implements Runnable {
       ZipOutputStream zos = new ZipOutputStream(fos);
 
       // add directory's files to the zip
-      addToZipFile(platformPath + "/implementation", "implementation", zos);
+      addToZipFile(platformPath + "/implementation", "", zos);
       // Add task_defs to the zip
-      addToZipFile(platformPath + "/implementation/task_defs", "implementation/task_defs", zos);
+      addToZipFile(platformPath + "/implementation/task_defs", "/task_defs", zos);
 
       // Add transition_defs to the zip
-      addToZipFile(platformPath + "/implementation/transition_defs", "implementation/transition_defs", zos);
-
-
-      // // add build file to the zip
-      // Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
-      // zos.putNextEntry(new ZipEntry("requirements.txt"));
-      // Files.copy(buildFile, zos);
-      // zos.closeEntry();
-      
+      addToZipFile(platformPath + "/implementation/transition_defs", "/transition_defs", zos);
 
       zos.close();
       fos.close();
