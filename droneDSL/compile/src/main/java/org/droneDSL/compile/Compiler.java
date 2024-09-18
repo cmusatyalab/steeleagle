@@ -17,7 +17,6 @@ import picocli.CommandLine;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -91,7 +90,7 @@ public class Compiler implements Runnable {
     // build file generate
     try {
       ProcessBuilder builder = new ProcessBuilder();
-      var cmd = String.format("cd %s/implementation && pipreqs . --force", platform);
+      var cmd = String.format("cd %s/ && pipreqs . --force", platform);
       builder.command("bash", "-c", cmd);
   
       Process process = builder.start();
@@ -117,7 +116,7 @@ public class Compiler implements Runnable {
       ZipOutputStream zos = new ZipOutputStream(fos);
 
       // add directory's files to the zip
-      addToZipFile(platformPath + "/implementation", "./implementation", zos);
+      addToZipFile(platformPath + "/implementation", "implementation", zos);
       // Add task_defs to the zip
       addToZipFile(platformPath + "/implementation/task_defs", "implementation/task_defs", zos);
 
@@ -126,7 +125,7 @@ public class Compiler implements Runnable {
 
 
       // add build file to the zip
-      Path buildFile = Paths.get(String.format("./%s/implementation/requirements.txt", platform));
+      Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
       zos.putNextEntry(new ZipEntry("requirements.txt"));
       Files.copy(buildFile, zos);
       zos.closeEntry();
