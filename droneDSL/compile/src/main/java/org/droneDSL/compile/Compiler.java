@@ -93,10 +93,23 @@ public class Compiler implements Runnable {
       ProcessBuilder builder = new ProcessBuilder();
       var cmd = String.format("cd %s/implementation && pipreqs . --force", platform);
       builder.command("bash", "-c", cmd);
-      builder.start().waitFor(); // Wait for the command to complete
-    } catch (IOException | InterruptedException e) {
-        e.printStackTrace();
-    }
+  
+      Process process = builder.start();
+      int exitCode = process.waitFor(); // Wait for the command to complete
+  
+      if (exitCode != 0) {
+          System.err.println("Error: pipreqs command failed with exit code " + exitCode);
+          // Optionally, capture and print the error output from the process
+          try (Scanner scanner = new Scanner(process.getErrorStream()).useDelimiter("\\A")) {
+              String errorOutput = scanner.hasNext() ? scanner.next() : "No error output.";
+              System.err.println("Error Output: " + errorOutput);
+          }
+      } else {
+          System.out.println("pipreqs command executed successfully.");
+      }
+  } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+  }
 
     // zip
     try {
