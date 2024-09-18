@@ -97,12 +97,17 @@ class CommandService(Service):
             with open(filename, mode='wb') as f:
                 for chunk in r.iter_content():
                     f.write(chunk)
+                    
             z = ZipFile(filename)
-            try:
-                subprocess.check_call(['rm', '-rf', self.user_path])
-            except subprocess.CalledProcessError as e:
-                logger.debug(f"Error removing old task/transition defs: {e}")
+ 
+            logger.info(f"Removing old implementation at {self.user_path}")
+            subprocess.check_call(['rm', '-rf', self.user_path])
+
+            logger.info(f"Extracting {filename} to {self.user_path}")
             z.extractall(path = self.user_path)
+            z.close()
+            
+            logger.info(f"Downloaded and extracted {filename} to {self.user_path}")
             self.install_prereqs()
         except Exception as e:
             print(e)
@@ -245,10 +250,11 @@ class CommandService(Service):
             self.manual = True
             logger.info('Manual control is now active!')
         elif extras.cmd.script_url:
-            if validators.url(extras.cmd.script_url):
-                logger.info(f'Flight script sent by commander: {extras.cmd.script_url}')
+            url = extras.cmd.script_url
+            if validators.url(url):
+                logger.info(f'Flight script sent by commander: {url}')
                 self.manual = False
-                self.send_start_mission()
+                self.send_start_mission(url)
             else:
                 logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
         elif self.manual:
@@ -273,7 +279,8 @@ async def async_main():
     type = DroneType.PARROT
     
     # Constants and Environment Variables
-    user_path = './user/project/implementation'
+    user_path = os.environ.get('PYTHONPATH') +'/user/project/implementation'
+    logger.info(f"User path: {user_path}")
 
     # init CommandService
     cmd_service = CommandService(type, user_path)
