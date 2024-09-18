@@ -4,8 +4,8 @@ import sys
 import json
 import numpy as np
 import math
-from user.project.implementation.transition_defs.TimerTransition import TimerTransition
-from user.project.interface.Task import Task
+from project.implementation.transition_defs.TimerTransition import TimerTransition
+from project.interface.Task import Task
 import time
 import logging
 from gabriel_protocol import gabriel_pb2

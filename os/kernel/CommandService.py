@@ -76,9 +76,6 @@ class CommandService(Service):
         self.register_socket(msn_sock)
         self.register_task(cmd_task)
  
-        
-        
-                        
     ######################################################## USER ############################################################
     def install_prereqs(self) -> bool:
         ret = False
@@ -111,7 +108,11 @@ class CommandService(Service):
             print(e)
             
     # Function to send a start mission command
-    def send_start_mission(self):
+    def send_start_mission(self, url):
+        # download the script
+        self.download_script(url)
+        
+        # send the start mission command
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
         message = mission_command.SerializeToString()

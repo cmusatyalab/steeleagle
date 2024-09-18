@@ -1,8 +1,8 @@
 
-from user.project.implementation.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
-from user.project.implementation.transition_defs.TimerTransition import TimerTransition
-from user.project.implementation.transition_defs.HSVDetectionTransition import HSVDetectionTransition
-from user.project.interface.Task import Task
+from project.implementation.transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
+from project.implementation.transition_defs.TimerTransition import TimerTransition
+from project.implementation.transition_defs.HSVDetectionTransition import HSVDetectionTransition
+from project.interface.Task import Task
 import asyncio
 import ast
 import logging
@@ -20,7 +20,7 @@ class TestTask(Task):
         
     def create_transition(self):
         
-        logger.info(f"**************Test Task {self.task_id}: create transition! **************\n")
+        logger.info(f"**************Test Task 2{self.task_id}: create transition! **************\n")
         logger.info(self.transitions_attributes)
         args = {
             'task_id': self.task_id,
@@ -31,7 +31,7 @@ class TestTask(Task):
         
         # triggered event
         if ("timeout" in self.transitions_attributes):
-            logger.info(f"**************Test Task {self.task_id}:  timer transition! **************\n")
+            logger.info(f"**************Test Task 2{self.task_id}:  timer transition! **************\n")
             timer = TimerTransition(args, self.transitions_attributes["timeout"])
             timer.daemon = True
             timer.start()
@@ -43,35 +43,31 @@ class TestTask(Task):
         
         # self.create_transition()
         
-        logger.info(f"**************Test {self.task_id}: hi this is Test task {self.task_id}**************\n")
+        logger.info(f"**************Test Task 2{self.task_id}: hi this is Test task2 {self.task_id}**************\n")
     
-        ''' Camera methods '''
-        logger.info(f"**************Test {self.task_id}: Camera methods test **************\n")
-        camera = await self.drone.getCameras()
-        await self.drone.switchCamera(0)
+        # coords = [
+        #     {"lat": 37.7749, "lng": -122.4194, "alt": 30, "bear": 0},  # San Francisco
+        #     {"lat": 34.0522, "lng": -118.2437, "alt": 50, "bear": 0},  # Los Angeles
+        #     {"lat": 40.7128, "lng": -74.0060, "alt": 100, "bear": 0}   # New York
+        # ]
+        coords = ast.literal_eval(self.task_attributes["coords"])
 
-        ''' Location methods '''
-        logger.info(f"**************Test {self.task_id}: Location methods test **************\n")
-        await self.drone.setHome('hi', 1, 1, 1)
-        location = await self.drone.getHome()
-        logger.info(f"Home location: {location}")
+        logger.info(f"**************Test Task 2{self.task_id}: hi this is Test task2 {self.task_id}**************\n")
+        for dest in coords:
+            lng = dest["lng"]
+            lat = dest["lat"]
+            alt = dest["alt"]
+            # bear = dest["bear"]
+            bear = 0
+            logger.info(f"**************Test Task 2{self.task_id}: setGPSLocation **************\n")
+            logger.info(f"**************Test Task 2{self.task_id}: GPSLocation: {lat}, {lng}, {alt} {bear}**************\n")
+            await self.drone.setGPSLocation(lat, lng, alt, bear)
+            await asyncio.sleep(0)
         
-        ''' Position methods '''
-        logger.info(f"**************Test {self.task_id}: Position methods test **************\n")
-        await self.drone.setAttitude(1, 1, 1, 1)
-        await self.drone.setVelocity()
-        await self.drone.setRelativePosition(1, 1, 1, 1)
-        await self.drone.setTranslatedPosition(1, 1, 1, 1)
-        await self.drone.setGlobalPosition(1, 1, 1, 1)
-        
-        
-        '''Preemptive methods''' 
-        logger.info(f"**************Test {self.task_id}: Preemptive methods test **************\n")       
-        await self.drone.hover()
-        await self.drone.rth()
-        await self.drone.land()
         
 
-        logger.info(f"**************Test {self.task_id}: Done**************\n")
+        logger.info(f"**************Test Task 2{self.task_id}: Done**************\n")
+            
+        
 
 
