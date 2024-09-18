@@ -1,4 +1,5 @@
 
+import importlib
 import os
 import sys
 import zmq
@@ -28,6 +29,7 @@ class MissionController():
         self.tm = None
         self.transitMap = {}
         self.task_arg_map = {}
+        self.reload = False
             
         
     ######################################################## MISSION ############################################################ 
@@ -39,13 +41,22 @@ class MissionController():
         
         # dynamic import the fsm
         logger.info(f"start the mission")
-        from project.implementation.Mission import Mission
+        if self.reload == False:
+            from project.implementation.Mission import Mission
+        else:
+            logger.info('Reloading...')
+            modules = sys.modules.copy()
+            for module in modules.values():
+                if module.__name__.startswith('Mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
+                    importlib.reload(module)
+        
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
         logger.info(f"start the task manager")
         self.tm = TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
+        self.reload = True
         
     
     async def end_mission(self):

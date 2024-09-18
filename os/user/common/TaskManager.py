@@ -131,7 +131,7 @@ class TaskManager():
                         else:
                             next_task = self.create_task(next_task_id)
                             logger.info(f"task created  taskid {str(next_task.task_id)} \n")
-                            self.transit_task_to(next_task, self.tr)
+                            self.transit_task_to(next_task)
 
                 await asyncio.sleep(0)            
 
