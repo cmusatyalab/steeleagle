@@ -1,1 +1,1 @@
-scipy
+# user space requirements except the dir project/implementation

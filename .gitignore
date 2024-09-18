@@ -34,3 +34,7 @@ onboard/python/task_defs/
 onboard/python/transition_defs/
 onboard/python/mission/
 onboard/python/requirements.txt
+
+
+# user space implementation
+os/user/project/implementation/
