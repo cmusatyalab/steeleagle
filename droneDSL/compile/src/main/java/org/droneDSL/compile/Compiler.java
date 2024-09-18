@@ -118,6 +118,12 @@ public class Compiler implements Runnable {
 
       // add directory's files to the zip
       addToZipFile(platformPath + "/implementation", "./implementation", zos);
+      // Add task_defs to the zip
+      addToZipFile(platformPath + "/implementation/task_defs", "implementation/task_defs", zos);
+
+      // Add transition_defs to the zip
+      addToZipFile(platformPath + "/implementation/transition_defs", "implementation/transition_defs", zos);
+
 
       // add build file to the zip
       Path buildFile = Paths.get(String.format("./%s/implementation/requirements.txt", platform));
