@@ -90,7 +90,7 @@ public class Compiler implements Runnable {
     // build file generate
     try {
       ProcessBuilder builder = new ProcessBuilder();
-      var cmd = String.format("cd %s/ && pipreqs . --force", platform);
+      var cmd = String.format("cd %s/implementation && pipreqs . --force", platform);
       builder.command("bash", "-c", cmd);
   
       Process process = builder.start();
@@ -124,11 +124,11 @@ public class Compiler implements Runnable {
       addToZipFile(platformPath + "/implementation/transition_defs", "implementation/transition_defs", zos);
 
 
-      // add build file to the zip
-      Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
-      zos.putNextEntry(new ZipEntry("requirements.txt"));
-      Files.copy(buildFile, zos);
-      zos.closeEntry();
+      // // add build file to the zip
+      // Path buildFile = Paths.get(String.format("./%s/requirements.txt", platform));
+      // zos.putNextEntry(new ZipEntry("requirements.txt"));
+      // Files.copy(buildFile, zos);
+      // zos.closeEntry();
       
 
       zos.close();
