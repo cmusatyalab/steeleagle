@@ -1,7 +1,10 @@
 
 import importlib
 import os
+import subprocess
 import sys
+from zipfile import ZipFile
+import requests
 import zmq
 import asyncio
 import logging
@@ -30,9 +33,48 @@ class MissionController():
         self.transitMap = {}
         self.task_arg_map = {}
         self.reload = False
-            
+        self.user_path = os.environ.get('PYTHONPATH') +'/user/project/implementation'
+        logger.info(f"User path: {self.user_path}")
         
-    ######################################################## MISSION ############################################################ 
+    ######################################################## MISSION ############################################################
+    def install_prereqs(self) -> bool:
+        ret = False
+        # Pip install prerequsites for flight script
+        requirements_path = os.path.join(self.user_path, 'requirements.txt')
+        try:
+            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', requirements_path])
+            ret = True
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"Error pip installing requirements.txt: {e}")
+        return ret
+
+    def download_script(self, url):
+        #download zipfile and extract reqs/flight script from cloudlet
+        try:
+            filename = url.rsplit(sep='/')[-1]
+            logger.info(f'Writing {filename} to disk...')
+            r = requests.get(url, stream=True)
+            with open(filename, mode='wb') as f:
+                for chunk in r.iter_content():
+                    f.write(chunk)
+                    
+            z = ZipFile(filename)
+ 
+            logger.info(f"Removing old implementation at {self.user_path}")
+            subprocess.check_call(['rm', '-rf', self.user_path])
+
+            logger.info(f"Extracting {filename} to {self.user_path}")
+            z.extractall(path = self.user_path)
+            z.close()
+            
+            logger.info(f"Downloaded and extracted {filename} to {self.user_path}")
+            self.install_prereqs()
+        except Exception as e:
+            print(e)
+            
+    def download_mission(self, url):
+        self.download_script(url)
+             
     def start_mission(self):
         # check if the mission is already running
         if self.tm:
@@ -41,15 +83,20 @@ class MissionController():
         
         # dynamic import the fsm
         logger.info(f"start the mission")
-        if self.reload == False:
-            from project.implementation.Mission import Mission
-        else:
+        from project.implementation.Mission import Mission
+        if self.reload :
             logger.info('Reloading...')
             modules = sys.modules.copy()
-            for module in modules.values():
-                if module.__name__.startswith('Mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
-                    importlib.reload(module)
-        
+            for module_name, module in modules.items():
+                logger.info(f"Module name: {module_name}")
+                if module_name.startswith('project.implementation.task_defs') or module_name.startswith('project.implementation.Mission') or module_name.startswith('project.implementation.transition_defs'):
+                    try:
+                        # Log and reload the module
+                        logger.info(f"Reloading module: {module_name}")
+                        importlib.reload(module)
+                    except Exception as e:
+                        logger.error(f"Failed to reload module {module_name}: {e}")
+                    
         Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
@@ -74,6 +121,7 @@ class MissionController():
                 logger.info("Mission has been ended and cleaned up.")
         else:
             logger.info("Mission not running or already cancelled.")
+            
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
         self.drone = DroneStub()
@@ -94,12 +142,18 @@ class MissionController():
                 mission_command.ParseFromString(message)
                 logger.info(f"Parsed Command: {mission_command}")
                 
-                if mission_command.startMission:
+                if mission_command.downloadMission:
+                    self.download_mission(mission_command.downloadMission)
+                    response = "Mission downloaded"
+                
+                elif mission_command.startMission:
                     self.start_mission()
                     response = "Mission started"
+                    
                 elif mission_command.stopMission:
                     await self.end_mission()
                     response = "Mission stopped"
+                    
                 else:
                     response = "Unknown command"
 

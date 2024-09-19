@@ -1,5 +1,5 @@
 #!/bin/bash
-# Get the directory where this script is located, even if sourced
+# Get the directory where this env.sh script is located, even if sourced
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
 # Export PYTHONPATH as os/

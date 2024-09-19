@@ -114,7 +114,6 @@ async def handle(identity, message, resp, action, resp_sock):
                 logger.debug("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.debug(f"hover function call finished at: {time.time()}")
-                
             case "setHome":
                 location  = message.setHome
                 await drone.setHome(location.latitude, location.longitude, location.altitude)
@@ -130,6 +129,11 @@ async def handle(identity, message, resp, action, resp_sock):
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            case "setGimbal":
+                gimbal = message.setGimbal
+                logger.info(f"Setting gimbal: {gimbal} started at {time.time()}, seq id {message.seqNum}")
+                await drone.rotateGimbal(0, gimbal.pitch_theta, 0)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "setRelativePosition":
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED

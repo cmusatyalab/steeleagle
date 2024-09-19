@@ -33,6 +33,7 @@ class ManualCommand(Enum):
     LAND = 5
     PCMD = 6
     CONNECTION = 7
+    GIMBAL = 8
 
 class DroneType(Enum):
     PARROT = 1
@@ -40,7 +41,7 @@ class DroneType(Enum):
     VESPER = 3
 
 class CommandService(Service):
-    def __init__(self, type, user_path):
+    def __init__(self, type):
         super().__init__()
         
         # setting args
@@ -49,8 +50,6 @@ class CommandService(Service):
         self.manual = True
         # init cmd seq
         self.command_seq = 0
-        # user path
-        self.user_path = user_path
         
         # Setting up conetxt
         context = zmq.asyncio.Context()
@@ -77,63 +76,35 @@ class CommandService(Service):
         self.register_task(cmd_task)
  
     ######################################################## USER ############################################################
-    def install_prereqs(self) -> bool:
-        ret = False
-        # Pip install prerequsites for flight script
-        requirements_path = os.path.join(self.user_path, 'requirements.txt')
-        try:
-            subprocess.check_call(['python3', '-m', 'pip', 'install', '-r', requirements_path])
-            ret = True
-        except subprocess.CalledProcessError as e:
-            logger.debug(f"Error pip installing requirements.txt: {e}")
-        return ret
-
-    def download_script(self, url):
-        #download zipfile and extract reqs/flight script from cloudlet
-        try:
-            filename = url.rsplit(sep='/')[-1]
-            logger.info(f'Writing {filename} to disk...')
-            r = requests.get(url, stream=True)
-            with open(filename, mode='wb') as f:
-                for chunk in r.iter_content():
-                    f.write(chunk)
-                    
-            z = ZipFile(filename)
- 
-            logger.info(f"Removing old implementation at {self.user_path}")
-            subprocess.check_call(['rm', '-rf', self.user_path])
-
-            logger.info(f"Extracting {filename} to {self.user_path}")
-            z.extractall(path = self.user_path)
-            z.close()
-            
-            logger.info(f"Downloaded and extracted {filename} to {self.user_path}")
-            self.install_prereqs()
-        except Exception as e:
-            print(e)
-            
-    # Function to send a start mission command
-    def send_start_mission(self, url):
-        # download the script
-        self.download_script(url)
+    async def send_download_mission(self, url):
+        # send the start mission command
+        mission_command = cnc_pb2.Mission()
+        mission_command.downloadMission = url
+        message = mission_command.SerializeToString()
+        logger.info(f'download_mission message:{message}')
+        self.msn_sock.send(message)
+        reply = await self.msn_sock.recv_string()
+        logger.info(f"Mission reply: {reply}")
         
+    # Function to send a start mission command
+    async def send_start_mission(self):
         # send the start mission command
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
         message = mission_command.SerializeToString()
-        print(f'start_mission message:{message}')
+        logger.info(f'start_mission message:{message}')
         self.msn_sock.send(message)
-        reply = self.msn_sock.recv_string()
-        print(f"Mission reply: {reply}")
+        reply = await self.msn_sock.recv_string()
+        logger.info(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
-    def send_stop_mission(self):
+    async def send_stop_mission(self):
         mission_command = cnc_pb2.Mission()
         mission_command.stopMission = True
         message = mission_command.SerializeToString()
         self.msn_sock.send(message)
-        reply = self.msn_sock.recv_string()
-        print(f"Mission reply: {reply}")
+        reply = await self.msn_sock.recv_string()
+        logger.info(f"Mission reply: {reply}")
     
         
     ######################################################## DRIVER ############################################################ 
@@ -159,11 +130,19 @@ class CommandService(Service):
                 # driver_command.setVelocity.right_vel = 0
                 # driver_command.setVelocity.up_vel = 0
             else:
-                driver_command.setVelocity.forward_vel = 2 if params["pitch"] > 0 else -2 if params["pitch"] < 0 else 0
-                driver_command.setVelocity.angle_vel = 20 if params["yaw"] > 0 else -20 if params["yaw"] < 0 else 0
-                driver_command.setVelocity.right_vel = 2 if params["roll"] > 0 else -2 if params["roll"] < 0 else 0
-                driver_command.setVelocity.up_vel = 2 if params["thrust"] > 0 else -2 if params["thrust"] < 0 else 0
+                # driver_command.setVelocity.forward_vel = 2 if params["pitch"] > 0 else -2 if params["pitch"] < 0 else 0
+                # driver_command.setVelocity.angle_vel = 20 if params["yaw"] > 0 else -20 if params["yaw"] < 0 else 0
+                # driver_command.setVelocity.right_vel = 2 if params["roll"] > 0 else -2 if params["roll"] < 0 else 0
+                # driver_command.setVelocity.up_vel = 2 if params["thrust"] > 0 else -2 if params["thrust"] < 0 else 0
+                
+                driver_command.setVelocity.forward_vel = params["pitch"]
+                driver_command.setVelocity.angle_vel = params["yaw"]
+                driver_command.setVelocity.right_vel = params["roll"]
+                driver_command.setVelocity.up_vel = params["thrust"]
                 logger.info(f'Driver Command setVelocities: {driver_command.setVelocity} sent at:{time.time()}, seq id {driver_command.seqNum}')
+        elif command == ManualCommand.GIMBAL:
+            driver_command.setGimbal.pitch_theta = params["gimbal_pitch"]
+            logger.info(f'Driver Command setGimbal: {driver_command.setGimbal} sent at:{time.time()}, seq id {driver_command.seqNum}')
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
@@ -204,7 +183,7 @@ class CommandService(Service):
                     logger.debug(f"proxy : 2 Received message from BACKEND: identity: {identity}")
                     
                     if identity == b'cmdr':
-                        self.process_command(cmd)
+                        await self.process_command(cmd)
                     elif identity == b'usr':
                         await self.cmd_back_sock.send_multipart(message)
                     else:
@@ -233,19 +212,19 @@ class CommandService(Service):
             except Exception as e:
                 logger.error(f"cmd_proxy: {e}")
                 
-    def process_command(self, cmd):
+    async def process_command(self, cmd):
         extras = cnc_pb2.Extras()
         extras.ParseFromString(cmd)
         self.command_seq = self.command_seq + 1
                
         if extras.cmd.rth:
             logger.info(f"RTH signal started at: {time.time()}")
-            self.send_stop_mission()
+            await self.send_stop_mission()
             asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
             self.manual = False
         elif extras.cmd.halt:
             logger.info(f"Halt signal started at: {time.time()}")
-            self.send_stop_mission()
+            await self.send_stop_mission()
             asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
             self.manual = True
             logger.info('Manual control is now active!')
@@ -254,7 +233,8 @@ class CommandService(Service):
             if validators.url(url):
                 logger.info(f'Flight script sent by commander: {url}')
                 self.manual = False
-                self.send_start_mission(url)
+                await self.send_download_mission(url)
+                await self.send_start_mission()
             else:
                 logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
         elif self.manual:
@@ -268,22 +248,19 @@ class CommandService(Service):
                 self.handle_pcmd_command(extras.cmd.pcmd)
 
     def handle_pcmd_command(self, pcmd):
-        pitch, yaw, roll, thrust = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz
-        params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust}
+        pitch, yaw, roll, thrust, gimbal_pitch = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz, pcmd.gimbal_pitch
+        params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust, "gimbal_pitch": gimbal_pitch}
         logger.info(f"PCMD signal started at: {time.time()} PCMD values: {params} seq id {self.command_seq}")
         asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
+        asyncio.create_task(self.send_driver_command(ManualCommand.GIMBAL, params))
             
         
 ######################################################## MAIN ##############################################################             
 async def async_main():
     type = DroneType.PARROT
-    
-    # Constants and Environment Variables
-    user_path = os.environ.get('PYTHONPATH') +'/user/project/implementation'
-    logger.info(f"User path: {user_path}")
 
     # init CommandService
-    cmd_service = CommandService(type, user_path)
+    cmd_service = CommandService(type)
     
     # run CommandService
     await cmd_service.start()

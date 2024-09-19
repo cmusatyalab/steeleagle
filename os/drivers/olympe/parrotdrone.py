@@ -410,9 +410,9 @@ class ParrotDrone():
         vertMax = self.drone.get_state(MaxVerticalSpeedChanged)["max"]
 
         if abs(angle_vel) > rotMax:
-            raise ArgumentOutOfBoundsException("Rotation speed outside bound")
+            raise ArgumentOutOfBoundsException("Rotation speed outside bound, max: " + str(rotMax))
         if abs(up_vel) > vertMax:
-            raise ArgumentOutOfBoundsException("Vertical speed outside bound")
+            raise ArgumentOutOfBoundsException("Vertical speed outside bound, max: " + str(vertMax))
 
         self.velocitySP = (forward_vel, right_vel, up_vel, angle_vel)
         if self.PIDTask is None:
@@ -438,7 +438,21 @@ class ParrotDrone():
             moveBy(forward, right, -1 * up, angle)
         )
         await self.hovering()
-
+        
+    async def rotateGimbal(self, yaw_theta, pitch_theta, roll_theta):
+        pose_dict = await self.getGimbalPose()
+        current_pitch = pose_dict["pitch"]
+        self.drone(set_target(
+            gimbal_id=0,
+            control_mode="position",
+            yaw_frame_of_reference="absolute",
+            yaw=yaw_theta,
+            pitch_frame_of_reference="absolute",
+            pitch=pitch_theta + current_pitch,
+            roll_frame_of_reference="absolute",
+            roll=roll_theta,)
+        )
+        
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         self.drone(set_target(
             gimbal_id=0,

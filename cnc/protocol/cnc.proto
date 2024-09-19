@@ -96,12 +96,19 @@ message Attitude {
   double thrust = 4;
 }
 
+message Pose {
+  double yaw_theta = 1;
+  double pitch_theta = 2;
+  double roll_theta = 3;
+}
+
 message Velocity {
   double forward_vel = 1;
   double right_vel = 2;
   double up_vel = 3;
   double angle_vel = 4;
 }
+
 
 message Position {
   double forward = 1;
@@ -155,14 +162,15 @@ message Driver {
     Location setHome = 8;
     Location getHome = 9;
     Velocity setVelocity = 10;
-    Position setRelativePosition = 11; //relative to home Position
-    Location setGPSLocation = 12;
-    Position setTranslatedPosition = 13; //relative to current position
-    int64 switchCamera = 14; //change current switchCamera
-    Camera getCameras = 15;
+    Pose setGimbal = 11;
+    Position setRelativePosition = 12; //relative to home Position
+    Location setGPSLocation = 13;
+    Position setTranslatedPosition = 14; //relative to current position
+    int64 switchCamera = 15; //change current switchCamera
+    Camera getCameras = 16;
   }
-  ResponseStatus resp = 16;
-  int64 seqNum = 17;
+  ResponseStatus resp = 17;
+  int64 seqNum = 18;
 }
 
 // Kernel - Mission Controller API
@@ -183,7 +191,6 @@ message Mission {
     bool pauseMission = 2;
     bool resumeMission = 3;
     bool stopMission = 4;
-    //for Kernel
     string downloadMission = 5; // URL that specifies the zip file to download
   }
   string UUID = 6; //unique mission reference for cataloging
