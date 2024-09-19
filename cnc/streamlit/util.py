@@ -33,6 +33,17 @@ def connect_redis():
     return red
 
 @st.cache_resource
+def connect_redis_publisher():
+    red = redis.Redis(
+        host=st.secrets.redis,
+        port=st.secrets.redis_port,
+        username=st.secrets.redis_user,
+        password=st.secrets.redis_pw,
+    )
+    subscriber = red.pubsub(ignore_subscribe_messages=True)
+    return subscriber
+
+@st.cache_resource
 def connect_zmq():
     ctx = zmq.Context()
     z = ctx.socket(zmq.REQ)
@@ -45,7 +56,7 @@ def get_drones():
     red = connect_redis()
     for k in red.keys("telemetry.*"):
         l.append(k.split(".")[-1])
-    return l
+    return sorted(l)
 
 def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
     _container = {}
