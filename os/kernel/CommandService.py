@@ -1,13 +1,9 @@
 from enum import Enum
-import subprocess
 import sys
 import time
-from zipfile import ZipFile
-import requests
 import validators
 import zmq
 import zmq.asyncio
-import os
 import asyncio
 import logging
 from cnc_protocol import cnc_pb2

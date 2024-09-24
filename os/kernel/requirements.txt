@@ -1,4 +1,5 @@
-validators
-gabriel_protocol
 zmq
-nest_asyncio
+protobuf==3.20.0
+gabriel-protocol==2.0.1 # required by track task for now but will be removed in the future
+websockets>=9.1
+validators
