@@ -1,0 +1,81 @@
+services:
+  steeleagle-os-driver:
+    image: steeleagle-os-driver-olympe:${TAG}
+    container_name: steeleagle-os-driver
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
+      - STEELEAGLE_DRIVER_DRONE_ARGS=${STEELEAGLE_DRIVER_DRONE_ARGS}
+      - TEL_PORT=${TEL_PORT}
+      - CAM_PORT=${CAM_PORT}
+      - CMD_BACK_PORT=${CMD_BACK_PORT}
+      - LOCALHOST=${LOCALHOST}
+    entrypoint: ["python3", "driver.py"]
+    restart: unless-stopped
+    networks:
+      - steeleagle-os-net
+    # network_mode: host
+
+  steeleagle-os-kernel-cmd:
+    image: steeleagle-os-kernel:${TAG}
+    container_name: steeleagle-os-kernel-cmd
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - CMD_FRONT_PORT=${CMD_FRONT_PORT}
+      - CMD_BACK_PORT=${CMD_BACK_PORT}
+      - MSN_PORT=${MSN_PORT}
+    ports:
+      - "${CMD_FRONT_PORT}:${CMD_FRONT_PORT}"
+      - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
+      - "${MSN_PORT}:${MSN_PORT}"
+    restart: unless-stopped
+    privileged: true
+    entrypoint: [ "python3", "CommandService.py"]
+    networks:
+      - steeleagle-os-net
+      - cnc-net
+
+  steeleagle-os-kernel-rc:
+    image: steeleagle-os-kernel:${TAG}
+    container_name: steeleagle-os-kernel-rc
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
+      - STEELEAGLE_GABRIEL_PORT=${STEELEAGLE_GABRIEL_PORT}
+      - TEL_PORT=${TEL_PORT}
+      - CAM_PORT=${CAM_PORT}
+    ports:
+      - "${TEL_PORT}:${TEL_PORT}"
+      - "${CAM_PORT}:${CAM_PORT}"
+    restart: unless-stopped
+    privileged: true
+    entrypoint: [ "python3", "RemoteComputeService.py"]
+    networks:
+      - steeleagle-os-net
+      - cnc-net
+
+  steeleagle-os-user:
+    image: steeleagle-os-user:${TAG}
+    container_name: steeleagle-os-user
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - CMD_FRONT_PORT=${CMD_FRONT_PORT}
+      - MSN_PORT=${MSN_PORT}
+      - LOCALHOST=${LOCALHOST}
+    restart: unless-stopped
+    privileged: true
+    entrypoint: ["python3", "-m", "common.MissionController"]
+    networks:
+      - steeleagle-os-net
+    volumes:
+      - ./user/project/implementation:/steeleagle-os/user/project/implementation/
+
+networks:
+  
+  steeleagle-os-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 13.13.0.0/24
+  cnc-net:
+    external: true

@@ -33,3 +33,4 @@ COPY ./os/util /steeleagle_os/util
 # Install required Python packages
 RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
 RUN pip install --upgrade  protobuf
+RUN apt update && apt install iputils-ping -y
