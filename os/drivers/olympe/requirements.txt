@@ -1,5 +1,5 @@
 zmq
-protobuf==3.20.*
 parrot-olympe
+protobuf
 opencv-python
 

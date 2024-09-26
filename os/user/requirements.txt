@@ -1,7 +1,7 @@
 requests
 zmq
-protobuf==3.20.0
+protobuf
 aenum
 numpy
-gabriel-protocol==2.0.1 # required by track task for now but will be removed in the future
+gabriel-protocol==3.0 # required by track task for now but will be removed in the future
 scipy

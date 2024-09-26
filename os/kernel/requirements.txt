@@ -1,5 +1,6 @@
 zmq
-protobuf==3.20.0
-gabriel-protocol==2.0.1 # required by track task for now but will be removed in the future
+protobuf
+gabriel-protocol
+# gabriel-client can  not use pip install in this because of the dependency of opencv-python is not compatible with the alphine
 websockets>=9.1
 validators
