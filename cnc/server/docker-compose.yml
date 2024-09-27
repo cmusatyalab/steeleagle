@@ -233,6 +233,7 @@ services:
       - ./redis/redis.conf:/redis-stack.conf
 networks:
   cnc-net:
+    name: cnc-net
     ipam:
       driver: default
       config:
