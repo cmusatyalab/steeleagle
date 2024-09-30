@@ -33,7 +33,6 @@ services:
     entrypoint: [ "python3", "CommandService.py"]
     networks:
       - steeleagle-os-net
-      - cnc-net
 
   steeleagle-os-kernel-rc:
     image: steeleagle-os-kernel:${TAG}
@@ -52,7 +51,6 @@ services:
     entrypoint: [ "python3", "RemoteComputeService.py"]
     networks:
       - steeleagle-os-net
-      - cnc-net
 
   steeleagle-os-user:
     image: steeleagle-os-user:${TAG}
@@ -77,5 +75,3 @@ networks:
       driver: default
       config:
         - subnet: 13.13.0.0/24
-  cnc-net:
-    external: true
