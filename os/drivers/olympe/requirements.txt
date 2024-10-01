@@ -1,5 +1,4 @@
 zmq
-parrot-olympe
 protobuf
 opencv-python
 
