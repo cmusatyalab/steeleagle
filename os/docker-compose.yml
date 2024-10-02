@@ -1,7 +1,6 @@
 services:
   steeleagle-os-driver:
-    # image: steeleagle-os-driver-olympe:${TAG}
-    image: achanana/steeleagle-voxl:${TAG}
+    image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
     container_name: steeleagle-os-driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -10,17 +9,15 @@ services:
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
-      - LOCALHOST=${LOCALHOST}
-    # entrypoint: ["python3", "driver.py"]
-    command: /home/ubuntu/parrot-olympe/out/olympe-linux/pyenv_root/shims/python driver.py
+      - CMD_ENDPOINT=${CMD_ENDPOINT}
+      - RC_ENDPOINT=${RC_ENDPOINT}
+    entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
       - steeleagle-os-net
-    # network_mode: host
 
   steeleagle-os-kernel-cmd:
-    # image: steeleagle-os-kernel:${TAG}
-    image: achanana/steeleagle-voxl-kernel:${TAG}
+    image: xianglic/steeleagle-os-kernel-arm:${TAG}
     container_name: steeleagle-os-kernel-cmd
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -38,8 +35,7 @@ services:
       - steeleagle-os-net
 
   steeleagle-os-kernel-rc:
-    # image: steeleagle-os-kernel:${TAG}
-    image: achanana/steeleagle-voxl-kernel:${TAG}
+    image: xianglic/steeleagle-os-kernel-arm:${TAG}
     container_name: steeleagle-os-kernel-rc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -57,14 +53,13 @@ services:
       - steeleagle-os-net
 
   steeleagle-os-user:
-    # image: steeleagle-os-user:${TAG}
-    image: achanana/steeleagle-voxl-user:${TAG}
+    image: xianglic/steeleagle-os-user-arm:${TAG}
     container_name: steeleagle-os-user
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - MSN_PORT=${MSN_PORT}
-      - LOCALHOST=${LOCALHOST}
+      - CMD_ENDPOINT=${CMD_ENDPOINT}
     restart: unless-stopped
     privileged: true
     entrypoint: ["python3", "-m", "common.MissionController"]

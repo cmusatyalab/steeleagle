@@ -13,7 +13,7 @@ context = zmq.Context()
 cmd_front_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
 cmd_front_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command frontend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 ######################################################## DriverRespond ############################################################ 
 class DriverRespond:

@@ -24,7 +24,7 @@ logger.addHandler(handler)
 
 context = zmq.Context()
 msn_sock = context.socket(zmq.REP)
-setup_socket(msn_sock, 'connect', 'MSN_PORT', 'Created user space mission control socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(msn_sock, 'connect', 'MSN_PORT', 'Created user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 class MissionController():
     def __init__(self):

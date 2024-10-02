@@ -10,6 +10,8 @@ import cnc_protocol.cnc_pb2 as cnc_protocol
 from util.utils import setup_socket
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 from datetime import datetime
+import signal
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -29,12 +31,19 @@ tel_sock = context.socket(zmq.PUB)
 cam_sock = context.socket(zmq.PUB)
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("LOCALHOST"))
-setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("LOCALHOST"))
-setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("LOCALHOST"))
+setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("RC_ENDPOINT"))
+setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
+setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 
-
+def handle_signal(signum, frame):
+    logger.info(f"Received signal {signum}, cleaning up...")
+    drone.disconnect()
+    sys.exit(0)
+    
+signal.signal(signal.SIGINT, handle_signal)  
+signal.signal(signal.SIGTERM, handle_signal)
+    
 
 async def camera_stream(drone, cam_sock):
     frame_id = 0
