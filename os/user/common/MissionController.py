@@ -2,6 +2,7 @@
 import importlib
 import os
 import subprocess
+import shutil
 import sys
 from zipfile import ZipFile
 import requests
@@ -10,7 +11,6 @@ import asyncio
 import logging
 from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
-from common.TaskManager import TaskManager
 from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 
@@ -47,30 +47,48 @@ class MissionController():
         except subprocess.CalledProcessError as e:
             logger.debug(f"Error pip installing requirements.txt: {e}")
         return ret
+    
+    
+    def clean_user_path(self):
+        for filename in os.listdir(self.user_path):
+            file_path = os.path.join(self.user_path, filename)
+            if os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # Remove directories
+            else:
+                os.remove(file_path)  # Remove files
+
 
     def download_script(self, url):
-        #download zipfile and extract reqs/flight script from cloudlet
+        # Download zipfile and extract reqs/flight script from cloudlet
         try:
             filename = url.rsplit(sep='/')[-1]
             logger.info(f'Writing {filename} to disk...')
-            r = requests.get(url, stream=True)
-            with open(filename, mode='wb') as f:
-                for chunk in r.iter_content():
-                    f.write(chunk)
-                    
-            z = ZipFile(filename)
- 
-            logger.info(f"Removing old implementation at {self.user_path}")
-            subprocess.check_call(['rm', '-rf', self.user_path])
-
-            logger.info(f"Extracting {filename} to {self.user_path}")
-            z.extractall(path = self.user_path)
-            z.close()
             
+            # Download the file
+            r = requests.get(url, stream=True)
+            r.raise_for_status()  # Raise an error for bad responses
+            
+            with open(filename, mode='wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):  # Use a chunk size
+                    f.write(chunk)
+
+            # Open the zip file
+            with ZipFile(filename) as z:
+                # Check if the path exists and remove it
+                if os.path.exists(self.user_path):
+                    logger.info(f"Removing old implementation at {self.user_path}")
+                    self.clean_user_path()
+                else:
+                    logger.info(f"{self.user_path} does not exist. No need to remove")
+
+                logger.info(f"Extracting {filename} to {self.user_path}")
+                z.extractall(path=self.user_path)
+
             logger.info(f"Downloaded and extracted {filename} to {self.user_path}")
             self.install_prereqs()
+        
         except Exception as e:
-            print(e)
+            logger.error(f"An unexpected error occurred: {e}")
             
     def download_mission(self, url):
         self.download_script(url)
@@ -80,6 +98,8 @@ class MissionController():
         if self.tm:
             logger.info(f"mission already running")
             return
+        else: # first time mission, create a task manager
+            from common.TaskManager import TaskManager
         
         # dynamic import the fsm
         logger.info(f"start the mission")
