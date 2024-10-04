@@ -19,6 +19,10 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender1 \
+    # debugging purpose
+    vim \ 
+    # debugging purpose
+    iputils-ping \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -35,4 +39,3 @@ COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410011647-py3-none-linux_a
 RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
 RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
 RUN pip install --upgrade  protobuf
-RUN apt update && apt install iputils-ping -y
