@@ -1,6 +1,7 @@
 services:
   steeleagle-os-driver:
-    image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: steeleagle-os-driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -17,7 +18,8 @@ services:
       - steeleagle-os-net
 
   steeleagle-os-kernel-cmd:
-    image: xianglic/steeleagle-os-kernel-arm:${TAG}
+    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
+    image: xianglic/steeleagle-os-kernel-amd:${TAG}
     container_name: steeleagle-os-kernel-cmd
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -35,7 +37,8 @@ services:
       - steeleagle-os-net
 
   steeleagle-os-kernel-rc:
-    image: xianglic/steeleagle-os-kernel-arm:${TAG}
+    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
+    image: xianglic/steeleagle-os-kernel-amd:${TAG}
     container_name: steeleagle-os-kernel-rc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -53,7 +56,8 @@ services:
       - steeleagle-os-net
 
   steeleagle-os-user:
-    image: xianglic/steeleagle-os-user-arm:${TAG}
+    # image: xianglic/steeleagle-os-user-arm:${TAG}
+    image: xianglic/steeleagle-os-user-amd:${TAG}
     container_name: steeleagle-os-user
     environment:
       - PYTHONPATH=${PYTHONPATH}

@@ -47,9 +47,9 @@ signal.signal(signal.SIGTERM, handle_signal)
 
 async def camera_stream(drone, cam_sock):
     frame_id = 0
-    cam_message = cnc_protocol.Frame() 
     while drone.isConnected():
         try:
+            cam_message = cnc_protocol.Frame()
             cam_message.data = await drone.getVideoFrame()
             cam_message.height = 720
             cam_message.width = 1280
@@ -64,10 +64,10 @@ async def camera_stream(drone, cam_sock):
         await asyncio.sleep(0.033)
 
 async def telemetry_stream(drone, tel_sock):
-    logger.info('Starting telemetry stream')
-    tel_message = cnc_protocol.Telemetry()
+    logger.info('Starting telemetry stream')  
     while drone.isConnected():
         try:
+            tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
             tel_message.global_position.latitude = telDict["gps"][0] 
             tel_message.global_position.longitude = telDict["gps"][1]

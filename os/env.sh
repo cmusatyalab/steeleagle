@@ -24,4 +24,6 @@ export CMD_BACK_PORT="5004"
 export MSN_PORT="5005"
 
 # ADDR
-export LOCALHOST="127.0.0.1"
+# export LOCALHOST="127.0.0.1"
+export CMD_ENDPOINT="127.0.0.1"
+export RC_ENDPOINT="127.0.0.1"
