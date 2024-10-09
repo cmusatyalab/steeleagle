@@ -7,6 +7,7 @@ import asyncio
 import os
 import sys
 import logging
+import json
 from util.utils import setup_socket
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
@@ -22,13 +23,14 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-
-class RemoteComputeService(Service):
+class DataService(Service):
     def __init__(self, gabriel_server, gabriel_port):
         super().__init__()
         
         # setting up args
         self.telemetry_cache = {
+            "connection": None,
+            "drone_id": None,
             "location": {
                 "latitude": None,
                 "longitude": None,
@@ -45,6 +47,7 @@ class RemoteComputeService(Service):
             "channels": None,
             "id": None
         }
+        self.result_cache = {}
         # Gabriel
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
@@ -54,39 +57,47 @@ class RemoteComputeService(Service):
             self.gabriel_server, self.gabriel_port,
             [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
         )
-        # user defined parameters
-        self.model = 'coco'
-        self.hsv_upper = [50,255,255]
-        self.hsv_lower = [30,100,100]
-        # drone id
-        self.drone_id = "ant"
-        
+        # remote computation parameters
+        self.params = {
+            "model": None,
+            "hsv_lower": None,
+            "hsv_upper": None
+        }
+       
+        # Result Cache
+
         # Setting up conetxt
         context = zmq.asyncio.Context()
         
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
+        cpt_sock = context.socket(zmq.REP)
         tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
         cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
         cam_sock.setsockopt(zmq.CONFLATE, 1)
         self.cam_sock = cam_sock
         self.tel_sock = tel_sock
+        self.cpt_sock = cpt_sock
         setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
+        setup_socket(cpt_sock, 'bind', 'CPT_PORT', 'Created compute socket endpoint')
         
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
+        cpt_task = asyncio.create_task(self.compute_handler())
         gab_task = asyncio.create_task(self.gabriel_client.launch_async())
         
         # registering context, sockets and tasks to service
         self.register_context(context)
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
+        self.register_socket(cpt_sock)
         self.register_task(tel_task)
         self.register_task(cam_task)
+        self.register_task(cpt_task)
         self.register_task(gab_task)
     
     ######################################################## DRIVER ############################################################  
@@ -98,6 +109,8 @@ class RemoteComputeService(Service):
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
+                self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
+                self.telemetry_cache['drone_id'] = telemetry.connection_status.drone_name
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
                 self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
                 self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
@@ -126,10 +139,44 @@ class RemoteComputeService(Service):
                 logger.debug(f"Camera Handler: finished time {time.time()}")
             except Exception as e:
                 logger.error(f"Camera Handler: {e}")
+
+    async def compute_handler(self):
+        logger.info('Compute handler started')
+        while True:
+            try:
+                msg = await self.cpt_sock.recv()
+                req = cnc_pb2.ComputeRequest()
+                req.ParseFromString(msg)
+                if req.engineKey in self.result_cache.keys():
+                    resp = ComputeResult()
+                    resp.result = self.result_cache[req.engineKey]
+                    if req.invalidateCache:
+                        self.result_cache.pop(req.engineKey, None)
+                    self.cpt_sock.send(resp.SerializeToString())
+            except Exception as e:
+                pass
     
     ######################################################## REMOTE COMPUTE ############################################################           
     def processResults(self, result_wrapper):
-        pass
+        if len(result_wrapper.results) != 1:
+            return
+
+        for result in result_wrapper.results:
+            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
+                payload = result.payload.decode('utf-8')
+                data = ""
+                try:
+                    if len(payload) != 0:
+                        data = json.loads(payload)
+                        producer = result_wrapper.result_producer_name.value
+                        self.result_cache[producer] = result
+                        logger.debug(f'Got new result for producer {producer}: {result}')
+                except json.JSONDecodeError as e:
+                    logger.debug(f'Error decoding json: {payload}')
+                except Exception as e:
+                    print(e)
+            else:
+                logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
 
     def get_frame_producer(self):
         async def producer():
@@ -137,7 +184,7 @@ class RemoteComputeService(Service):
             
             logger.debug(f"Frame Producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
-            if self.frame_cache['data'] is not None:
+            if self.frame_cache['data'] is not None and self.telemetry_cache['drone_id'] is not None:
                 try:
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
@@ -148,16 +195,19 @@ class RemoteComputeService(Service):
                     
                     # produce extras
                     extras = cnc_pb2.Extras()
-                    extras.drone_id = self.drone_id
+                    extras.drone_id = self.telemetry_cache['drone_id']
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
                     extras.location.longitude = self.telemetry_cache['location']['longitude']
-                    extras.detection_model = self.model
-                    extras.lower_bound.H = self.hsv_lower[0]
-                    extras.lower_bound.S = self.hsv_lower[1]
-                    extras.lower_bound.V = self.hsv_lower[2]
-                    extras.upper_bound.H = self.hsv_upper[0]
-                    extras.upper_bound.S = self.hsv_upper[1]
-                    extras.upper_bound.V = self.hsv_upper[2]
+                    if self.params['model'] is not None:
+                        extras.detection_model = self.params['model']
+                    if self.params['hsv_lower'] is not None:
+                        extras.lower_bound.H = self.params['hsv_lower'][0]
+                        extras.lower_bound.S = self.params['hsv_lower'][1]
+                        extras.lower_bound.V = self.params['hsv_lower'][2]
+                    if self.params['hsv_upper'] is not None:
+                        extras.upper_bound.H = self.params['hsv_upper'][0]
+                        extras.upper_bound.S = self.params['hsv_upper'][1]
+                        extras.upper_bound.V = self.params['hsv_upper'][2]
                     if extras is not None:
                         input_frame.extras.Pack(extras)
 
@@ -186,15 +236,13 @@ class RemoteComputeService(Service):
             input_frame.payloads.append('heartbeart'.encode('utf8'))
 
             extras = cnc_pb2.Extras()
-            # test
-            extras.drone_id = self.drone_id
-            extras.status.rssi = 0
             
             try:
                 if all(value is None for value in self.telemetry_cache.values()):
                     logger.info('All telemetry_cache values are None')
                 else:
                     # Proceed with normal assignments
+                    extras.drone_id = self.telemetry_cache['drone_id']
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
                     extras.location.longitude = self.telemetry_cache['location']['longitude']
                     extras.location.altitude = self.telemetry_cache['location']['altitude']
@@ -202,20 +250,9 @@ class RemoteComputeService(Service):
                     extras.status.battery = self.telemetry_cache['battery']    
                     extras.status.mag = self.telemetry_cache['magnetometer']
                     extras.status.bearing = self.telemetry_cache['bearing']
+                    extras.status.rssi = 0
                     
                     logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
-                
-                # result = await self.send_driver_command(ManualCommand.CONNECTION, None)
-                # if self.drone_type == DroneType.VESPER:
-                #     extras.status.rssi = result.connectionStatus.radio_rssi
-                # elif self.drone_type == DroneType.PARROT:
-                #     extras.status.rssi = result.connectionStatus.wifi_rssi
-                # elif self.drone_type == DroneType.VXOL:
-                #     extras.status.rssi = result.connectionStatus.wifi_rssi
-                # else:
-                #     extras.status.rssi = result.connectionStatus.cellular_rssi
-                
-                
             except Exception as e:
                 logger.debug(f'Gabriel Client Telemetry Producer: {e}')
 
@@ -233,20 +270,17 @@ class RemoteComputeService(Service):
     
 ######################################################## MAIN ##############################################################             
 async def async_main():
-    logger.info("Main: starting RemoteComputeService")
+    logger.info("Main: starting DataService")
     gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
     logger.info(f'Main: Gabriel server: {gabriel_server}')
     gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
     logger.info(f'Main: Gabriel port: {gabriel_port}')
 
-    # init RemoteComputeService
-    rc_service = RemoteComputeService(gabriel_server, gabriel_port)
+    # init DataService
+    rc_service = DataService(gabriel_server, gabriel_port)
     
-    # run RemoteComputeService
+    # run DataService
     await rc_service.start()
-                 
-        
     
 if __name__ == "__main__":
-
     asyncio.run(async_main())
