@@ -3,15 +3,15 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
+import asyncio
 from st_keypressed import st_keypressed
 import os
 from cnc_protocol import cnc_pb2
 import time
-import datetime
-from streamlit_autorefresh import st_autorefresh
-from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu
+import folium
+from streamlit_folium import st_folium
+from folium.plugins import MiniMap
+from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS
 
 st.set_page_config(
     page_title="Commander",
@@ -32,33 +32,28 @@ if "rth_sent" not in st.session_state:
     st.session_state.rth_sent = False
 if "script_file" not in st.session_state:
     st.session_state.script_file = None
-if "prev_sats" not in st.session_state:
-    st.session_state.prev_sats = 0
-if "prev_alt" not in st.session_state:
-    st.session_state.prev_alt = 0
 if "key_pressed" not in st.session_state:
     st.session_state.key_pressed = ""
-if "map_server" not in st.session_state:
-    st.session_state.map_server = "Google Hybrid"
-if "center" not in st.session_state:
-    st.session_state.center = [40.415428612484924, -79.95028831875038]
 if "selected_drone" not in st.session_state:
     st.session_state.selected_drone = None
 if "roll_speed" not in st.session_state:
-    st.session_state.roll_speed = 25
+    st.session_state.roll_speed = 50
 if "yaw_speed" not in st.session_state:
-    st.session_state.yaw_speed = 75
-if "gaz_speed" not in st.session_state:
-    st.session_state.gaz_speed = 75
+    st.session_state.yaw_speed = 45
+if "thrust_speed" not in st.session_state:
+    st.session_state.thrust_speed = 50
 if "pitch_speed" not in st.session_state:
-    st.session_state.pitch_speed = 25
-if "st.session_state.gimbal_speed" not in st.session_state:
+    st.session_state.pitch_speed = 50
+if "gimbal_speed" not in st.session_state:
     st.session_state.gimbal_speed = 50
-
-#Redis Connection
-red = connect_redis()
-#ZMQ Control Plane
-z = connect_zmq()
+if "subscriber" not in st.session_state:
+    st.session_state.subscriber = connect_redis_publisher()
+if "telemetry" not in st.session_state:
+    st.session_state.telemetry = None
+if "redis" not in st.session_state:
+    st.session_state.redis = connect_redis()
+if "zmq" not in st.session_state:
+    st.session_state.zmq = connect_zmq()
 
 MAG_STATE = [
     "Calibrated",
@@ -68,12 +63,60 @@ MAG_STATE = [
     "Perturbation!!",
 ]
 
-def get_telemetry(drone):
-    #df = stream_to_dataframe(red.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
-    results = red.xrevrange(f"telemetry.{drone}", "+", "-", 1)
-    telemetry = results[0][1]
-    telemetry["last_update"] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(int(results[0][0].split("-")[0])/1000), "%d-%b-%Y %H:%M:%S") 
-    return telemetry
+async def update(live, avoidance, detection, hsv, status,):
+    try:
+        while True:
+            live.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}", use_column_width="auto")
+            avoidance.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_column_width="auto")
+            detection.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_column_width="auto")
+            hsv.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_column_width="auto")
+
+
+            # message = st.session_state.subscriber.get_message()
+            # if message is not None:
+            #     image_np = np.frombuffer(message['data'], dtype=np.uint8)
+            #     img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+            #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            #     live.image(img)
+
+            columns = {
+                "latitude": "Latitude",
+                "longitude": "Longitude",
+                "altitude": st.column_config.NumberColumn(
+                    "Altitude",
+                    format="%0.2f m",
+                ),
+                "rssi": st.column_config.NumberColumn(
+                    "RSSI",
+                    format="%d",
+                ),
+                "battery": st.column_config.ProgressColumn(
+                    "Battery",
+                    help="Battery  Percentage",
+                    format="%d%%",
+                    min_value=0,
+                    max_value=100,
+                ),
+                "mag":  st.column_config.CheckboxColumn(label="Mag", width="small"),
+                "bearing": st.column_config.NumberColumn(
+                    "Heading",
+                    format="%d°",
+                  ),
+            }
+
+            order = ("altitude", "bearing", "battery", "mag", "rssi",)
+
+            st.session_state.telemetry = stream_to_dataframe(st.session_state.redis.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
+            st.session_state.telemetry["latitude"].clip(-90, 90, inplace=True)
+            st.session_state.telemetry["longitude"].clip(-180, 180, inplace=True)
+            st.session_state.telemetry["mag"] = st.session_state.telemetry["mag"].transform(lambda x: x == 0)
+            status.dataframe(st.session_state.telemetry, hide_index=False, use_container_width=True, column_order=order, column_config=columns)
+            #map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
+
+            await asyncio.sleep(0.05)
+
+    except asyncio.CancelledError:
+        st.write("Update coroutine canceled.")
 
 def run_flightscript():
     if st.session_state.script_file is None:
@@ -89,8 +132,8 @@ def run_flightscript():
         req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = st.session_state.selected_drone
-        z.send(req.SerializeToString())
-        rep = z.recv()
+        st.session_state.zmq.send(req.SerializeToString())
+        rep = st.session_state.zmq.recv()
         st.toast(
             f"Instructed {st.session_state.selected_drone} to fly autonomous script",
             icon="\u2601",
@@ -104,8 +147,8 @@ def enable_manual():
     req.cmd.halt = True
     req.commander_id = os.uname()[1]
     req.cmd.for_drone_id = st.session_state.selected_drone
-    z.send(req.SerializeToString())
-    rep = z.recv()
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
     st.toast(
         f"Assuming manual control of {st.session_state.selected_drone}! Kill signal sent."
     )
@@ -119,22 +162,102 @@ def rth():
     req.cmd.manual = False
     req.commander_id = os.uname()[1]
     req.cmd.for_drone_id = st.session_state.selected_drone
-    z.send(req.SerializeToString())
-    rep = z.recv()
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
     st.toast(f"Instructed {st.session_state.selected_drone} to return to home!")
 
-def change_center():
-    if st.session_state.selected_drone is not None:
-        df = stream_to_dataframe(red.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
-        for index, row in df.iterrows():
-            st.session_state.center =[row['latitude'], row['longitude']]
+@st.fragment(run_every="1s")
+def draw_map():
+    tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
+    tiles = folium.TileLayer(
+        name="map_tileserver", tiles=tileset, attr="Google", max_zoom=20
+    )
 
-refresh_count = st_autorefresh(interval=500, key="individual_refresh")
+    m = folium.Map(
+        location=[40.415428612484924, -79.95028831875038],
+        zoom_start=18,
+        tiles=tiles,
+    )
+
+    MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
+    fg = folium.FeatureGroup(name="Drone Markers")
+    tracks = folium.FeatureGroup(name="Historical Tracks")
+    # Draw(export=True).add_to(m)
+    lc = folium.LayerControl()
+
+    marker_color = 0
+    for k in st.session_state.redis .keys("telemetry.*"):
+        df = stream_to_dataframe(st.session_state.redis .xrevrange(f"{k}", "+", "-", 1))
+        last_update = (int(df.index[0].split("-")[0])/1000)
+        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            coords = []
+            i = 0
+            for index, row in df.iterrows():
+                if i % 10 == 0:
+                    coords.append([row["latitude"], row["longitude"]])
+                if i == 0:
+                    text = folium.DivIcon(
+                        icon_size=(1, 1),
+                        icon_anchor=(-20, 30),
+                        html=f'<div style="color:black;font-size: 12pt;font-weight: bold">{k.split(".")[-1]}</div>',
+                    )
+                    plane = folium.Icon(
+                        icon="plane",
+                        color=COLORS[marker_color],
+                        prefix="glyphicon",
+                        angle=int(row["bearing"]),
+                    )
+                    html = f'<img src="http://{st.secrets.webserver}/raw/{k.split(".")[-1]}/latest.jpg" height="250px" width="250px"/>'
+
+                    fg.add_child(
+                        folium.Marker(
+                            location=[
+                                row["latitude"],
+                                row["longitude"],
+                            ],
+                            # tooltip=k.split(".")[-1],
+                            tooltip=html,
+                            icon=plane,
+                        )
+                    )
+
+                    fg.add_child(
+                        folium.Marker(
+                            location=[
+                                row["latitude"],
+                                row["longitude"],
+                            ],
+                            icon=text,
+                        )
+                    )
+
+                i += 1
+
+            ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
+            ls.add_to(tracks)
+            marker_color += 1
+
+    st_folium(
+        m,
+        key="overview_map",
+        use_container_width=True,
+        feature_group_to_add=[fg, tracks],
+        layer_control=lc,
+        returned_objects=[],
+        center=st.session_state.center,
+        height=500
+    )
+
 menu(with_control=False)
-c2, c3 = st.columns(spec=[2, 3], gap="large")
-
 
 with st.sidebar:
+    st.session_state.selected_drone = st.selectbox(
+        label=":helicopter: :green[Available Drones]",
+        options=get_drones(),
+        placeholder="No drone selected...",
+
+        index = get_drones().index(st.session_state.selected_drone)
+    )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label=" Fly Autonomous Mission",
@@ -173,230 +296,89 @@ with st.sidebar:
     if st.session_state.manual_control:
         #st.subheader(f":blue[Manual Control Enabled]")
         st.subheader(":red[Manual Speed Controls]", divider="gray")
-        st.sidebar.slider(
-            key="pitch_speed",
-            label="Drone Pitch (forward/backward)",
-            min_value=0,
-            max_value=100,
-            value=st.session_state.pitch_speed,
-            step=5,
-            format="%d%%"
-        )
-        st.sidebar.slider(
-            key="gaz_speed",
-            label="Drone Gaz (up/down)",
-            min_value=0,
-            max_value=100,
-            value=st.session_state.gaz_speed,
-            step=5,
-            format="%d%%"
-        )
-        st.sidebar.slider(
-            key="yaw_speed",
-            label="Drone Yaw (turn left/right)",
-            min_value=0,
-            max_value=100,
-            value=st.session_state.yaw_speed,
-            step=5,
-            format="%d%%"
-        )
-        st.sidebar.slider(
-            key="roll_speed",
-            label="Drone Roll (strafe left/right)",
-            min_value=0,
-            max_value=100,
-            value=st.session_state.roll_speed,
-            step=5,
-            format="%d%%"
-        )
-        st.sidebar.slider(
-            key="gimbal_speed",
-            label="Gimbal Pitch",
-            min_value=0,
-            max_value=100,
-            value=st.session_state.gimbal_speed,
-            step=5,
-            format="%d%%"
-        )
+        c1, c2 = st.columns(spec=2, gap="small")
+        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.pitch_speed, format="%d")
+        c2.number_input(key="thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=st.session_state.thrust_speed, format="%d")
+        c3, c4 = st.columns(spec=2, gap="small")
+        c3.number_input(key="yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=st.session_state.yaw_speed, format="%d")
+        c4.number_input(key="roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=st.session_state.roll_speed, format="%d")
+        c5, c6 = st.columns(spec=2, gap="small")
+        c5.number_input(key="gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
+        c6.empty()
+
     elif st.session_state.rth_sent:
         st.subheader(f":orange[Return to Home Initiated]")
     elif st.session_state.script_file is not None:
         st.subheader(f":violet[Autonomous Mode Enabled]")
 
-with c2:
-    tiles_col = st.columns(2)
-    if st.session_state.selected_drone is not None:
-        st.session_state.selected_drone = tiles_col[0].selectbox(
-            key="drone_list",
-            label=":helicopter: :green[Available Drones]",
-            options=get_drones(),
-            placeholder="No drone selected...",
-            on_change=change_center(),
-            index = get_drones().index(st.session_state.selected_drone)
-        )
-    tiles_col[1].selectbox(
-        key="map_server",
-        label=":world_map: :blue[Tile Server]",
-        options=("Google Sat", "Google Hybrid"),
-    )
-    if st.session_state.map_server == "Google Sat":
-        tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
-    elif st.session_state.map_server == "Google Hybrid":
-        tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
-    m = folium.Map(
-        location=[40.415428612484924, -79.95028831875038],
-        zoom_start=16,
-        max_zoom=20,
-        tiles=tileset,
-        attr="Google",
-    )
-    fg = folium.FeatureGroup(name="markers")
+status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 
-    #Draw(export=True).add_to(m)
-    if st.session_state.selected_drone is not None:
-        telemetry = get_telemetry(st.session_state.selected_drone)
-        plane = folium.Icon(
-            icon="plane",
-            color="red",
-            prefix="glyphicon",
-            angle=int(
-                telemetry['bearing']
-            ),
-        )
+with status_container:
+    draw_map()
+    #st.session_state.subscriber.punsubscribe()
+    #st.session_state.subscriber.psubscribe(f'imagery.{st.session_state.selected_drone}')
 
-        fg.add_child(
-            folium.Marker(
-                location=[
-                    telemetry['latitude'],
-                    telemetry['longitude'],
-                ],
-                tooltip=st.session_state.selected_drone,
-                icon=plane,
-            )
-        )
+    st.subheader(f":blue[{st.session_state.selected_drone}] Status"
+                    if st.session_state.selected_drone is not None else ":red[No Drone Connected]",
+                    divider="gray",
+                )
+    status_container = st.empty()
 
-    st_folium(
-        key="individual_map",
-        fig=m,
-        use_container_width=True,
-        height=400,
-        feature_group_to_add=fg,
-        returned_objects=[],
-        center = st.session_state.center,
-    )
+with imagery_container:
+    livefeed_container = st.empty()
+    c1, c2, c3 = st.columns(spec=3, gap="small")
+    with c1:
+        avoidance = st.empty()
+        st.markdown(":checkered_flag: **Obstacle Avoidance**")
+    with c2:
+        detection = st.empty()
+        st.markdown(":sleuth_or_spy: **Object Detection**")
+    with c3:
+        hsv = st.empty()
+        st.markdown(":traffic_light: **HSV Filtering**")
 
+st.session_state.key_pressed = st_keypressed()
+if st.session_state.manual_control and st.session_state.selected_drone is not None:
+    req = cnc_pb2.Extras()
+    req.commander_id = os.uname()[1]
+    req.cmd.for_drone_id = st.session_state.selected_drone
+    #req.cmd.manual = True
+    if st.session_state.key_pressed == "t":
+        req.cmd.takeoff = True
+        st.info(f"Instructed {st.session_state.selected_drone} to takeoff.")
+    elif st.session_state.key_pressed == "g":
+        req.cmd.land = True
+        st.info(f"Instructed {st.session_state.selected_drone} to land.")
+    else:
+        pitch = roll = yaw = thrust = gimbal_pitch = 0
+        if st.session_state.key_pressed == "w":
+            pitch = 1 * st.session_state.pitch_speed
+        elif st.session_state.key_pressed == "s":
+            pitch = -1 * st.session_state.pitch_speed
+        elif st.session_state.key_pressed == "d":
+            roll = 1 * st.session_state.roll_speed
+        elif st.session_state.key_pressed == "a":
+            roll = -1 * st.session_state.roll_speed
+        elif st.session_state.key_pressed == "i":
+            thrust = 1 * st.session_state.thrust_speed
+        elif st.session_state.key_pressed == "k":
+            thrust = -1 * st.session_state.thrust_speed
+        elif st.session_state.key_pressed == "l":
+            yaw = 1 * st.session_state.yaw_speed
+        elif st.session_state.key_pressed == "j":
+            yaw = -1 * st.session_state.yaw_speed
+        elif st.session_state.key_pressed == "r":
+            gimbal_pitch = 1 * st.session_state.gimbal_speed
+        elif st.session_state.key_pressed == "f":
+            gimbal_pitch = -1 * st.session_state.gimbal_speed
+        #st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust})")
+        req.cmd.pcmd.yaw = yaw
+        req.cmd.pcmd.pitch = pitch
+        req.cmd.pcmd.roll = roll
+        req.cmd.pcmd.gaz = thrust
+        req.cmd.pcmd.gimbal_pitch = gimbal_pitch
+    st.session_state.key_pressed = None
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
 
-    st.subheader(
-        f":blue[{st.session_state.selected_drone}] Status"
-        if st.session_state.selected_drone is not None
-        else ":red[No Drone Connected]",
-        divider="gray",
-    )
-
-    if st.session_state.selected_drone is not None:
-        status_cols = st.columns(4)
-        status_cols[0].metric(
-            label="Altitude",
-            value=f"{round(float(telemetry['altitude']), 2)} m",
-            delta=f"{round(float(telemetry['altitude']) - st.session_state.prev_alt, 2)} m",
-        )
-        # status_cols[1].metric(
-        #     label="Satellites",
-        #     value=f"{int(telemetry['sats'])}",
-        #     delta=f"{int(telemetry['sats']) - st.session_state.prev_sats}",
-        # )
-        status_cols[2].metric(
-            label="RSSI",
-            value=f"{int(telemetry['rssi'])}",
-        )
-        status_cols[3].metric(
-            label="Battery",
-            value=f"{int(telemetry['battery'])}%",
-        )
-        status_cols2 = st.columns(2)
-        status_cols2[0].metric(
-            label="Magnetometer",
-            value=MAG_STATE[
-                int(telemetry['mag'])
-            ],
-        )
-        st.metric(
-            label="Last Update",
-            value=f"{telemetry['last_update']}",
-        )
-        # status_cols2[1].metric(
-        #     label="Status",
-        #     value=telemetry['status'],
-        # )
-        # st.session_state.prev_sats = int(
-        #     st.session_state.list.loc[st.session_state.selected_drone].sats
-        # )
-        st.session_state.prev_alt = float(telemetry['altitude'])
-
-
-with c3:
-    tab1, tab2, tab3, tab4 = st.tabs(["Live", "Obstacle Avoidance", "Object Detection", "HSV Filter"])
-    if st.session_state.selected_drone is not None:
-        # message = st.session_state.subscriber.get_message(timeout=0.1)
-
-        # if message and bytes(st.session_state.selected_drone, encoding='utf-8') == message['channel'].split(b'.')[-1]:
-        #     image_np = np.fromstring(message['data'], dtype=np.uint8)
-        #     img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
-        #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        #     tab1.image(img)
-        #tab1.image(f"http://{st.secrets.webrtc}/api/frame.jpeg?src=file2&a={time.time()}", use_column_width="auto")
-        #live = tab1.empty()
-        #tab1.image(f"../server/steeleagle-vol/raw/{st.session_state.selected_drone}/latest.jpg")
-        #tab1.video(f"http://{st.secrets.webrtc}/api/stream.mp4?src=drone")
-        tab1.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}")
-    tab2.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_column_width="auto")
-    tab3.image(
-        f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_column_width="auto"
-    )
-    tab4.image(
-        f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_column_width="auto"
-    )
-
-    #st.write(f":keyboard: {st.session_state.key_pressed}")
-    st.session_state.key_pressed = st_keypressed()
-    if st.session_state.manual_control and st.session_state.selected_drone is not None:
-        req = cnc_pb2.Extras()
-        req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = st.session_state.selected_drone
-        #req.cmd.manual = True
-        if st.session_state.key_pressed == "t":
-            req.cmd.takeoff = True
-            st.info(f"Instructed {st.session_state.selected_drone} to takeoff.")
-        elif st.session_state.key_pressed == "g":
-            req.cmd.land = True
-            st.info(f"Instructed {st.session_state.selected_drone} to land.")
-        else:
-            pitch = roll = yaw = gaz = gimbal_pitch = 0
-            if st.session_state.key_pressed == "w":
-                pitch = 1 * st.session_state.pitch_speed
-            elif st.session_state.key_pressed == "s":
-                pitch = -1 * st.session_state.pitch_speed
-            elif st.session_state.key_pressed == "d":
-                roll = 1 * st.session_state.roll_speed
-            elif st.session_state.key_pressed == "a":
-                roll = -1 * st.session_state.roll_speed
-            elif st.session_state.key_pressed == "i":
-                gaz = 1 * st.session_state.gaz_speed
-            elif st.session_state.key_pressed == "k":
-                gaz = -1 * st.session_state.gaz_speed
-            elif st.session_state.key_pressed == "l":
-                yaw = 1 * st.session_state.yaw_speed
-            elif st.session_state.key_pressed == "j":
-                yaw = -1 * st.session_state.yaw_speed
-            elif st.session_state.key_pressed == "r":
-                gimbal_pitch = 1 * st.session_state.gimbal_speed
-            elif st.session_state.key_pressed == "f":
-                gimbal_pitch = -1 * st.session_state.gimbal_speed
-            #st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
-            req.cmd.pcmd.yaw = yaw
-            req.cmd.pcmd.pitch = pitch
-            req.cmd.pcmd.roll = roll
-            req.cmd.pcmd.gaz = gaz
-            req.cmd.pcmd.gimbal_pitch = gimbal_pitch
-        z.send(req.SerializeToString())
-        rep = z.recv()
+asyncio.run(update(livefeed_container, avoidance, detection, hsv, status_container,))
