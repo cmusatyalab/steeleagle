@@ -4,6 +4,7 @@
 
 import os
 import time
+import json
 from cnc_protocol import cnc_pb2
 import folium
 import streamlit as st
@@ -57,42 +58,40 @@ def run_flightscript():
     if st.session_state.script_file is None:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        for d in st.session_state.selected_drones:
-            bytes_data = st.session_state.script_file.getvalue()
-            fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
-            fd.write(bytes_data)
-            req = cnc_pb2.Extras()
-            req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
-            req.commander_id = os.uname()[1]
-            req.cmd.for_drone_id = d
-            st.session_state.zmq.send(req.SerializeToString())
-            rep = st.session_state.zmq.recv()
-            st.toast(
-                f"Instructed {d} to fly autonomous script",
-                icon="\u2601",
-            )
-
-def enable_manual():
-    for d in st.session_state.selected_drones:
+        bytes_data = st.session_state.script_file.getvalue()
+        fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
+        fd.write(bytes_data)
         req = cnc_pb2.Extras()
-        req.cmd.halt = True
+        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
         req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = d
+        req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
-            f"Telling drone {d} to halt! Kill signal sent."
+            f"Instructed {req.cmd.for_drone_id} to fly autonomous script",
+            icon="\u2601",
         )
+
+def enable_manual():
+    req = cnc_pb2.Extras()
+    req.cmd.halt = True
+    req.commander_id = os.uname()[1]
+    req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
+    st.toast(
+        f"Telling drone {req.cmd.for_drone_id} to halt! Kill signal sent."
+    )
+
 def rth():
-    for d in st.session_state.selected_drones:
-        req = cnc_pb2.Extras()
-        req.cmd.rth = True
-        req.cmd.manual = False
-        req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = d
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
-        st.toast(f"Instructed {d} to return to home!")
+    req = cnc_pb2.Extras()
+    req.cmd.rth = True
+    req.cmd.manual = False
+    req.commander_id = os.uname()[1]
+    req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
+    st.toast(f"Instructed {req.cmd.for_drone_id} to return to home!")
 
 @st.fragment(run_every="1s")
 def draw_map():
