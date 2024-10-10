@@ -21,7 +21,7 @@ venv/
 *.ms
 *.kml
 .venv
-.streamlit/secrets.toml
+cnc/streamlit/.streamlit/secrets.toml
 *~
 *.log
 cnc/server/steeleagle-vol/
