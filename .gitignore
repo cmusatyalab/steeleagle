@@ -25,7 +25,8 @@ venv/
 *~
 *.log
 cnc/server/steeleagle-vol/
-cnc/server/redis/
+cnc/server/redis/dump.rdb
+cnc/server/redis/redis.conf
 
 hermes/python/mission/MissionCreator.py
 onboard/python/runtime/
