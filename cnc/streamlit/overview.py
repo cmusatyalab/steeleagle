@@ -119,9 +119,10 @@ def draw_map():
                     coords.append([row["latitude"], row["longitude"]])
                 if i == 0:
                     text = folium.DivIcon(
-                        icon_size=(1, 1),
+                        icon_size=(150,50),
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:black;font-size: 12pt;font-weight: bold">{k.split(".")[-1]}</div>',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{k.split(".")[-1]}</div>',
+
                     )
                     plane = folium.Icon(
                         icon="plane",
