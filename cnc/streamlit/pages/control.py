@@ -63,7 +63,7 @@ MAG_STATE = [
     "Perturbation!!",
 ]
 
-async def update(live, avoidance, detection, hsv, status, ):
+async def update(live, avoidance, detection, hsv, status, map_container):
     try:
         while True:
             live.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}", use_column_width="auto")
@@ -109,8 +109,7 @@ async def update(live, avoidance, detection, hsv, status, ):
             st.session_state.telemetry["mag"] = st.session_state.telemetry["mag"].transform(lambda x: x == 0)
 
             status.dataframe(st.session_state.telemetry, hide_index=True, use_container_width=True, column_order=order, column_config=columns)
-            st.session_state.map_container.add_rows(st.session_state.telemetry)
-            #map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
+            map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
 
             await asyncio.sleep(0.05)
 
@@ -224,7 +223,7 @@ with st.sidebar:
 status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 
 with status_container:
-    st.session_state.map_container =  st.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
+    map_container =  st.empty()
     #st.session_state.subscriber.punsubscribe()
     #st.session_state.subscriber.psubscribe(f'imagery.{st.session_state.selected_drone}')
     st.session_state.selected_drone = st.selectbox(
@@ -297,4 +296,4 @@ if st.session_state.manual_control and st.session_state.selected_drone is not No
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
 
-asyncio.run(update(livefeed_container, avoidance, detection, hsv, status_container, ))
+asyncio.run(update(livefeed_container, avoidance, detection, hsv, status_container, map_container))

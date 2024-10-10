@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -48,7 +47,6 @@ public class Compiler implements Runnable {
 
   @Override
   public void run() {
-    // preprocess
     // preprocess
     Map<String, List<Compiler.Pt>> waypointsMap;
     if (!kmlFilePath.isEmpty()) {
@@ -128,6 +126,15 @@ public class Compiler implements Runnable {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public void runWithArguments(String dslFilePath, String outputFilePath, String kmlFilePath, String altitude, String platform) {
+    this.dslFilePath = dslFilePath;
+    this.outputFilePath = outputFilePath;
+    this.kmlFilePath = kmlFilePath;
+    this.altitude = altitude;
+    this.platform = platform;
+    run();  // Call the main `run` method to perform the actual work  
   }
 
   public static void main(String[] args) {

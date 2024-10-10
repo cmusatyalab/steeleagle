@@ -21,6 +21,7 @@ cnc/server/redis/
 cnc/streamlit/.streamlit/secrets.toml
 venv/
 *.jar
+*.dsl
 *.ms
 *.kml
 .venv
