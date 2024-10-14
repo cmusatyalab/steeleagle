@@ -19,8 +19,6 @@ from cnc_protocol import cnc_pb2
 import argparse
 import zmq
 import redis
-from sklearn.cluster import KMeans
-import json
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,7 +31,10 @@ logger.addHandler(handler)
 interrupt = threading.Event()
 
 compiler_path = '/compiler'
-output_path = '/compiler/out'
+compiler_file = 'compile-1.5-full.jar'
+output_path = '/compiler/out/flightplan_'
+platform_path  = '/compiler/python'
+
 
 def download_script(script_url):
     try:
@@ -73,7 +74,7 @@ def compile_mission(dsl_file, kml_file, drone_list):
     # Construct the full paths for the DSL and KML files
     dsl_file_path = os.path.join(compiler_path, dsl_file)
     kml_file_path = os.path.join(compiler_path, kml_file)
-    jar_path = os.path.join(compiler_path, "compile-1.0-full.jar")
+    jar_path = os.path.join(compiler_path, compiler_file)
 
     # Define the command and arguments
     command = [
@@ -82,18 +83,20 @@ def compile_mission(dsl_file, kml_file, drone_list):
         "-d", drone_list,
         "-s", dsl_file_path,
         "-k", kml_file_path,
-        "-o", output_path
+        "-o", output_path,
+        "-p", platform_path
     ]
     
-    try:
-        # Run the command
-        subprocess.run(command, check=True, capture_output=True, text=True)
-        
-        # Output the results
-        logger.info("Compilation successful.")
+    # Run the command
+    result = subprocess.run(command, check=True, capture_output=True, text=True)
     
-    except subprocess.CalledProcessError as e:
-        print("Error output:", e.stderr)
+    # Log the output
+    logger.info(f"Compilation output: {result.stdout}")
+    
+    # Output the results
+    logger.info("Compilation successful.")
+    
+
         
 def listen_drones(args, drones):
     ctx = zmq.Context()
