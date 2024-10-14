@@ -5,16 +5,22 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import os
+import subprocess
 import sys
 import threading
 import time
 import logging
+from zipfile import ZipFile
 from google.protobuf.message import DecodeError
 from google.protobuf import text_format
+import requests
 from cnc_protocol import cnc_pb2
 import argparse
 import zmq
 import redis
+from sklearn.cluster import KMeans
+import json
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -26,6 +32,69 @@ logger.addHandler(handler)
 
 interrupt = threading.Event()
 
+compiler_path = '/compiler'
+output_path = '/compiler/out'
+
+def download_script(script_url):
+    try:
+        # Get the ZIP file name from the URL
+        filename = script_url.rsplit(sep='/')[-1]
+        logger.info(f'Writing {filename} to disk...')
+        
+        # Download the ZIP file
+        r = requests.get(script_url, stream=True)
+        with open(filename, mode='wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        # Variables to hold extracted .dsl and .kml files
+        dsl_file = None
+        kml_file = None
+
+        # Extract all contents of the ZIP file and remember .dsl and .kml filenames
+        with ZipFile(filename, 'r') as z:
+            z.extractall(path=compiler_path)
+            for file_name in z.namelist():
+                if file_name.endswith('.dsl'):
+                    dsl_file = file_name
+                elif file_name.endswith('.kml'):
+                    kml_file = file_name
+
+        # Log or return the results
+        logger.info(f"Extracted DSL files: {dsl_file}")
+        logger.info(f"Extracted KML files: {kml_file}")
+        
+        return dsl_file, kml_file
+
+    except Exception as e:
+        logger.error(f"Error during download or extraction: {e}")
+        
+def compile_mission(dsl_file, kml_file, drone_list):
+    # Construct the full paths for the DSL and KML files
+    dsl_file_path = os.path.join(compiler_path, dsl_file)
+    kml_file_path = os.path.join(compiler_path, kml_file)
+    jar_path = os.path.join(compiler_path, "compile-1.0-full.jar")
+
+    # Define the command and arguments
+    command = [
+        "java",
+        "-jar", jar_path,
+        "-d", drone_list,
+        "-s", dsl_file_path,
+        "-k", kml_file_path,
+        "-o", output_path
+    ]
+    
+    try:
+        # Run the command
+        subprocess.run(command, check=True, capture_output=True, text=True)
+        
+        # Output the results
+        logger.info("Compilation successful.")
+    
+    except subprocess.CalledProcessError as e:
+        print("Error output:", e.stderr)
+        
 def listen_drones(args, drones):
     ctx = zmq.Context()
     sock = ctx.socket(zmq.REP)
@@ -44,7 +113,7 @@ def listen_drones(args, drones):
         except DecodeError:
             sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
     sock.close()
-
+    
 def listen_cmdrs(args, drones, redis):
     ctx = zmq.Context()
     sock = ctx.socket(zmq.REP)
@@ -55,6 +124,19 @@ def listen_cmdrs(args, drones, redis):
             extras = cnc_pb2.Extras()
             extras.ParseFromString(msg)
             logger.info(f'Request received:\n{text_format.MessageToString(extras)}')
+            
+            # Check if the command contains a mission and process it
+            if extras.HasField('cmd'):
+                drone_list = extras.cmd.for_drone_id
+                script_url = extras.cmd.script_url
+                kml, dsl = download_script(script_url)
+                compile_mission(dsl, kml, drone_list)
+                sock.send(b'Mission assigned and saved.')
+            
+            else:
+                # For non-mission commands, proceed as usual
+                drones[extras.cmd.for_drone_id] = extras
+                sock.send(b'ACK')
             drones[extras.cmd.for_drone_id] = extras
             sock.send(b'ACK')
             key = redis.xadd(
@@ -65,6 +147,7 @@ def listen_cmdrs(args, drones, redis):
         except DecodeError:
             sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
     sock.close()
+    
 
 def main():
     parser = argparse.ArgumentParser()
