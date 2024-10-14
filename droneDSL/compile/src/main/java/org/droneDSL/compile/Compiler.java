@@ -85,7 +85,7 @@ public class Compiler implements Runnable {
       var ast = new MissionPlan(startTaskID, taskMap);
 
       // code generate
-      var platformPath = String.format("./%s", Platform);
+      var platformPath = Platform;
       try {
         ast.codeGenPython(platformPath);
       } catch (IOException e) {
