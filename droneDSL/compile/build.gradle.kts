@@ -10,6 +10,8 @@ dependencies {
   implementation(libs.aya.ipwrapper)
   // Gson dependency
   implementation ("com.google.code.gson:gson:2.10.1")
+  implementation("org.locationtech.jts:jts-core:1.18.2")
+  implementation("org.apache.commons:commons-math3:3.6.1")
 }
 
 val genDir = file("src/main/gen")
