@@ -26,7 +26,7 @@ logger.addHandler(handler)
 class DataService(Service):
     def __init__(self, gabriel_server, gabriel_port):
         super().__init__()
-        
+
         # setting up args
         self.telemetry_cache = {
             "connection": None,
@@ -63,12 +63,12 @@ class DataService(Service):
             "hsv_lower": None,
             "hsv_upper": None
         }
-       
+
         # Result Cache
 
         # Setting up conetxt
         context = zmq.asyncio.Context()
-        
+
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
@@ -83,13 +83,13 @@ class DataService(Service):
         setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
         setup_socket(cpt_sock, 'bind', 'CPT_PORT', 'Created compute socket endpoint')
-        
+
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
         cpt_task = asyncio.create_task(self.compute_handler())
         gab_task = asyncio.create_task(self.gabriel_client.launch_async())
-        
+
         # registering context, sockets and tasks to service
         self.register_context(context)
         self.register_socket(tel_sock)
@@ -99,8 +99,8 @@ class DataService(Service):
         self.register_task(cam_task)
         self.register_task(cpt_task)
         self.register_task(gab_task)
-    
-    ######################################################## DRIVER ############################################################  
+
+    ######################################################## DRIVER ############################################################
     async def telemetry_handler(self):
         logger.info('Telemetry handler started')
         while True:
@@ -121,7 +121,7 @@ class DataService(Service):
                 logger.debug(f"telemetry_handler: finished time {time.time()}")
             except Exception as e:
                 logger.error(f"Telemetry Handler: {e}")
-    
+
     async def camera_handler(self):
         logger.info('Camera handler started')
         while True:
@@ -155,8 +155,8 @@ class DataService(Service):
                     self.cpt_sock.send(resp.SerializeToString())
             except Exception as e:
                 pass
-    
-    ######################################################## REMOTE COMPUTE ############################################################           
+
+    ######################################################## REMOTE COMPUTE ############################################################
     def processResults(self, result_wrapper):
         if len(result_wrapper.results) != 1:
             return
@@ -181,7 +181,7 @@ class DataService(Service):
     def get_frame_producer(self):
         async def producer():
             await asyncio.sleep(0)
-            
+
             logger.debug(f"Frame Producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None and self.telemetry_cache['drone_id'] is not None:
@@ -189,10 +189,10 @@ class DataService(Service):
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                     frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
-                    
+
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
-                    
+
                     # produce extras
                     extras = cnc_pb2.Extras()
                     extras.drone_id = self.telemetry_cache['drone_id']
@@ -219,16 +219,16 @@ class DataService(Service):
                 logger.debug('Frame producer: Frame is None')
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
-                
+
             logger.debug(f"Frame Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
-    
+
     def get_telemetry_producer(self):
         async def producer():
             await asyncio.sleep(0)
-            
+
             logger.debug(f"tel Producer: starting time {time.time()}")
             self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
@@ -236,7 +236,7 @@ class DataService(Service):
             input_frame.payloads.append('heartbeart'.encode('utf8'))
 
             extras = cnc_pb2.Extras()
-            
+
             try:
                 if all(value is None for value in self.telemetry_cache.values()):
                     logger.info('All telemetry_cache values are None')
@@ -247,11 +247,11 @@ class DataService(Service):
                     extras.location.longitude = self.telemetry_cache['location']['longitude']
                     extras.location.altitude = self.telemetry_cache['location']['altitude']
 
-                    extras.status.battery = self.telemetry_cache['battery']    
+                    extras.status.battery = self.telemetry_cache['battery']
                     extras.status.mag = self.telemetry_cache['magnetometer']
                     extras.status.bearing = self.telemetry_cache['bearing']
                     extras.status.rssi = 0
-                    
+
                     logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
             except Exception as e:
                 logger.debug(f'Gabriel Client Telemetry Producer: {e}')
@@ -262,13 +262,13 @@ class DataService(Service):
 
             logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
-            
+
             logger.debug(f"tel Producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
-    
-######################################################## MAIN ##############################################################             
+
+######################################################## MAIN ##############################################################
 async def async_main():
     logger.info("Main: starting DataService")
     gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
@@ -278,9 +278,9 @@ async def async_main():
 
     # init DataService
     rc_service = DataService(gabriel_server, gabriel_port)
-    
+
     # run DataService
     await rc_service.start()
-    
+
 if __name__ == "__main__":
     asyncio.run(async_main())
