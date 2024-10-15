@@ -5,6 +5,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import copy
+import json
 import os
 import subprocess
 import sys
@@ -19,6 +21,7 @@ from cnc_protocol import cnc_pb2
 import argparse
 import zmq
 import redis
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -123,32 +126,64 @@ def listen_cmdrs(args, drones, redis):
     sock.bind(f'tcp://*:{args.cmdrport}')
     while not interrupt.isSet():
         msg = sock.recv()
+        extras = cnc_pb2.Extras()
+        
         try:
-            extras = cnc_pb2.Extras()
             extras.ParseFromString(msg)
             logger.info(f'Request received:\n{text_format.MessageToString(extras)}')
-            
-            # Check if the command contains a mission and process it
-            if extras.HasField('cmd'):
-                drone_list = extras.cmd.for_drone_id
-                script_url = extras.cmd.script_url
-                kml, dsl = download_script(script_url)
-                compile_mission(dsl, kml, drone_list)
-                sock.send(b'Mission assigned and saved.')
-            
-            else:
-                # For non-mission commands, proceed as usual
-                drones[extras.cmd.for_drone_id] = extras
-                sock.send(b'ACK')
-            drones[extras.cmd.for_drone_id] = extras
-            sock.send(b'ACK')
-            key = redis.xadd(
-                    f"commands",
-                    {"commander": extras.commander_id, "drone": extras.cmd.for_drone_id, "value": text_format.MessageToString(extras),}
-                )
-            logger.debug(f"Updated redis under stream commands at key {key}")
         except DecodeError:
             sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
+            logger.info(f'Error decoding protobuf. Did you send a cnc_pb2?')
+            continue
+            
+        try:
+            # assuming the commander also gives drone id in json format 
+            drone_list_json = extras.cmd.for_drone_id
+            drone_list = json.loads(drone_list_json)
+            logger.info(f"drone list:  {drone_list}")
+        except json.JSONDecodeError:
+            sock.send(b'Error decoding drone list. Did you send a JSON list?')
+            logger.info(f'Error decoding drone list. Did you send a JSON list?')
+            continue
+            
+        # Check if the command contains a mission and process it
+        base_url = None
+        if (extras.cmd.script_url):
+            # download the script
+            script_url = extras.cmd.script_url
+            logger.info(f"script url:  {script_url}")
+            kml, dsl = download_script(script_url)
+            
+            # compile the mission
+            drone_list_revised = "&".join(drone_list)
+            logger.info(f"drone list revised:  {drone_list_revised}")
+            compile_mission(dsl, kml, drone_list_revised)
+            
+            # get the base url
+            parsed_url = urlparse(script_url)
+            base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+            
+        # Send the command to each drone 
+        for drone_id in drone_list:
+            extras_copy = copy.deepcopy(extras)
+            
+            # check if the cmd is a mission
+            if (base_url):
+                # reconstruct the script url with the correct compiler output path
+                extras_copy.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
+                logger.info(f"script url:  {extras_copy.cmd.script_url}")
+                
+            # store the command in drones dict and redis
+            drones[drone_id] = extras_copy
+            key = redis.xadd(
+                f"commands",
+                {"commander": extras.commander_id, "drone": drone_id, "value": text_format.MessageToString(extras_copy),}
+            )
+             
+        sock.send(b'ACK')
+        logger.debug(f"Updated redis under stream commands at key {key}")
+        
     sock.close()
     
 
