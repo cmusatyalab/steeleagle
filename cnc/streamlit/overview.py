@@ -5,6 +5,7 @@
 import os
 import time
 import json
+from zipfile import ZipFile
 from cnc_protocol import cnc_pb2
 import folium
 import streamlit as st
@@ -58,17 +59,20 @@ def run_flightscript():
     if st.session_state.script_file is None:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        bytes_data = st.session_state.script_file.getvalue()
-        fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
-        fd.write(bytes_data)
+        filename = f"{time.time_ns()}.ms"
+        path = f"{st.secrets.scripts_path}/{filename}"
+        with ZipFile(path, 'w') as z:
+            for file in st.session_state.script_file:
+                z.writestr(file.name, file.read())
+
         req = cnc_pb2.Extras()
-        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
+        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/{filename}"
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
-            f"Instructed {req.cmd.for_drone_id} to fly autonomous script",
+            f"Instructed {req.cmd.for_drone_id} to fly autonomous script.",
             icon="\u2601",
         )
 
@@ -212,10 +216,11 @@ with col2:
     )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
-        label="**Fly Autonomous Mission**",
+        label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["ms"],
-        label_visibility='visible'
+        type=["kml", "txt"],
+        label_visibility='visible',
+        accept_multiple_files=True
     )
     st.button(
         key="autonomous_button",
