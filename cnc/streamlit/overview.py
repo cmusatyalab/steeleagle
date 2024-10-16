@@ -221,7 +221,7 @@ with col2:
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["kml", "txt"],
+        type=["kml", "dsl"],
         label_visibility='visible',
         accept_multiple_files=True
     )

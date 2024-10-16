@@ -136,7 +136,7 @@ def run_flightscript():
         req = cnc_pb2.Extras()
         req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
         req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = st.session_state.selected_drone
+        req.cmd.for_drone_id = json.dumps(st.session_state.selected_drone)
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
