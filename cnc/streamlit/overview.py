@@ -11,7 +11,7 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS
+from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 
 if "location" not in st.session_state:
     st.session_state["location"] = [40.44482669, -79.90575779]
@@ -41,6 +41,9 @@ st.set_page_config(
 
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
+
+if not authenticated():
+    st.stop()  # Do not continue if not authenticated
 
 red = connect_redis()
 

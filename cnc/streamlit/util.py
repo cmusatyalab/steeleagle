@@ -8,6 +8,7 @@ import pandas as pd
 import json
 import zmq
 import time
+import hmac
 
 DATA_TYPES = {
     "latitude": "float",
@@ -45,6 +46,30 @@ if "control_pressed" not in st.session_state:
     st.session_state.control_pressed = False
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
+
+def authenticated():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    a,b,c = st.columns(3)
+    b.text_input(
+        "Password", type="password", on_change=password_entered, key="password", 
+    )
+    if "password_correct" in st.session_state:
+        b.error("Authentication failed.", icon=":material/block:")
+    return False
 
 @st.cache_resource
 def connect_redis():

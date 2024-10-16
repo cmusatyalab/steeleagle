@@ -11,7 +11,7 @@ import time
 import folium
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS
+from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS, authenticated
 
 st.set_page_config(
     page_title="Commander",
@@ -54,6 +54,8 @@ if "redis" not in st.session_state:
     st.session_state.redis = connect_redis()
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
+if "inactivity_time" not in st.session_state:
+    st.session_state.inactivity_time = 1 #min
 
 MAG_STATE = [
     "Calibrated",
@@ -62,6 +64,9 @@ MAG_STATE = [
     "unused",
     "Perturbation!!",
 ]
+
+if not authenticated():
+    st.stop()  # Do not continue if not authenticated
 
 async def update(live, avoidance, detection, hsv, status,):
     try:
