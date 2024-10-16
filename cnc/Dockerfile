@@ -20,7 +20,11 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     python3-pip \
     wget \
+    # compiler requirement
+    openjdk-17-jdk\
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
 
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN pip3 install --upgrade pip

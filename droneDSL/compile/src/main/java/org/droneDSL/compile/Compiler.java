@@ -113,7 +113,7 @@ public class Compiler implements Runnable {
         addToZipFile(platformPath + "/transition_defs", "./transition_defs", zos);
 
         // add build file to the zip
-        Path buildFile = Paths.get(String.format("./%s/requirements.txt", Platform));
+        Path buildFile = Paths.get(String.format("%s/requirements.txt", Platform));
         zos.putNextEntry(new ZipEntry("requirements.txt"));
         Files.copy(buildFile, zos);
         zos.closeEntry();
