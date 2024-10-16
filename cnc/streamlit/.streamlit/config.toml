@@ -1,3 +1,14 @@
 [client]
 showSidebarNavigation = false
 
+[server]
+headless = true
+enableXsrfProtection = false
+
+[theme]
+base = "dark"
+primaryColor="#1B9AAA"
+backgroundColor="#050505"
+secondaryBackgroundColor="#333333"
+textColor="#F5F1E3"
+font="sans serif"
