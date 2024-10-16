@@ -27,6 +27,8 @@ if "script_file" not in st.session_state:
     st.session_state.script_file = None
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
+if "trail_length" not in st.session_state:
+    st.session_state.trail_length = 500
 
 st.set_page_config(
     page_title="Commander",
@@ -59,7 +61,7 @@ def change_center():
 
 
 def run_flightscript():
-    if st.session_state.script_file is None:
+    if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
         filename = f"{time.time_ns()}.ms"
@@ -116,7 +118,7 @@ def draw_map():
 
     marker_color = 0
     for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", 500))
+        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
         last_update = (int(df.index[0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
@@ -206,6 +208,8 @@ elif st.session_state.map_server == "Google Hybrid":
 tiles = folium.TileLayer(
     name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
 )
+
+st.session_state.trail_length = tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=50000)
 
 col1, col2 = st.columns([3, 1])
 with col1:
