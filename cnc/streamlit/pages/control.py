@@ -4,6 +4,7 @@
 
 import streamlit as st
 import asyncio
+import json
 from st_keypressed import st_keypressed
 import os
 from cnc_protocol import cnc_pb2
@@ -136,7 +137,7 @@ def run_flightscript():
         req = cnc_pb2.Extras()
         req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
         req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = json.dumps(st.session_state.selected_drone)
+        req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
@@ -151,7 +152,7 @@ def enable_manual():
     req = cnc_pb2.Extras()
     req.cmd.halt = True
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
     st.toast(
@@ -166,7 +167,7 @@ def rth():
     req.cmd.rth = True
     req.cmd.manual = False
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
     st.toast(f"Instructed {st.session_state.selected_drone} to return to home!")
@@ -346,7 +347,7 @@ st.session_state.key_pressed = st_keypressed()
 if st.session_state.manual_control and st.session_state.selected_drone is not None:
     req = cnc_pb2.Extras()
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     #req.cmd.manual = True
     if st.session_state.key_pressed == "t":
         req.cmd.takeoff = True
