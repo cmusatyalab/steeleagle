@@ -5,6 +5,7 @@
 import streamlit as st
 import asyncio
 import json
+import random
 from st_keypressed import st_keypressed
 import os
 from cnc_protocol import cnc_pb2
@@ -55,8 +56,7 @@ if "redis" not in st.session_state:
     st.session_state.redis = connect_redis()
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
-if "inactivity_time" not in st.session_state:
-    st.session_state.inactivity_time = 1 #min
+
 
 MAG_STATE = [
     "Calibrated",
@@ -186,69 +186,53 @@ def draw_map():
     )
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
-    fg = folium.FeatureGroup(name="Drone Markers")
-    tracks = folium.FeatureGroup(name="Historical Tracks")
-    # Draw(export=True).add_to(m)
-    lc = folium.LayerControl()
+    fg = folium.FeatureGroup(name="Current Location")
 
     marker_color = 0
-    for k in st.session_state.redis .keys("telemetry.*"):
-        df = stream_to_dataframe(st.session_state.redis .xrevrange(f"{k}", "+", "-", 1))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            coords = []
-            i = 0
-            for index, row in df.iterrows():
-                if i % 10 == 0:
-                    coords.append([row["latitude"], row["longitude"]])
-                if i == 0:
-                    text = folium.DivIcon(
-                        icon_size=(1, 1),
-                        icon_anchor=(-20, 30),
-                        html=f'<div style="color:black;font-size: 12pt;font-weight: bold">{k.split(".")[-1]}</div>',
-                    )
-                    plane = folium.Icon(
-                        icon="plane",
-                        color=COLORS[marker_color],
-                        prefix="glyphicon",
-                        angle=int(row["bearing"]),
-                    )
-                    html = f'<img src="http://{st.secrets.webserver}/raw/{k.split(".")[-1]}/latest.jpg" height="250px" width="250px"/>'
+    df = stream_to_dataframe(st.session_state.redis .xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
+    last_update = (int(df.index[0].split("-")[0])/1000)
+    i = 0
+    for index, row in df.iterrows():
+        text = folium.DivIcon(
+            icon_size="null",  #set the size to null so that it expands to the length of the string inside in the div
+            icon_anchor=(-20, 30),
+            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{st.session_state.selected_drone}</div>',
+        )
+        plane = folium.Icon(
+            icon="plane",
+            color=COLORS[marker_color],
+            prefix="glyphicon",
+            angle=int(row["bearing"]),
+        )
+        html = f'<img src="http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg" height="250px" width="250px"/>'
+        st.session_state.center =[row['latitude'], row['longitude']]
+        fg.add_child(
+            folium.Marker(
+                location=[
+                    row["latitude"],
+                    row["longitude"],
+                ],
+                # tooltip=k.split(".")[-1],
+                tooltip=html,
+                icon=plane,
+            )
+        )
 
-                    fg.add_child(
-                        folium.Marker(
-                            location=[
-                                row["latitude"],
-                                row["longitude"],
-                            ],
-                            # tooltip=k.split(".")[-1],
-                            tooltip=html,
-                            icon=plane,
-                        )
-                    )
-
-                    fg.add_child(
-                        folium.Marker(
-                            location=[
-                                row["latitude"],
-                                row["longitude"],
-                            ],
-                            icon=text,
-                        )
-                    )
-
-                i += 1
-
-            ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
-            ls.add_to(tracks)
-            marker_color += 1
+        fg.add_child(
+            folium.Marker(
+                location=[
+                    row["latitude"],
+                    row["longitude"],
+                ],
+                icon=text,
+            )
+        )
 
     st_folium(
         m,
         key="overview_map",
         use_container_width=True,
-        feature_group_to_add=[fg, tracks],
-        layer_control=lc,
+        feature_group_to_add=fg,
         returned_objects=[],
         center=st.session_state.center,
         height=500
@@ -257,13 +241,13 @@ def draw_map():
 menu(with_control=False)
 
 with st.sidebar:
-    st.session_state.selected_drone = st.selectbox(
-        label=":helicopter: :green[Available Drones]",
-        options=get_drones(),
-        placeholder="No drone selected...",
+    # st.session_state.selected_drone = st.selectbox(
+    #     label=":helicopter: :green[Available Drones]",
+    #     options=get_drones(),
+    #     placeholder="No drone selected...",
 
-        index = get_drones().index(st.session_state.selected_drone)
-    )
+    #     index = get_drones().index(st.session_state.selected_drone)
+    # )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label=" Fly Autonomous Mission",
