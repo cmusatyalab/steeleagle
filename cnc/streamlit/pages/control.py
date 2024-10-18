@@ -287,13 +287,13 @@ with st.sidebar:
         #st.subheader(f":blue[Manual Control Enabled]")
         st.subheader(":red[Manual Speed Controls]", divider="gray")
         c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.pitch_speed, format="%d")
-        c2.number_input(key="thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=st.session_state.thrust_speed, format="%d")
+        st.session_state.pitch_speed = c1.number_input( label="Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.pitch_speed, format="%d")
+        st.session_state.thrust_speed = c2.number_input( label="Thrust %", min_value=0, max_value=100, step=5, value=st.session_state.thrust_speed, format="%d")
         c3, c4 = st.columns(spec=2, gap="small")
-        c3.number_input(key="yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=st.session_state.yaw_speed, format="%d")
-        c4.number_input(key="roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=st.session_state.roll_speed, format="%d")
+        st.session_state.yaw_speed = c3.number_input( label="Yaw %", min_value=0, max_value=100, step=5, value=st.session_state.yaw_speed, format="%d")
+        st.session_state.roll_speed = c4.number_input( label="Roll %", min_value=0, max_value=100, step=5, value=st.session_state.roll_speed, format="%d")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key="gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
+        st.session_state.gimbal_speed = c5.number_input( label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
         c6.empty()
 
     elif st.session_state.rth_sent:
