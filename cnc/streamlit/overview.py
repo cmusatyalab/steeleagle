@@ -11,14 +11,12 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS
+from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 
-if "location" not in st.session_state:
-    st.session_state["location"] = [40.44482669, -79.90575779]
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
 if "center" not in st.session_state:
-    st.session_state.center = [40.415428612484924, -79.95028831875038]
+    st.session_state.center = [40.413552, -79.949152]
 if "tracking_selection" not in st.session_state:
     st.session_state.tracking_selection = None
 if "selected_drones" not in st.session_state:
@@ -27,6 +25,8 @@ if "script_file" not in st.session_state:
     st.session_state.script_file = None
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
+if "trail_length" not in st.session_state:
+    st.session_state.trail_length = 500
 
 st.set_page_config(
     page_title="Commander",
@@ -42,6 +42,9 @@ st.set_page_config(
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
 
+if not authenticated():
+    st.stop()  # Do not continue if not authenticated
+
 red = connect_redis()
 
 def change_center():
@@ -56,7 +59,7 @@ def change_center():
 
 
 def run_flightscript():
-    if st.session_state.script_file is None:
+    if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
         filename = f"{time.time_ns()}.ms"
@@ -113,7 +116,7 @@ def draw_map():
 
     marker_color = 0
     for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", 500))
+        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
         last_update = (int(df.index[0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
@@ -123,7 +126,7 @@ def draw_map():
                     coords.append([row["latitude"], row["longitude"]])
                 if i == 0:
                     text = folium.DivIcon(
-                        icon_size=(150,50),
+                        icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
                         html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{k.split(".")[-1]}</div>',
 
@@ -176,12 +179,13 @@ def draw_map():
 
 menu()
 
-
+map_options = ("Google Sat", "Google Hybrid")
 tiles_col = st.columns(5)
-tiles_col[0].selectbox(
-    key="map_server",
+st.session_state.map_server = tiles_col[0].selectbox(
+   # key="map_server",
     label=":world_map: **:blue[Tile Server]**",
-    options=("Google Sat", "Google Hybrid"),
+    options=map_options,
+    index=map_options.index(st.session_state.map_server)
 )
 
 st.session_state.tracking_selection = tiles_col[1].selectbox(
@@ -189,11 +193,11 @@ st.session_state.tracking_selection = tiles_col[1].selectbox(
     label=":dart: **:green[Track Drone]**",
     options=get_drones(),
     on_change=change_center(),
-    index=None,
+    index=get_drones().index(st.session_state.tracking_selection) if st.session_state.tracking_selection else None,
     placeholder="Select a drone to track...",
 )
 
-st.session_state.inactivity_time = tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, max_value=600000)
+st.session_state.inactivity_time = tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, value=st.session_state.inactivity_time, max_value=600000)
 
 if st.session_state.map_server == "Google Sat":
     tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
@@ -204,6 +208,8 @@ tiles = folium.TileLayer(
     name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
 )
 
+st.session_state.trail_length = tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, value=st.session_state.trail_length)
+
 col1, col2 = st.columns([3, 1])
 with col1:
     draw_map()
@@ -212,13 +218,14 @@ with col2:
     st.session_state.selected_drones = st.multiselect(
         label=":helicopter: **:orange[Swarm Control]** :helicopter:",
         options=get_drones(),
-        placeholder="Select one or more drones..."
+        placeholder="Select one or more drones...",
+        default=st.session_state.selected_drones
     )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["kml", "txt"],
+        type=["kml", "dsl"],
         label_visibility='visible',
         accept_multiple_files=True
     )
