@@ -39,6 +39,7 @@ class Supervisor:
 
     def __init__(self, args):
         # Import the files corresponding to the selected drone/cloudlet
+        self.drone_id = None
         drone_import = f"implementation.drones.{args.drone}"
         cloudlet_import = f"implementation.cloudlets.{args.cloudlet}"
         try:
@@ -63,6 +64,11 @@ class Supervisor:
                 kwargs['sim'] = True
             if args.lowdelay:
                 kwargs['lowdelay'] = True
+            if args.dronename:
+                kwargs['dronename'] = args.dronename
+            if args.droneip:
+                kwargs['droneip'] = args.droneip
+            logger.info(f"{kwargs=}")
             self.drone = getattr(Drone, args.drone)(**kwargs)
         except Exception as e:
             logger.info('Could not initialize {args.drone}, name does not exist. Aborting.')
@@ -104,9 +110,10 @@ class Supervisor:
         # Start new task
         logger.debug('MS import')
         if not self.reload:
-            import mission
-            import task_defs
-            import transition_defs
+            module_prefix = self.drone_id
+            importlib.import_module(f"{module_prefix}.mission")
+            importlib.import_module(f"{module_prefix}.task_defs")
+            importlib.import_module(f"{module_prefix}.transition_defs")
         else:
             logger.info('Reloading...')
             modules = sys.modules.copy()
@@ -136,7 +143,10 @@ class Supervisor:
             with open(filename, mode='wb') as f:
                 for chunk in r.iter_content():
                     f.write(chunk)
+            os.makedirs(self.drone_id, exist_ok=True)
             z = ZipFile(filename)
+            os.chdir(self.drone_id)
+            sys.path.append(self.drone_id)
             try:
                 subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
             except subprocess.CalledProcessError as e:
@@ -162,6 +172,7 @@ class Supervisor:
 
         req = cnc_pb2.Extras()
         req.drone_id = name
+        self.drone_id = name
         while True:
             await asyncio.sleep(0)
             try:
@@ -286,10 +297,15 @@ async def _main():
                         help='Specify websocket port [default: 6000]')
     parser.add_argument('-t', '--trajectory', action='store_true',
         help='Log the trajectory of the drone over the flight duration [default: False]')
+    parser.add_argument('-i', '--droneip', default='192.168.42.1',
+                                    help='Specify drone IP address [default: 192.168.42.1]')
 
+    parser.add_argument('-n', '--dronename',
+                                    help='Specify drone name.')
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s",
                         level=args.loglevel)
+    logger.info(f"{args=}")
 
     adapter = Supervisor(args)
     await adapter.initializeConnection()
