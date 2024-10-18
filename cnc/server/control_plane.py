@@ -152,7 +152,7 @@ def listen_cmdrs(args, drones, redis):
             # download the script
             script_url = extras.cmd.script_url
             logger.info(f"script url:  {script_url}")
-            kml, dsl = download_script(script_url)
+            dsl, kml = download_script(script_url)
             
             # compile the mission
             drone_list_revised = "&".join(drone_list)
@@ -180,9 +180,10 @@ def listen_cmdrs(args, drones, redis):
                 f"commands",
                 {"commander": extras.commander_id, "drone": drone_id, "value": text_format.MessageToString(extras_copy),}
             )
+            logger.debug(f"Updated redis under stream commands at key {key}")
              
         sock.send(b'ACK')
-        logger.debug(f"Updated redis under stream commands at key {key}")
+        
         
     sock.close()
     
