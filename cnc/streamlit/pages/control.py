@@ -57,7 +57,7 @@ if "redis" not in st.session_state:
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
 if "imagery_sleep_duration" not in st.session_state:
-    st.session_state.imagery_sleep_duration = 0.10
+    st.session_state.imagery_sleep_duration = 0.5
 
 
 MAG_STATE = [
@@ -115,8 +115,8 @@ async def update(live, avoidance, detection, hsv, status,):
             order = ("altitude", "bearing", "battery", "mag", "rssi",)
 
             st.session_state.telemetry = stream_to_dataframe(st.session_state.redis.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
-            st.session_state.telemetry["latitude"].clip(-90, 90, inplace=True)
-            st.session_state.telemetry["longitude"].clip(-180, 180, inplace=True)
+            st.session_state.telemetry["latitude"] = st.session_state.telemetry["latitude"].clip(-90, 90)
+            st.session_state.telemetry["longitude"] = st.session_state.telemetry["longitude"].clip(-180, 180)
             st.session_state.telemetry["mag"] = st.session_state.telemetry["mag"].transform(lambda x: x == 0)
             status.dataframe(st.session_state.telemetry, hide_index=False, use_container_width=True, column_order=order, column_config=columns)
             #map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
