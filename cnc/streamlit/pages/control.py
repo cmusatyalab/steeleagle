@@ -56,8 +56,8 @@ if "redis" not in st.session_state:
     st.session_state.redis = connect_redis()
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
-if "imagery_sleep_duration" not in st.session_state:
-    st.session_state.imagery_sleep_duration = 0.5
+if "imagery_framerate" not in st.session_state:
+    st.session_state.imagery_framerate = 1
 
 
 MAG_STATE = [
@@ -121,7 +121,7 @@ async def update(live, avoidance, detection, hsv, status,):
             status.dataframe(st.session_state.telemetry, hide_index=False, use_container_width=True, column_order=order, column_config=columns)
             #map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
 
-            await asyncio.sleep(st.session_state.imagery_sleep_duration)
+            await asyncio.sleep(1/st.session_state.imagery_framerate)
 
     except asyncio.CancelledError:
         st.write("Update coroutine canceled.")
@@ -296,7 +296,7 @@ with st.sidebar:
         st.session_state.roll_speed = c4.number_input( label="Roll %", min_value=0, max_value=100, step=5, value=st.session_state.roll_speed, format="%d")
         c5, c6 = st.columns(spec=2, gap="small")
         st.session_state.gimbal_speed = c5.number_input( label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
-        st.session_state.imagery_sleep_duration = c6.number_input( label="Imagery Sleep (ms)", min_value=0.0, max_value=1.0, step=0.05, value=st.session_state.imagery_sleep_duration, format="%0.2f")
+        st.session_state.imagery_framerate = c6.number_input( label="Imagery Framerate", min_value=1, max_value=30, step=1, value=st.session_state.imagery_framerate, format="%0d")
 
     elif st.session_state.rth_sent:
         st.subheader(f":orange[Return to Home Initiated]")
