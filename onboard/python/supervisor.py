@@ -148,12 +148,14 @@ class Supervisor:
             os.makedirs(self.drone_id, exist_ok=True)
             z = ZipFile(filename)
             sys.path.append(self.drone_id)
+            os.chdir(self.drone_id)
             try:
                 subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
             z.extractall()
             self.install_prereqs()
+            os.chdir('..')
         except Exception as e:
             print(e)
 
