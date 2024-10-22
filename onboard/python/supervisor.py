@@ -109,8 +109,9 @@ class Supervisor:
         self.stop_mission()
         # Start new task
         logger.debug('MS import')
+        module_prefix = self.drone_id
         if not self.reload:
-            module_prefix = self.drone_id
+            logger.info('first time...')
             importlib.import_module(f"{module_prefix}.mission")
             importlib.import_module(f"{module_prefix}.task_defs")
             importlib.import_module(f"{module_prefix}.transition_defs")
@@ -118,11 +119,12 @@ class Supervisor:
             logger.info('Reloading...')
             modules = sys.modules.copy()
             for module in modules.values():
-                if module.__name__.startswith('mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
+                if module.__name__.startswith(f'{module_prefix}.mission') or module.__name__.startswith(f'{module_prefix}.task_defs') or module.__name__.startswith('{module_prefix}.transition_defs'):
                     importlib.reload(module)
         logger.debug('MC init')
-        from mission.MissionController import MissionController
-        self.mission = MissionController(self.drone, self.cloudlet)
+        #from mission.MissionController import MissionController
+        Mission = importlib.import_module(f"{module_prefix}.mission.MissionController")
+        self.mission = getattr(Mission, "MissionController")(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
         self.reload = True
@@ -145,7 +147,6 @@ class Supervisor:
                     f.write(chunk)
             os.makedirs(self.drone_id, exist_ok=True)
             z = ZipFile(filename)
-            os.chdir(self.drone_id)
             sys.path.append(self.drone_id)
             try:
                 subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
