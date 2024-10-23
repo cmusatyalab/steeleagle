@@ -121,6 +121,7 @@ def draw_map():
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
             i = 0
+            drone_name = k.split(".")[-1]
             for index, row in df.iterrows():
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
@@ -128,7 +129,7 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{k.split(".")[-1]}</div>',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%)</div>',
 
                     )
                     plane = folium.Icon(
@@ -137,7 +138,7 @@ def draw_map():
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
                     )
-                    html = f'<img src="http://{st.secrets.webserver}/raw/{k.split(".")[-1]}/latest.jpg" height="250px" width="250px"/>'
+                    html = f'<img src="http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg" height="250px" width="250px"/>'
 
                     fg.add_child(
                         folium.Marker(
@@ -145,7 +146,6 @@ def draw_map():
                                 row["latitude"],
                                 row["longitude"],
                             ],
-                            # tooltip=k.split(".")[-1],
                             tooltip=html,
                             icon=plane,
                         )
@@ -157,6 +157,7 @@ def draw_map():
                                 row["latitude"],
                                 row["longitude"],
                             ],
+                            tooltip=html,
                             icon=text,
                         )
                     )
