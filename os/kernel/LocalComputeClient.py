@@ -1,7 +1,9 @@
 import asyncio
+import cv2
 from enum import Enum
-from gabriel_protocol import gabriel_pb2
 import logging
+import numpy as np
+import onboard_compute_pb2
 import sys
 from util.utils import setup_socket
 import zmq
@@ -22,24 +24,32 @@ class LocalComputeClient:
         setup_socket(self.socket, 'connect', 'LCE_PORT', 'Created socket to connect to local compute engine', 'localhost')
 
     async def process_frame(self, frame, computation_type):
-        if not isinstance(frame, gabriel_pb2.InputFrame):
-            raise Exception("Incorrect input type for frame")
+        request = onboard_compute_pb2.ComputeRequest()
+        request.frame_data = frame
+        request.frame_width = 1280
+        request.frame_height = 720
+
         if computation_type != ComputationType.OBJECT_DETECT:
             raise Exception("Computation type not supported")
 
         logger.info("Sending work item to local compute engine")
+        await self.socket.send(request.SerializeToString())
 
-        await self.socket.send(frame.SerializeToString())
         result = await self.socket.recv()
         logger.info(f"Received response {result} from local compute engine")
 
 async def main():
     logger.info("Starting local compute client")
     client = LocalComputeClient()
-    frame = gabriel_pb2.InputFrame()
+    robomaster_img = cv2.imread("robomaster.jpg")
+    image_yuv = cv2.cvtColor(robomaster_img, cv2.COLOR_BGR2YUV_Y422)
+
+    frame = image_yuv.tobytes()
+
+    # with open('robomaster_yuv422.yuv', 'wb') as f:
+    #     f.write(frame)
+
     result = await client.process_frame(frame, ComputationType.OBJECT_DETECT)
-    while True:
-        pass
 
 if __name__ == "__main__":
     asyncio.run(main())
