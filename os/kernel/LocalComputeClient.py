@@ -36,13 +36,16 @@ class LocalComputeClient:
         await self.socket.send(request.SerializeToString())
 
         result = await self.socket.recv()
-        logger.info(f"Received response {result} from local compute engine")
+        logger.info(f"Received response from local compute engine")
+        detections = onboard_compute_pb2.ComputeResult()
+        detections.ParseFromString(result)
+        print(detections)
 
 async def main():
     logger.info("Starting local compute client")
     client = LocalComputeClient()
-    robomaster_img = cv2.imread("robomaster.jpg")
-    image_yuv = cv2.cvtColor(robomaster_img, cv2.COLOR_BGR2YUV_Y422)
+    robomaster_img = cv2.imread("jingao.jpg")
+    image_yuv = cv2.cvtColor(robomaster_img, cv2.COLOR_BGR2YUV_YUYV)
 
     frame = image_yuv.tobytes()
 
