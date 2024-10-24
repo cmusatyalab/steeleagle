@@ -8,7 +8,7 @@ import os
 import sys
 import logging
 import json
-from util.utils import setup_socket
+from util.utils import setup_socket, SocketOperation
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
@@ -80,9 +80,9 @@ class DataService(Service):
         self.cam_sock = cam_sock
         self.tel_sock = tel_sock
         self.cpt_sock = cpt_sock
-        setup_socket(tel_sock, 'bind', 'TEL_PORT', 'Created telemetry socket endpoint')
-        setup_socket(cam_sock, 'bind', 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_sock, 'bind', 'CPT_PORT', 'Created compute socket endpoint')
+        setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
+        setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+        setup_socket(cpt_sock, SocketOperation.BIND, 'CPT_PORT', 'Created compute socket endpoint')
 
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())

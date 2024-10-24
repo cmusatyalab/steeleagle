@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import onboard_compute_pb2
 import sys
-from util.utils import setup_socket
+from util.utils import setup_socket, SocketOperation
 import zmq
 import zmq.asyncio
 
@@ -15,21 +15,26 @@ handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(handler)
 
 class ComputationType(Enum):
-    OBJECT_DETECT = 1
+    OBJECT_DETECTION = 1
+    DEPTH_ESTIMATION = 2
 
 class LocalComputeClient:
-    def __init__(self):
+    def __init__(self, frame_width, frame_height):
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
-        setup_socket(self.socket, 'connect', 'LCE_PORT', 'Created socket to connect to local compute engine', 'localhost')
+        setup_socket(self.socket, SocketOperation.CONNECT, 'LCE_PORT',
+                     'Created socket to connect to local compute engine',
+                     'localhost')
+        self.frame_width = frame_width
+        self.frame_height = frame_height
 
     async def process_frame(self, frame, computation_type):
         request = onboard_compute_pb2.ComputeRequest()
         request.frame_data = frame
-        request.frame_width = 1280
-        request.frame_height = 720
+        request.frame_width = self.frame_width
+        request.frame_height = self.frame_height
 
-        if computation_type != ComputationType.OBJECT_DETECT:
+        if computation_type != ComputationType.OBJECT_DETECTION:
             raise Exception("Computation type not supported")
 
         logger.info("Sending work item to local compute engine")
@@ -43,7 +48,7 @@ class LocalComputeClient:
 
 async def main():
     logger.info("Starting local compute client")
-    client = LocalComputeClient()
+    client = LocalComputeClient(1280, 720)
     robomaster_img = cv2.imread("jingao.jpg")
     image_yuv = cv2.cvtColor(robomaster_img, cv2.COLOR_BGR2YUV_YUYV)
 
@@ -52,7 +57,7 @@ async def main():
     # with open('robomaster_yuv422.yuv', 'wb') as f:
     #     f.write(frame)
 
-    result = await client.process_frame(frame, ComputationType.OBJECT_DETECT)
+    result = await client.process_frame(frame, ComputationType.OBJECT_DETECTION)
 
 if __name__ == "__main__":
     asyncio.run(main())

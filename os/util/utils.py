@@ -1,25 +1,30 @@
+from enum import Enum
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def setup_socket(socket, socket_type, port_num, logger_message, host_addr="*"):
+class SocketOperation(Enum):
+    BIND = 1
+    CONNECT = 2
+
+def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
     # Get port number from environment variables
     port = os.environ.get(port_num, "")
 
     if not port:
-        logger.error(f'Cannot get {port_num} from system')
+        logger.fatal(f'Cannot get {port_num} from system')
         quit()
 
     # Construct the address
     addr = f'tcp://{host_addr}:{port}'
 
-    logger.info(f"addr: {addr}")
+    logger.info(f"Setting up socket at {addr=}")
 
-    if socket_type == 'connect':
+    if socket_op == SocketOperation.CONNECT:
         socket.connect(addr)
-    elif socket_type == 'bind':
+    elif socket_op == SocketOperation.BIND:
         socket.bind(addr)
 
     logger.info(logger_message)
