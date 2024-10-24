@@ -83,7 +83,6 @@ class DataService(Service):
         self.cpt_sock = cpt_sock
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_sock, SocketOperation.BIND, 'CPT_PORT', 'Created compute socket endpoint')
 
         self.local_compute_client = LocalComputeClient(1280, 720)
 
