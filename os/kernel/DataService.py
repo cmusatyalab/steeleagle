@@ -13,6 +13,7 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from kernel.Service import Service
+from LocalComputeClient import LocalComputeClient
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -84,11 +85,14 @@ class DataService(Service):
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
         setup_socket(cpt_sock, SocketOperation.BIND, 'CPT_PORT', 'Created compute socket endpoint')
 
+        self.local_compute_client = LocalComputeClient(1280, 720)
+
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
         cpt_task = asyncio.create_task(self.compute_handler())
         gab_task = asyncio.create_task(self.gabriel_client.launch_async())
+        local_compute_task = asyncio.create_task(self.local_compute_task())
 
         # registering context, sockets and tasks to service
         self.register_context(context)
@@ -267,6 +271,14 @@ class DataService(Service):
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
+
+    def local_compute_task(self):
+        while True:
+            await asyncio.sleep(0)
+            frame_bytes = self.frame_cache['data']
+            nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+            frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+            await self.local_compute_client.process_frame(frame.tobytes())
 
 ######################################################## MAIN ##############################################################
 async def async_main():

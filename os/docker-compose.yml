@@ -1,7 +1,7 @@
 services:
   steeleagle-os-driver:
-    # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
-    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: steeleagle-os-driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -17,9 +17,9 @@ services:
     networks:
       - steeleagle-os-net
 
-  steeleagle-os-kernel-cmd:
-    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
-    image: xianglic/steeleagle-os-kernel-amd:${TAG}
+  steeleagle-os-kernel-cmd-svc:
+    image: achanana/steeleagle-os-kernel-arm:${TAG}
+    # image: xianglic/steeleagle-os-kernel-amd:${TAG}
     container_name: steeleagle-os-kernel-cmd
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -36,9 +36,9 @@ services:
     networks:
       - steeleagle-os-net
 
-  steeleagle-os-kernel-rc:
-    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
-    image: xianglic/steeleagle-os-kernel-amd:${TAG}
+  steeleagle-os-kernel-data-svc:
+    image: achanana/steeleagle-os-kernel-arm:${TAG}
+    #image: xianglic/steeleagle-os-kernel-amd:${TAG}
     container_name: steeleagle-os-kernel-rc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -46,18 +46,20 @@ services:
       - STEELEAGLE_GABRIEL_PORT=${STEELEAGLE_GABRIEL_PORT}
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
+      - LCE_PORT=${LCE_PORT}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"
       - "${CAM_PORT}:${CAM_PORT}"
+      - "${LCE_PORT}:${LCE_PORT}"
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "python3", "RemoteComputeService.py"]
+    entrypoint: [ "python3", "DataService.py"]
     networks:
       - steeleagle-os-net
 
   steeleagle-os-user:
-    # image: xianglic/steeleagle-os-user-arm:${TAG}
-    image: xianglic/steeleagle-os-user-amd:${TAG}
+    image: xianglic/steeleagle-os-user-arm:${TAG}
+    # image: xianglic/steeleagle-os-user-amd:${TAG}
     container_name: steeleagle-os-user
     environment:
       - PYTHONPATH=${PYTHONPATH}
