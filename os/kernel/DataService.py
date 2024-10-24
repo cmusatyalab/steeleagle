@@ -272,7 +272,7 @@ class DataService(Service):
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
 
-    def local_compute_task(self):
+    async def local_compute_task(self):
         while True:
             await asyncio.sleep(0)
             frame_bytes = self.frame_cache['data']
