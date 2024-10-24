@@ -11,15 +11,14 @@ RUN apk add --no-cache gcc g++ bash musl-dev linux-headers
 # Set the dir in the container
 WORKDIR /steeleagle_os/kernel
 
+RUN pip install --break-system-packages --no-deps --no-cache-dir gabriel-client==3.0
+
+COPY ./os/kernel/requirements.txt /steeleagle_os/kernel/requirements.txt
+
+# Install any required Python packages
+RUN pip install --break-system-packages --no-cache-dir -r /steeleagle_os/kernel/requirements.txt
+
 COPY ./os/kernel /steeleagle_os/kernel
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
 COPY ./os/env.sh /steeleagle_os/env.sh
 COPY ./os/util /steeleagle_os/util
-
-# Install any required Python packages
-RUN pip install --break-system-packages --no-cache-dir -r /steeleagle_os/kernel/requirements.txt
-RUN pip install --break-system-packages --no-deps --no-cache-dir gabriel-client==3.0
-
-
-
-
