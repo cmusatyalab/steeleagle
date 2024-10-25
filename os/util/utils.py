@@ -20,11 +20,11 @@ def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
     # Construct the address
     addr = f'tcp://{host_addr}:{port}'
 
-    logger.info(f"Setting up socket at {addr=}")
-
     if socket_op == SocketOperation.CONNECT:
+        logger.info(f"Connecting socket to {addr=}")
         socket.connect(addr)
     elif socket_op == SocketOperation.BIND:
+        logger.info(f"Binding socket to {addr=}")
         socket.bind(addr)
     else:
         logger.fatal("Invalid socket operation")
