@@ -39,5 +39,4 @@ RUN pip install --upgrade  protobuf
 # Copy necessary files into the container
 COPY ./os/drivers/olympe /steeleagle_os/driver_olympe
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
-COPY ./os/env.sh /steeleagle_os/env.sh
 COPY ./os/util /steeleagle_os/util

@@ -20,5 +20,4 @@ RUN pip install --break-system-packages --no-cache-dir -r /steeleagle_os/kernel/
 
 COPY ./os/kernel /steeleagle_os/kernel
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
-COPY ./os/env.sh /steeleagle_os/env.sh
 COPY ./os/util /steeleagle_os/util
