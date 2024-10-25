@@ -102,6 +102,7 @@ class DataService(Service):
         self.register_task(cam_task)
         self.register_task(cpt_task)
         self.register_task(gab_task)
+        self.register_task(local_compute_task)
 
     ######################################################## DRIVER ############################################################
     async def telemetry_handler(self):
@@ -273,8 +274,8 @@ class DataService(Service):
 
     async def local_compute_task(self):
         while True:
+            await asyncio.sleep(0)
             if self.frame_cache['data'] is not None:
-                await asyncio.sleep(0)
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                 frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]

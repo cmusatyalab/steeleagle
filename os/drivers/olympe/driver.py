@@ -35,18 +35,20 @@ setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint
 setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
 setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
+error_frequency = os.environ.get('ERROR_FREQUENCY')
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
     drone.disconnect()
     sys.exit(0)
-    
-signal.signal(signal.SIGINT, handle_signal)  
+
+signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
-    
+
 
 async def camera_stream(drone, cam_sock):
     frame_id = 0
+    error_count = 0
     while drone.isConnected():
         try:
             cam_message = cnc_protocol.Frame()
@@ -55,21 +57,24 @@ async def camera_stream(drone, cam_sock):
             cam_message.width = 1280
             cam_message.channels = 3
             cam_message.id = frame_id
-            frame_id = frame_id + 1 
+            frame_id = frame_id + 1
             cam_sock.send(cam_message.SerializeToString())
             logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
             logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
-            pass
+            if error_count % error_frequency == 0:
+                logger.error(f'Failed to get video frame, error: {e}')
+            error_count += 1
         await asyncio.sleep(0.033)
 
 async def telemetry_stream(drone, tel_sock):
-    logger.info('Starting telemetry stream')  
+    logger.info('Starting telemetry stream')
+    error_count = 0
     while drone.isConnected():
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            tel_message.global_position.latitude = telDict["gps"][0] 
+            tel_message.global_position.latitude = telDict["gps"][0]
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
             tel_message.relative_position.up = telDict["relAlt"]
@@ -89,7 +94,9 @@ async def telemetry_stream(drone, tel_sock):
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
-            logger.error(f'Failed to get telemetry, error: {e}')
+            if error_count % error_frequency == 0:
+                logger.error(f'Failed to get telemetry, error: {e}')
+            error_count += 1
         await asyncio.sleep(0)
 
 async def handle(identity, message, resp, action, resp_sock):
@@ -160,11 +167,11 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
-        resp.resp = cnc_protocol.ResponseStatus.FAILED 
-        
-    
+        resp.resp = cnc_protocol.ResponseStatus.FAILED
+
+
     resp_sock.send_multipart([identity, resp.SerializeToString()])
-      
+
 
 async def main(drone, cam_sock, tel_sock, args):
     while True:
@@ -175,15 +182,15 @@ async def main(drone, cam_sock, tel_sock, args):
             logger.error('Failed to connect to drone, retrying...')
             continue
         await drone.startStreaming()
-        
+
         asyncio.create_task(camera_stream(drone, cam_sock))
         asyncio.create_task(telemetry_stream(drone, tel_sock))
-        
+
         while drone.isConnected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
-                logger.debug(f"Received identity: {identity}")  
+                logger.debug(f"Received identity: {identity}")
                 data = message_parts[1]
                 logger.debug(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
@@ -191,16 +198,16 @@ async def main(drone, cam_sock, tel_sock, args):
                 message.ParseFromString(data)
                 logger.debug(f"Received message: {message}")
                 action = message.WhichOneof("method")
-                
+
                 # send a okay message
-                
-                
+
+
                 # Create a driver response message
                 resp = message
                 asyncio.create_task(handle(identity, message, resp, action, cmd_back_sock))
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
-                
+
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
