@@ -9,10 +9,8 @@ from util.utils import setup_socket, SocketOperation
 import zmq
 import zmq.asyncio
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-logger.addHandler(handler)
 
 class ComputationType(Enum):
     OBJECT_DETECTION = 1
