@@ -47,6 +47,7 @@ signal.signal(signal.SIGTERM, handle_signal)
 
 
 async def camera_stream(drone, cam_sock):
+    logger.info('Starting camera stream')
     frame_id = 0
     error_count = 0
     while drone.isConnected():
