@@ -76,8 +76,8 @@ class DataService(Service):
         self.cam_sock = cam_sock
         self.tel_sock = tel_sock
         self.cpt_sock = cpt_sock
-        setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint')
-        setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint')
+        setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get('DRIVER_ENDPOINT'))
+        setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get('DRIVER_ENDPOINT'))
 
         self.local_compute_client = LocalComputeClient(1280, 720)
 
