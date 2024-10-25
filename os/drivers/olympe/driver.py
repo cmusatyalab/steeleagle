@@ -35,7 +35,7 @@ setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint
 setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
 setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
-error_frequency = os.environ.get('ERROR_FREQUENCY')
+error_frequency = int(os.environ.get('ERROR_FREQUENCY'))
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
