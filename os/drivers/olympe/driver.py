@@ -12,14 +12,10 @@ from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBou
 from datetime import datetime
 import signal
 
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+# Configure logger
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
@@ -60,7 +56,6 @@ async def camera_stream(drone, cam_sock):
             cam_message.id = frame_id
             frame_id = frame_id + 1
             cam_sock.send(cam_message.SerializeToString())
-            logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
             logger.debug(f'Camera stream: ID: frame_id {frame_id}')
         except Exception as e:
             if error_count % error_frequency == 0:
