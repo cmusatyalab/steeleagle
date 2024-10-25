@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 context = zmq.Context()
 cpt_sock = context.socket(zmq.REQ)
-setup_socket(cpt_sock, 'connect', 'CPT_PORT', 'Connected to compute socket endpoint', os.environ.get("RC_ENDPOINT"))
+setup_socket(cpt_sock, 'connect', 'CPT_PORT', 'Connected to compute socket endpoint', os.environ.get("DATA_ENDPOINT"))
 
 class ComputeStub():
     # REQ/REP function
@@ -38,7 +38,7 @@ class ComputeStub():
             req.hsv_upper_bound.S = hsv_upper[1]
             req.hsv_upper_bound.V = hsv_upper[2]
         await self.sendRecv(req)
-    
+
     # Get results for a compute engine
     async def getResults(self, engine_key, invalidate_cache=True):
         req = cnc_pb2.ComputeRequest()
@@ -48,4 +48,4 @@ class ComputeStub():
         msg = cnc_pb2.ComputeResult()
         msg.ParseFromString(resp)
         return msg.result
-        
+
