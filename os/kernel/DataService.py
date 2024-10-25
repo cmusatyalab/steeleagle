@@ -84,7 +84,6 @@ class DataService(Service):
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
-        cpt_task = asyncio.create_task(self.compute_handler())
         gab_task = asyncio.create_task(self.gabriel_client.launch_async())
         local_compute_task = asyncio.create_task(self.local_compute_task())
 
@@ -95,7 +94,6 @@ class DataService(Service):
         self.register_socket(cpt_sock)
         self.register_task(tel_task)
         self.register_task(cam_task)
-        self.register_task(cpt_task)
         self.register_task(gab_task)
         self.register_task(local_compute_task)
 
