@@ -48,7 +48,6 @@ services:
     ports:
       - "${TEL_PORT}:${TEL_PORT}"
       - "${CAM_PORT}:${CAM_PORT}"
-      - "${LCE_PORT}:${LCE_PORT}"
     restart: unless-stopped
     privileged: true
     entrypoint: [ "python3", "DataService.py"]
