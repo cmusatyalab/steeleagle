@@ -273,7 +273,7 @@ class DataService(Service):
 
     async def local_compute_task(self):
         while True:
-            if self.frame_cache['data'] is not None and self.telemetry_cache['drone_id'] is not None:
+            if self.frame_cache['data'] is not None:
                 await asyncio.sleep(0)
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
