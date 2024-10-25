@@ -10,7 +10,6 @@ import zmq
 import zmq.asyncio
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class ComputationType(Enum):
     OBJECT_DETECTION = 1

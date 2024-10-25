@@ -13,7 +13,7 @@ from datetime import datetime
 import signal
 
 # Configure logger
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 

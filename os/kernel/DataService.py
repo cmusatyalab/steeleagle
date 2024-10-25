@@ -15,7 +15,7 @@ from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from kernel.Service import Service
 from LocalComputeClient import LocalComputeClient
 
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 

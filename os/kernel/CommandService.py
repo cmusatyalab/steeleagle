@@ -11,10 +11,9 @@ from kernel.Service import Service
 from util.utils import setup_socket, SocketOperation
 
 # Configure logger
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 # Enumerations for Commands and Drone Types
 class ManualCommand(Enum):
