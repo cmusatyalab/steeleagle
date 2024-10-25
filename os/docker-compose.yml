@@ -13,6 +13,7 @@ services:
       - CMD_ENDPOINT=${CMD_ENDPOINT}
       - RC_ENDPOINT=${RC_ENDPOINT}
       - ERROR_FREQUENCY=100
+      - LOG_LEVEL=${LOG_LEVEL}
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
@@ -26,6 +27,7 @@ services:
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - MSN_PORT=${MSN_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${CMD_FRONT_PORT}:${CMD_FRONT_PORT}"
       - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
@@ -46,6 +48,7 @@ services:
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
       - LCE_PORT=${LCE_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"
       - "${CAM_PORT}:${CAM_PORT}"
@@ -64,6 +67,7 @@ services:
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - MSN_PORT=${MSN_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
+      - LOG_LEVEL=${LOG_LEVEL}
     restart: unless-stopped
     privileged: true
     entrypoint: ["python3", "-m", "common.MissionController"]
