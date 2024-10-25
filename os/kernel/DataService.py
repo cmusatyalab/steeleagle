@@ -273,6 +273,7 @@ class DataService(Service):
         return ProducerWrapper(producer=producer, source_name='telemetry')
 
     async def local_compute_task(self):
+        logger.info('Local compute task started')
         while True:
             await asyncio.sleep(0)
             if self.frame_cache['data'] is not None:
