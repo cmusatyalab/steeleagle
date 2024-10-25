@@ -6,6 +6,7 @@ import zmq
 import zmq.asyncio
 import asyncio
 import logging
+import os
 from cnc_protocol import cnc_pb2
 from kernel.Service import Service
 from util.utils import setup_socket, SocketOperation
