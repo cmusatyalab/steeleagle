@@ -26,5 +26,8 @@ def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
         socket.connect(addr)
     elif socket_op == SocketOperation.BIND:
         socket.bind(addr)
+    else:
+        logger.fatal("Invalid socket operation")
+        quit()
 
     logger.info(logger_message)

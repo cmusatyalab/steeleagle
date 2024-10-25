@@ -7,7 +7,7 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
-from util.utils import setup_socket
+from util.utils import setup_socket, SocketOperation
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 from datetime import datetime
 import signal
@@ -27,9 +27,9 @@ tel_sock = context.socket(zmq.PUB)
 cam_sock = context.socket(zmq.PUB)
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("RC_ENDPOINT"))
-setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
-setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
+setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("RC_ENDPOINT"))
+setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
+setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 error_frequency = int(os.environ.get('ERROR_FREQUENCY'))
 
