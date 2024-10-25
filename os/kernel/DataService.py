@@ -275,6 +275,7 @@ class DataService(Service):
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                 frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+                logger.debug("Sending frame to local compute client")
                 await self.local_compute_client.process_frame(frame.tobytes())
 
 ######################################################## MAIN ##############################################################
