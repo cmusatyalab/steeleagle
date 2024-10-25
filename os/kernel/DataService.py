@@ -270,13 +270,15 @@ class DataService(Service):
     async def local_compute_task(self):
         logger.info('Local compute task started')
         while True:
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.033)
             if self.frame_cache['data'] is not None:
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                 frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
-                logger.debug("Sending frame to local compute client")
+                logger.info("Sending frame to local compute client")
                 await self.local_compute_client.process_frame(frame.tobytes())
+            else:
+                logger.debug("Frame cache is none, not sending work item to local compute")
 
 ######################################################## MAIN ##############################################################
 async def async_main():
