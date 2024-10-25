@@ -1,6 +1,6 @@
 services:
   steeleagle-os-driver:
-    image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    image: achanana/steeleagle-os-driver-olympe-arm:${TAG}
     # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: steeleagle-os-driver
     environment:
@@ -12,6 +12,7 @@ services:
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
       - RC_ENDPOINT=${RC_ENDPOINT}
+      - ERROR_FREQUENCY=100
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
