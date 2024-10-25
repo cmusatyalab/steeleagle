@@ -48,6 +48,7 @@ services:
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
       - LCE_PORT=${LCE_PORT}
+      - LCE_HOST=${LCE_HOST}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"

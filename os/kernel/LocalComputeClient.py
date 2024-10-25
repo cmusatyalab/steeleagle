@@ -3,6 +3,7 @@ import cv2
 from enum import Enum
 import logging
 import numpy as np
+import os
 import onboard_compute_pb2
 import sys
 from util.utils import setup_socket, SocketOperation
@@ -21,7 +22,7 @@ class LocalComputeClient:
         self.socket = self.context.socket(zmq.REQ)
         setup_socket(self.socket, SocketOperation.CONNECT, 'LCE_PORT',
                      'Created socket to connect to local compute engine',
-                     'localhost')
+                     os.environ.get('LCE_HOST'))
         self.frame_width = frame_width
         self.frame_height = frame_height
 
