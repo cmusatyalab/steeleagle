@@ -4,7 +4,7 @@ services:
     # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: steeleagle-os-driver
     environment:
-      - PYTHONPATH=${PYTHONPATH}
+      - PYTHONPATH=/steeleagle_os/
       - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
       - STEELEAGLE_DRIVER_DRONE_ARGS=${STEELEAGLE_DRIVER_DRONE_ARGS}
       - TEL_PORT=${TEL_PORT}
@@ -21,7 +21,7 @@ services:
     image: achanana/steeleagle-os-kernel:${TAG}
     container_name: steeleagle-os-kernel-cmd-svc
     environment:
-      - PYTHONPATH=${PYTHONPATH}
+      - PYTHONPATH=/steeleagle_os/
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - MSN_PORT=${MSN_PORT}
@@ -39,7 +39,7 @@ services:
     image: achanana/steeleagle-os-kernel:${TAG}
     container_name: steeleagle-os-kernel-data-svc
     environment:
-      - PYTHONPATH=${PYTHONPATH}
+      - PYTHONPATH=/steeleagle_os/
       - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
       - STEELEAGLE_GABRIEL_PORT=${STEELEAGLE_GABRIEL_PORT}
       - TEL_PORT=${TEL_PORT}
@@ -60,7 +60,7 @@ services:
     # image: xianglic/steeleagle-os-user-amd:${TAG}
     container_name: steeleagle-os-user
     environment:
-      - PYTHONPATH=${PYTHONPATH}
+      - PYTHONPATH=/steeleagle_os/
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - MSN_PORT=${MSN_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
