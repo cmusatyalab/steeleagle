@@ -73,12 +73,13 @@ def download_script(script_url):
     except Exception as e:
         logger.error(f"Error during download or extraction: {e}")
         
-def compile_mission(dsl_file, kml_file, drone_list):
+def compile_mission(dsl_file, kml_file, drone_list, alt):
     # Construct the full paths for the DSL and KML files
     dsl_file_path = os.path.join(compiler_path, dsl_file)
     kml_file_path = os.path.join(compiler_path, kml_file)
     jar_path = os.path.join(compiler_path, compiler_file)
-
+    altitude = str(alt)
+    
     # Define the command and arguments
     command = [
         "java",
@@ -87,10 +88,12 @@ def compile_mission(dsl_file, kml_file, drone_list):
         "-s", dsl_file_path,
         "-k", kml_file_path,
         "-o", output_path,
-        "-p", platform_path
+        "-p", platform_path,
+        "-a", altitude
     ]
     
     # Run the command
+    logger.info(f"Running command: {' '.join(command)}")
     result = subprocess.run(command, check=True, capture_output=True, text=True)
     
     # Log the output
@@ -120,7 +123,7 @@ def listen_drones(args, drones):
             sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
     sock.close()
     
-def listen_cmdrs(args, drones, redis):
+def listen_cmdrs(args, drones, redis, alt):
     ctx = zmq.Context()
     sock = ctx.socket(zmq.REP)
     sock.bind(f'tcp://*:{args.cmdrport}')
@@ -157,7 +160,7 @@ def listen_cmdrs(args, drones, redis):
             # compile the mission
             drone_list_revised = "&".join(drone_list)
             logger.info(f"drone list revised:  {drone_list_revised}")
-            compile_mission(dsl, kml, drone_list_revised)
+            compile_mission(dsl, kml, drone_list_revised, alt)
             
             # get the base url
             parsed_url = urlparse(script_url)
@@ -198,8 +201,11 @@ def main():
     parser.add_argument(
         "-a", "--auth", default="", help="Share key for redis user."
     )
+    parser.add_argument(
+        "--altitude", type=int, default=15, help="base altitude for the drones mission"
+    )
     args = parser.parse_args()
-
+    alt = args.altitude
     r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
     logger.info(f"Connected to redis on port {args.redis}...")
     drones = {}
@@ -208,7 +214,7 @@ def main():
     logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
     
     d = threading.Thread(target=listen_drones, args=[args, drones])
-    c = threading.Thread(target=listen_cmdrs, args=[args, drones, r])
+    c = threading.Thread(target=listen_cmdrs, args=[args, drones, r, alt])
     d.start()
     c.start()
 
