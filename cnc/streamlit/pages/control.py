@@ -26,6 +26,8 @@ st.set_page_config(
     }
 )
 
+if "armed" not in st.session_state:
+    st.session_state.armed = False
 if "manual_control" not in st.session_state:
     st.session_state.manual_control = True
 if "autonomous" not in st.session_state:
@@ -284,24 +286,26 @@ with st.sidebar:
         disabled=st.session_state.rth_sent,
         on_click=rth,
     )
-
+    if "armed2" not in st.session_state:
+     st.session_state.armed2 = False
     if st.session_state.manual_control:
         #st.subheader(f":blue[Manual Control Enabled]")
-        st.subheader(":red[Manual Speed Controls]", divider="gray")
+        mode = ":green[Manual (armed)]" if st.session_state.armed else ":red[Manual (disarmed)]"
+        st.checkbox(key="armed", label="Arm Drone?")
         c1, c2 = st.columns(spec=2, gap="small")
-        st.session_state.pitch_speed = c1.number_input( label="Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.pitch_speed, format="%d")
-        st.session_state.thrust_speed = c2.number_input( label="Thrust %", min_value=0, max_value=100, step=5, value=st.session_state.thrust_speed, format="%d")
+        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, value=50, step=5, format="%d")
+        c2.number_input(key = "thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=50, format="%d")
         c3, c4 = st.columns(spec=2, gap="small")
-        st.session_state.yaw_speed = c3.number_input( label="Yaw %", min_value=0, max_value=100, step=5, value=st.session_state.yaw_speed, format="%d")
-        st.session_state.roll_speed = c4.number_input( label="Roll %", min_value=0, max_value=100, step=5, value=st.session_state.roll_speed, format="%d")
+        c3.number_input(key = "yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c4.number_input(key = "roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=50, format="%d")
         c5, c6 = st.columns(spec=2, gap="small")
-        st.session_state.gimbal_speed = c5.number_input( label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
-        st.session_state.imagery_framerate = c6.number_input( label="Imagery Framerate", min_value=1, max_value=30, step=1, value=st.session_state.imagery_framerate, format="%0d")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c6.number_input(key = "imagery_framerate", label="Imagery Framerate", min_value=1, max_value=30, step=1, value=2, format="%0d")
 
     elif st.session_state.rth_sent:
-        st.subheader(f":orange[Return to Home Initiated]")
+        mode = f":orange[Return to Home Initiated]"
     elif st.session_state.script_file is not None:
-        st.subheader(f":violet[Autonomous Mode Enabled]")
+        mode = f":violet[Autonomous Mode Enabled]"
 
 status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 
@@ -309,8 +313,8 @@ with status_container:
     draw_map()
     #st.session_state.subscriber.punsubscribe()
     #st.session_state.subscriber.psubscribe(f'imagery.{st.session_state.selected_drone}')
-
-    st.subheader(f":blue[{st.session_state.selected_drone}] Status"
+    
+    st.subheader(f":blue[{st.session_state.selected_drone}] Status - {mode}"
                     if st.session_state.selected_drone is not None else ":red[No Drone Connected]",
                     divider="gray",
                 )
@@ -330,7 +334,7 @@ with imagery_container:
         st.markdown(":traffic_light: **HSV Filtering**")
 
 st.session_state.key_pressed = st_keypressed()
-if st.session_state.manual_control and st.session_state.selected_drone is not None:
+if st.session_state.armed and st.session_state.manual_control and st.session_state.selected_drone is not None:
     req = cnc_pb2.Extras()
     req.commander_id = os.uname()[1]
     req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
