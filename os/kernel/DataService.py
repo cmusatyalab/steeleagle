@@ -13,7 +13,7 @@ from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from kernel.Service import Service
-from LocalComputeClient import LocalComputeClient
+from LocalComputeClient import LocalComputeClient, ComputationType
 
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
@@ -274,7 +274,7 @@ class DataService(Service):
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                 frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
                 logger.info("Sending frame to local compute client")
-                await self.local_compute_client.process_frame(frame.tobytes())
+                await self.local_compute_client.process_frame(frame.tobytes(), ComputationType.OBJECT_DETECTION)
             else:
                 logger.debug("Frame cache is none, not sending work item to local compute")
 
