@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender1 \
     # debugging purpose
-    vim \ 
+    vim \
     # debugging purpose
     iputils-ping \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -28,14 +28,16 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory
 WORKDIR /steeleagle_os/driver_olympe
 
+COPY ./os/drivers/olympe/requirements.txt /steeleagle_os/driver_olympe/requirements.txt
+
+# Install required Python packages
+COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl  /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
+RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
+RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
+RUN pip install --upgrade  protobuf
+
 # Copy necessary files into the container
 COPY ./os/drivers/olympe /steeleagle_os/driver_olympe
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
 COPY ./os/env.sh /steeleagle_os/env.sh
 COPY ./os/util /steeleagle_os/util
-
-# Install required Python packages
-COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl  /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl 
-RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
-RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
-RUN pip install --upgrade  protobuf
