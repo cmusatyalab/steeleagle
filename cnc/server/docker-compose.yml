@@ -41,7 +41,7 @@ services:
     container_name: control-plane
     restart: unless-stopped
     ports:
-      # - "5003:5003"
+      - "5003:5003"
       - "6001:6001"
     privileged: true
     # arm

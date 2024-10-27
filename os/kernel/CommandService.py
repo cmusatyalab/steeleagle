@@ -52,7 +52,7 @@ class CommandService(Service):
         self.cmd_front_sock = cmd_front_sock
         self.cmd_back_sock = cmd_back_sock
         self.msn_sock = msn_sock
-        setup_socket(cmd_front_sock, SocketOperation.BIND, 'CMD_FRONT_PORT', 'Created command frontend socket endpoint')
+        setup_socket(cmd_front_sock, SocketOperation.CONNECT, 'CMD_FRONT_PORT', 'Created command frontend socket endpoint', os.environ.get('STEELEAGLE_GABRIEL_SERVER'))
         setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
         setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
 
