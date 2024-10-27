@@ -28,7 +28,7 @@ class LocalComputeClient:
 
     async def process_frame(self, frame, computation_type):
         request = onboard_compute_pb2.ComputeRequest()
-        request.frame_data = frame
+        request.frame_data = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV_YUYV).tobytes()
         request.frame_width = self.frame_width
         request.frame_height = self.frame_height
 

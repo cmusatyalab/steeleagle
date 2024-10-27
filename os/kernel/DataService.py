@@ -287,7 +287,7 @@ class DataService(Service):
                         f.write(frame.tobytes())
                 logger.info("Sending frame to local compute client")
                 frame_id = self.frame_cache['id']
-                await self.local_compute_client.process_frame(frame.tobytes(), ComputationType.OBJECT_DETECTION)
+                await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
             else:
                 logger.debug("Frame cache is none, not sending work item to local compute")
 
