@@ -278,7 +278,7 @@ class DataService(Service):
                 width = self.frame_cache['width']
                 channels = self.frame_cache['channels']
                 logger.debug(f"Encoding frame to jpg {height=} {width=} {channels=}")
-                success, frame = cv2.imencode('.jpg', nparr.reshape(height width, channels))
+                success, frame = cv2.imencode('.jpg', nparr.reshape(height, width, channels))
                 if not success:
                     logger.error("Error encoding frame to jpg")
                     raise Exception()
