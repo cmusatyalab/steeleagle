@@ -35,7 +35,7 @@ error_frequency = int(os.environ.get('ERROR_FREQUENCY'))
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
-    drone.disconnect()
+    drone.drone.disconnect()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_signal)
