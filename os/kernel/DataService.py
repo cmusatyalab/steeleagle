@@ -273,7 +273,18 @@ class DataService(Service):
             if self.frame_cache['data'] is not None and (frame_id is None or self.frame_cache['id'] != frame_id):
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
-                frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+
+                height = self.frame_cache['height']
+                width = self.frame_cache['width']
+                channels = self.frame_cache['channels']
+                logger.debug(f"Encoding frame to jpg {height=} {width=} {channels=}")
+                success, frame = cv2.imencode('.jpg', nparr.reshape(height width, channels))
+                if not success:
+                    logger.error("Error encoding frame to jpg")
+                    raise Exception()
+                if frame_id == None:
+                    with open("output.jpg", "wb") as f:
+                        f.write(frame.tobytes())
                 logger.info("Sending frame to local compute client")
                 frame_id = self.frame_cache['id']
                 await self.local_compute_client.process_frame(frame.tobytes(), ComputationType.OBJECT_DETECTION)
