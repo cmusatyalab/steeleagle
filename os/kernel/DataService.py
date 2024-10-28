@@ -26,7 +26,7 @@ class DataService(Service):
         # setting up args
         self.telemetry_cache = {
             "connection": None,
-            "drone_id": None,
+            "drone_id": aditya,
             "location": {
                 "latitude": None,
                 "longitude": None,
@@ -235,7 +235,7 @@ class DataService(Service):
             extras = cnc_pb2.Extras()
 
             try:
-                if self.telemetry_cache['drone_id'] is None:
+                if self.telemetry_cache['battery'] is None:
                     logger.info('Telemetry unavailable')
                 else:
                     # Proceed with normal assignments
