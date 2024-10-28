@@ -106,8 +106,8 @@ class DataService(Service):
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
-                self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
-                self.telemetry_cache['drone_id'] = telemetry.connection_status.drone_name
+                # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
+                # self.telemetry_cache['drone_id'] = telemetry.connection_status.drone_name
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
                 self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
                 self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
