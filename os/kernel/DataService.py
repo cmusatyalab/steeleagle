@@ -26,7 +26,7 @@ class DataService(Service):
         # setting up args
         self.telemetry_cache = {
             "connection": None,
-            "drone_id": aditya,
+            "drone_id": "aditya",
             "location": {
                 "latitude": None,
                 "longitude": None,
