@@ -192,7 +192,7 @@ class DataService(Service):
 
                     # produce extras
                     extras = cnc_pb2.Extras()
-                    extras.drone_id = self.telemetry_cache['drone_id']
+                    extras.drone_id = self.telemetry_cache['drone_name']
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
                     extras.location.longitude = self.telemetry_cache['location']['longitude']
                     if self.params['model'] is not None:
@@ -239,7 +239,7 @@ class DataService(Service):
                     logger.info('Telemetry unavailable')
                 else:
                     # Proceed with normal assignments
-                    extras.drone_id = self.telemetry_cache['drone_id']
+                    extras.drone_id = self.telemetry_cache['drone_name']
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
                     extras.location.longitude = self.telemetry_cache['location']['longitude']
                     extras.location.altitude = self.telemetry_cache['location']['altitude']

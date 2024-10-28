@@ -476,12 +476,12 @@ class ParrotDrone():
         telDict["name"] = await self.getName()
         telDict["gps"] = await self.getGPS()
         telDict["relAlt"] = await self.getAltitudeRel()
-        telDict["satellites"] = await self.getSatellites()
         telDict["attitude"] = await self.getAttitude()
         telDict["magnetometer"] = await self.getMagnetometerReading()
         telDict["imu"] = await self.getVelocityBody()
         telDict["battery"] = await self.getBatteryPercentage()
         telDict["gimbalAttitude"] = await self.getGimbalPose()
+        telDict["satellites"] = await self.getSatellites()
 
         return telDict
 
@@ -498,7 +498,10 @@ class ParrotDrone():
             return (500.0, 500.0, 0.0)
 
     async def getSatellites(self):
-        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+        try:
+            return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+        except:
+            return 0
 
     async def getHeading(self):
         return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
