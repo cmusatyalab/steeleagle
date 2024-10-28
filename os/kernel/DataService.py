@@ -278,7 +278,6 @@ class DataService(Service):
                 width = self.frame_cache['width']
                 channels = self.frame_cache['channels']
                 logger.debug(f"Encoding frame to jpg {height=} {width=} {channels=}")
-                success, frame = cv2.imencode('.jpg', nparr.reshape(height, width, channels))
                 if not success:
                     logger.error("Error encoding frame to jpg")
                     raise Exception()
@@ -287,7 +286,7 @@ class DataService(Service):
                         f.write(frame.tobytes())
                 logger.info("Sending frame to local compute client")
                 frame_id = self.frame_cache['id']
-                await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
+                await self.local_compute_client.process_frame(nparr, ComputationType.OBJECT_DETECTION)
             else:
                 logger.debug("Frame cache is none, not sending work item to local compute")
 
