@@ -1,5 +1,5 @@
 zmq
-protobuf
+protobuf==3.20.3
 gabriel-protocol
 # gabriel-client can  not use pip install in this because of the dependency of opencv-python is not compatible with the alphine
 websockets>=9.1
