@@ -278,9 +278,6 @@ class DataService(Service):
                 width = self.frame_cache['width']
                 channels = self.frame_cache['channels']
                 frame = nparr.reshape(height, width, channels)
-                if not success:
-                    logger.error("Error encoding frame to jpg")
-                    raise Exception()
                 if frame_id == None:
                     with open("output.jpg", "wb") as f:
                         f.write(frame.tobytes())
