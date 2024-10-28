@@ -26,7 +26,7 @@ class DataService(Service):
         # setting up args
         self.telemetry_cache = {
             "connection": None,
-            "drone_id": "aditya",
+            "drone_name": None,
             "location": {
                 "latitude": None,
                 "longitude": None,
@@ -107,7 +107,7 @@ class DataService(Service):
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
-                # self.telemetry_cache['drone_id'] = telemetry.connection_status.drone_name
+                self.telemetry_cache['drone_name'] = telemetry.drone_name
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
                 self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
                 self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
@@ -181,7 +181,7 @@ class DataService(Service):
 
             logger.debug(f"Frame Producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
-            if self.frame_cache['data'] is not None and self.telemetry_cache['drone_id'] is not None:
+            if self.frame_cache['data'] is not None and self.telemetry_cache['drone_name'] is not None:
                 try:
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)

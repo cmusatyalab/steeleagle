@@ -11,7 +11,7 @@ version: '2.3'
 services:
   gabriel-server:
     # image: cmusatyalab/steeleagle:${TAG}
-    image: gabriel-server-new:${TAG}
+    image: xianglic/gabriel-server-new:${TAG}
     container_name: gabriel-server
     ports:
       - "9099:9099"
@@ -22,7 +22,7 @@ services:
       - cnc-net
 
   telemetry-engine:
-    image: cmusatyalab/steeleagle:${TAG}
+    image: achanana/steeleagle:${TAG}
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
@@ -37,7 +37,7 @@ services:
 
   control-plane:
     # image: cmusatyalab/steeleagle:${TAG}
-    image: xianglic/steeleagle:latest
+    image: achanana/steeleagle:${TAG}
     container_name: control-plane
     restart: unless-stopped
     ports:

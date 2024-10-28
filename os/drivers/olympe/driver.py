@@ -70,6 +70,7 @@ async def telemetry_stream(drone, tel_sock):
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
+            tel_message.drone_name = telDict["name"]
             tel_message.global_position.latitude = telDict["gps"][0]
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
