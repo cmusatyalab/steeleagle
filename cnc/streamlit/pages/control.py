@@ -5,7 +5,7 @@
 import streamlit as st
 import asyncio
 import json
-import random
+from zipfile import ZipFile
 from st_keypressed import st_keypressed
 import os
 from cnc_protocol import cnc_pb2
@@ -129,23 +129,23 @@ async def update(live, avoidance, detection, hsv, status,):
         st.write("Update coroutine canceled.")
 
 def run_flightscript():
-    if st.session_state.script_file is None:
+    if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        bytes_data = st.session_state.script_file.getvalue()
-        fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
-        fd.write(bytes_data)
-        st.session_state.manual_control = False
-        st.session_state.rth_sent = False
-        st.session_state.autonomous = True
+        filename = f"{time.time_ns()}.ms"
+        path = f"{st.secrets.scripts_path}/{filename}"
+        with ZipFile(path, 'w') as z:
+            for file in st.session_state.script_file:
+                z.writestr(file.name, file.read())
+
         req = cnc_pb2.Extras()
-        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
+        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/{filename}"
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
-            f"Instructed {st.session_state.selected_drone} to fly autonomous script",
+            f"Instructed {req.cmd.for_drone_id} to fly autonomous script.",
             icon="\u2601",
         )
 
@@ -254,10 +254,11 @@ with st.sidebar:
     # )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
-        label=" Fly Autonomous Mission",
+        label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["ms"],
-        label_visibility='visible'
+        type=["kml", "dsl"],
+        label_visibility='visible',
+        accept_multiple_files=True
     )
     st.button(
         key="autonomous_button",
