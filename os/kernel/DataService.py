@@ -235,8 +235,8 @@ class DataService(Service):
             extras = cnc_pb2.Extras()
 
             try:
-                if all(value is None for value in self.telemetry_cache.values()):
-                    logger.info('All telemetry_cache values are None')
+                if self.telemetry_cache['drone_id'] is None:
+                    logger.info('Telemetry unavailable')
                 else:
                     # Proceed with normal assignments
                     extras.drone_id = self.telemetry_cache['drone_id']
