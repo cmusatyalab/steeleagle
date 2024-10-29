@@ -48,7 +48,7 @@ class DataService(Service):
         self.gabriel_server = gabriel_server
         self.gabriel_port = gabriel_port
         self.engine_results = {}
-        self.gabriel_client_heartbeats = 0
+        self.drone_registered = False
         self.gabriel_client = ZeroMQClient(
             self.gabriel_server, self.gabriel_port,
             [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
@@ -227,7 +227,6 @@ class DataService(Service):
             await asyncio.sleep(0)
 
             logger.debug(f"tel Producer: starting time {time.time()}")
-            self.gabriel_client_heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
@@ -235,7 +234,7 @@ class DataService(Service):
             extras = cnc_pb2.Extras()
 
             try:
-                if self.telemetry_cache['battery'] is None:
+                if self.telemetry_cache['drone_name'] is None:
                     logger.info('Telemetry unavailable')
                 else:
                     # Proceed with normal assignments
@@ -249,13 +248,15 @@ class DataService(Service):
                     extras.status.bearing = self.telemetry_cache['bearing']
                     extras.status.rssi = 0
 
+                    # Register when we start sending telemetry
+                    if not self.drone_registered:
+                        logger.info("Sending registeration request to backend")
+                        extras.registering = True
+                        self.drone_registered = True
+
                     logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
             except Exception as e:
                 logger.debug(f'Gabriel Client Telemetry Producer: {e}')
-
-            # Register on the first frame
-            if self.gabriel_client_heartbeats == 1:
-                extras.registering = True
 
             logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
