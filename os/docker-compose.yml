@@ -24,6 +24,7 @@ services:
     container_name: kernel-cmd-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - MSN_PORT=${MSN_PORT}
