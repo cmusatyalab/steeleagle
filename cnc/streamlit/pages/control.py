@@ -287,8 +287,6 @@ with st.sidebar:
         disabled=st.session_state.rth_sent,
         on_click=rth,
     )
-    if "armed2" not in st.session_state:
-     st.session_state.armed2 = False
     if st.session_state.manual_control:
         #st.subheader(f":blue[Manual Control Enabled]")
         mode = ":green[Manual (armed)]" if st.session_state.armed else ":red[Manual (disarmed)]"

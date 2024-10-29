@@ -12,6 +12,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
 from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
+from st_keypressed import st_keypressed
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -27,6 +28,18 @@ if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
 if "trail_length" not in st.session_state:
     st.session_state.trail_length = 500
+if "armed" not in st.session_state:
+    st.session_state.armed = False
+if "roll_speed" not in st.session_state:
+    st.session_state.roll_speed = 50
+if "yaw_speed" not in st.session_state:
+    st.session_state.yaw_speed = 45
+if "thrust_speed" not in st.session_state:
+    st.session_state.thrust_speed = 50
+if "pitch_speed" not in st.session_state:
+    st.session_state.pitch_speed = 50
+if "gimbal_speed" not in st.session_state:
+    st.session_state.gimbal_speed = 50
 
 st.set_page_config(
     page_title="Commander",
@@ -129,7 +142,7 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%)</div>',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["altitude"]:.2f}m]</div>',
 
                     )
                     plane = folium.Icon(
@@ -210,6 +223,10 @@ tiles = folium.TileLayer(
 )
 
 st.session_state.trail_length = tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, value=st.session_state.trail_length)
+mode = ":joystick: **:green[Manual (armed)]**" if st.session_state.armed else ":joystick: **:red[Manual (disarmed)]**"
+with tiles_col[4]:
+    st.caption(mode)
+    st.checkbox(key="armed", label="Arm Drone?")
 
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -255,3 +272,46 @@ with col2:
         on_click=rth,
     )
 
+    st.session_state.key_pressed = st_keypressed()
+    if st.session_state.armed and st.session_state.selected_drones is not None:
+        req = cnc_pb2.Extras()
+        req.commander_id = os.uname()[1]
+        req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+        #req.cmd.manual = True
+        if st.session_state.key_pressed == "t":
+            req.cmd.takeoff = True
+            st.info(f"Instructed {req.cmd.for_drone_id} to takeoff.")
+        elif st.session_state.key_pressed == "g":
+            req.cmd.land = True
+            st.info(f"Instructed {req.cmd.for_drone_id} to land.")
+        else:
+            pitch = roll = yaw = thrust = gimbal_pitch = 0
+            if st.session_state.key_pressed == "w":
+                pitch = 1 * st.session_state.pitch_speed
+            elif st.session_state.key_pressed == "s":
+                pitch = -1 * st.session_state.pitch_speed
+            elif st.session_state.key_pressed == "d":
+                roll = 1 * st.session_state.roll_speed
+            elif st.session_state.key_pressed == "a":
+                roll = -1 * st.session_state.roll_speed
+            elif st.session_state.key_pressed == "i":
+                thrust = 1 * st.session_state.thrust_speed
+            elif st.session_state.key_pressed == "k":
+                thrust = -1 * st.session_state.thrust_speed
+            elif st.session_state.key_pressed == "l":
+                yaw = 1 * st.session_state.yaw_speed
+            elif st.session_state.key_pressed == "j":
+                yaw = -1 * st.session_state.yaw_speed
+            elif st.session_state.key_pressed == "r":
+                gimbal_pitch = 1 * st.session_state.gimbal_speed
+            elif st.session_state.key_pressed == "f":
+                gimbal_pitch = -1 * st.session_state.gimbal_speed
+            st.caption(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust})")
+            req.cmd.pcmd.yaw = yaw
+            req.cmd.pcmd.pitch = pitch
+            req.cmd.pcmd.roll = roll
+            req.cmd.pcmd.gaz = thrust
+            req.cmd.pcmd.gimbal_pitch = gimbal_pitch
+        st.session_state.key_pressed = None
+        st.session_state.zmq.send(req.SerializeToString())
+        rep = st.session_state.zmq.recv()
