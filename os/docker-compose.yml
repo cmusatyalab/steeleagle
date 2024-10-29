@@ -1,8 +1,8 @@
 services:
-  steeleagle-os-driver:
+  driver:
     image: achanana/steeleagle-os-driver-olympe-arm:${TAG}
     # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
-    container_name: steeleagle-os-driver
+    container_name: driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
@@ -17,11 +17,11 @@ services:
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-kernel-cmd-svc:
+  kernel-cmd-svc:
     image: achanana/steeleagle-os-kernel:${TAG}
-    container_name: steeleagle-os-kernel-cmd-svc
+    container_name: kernel-cmd-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
@@ -36,11 +36,11 @@ services:
     privileged: true
     entrypoint: [ "python3", "CommandService.py"]
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-kernel-data-svc:
+  kernel-data-svc:
     image: achanana/steeleagle-os-kernel:${TAG}
-    container_name: steeleagle-os-kernel-data-svc
+    container_name: kernel-data-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
@@ -57,12 +57,12 @@ services:
     privileged: true
     entrypoint: [ "python3", "DataService.py"]
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-user:
+  user:
     image: xianglic/steeleagle-os-user-arm:${TAG}
     # image: xianglic/steeleagle-os-user-amd:${TAG}
-    container_name: steeleagle-os-user
+    container_name: user
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
@@ -73,13 +73,13 @@ services:
     privileged: true
     entrypoint: ["python3", "-m", "common.MissionController"]
     networks:
-      - steeleagle-os-net
+      - os-net
     volumes:
       - ./user/project/implementation:/steeleagle_os/user/project/implementation/
 
 networks:
 
-  steeleagle-os-net:
+  os-net:
     ipam:
       driver: default
       config:
