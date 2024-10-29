@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64/v8 alpine:latest
+FROM alpine:latest
 RUN apk add --no-cache python3 py3-pip
 RUN apk add --no-cache py3-opencv
 
