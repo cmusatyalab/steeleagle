@@ -21,7 +21,7 @@ if "center" not in st.session_state:
 if "tracking_selection" not in st.session_state:
     st.session_state.tracking_selection = None
 if "selected_drones" not in st.session_state:
-    st.session_state.selected_drones = None
+    st.session_state.selected_drones = []
 if "script_file" not in st.session_state:
     st.session_state.script_file = None
 if "inactivity_time" not in st.session_state:
@@ -193,25 +193,25 @@ def draw_map():
 
 menu()
 
-map_options = ("Google Sat", "Google Hybrid")
+map_options = ["Google Sat", "Google Hybrid"]
 tiles_col = st.columns(5)
-st.session_state.map_server = tiles_col[0].selectbox(
-   # key="map_server",
+tiles_col[0].selectbox(
+    key="map_server",
     label=":world_map: **:blue[Tile Server]**",
     options=map_options,
-    index=map_options.index(st.session_state.map_server)
+    index=0
 )
 
-st.session_state.tracking_selection = tiles_col[1].selectbox(
-    key="drone_track",
+tiles_col[1].selectbox(
+    key="tracking_selection",
     label=":dart: **:green[Track Drone]**",
     options=get_drones(),
     on_change=change_center(),
-    index=get_drones().index(st.session_state.tracking_selection) if st.session_state.tracking_selection else None,
     placeholder="Select a drone to track...",
 )
 
-st.session_state.inactivity_time = tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, value=st.session_state.inactivity_time, max_value=600000)
+
+tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, key="inactivity_time", max_value=600000)
 
 if st.session_state.map_server == "Google Sat":
     tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
@@ -222,7 +222,7 @@ tiles = folium.TileLayer(
     name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
 )
 
-st.session_state.trail_length = tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, value=st.session_state.trail_length)
+tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
 mode = ":joystick: **:green[Manual (armed)]**" if st.session_state.armed else ":joystick: **:red[Manual (disarmed)]**"
 with tiles_col[4]:
     st.caption(mode)
@@ -233,12 +233,16 @@ with col1:
     draw_map()
 
 with col2:
-    st.session_state.selected_drones = st.multiselect(
-        label=":helicopter: **:orange[Swarm Control]** :helicopter:",
-        options=get_drones(),
-        placeholder="Select one or more drones...",
-        default=st.session_state.selected_drones
-    )
+    drone_list = get_drones()
+    if len(drone_list) > 0:
+        st.multiselect(
+            label=":helicopter: **:orange[Swarm Control]** :helicopter:",
+            options=drone_list,
+            default=drone_list,
+            key="selected_drones"
+        )
+    else:
+        st.caption("No active drones.")
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
