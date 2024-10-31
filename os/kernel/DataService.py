@@ -102,7 +102,7 @@ class DataService(Service):
         logger.info('Telemetry handler started')
         while True:
             try:
-                logger.debug(f"telemetry_handler: started time {time.time()}")
+                logger.debug(f"Telemetry handler: started time {time.time()}")
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
@@ -114,16 +114,15 @@ class DataService(Service):
                 self.telemetry_cache['battery'] = telemetry.battery
                 self.telemetry_cache['magnetometer'] = telemetry.mag
                 self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
-                logger.debug(f'Telemetry Data: {self.telemetry_cache}')
-                logger.debug(f"telemetry_handler: finished time {time.time()}")
+                logger.debug(f"Telemetry handler: finished time {time.time()}")
             except Exception as e:
-                logger.error(f"Telemetry Handler: {e}")
+                logger.error(f"Telemetry handler: {e}")
 
     async def camera_handler(self):
         logger.info('Camera handler started')
         while True:
             try:
-                logger.debug(f"Camera Handler: started time {time.time()}")
+                logger.debug(f"Camera handler: started time {time.time()}")
                 msg = await self.cam_sock.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
@@ -132,10 +131,10 @@ class DataService(Service):
                 self.frame_cache['width'] = frame.width
                 self.frame_cache['channels'] = frame.channels
                 self.frame_cache['id'] = frame.id
-                logger.debug(f'Camera Frame ID: {self.frame_cache["id"]}')
-                logger.debug(f"Camera Handler: finished time {time.time()}")
+                logger.debug(f'Camera handler: received frame frame_id={self.frame_cache["id"]}')
+                logger.debug(f"Camera handler: finished time {time.time()}")
             except Exception as e:
-                logger.error(f"Camera Handler: {e}")
+                logger.error(f"Camera handler: {e}")
 
     async def compute_handler(self):
         logger.info('Compute handler started')
@@ -270,7 +269,7 @@ class DataService(Service):
         logger.info('Local compute task started')
         frame_id = None
         while True:
-            await asyncio.sleep(0.033)
+            await asyncio.sleep(0)
             if self.frame_cache['data'] is not None and (frame_id is None or self.frame_cache['id'] > frame_id):
                 frame_bytes = self.frame_cache['data']
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)

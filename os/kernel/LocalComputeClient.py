@@ -6,7 +6,7 @@ import numpy as np
 import os
 import onboard_compute_pb2
 import sys
-from util.utils import setup_socket, SocketOperation
+from util.utils import setup_socket, SocketOperation, lazy_pirate_request
 import zmq
 import zmq.asyncio
 
@@ -20,9 +20,13 @@ class LocalComputeClient:
     def __init__(self, frame_width, frame_height):
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
+        host = os.environ.get('LCE_HOST')
+        port = os.environ.get('LCE_PORT')
+
         setup_socket(self.socket, SocketOperation.CONNECT, 'LCE_PORT',
                      'Created socket to connect to local compute engine',
-                     os.environ.get('LCE_HOST'))
+                     host)
+        self.server_endpoint = f'tcp://{host}:{port}'
         self.frame_width = frame_width
         self.frame_height = frame_height
 
@@ -38,10 +42,18 @@ class LocalComputeClient:
         logger.info("Sending work item to local compute engine")
         await self.socket.send(request.SerializeToString())
 
-        result = await self.socket.recv()
+        reply = None
+        (self.socket, reply) = await lazy_pirate_request(
+            self.socket, request.SerializeToString(), self.context,
+            self.server_endpoint)
+
+        if reply == None:
+            logger.error(f"Local compute engine did not respond to request")
+            return
+
         logger.info(f"Received response from local compute engine")
         detections = onboard_compute_pb2.ComputeResult()
-        detections.ParseFromString(result)
+        detections.ParseFromString(reply)
         print(detections)
 
 async def main():

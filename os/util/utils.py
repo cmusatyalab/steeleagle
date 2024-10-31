@@ -1,6 +1,8 @@
+import asyncio
 from enum import Enum
-import os
 import logging
+import os
+import zmq
 
 logger = logging.getLogger(__name__)
 
@@ -30,3 +32,35 @@ def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
         quit()
 
     logger.info(logger_message)
+
+async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
+                              timeout=2500):
+    if retries <= 0:
+        raise ValueError(f"Retries must be positive; {retries=}")
+    # Send payload
+    socket.send(payload)
+
+    retries_left = retries
+    while retries_left == None or retries_left > 0:
+        # Check if reply received within timeout
+        if (socket.poll(timeout) & zmq.POLLIN) != 0:
+            reply = await socket.recv()
+            return (socket, reply)
+        if retries_left != None:
+            retries_left -= 1
+        logger.warning(f"Request timeout for {server_endpoint=}")
+
+        # Close the socket and create a new one
+        socket.setsockopt(zmq.LINGER, 0)
+        socket.close()
+
+        if retries_left == 0:
+            logger.info(f"Server {server_endpoint} offline, abandoning")
+            return (socket, None)
+
+        logger.info(f"Reconnecting to {server_endpoint=}...")
+        socket = ctx.socket(zmq.REQ)
+        socket.connect(server_endpoint)
+        logger.info(f"Resending payload to {server_endpoint=}...")
+        socket.send(payload)
+

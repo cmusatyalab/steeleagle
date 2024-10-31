@@ -13,9 +13,16 @@ from datetime import datetime
 import signal
 
 # Configure logger
+logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+                    format=logging_format)
 logger = logging.getLogger(__name__)
+
+telemetry_logger = logging.getLogger('telemetry')
+telemetry_handler = logging.FileHandler('telemetry.log')
+formatter = logging.Formatter(logging_format)
+telemetry_handler.setFormatter(formatter)
+telemetry_logger.addHandler(telemetry_handler)
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
@@ -41,7 +48,6 @@ def handle_signal(signum, frame):
 signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
 
-
 async def camera_stream(drone, cam_sock):
     logger.info('Starting camera stream')
     frame_id = 0
@@ -56,13 +62,13 @@ async def camera_stream(drone, cam_sock):
             cam_message.id = frame_id
             frame_id = frame_id + 1
             cam_sock.send(cam_message.SerializeToString())
-            logger.debug(f'Camera stream: ID: frame_id {frame_id}')
+            logger.debug(f'Camera stream: sent frame {frame_id=}')
         except Exception as e:
             if error_count % error_frequency == 0:
                 logger.error(f'Failed to get video frame, error: {e}')
             error_count += 1
         await asyncio.sleep(0.033)
-    logger.INFO("Camera stream ended, disconnected from drone")
+    logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
     logger.info('Starting telemetry stream')
@@ -88,7 +94,7 @@ async def telemetry_stream(drone, tel_sock):
             tel_message.velocity.right_vel = telDict["imu"]["right"]
             tel_message.velocity.up_vel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
-            logger.debug(f"Telemetry: {tel_message}")
+            telemetry_logger.debug(f"Telemetry: {tel_message}")
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
@@ -211,7 +217,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.INFO("Disconnected from drone {name}")
+        logger.info("Disconnected from drone {name}")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
