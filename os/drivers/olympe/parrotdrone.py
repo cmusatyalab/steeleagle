@@ -573,7 +573,8 @@ class FFMPEGStreamingThread(threading.Thread):
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, os.environ.get("FFMPEG_THREADS")))
+        num_threads = int(os.environ.get("FFMPEG_THREADS"))
+        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, num_threads))
         self.isRunning = True
 
     def run(self):
