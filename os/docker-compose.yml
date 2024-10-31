@@ -13,6 +13,7 @@ services:
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
       - ERROR_FREQUENCY=100
+      - FFMPEG_THREADS=${FFMPEG_THREADS}
       - LOG_LEVEL=${LOG_LEVEL}
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
