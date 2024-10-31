@@ -209,7 +209,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.INFO("Disconnected from drone {name})
+        logger.INFO("Disconnected from drone {name}")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
