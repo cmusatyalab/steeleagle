@@ -657,6 +657,7 @@ class PDRAWStreamingThread(threading.Thread):
 
             :type yuv_frame: olympe.VideoFrame
         """
+        logger.debug("Received YUV frame from drone")
         yuv_frame.ref()
         self.frame_queue.put_nowait(yuv_frame)
 
