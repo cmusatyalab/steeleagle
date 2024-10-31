@@ -31,8 +31,8 @@ WORKDIR /steeleagle_os/driver_olympe
 COPY ./os/drivers/olympe/requirements.txt /steeleagle_os/driver_olympe/requirements.txt
 
 # Install required Python packages
-COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl  /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
-RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410011647-py3-none-linux_aarch64.whl
+COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl
+RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl
 RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
 RUN pip install --upgrade  protobuf
 
