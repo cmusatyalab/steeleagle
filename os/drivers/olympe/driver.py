@@ -181,7 +181,8 @@ async def main(drone, cam_sock, tel_sock, args):
             continue
         name = await drone.getName()
         logger.info(f'Established connection to drone {name}, ready to receive commands!')
-        await drone.startStreaming()
+        save_frames = os.environ.get("SAVE_FRAMES") == "true"
+        await drone.startStreaming(save_frames)
 
         asyncio.create_task(camera_stream(drone, cam_sock))
         asyncio.create_task(telemetry_stream(drone, tel_sock))

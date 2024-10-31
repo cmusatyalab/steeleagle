@@ -332,9 +332,9 @@ class ParrotDrone():
 
     ''' Streaming methods '''
 
-    async def startStreaming(self):
+    async def startStreaming(self, save_frames = False):
         if not self.ffmpeg:
-            self.streamingThread = PDRAWStreamingThread(self.drone, self.ip)
+            self.streamingThread = PDRAWStreamingThread(self.drone, self.ip, save_frames)
         else:
             self.streamingThread = FFMPEGStreamingThread(self.drone, self.ip)
         self.streamingThread.start()
@@ -648,6 +648,13 @@ class PDRAWStreamingThread(threading.Thread):
         }[yuv_frame.format()]
 
         self.currentFrame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+        if self.save_frames:
+            directory = "saved_images"
+            timestamp = int(time.time() * 1000)
+            filename = f"{timestamp}.jpg"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            cv2.imwrite(os.path.join(directory, filename), self.currentFrame)
 
     ''' Callbacks '''
 
