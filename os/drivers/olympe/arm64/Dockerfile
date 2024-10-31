@@ -36,6 +36,8 @@ RUN pip install /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py
 RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
 RUN pip install --upgrade  protobuf
 
+RUN timedatectl set-timezone America/New_York
+
 # Copy necessary files into the container
 COPY ./os/drivers/olympe /steeleagle_os/driver_olympe
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
