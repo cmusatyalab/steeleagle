@@ -6,6 +6,7 @@ import logging
 import asyncio
 import threading
 import math
+import os
 import time
 
 import olympe
@@ -572,7 +573,7 @@ class FFMPEGStreamingThread(threading.Thread):
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, os.environ.get("FFMPEG_THREADS")))
         self.isRunning = True
 
     def run(self):
