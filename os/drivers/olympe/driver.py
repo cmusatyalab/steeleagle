@@ -62,6 +62,7 @@ async def camera_stream(drone, cam_sock):
                 logger.error(f'Failed to get video frame, error: {e}')
             error_count += 1
         await asyncio.sleep(0.033)
+    logger.INFO("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
     logger.info('Starting telemetry stream')
@@ -95,6 +96,7 @@ async def telemetry_stream(drone, tel_sock):
                 logger.error(f'Failed to get telemetry, error: {e}')
             error_count += 1
         await asyncio.sleep(0)
+    logger.INFO("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
@@ -206,6 +208,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
+        logger.INFO("Disconnected from drone {name})
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
