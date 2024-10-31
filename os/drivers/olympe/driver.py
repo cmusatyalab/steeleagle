@@ -174,10 +174,11 @@ async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
             await drone.connect()
-            logger.info('Established connection to drone, ready to receive commands!')
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
             continue
+        name = await drone.getName()
+        logger.info(f'Established connection to drone {name}, ready to receive commands!')
         await drone.startStreaming()
 
         asyncio.create_task(camera_stream(drone, cam_sock))

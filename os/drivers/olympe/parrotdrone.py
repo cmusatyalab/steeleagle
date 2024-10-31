@@ -28,9 +28,7 @@ import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
 
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 import logness
 logness.update_config({
@@ -632,6 +630,7 @@ class PDRAWStreamingThread(threading.Thread):
             frame = self.currentFrame.copy()
             return frame
         except Exception as e:
+            logger.error(f"Sending blank frame, encountered exception: {e}")
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8)
 
