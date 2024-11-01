@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import os
 import zmq
+import zmq.asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,8 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
     retries_left = retries
     while retries_left == None or retries_left > 0:
         # Check if reply received within timeout
-        if (socket.poll(timeout) & zmq.POLLIN) != 0:
+        poll_result = await socket.poll(timeout)
+        if (poll_result & zmq.POLLIN) != 0:
             reply = await socket.recv()
             return (socket, reply)
         if retries_left != None:

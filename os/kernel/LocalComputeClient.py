@@ -40,7 +40,6 @@ class LocalComputeClient:
             raise Exception("Computation type not supported")
 
         logger.info("Sending work item to local compute engine")
-        await self.socket.send(request.SerializeToString())
 
         reply = None
         (self.socket, reply) = await lazy_pirate_request(
