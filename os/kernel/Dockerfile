@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM --platform=$BUILDPLATFORM alpine:latest
 RUN apk add --no-cache python3 py3-pip
 RUN apk add --no-cache py3-opencv
 

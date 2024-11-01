@@ -22,6 +22,7 @@ telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
 telemetry_handler.setFormatter(formatter)
+telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
