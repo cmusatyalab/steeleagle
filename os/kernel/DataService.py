@@ -280,7 +280,10 @@ class DataService(Service):
                 frame = nparr.reshape(height, width, channels)
                 logger.info("Sending frame to local compute client")
                 frame_id = self.frame_cache['id']
-                await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
+                try:
+                    await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
+                except Exception as e:
+                    logger.error(f"Error processing local compute request: {e}")
             else:
                 logger.debug("Frame cache is none, not sending work item to local compute")
 

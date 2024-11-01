@@ -56,13 +56,14 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
         socket.setsockopt(zmq.LINGER, 0)
         socket.close()
 
+        logger.info(f"Reconnecting to {server_endpoint=}...")
+        socket = ctx.socket(zmq.REQ)
+        socket.connect(server_endpoint)
+
         if retries_left == 0:
             logger.info(f"Server {server_endpoint} offline, abandoning")
             return (socket, None)
 
-        logger.info(f"Reconnecting to {server_endpoint=}...")
-        socket = ctx.socket(zmq.REQ)
-        socket.connect(server_endpoint)
         logger.info(f"Resending payload to {server_endpoint=}...")
         socket.send(payload)
 
