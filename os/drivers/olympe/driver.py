@@ -61,9 +61,9 @@ async def camera_stream(drone, cam_sock):
             cam_message.width = 1280
             cam_message.channels = 3
             cam_message.id = frame_id
-            frame_id = frame_id + 1
             cam_sock.send(cam_message.SerializeToString())
             logger.debug(f'Camera stream: sent frame {frame_id=}')
+            frame_id = frame_id + 1
         except Exception as e:
             if error_count % error_frequency == 0:
                 logger.error(f'Failed to get video frame, error: {e}')

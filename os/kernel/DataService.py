@@ -9,6 +9,7 @@ import sys
 import logging
 import json
 from util.utils import setup_socket, SocketOperation
+from util.timer import Timer
 from cnc_protocol import cnc_pb2
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
@@ -105,7 +106,8 @@ class DataService(Service):
                 logger.debug(f"Telemetry handler: started time {time.time()}")
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
-                telemetry.ParseFromString(msg)
+                with Timer(logger, "Parsing telemetry from driver"):
+                    telemetry.ParseFromString(msg)
                 # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
                 self.telemetry_cache['drone_name'] = telemetry.drone_name
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
@@ -124,7 +126,8 @@ class DataService(Service):
             try:
                 logger.debug(f"Camera handler: started time {time.time()}")
                 msg = await self.cam_sock.recv()
-                frame = cnc_pb2.Frame()
+                with Timer(logger, "Parsing frame from driver"):
+                    frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
                 self.frame_cache['data'] = frame.data
                 self.frame_cache['height'] = frame.height
@@ -178,16 +181,19 @@ class DataService(Service):
         async def producer():
             await asyncio.sleep(0)
 
-            logger.debug(f"Frame Producer: starting converting {time.time()}")
+            logger.debug(f"Frame producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None and self.telemetry_cache['drone_name'] is not None:
                 try:
                     frame_bytes = self.frame_cache['data']
-                    nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
-                    frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+                    with Timer(logger, "Creating np array from buffer"):
+                        nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+                    with Timer(logger, "Encoding frame to jpg"):
+                        frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
 
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-                    input_frame.payloads.append(frame.tobytes())
+                    with Timer(logger, "Converting frame to bytes"):
+                        input_frame.payloads.append(frame.tobytes())
 
                     # produce extras
                     extras = cnc_pb2.Extras()
@@ -210,13 +216,13 @@ class DataService(Service):
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.error(f'frame_producer: Unable to produce a frame: {e}')
+                    logger.error(f'Frame producer: unable to produce a frame: {e}')
             else:
-                logger.debug('Frame producer: Frame is None')
+                logger.debug('Frame producer: frame is None')
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
 
-            logger.debug(f"Frame Producer: finished time {time.time()}")
+            logger.debug(f"Frame producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -225,7 +231,7 @@ class DataService(Service):
         async def producer():
             await asyncio.sleep(0)
 
-            logger.debug(f"tel Producer: starting time {time.time()}")
+            logger.debug(f"tel producer: starting time {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
@@ -253,14 +259,14 @@ class DataService(Service):
                         extras.registering = True
                         self.drone_registered = True
 
-                    logger.debug(f'Gabriel Client Telemetry Producer: {extras}')
+                    logger.debug(f'Gabriel client telemetry producer: {extras}')
             except Exception as e:
-                logger.debug(f'Gabriel Client Telemetry Producer: {e}')
+                logger.debug(f'Gabriel client telemetry producer: {e}')
 
-            logger.debug('Gabriel Client Telemetry Producer: sending Gabriel frame!')
+            logger.debug('Gabriel client telemetry producer: sending Gabriel frame!')
             input_frame.extras.Pack(extras)
 
-            logger.debug(f"tel Producer: finished time {time.time()}")
+            logger.debug(f"tel producer: finished time {time.time()}")
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
@@ -296,10 +302,10 @@ async def async_main():
     logger.info(f'Main: Gabriel port: {gabriel_port}')
 
     # init DataService
-    rc_service = DataService(gabriel_server, gabriel_port)
+    data_service = DataService(gabriel_server, gabriel_port)
 
     # run DataService
-    await rc_service.start()
+    await data_service.start()
 
 if __name__ == "__main__":
     asyncio.run(async_main())
