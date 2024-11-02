@@ -44,6 +44,7 @@ class DataService(Service):
             "channels": None,
             "id": None
         }
+        self.frame_updated = asyncio.Event()
         self.result_cache = {}
         # Gabriel
         self.gabriel_server = gabriel_server
@@ -125,17 +126,22 @@ class DataService(Service):
         while True:
             try:
                 logger.debug(f"Camera handler: started time {time.time()}")
+
                 msg = await self.cam_sock.recv()
                 with Timer(logger, "Parsing frame from driver"):
                     frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
+
                 self.frame_cache['data'] = frame.data
                 self.frame_cache['height'] = frame.height
                 self.frame_cache['width'] = frame.width
                 self.frame_cache['channels'] = frame.channels
                 self.frame_cache['id'] = frame.id
+
                 logger.debug(f'Camera handler: received frame frame_id={self.frame_cache["id"]}')
                 logger.debug(f"Camera handler: finished time {time.time()}")
+
+                self.frame_updated.set()
             except Exception as e:
                 logger.error(f"Camera handler: {e}")
 
@@ -146,6 +152,7 @@ class DataService(Service):
                 msg = await self.cpt_sock.recv()
                 req = cnc_pb2.ComputeRequest()
                 req.ParseFromString(msg)
+
                 if req.engineKey in self.result_cache.keys():
                     resp = ComputeResult()
                     resp.result = self.result_cache[req.engineKey]
@@ -185,6 +192,10 @@ class DataService(Service):
             input_frame = gabriel_pb2.InputFrame()
             if self.frame_cache['data'] is not None and self.telemetry_cache['drone_name'] is not None:
                 try:
+                    logger.debug("Waiting for new frame from driver")
+                    await self.frame_updated.wait()
+                    logger.debug("New frame available from driver")
+
                     frame_bytes = self.frame_cache['data']
                     with Timer(logger, "Creating np array from buffer"):
                         nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
@@ -223,6 +234,7 @@ class DataService(Service):
                 input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
 
             logger.debug(f"Frame producer: finished time {time.time()}")
+            self.frame_updated.clear()
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
