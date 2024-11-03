@@ -37,6 +37,7 @@ class DataService(Service):
             "magnetometer": None,
             "bearing": None
         }
+        self.telemetry_updated = asyncio.Event()
         self.frame_cache = {
             "data": None,
             "height": None,
@@ -109,6 +110,7 @@ class DataService(Service):
                 telemetry = cnc_pb2.Telemetry()
                 with Timer(logger, "Parsing telemetry from driver"):
                     telemetry.ParseFromString(msg)
+
                 # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
                 self.telemetry_cache['drone_name'] = telemetry.drone_name
                 self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
@@ -117,7 +119,9 @@ class DataService(Service):
                 self.telemetry_cache['battery'] = telemetry.battery
                 self.telemetry_cache['magnetometer'] = telemetry.mag
                 self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
+
                 logger.debug(f"Telemetry handler: finished time {time.time()}")
+                self.telemetry_updated.set()
             except Exception as e:
                 logger.error(f"Telemetry handler: {e}")
 
@@ -254,6 +258,10 @@ class DataService(Service):
                 if self.telemetry_cache['drone_name'] is None:
                     logger.info('Telemetry unavailable')
                 else:
+                    logger.debug("Waiting for new telemetry from driver")
+                    await self.telemetry_updated.wait()
+                    logger.debug("New telemetry available from driver")
+
                     # Proceed with normal assignments
                     extras.drone_id = self.telemetry_cache['drone_name']
                     extras.location.latitude = self.telemetry_cache['location']['latitude']
@@ -279,6 +287,8 @@ class DataService(Service):
             input_frame.extras.Pack(extras)
 
             logger.debug(f"tel producer: finished time {time.time()}")
+
+            self.telemetry_updated.clear()
             return input_frame
 
         return ProducerWrapper(producer=producer, source_name='telemetry')
