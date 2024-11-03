@@ -24,6 +24,7 @@ formatter = logging.Formatter(logging_format)
 telemetry_handler.setFormatter(formatter)
 telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
+telemetry_logger.propagate = False
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
@@ -102,7 +103,7 @@ async def telemetry_stream(drone, tel_sock):
             if error_count % error_frequency == 0:
                 logger.error(f'Failed to get telemetry, error: {e}')
             error_count += 1
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.01)
     logger.info("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
