@@ -103,7 +103,7 @@ async def telemetry_stream(drone, tel_sock):
                 logger.error(f'Failed to get telemetry, error: {e}')
             error_count += 1
         await asyncio.sleep(0)
-    logger.INFO("Telemetry stream ended, disconnected from drone")
+    logger.info("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
