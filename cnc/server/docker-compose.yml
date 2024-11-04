@@ -45,7 +45,7 @@ services:
       - "6001:6001"
     privileged: true
     # arm
-    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}", "-s", "162.172.22.130"]
+    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}", "-s", "*"]
     #entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
     networks:
       - cnc-net

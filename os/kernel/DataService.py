@@ -108,8 +108,7 @@ class DataService(Service):
                 logger.debug(f"Telemetry handler: started time {time.time()}")
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
-                with Timer(logger, "Parsing telemetry from driver"):
-                    telemetry.ParseFromString(msg)
+                telemetry.ParseFromString(msg)
 
                 # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
                 self.telemetry_cache['drone_name'] = telemetry.drone_name
@@ -132,8 +131,7 @@ class DataService(Service):
                 logger.debug(f"Camera handler: started time {time.time()}")
 
                 msg = await self.cam_sock.recv()
-                with Timer(logger, "Parsing frame from driver"):
-                    frame = cnc_pb2.Frame()
+                frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
 
                 self.frame_cache['data'] = frame.data
@@ -201,14 +199,12 @@ class DataService(Service):
                     logger.debug("New frame available from driver")
 
                     frame_bytes = self.frame_cache['data']
-                    with Timer(logger, "Creating np array from buffer"):
-                        nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+                    nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                     with Timer(logger, "Encoding frame to jpg"):
                         frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
 
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-                    with Timer(logger, "Converting frame to bytes"):
-                        input_frame.payloads.append(frame.tobytes())
+                    input_frame.payloads.append(frame.tobytes())
 
                     # produce extras
                     extras = cnc_pb2.Extras()
@@ -312,8 +308,6 @@ class DataService(Service):
                     await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
                 except Exception as e:
                     logger.error(f"Error processing local compute request: {e}")
-            else:
-                logger.debug("Frame cache is none, not sending work item to local compute")
 
 ######################################################## MAIN ##############################################################
 async def async_main():
