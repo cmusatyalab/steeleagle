@@ -202,7 +202,7 @@ class DataService(Service):
                 try:
                     logger.debug("Waiting for new frame from driver")
                     await self.frame_updated.wait()
-                    logger.debug("New frame available from driver")
+                    logger.debug(f"New frame frame_id={self.frame_cache['id']} available from driver")
 
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
