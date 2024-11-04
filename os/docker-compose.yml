@@ -12,9 +12,9 @@ services:
       - CAM_PORT=${CAM_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
-      - ERROR_FREQUENCY=100
       - FFMPEG_THREADS=${FFMPEG_THREADS}
       - SAVE_FRAMES=${SAVE_FRAMES}
+      - LOG_TO_FILE=${LOG_TO_FILE}
       - LOG_LEVEL=${LOG_LEVEL}
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
@@ -52,6 +52,7 @@ services:
       - CAM_PORT=${CAM_PORT}
       - LCE_PORT=${LCE_PORT}
       - LCE_HOST=${LCE_HOST}
+      - LOG_TO_FILE=${LOG_TO_FILE}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"

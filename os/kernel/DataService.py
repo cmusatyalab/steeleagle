@@ -16,9 +16,15 @@ from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from kernel.Service import Service
 from LocalComputeClient import LocalComputeClient, ComputationType
 
+logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+                    format=logging_format)
 logger = logging.getLogger(__name__)
+
+if os.environ.get("LOG_TO_FILE") == "true":
+    file_handler = logging.FileHandler('data_service.log')
+    file_handler.setFormatter(logging.Formatter(logging_format))
+    logger.addHandler(file_handler)
 
 class DataService(Service):
     def __init__(self, gabriel_server, gabriel_port):

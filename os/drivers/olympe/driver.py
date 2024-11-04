@@ -18,6 +18,11 @@ logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format=logging_format)
 logger = logging.getLogger(__name__)
 
+if os.environ.get("LOG_TO_FILE") == "true":
+    file_handler = logging.FileHandler('driver.log')
+    file_handler.setFormatter(logging.Formatter(logging_format))
+    logger.addHandler(file_handler)
+
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
@@ -40,8 +45,6 @@ setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry s
 setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
 setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
-error_frequency = int(os.environ.get('ERROR_FREQUENCY'))
-
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
     drone.drone.disconnect()
@@ -53,7 +56,6 @@ signal.signal(signal.SIGTERM, handle_signal)
 async def camera_stream(drone, cam_sock):
     logger.info('Starting camera stream')
     frame_id = 0
-    error_count = 0
     while drone.isConnected():
         try:
             cam_message = cnc_protocol.Frame()
@@ -66,15 +68,12 @@ async def camera_stream(drone, cam_sock):
             logger.debug(f'Camera stream: sent frame {frame_id=}')
             frame_id = frame_id + 1
         except Exception as e:
-            if error_count % error_frequency == 0:
-                logger.error(f'Failed to get video frame, error: {e}')
-            error_count += 1
+            logger.error(f'Failed to get video frame, error: {e}')
         await asyncio.sleep(0.033)
     logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
     logger.info('Starting telemetry stream')
-    error_count = 0
     while drone.isConnected():
         try:
             tel_message = cnc_protocol.Telemetry()
@@ -100,9 +99,7 @@ async def telemetry_stream(drone, tel_sock):
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
-            if error_count % error_frequency == 0:
-                logger.error(f'Failed to get telemetry, error: {e}')
-            error_count += 1
+            logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0.01)
     logger.info("Telemetry stream ended, disconnected from drone")
 
