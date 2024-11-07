@@ -36,7 +36,7 @@ async def listen_cmdrs(args, redis):
     kernel_sock = async_ctx.socket(zmq.DEALER)
     kernel_sock_identity = b'cmdr'
     kernel_sock.setsockopt(zmq.IDENTITY, kernel_sock_identity)
-    kernel_sock.connect(f'tcp://{args.droneip}:{args.droneport}')
+    kernel_sock.bind(f'tcp://*:{args.droneport}')
 
     try:
         while True:

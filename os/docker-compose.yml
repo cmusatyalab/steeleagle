@@ -1,31 +1,36 @@
 services:
-  steeleagle-os-driver:
-    # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
-    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
-    container_name: steeleagle-os-driver
+  driver:
+    image: achanana/steeleagle-os-driver-olympe-arm:${TAG}
+    # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    container_name: driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
       - STEELEAGLE_DRIVER_DRONE_ARGS=${STEELEAGLE_DRIVER_DRONE_ARGS}
+      - DATA_ENDPOINT=${DATA_ENDPOINT}
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
-      - RC_ENDPOINT=${RC_ENDPOINT}
+      - FFMPEG_THREADS=${FFMPEG_THREADS}
+      - SAVE_FRAMES=${SAVE_FRAMES}
+      - LOG_TO_FILE=${LOG_TO_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-kernel-cmd:
-    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
-    image: xianglic/steeleagle-os-kernel-amd:${TAG}
-    container_name: steeleagle-os-kernel-cmd
+  kernel-cmd-svc:
+    image: achanana/steeleagle-os-kernel:${TAG}
+    container_name: kernel-cmd-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - CMD_BACK_PORT=${CMD_BACK_PORT}
       - MSN_PORT=${MSN_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${CMD_FRONT_PORT}:${CMD_FRONT_PORT}"
       - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
@@ -34,47 +39,51 @@ services:
     privileged: true
     entrypoint: [ "python3", "CommandService.py"]
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-kernel-rc:
-    # image: xianglic/steeleagle-os-kernel-arm:${TAG}
-    image: xianglic/steeleagle-os-kernel-amd:${TAG}
-    container_name: steeleagle-os-kernel-rc
+  kernel-data-svc:
+    image: achanana/steeleagle-os-kernel:${TAG}
+    container_name: kernel-data-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
       - STEELEAGLE_GABRIEL_PORT=${STEELEAGLE_GABRIEL_PORT}
       - TEL_PORT=${TEL_PORT}
       - CAM_PORT=${CAM_PORT}
+      - LCE_PORT=${LCE_PORT}
+      - LCE_HOST=${LCE_HOST}
+      - LOG_TO_FILE=${LOG_TO_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"
       - "${CAM_PORT}:${CAM_PORT}"
     restart: unless-stopped
     privileged: true
-    entrypoint: [ "python3", "RemoteComputeService.py"]
+    entrypoint: [ "python3", "DataService.py"]
     networks:
-      - steeleagle-os-net
+      - os-net
 
-  steeleagle-os-user:
-    # image: xianglic/steeleagle-os-user-arm:${TAG}
-    image: xianglic/steeleagle-os-user-amd:${TAG}
-    container_name: steeleagle-os-user
+  user:
+    image: xianglic/steeleagle-os-user-arm:${TAG}
+    # image: xianglic/steeleagle-os-user-amd:${TAG}
+    container_name: user
     environment:
       - PYTHONPATH=${PYTHONPATH}
       - CMD_FRONT_PORT=${CMD_FRONT_PORT}
       - MSN_PORT=${MSN_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
+      - LOG_LEVEL=${LOG_LEVEL}
     restart: unless-stopped
     privileged: true
     entrypoint: ["python3", "-m", "common.MissionController"]
     networks:
-      - steeleagle-os-net
+      - os-net
     volumes:
       - ./user/project/implementation:/steeleagle_os/user/project/implementation/
 
 networks:
 
-  steeleagle-os-net:
+  os-net:
     ipam:
       driver: default
       config:

@@ -6,6 +6,7 @@ import logging
 import asyncio
 import threading
 import math
+import os
 import time
 
 import olympe
@@ -27,9 +28,7 @@ import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
 
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 import logness
 logness.update_config({
@@ -70,7 +69,7 @@ class ParrotDrone():
         ATTITUDE = 2
         VELOCITY = 3
         GUIDED = 4
-    
+
     def __init__(self, **kwargs):
         # Handle special arguments
         self.ip = '192.168.42.1'
@@ -119,9 +118,9 @@ class ParrotDrone():
                 break
             else:
                 await asyncio.sleep(1)
-        
+
         logger.info(f"Hovering function finished at: {time.time()}")
-    
+
     ''' Background PID tasks '''
 
     async def _attitudePID(self):
@@ -135,7 +134,7 @@ class ParrotDrone():
 
             tiltMax = self.drone.get_state(MaxTiltChanged)["max"]
             tiltMin = self.drone.get_state(MaxTiltChanged)["min"]
-            
+
             def clamp(val, mini, maxi):
                 return max(mini, min(val, maxi))
 
@@ -150,7 +149,7 @@ class ParrotDrone():
                     D = pidDict["Kd"] * (e - ep) / (ts - tp)
                 else:
                     D = 0
-                
+
                 return P, I, D
 
             while self.flightmode == ParrotDrone.FlightMode.ATTITUDE:
@@ -180,7 +179,7 @@ class ParrotDrone():
                 P, I, D = updatePID(error["pitch"], ep["pitch"], tp, ts, pitch_PID)
                 pitch_PID["PrevI"] += I
                 pitch = P + I + D
-                
+
                 P, I, D = updatePID(error["roll"], ep["roll"], tp, ts, roll_PID)
                 roll_PID["PrevI"] += I
                 roll = P + I + D
@@ -188,25 +187,25 @@ class ParrotDrone():
                 P, I, D = updatePID(error["yaw"], ep["yaw"], tp, ts, yaw_PID)
                 yaw_PID["PrevI"] += I
                 yaw = P + I + D
-                
+
                 prevPitch = 0
                 prevRoll = 0
                 if prevVal is not None:
                     prevPitch = prevVal["pitch"]
                     prevRoll = prevVal["roll"]
-                
-                pitch = int(clamp(pitch + prevPitch, -100, 100)) 
-                roll = int(clamp(roll + prevRoll, -100, 100)) 
+
+                pitch = int(clamp(pitch + prevPitch, -100, 100))
+                roll = int(clamp(roll + prevRoll, -100, 100))
                 thrust = int(thrustSP * 100)
-                yaw = int(clamp(yaw, -100, 100)) 
-                
+                yaw = int(clamp(yaw, -100, 100))
+
                 self.drone(PCMD(1, roll, pitch, yaw, thrust, timestampAndSeqNum=0))
-                
+
                 if prevVal is None:
                     prevVal = {}
                 prevVal["pitch"] = pitch
                 prevVal["roll"] = roll
-                
+
                 # Set previous ts and error for next iteration
                 tp = ts
                 ep = error
@@ -239,16 +238,16 @@ class ParrotDrone():
                     D = pidDict["Kd"] * (e - ep) / (ts - tp)
                 else:
                     D = 0.0
-                
+
                 # For testing Integral component
                 I = 0.0
                 return P, I, D
-            
+
             counter = 0
             while self.flightmode == ParrotDrone.FlightMode.VELOCITY:
                 current = await self.getVelocityBody()
                 forwardSP, rightSP, upSP, angSP = self.velocitySP
-                
+
                 forward = 0
                 right = 0
                 up = 0
@@ -276,15 +275,15 @@ class ParrotDrone():
                     P, I, D = updatePID(error["forward"], ep["forward"], tp, ts, forward_PID)
                     forward_PID["PrevI"] += I
                     forward = P + I + D
-                    
+
                     P, I, D = updatePID(error["right"], ep["right"], tp, ts, right_PID)
                     right_PID["PrevI"] += I
                     right = P + I + D
-                     
+
                     P, I, D = updatePID(error["up"], ep["up"], tp, ts, up_PID)
                     up_PID["PrevI"] += I
                     up = P + I + D
-                    
+
                     # Set previous ts and error for next iteration
                     tp = ts
                     ep = error
@@ -297,22 +296,22 @@ class ParrotDrone():
                     prevForward = prevVal["forward"]
                     prevRight = prevVal["right"]
                     prevUp = prevVal["up"]
-                
-                forward = int(clamp(forward + prevForward, -100, 100)) 
-                right = int(clamp(right + prevRight, -100, 100)) 
+
+                forward = int(clamp(forward + prevForward, -100, 100))
+                right = int(clamp(right + prevRight, -100, 100))
                 up = int(clamp(up + prevUp, -100, 100))
-                ang = int(clamp((angSP / rotMax) * 100, -100, 100)) 
+                ang = int(clamp((angSP / rotMax) * 100, -100, 100))
 
                 self.drone(PCMD(1, right, forward, ang, up, timestampAndSeqNum=0))
-                
+
                 if prevVal is None:
                     prevVal = {}
                 prevVal["forward"] = forward
                 prevVal["right"] = right
                 prevVal["up"] = up
-                
+
                 counter += 1
-                
+
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             pass
@@ -333,9 +332,9 @@ class ParrotDrone():
 
     ''' Streaming methods '''
 
-    async def startStreaming(self):
+    async def startStreaming(self, save_frames = False):
         if not self.ffmpeg:
-            self.streamingThread = PDRAWStreamingThread(self.drone, self.ip)
+            self.streamingThread = PDRAWStreamingThread(self.drone, self.ip, save_frames)
         else:
             self.streamingThread = FFMPEGStreamingThread(self.drone, self.ip)
         self.streamingThread.start()
@@ -375,7 +374,7 @@ class ParrotDrone():
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(return_to_home())
         logger.info(f"rth function started at: {time.time()}")
-    
+
     ''' Camera methods '''
 
     async def getCameras(self):
@@ -389,7 +388,7 @@ class ParrotDrone():
             self.drone(set_mode(mode="disabled")).wait().success()
 
     ''' Movement methods '''
-    
+
     async def setAttitude(self, pitch, roll, thrust, yaw):
         await self.switchModes(ParrotDrone.FlightMode.ATTITUDE)
         # Get attitude bounds from the drone
@@ -401,11 +400,11 @@ class ParrotDrone():
         self.attitudeSP = (pitch, roll, thrust, yaw)
         if self.PIDTask is None:
             self.PIDTask = asyncio.create_task(self._attitudePID())
-    
+
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"setVelocity function started at: {time.time()}")
         await self.switchModes(ParrotDrone.FlightMode.VELOCITY)
-        
+
         rotMax = self.drone.get_state(MaxRotationSpeedChanged)["max"]
         vertMax = self.drone.get_state(MaxVerticalSpeedChanged)["max"]
 
@@ -417,7 +416,7 @@ class ParrotDrone():
         self.velocitySP = (forward_vel, right_vel, up_vel, angle_vel)
         if self.PIDTask is None:
             self.PIDTask = asyncio.create_task(self._velocityPID())
-        
+
         logger.info(f"setVelocity function finished at: {time.time()}")
 
     async def setGPSLocation(self, lat, lng, alt, bearing):
@@ -438,7 +437,7 @@ class ParrotDrone():
             moveBy(forward, right, -1 * up, angle)
         )
         await self.hovering()
-        
+
     async def rotateGimbal(self, yaw_theta, pitch_theta, roll_theta):
         pose_dict = await self.getGimbalPose()
         current_pitch = pose_dict["pitch"]
@@ -452,7 +451,7 @@ class ParrotDrone():
             roll_frame_of_reference="absolute",
             roll=roll_theta,)
         )
-        
+
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         self.drone(set_target(
             gimbal_id=0,
@@ -468,25 +467,26 @@ class ParrotDrone():
     async def hover(self):
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(PCMD(1, 0, 0, 0, 0, timestampAndSeqNum=0))
-    
+
     ''' Status methods '''
 
     async def getTelemetry(self):
         telDict = {}
+        telDict["name"] = await self.getName()
         telDict["gps"] = await self.getGPS()
         telDict["relAlt"] = await self.getAltitudeRel()
-        telDict["satellites"] = await self.getSatellites()
         telDict["attitude"] = await self.getAttitude()
         telDict["magnetometer"] = await self.getMagnetometerReading()
         telDict["imu"] = await self.getVelocityBody()
         telDict["battery"] = await self.getBatteryPercentage()
         telDict["gimbalAttitude"] = await self.getGimbalPose()
-        
+        telDict["satellites"] = await self.getSatellites()
+
         return telDict
 
     async def getName(self):
         return self.drone._device_name
-    
+
     async def getGPS(self):
         try:
             return (self.drone.get_state(GpsLocationChanged)["latitude"],
@@ -495,9 +495,12 @@ class ParrotDrone():
         except Exception as e:
             # If there is no GPS fix, return default values
             return (500.0, 500.0, 0.0)
-    
+
     async def getSatellites(self):
-        return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+        try:
+            return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+        except:
+            return 0
 
     async def getHeading(self):
         return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
@@ -568,7 +571,8 @@ class FFMPEGStreamingThread(threading.Thread):
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+        num_threads = int(os.environ.get("FFMPEG_THREADS"))
+        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, num_threads))
         self.isRunning = True
 
     def run(self):
@@ -626,6 +630,7 @@ class PDRAWStreamingThread(threading.Thread):
             frame = self.currentFrame.copy()
             return frame
         except Exception as e:
+            logger.error(f"Sending blank frame, encountered exception: {e}")
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8)
 
@@ -643,6 +648,13 @@ class PDRAWStreamingThread(threading.Thread):
         }[yuv_frame.format()]
 
         self.currentFrame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+        if self.save_frames:
+            directory = "saved_images"
+            timestamp = int(time.time() * 1000)
+            filename = f"{timestamp}.jpg"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            cv2.imwrite(os.path.join(directory, filename), self.currentFrame)
 
     ''' Callbacks '''
 
@@ -652,6 +664,7 @@ class PDRAWStreamingThread(threading.Thread):
 
             :type yuv_frame: olympe.VideoFrame
         """
+        logger.debug("Received YUV frame from drone")
         yuv_frame.ref()
         self.frame_queue.put_nowait(yuv_frame)
 

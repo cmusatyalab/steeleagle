@@ -3,29 +3,28 @@ import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class Service:
     def __init__(self):
         self.context = None
         self.tasks = []
         self.socks = []
-    
+
     def register_context(self, context):
         self.context = context
-        
+
     def register_socket (self, sock):
         self.socks.append(sock)
-            
+
     def register_task(self, task):
         logger.info("registered a task")
         self.tasks.append(task)
-        
+
     async def start(self):
         logger.info(f'service started')
         try:
             await asyncio.gather(*self.tasks)
-                
+
         except Exception:
             await self.shutdown()
 
@@ -33,9 +32,9 @@ class Service:
         logger.info(f'{self.__class__.__name__}: Shutting down CommandService')
         for sock in self.socks:
             sock.close()
-        
+
         self.context.term()
-        
+
         for task in self.tasks:
             if not task.done():
                 task.cancel()
@@ -50,9 +49,9 @@ class Service:
                     pass
                 except Exception as err:
                     logger.error(f"Task raised exception: {err}")
-                
-        
+
+
         logger.info("Main: CommandService shutdown complete")
-        
-        
- 
+
+
+

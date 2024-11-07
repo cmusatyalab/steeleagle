@@ -7,19 +7,29 @@ import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
-from util.utils import setup_socket
+from util.utils import setup_socket, SocketOperation
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 from datetime import datetime
 import signal
 
+# Configure logger
+logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
+                    format=logging_format)
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+if os.environ.get("LOG_TO_FILE") == "true":
+    file_handler = logging.FileHandler('driver.log')
+    file_handler.setFormatter(logging.Formatter(logging_format))
+    logger.addHandler(file_handler)
+
+telemetry_logger = logging.getLogger('telemetry')
+telemetry_handler = logging.FileHandler('telemetry.log')
+formatter = logging.Formatter(logging_format)
+telemetry_handler.setFormatter(formatter)
+telemetry_logger.handlers.clear()
+telemetry_logger.addHandler(telemetry_handler)
+telemetry_logger.propagate = False
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
@@ -31,21 +41,20 @@ tel_sock = context.socket(zmq.PUB)
 cam_sock = context.socket(zmq.PUB)
 tel_sock.setsockopt(zmq.CONFLATE, 1)
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, 'connect', 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("RC_ENDPOINT"))
-setup_socket(cam_sock, 'connect', 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("RC_ENDPOINT"))
-setup_socket(cmd_back_sock, 'connect', 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
-
+setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("DATA_ENDPOINT"))
+setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
+setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
-    drone.disconnect()
+    drone.drone.disconnect()
     sys.exit(0)
-    
-signal.signal(signal.SIGINT, handle_signal)  
+
+signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
-    
 
 async def camera_stream(drone, cam_sock):
+    logger.info('Starting camera stream')
     frame_id = 0
     while drone.isConnected():
         try:
@@ -55,21 +64,22 @@ async def camera_stream(drone, cam_sock):
             cam_message.width = 1280
             cam_message.channels = 3
             cam_message.id = frame_id
-            frame_id = frame_id + 1 
             cam_sock.send(cam_message.SerializeToString())
-            logger.debug('Camera stream: Timestamp: {:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now()))
-            logger.debug(f'Camera stream: ID: frame_id {frame_id}')
+            logger.debug(f'Camera stream: sent frame {frame_id=}')
+            frame_id = frame_id + 1
         except Exception as e:
-            pass
+            logger.error(f'Failed to get video frame, error: {e}')
         await asyncio.sleep(0.033)
+    logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
-    logger.info('Starting telemetry stream')  
+    logger.info('Starting telemetry stream')
     while drone.isConnected():
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            tel_message.global_position.latitude = telDict["gps"][0] 
+            tel_message.drone_name = telDict["name"]
+            tel_message.global_position.latitude = telDict["gps"][0]
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
             tel_message.relative_position.up = telDict["relAlt"]
@@ -85,12 +95,13 @@ async def telemetry_stream(drone, tel_sock):
             tel_message.velocity.right_vel = telDict["imu"]["right"]
             tel_message.velocity.up_vel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
-            logger.debug(f"Telemetry: {tel_message}")
+            telemetry_logger.debug(f"Telemetry: {tel_message}")
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.01)
+    logger.info("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
@@ -160,30 +171,34 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
-        resp.resp = cnc_protocol.ResponseStatus.FAILED 
-        
-    
+        resp.resp = cnc_protocol.ResponseStatus.FAILED
+
+
     resp_sock.send_multipart([identity, resp.SerializeToString()])
-      
+
 
 async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
             await drone.connect()
-            logger.info('Established connection to drone, ready to receive commands!')
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
             continue
-        await drone.startStreaming()
-        
+        name = await drone.getName()
+        logger.info(f'Established connection to drone {name}, ready to receive commands!')
+        save_frames = os.environ.get("SAVE_FRAMES") == "true"
+        await drone.startStreaming(save_frames)
+        if save_frames:
+            logger.info("Saving received frames to storage")
+
         asyncio.create_task(camera_stream(drone, cam_sock))
         asyncio.create_task(telemetry_stream(drone, tel_sock))
-        
+
         while drone.isConnected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
-                logger.debug(f"Received identity: {identity}")  
+                logger.debug(f"Received identity: {identity}")
                 data = message_parts[1]
                 logger.debug(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
@@ -191,16 +206,17 @@ async def main(drone, cam_sock, tel_sock, args):
                 message.ParseFromString(data)
                 logger.debug(f"Received message: {message}")
                 action = message.WhichOneof("method")
-                
+
                 # send a okay message
-                
-                
+
+
                 # Create a driver response message
                 resp = message
                 asyncio.create_task(handle(identity, message, resp, action, cmd_back_sock))
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
-                
+
+        logger.info(f"Disconnected from drone {name}")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
