@@ -341,8 +341,8 @@ class ParrotDrone():
 
     async def getVideoFrame(self):
         if self.streamingThread:
-            ret = await self.streamingThread.grabFrame().tobytes()
-            return ret
+            ret = await self.streamingThread.grabFrame()
+            return ret.tobytes()
 
     async def stopStreaming(self):
         self.streamingThread.stop()
