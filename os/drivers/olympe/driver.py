@@ -28,7 +28,8 @@ telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
 telemetry_handler.setFormatter(formatter)
 telemetry_logger.handlers.clear()
-telemetry_logger.addHandler(telemetry_handler)
+if os.environ.get('LOG_TELEMETRY') == "true":
+    telemetry_logger.addHandler(telemetry_handler)
 telemetry_logger.propagate = False
 
 driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
@@ -69,7 +70,7 @@ async def camera_stream(drone, cam_sock):
             frame_id = frame_id + 1
         except Exception as e:
             logger.error(f'Failed to get video frame, error: {e}')
-        await asyncio.sleep(0.033)
+        await asyncio.sleep(0)
     logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
