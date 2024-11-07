@@ -341,7 +341,8 @@ class ParrotDrone():
 
     async def getVideoFrame(self):
         if self.streamingThread:
-            return self.streamingThread.grabFrame().tobytes()
+            ret = await self.streamingThread.grabFrame().tobytes()
+            return ret
 
     async def stopStreaming(self):
         self.streamingThread.stop()
@@ -574,17 +575,22 @@ class FFMPEGStreamingThread(threading.Thread):
         num_threads = int(os.environ.get("FFMPEG_THREADS"))
         self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, num_threads))
         self.isRunning = True
+        self.frame_updated = asyncio.Event()
+        self.loop = asyncio.get_running_loop()
 
     def run(self):
         try:
             while(self.isRunning):
                 ret, self.currentFrame = self.cap.read()
+                self.loop.call_soon_threadsafe(self.frame_updated.set)
         except Exception as e:
             logger.error(e)
 
-    def grabFrame(self):
+    async def grabFrame(self):
         try:
+            await self.frame_updated.wait()
             frame = self.currentFrame.copy()
+            self.frame_updated.clear()
             return frame
         except Exception as e:
             # Send a blank frame
