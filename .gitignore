@@ -27,9 +27,7 @@ venv/
 .venv
 *~
 *.log
-cnc/server/steeleagle-vol/
-cnc/server/redis/dump.rdb
-cnc/server/redis/redis.conf
+
 
 # needed to be removed in the future
 hermes/python/mission/MissionCreator.py
