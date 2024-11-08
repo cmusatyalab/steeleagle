@@ -3,13 +3,17 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import streamlit as st
-import numpy as np
 import asyncio
+import json
+from zipfile import ZipFile
 from st_keypressed import st_keypressed
 import os
 from cnc_protocol import cnc_pb2
 import time
-from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher
+import folium
+from streamlit_folium import st_folium
+from folium.plugins import MiniMap
+from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS, authenticated
 
 st.set_page_config(
     page_title="Commander",
@@ -22,6 +26,8 @@ st.set_page_config(
     }
 )
 
+if "armed" not in st.session_state:
+    st.session_state.armed = False
 if "manual_control" not in st.session_state:
     st.session_state.manual_control = True
 if "autonomous" not in st.session_state:
@@ -35,13 +41,13 @@ if "key_pressed" not in st.session_state:
 if "selected_drone" not in st.session_state:
     st.session_state.selected_drone = None
 if "roll_speed" not in st.session_state:
-    st.session_state.roll_speed = 1.0
+    st.session_state.roll_speed = 50
 if "yaw_speed" not in st.session_state:
-    st.session_state.yaw_speed = 3.0
+    st.session_state.yaw_speed = 45
 if "thrust_speed" not in st.session_state:
-    st.session_state.thrust_speed = 2.0
+    st.session_state.thrust_speed = 50
 if "pitch_speed" not in st.session_state:
-    st.session_state.pitch_speed = 2.0
+    st.session_state.pitch_speed = 50
 if "gimbal_speed" not in st.session_state:
     st.session_state.gimbal_speed = 50
 if "subscriber" not in st.session_state:
@@ -52,8 +58,9 @@ if "redis" not in st.session_state:
     st.session_state.redis = connect_redis()
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
-if "map_container" not in st.session_state:
-    st.session_state.map_container = None
+if "imagery_framerate" not in st.session_state:
+    st.session_state.imagery_framerate = 1
+
 
 MAG_STATE = [
     "Calibrated",
@@ -63,7 +70,10 @@ MAG_STATE = [
     "Perturbation!!",
 ]
 
-async def update(live, avoidance, detection, hsv, status, map_container):
+if not authenticated():
+    st.stop()  # Do not continue if not authenticated
+
+async def update(live, avoidance, detection, hsv, status,):
     try:
         while True:
             live.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}", use_column_width="auto")
@@ -87,8 +97,8 @@ async def update(live, avoidance, detection, hsv, status, map_container):
                     format="%0.2f m",
                 ),
                 "rssi": st.column_config.NumberColumn(
-                    "Signal",
-                    format="%d RSSI",
+                    "RSSI",
+                    format="%d",
                 ),
                 "battery": st.column_config.ProgressColumn(
                     "Battery",
@@ -97,43 +107,45 @@ async def update(live, avoidance, detection, hsv, status, map_container):
                     min_value=0,
                     max_value=100,
                 ),
-                "mag":  st.column_config.CheckboxColumn("Magnetometer"),
-                "bearing": "Heading",
+                "mag":  st.column_config.CheckboxColumn(label="Mag", width="small"),
+                "bearing": st.column_config.NumberColumn(
+                    "Heading",
+                    format="%d°",
+                  ),
             }
 
-            order = ("altitude", "rssi", "battery", "mag", "bearing",)
+            order = ("altitude", "bearing", "battery", "mag", "rssi",)
 
             st.session_state.telemetry = stream_to_dataframe(st.session_state.redis.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
-            st.session_state.telemetry["latitude"].clip(-90, 90, inplace=True)
-            st.session_state.telemetry["longitude"].clip(-180, 180, inplace=True)
+            st.session_state.telemetry["latitude"] = st.session_state.telemetry["latitude"].clip(-90, 90)
+            st.session_state.telemetry["longitude"] = st.session_state.telemetry["longitude"].clip(-180, 180)
             st.session_state.telemetry["mag"] = st.session_state.telemetry["mag"].transform(lambda x: x == 0)
+            status.dataframe(st.session_state.telemetry, hide_index=False, use_container_width=True, column_order=order, column_config=columns)
+            #map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
 
-            status.dataframe(st.session_state.telemetry, hide_index=True, use_container_width=True, column_order=order, column_config=columns)
-            map_container.map(data=st.session_state.telemetry, use_container_width=True, zoom=16, size=1)
-
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(1/st.session_state.imagery_framerate)
 
     except asyncio.CancelledError:
         st.write("Update coroutine canceled.")
 
 def run_flightscript():
-    if st.session_state.script_file is None:
+    if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        bytes_data = st.session_state.script_file.getvalue()
-        fd = open(file=f"{st.secrets.scripts_path}/{st.session_state.script_file.name}", mode="wb")
-        fd.write(bytes_data)
-        st.session_state.manual_control = False
-        st.session_state.rth_sent = False
-        st.session_state.autonomous = True
+        filename = f"{time.time_ns()}.ms"
+        path = f"{st.secrets.scripts_path}/{filename}"
+        with ZipFile(path, 'w') as z:
+            for file in st.session_state.script_file:
+                z.writestr(file.name, file.read())
+
         req = cnc_pb2.Extras()
-        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/" + st.session_state.script_file.name
+        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/{filename}"
         req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = st.session_state.selected_drone
+        req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
         st.toast(
-            f"Instructed {st.session_state.selected_drone} to fly autonomous script",
+            f"Instructed {req.cmd.for_drone_id} to fly autonomous script.",
             icon="\u2601",
         )
 
@@ -144,7 +156,7 @@ def enable_manual():
     req = cnc_pb2.Extras()
     req.cmd.halt = True
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
     st.toast(
@@ -159,20 +171,94 @@ def rth():
     req.cmd.rth = True
     req.cmd.manual = False
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
     st.toast(f"Instructed {st.session_state.selected_drone} to return to home!")
 
+@st.fragment(run_every="1s")
+def draw_map():
+    tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
+    tiles = folium.TileLayer(
+        name="map_tileserver", tiles=tileset, attr="Google", max_zoom=20
+    )
+
+    m = folium.Map(
+        location=[40.415428612484924, -79.95028831875038],
+        zoom_start=18,
+        tiles=tiles,
+    )
+
+    MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
+    fg = folium.FeatureGroup(name="Current Location")
+
+    marker_color = 0
+    df = stream_to_dataframe(st.session_state.redis .xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
+    last_update = (int(df.index[0].split("-")[0])/1000)
+    i = 0
+    for index, row in df.iterrows():
+        text = folium.DivIcon(
+            icon_size="null",  #set the size to null so that it expands to the length of the string inside in the div
+            icon_anchor=(-20, 30),
+            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{st.session_state.selected_drone}</div>',
+        )
+        plane = folium.Icon(
+            icon="plane",
+            color=COLORS[marker_color],
+            prefix="glyphicon",
+            angle=int(row["bearing"]),
+        )
+        html = f'<img src="http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg" height="250px" width="250px"/>'
+        st.session_state.center =[row['latitude'], row['longitude']]
+        fg.add_child(
+            folium.Marker(
+                location=[
+                    row["latitude"],
+                    row["longitude"],
+                ],
+                # tooltip=k.split(".")[-1],
+                tooltip=html,
+                icon=plane,
+            )
+        )
+
+        fg.add_child(
+            folium.Marker(
+                location=[
+                    row["latitude"],
+                    row["longitude"],
+                ],
+                icon=text,
+            )
+        )
+
+    st_folium(
+        m,
+        key="overview_map",
+        use_container_width=True,
+        feature_group_to_add=fg,
+        returned_objects=[],
+        center=st.session_state.center,
+        height=500
+    )
+
 menu(with_control=False)
 
 with st.sidebar:
+    # st.session_state.selected_drone = st.selectbox(
+    #     label=":helicopter: :green[Available Drones]",
+    #     options=get_drones(),
+    #     placeholder="No drone selected...",
+
+    #     index = get_drones().index(st.session_state.selected_drone)
+    # )
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
-        label=" Fly Autonomous Mission",
+        label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["ms"],
-        label_visibility='visible'
+        type=["kml", "dsl"],
+        label_visibility='visible',
+        accept_multiple_files=True
     )
     st.button(
         key="autonomous_button",
@@ -201,39 +287,33 @@ with st.sidebar:
         disabled=st.session_state.rth_sent,
         on_click=rth,
     )
-
     if st.session_state.manual_control:
         #st.subheader(f":blue[Manual Control Enabled]")
-        st.subheader(":red[Manual Speed Controls]", divider="gray")
+        mode = ":green[Manual (armed)]" if st.session_state.armed else ":red[Manual (disarmed)]"
+        st.checkbox(key="armed", label="Arm Drone?")
         c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, step=0.5, value=st.session_state.pitch_speed, format="%0.1f")
-        c2.number_input(key="thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, step=0.5, value=st.session_state.thrust_speed, format="%0.1f")
+        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, value=50, step=5, format="%d")
+        c2.number_input(key = "thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=50, format="%d")
         c3, c4 = st.columns(spec=2, gap="small")
-        c3.number_input(key="yaw_speed", label="Yaw (m/s)", min_value=0.0, max_value=5.0, step=0.5, value=st.session_state.yaw_speed, format="%0.1f")
-        c4.number_input(key="roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, step=0.5, value=st.session_state.roll_speed, format="%0.1f")
+        c3.number_input(key = "yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c4.number_input(key = "roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=50, format="%d")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key="gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=st.session_state.gimbal_speed, format="%d")
-        c6.empty()
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c6.number_input(key = "imagery_framerate", label="Imagery Framerate", min_value=1, max_value=30, step=1, value=2, format="%0d")
 
     elif st.session_state.rth_sent:
-        st.subheader(f":orange[Return to Home Initiated]")
+        mode = f":orange[Return to Home Initiated]"
     elif st.session_state.script_file is not None:
-        st.subheader(f":violet[Autonomous Mode Enabled]")
+        mode = f":violet[Autonomous Mode Enabled]"
 
 status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 
 with status_container:
-    map_container =  st.empty()
+    draw_map()
     #st.session_state.subscriber.punsubscribe()
     #st.session_state.subscriber.psubscribe(f'imagery.{st.session_state.selected_drone}')
-    st.session_state.selected_drone = st.selectbox(
-        label=":helicopter: :green[Available Drones]",
-        options=get_drones(),
-        placeholder="No drone selected...",
-
-        index = get_drones().index(st.session_state.selected_drone)
-    )
-    st.subheader(f":blue[{st.session_state.selected_drone}] Status"
+    
+    st.subheader(f":blue[{st.session_state.selected_drone}] Status - {mode}"
                     if st.session_state.selected_drone is not None else ":red[No Drone Connected]",
                     divider="gray",
                 )
@@ -253,10 +333,10 @@ with imagery_container:
         st.markdown(":traffic_light: **HSV Filtering**")
 
 st.session_state.key_pressed = st_keypressed()
-if st.session_state.manual_control and st.session_state.selected_drone is not None:
+if st.session_state.armed and st.session_state.manual_control and st.session_state.selected_drone is not None:
     req = cnc_pb2.Extras()
     req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = st.session_state.selected_drone
+    req.cmd.for_drone_id = json.dumps([st.session_state.selected_drone])
     #req.cmd.manual = True
     if st.session_state.key_pressed == "t":
         req.cmd.takeoff = True
@@ -296,4 +376,4 @@ if st.session_state.manual_control and st.session_state.selected_drone is not No
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
 
-asyncio.run(update(livefeed_container, avoidance, detection, hsv, status_container, map_container))
+asyncio.run(update(livefeed_container, avoidance, detection, hsv, status_container,))

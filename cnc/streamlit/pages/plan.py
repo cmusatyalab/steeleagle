@@ -6,8 +6,41 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap, Draw, Geocoder
-from barfi import st_barfi, Block, barfi_schemas
-from util import menu
+from streamlit_ace import st_ace
+from util import menu, authenticated
+
+sample="""#Sample Mission
+Task {
+    Test tri {
+        way_points: <Triangle>,
+        gimbal_pitch: -20.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 0,
+        model: coco,
+        hsv_lower_bound: (30, 100, 100),
+        hsv_upper_bound: (50, 255, 255)
+    }
+
+    Test rect {
+        way_points: <Rectangle>,
+        gimbal_pitch: -20.0,
+        drone_rotation: 0.0,
+        sample_rate: 2,
+        hover_delay: 0,
+        model: coco,
+        hsv_lower_bound: (30, 100, 100),
+        hsv_upper_bound: (50, 255, 255)
+    }
+}
+
+Mission {
+    Start tri
+    Transition (timeout(10)) tri -> rect
+    Transition (done) rect -> tri
+}
+
+"""
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -27,6 +60,10 @@ st.set_page_config(
         'About': "SteelEagle - Automated drone flights for visual inspection tasks\n https://github.com/cmusatyalab/steeleagle"
     }
 )
+
+if not authenticated():
+    st.stop()  # Do not continue if not authenticated
+
 menu()
 tiles_col = st.columns(5)
 tiles_col[0].selectbox(
@@ -34,7 +71,6 @@ tiles_col[0].selectbox(
     label=":world_map: :blue[Tile Server]",
     options=("Google Sat", "Google Hybrid"),
 )
-st.session_state.select_schema = tiles_col[4].selectbox('Load a saved schema:', barfi_schemas(), index=1)
 if st.session_state.map_server == "Google Sat":
     tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
 elif st.session_state.map_server == "Google Hybrid":
@@ -52,9 +88,10 @@ m = folium.Map(
     control_scale=True
 )
 
+Draw(export=True, ).add_to(m)
 #Geocoder().add_to(m)
 #MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
-Draw(export=True, ).add_to(m)
+
 folium.LayerControl().add_to(m)
 c1, c2 = st.columns(spec=[0.5, 0.5], gap="small")
 with c1:
@@ -66,15 +103,4 @@ with c1:
     )
 
 with c2:
-    
-    d = Block(name='DetectTask')
-    d.add_output(name="Detected", value="person")
-    t = Block(name='TrackingTask')
-    t.add_input()
-    mul = Block(name='Multiplication')
-    div = Block(name='Division')
-
-
-
-    st.session_state.barfi_result = st_barfi(compute_engine=False, base_blocks= [d, t], load_schema=st.session_state.select_schema)
-    st.write(st.session_state.barfi_result)
+    dsl = st_ace(height=600, value=sample, language="yaml")

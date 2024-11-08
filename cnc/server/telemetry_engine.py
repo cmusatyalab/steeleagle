@@ -76,13 +76,15 @@ class TelemetryEngine(cognitive_engine.Engine):
             #have redis publish the latest image
             self.r.publish(f'imagery.{extras.drone_id}', input_frame.payloads[0])
             #store images in the shared volume
-            if self.current_path is not None:
+            try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
                 img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
                 img.save(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", format="JPEG")
                 os.rename(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", f"{self.storage_path}/raw/{extras.drone_id}/latest.jpg")
+            except Exception as e:
+                logger.error(f"Exception trying to store imagery: {e}")
         
         # only append the result if it has a payload
         # e.g. in the elif block where we received an image from the streaming thread, we don't add a payload

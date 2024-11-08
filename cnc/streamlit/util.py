@@ -7,6 +7,8 @@ import redis
 import pandas as pd
 import json
 import zmq
+import time
+import hmac
 
 DATA_TYPES = {
     "latitude": "float",
@@ -19,8 +21,56 @@ DATA_TYPES = {
     # "sats": int,
 }
 
+COLORS = [
+    "red",
+    "blue",
+    "green",
+    "purple",
+    "orange",
+    "darkred",
+    "darkblue",
+    "darkgreen",
+    "pink",
+    "beige",
+    "lightred",
+    "lightblue",
+    "lightgreen",
+    "darkpurple",
+    "gray",
+    "cadetblue",
+    "lightgray",
+    "black",
+]
+
 if "control_pressed" not in st.session_state:
     st.session_state.control_pressed = False
+if "inactivity_time" not in st.session_state:
+    st.session_state.inactivity_time = 1 #min
+
+def authenticated():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    a,b,c = st.columns(3)
+    b.text_input(
+        "Password", type="password", on_change=password_entered, key="password", 
+    )
+    if "password_correct" in st.session_state:
+        b.error("Authentication failed.", icon=":material/block:")
+    return False
+
 @st.cache_resource
 def connect_redis():
     red = redis.Redis(
@@ -55,7 +105,10 @@ def get_drones():
     l = []
     red = connect_redis()
     for k in red.keys("telemetry.*"):
-        l.append(k.split(".")[-1])
+        latest_entry = red.xrevrange(f"{k}", "+", "-", 1)
+        last_update = (int(latest_entry[0][0].split("-")[0])/1000)
+        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            l.append(k.split(".")[-1])
     return sorted(l)
 
 def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
@@ -78,7 +131,7 @@ def menu(with_control=True):
     st.sidebar.page_link("overview.py", label="Overview")
     st.sidebar.page_link("pages/plan.py", label="Mission Planning (WIP)")
     if with_control:
-        st.sidebar.header(":helicopter: Control", divider=True)
+        st.sidebar.header(":joystick: Individual Control", divider=True)
         for d in get_drones():
             #st.sidebar.page_link(f"pages/control.py", label=d)
             if "selected_drone" in st.session_state:

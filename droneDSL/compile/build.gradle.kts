@@ -6,11 +6,14 @@ val mainClassFQName = "org.droneDSL.compile.Compiler"
 application.mainClass.set(mainClassFQName)
 
 dependencies {
-    api(libs.picocli)
-    implementation(libs.aya.tools)
-    implementation(libs.aya.ipcore)
-    implementation(libs.aya.ipwrapper)
-    implementation("com.google.code.gson:gson:2.10.1") // Gson dependency
+  api(libs.picocli)
+  implementation(libs.aya.tools)
+  implementation(libs.aya.ipcore)
+  implementation(libs.aya.ipwrapper)
+  // Gson dependency
+  implementation ("com.google.code.gson:gson:2.10.1")
+  implementation("org.locationtech.jts:jts-core:1.18.2")
+  implementation("org.apache.commons:commons-math3:3.6.1")
 }
 
 val genDir = file("src/main/gen")

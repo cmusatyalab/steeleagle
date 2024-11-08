@@ -36,17 +36,17 @@ services:
       - ./steeleagle-vol:/cnc/server/images/
 
   control-plane:
-    # image: cmusatyalab/steeleagle:${TAG}
-    image: achanana/steeleagle:${TAG}
+    image: xianglic/steeleagle:${TAG}
     container_name: control-plane
     restart: unless-stopped
     ports:
       - "5003:5003"
       - "6001:6001"
     privileged: true
-    # arm
-    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}", "-s", "*"]
-    #entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
+    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
+    volumes:
+      - ./steeleagle-vol/compiler/:/compiler
+      - ./steeleagle-vol/scripts/:/scripts
     networks:
       - cnc-net
       - redis

@@ -29,14 +29,19 @@ logger.setLevel(logging.INFO)
 class ParrotAnafiDrone(DroneItf.DroneItf):
 
     def __init__(self, **kwargs):
+        self.dronename = None
         if 'sim' in kwargs:
             self.ip = '10.202.0.1'
+        elif 'droneip' in kwargs:
+            self.ip = kwargs['droneip']
         else:
             self.ip = '192.168.42.1'
         if 'lowdelay' in kwargs:
             self.lowdelay = True
         else:
             self.lowdelay = False
+        if 'dronename' in kwargs:
+            self.dronename = kwargs['dronename']
         self.drone = Drone(self.ip)
         self.active = False
 
@@ -60,6 +65,9 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def connect(self):
         self.drone.connect()
+        logging.info(f"Drone name is {self.dronename}")
+        if self.dronename is not None:
+            self.drone.set_device_name(self.dronename)
         self.active = True
 
     async def isConnected(self):

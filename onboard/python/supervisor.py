@@ -39,6 +39,7 @@ class Supervisor:
 
     def __init__(self, args):
         # Import the files corresponding to the selected drone/cloudlet
+        self.drone_id = None
         drone_import = f"implementation.drones.{args.drone}"
         cloudlet_import = f"implementation.cloudlets.{args.cloudlet}"
         try:
@@ -63,6 +64,11 @@ class Supervisor:
                 kwargs['sim'] = True
             if args.lowdelay:
                 kwargs['lowdelay'] = True
+            if args.dronename:
+                kwargs['dronename'] = args.dronename
+            if args.droneip:
+                kwargs['droneip'] = args.droneip
+            logger.info(f"{kwargs=}")
             self.drone = getattr(Drone, args.drone)(**kwargs)
         except Exception as e:
             logger.info('Could not initialize {args.drone}, name does not exist. Aborting.')
@@ -103,19 +109,22 @@ class Supervisor:
         self.stop_mission()
         # Start new task
         logger.debug('MS import')
+        module_prefix = self.drone_id
         if not self.reload:
-            import mission
-            import task_defs
-            import transition_defs
+            logger.info('first time...')
+            importlib.import_module(f"{module_prefix}.mission")
+            importlib.import_module(f"{module_prefix}.task_defs")
+            importlib.import_module(f"{module_prefix}.transition_defs")
         else:
             logger.info('Reloading...')
             modules = sys.modules.copy()
             for module in modules.values():
-                if module.__name__.startswith('mission') or module.__name__.startswith('task_defs') or module.__name__.startswith('transition_defs'):
+                if module.__name__.startswith(f'{module_prefix}.mission') or module.__name__.startswith(f'{module_prefix}.task_defs') or module.__name__.startswith('{module_prefix}.transition_defs'):
                     importlib.reload(module)
         logger.debug('MC init')
-        from mission.MissionController import MissionController
-        self.mission = MissionController(self.drone, self.cloudlet)
+        #from mission.MissionController import MissionController
+        Mission = importlib.import_module(f"{module_prefix}.mission.MissionController")
+        self.mission = getattr(Mission, "MissionController")(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
         self.reload = True
@@ -136,13 +145,17 @@ class Supervisor:
             with open(filename, mode='wb') as f:
                 for chunk in r.iter_content():
                     f.write(chunk)
+            os.makedirs(self.drone_id, exist_ok=True)
             z = ZipFile(filename)
+            sys.path.append(self.drone_id)
+            os.chdir(self.drone_id)
             try:
                 subprocess.check_call(['rm', '-rf', './task_defs', './mission', './transition_defs'])
             except subprocess.CalledProcessError as e:
                 logger.debug(f"Error removing old task/transition defs: {e}")
             z.extractall()
             self.install_prereqs()
+            os.chdir('..')
         except Exception as e:
             print(e)
 
@@ -162,6 +175,7 @@ class Supervisor:
 
         req = cnc_pb2.Extras()
         req.drone_id = name
+        self.drone_id = name
         while True:
             await asyncio.sleep(0)
             try:
@@ -286,10 +300,15 @@ async def _main():
                         help='Specify websocket port [default: 6000]')
     parser.add_argument('-t', '--trajectory', action='store_true',
         help='Log the trajectory of the drone over the flight duration [default: False]')
+    parser.add_argument('-i', '--droneip', default='192.168.42.1',
+                                    help='Specify drone IP address [default: 192.168.42.1]')
 
+    parser.add_argument('-n', '--dronename',
+                                    help='Specify drone name.')
     args = parser.parse_args()
     logging.basicConfig(format="%(levelname)s: %(message)s",
                         level=args.loglevel)
+    logger.info(f"{args=}")
 
     adapter = Supervisor(args)
     await adapter.initializeConnection()
