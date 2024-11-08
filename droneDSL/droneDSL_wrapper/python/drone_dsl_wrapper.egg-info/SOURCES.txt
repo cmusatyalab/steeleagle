@@ -1,9 +1,0 @@
-setup.py
-./droneDSL_wrapper_py/__init__.py
-./droneDSL_wrapper_py/compiler.py
-./droneDSL_wrapper_py/lib/compile-1.0-full.jar
-drone_dsl_wrapper.egg-info/PKG-INFO
-drone_dsl_wrapper.egg-info/SOURCES.txt
-drone_dsl_wrapper.egg-info/dependency_links.txt
-drone_dsl_wrapper.egg-info/requires.txt
-drone_dsl_wrapper.egg-info/top_level.txt
