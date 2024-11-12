@@ -162,7 +162,7 @@ class DataService(Service):
                 req.ParseFromString(msg)
 
                 if req.engineKey in self.result_cache.keys():
-                    resp = ComputeResult()
+                    resp = cnc_pb2.ComputeResult()
                     resp.result = self.result_cache[req.engineKey]
                     if req.invalidateCache:
                         self.result_cache.pop(req.engineKey, None)

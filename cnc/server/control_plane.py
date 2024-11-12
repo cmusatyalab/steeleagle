@@ -5,13 +5,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import copy
 import json
 import os
 import subprocess
 import sys
-import threading
-import time
 import logging
 from zipfile import ZipFile
 from google.protobuf.message import DecodeError
@@ -20,8 +17,10 @@ import requests
 from cnc_protocol import cnc_pb2
 import argparse
 import zmq
+import zmq.asyncio
 import redis
 from urllib.parse import urlparse
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -31,8 +30,7 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-interrupt = threading.Event()
-
+# Set up the paths and variables for the compiler
 compiler_path = '/compiler'
 compiler_file = 'compile-1.5-full.jar'
 output_path = '/compiler/out/flightplan_'
@@ -104,56 +102,60 @@ def compile_mission(dsl_file, kml_file, drone_list, alt):
     
 
         
-def listen_drones(args, drones):
-    ctx = zmq.Context()
-    sock = ctx.socket(zmq.REP)
-    sock.bind(f'tcp://*:{args.droneport}')
-    while not interrupt.isSet():
-        msg = sock.recv()
-        try:
-            extras = cnc_pb2.Extras()
-            extras.ParseFromString(msg)
-            d = drones[extras.drone_id]
-            sock.send(d.SerializeToString())
-            logger.info(f'Delivered request:\n{text_format.MessageToString(d)}')
-            del drones[extras.drone_id]
-        except KeyError:
-            sock.send(b'No commands.')
-        except DecodeError:
-            sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
-    sock.close()
+def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock):
+    try:
+        # Send the command to each drone 
+        for drone_id in drone_list:
+            # check if the cmd is a mission
+            if (base_url):
+                # reconstruct the script url with the correct compiler output path
+                msg.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
+                logger.info(f"script url:  {msg.cmd.script_url}")
+                
+            # send the command to the drone
+            message = [drone_id, msg.SerializeToString()]
+            cmd_front_cmdr_sock.send_multipart(message)
+            logger.info(f'Delivered request:\n{text_format.MessageToString(message)}')
+            
+            # store the record in redis
+            key = redis.xadd(
+                f"commands",
+                {"commander": msg.commander_id, "drone": drone_id, "value": text_format.MessageToString(msg),}
+            )
+            logger.debug(f"Updated redis under stream commands at key {key}")
+    except Exception as e:
+        logger.error(f"Error sending request to drone: {e}")
+
     
-def listen_cmdrs(args, drones, redis, alt):
-    ctx = zmq.Context()
-    sock = ctx.socket(zmq.REP)
-    sock.bind(f'tcp://*:{args.cmdrport}')
-    while not interrupt.isSet():
-        msg = sock.recv()
-        extras = cnc_pb2.Extras()
+def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt):
+    while True:
         
+        # Listen for incoming requests from cmdr
+        req = cmdr_sock.recv()
         try:
-            extras.ParseFromString(msg)
-            logger.info(f'Request received:\n{text_format.MessageToString(extras)}')
+            msg = cnc_pb2.Extras()
+            msg.ParseFromString(req)
+            logger.info(f'Request received:\n{text_format.MessageToString(msg)}')
         except DecodeError:
-            sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
+            cmdr_sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
             logger.info(f'Error decoding protobuf. Did you send a cnc_pb2?')
             continue
-            
+        
+        # get the drone list
         try:
-            # assuming the commander also gives drone id in json format 
-            drone_list_json = extras.cmd.for_drone_id
+            drone_list_json = msg.cmd.for_drone_id
             drone_list = json.loads(drone_list_json)
             logger.info(f"drone list:  {drone_list}")
         except json.JSONDecodeError:
-            sock.send(b'Error decoding drone list. Did you send a JSON list?')
+            cmdr_sock.send(b'Error decoding drone list. Did you send a JSON list?')
             logger.info(f'Error decoding drone list. Did you send a JSON list?')
             continue
             
-        # Check if the command contains a mission and process it
+        # Check if the command contains a mission and compile it if true
         base_url = None
-        if (extras.cmd.script_url):
+        if (msg.cmd.script_url):
             # download the script
-            script_url = extras.cmd.script_url
+            script_url = msg.cmd.script_url
             logger.info(f"script url:  {script_url}")
             dsl, kml = download_script(script_url)
             
@@ -169,27 +171,24 @@ def listen_cmdrs(args, drones, redis, alt):
             
         # Send the command to each drone 
         for drone_id in drone_list:
-            extras_copy = copy.deepcopy(extras)
-            
             # check if the cmd is a mission
             if (base_url):
                 # reconstruct the script url with the correct compiler output path
-                extras_copy.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
-                logger.info(f"script url:  {extras_copy.cmd.script_url}")
+                msg.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
+                logger.info(f"script url:  {msg.cmd.script_url}")
                 
-            # store the command in drones dict and redis
-            drones[drone_id] = extras_copy
+            # send the command to the drone
+            send_to_drone(msg, drone_id, cmd_front_cmdr_sock)
+            
+            # store the record in redis
             key = redis.xadd(
                 f"commands",
-                {"commander": extras.commander_id, "drone": drone_id, "value": text_format.MessageToString(extras_copy),}
+                {"commander": msg.commander_id, "drone": drone_id, "value": text_format.MessageToString(msg),}
             )
             logger.debug(f"Updated redis under stream commands at key {key}")
              
-        sock.send(b'ACK')
-        
-        
-    sock.close()
-    
+        cmdr_sock.send(b'ACK')
+        logger.info('Sent ACK to commander')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -205,27 +204,34 @@ def main():
         "--altitude", type=int, default=15, help="base altitude for the drones mission"
     )
     args = parser.parse_args()
-    alt = args.altitude
-    r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
-    logger.info(f"Connected to redis on port {args.redis}...")
-    drones = {}
-
-    logger.info(f'Listening on tcp://*:{args.droneport} for drone requests...')
-    logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
     
-    d = threading.Thread(target=listen_drones, args=[args, drones])
-    c = threading.Thread(target=listen_cmdrs, args=[args, drones, r, alt])
-    d.start()
-    c.start()
+    # Set the altitude
+    alt = args.altitude
+    logger.info(f"Starting control plane with altitude {alt}...")
+    
+    # Connect to redis
+    redis = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+    logger.info(f"Connected to redis on port {args.redis}...")
 
+    # Set up the commander socket
+    logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
+    ctx = zmq.Context()
+    cmdr_sock = ctx.socket(zmq.REP)
+    cmdr_sock.bind(f'tcp://*:{args.cmdrport}')
+
+    # Set up the drone socket
+    async_ctx = zmq.asyncio.Context()
+    cmd_front_cmdr_sock = async_ctx.socket(zmq.ROUTER)
+    cmd_front_cmdr_sock.bind(f'tcp://*:{args.droneport}')
+    logger.info(f'Listening on tcp://*:{args.droneport} for drone requests...')
+    
+    # Listen for incoming requests from cmdr
     try:
-        while d.is_alive():
-            time.sleep(0.1)
+        listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt)
     except KeyboardInterrupt:
-        interrupt.set()
-        logging.info("Waiting for threads to join...")
-        c.join()
-        d.join()
+        logger.info('Shutting down...')
+        cmdr_sock.close()
+        cmd_front_cmdr_sock.close()
 
 if __name__ == '__main__':
     main()
