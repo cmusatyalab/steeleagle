@@ -13,7 +13,6 @@ WORKDIR /steeleagle_os/user
 # Copy necessary files into the container
 COPY ./os/user /steeleagle_os/user
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
-COPY ./os/env.sh /steeleagle_os/env.sh
 COPY ./os/util /steeleagle_os/util
 
 # Install required Python packages
