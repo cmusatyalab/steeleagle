@@ -72,7 +72,7 @@ services:
     container_name: user
     environment:
       - PYTHONPATH=${PYTHONPATH}
-      - CMD_FRONT_PORT=${CMD_FRONT_PORT}
+      - CMD_FRONT_USR_PORT=${CMD_FRONT_USR_PORT}
       - MSN_PORT=${MSN_PORT}
       - CMD_ENDPOINT=${CMD_ENDPOINT}
       - LOG_LEVEL=${LOG_LEVEL}
