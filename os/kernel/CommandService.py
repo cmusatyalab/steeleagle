@@ -48,7 +48,7 @@ class CommandService(Service):
         cmd_back_sock = context.socket(zmq.DEALER)
         msn_sock = context.socket(zmq.REQ)
         setup_socket(cmd_front_cmdr_sock, SocketOperation.CONNECT, 'CMD_FRONT_CMDR_PORT', 'Created command frontend cmdr socket endpoint', os.environ.get('STEELEAGLE_GABRIEL_SERVER'))
-        setup_socket(cmd_front_usr_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command frontend user socket endpoint')
+        setup_socket(cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT', 'Created command frontend user socket endpoint')
         setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
         setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
         self.cmd_front_cmdr_sock = cmd_front_cmdr_sock

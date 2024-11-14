@@ -10,7 +10,7 @@ import zmq
 import asyncio
 import logging
 from system_call_stubs.DroneStub import DroneStub
-from system_call_stubs.ComputeStub import ComputeStub
+# from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 

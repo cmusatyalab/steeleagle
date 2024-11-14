@@ -35,7 +35,7 @@ services:
       - MSN_PORT=${MSN_PORT}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
-      - "${CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
+      - "${HOST_CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
       - "${CMD_FRONT_USR_PORT}:${CMD_FRONT_USR_PORT}"
       - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
       - "${MSN_PORT}:${MSN_PORT}"
