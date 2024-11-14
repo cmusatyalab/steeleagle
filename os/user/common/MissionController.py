@@ -12,7 +12,7 @@ import logging
 from system_call_stubs.DroneStub import DroneStub
 # from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
-from util.utils import setup_socket
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -24,7 +24,7 @@ logger.addHandler(handler)
 
 context = zmq.Context()
 msn_sock = context.socket(zmq.REP)
-setup_socket(msn_sock, 'connect', 'MSN_PORT', 'Created user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
+setup_socket(msn_sock, SocketOperation.CONNECT, 'MSN_PORT', 'Connected to user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 class MissionController():
     def __init__(self):
