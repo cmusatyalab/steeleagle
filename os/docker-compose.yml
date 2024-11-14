@@ -1,7 +1,7 @@
 services:
   driver:
-    image: achanana/steeleagle-os-driver-olympe-arm:${TAG}
-    # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: driver
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -22,7 +22,7 @@ services:
       - os-net
 
   kernel-cmd-svc:
-    image: achanana/steeleagle-os-kernel:${TAG}
+    image: xianglic/steeleagle-os-kernel:${TAG}
     container_name: kernel-cmd-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -35,7 +35,8 @@ services:
       - MSN_PORT=${MSN_PORT}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
-      - "${CMD_FRONT_PORT}:${CMD_FRONT_PORT}"
+      - "${CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
+      - "${CMD_FRONT_USR_PORT}:${CMD_FRONT_USR_PORT}"
       - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
       - "${MSN_PORT}:${MSN_PORT}"
     restart: unless-stopped
@@ -45,7 +46,7 @@ services:
       - os-net
 
   kernel-data-svc:
-    image: achanana/steeleagle-os-kernel:${TAG}
+    image: xianglic/steeleagle-os-kernel:${TAG}
     container_name: kernel-data-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -67,8 +68,8 @@ services:
       - os-net
 
   user:
-    image: xianglic/steeleagle-os-user-arm:${TAG}
-    # image: xianglic/steeleagle-os-user-amd:${TAG}
+    # image: xianglic/steeleagle-os-user-arm:${TAG}
+    image: xianglic/steeleagle-os-user-amd:${TAG}
     container_name: user
     environment:
       - PYTHONPATH=${PYTHONPATH}

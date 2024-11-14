@@ -5,15 +5,16 @@ import zmq
 from cnc_protocol import cnc_pb2
 from enum import Enum
 from util.utils import setup_socket
+from util.utils import SocketOperation
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 context = zmq.Context()
-cmd_front_sock = context.socket(zmq.DEALER)
+cmd_front_usr_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
-cmd_front_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("CMD_ENDPOINT"))
+cmd_front_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
+setup_socket(cmd_front_usr_sock, SocketOperation.CONNECT, 'CMD_FRONT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 ######################################################## DriverRespond ############################################################ 
 class DriverRespond:
@@ -56,7 +57,7 @@ class DroneStub:
         self.seqNum += 1
         self.seqNum_res[seqNum] = driverRespond
         serialized_request = request.SerializeToString()
-        cmd_front_sock.send_multipart([serialized_request])
+        cmd_front_usr_sock.send_multipart([serialized_request])
 
     def receiver(self, response_parts):
         response = response_parts[0]
@@ -90,7 +91,7 @@ class DroneStub:
     async def run(self):
         while True:
             try:
-                response_parts = cmd_front_sock.recv_multipart(flags=zmq.NOBLOCK)
+                response_parts = cmd_front_usr_sock.recv_multipart(flags=zmq.NOBLOCK)
                 self.receiver(response_parts)
             except zmq.Again:
                 pass
