@@ -595,7 +595,10 @@ class FFMPEGStreamingThread(threading.Thread):
         try:
             await self.frame_updated.wait()
             with Timer(logger, "Copying current frame"):
-                frame = await self.loop.run_in_executor(self.pool, self.currentFrame.copy)
+                if os.environ.get("USE_PROCESS_POOL") == "true":
+                    frame = await self.loop.run_in_executor(self.pool, self.currentFrame.copy)
+                else:
+                    frame = self.currentFrame.copy()
             self.frame_updated.clear()
             return frame
         except Exception as e:

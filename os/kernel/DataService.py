@@ -9,6 +9,7 @@ import os
 import sys
 import logging
 import json
+import skimage.transform import downscale_local_mean
 from util.utils import setup_socket, SocketOperation
 from util.timer import Timer
 from cnc_protocol import cnc_pb2
@@ -210,9 +211,15 @@ class DataService(Service):
 
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+                    reshaped_arr = nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels'])
+
+                    if os.environ.get("DOWNSCALE_IMAGE") == "true":
+                        reshaped_arr = downscale_local_mean(reshaped_arr, (2,2))
                     with Timer(logger, "Encoding frame to jpg"):
-                        reshaped_arr = nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels'])
-                        _, frame = await self.loop.run_in_executor(self.pool, cv2.imencode, '.jpg', reshaped_arr)
+                        if os.environ.get("USE_PROCESS_POOL") == "true":
+                            _, frame = await self.loop.run_in_executor(self.pool, cv2.imencode, '.jpg', reshaped_arr)
+                        else:
+                            _, frame = cv2.imencode('.jpg', reshaped_arr)
 
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())

@@ -16,6 +16,7 @@ services:
       - SAVE_FRAMES=${SAVE_FRAMES}
       - LOG_TO_FILE=${LOG_TO_FILE}
       - LOG_LEVEL=${LOG_LEVEL}
+      - USE_PROCESS_POOL=${USE_PROCESS_POOL}
     entrypoint: ["python3", "driver.py"]
     restart: unless-stopped
     networks:
@@ -54,6 +55,8 @@ services:
       - LCE_HOST=${LCE_HOST}
       - LOG_TO_FILE=${LOG_TO_FILE}
       - LOG_LEVEL=${LOG_LEVEL}
+      - USE_PROCESS_POOL=${USE_PROCESS_POOL}
+      - DOWNSCALE_IMAGE=${DOWNSCALE_IMAGE}
     ports:
       - "${TEL_PORT}:${TEL_PORT}"
       - "${CAM_PORT}:${CAM_PORT}"
