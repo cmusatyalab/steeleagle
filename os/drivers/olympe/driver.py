@@ -11,6 +11,7 @@ from util.utils import setup_socket, SocketOperation
 from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
 from datetime import datetime
 import signal
+from util.timer import Timer
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -65,12 +66,11 @@ async def camera_stream(drone, cam_sock):
             cam_message.width = 1280
             cam_message.channels = 3
             cam_message.id = frame_id
-            cam_sock.send(cam_message.SerializeToString())
+            await cam_sock.send(cam_message.SerializeToString())
             logger.debug(f'Camera stream: sent frame {frame_id=}')
             frame_id = frame_id + 1
         except Exception as e:
             logger.error(f'Failed to get video frame, error: {e}')
-        await asyncio.sleep(0)
     logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
@@ -78,7 +78,8 @@ async def telemetry_stream(drone, tel_sock):
     while drone.isConnected():
         try:
             tel_message = cnc_protocol.Telemetry()
-            telDict = await drone.getTelemetry()
+            with Timer(logger, "Getting drone telemetry"):
+                telDict = await drone.getTelemetry()
             tel_message.drone_name = telDict["name"]
             tel_message.global_position.latitude = telDict["gps"][0]
             tel_message.global_position.longitude = telDict["gps"][1]
@@ -97,7 +98,7 @@ async def telemetry_stream(drone, tel_sock):
             tel_message.velocity.up_vel = telDict["imu"]["up"]
             tel_message.satellites = telDict["satellites"]
             telemetry_logger.debug(f"Telemetry: {tel_message}")
-            tel_sock.send(tel_message.SerializeToString())
+            await tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
@@ -175,7 +176,7 @@ async def handle(identity, message, resp, action, resp_sock):
         resp.resp = cnc_protocol.ResponseStatus.FAILED
 
 
-    resp_sock.send_multipart([identity, resp.SerializeToString()])
+    await resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 
 async def main(drone, cam_sock, tel_sock, args):

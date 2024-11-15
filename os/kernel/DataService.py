@@ -94,7 +94,7 @@ class DataService(Service):
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
         gab_task = asyncio.create_task(self.gabriel_client.launch_async())
-        local_compute_task = asyncio.create_task(self.local_compute_task())
+        #local_compute_task = asyncio.create_task(self.local_compute_task())
 
         # registering context, sockets and tasks to service
         self.register_context(context)
@@ -104,7 +104,7 @@ class DataService(Service):
         self.register_task(tel_task)
         self.register_task(cam_task)
         self.register_task(gab_task)
-        self.register_task(local_compute_task)
+        #self.register_task(local_compute_task)
 
     ######################################################## DRIVER ############################################################
     async def telemetry_handler(self):
@@ -166,7 +166,7 @@ class DataService(Service):
                     resp.result = self.result_cache[req.engineKey]
                     if req.invalidateCache:
                         self.result_cache.pop(req.engineKey, None)
-                    self.cpt_sock.send(resp.SerializeToString())
+                    await self.cpt_sock.send(resp.SerializeToString())
             except Exception as e:
                 pass
 

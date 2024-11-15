@@ -73,7 +73,7 @@ class CommandService(Service):
         mission_command.downloadMission = url
         message = mission_command.SerializeToString()
         logger.info(f'download_mission message:{message}')
-        self.msn_sock.send(message)
+        await self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 
@@ -84,7 +84,7 @@ class CommandService(Service):
         mission_command.startMission = True
         message = mission_command.SerializeToString()
         logger.info(f'start_mission message:{message}')
-        self.msn_sock.send(message)
+        await self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 
@@ -93,7 +93,7 @@ class CommandService(Service):
         mission_command = cnc_pb2.Mission()
         mission_command.stopMission = True
         message = mission_command.SerializeToString()
-        self.msn_sock.send(message)
+        await self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 

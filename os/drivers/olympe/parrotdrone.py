@@ -8,6 +8,8 @@ import threading
 import math
 import os
 import time
+import asyncio
+import concurrent.futures
 
 import olympe
 from olympe import Drone
@@ -27,6 +29,8 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
+
+from util.timer import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -589,7 +593,8 @@ class FFMPEGStreamingThread(threading.Thread):
     async def grabFrame(self):
         try:
             await self.frame_updated.wait()
-            frame = self.currentFrame.copy()
+            with Timer(logger, "Copying current frame"):
+                frame = self.currentFrame.copy()
             self.frame_updated.clear()
             return frame
         except Exception as e:
