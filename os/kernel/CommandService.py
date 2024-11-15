@@ -151,12 +151,10 @@ class CommandService(Service):
 
                 # Check for messages on the ROUTER socket
                 if self.cmd_front_cmdr_sock in socks:
-                    message = await self.cmd_front_cmdr_sock.recv_multipart()
+                    cmd = await self.cmd_front_cmdr_sock.recv_multipart()
 
                     # Filter the message
-                    identity = message[0]
-                    cmd = message[1]
-                    logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: identity: {identity} cmd: {cmd}")
+                    logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}")
                     await self.process_command(cmd)
                  
                 # Check for messages on the DEALER socket
