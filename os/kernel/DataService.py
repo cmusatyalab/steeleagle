@@ -213,8 +213,8 @@ class DataService(Service):
                     reshaped_arr = nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels'])
 
                     if os.environ.get("DOWNSCALE_IMAGE") == "true":
-                        height, width = reshaped_arr.shape
-                        reshaped_arr = reshaped_arr.reshape(height // 2, 2, width // 2, 2).mean(axis=(1,3)).astype(np.uint8)
+                        height, width, _ = reshaped_arr.shape
+                        reshaped_arr = reshaped_arr.reshape(height // 2, 2, width // 2, 2, -1).mean(axis=(1,3)).astype(np.uint8)
                     with Timer(logger, "Encoding frame to jpg"):
                         if os.environ.get("USE_PROCESS_POOL") == "true":
                             _, frame = await self.loop.run_in_executor(self.pool, cv2.imencode, '.jpg', reshaped_arr)
