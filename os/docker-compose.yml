@@ -35,7 +35,7 @@ services:
       - DRONE_TYPE=${DRONE_TYPE} # ugly current compromised solution
       - DRONE_ID=${DRONE_ID} # ugly current compromised solution
     ports:
-      - "${HOST_CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
+      # - "${CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
       - "${CMD_FRONT_USR_PORT}:${CMD_FRONT_USR_PORT}"
       - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
       - "${MSN_PORT}:${MSN_PORT}"
