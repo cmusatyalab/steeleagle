@@ -581,6 +581,7 @@ class FFMPEGStreamingThread(threading.Thread):
         self.isRunning = True
         self.frame_updated = asyncio.Event()
         self.loop = asyncio.get_running_loop()
+        self.pool = concurrent.futures.ProcessPoolExecutor(max_workers=1)
 
     def run(self):
         try:
@@ -594,7 +595,7 @@ class FFMPEGStreamingThread(threading.Thread):
         try:
             await self.frame_updated.wait()
             with Timer(logger, "Copying current frame"):
-                frame = self.currentFrame.copy()
+                frame = await self.loop.run_in_executor(self.pool, self.currentFrame.copy())
             self.frame_updated.clear()
             return frame
         except Exception as e:

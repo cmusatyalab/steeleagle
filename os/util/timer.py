@@ -10,7 +10,7 @@ class TimerError(Exception):
 class Timer:
     logger: logging.Logger
     name: Optional[str] = None
-    text: str = "{} took {:0.4f} seconds"
+    text: str = "{} took {:0.4f} ms"
     max_frequency: Optional[int] = None
     _start_time: Optional[float] = field(default=None, init=False, repr=False)
     _last_log_time: Optional[int] = None
@@ -46,4 +46,4 @@ class Timer:
             else:
                 self._last_log_time = now
 
-        self.logger.info(self.text.format(self.name, elapsed_time))
+        self.logger.info(self.text.format(self.name, elapsed_time * 1000))

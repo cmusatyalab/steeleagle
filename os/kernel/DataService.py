@@ -4,6 +4,7 @@ import numpy as np
 import zmq
 import zmq.asyncio
 import asyncio
+import concurrent.futures
 import os
 import sys
 import logging
@@ -29,6 +30,9 @@ if os.environ.get("LOG_TO_FILE") == "true":
 class DataService(Service):
     def __init__(self, gabriel_server, gabriel_port):
         super().__init__()
+
+        self.loop = asyncio.get_running_loop()
+        self.pool = concurrent.futures.ProcessPoolExecutor(max_workers=1)
 
         # setting up args
         self.telemetry_cache = {
@@ -207,7 +211,8 @@ class DataService(Service):
                     frame_bytes = self.frame_cache['data']
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
                     with Timer(logger, "Encoding frame to jpg"):
-                        frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
+                        reshaped_arr = nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels'])
+                        _, frame = await self.loop.run_in_executor(self.pool, cv2.imencode, '.jpg', reshaped_arr)
 
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
