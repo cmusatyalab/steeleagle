@@ -102,8 +102,9 @@ def compile_mission(dsl_file, kml_file, drone_list, alt):
     
 
         
-def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock):
+def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis):
     try:
+        logger.info(f"Sending request to drone...")
         # Send the command to each drone 
         for drone_id in drone_list:
             # check if the cmd is a mission
@@ -111,11 +112,10 @@ def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock):
                 # reconstruct the script url with the correct compiler output path
                 msg.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
                 logger.info(f"script url:  {msg.cmd.script_url}")
-                
+            
             # send the command to the drone
-            message = [drone_id, msg.SerializeToString()]
-            cmd_front_cmdr_sock.send_multipart(message)
-            logger.info(f'Delivered request:\n{text_format.MessageToString(message)}')
+            cmd_front_cmdr_sock.send_multipart([drone_id.encode('utf-8'), msg.SerializeToString()])
+            logger.info(f'Delivered request to drone {drone_id}:\n {text_format.MessageToString(msg)}')
             
             # store the record in redis
             key = redis.xadd(
@@ -169,30 +169,17 @@ def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt):
             base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
             
-        # Send the command to each drone 
-        for drone_id in drone_list:
-            # check if the cmd is a mission
-            if (base_url):
-                # reconstruct the script url with the correct compiler output path
-                msg.cmd.script_url = f"{base_url}{output_path}{drone_id}.ms"
-                logger.info(f"script url:  {msg.cmd.script_url}")
-                
-            # send the command to the drone
-            send_to_drone(msg, drone_id, cmd_front_cmdr_sock)
+        # send the command to the drone
+        send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis)
             
-            # store the record in redis
-            key = redis.xadd(
-                f"commands",
-                {"commander": msg.commander_id, "drone": drone_id, "value": text_format.MessageToString(msg),}
-            )
-            logger.debug(f"Updated redis under stream commands at key {key}")
+
              
         cmdr_sock.send(b'ACK')
         logger.info('Sent ACK to commander')
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--droneport', type=int, default=6000, help='Specify port to listen for drone requests [default: 6000]')
+    parser.add_argument('-d', '--droneport', type=int, default=5003, help='Specify port to listen for drone requests [default: 5003]')
     parser.add_argument('-c', '--cmdrport', type=int, default=6001, help='Specify port to listen for commander requests [default: 6001]')
     parser.add_argument(
         "-r", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
@@ -210,24 +197,25 @@ def main():
     logger.info(f"Starting control plane with altitude {alt}...")
     
     # Connect to redis
-    redis = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+    r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
     logger.info(f"Connected to redis on port {args.redis}...")
 
     # Set up the commander socket
-    logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
     ctx = zmq.Context()
     cmdr_sock = ctx.socket(zmq.REP)
     cmdr_sock.bind(f'tcp://*:{args.cmdrport}')
+    logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
 
     # Set up the drone socket
     async_ctx = zmq.asyncio.Context()
     cmd_front_cmdr_sock = async_ctx.socket(zmq.ROUTER)
+    cmd_front_cmdr_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
     cmd_front_cmdr_sock.bind(f'tcp://*:{args.droneport}')
     logger.info(f'Listening on tcp://*:{args.droneport} for drone requests...')
     
     # Listen for incoming requests from cmdr
     try:
-        listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt)
+        listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, r, alt)
     except KeyboardInterrupt:
         logger.info('Shutting down...')
         cmdr_sock.close()

@@ -40,3 +40,4 @@ onboard/python/requirements.txt
 
 # user space implementation
 os/user/project/implementation/
+os/env.sh
