@@ -14,7 +14,7 @@ from system_call_stubs.DroneStub import DroneStub
 from cnc_protocol import cnc_pb2
 from util.utils import SocketOperation, setup_socket
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
@@ -26,6 +26,8 @@ context = zmq.Context()
 msn_sock = context.socket(zmq.REP)
 setup_socket(msn_sock, SocketOperation.CONNECT, 'MSN_PORT', 'Connected to user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
+user_path = 'user/project/implementation'
+
 class MissionController():
     def __init__(self):
         self.isTerminated = False
@@ -33,7 +35,7 @@ class MissionController():
         self.transitMap = {}
         self.task_arg_map = {}
         self.reload = False
-        self.user_path = os.environ.get('PYTHONPATH') +'/user/project/implementation'
+        self.user_path = os.environ.get('PYTHONPATH') + user_path
         logger.info(f"User path: {self.user_path}")
         
     ######################################################## MISSION ############################################################

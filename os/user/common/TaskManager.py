@@ -8,7 +8,6 @@ import queue
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
     
 class TaskManager():
