@@ -40,7 +40,9 @@ if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 50
 if "gimbal_speed" not in st.session_state:
     st.session_state.gimbal_speed = 50
-
+if "imagery_framerate" not in st.session_state:
+    st.session_state.imagery_framerate = 2
+    
 st.set_page_config(
     page_title="Commander",
     page_icon=":world_map:",
