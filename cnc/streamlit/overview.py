@@ -142,8 +142,8 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["altitude"]:.2f}m]</div>',
-
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["altitude"]:.2f}m]',
+                        #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
                         icon="plane",
@@ -151,7 +151,6 @@ def draw_map():
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
                     )
-                    html = f'<img src="http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg" height="250px" width="250px"/>'
 
                     fg.add_child(
                         folium.Marker(
@@ -159,7 +158,6 @@ def draw_map():
                                 row["latitude"],
                                 row["longitude"],
                             ],
-                            tooltip=html,
                             icon=plane,
                         )
                     )
@@ -170,7 +168,6 @@ def draw_map():
                                 row["latitude"],
                                 row["longitude"],
                             ],
-                            tooltip=html,
                             icon=text,
                         )
                     )
@@ -189,60 +186,97 @@ def draw_map():
         layer_control=lc,
         returned_objects=[],
         center=st.session_state.center,
+        height=500
     )
 
 menu()
+options_expander = st.expander(" **:gray-background[:wrench: Toolbar]**", expanded=True)
 
-map_options = ["Google Sat", "Google Hybrid"]
-tiles_col = st.columns(5)
-tiles_col[0].selectbox(
-    key="map_server",
-    label=":world_map: **:blue[Tile Server]**",
-    options=map_options,
-    index=0
-)
+with options_expander:
+    map_options = ["Google Sat", "Google Hybrid"]
+    tiles_col = st.columns(5)
+    tiles_col[0].selectbox(
+        key="map_server",
+        label=":world_map: **:blue[Tile Server]**",
+        options=map_options,
+        index=0
+    )
 
-tiles_col[1].selectbox(
-    key="tracking_selection",
-    label=":dart: **:green[Track Drone]**",
-    options=get_drones(),
-    on_change=change_center(),
-    placeholder="Select a drone to track...",
-)
+    tiles_col[1].selectbox(
+        key="tracking_selection",
+        label=":dart: **:green[Track Drone]**",
+        options=get_drones(),
+        on_change=change_center(),
+        placeholder="Select a drone to track...",
+    )
 
 
-tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, key="inactivity_time", max_value=600000)
+    tiles_col[2].number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, key="inactivity_time", max_value=600000)
 
-if st.session_state.map_server == "Google Sat":
-    tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
-elif st.session_state.map_server == "Google Hybrid":
-    tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
+    if st.session_state.map_server == "Google Sat":
+        tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
+    elif st.session_state.map_server == "Google Hybrid":
+        tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
-tiles = folium.TileLayer(
-    name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
-)
+    tiles = folium.TileLayer(
+        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
+    )
 
-tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
-mode = ":joystick: **:green[Manual (armed)]**" if st.session_state.armed else ":joystick: **:red[Manual (disarmed)]**"
-with tiles_col[4]:
-    st.caption(mode)
-    st.checkbox(key="armed", label="Arm Drone?")
+    tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
+    mode = "**:green-background[:joystick: Manual Control Enabled (armed)]**" if st.session_state.armed else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
 
-col1, col2 = st.columns([3, 1])
+
+col1, col2 = st.columns([0.6, 0.4])
 with col1:
-    draw_map()
+    drone_list = []
+    detected_header = "**:sleuth_or_spy: Object Detection**"
+    avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
+    hsv_header = "**:traffic_light: HSV Filtering**"
+    for k in red.keys("telemetry.*"):
+        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
+        last_update = (int(df.index[0].split("-")[0])/1000)
+        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(".")[-1]
+            drone_list.append(drone_name)
+    drone_list.append(detected_header)
+    drone_list.append(avoidance_header)
+    drone_list.append(hsv_header)
+    tabs = st.tabs(drone_list)
+
+    i = 0
+    for d in drone_list:
+        with tabs[i]:
+            if d == detected_header:
+               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
+            elif d == avoidance_header:
+                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
+            elif d == hsv_header:
+                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
+            else:
+                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
+        i += 1
 
 with col2:
+        st.caption("**:blue-background[:globe_with_meridians: Flight Tracking]**")
+        draw_map()
+
+with st.sidebar:
     drone_list = get_drones()
     if len(drone_list) > 0:
-        st.multiselect(
-            label=":helicopter: **:orange[Swarm Control]** :helicopter:",
-            options=drone_list,
-            default=drone_list,
-            key="selected_drones"
-        )
+        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
+            options=drone_list.keys(),
+            default=drone_list.keys(),
+            format_func=lambda option: drone_list[option],
+            selection_mode="multi",
+             key="selected_drones"
+             )
+
     else:
         st.caption("No active drones.")
+
+    st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
+    st.caption(mode)
+
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
