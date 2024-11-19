@@ -113,6 +113,35 @@ def rth():
     rep = st.session_state.zmq.recv()
     st.toast(f"Instructed {req.cmd.for_drone_id} to return to home!")
 
+@st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
+def update_imagery():
+    drone_list = []
+    detected_header = "**:sleuth_or_spy: Object Detection**"
+    avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
+    hsv_header = "**:traffic_light: HSV Filtering**"
+    for k in red.keys("telemetry.*"):
+        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
+        last_update = (int(df.index[0].split("-")[0])/1000)
+        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(".")[-1]
+            drone_list.append(drone_name)
+    drone_list.append(detected_header)
+    drone_list.append(avoidance_header)
+    drone_list.append(hsv_header)
+    tabs = st.tabs(drone_list)
+
+    i = 0
+    for d in drone_list:
+        with tabs[i]:
+            if d == detected_header:
+               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
+            elif d == avoidance_header:
+                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
+            elif d == hsv_header:
+                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
+            else:
+                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
+        i += 1
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -224,37 +253,11 @@ with options_expander:
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
     mode = "**:green-background[:joystick: Manual Control Enabled (armed)]**" if st.session_state.armed else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
-
+    tiles_col[4].number_input(key = "imagery_framerate", label=":camera: **:orange[Imagery FPS]**", min_value=1, max_value=30, step=1, value=2, format="%0d")
 
 col1, col2 = st.columns([0.6, 0.4])
 with col1:
-    drone_list = []
-    detected_header = "**:sleuth_or_spy: Object Detection**"
-    avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
-    hsv_header = "**:traffic_light: HSV Filtering**"
-    for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            drone_name = k.split(".")[-1]
-            drone_list.append(drone_name)
-    drone_list.append(detected_header)
-    drone_list.append(avoidance_header)
-    drone_list.append(hsv_header)
-    tabs = st.tabs(drone_list)
-
-    i = 0
-    for d in drone_list:
-        with tabs[i]:
-            if d == detected_header:
-               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == avoidance_header:
-                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == hsv_header:
-                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
-            else:
-                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
-        i += 1
+    update_imagery()
 
 with col2:
         st.caption("**:blue-background[:globe_with_meridians: Flight Tracking]**")
