@@ -47,7 +47,7 @@ if "file_list" not in st.session_state:
 
 st.set_page_config(
     page_title="Commander",
-    page_icon=":world_map:",
+    page_icon=":military_helmet:",
     layout="wide",
     menu_items={
         'Get help': 'https://cmusatyalab.github.io/steeleagle/',

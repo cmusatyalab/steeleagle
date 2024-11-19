@@ -45,7 +45,7 @@ if "imagery_framerate" not in st.session_state:
     
 st.set_page_config(
     page_title="Commander",
-    page_icon=":world_map:",
+    page_icon=":military_helmet:",
     layout="wide",
     menu_items={
         'Get help': 'https://cmusatyalab.github.io/steeleagle/',
@@ -136,13 +136,13 @@ def update_imagery():
     for d in drone_list:
         with tabs[i]:
             if d == detected_header:
-               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
+               st.image(f"../server/steeleagle-vol/detected/latest.jpg", use_container_width=True)
             elif d == avoidance_header:
-                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
+                st.image(f"../server/steeleagle-vol/moa/latest.jpg", use_container_width=True)
             elif d == hsv_header:
-                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
+                st.image(f"../server/steeleagle-vol/detected/hsv.jpg", use_container_width=True)
             else:
-                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
+                st.image(f"../server/steeleagle-vol/raw/{d}/latest.jpg", use_container_width=True)
         i += 1
 @st.fragment(run_every="1s")
 def draw_map():
