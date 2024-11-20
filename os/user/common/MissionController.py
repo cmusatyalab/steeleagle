@@ -9,34 +9,29 @@ import requests
 import zmq
 import asyncio
 import logging
+
+from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
 # from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
-from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
-context = zmq.Context()
-msn_sock = context.socket(zmq.REP)
-setup_socket(msn_sock, SocketOperation.CONNECT, 'MSN_PORT', 'Connected to user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
-user_path = 'user/project/implementation'
 
 class MissionController():
-    def __init__(self):
+    def __init__(self, user_path):
         self.isTerminated = False
         self.tm = None
         self.transitMap = {}
         self.task_arg_map = {}
         self.reload = False
         self.user_path = os.environ.get('PYTHONPATH') + user_path
-        logger.info(f"User path: {self.user_path}")
+        logger.info("Mission Controller created")
+        
+        context = zmq.Context()
+        self.msn_sock = context.socket(zmq.REP)
+        setup_socket(self.msn_sock, SocketOperation.CONNECT, 'MSN_PORT', 'Connected to user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
         
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:
@@ -105,7 +100,7 @@ class MissionController():
         
         # dynamic import the fsm
         logger.info(f"start the mission")
-        from project.implementation.Mission import Mission
+        from project.Mission import Mission
         if self.reload :
             logger.info('Reloading...')
             modules = sys.modules.copy()
@@ -154,7 +149,7 @@ class MissionController():
             logger.debug("MC")
             try:
                 # Receive a message
-                message = msn_sock.recv(flags=zmq.NOBLOCK)
+                message = self.msn_sock.recv(flags=zmq.NOBLOCK)
                 
                 # Log the raw received message
                 logger.info(f"Received raw message: {message}")
@@ -180,20 +175,15 @@ class MissionController():
                     response = "Unknown command"
 
                 # Send a reply back to the client
-                msn_sock.send_string(response)
+                self.msn_sock.send_string(response)
                 
             except zmq.Again:
                 pass
                 
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
-                msn_sock.send_string("Error processing command")
+                self.msn_sock.send_string("Error processing command")
             
             await asyncio.sleep(0)
             
             
-            
-
-if __name__ == "__main__":
-    mc = MissionController()
-    asyncio.run(mc.run())
