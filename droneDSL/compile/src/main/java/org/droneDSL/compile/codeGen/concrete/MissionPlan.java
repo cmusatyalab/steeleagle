@@ -20,8 +20,7 @@ public final class MissionPlan {
   }
 
   public void codeGenPython(String rootPath) throws IOException {
-    var pRoot = Paths.get(rootPath);
-    var root = pRoot.resolve("implementation");
+    var root = Paths.get(rootPath);
     Files.writeString(root.resolve("Mission.py"), missionContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
   }
 
@@ -109,7 +108,7 @@ public final class MissionPlan {
             import logging
             logger = logging.getLogger(__name__)
             logger.setLevel(logging.INFO)
-            from project.interface.Task import TaskArguments, TaskType
+            from interface.Task import TaskArguments, TaskType
                         
                         
             class Mission:

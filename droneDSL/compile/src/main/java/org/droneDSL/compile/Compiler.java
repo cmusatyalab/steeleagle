@@ -40,8 +40,8 @@ public class Compiler implements Runnable {
   @CommandLine.Option(names = {"-a", "--Altitude"}, paramLabel = "<Altitude>", defaultValue = "15", description = "altitude of the waypoints specified")
   String Altitude = "12";
 
-  @CommandLine.Option(names = {"-p", "--Platform"}, paramLabel = "<Platform>", defaultValue = "python", description = "compiled code platform")
-  String Platform = "python";
+  @CommandLine.Option(names = {"-p", "--Platform"}, paramLabel = "<Platform>", defaultValue = "python/project", description = "compiled code platform")
+  String Platform = "python/project";
 
   @CommandLine.Option(names = {"-d", "--Drones"}, paramLabel = "<Drones>", defaultValue = "ant", description = "all the drones name")
   String Drones = "ant";
@@ -105,19 +105,8 @@ public class Compiler implements Runnable {
       try {
         FileOutputStream fos = new FileOutputStream(String.format(OutputFilePath+droneID+".ms"));
         ZipOutputStream zos = new ZipOutputStream(fos);
-
-        // add a directory's files to the zip
-        addToZipFile(platformPath + "/task_defs", "./task_defs", zos);
-        addToZipFile(platformPath + "/mission", "./mission", zos);
-        addToZipFile(platformPath + "/transition_defs", "./transition_defs", zos);
-
-        // add build file to the zip
-        Path buildFile = Paths.get(String.format("%s/requirements.txt", Platform));
-        zos.putNextEntry(new ZipEntry("requirements.txt"));
-        Files.copy(buildFile, zos);
-        zos.closeEntry();
-
-
+        // add to the zip file
+        addToZipFile(platformPath, "project", zos);
         zos.close();
         fos.close();
       } catch (IOException e) {
@@ -126,13 +115,19 @@ public class Compiler implements Runnable {
     }
   }
 
-
   private static void addToZipFile(String sourceDir, String insideZipDir, ZipOutputStream zos) throws IOException {
     File dir = new File(sourceDir);
     File[] files = dir.listFiles();
+
+    // Check if the directory exists and contains files
     if (files != null) {
       for (File file : files) {
-        if (file.isFile()) {
+        // If it's a directory, recursively process the files inside this directory
+        if (file.isDirectory()) {
+          // Create the corresponding directory inside the ZIP file
+          addToZipFile(file.getAbsolutePath(), insideZipDir + "/" + file.getName(), zos);
+        } else {
+          // If it's a file, add it to the ZIP file
           zos.putNextEntry(new ZipEntry(insideZipDir + "/" + file.getName()));
           Files.copy(file.toPath(), zos);
           zos.closeEntry();
