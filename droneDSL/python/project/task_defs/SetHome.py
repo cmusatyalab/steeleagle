@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from project.interface.Task import Task
-import time
+from interface.Task import Task
 import ast
-import asyncio
 
 class SetHome(Task):
 

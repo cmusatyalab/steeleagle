@@ -7,7 +7,6 @@ import functools
 import logging
 import threading
 from aenum import Enum
-import inspect
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

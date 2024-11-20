@@ -1,9 +1,8 @@
 from json import JSONDecodeError
 import json
 import logging
-import time
 from venv import logger
-from project.interface.Transition import Transition
+from interface.Transition import Transition
 from gabriel_protocol import gabriel_pb2
 
 logger = logging.getLogger(__name__)

@@ -9,8 +9,8 @@ import time
 import asyncio
 import logging
 from gabriel_protocol import gabriel_pb2
-from project.implementation.transition_defs.TimerTransition import TimerTransition
-from project.interface.Task import Task
+from ..transition_defs.TimerTransition import TimerTransition
+from interface.Task import Task
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
