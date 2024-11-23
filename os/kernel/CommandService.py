@@ -181,7 +181,7 @@ class CommandService(Service):
                         pass
                     elif identity == b'usr':
                         logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: sent back bc of user")
-                        await self.cmd_front_usr_sock.send_multipart(message)
+                        await self.cmd_front_usr_sock.send_multipart([cmd])
                     else:
                         logger.error(f"proxy: invalid identity")
 
