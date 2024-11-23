@@ -26,7 +26,7 @@ class MissionController():
         self.transitMap = {}
         self.task_arg_map = {}
         self.reload = False
-        self.user_path = os.environ.get('PYTHONPATH') + user_path
+        self.user_path = user_path
         logger.info("Mission Controller created")
         
         context = zmq.Context()
@@ -89,38 +89,41 @@ class MissionController():
             
     def download_mission(self, url):
         self.download_script(url)
-             
+
+    def reload_mission(self):
+        logger.info('Reloading...')
+        modules = sys.modules.copy()
+        for module_name, module in modules.items():
+            logger.info(f"Module name: {module_name}")
+            if module_name.startswith('project.task_defs') or module_name.startswith('project.Mission') or module_name.startswith('project.transition_defs'):
+                try:
+                    # Log and reload the module
+                    logger.info(f"Reloading module: {module_name}")
+                    importlib.reload(module)
+                except Exception as e:
+                    logger.error(f"Failed to reload module {module_name}: {e}")
+                    
     def start_mission(self):
-        # check if the mission is already running
         if self.tm:
             logger.info(f"mission already running")
             return
         else: # first time mission, create a task manager
-            from common.TaskManager import TaskManager
+            import common.TaskManager as tm 
         
-        # dynamic import the fsm
         logger.info(f"start the mission")
-        from project.Mission import Mission
-        if self.reload :
-            logger.info('Reloading...')
-            modules = sys.modules.copy()
-            for module_name, module in modules.items():
-                logger.info(f"Module name: {module_name}")
-                if module_name.startswith('project.implementation.task_defs') or module_name.startswith('project.implementation.Mission') or module_name.startswith('project.implementation.transition_defs'):
-                    try:
-                        # Log and reload the module
-                        logger.info(f"Reloading module: {module_name}")
-                        importlib.reload(module)
-                    except Exception as e:
-                        logger.error(f"Failed to reload module {module_name}: {e}")
-                    
-        Mission.define_mission(self.transitMap, self.task_arg_map)
+        if self.reload : 
+            self.reload_mission()
+        
+        import project.Mission as msn # import the mission module instead of attribute of the module for the reload to work
+        self.reload = True 
+               
+        msn.Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
         logger.info(f"start the task manager")
-        self.tm = TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
+        self.tm = tm.TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
-        self.reload = True
+        
         
     
     async def end_mission(self):

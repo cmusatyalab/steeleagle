@@ -79,11 +79,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
     restart: unless-stopped
     privileged: true
-    entrypoint: ["python3", "-m", "common.MissionController"]
+    entrypoint: ["python3", "common"]
+    # entrypoint: ["tail", "-f", "/dev/null"]
     networks:
       - os-net
     volumes:
-      - ./user/project/implementation:/steeleagle_os/user/project/implementation/
+      - ./user/project/:/steeleagle_os/user/project/
 
 networks:
 

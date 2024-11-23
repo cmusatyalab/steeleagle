@@ -1,9 +1,9 @@
 import asyncio
-from interface.Task import TaskType      
-from project.task_defs.TrackTask import TrackTask
-from project.task_defs.DetectTask import DetectTask
-from project.task_defs.AvoidTask import AvoidTask
-from project.task_defs.TestTask import TestTask
+import interface.Task as taskitf     
+import project.task_defs.TrackTask as track 
+import project.task_defs.DetectTask as detect
+import project.task_defs.AvoidTask as avoid
+import project.task_defs.TestTask as test
 import queue
 import logging
 
@@ -67,18 +67,18 @@ class TaskManager():
     def create_task(self, task_id):
         logger.info(f'taskid{task_id}')
         if (task_id in self.task_arg_map.keys()):
-            if (self.task_arg_map[task_id].task_type == TaskType.Detect):
+            if (self.task_arg_map[task_id].task_type == taskitf.TaskType.Detect):
                 logger.info('Detect task')
-                return DetectTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
-            elif (self.task_arg_map[task_id].task_type == TaskType.Track):
+                return detect.DetectTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == taskitf.TaskType.Track):
                 logger.info('Track task')
-                return TrackTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
-            elif (self.task_arg_map[task_id].task_type == TaskType.Avoid):
+                return track.TrackTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == taskitf.TaskType.Avoid):
                 logger.info('Avoid task')
-                return AvoidTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
-            elif (self.task_arg_map[task_id].task_type == TaskType.Test):
+                return avoid.AvoidTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+            elif (self.task_arg_map[task_id].task_type == taskitf.TaskType.Test):
                 logger.info('Test task')
-                return TestTask(self.drone, None, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+                return test.TestTask(self.drone, None, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
         return None
     
     def stop_task(self):

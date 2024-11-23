@@ -65,7 +65,7 @@ async def camera_stream(drone, cam_sock):
             cam_message.channels = 3
             cam_message.id = frame_id
             cam_sock.send(cam_message.SerializeToString())
-            logger.debug(f'Camera stream: sent frame {frame_id=}')
+            # logger.debug(f'Camera stream: sent frame {frame_id=}')
             frame_id = frame_id + 1
         except Exception as e:
             logger.error(f'Failed to get video frame, error: {e}')
@@ -97,7 +97,7 @@ async def telemetry_stream(drone, tel_sock):
             tel_message.satellites = telDict["satellites"]
             telemetry_logger.debug(f"Telemetry: {tel_message}")
             tel_sock.send(tel_message.SerializeToString())
-            logger.debug('Sent telemetry')
+            # logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0.01)

@@ -34,7 +34,7 @@ logger.addHandler(handler)
 compiler_path = '/compiler'
 compiler_file = 'compile-1.5-full.jar'
 output_path = '/compiler/out/flightplan_'
-platform_path  = '/compiler/python'
+platform_path  = '/compiler/python/project'
 
 
 def download_script(script_url):

@@ -161,7 +161,8 @@ class CommandService(Service):
                 if self.cmd_front_usr_sock in socks:
                     message = await self.cmd_front_usr_sock.recv_multipart()
                     logger.debug(f"proxy : cmd_front_usr_sock Received message from FRONTEND: {message}")
-                    await self.cmd_back_sock.send_multipart(message)
+                    identity = b'usr'
+                    await self.cmd_back_sock.send_multipart([identity, message])
                     
                     
                 # Check for messages on the DEALER socket

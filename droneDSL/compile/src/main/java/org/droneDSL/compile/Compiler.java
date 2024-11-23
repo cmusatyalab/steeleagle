@@ -51,7 +51,6 @@ public class Compiler implements Runnable {
   public void run() {
     // drone info
     List<String> droneList = List.of(Drones.split("&"));
-    int droneSize = droneList.size();
 
     // preprocess
     Map<String, Map<String, List<Compiler.Pt>>> droneWaypointsDict;
@@ -106,7 +105,7 @@ public class Compiler implements Runnable {
         FileOutputStream fos = new FileOutputStream(String.format(OutputFilePath+droneID+".ms"));
         ZipOutputStream zos = new ZipOutputStream(fos);
         // add to the zip file
-        addToZipFile(platformPath, "project", zos);
+        addToZipFile(platformPath, "", zos);
         zos.close();
         fos.close();
       } catch (IOException e) {
