@@ -42,7 +42,7 @@ if "gimbal_speed" not in st.session_state:
     st.session_state.gimbal_speed = 50
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
-    
+
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -136,13 +136,13 @@ def update_imagery():
     for d in drone_list:
         with tabs[i]:
             if d == detected_header:
-               st.image(f"../server/steeleagle-vol/detected/latest.jpg", use_container_width=True)
+               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
             elif d == avoidance_header:
-                st.image(f"../server/steeleagle-vol/moa/latest.jpg", use_container_width=True)
+                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
             elif d == hsv_header:
-                st.image(f"../server/steeleagle-vol/detected/hsv.jpg", use_container_width=True)
+                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
             else:
-                st.image(f"../server/steeleagle-vol/raw/{d}/latest.jpg", use_container_width=True)
+                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
         i += 1
 @st.fragment(run_every="1s")
 def draw_map():
@@ -255,7 +255,7 @@ with options_expander:
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
     mode = "**:green-background[:joystick: Manual Control Enabled (armed)]**" if st.session_state.armed else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
-    tiles_col[4].number_input(key = "imagery_framerate", label=":camera: **:orange[Imagery FPS]**", min_value=1, max_value=30, step=1, value=2, format="%0d")
+    tiles_col[4].number_input(key = "imagery_framerate", label=":camera: **:orange[Imagery FPS]**", min_value=1, max_value=10, step=1, value=2, format="%0d")
 
 col1, col2 = st.columns([0.6, 0.4])
 with col1:
@@ -315,46 +315,55 @@ with st.sidebar:
         on_click=rth,
     )
 
-    st.session_state.key_pressed = st_keypressed()
-    if st.session_state.armed and st.session_state.selected_drones is not None:
+    if st.session_state.armed and len(st.session_state.selected_drones) > 0:
+        c1, c2 = st.columns(spec=2, gap="small")
+        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, value=50, step=5, format="%d")
+        c2.number_input(key = "thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c3, c4 = st.columns(spec=2, gap="small")
+        c3.number_input(key = "yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c4.number_input(key = "roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c5, c6 = st.columns(spec=2, gap="small")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=50, format="%d")
+
+        key_pressed = st_keypressed()
         req = cnc_pb2.Extras()
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
         #req.cmd.manual = True
-        if st.session_state.key_pressed == "t":
+        if key_pressed == "t":
             req.cmd.takeoff = True
             st.info(f"Instructed {req.cmd.for_drone_id} to takeoff.")
-        elif st.session_state.key_pressed == "g":
+        elif key_pressed == "g":
             req.cmd.land = True
             st.info(f"Instructed {req.cmd.for_drone_id} to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
-            if st.session_state.key_pressed == "w":
+            if key_pressed == "w":
                 pitch = 1 * st.session_state.pitch_speed
-            elif st.session_state.key_pressed == "s":
+            elif key_pressed == "s":
                 pitch = -1 * st.session_state.pitch_speed
-            elif st.session_state.key_pressed == "d":
+            elif key_pressed == "d":
                 roll = 1 * st.session_state.roll_speed
-            elif st.session_state.key_pressed == "a":
+            elif key_pressed == "a":
                 roll = -1 * st.session_state.roll_speed
-            elif st.session_state.key_pressed == "i":
+            elif key_pressed == "i":
                 thrust = 1 * st.session_state.thrust_speed
-            elif st.session_state.key_pressed == "k":
+            elif key_pressed == "k":
                 thrust = -1 * st.session_state.thrust_speed
-            elif st.session_state.key_pressed == "l":
+            elif key_pressed == "l":
                 yaw = 1 * st.session_state.yaw_speed
-            elif st.session_state.key_pressed == "j":
+            elif key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
-            elif st.session_state.key_pressed == "r":
+            elif key_pressed == "r":
                 gimbal_pitch = 1 * st.session_state.gimbal_speed
-            elif st.session_state.key_pressed == "f":
+            elif key_pressed == "f":
                 gimbal_pitch = -1 * st.session_state.gimbal_speed
-            st.caption(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust})")
+            st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
             req.cmd.pcmd.yaw = yaw
             req.cmd.pcmd.pitch = pitch
             req.cmd.pcmd.roll = roll
             req.cmd.pcmd.gaz = thrust
             req.cmd.pcmd.gimbal_pitch = gimbal_pitch
-        st.session_state.key_pressed = None
+        key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
