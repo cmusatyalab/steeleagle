@@ -23,6 +23,8 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
+drone_id = os.environ.get('DRONE_ID')
+
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
@@ -78,7 +80,8 @@ async def telemetry_stream(drone, tel_sock):
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            tel_message.drone_name = telDict["name"]
+            # tel_message.drone_name = telDict["name"]
+            tel_message.drone_name = drone_id
             tel_message.global_position.latitude = telDict["gps"][0]
             tel_message.global_position.longitude = telDict["gps"][1]
             tel_message.global_position.altitude = telDict["gps"][2]
