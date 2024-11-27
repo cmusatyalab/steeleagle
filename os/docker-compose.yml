@@ -4,6 +4,7 @@ services:
     image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
     container_name: driver
     environment:
+      - DRONE_ID=${DRONE_ID} # ugly current compromised solution
       - PYTHONPATH=${PYTHONPATH}
       - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
       - STEELEAGLE_DRIVER_DRONE_ARGS=${STEELEAGLE_DRIVER_DRONE_ARGS}
