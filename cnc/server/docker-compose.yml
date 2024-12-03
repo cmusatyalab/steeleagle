@@ -22,7 +22,7 @@ services:
       - cnc-net
 
   telemetry-engine:
-    image: achanana/steeleagle:${TAG}
+    image: xianglic/steeleagle-os-swrm-ctrl:${TAG} 
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
