@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-License-Identifier: GPL-2.0-only
 
-gabriel-server==2.1.1
-gabriel-client==2.1.1
+gabriel-server
 opencv-python>=3, <5
 py-cpuinfo
 validators

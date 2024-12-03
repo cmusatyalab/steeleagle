@@ -32,7 +32,6 @@ logger.addHandler(handler)
 
 # Set up the paths and variables for the compiler
 compiler_path = '/compiler'
-compiler_file = 'compile-1.5-full.jar'
 output_path = '/compiler/out/flightplan_'
 platform_path  = '/compiler/python/project'
 
@@ -71,7 +70,7 @@ def download_script(script_url):
     except Exception as e:
         logger.error(f"Error during download or extraction: {e}")
         
-def compile_mission(dsl_file, kml_file, drone_list, alt):
+def compile_mission(dsl_file, kml_file, drone_list, alt, compiler_file):
     # Construct the full paths for the DSL and KML files
     dsl_file_path = os.path.join(compiler_path, dsl_file)
     kml_file_path = os.path.join(compiler_path, kml_file)
@@ -101,7 +100,6 @@ def compile_mission(dsl_file, kml_file, drone_list, alt):
     logger.info("Compilation successful.")
     
 
-        
 def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis):
     try:
         logger.info(f"Sending request to drone...")
@@ -127,7 +125,7 @@ def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis):
         logger.error(f"Error sending request to drone: {e}")
 
     
-def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt):
+def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt, compiler_file):
     while True:
         
         # Listen for incoming requests from cmdr
@@ -162,7 +160,7 @@ def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt):
             # compile the mission
             drone_list_revised = "&".join(drone_list)
             logger.info(f"drone list revised:  {drone_list_revised}")
-            compile_mission(dsl, kml, drone_list_revised, alt)
+            compile_mission(dsl, kml, drone_list_revised, alt, compiler_file)
             
             # get the base url
             parsed_url = urlparse(script_url)
@@ -190,11 +188,17 @@ def main():
     parser.add_argument(
         "--altitude", type=int, default=15, help="base altitude for the drones mission"
     )
+    parser.add_argument(
+        "--compiler_file", default='compile-1.5-full.jar', help="compiler file name"
+    )   
     args = parser.parse_args()
     
     # Set the altitude
     alt = args.altitude
     logger.info(f"Starting control plane with altitude {alt}...")
+    
+    compiler_file = args.compiler_file
+    logger.info(f"Using compiler file: {compiler_file}")
     
     # Connect to redis
     r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
@@ -215,7 +219,7 @@ def main():
     
     # Listen for incoming requests from cmdr
     try:
-        listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, r, alt)
+        listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, r, alt, compiler_file)
     except KeyboardInterrupt:
         logger.info('Shutting down...')
         cmdr_sock.close()
