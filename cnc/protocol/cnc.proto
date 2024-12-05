@@ -14,14 +14,15 @@ message Location {
   double latitude = 2;
   double longitude = 3;
   double altitude = 4;
+  double bearing = 5;
 }
 
 message PCMD {
-  int32 gaz = 1;
-  int32 yaw = 2;
-  int32 pitch = 3;
-  int32 roll = 4;
-  int32 gimbal_pitch = 5;
+  double gaz = 1;
+  double yaw = 2;
+  double pitch = 3;
+  double roll = 4;
+  double gimbal_pitch = 5;
 }
 
 message Command {
@@ -59,6 +60,144 @@ message Extras {
     string detection_model = 7;
 
     //for HSV filtering of object detection results
-    optional HSV lower_bound = 8;
-    optional HSV upper_bound = 9;
+    HSV lower_bound = 8;
+    HSV upper_bound = 9;
+}
+
+// Driver - Kernel API
+message Frame {
+  bytes data = 1;
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4; //rgb, greyscale, etc
+  int64 id = 5; //for future correlation
+}
+
+enum ResponseStatus {
+  OK = 0;
+  FAILED = 1;
+  NOTSUPPORTED = 2;
+  COMPLETED = 3;
+  DENIED = 4;
+}
+
+enum Magnetometer {
+  CALIBRATED = 0;
+  RECOMMENDED = 1;
+  REQUIRED = 2;
+  UNUSED = 3;
+  PERTURBATION = 4;
+}
+
+message Attitude {
+  double yaw = 1;
+  double pitch = 2;
+  double roll = 3;
+  double thrust = 4;
+}
+
+message Pose {
+  double yaw_theta = 1;
+  double pitch_theta = 2;
+  double roll_theta = 3;
+}
+
+message Velocity {
+  double forward_vel = 1;
+  double right_vel = 2;
+  double up_vel = 3;
+  double angle_vel = 4;
+}
+
+
+message Position {
+  double forward = 1;
+  double right = 2;
+  double up = 3;
+  double angle = 4;
+}
+
+// Pub/Sub for telemetry
+message Telemetry {
+  string drone_name = 1;
+  Location global_position = 2;
+  Magnetometer mag = 3;
+  int64 battery = 4;
+  Attitude gimbal_attitude = 5;
+  Attitude drone_attitude = 6;
+  Velocity velocity = 7;
+  Position relative_position = 8;
+  int64 satellites = 9;
+}
+
+message ConnectionStatus {
+  bool isConnected = 1;
+  int64 wifi_rssi = 2;
+  int64 cellular_rssi = 3;
+  int64 radio_rssi = 4;
+  string drone_name = 5;
+}
+
+enum CameraType {
+  RGB = 0;
+  STEREO = 1;
+  THERMAL = 2;
+  NIGHT = 3;
+}
+
+message Camera {
+  repeated int64 id = 1;
+  repeated CameraType type = 2;
+}
+
+// Request/Response for commands
+message Driver {
+  oneof method {
+    Attitude setAttitude = 1;
+    ConnectionStatus connectionStatus = 2;
+    bool takeOff = 3;
+    bool land = 4;
+    bool hover = 5;
+    bool kill = 6;
+    bool rth = 7; //return to home
+    Location setHome = 8;
+    Location getHome = 9;
+    Velocity setVelocity = 10;
+    Pose setGimbal = 11;
+    Position setRelativePosition = 12; //relative to home Position
+    Location setGPSLocation = 13;
+    Position setTranslatedPosition = 14; //relative to current position
+    int64 switchCamera = 15; //change current switchCamera
+    Camera getCameras = 16;
+  }
+  ResponseStatus resp = 17;
+  int64 seqNum = 18;
+}
+
+// Kernel - Mission Controller API
+/*Request/Response for commands should just use the Driver message;
+the Kernel will reject any privileged calls
+
+message Driver {
+  oneof method {
+...
+  }
+}
+*/
+
+message Mission {
+  oneof method {
+    //for MissionController
+    bool startMission = 1;
+    bool pauseMission = 2;
+    bool resumeMission = 3;
+    bool stopMission = 4;
+    string downloadMission = 5; // URL that specifies the zip file to download
+  }
+  string UUID = 6; //unique mission reference for cataloging
+}
+
+message ComputeResult {
+  string result = 1; //JSON/YAML/etc, varies by compute engine
+  int64 frameId = 2; //for future correlation
 }

@@ -10,18 +10,19 @@
 version: '2.3'
 services:
   gabriel-server:
-    image: cmusatyalab/steeleagle:${TAG}
+    # image: cmusatyalab/steeleagle:${TAG}
+    image: xianglic/gabriel-server-new:${TAG}
     container_name: gabriel-server
     ports:
       - "9099:9099"
       - "5555:5555"
-    entrypoint: [ "./main.py", "-t", "30" ]
+    entrypoint: [ "./main.py", "-t", "30", "-z"]
     restart: unless-stopped
     networks:
       - cnc-net
 
   telemetry-engine:
-    image: cmusatyalab/steeleagle:${TAG}
+    image: xianglic/steeleagle-os-swrm-ctrl:${TAG} 
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
@@ -34,15 +35,15 @@ services:
     volumes:
       - ./steeleagle-vol:/cnc/server/images/
 
-  control-plane:
-    image: xianglic/steeleagle:${TAG}
-    container_name: control-plane
+  swarm-controller:
+    image: xianglic/steeleagle-os-swrm-ctrl:${TAG}
+    container_name: swarm-controller
     restart: unless-stopped
     ports:
-      - "6000:6000"
+      - "5003:5003"
       - "6001:6001"
     privileged: true
-    entrypoint: [ "./control_plane.py", "-a", "${REDIS_AUTH}"]
+    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
@@ -234,11 +235,16 @@ services:
       - ./redis/redis.conf:/redis-stack.conf
 networks:
   cnc-net:
+    name: cnc-net
     ipam:
       driver: default
       config:
         - subnet: 11.11.0.0/24
   redis:
+    ipam:
+      driver: default
+      config:
+        - subnet: 12.12.0.0/24
 volumes:
   training-vol:
 

@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 gabriel-server
-gabriel-client
 opencv-python>=3, <5
 py-cpuinfo
 validators
@@ -13,5 +12,5 @@ jsonschema
 Pillow
 redis
 zmq
-protobuf==3.20.0
+protobuf
 requests

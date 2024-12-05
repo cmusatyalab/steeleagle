@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-#
-# SPDX-License-Identifier: CC0-1.0
-
-# Ignore Gradle project-specific cache directory
-.gradle
-
-# Ignore Gradle build output directory
-build

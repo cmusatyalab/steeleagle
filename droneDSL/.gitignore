@@ -26,7 +26,9 @@ lombok.config
 /*/out/
 
 # mission creator
-python/mission/MissionCreator.py
+python/project/Mission.py
+python/project/requirements.txt
+
 
 # keep the gradle wrapper
 !/gradle/wrapper/*.jar

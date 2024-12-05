@@ -1,0 +1,96 @@
+services:
+  driver:
+    # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
+    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    container_name: driver
+    environment:
+      - DRONE_ID=${DRONE_ID} # ugly current compromised solution
+      - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_DRIVER_ARGS=${STEELEAGLE_DRIVER_ARGS}
+      - STEELEAGLE_DRIVER_DRONE_ARGS=${STEELEAGLE_DRIVER_DRONE_ARGS}
+      - DATA_ENDPOINT=${DATA_ENDPOINT}
+      - TEL_PORT=${TEL_PORT}
+      - CAM_PORT=${CAM_PORT}
+      - CMD_BACK_PORT=${CMD_BACK_PORT}
+      - CMD_ENDPOINT=${CMD_ENDPOINT}
+      - FFMPEG_THREADS=${FFMPEG_THREADS}
+      - SAVE_FRAMES=${SAVE_FRAMES}
+      - LOG_TO_FILE=${LOG_TO_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
+    entrypoint: ["python3", "driver.py"]
+    restart: unless-stopped
+    networks:
+      - os-net
+
+  kernel-cmd-svc:
+    image: xianglic/steeleagle-os-kernel:${TAG}
+    container_name: kernel-cmd-svc
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
+      - CMD_FRONT_CMDR_PORT=${CMD_FRONT_CMDR_PORT}
+      - CMD_FRONT_USR_PORT=${CMD_FRONT_USR_PORT}
+      - CMD_BACK_PORT=${CMD_BACK_PORT}
+      - MSN_PORT=${MSN_PORT}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DRONE_TYPE=${DRONE_TYPE} # ugly current compromised solution
+      - DRONE_ID=${DRONE_ID} # ugly current compromised solution
+    ports:
+      # - "${CMD_FRONT_CMDR_PORT}:${CMD_FRONT_CMDR_PORT}"
+      - "${CMD_FRONT_USR_PORT}:${CMD_FRONT_USR_PORT}"
+      - "${CMD_BACK_PORT}:${CMD_BACK_PORT}"
+      - "${MSN_PORT}:${MSN_PORT}"
+    restart: unless-stopped
+    privileged: true
+    entrypoint: [ "python3", "CommandService.py"]
+    networks:
+      - os-net
+
+  kernel-data-svc:
+    image: xianglic/steeleagle-os-kernel:${TAG}
+    container_name: kernel-data-svc
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - STEELEAGLE_GABRIEL_SERVER=${STEELEAGLE_GABRIEL_SERVER}
+      - STEELEAGLE_GABRIEL_PORT=${STEELEAGLE_GABRIEL_PORT}
+      - TEL_PORT=${TEL_PORT}
+      - CAM_PORT=${CAM_PORT}
+      - LCE_PORT=${LCE_PORT}
+      - LCE_HOST=${LCE_HOST}
+      - LOG_TO_FILE=${LOG_TO_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
+    ports:
+      - "${TEL_PORT}:${TEL_PORT}"
+      - "${CAM_PORT}:${CAM_PORT}"
+    restart: unless-stopped
+    privileged: true
+    entrypoint: [ "python3", "DataService.py"]
+    networks:
+      - os-net
+
+  user:
+    # image: xianglic/steeleagle-os-user-arm:${TAG}
+    image: xianglic/steeleagle-os-user-amd:${TAG}
+    container_name: user
+    environment:
+      - PYTHONPATH=${PYTHONPATH}
+      - CMD_FRONT_USR_PORT=${CMD_FRONT_USR_PORT}
+      - MSN_PORT=${MSN_PORT}
+      - CMD_ENDPOINT=${CMD_ENDPOINT}
+      - LOG_LEVEL=${LOG_LEVEL}
+    restart: unless-stopped
+    privileged: true
+    entrypoint: ["python3", "common"]
+    # entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      - os-net
+    volumes:
+      - ./user/project/:/steeleagle_os/user/project/
+
+networks:
+
+  os-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 13.13.0.0/24

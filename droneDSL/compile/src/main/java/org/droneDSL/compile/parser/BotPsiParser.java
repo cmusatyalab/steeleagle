@@ -343,7 +343,7 @@ public class BotPsiParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // (TASK_DETECT_KW | TASK_TRACK_KW | TASK_AVOID_KW) task_name task_body
+  // (TASK_DETECT_KW | TASK_TRACK_KW | TASK_AVOID_KW| TASK_TEST_KW) task_name task_body
   public static boolean task_decl(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "task_decl")) return false;
     boolean r;
@@ -355,13 +355,14 @@ public class BotPsiParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  // TASK_DETECT_KW | TASK_TRACK_KW | TASK_AVOID_KW
+  // TASK_DETECT_KW | TASK_TRACK_KW | TASK_AVOID_KW| TASK_TEST_KW
   private static boolean task_decl_0(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "task_decl_0")) return false;
     boolean r;
     r = consumeToken(b, TASK_DETECT_KW);
     if (!r) r = consumeToken(b, TASK_TRACK_KW);
     if (!r) r = consumeToken(b, TASK_AVOID_KW);
+    if (!r) r = consumeToken(b, TASK_TEST_KW);
     return r;
   }
 
