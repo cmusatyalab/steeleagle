@@ -102,14 +102,15 @@ def connect_zmq():
 
 
 def get_drones():
-    l = []
+    l = {}
     red = connect_redis()
     for k in red.keys("telemetry.*"):
         latest_entry = red.xrevrange(f"{k}", "+", "-", 1)
         last_update = (int(latest_entry[0][0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            l.append(k.split(".")[-1])
-    return sorted(l)
+            l[f"{k.split('.')[-1]}"] = f"**{k.split('.')[-1]}** " #TODO: add :material/abc:[drone model] once it is sent with telemetry
+
+    return l
 
 def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
     _container = {}
@@ -128,17 +129,8 @@ def control_drone(drone):
 
 
 def menu(with_control=True):
-    st.sidebar.page_link("overview.py", label="Overview")
-    st.sidebar.page_link("pages/plan.py", label="Mission Planning (WIP)")
-    if with_control:
-        st.sidebar.header(":joystick: Individual Control", divider=True)
-        for d in get_drones():
-            #st.sidebar.page_link(f"pages/control.py", label=d)
-            if "selected_drone" in st.session_state:
-                if st.session_state.selected_drone == d and st.session_state.control_pressed:
-                        st.session_state.control_pressed = False
-                        st.switch_page("pages/control.py")
-            st.sidebar.button(label=d, on_click=control_drone, args=[d])
+    st.sidebar.page_link("overview.py", label=":satellite_antenna: Overview")
+    st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
 
 
 
