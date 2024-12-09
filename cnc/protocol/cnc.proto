@@ -197,7 +197,32 @@ message Mission {
   string UUID = 6; //unique mission reference for cataloging
 }
 
-message ComputeResult {
-  string result = 1; //JSON/YAML/etc, varies by compute engine
-  int64 frameId = 2; //for future correlation
+
+// COMPUTE MSG
+import "google/protobuf/any.proto";
+
+message ComputeResult{
+  required string compute_id = 1;
+  required string compute_type = 2;
+  required  string timestamp = 3;
+  oneof method{
+    string string_result = 4; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_result = 5; // proto format result, using Any here just for efficiency
+  }
+}
+
+message ComputeGetter{
+  repeated ComputeResult compute_result = 1;
+}
+
+message ComputeCommand{
+  required string compute_type = 1;
+  oneof method{
+    string string_cmd = 2; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_cmd = 3; // proto format cmd, using Any here just for efficiency
+  }
+}
+
+message ComputeSetter{
+  repeated ComputeCommand = 1;
 }

@@ -2,7 +2,6 @@ from enum import Enum
 from cnc_protocol import cnc_pb2
 from typing import Optional, Union
 import logging
-from kernel.computes.ComputeItf import ComputeInterface
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +17,14 @@ class DataStore:
         self._result_cache = {}
 
     ######################################################## COMPUTE ############################################################
+    def get_compute_result(self, compute_id, compute_type: str) -> Optional[Union[None, tuple]]:
+        pass
+    
     def append_compute(self, compute_id):
         self._result_cache[compute_id] = {}
         
-    def update_compute_result(self, compute_id, compute_type: ComputeInterface.ComputeType, result, timestamp):
-        if not isinstance(compute_type, ComputeInterface.ComputeType):
-            raise ValueError("update_compute_result: compute_type must be an instance of ComputeInterface.ComputeType")
-        
+    def update_compute_result(self, compute_id, compute_type: str, result, timestamp):
+        assert isinstance(compute_type, str), f"Argument must be a string, got {type(compute_type).__name__}"
         self._result_cache[compute_id][compute_type] = (result, timestamp)
         logger.debug(f"update_compute_result: Updated result cache for compute {compute_id} with type {compute_type}; result: {result}")
 

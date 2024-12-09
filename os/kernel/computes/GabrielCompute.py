@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class GabrielCompute(ComputeInterface):
-    def __init__(self, compute_id, datastore:DataStore):
+    def __init__(self, compute_id, data_store:DataStore):
         super().__init__(compute_id)
         
         # remote computation parameters
@@ -40,8 +40,8 @@ class GabrielCompute(ComputeInterface):
             [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
         )
         
-        # datastore
-        self.datastore = datastore
+        # data_store
+        self.data_store = data_store
     
     async def run(self):
         await self.gabriel_client.launch_async()
@@ -72,21 +72,12 @@ class GabrielCompute(ComputeInterface):
                 try:
                     if len(payload) != 0:
                         # get engine id
-                        engine_id = result_wrapper.result_producer_name.value
+                        compute_type = result_wrapper.result_producer_name.value
                         # get timestamp
                         timestamp = time.time()
                         # update
-                        compute_type = None
-                        if engine_id == "openscout-object":
-                            compute_type = ComputeInterface.ComputeType.Detection
-                        elif engine_id == "obstacle-avoidance":
-                            compute_type = ComputeInterface.ComputeType.Avoidance
-                        else:
-                            logger.debug(f"Got unknown engine id {engine_id}")
-                            continue
-                        
-                        logger.debug(f"Gabriel compute: timestamp = {timestamp}, compute type = {compute_type}, result = {result}, engine id = {engine_id}")
-                        self.datastore.update_compute_result(self.compute_id, compute_type, payload, timestamp)   
+                        logger.debug(f"Gabriel compute: timestamp = {timestamp}, compute type = {compute_type}, result = {result}")
+                        self.data_store.update_compute_result(self.compute_id, compute_type, payload, timestamp)   
                 except Exception as e:
                     logger.error(f"Gabriel compute processResults: error processing result: {e}")
             else:
@@ -100,9 +91,9 @@ class GabrielCompute(ComputeInterface):
             logger.debug(f"Frame producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             frame_data = cnc_pb2.Frame()
-            self.datastore.get_raw_data(frame_data)
+            self.data_store.get_raw_data(frame_data)
             tel_data = cnc_pb2.Telemetry()
-            self.datastore.get_raw_data(tel_data)
+            self.data_store.get_raw_data(tel_data)
             try:
                 if frame_data is not None:
                     logger.debug("Waiting for new frame from driver")
@@ -156,7 +147,7 @@ class GabrielCompute(ComputeInterface):
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
             tel_data = cnc_pb2.Telemetry()
-            self.datastore.get_raw_data(tel_data)
+            self.data_store.get_raw_data(tel_data)
             try:
                 if tel_data is not None:
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")

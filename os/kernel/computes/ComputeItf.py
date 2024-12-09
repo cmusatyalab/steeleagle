@@ -8,11 +8,6 @@ class ComputeInterface(ABC):
         Disconnected = 2
         IDLE = 3
         
-    class ComputeType(Enum):
-        Detection = 1
-        Avoidance = 2
-        SLAM = 3
-        
     def __init__(self, compute_id):
         self.compute_id = compute_id
         self.compute_status = self.ComputeStatus.IDLE

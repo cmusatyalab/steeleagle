@@ -56,10 +56,19 @@ class DataService(Service):
         
         # setting up data store
         self.data_store = DataStore()
+        self.compute_dict = {}
         compute_tasks = self.spawn_computes(config_yaml)
         for task in compute_tasks:
             self.register_task(task)
 
+    ######################################################## USER ##############################################################
+    async def compute_setter(self):
+        # self.
+        pass
+    async def user_handler(self):
+        # self.data_store.get_compute_result()
+        
+        pass
     ######################################################## DRIVER ############################################################
 
     async def telemetry_handler(self):
@@ -111,7 +120,7 @@ class DataService(Service):
 
         Compute = compute_classes[compute_class]
         compute_instance = Compute(compute_id, self.data_store)
-        return asyncio.create_task(compute_instance.run())
+        return compute_instance, asyncio.create_task(compute_instance.run())
 
     def spawn_computes(self, config_yaml):
         """Load configuration and spawn computes."""
@@ -123,9 +132,14 @@ class DataService(Service):
         for compute_config in config.get("computes", []):
             compute_class = compute_config["compute_class"].lower()
             compute_id = compute_config["compute_id"]
-            self.data_store.append_compute(compute_id)
-            task = self.run_compute(compute_class, compute_id, compute_classes)
-            if task: compute_tasks.append(task)
+            result = self.run_compute(compute_class, compute_id, compute_classes)
+            if result:
+                compute_instance, task = result
+                # Store the compute instance and append the compute id to the data store
+                self.compute_dict[compute_id] = compute_instance
+                self.data_store.append_compute(compute_id)
+                compute_tasks.append(task)
+            
         return compute_tasks
 
 ######################################################## MAIN ##############################################################
