@@ -104,7 +104,7 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
             
             logger.info(f"Telemetry: {telDict}")
-            # tel_sock.send(tel_message.SerializeToString())
+            tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')

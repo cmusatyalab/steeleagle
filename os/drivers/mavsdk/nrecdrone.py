@@ -84,7 +84,7 @@ class NrecDrone():
         
     async def getBatteryPercentage(self):
         battery = await anext(self.drone.telemetry.battery())
-        return battery.remaining_percent
+        return int(battery.remaining_percent)
 
     async def takeOff(self):
         print("-- Taking off")
