@@ -50,7 +50,6 @@ setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created c
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
-    drone.drone.disconnect()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_signal)
@@ -59,7 +58,7 @@ signal.signal(signal.SIGTERM, handle_signal)
 async def camera_stream(drone, cam_sock):
     logger.info('Starting camera stream')
     frame_id = 0
-    while drone.isConnected():
+    while await drone.isConnected():
         try:
             cam_message = cnc_protocol.Frame()
             cam_message.data = await drone.getVideoFrame()
@@ -75,31 +74,36 @@ async def camera_stream(drone, cam_sock):
         await asyncio.sleep(0.033)
     logger.info("Camera stream ended, disconnected from drone")
 
-async def telemetry_stream(drone, tel_sock):
+async def telemetry_stream(drone : NrecDrone, tel_sock):
     logger.info('Starting telemetry stream')
-    while drone.isConnected():
+    while await drone.isConnected():
+        logger.info('HI from telemetry stream')
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            # tel_message.drone_name = telDict["name"]
-            # tel_message.drone_name = drone_id
-            # tel_message.global_position.latitude = telDict["gps"][0]
-            # tel_message.global_position.longitude = telDict["gps"][1]
-            # tel_message.global_position.altitude = telDict["gps"][2]
+            tel_message.drone_name = drone_id
+            tel_message.mag = telDict["magnetometer"]
+            tel_message.battery = telDict["battery"]
+            tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
+            tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
+            tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            tel_message.satellites = telDict["satellites"]
+            
             # tel_message.relative_position.up = telDict["relAlt"]
-            # tel_message.mag = telDict["magnetometer"]
-            # tel_message.battery = telDict["battery"]
-            # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
-            # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
-            # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
-            # tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-            # tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-            # tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            
+            # tel_message.global_position.latitude = telDict["gps"]["latitude"]
+            # tel_message.global_position.longitude = telDict["gps"]["longitude"]
+            # tel_message.global_position.altitude = telDict["gps"]["altitude"]
+            
             # tel_message.velocity.forward_vel = telDict["imu"]["forward"]
             # tel_message.velocity.right_vel = telDict["imu"]["right"]
             # tel_message.velocity.up_vel = telDict["imu"]["up"]
-            # tel_message.satellites = telDict["satellites"]
-            telemetry_logger.debug(f"Telemetry: {tel_message}")
+            
+            # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
+            # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
+            # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
+            
+            logger.info(f"Telemetry: {telDict}")
             # tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
@@ -139,7 +143,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
 
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
-        while drone.isConnected():
+        while await drone.isConnected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
@@ -151,9 +155,6 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
                 message.ParseFromString(data)
                 logger.debug(f"Received message: {message}")
                 action = message.WhichOneof("method")
-
-                # send a okay message
-
 
                 # Create a driver response message
                 resp = message
