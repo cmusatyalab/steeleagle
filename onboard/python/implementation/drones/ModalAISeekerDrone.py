@@ -168,7 +168,7 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
         h = self.get_heading()
         R = get_rot_mat(h)
         res = np.matmul(R, v)
-        await self.drone.offboard.set_position_ned(PositionNed(res[0], res[1], -1 * res[2], h + t))
+        await self.drone.offboard.set_position_ned(PositionNedYaw(res[0], res[1], -1 * res[2], h + t))
         await self.hovering()
 
     async def rotateTo(self, theta):

@@ -126,6 +126,17 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Landing#######################################################################')
                 logger.info(f"land function call finished at: {time.time()}")
+            case "rth":
+                logger.info(f"rth function call started at: {time.time()}")
+                await drone.rth()
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info(f"rth function call finished at: {time.time()}")
+            case "hover":
+                logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
+                await drone.hover()
+                logger.debug("hover !")
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.debug(f"hover function call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED
