@@ -44,6 +44,8 @@ class NrecDrone():
 
     ''' connect methods'''
     async def connect(self):
+        # for the spirit drone (drone bridge), it uses the pull model, and requires to specify the ip address of the drone
+        # for the simulator (mav proxy), it uses the push model, and requires to bind all addresses
         await self.drone.connect(system_address="udp://:14550")
         self.max_speed = await self.drone.action.get_maximum_speed()
     
@@ -59,11 +61,11 @@ class NrecDrone():
     async def getTelemetry(self):
         telDict = {}
         try:
-            # telDict["gps"] = await self.getGPS()
-            # telDict["relAlt"] = await self.getAltitudeRel()
+            telDict["gps"] = await self.getGPS()
+            telDict["relAlt"] = await self.getAltitudeRel()
             telDict["attitude"] = await self.getAttitude()
             telDict["magnetometer"] = await self.getMagnetometerReading()
-            # telDict["imu"] = await self.getVelocityBody()
+            telDict["imu"] = await self.getVelocityBody()
             telDict["battery"] = await self.getBatteryPercentage()
             telDict["gimbalAttitude"] = await self.getGimbalPose()
             telDict["satellites"] = await self.getSatellites()
@@ -163,6 +165,9 @@ class NrecDrone():
     async def PCMD(self, roll, pitch, yaw, gaz):
         await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed((pitch/100)*self.max_speed, (roll/100)*self.max_speed, (-1 * gaz/100)*self.max_speed, float(yaw)))
 
+    async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
+        await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(forward_vel, right_vel, -1 * up_vel, angle_vel))
+        
     async def moveTo(self, lat, lng, alt):
         # Get bearing to target
         currentLat = await self.getGPS()["latitude"]

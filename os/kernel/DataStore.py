@@ -46,7 +46,7 @@ class DataStore:
         data_copy.CopyFrom(cache)
     
 
-    def set_raw_data(self, data) -> None:
+    def set_raw_data(self, data):
         data_type = type(data)
         if data_type not in self._raw_data_cache:
             logger.warning(f"set_raw_data: No such data: data type {data_type}")
