@@ -120,6 +120,11 @@ async def handle(identity, message, resp, action, resp_sock):
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
+            case "setVelocity":
+                velocity = message.setVelocity
+                logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
+                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "land":
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
