@@ -158,7 +158,9 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             logger.error('Failed to connect to drone, retrying...')
             continue
         logger.info(f'Established connection to drone {drone_id}, ready to receive commands!')
-
+        
+        
+        await drone.takeOff()
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():

@@ -10,6 +10,13 @@ async def get_home():
             print("Drone connected!")
             break
 
+    print("-- Checking flight mode...")
+    async for flight_mode in drone.telemetry.flight_mode():
+        print(f"Current flight mode: {flight_mode}")
+        if flight_mode == "GUIDED":
+            print("-- GUIDED mode confirmed!")
+            break
+
     print("Fetching home position...")
     async for home_position in drone.telemetry.home():
         print(f"Home position: Latitude: {home_position.latitude_deg}, "

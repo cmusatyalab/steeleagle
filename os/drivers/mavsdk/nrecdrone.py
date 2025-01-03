@@ -2,6 +2,7 @@
 
 import math
 import time
+import mavsdk
 from mavsdk import System
 from mavsdk.offboard import (OffboardError, PositionNedYaw, VelocityBodyYawspeed, PositionGlobalYaw)
 import numpy as np
@@ -22,8 +23,7 @@ def bearing(origin, destination):
 
 	b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon))
 	bd = math.degrees(b)
-	br,bn = divmod(bd+360,360) 
-	
+	br,bn = divmod(bd+360,360)
 	return bn
 
 def get_rot_mat(theta):
@@ -37,7 +37,7 @@ class NrecDrone():
     def __init__(self):
         # Init the drone
         self.drone = System()
-        
+
         self.VEL_TOL = 0.1
         self.ANG_VEL_TOL = 0.01
         self.RTH_ALT = 20
@@ -47,8 +47,9 @@ class NrecDrone():
         # for the spirit drone (drone bridge), it uses the pull model, and requires to specify the ip address of the drone
         # for the simulator (mav proxy), it uses the push model, and requires to bind all addresses
         await self.drone.connect(system_address="udp://:14550")
-        self.max_speed = await self.drone.action.get_maximum_speed()
-    
+        # need the workaround for maximum speed from ardupilot
+        self.max_speed = 10 
+
     async def isConnected(self):
         async for state in self.drone.core.connection_state():
             if state.is_connected:
