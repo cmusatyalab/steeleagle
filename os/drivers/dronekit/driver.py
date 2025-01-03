@@ -152,7 +152,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
     while True:
         try:
             logger.info('starting connecting...')
-            await drone.connect()
+            await drone.connect('udp:0.0.0.0:14550')
             logger.info('drone connected')
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
@@ -160,7 +160,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
         logger.info(f'Established connection to drone {drone_id}, ready to receive commands!')
         
         
-        await drone.takeOff()
+        await drone.takeOff(10)
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
