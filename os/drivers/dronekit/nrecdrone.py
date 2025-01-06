@@ -36,7 +36,7 @@ class NrecDrone():
         tel_dict = {}
         try:
             tel_dict["gps"] = await self.getGPS()
-            tel_dict["rel_alt"] = await self.getAltitudeRel()
+            tel_dict["relAlt"] = await self.getAltitudeRel()
             tel_dict["attitude"] = await self.getAttitude()
             tel_dict["battery"] = await self.getBatteryPercentage()
             tel_dict["satellites"] = await self.getSatellites()

@@ -82,26 +82,26 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
             tel_message.drone_name = drone_id
-            tel_message.mag = telDict["magnetometer"]
+            tel_message.mag = 0
             tel_message.battery = telDict["battery"]
             tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
             tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
             tel_message.satellites = telDict["satellites"]
             
-            # tel_message.relative_position.up = telDict["relAlt"]
+            tel_message.relative_position.up = telDict["relAlt"]
             
-            # tel_message.global_position.latitude = telDict["gps"]["latitude"]
-            # tel_message.global_position.longitude = telDict["gps"]["longitude"]
-            # tel_message.global_position.altitude = telDict["gps"]["altitude"]
+            tel_message.global_position.latitude = telDict["gps"]["latitude"]
+            tel_message.global_position.longitude = telDict["gps"]["longitude"]
+            tel_message.global_position.altitude = telDict["gps"]["altitude"]
             
-            # tel_message.velocity.forward_vel = telDict["imu"]["forward"]
-            # tel_message.velocity.right_vel = telDict["imu"]["right"]
-            # tel_message.velocity.up_vel = telDict["imu"]["up"]
+            #tel_message.velocity.forward_vel = telDict["imu"]["forward"]
+            #tel_message.velocity.right_vel = telDict["imu"]["right"]
+            #tel_message.velocity.up_vel = telDict["imu"]["up"]
             
-            # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
-            # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
-            # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
+            #tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
+            #tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
+            #tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
             
             logger.info(f"Telemetry: {telDict}")
             tel_sock.send(tel_message.SerializeToString())
@@ -116,7 +116,7 @@ async def handle(identity, message, resp, action, resp_sock):
         match action:
             case "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
-                await drone.takeOff()
+                await drone.takeOff(10)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
