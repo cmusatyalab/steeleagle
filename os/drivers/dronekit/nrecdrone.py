@@ -122,17 +122,32 @@ class NrecDrone():
         msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
             0,       # time_boot_ms (not used)
             0, 0,    # target system, target component
-            0b0000111111000111,  # type_mask (only velocities and yaw rate are enabled)
+	    mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
+            0b010111000111,  # type_mask (only velocities and yaw rate are enabled)
             0, 0, 0,  # x, y, z positions (not used)
             forward_vel, right_vel, up_vel,  # x, y, z velocity in m/s
             0, 0, 0,  # x, y, z acceleration (not supported)
-            0, angle_vel  # yaw, yaw_rate in rad/s
+	    0, angle_vel  # yaw, yaw_rate in rad/s
         )
         
         # Send the message asynchronously
         await asyncio.to_thread(self.vehicle.send_mavlink, msg)
         # self.vehicle.flush()
 
+    async def hover(self):
+        """
+        Commands the drone to hold its position using LOITER mode.
+        """
+        logger.info("-- Setting position hold")
+        #await asyncio.to_thread(setattr, self.vehicle, 'mode', VehicleMode("LOITER"))
+
+        # Monitor the mode until it's successfully set
+        #while not self.vehicle.mode.name == "LOITER":
+            #logger.info("Waiting for LOITER mode...")
+            #await asyncio.sleep(1)
+
+        #logger.info("-- Drone is now in LOITER mode")
+    
     ''' Helper methods '''
     def getDistance(self, location1, location2):
         dlat = location2["lat"] - location1["latitude"]

@@ -75,9 +75,9 @@ async def camera_stream(drone, cam_sock):
     logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone : NrecDrone, tel_sock):
-    logger.info('Starting telemetry stream')
+    logger.debug('Starting telemetry stream')
     while await drone.isConnected():
-        logger.info('HI from telemetry stream')
+        logger.debug('HI from telemetry stream')
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
@@ -103,13 +103,13 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             #tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
             #tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
             
-            logger.info(f"Telemetry: {telDict}")
+            logger.debug(f"Telemetry: {telDict}")
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0.01)
-    logger.info("Telemetry stream ended, disconnected from drone")
+    logger.debug("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
@@ -159,8 +159,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             continue
         logger.info(f'Established connection to drone {drone_id}, ready to receive commands!')
         
-        
-        await drone.takeOff(10)
+
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
