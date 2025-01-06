@@ -5,6 +5,7 @@ import collections
 collections.MutableMapping = collections.abc.MutableMapping
 
 from dronekit import connect, VehicleMode, LocationGlobalRelative
+from pymavlink import mavutil
 import logging
 import asyncio
 
@@ -30,6 +31,11 @@ class NrecDrone():
 
     async def isConnected(self):
         return self.vehicle and self.vehicle.is_armable
+    
+    async def disconnect(self):
+        if self.vehicle:
+            await asyncio.to_thread(self.vehicle.close)
+            logger.info("-- Disconnected from drone")
 
     ''' Telemetry methods '''
     async def getTelemetry(self):
@@ -91,10 +97,11 @@ class NrecDrone():
             await asyncio.sleep(1)
         logger.info("-- Landed and disarmed")
 
-    async def goTo(self, lat, lon, alt):
+    async def setGPSLocation(self, lat, lon, alt, bearing):
         target_location = LocationGlobalRelative(lat, lon, alt)
         await asyncio.to_thread(self.vehicle.simple_goto, target_location)
-
+        await self.setBearing(bearing)
+            
         while True:
             current_location = await self.getGPS()
             distance = self.getDistance(current_location, {"lat": lat, "lon": lon})
@@ -104,30 +111,51 @@ class NrecDrone():
                 break
             await asyncio.sleep(1)
 
-    async def returnToLaunch(self):
+    async def rth(self):
         logger.info("-- Returning to launch")
         await asyncio.to_thread(setattr, self.vehicle, 'mode', VehicleMode("RTL"))
 
-    async def setVelocity(self, vx, vy, vz):
-        logger.info(f"-- Setting velocity: vx={vx}, vy={vy}, vz={vz}")
+    async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
+        logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
+        
+        # MAVLink message for velocity and angular velocity control
         msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
             0,       # time_boot_ms (not used)
             0, 0,    # target system, target component
-            0b0000111111000111, # type_mask (only speeds enabled)
-            0, 0, 0, # x, y, z positions (not used)
-            vx, vy, vz, # x, y, z velocity in m/s
-            0, 0, 0,    # x, y, z acceleration (not supported)
-            0, 0)       # yaw, yaw_rate (not supported)
+            0b0000111111000111,  # type_mask (only velocities and yaw rate are enabled)
+            0, 0, 0,  # x, y, z positions (not used)
+            forward_vel, right_vel, up_vel,  # x, y, z velocity in m/s
+            0, 0, 0,  # x, y, z acceleration (not supported)
+            0, angle_vel  # yaw, yaw_rate in rad/s
+        )
+        
+        # Send the message asynchronously
         await asyncio.to_thread(self.vehicle.send_mavlink, msg)
+        # self.vehicle.flush()
 
     ''' Helper methods '''
     def getDistance(self, location1, location2):
         dlat = location2["lat"] - location1["latitude"]
         dlon = location2["lon"] - location1["longitude"]
         return math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
+    
+    async def setBearing(self, bearing):
+        """
+        Sets the yaw (bearing) of the drone.
+        
+        :param bearing: Desired yaw in degrees (0-360)
+        """
+        logger.info(f"-- Setting yaw to {bearing} degrees")
+        msg = self.vehicle.message_factory.command_long_encode(
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW, # command
+            0,       # confirmation
+            bearing, # param1: Yaw angle in degrees
+            0,       # param2: Yaw speed (0 = default)
+            1,       # param3: Direction (-1: CCW, 1: CW)
+            1,       # param4: Relative (1) or absolute (0)
+            0, 0, 0  # param5 ~ 7 (unused)
+        )
+        await asyncio.to_thread(self.vehicle.send_mavlink, msg)
 
-    async def disconnect(self):
-        if self.vehicle:
-            await asyncio.to_thread(self.vehicle.close)
-            logger.info("-- Disconnected from drone")
 
