@@ -125,7 +125,7 @@ class NrecDrone():
 	    mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
             0b010111000111,  # type_mask (only velocities and yaw rate are enabled)
             0, 0, 0,  # x, y, z positions (not used)
-            forward_vel, right_vel, up_vel,  # x, y, z velocity in m/s
+            forward_vel, right_vel, -1 * up_vel,  # x, y, z velocity in m/s
             0, 0, 0,  # x, y, z acceleration (not supported)
 	    0, angle_vel  # yaw, yaw_rate in rad/s
         )
