@@ -106,6 +106,7 @@ class CommandService(Service):
 
         if command == ManualCommand.RTH:
             driver_command.rth = True
+            logger.info(f"rth signal sent at: {time.time()}, seq id {driver_command.seqNum}")
         if command == ManualCommand.HALT:
             driver_command.hover = True
         elif command == ManualCommand.TAKEOFF:
