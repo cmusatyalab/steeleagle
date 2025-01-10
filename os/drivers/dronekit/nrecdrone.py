@@ -21,6 +21,17 @@ class NrecDrone():
         self.ANG_VEL_TOL = 0.01
         self.RTH_ALT = 20
 
+    def showPIDParams(self):
+        # Get rate controller parameters
+        roll_p = self.vehicle.parameters['ATC_RAT_RLL_P']
+        roll_d = self.vehicle.parameters['ATC_RAT_RLL_D']
+        pitch_p = self.vehicle.parameters['ATC_RAT_PIT_P']
+        pitch_d = self.vehicle.parameters['ATC_RAT_PIT_D']
+        yaw_p = self.vehicle.parameters['ATC_RAT_YAW_P']
+        logger.info(f"Roll P: {roll_p}, Roll D: {roll_d}")
+        logger.info(f"Pitch P: {pitch_p}, Pitch D: {pitch_d}")
+        logger.info(f"Yaw P: {yaw_p}")
+
     ''' Connect methods '''
     async def connect(self, connection_string):
         logger.info(f"Connecting to drone at {connection_string}...")
@@ -28,6 +39,22 @@ class NrecDrone():
         if not self.vehicle.is_armable:
             raise ConnectionFailedException("Drone is not armable.")
         logger.info("-- Connected to drone!")
+
+        # Get rate controller parameters
+        logger.info("show original PID params")
+        self.showPIDParams()	
+        self.vehicle.parameters['ATC_RAT_RLL_P'] = 0.4
+        self.vehicle.parameters['ATC_RAT_PIT_P'] = 0.6
+        self.vehicle.parameters['ATC_ACCEL_P_MAX'] = 100000
+        self.vehicle.parameters['ATC_ACCEL_R_MAX'] = 100000
+        self.vehicle.parameters['ATC_ACCEL_Y_MAX'] = 80000
+
+        self.vehicle.parameters['ATC_RAT_RLL_D'] = 0.005
+        self.vehicle.parameters['ATC_RAT_PIT_D'] = 0.005
+
+        self.vehicle.parameters['ATC_RAT_YAW_P'] = 0.4
+        logger.info("after update PID params")
+        self.showPIDParams()
 
     async def isConnected(self):
         return self.vehicle and self.vehicle.is_armable
@@ -131,8 +158,8 @@ class NrecDrone():
         )
         
         # Send the message asynchronously
-        await asyncio.to_thread(self.vehicle.send_mavlink, msg)
-        # self.vehicle.flush()
+        self.vehicle.send_mavlink(msg)
+        self.vehicle.flush()
 
     async def hover(self):
         """
