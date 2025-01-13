@@ -1,0 +1,41 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+
+package steeleagle.onboard;
+import "steeleagle/shared/common.proto";
+
+// Request/Response for commands
+message ControlPlane {
+  oneof method {
+    Attitude setAttitude = 1;
+    bool takeOff = 2;
+    bool land = 3;
+    bool hover = 4;
+    bool kill = 5;
+    bool rth = 6; //return to home
+    Location setHome = 7;
+    Velocity setVelocity = 8;
+    Pose setGimbal = 9;
+    Position setRelativePosition = 10; //relative to home Position
+    Location setGPSLocation = 11;
+    Position setTranslatedPosition = 12; //relative to current position
+    int64 switchCamera = 13; //change current switchCamera
+  }
+  ResponseStatus resp = 14;
+  int64 seqNum = 15;
+}
+
+message Mission {
+  oneof method {
+    //for MissionController
+    bool startMission = 1;
+    bool pauseMission = 2;
+    bool resumeMission = 3;
+    bool stopMission = 4;
+    string downloadMission = 5; // URL that specifies the zip file to download
+  }
+  string UUID = 6; //unique mission reference for cataloging
+}

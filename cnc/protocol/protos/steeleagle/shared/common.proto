@@ -1,0 +1,90 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.shared;
+
+message Frame {
+  bytes data = 1;
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4; //rgb, greyscale, etc
+  int64 id = 5; //for future correlation
+}
+
+message HSV {
+  int64 H = 1;
+  int64 S = 2;
+  int64 V = 3;
+}
+
+message Location {
+  string name = 1;
+  double latitude = 2;
+  double longitude = 3;
+  double altitude = 4;
+  double bearing = 5;
+}
+
+enum ResponseStatus {
+  OK = 0;
+  FAILED = 1;
+  NOTSUPPORTED = 2;
+  COMPLETED = 3;
+  DENIED = 4;
+}
+
+enum Magnetometer {
+  CALIBRATED = 0;
+  RECOMMENDED = 1;
+  REQUIRED = 2;
+  UNUSED = 3;
+  PERTURBATION = 4;
+}
+
+message Attitude {
+  double yaw = 1;
+  double pitch = 2;
+  double roll = 3;
+  double thrust = 4;
+}
+
+message Pose {
+  double yaw_theta = 1;
+  double pitch_theta = 2;
+  double roll_theta = 3;
+}
+
+message Velocity {
+  double forward_vel = 1;
+  double right_vel = 2;
+  double up_vel = 3;
+  double angle_vel = 4;
+}
+
+message Position {
+  double forward = 1;
+  double right = 2;
+  double up = 3;
+  double angle = 4;
+}
+
+enum CameraType {
+  RGB = 0;
+  STEREO = 1;
+  THERMAL = 2;
+  NIGHT = 3;
+}
+
+message Camera {
+  repeated int64 id = 1;
+  repeated CameraType type = 2;
+}
+
+message Bbox {
+  double ymin = 1;
+  double xmin = 2;
+  double ymax = 3;
+  double xmax = 4;
+}
