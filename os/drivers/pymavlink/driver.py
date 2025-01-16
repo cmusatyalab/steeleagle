@@ -23,9 +23,6 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
-drone_id = os.environ.get('DRONE_ID')
-logger.info(f"Starting driver for drone {drone_id}")    
-
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
@@ -81,8 +78,8 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            tel_message.drone_name = drone_id
-            tel_message.mag = 0
+            tel_message.drone_name = telDict["name"]
+            # tel_message.mag = telDict["magnetometer"]
             tel_message.battery = telDict["battery"]
             tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
@@ -95,9 +92,9 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             tel_message.global_position.longitude = telDict["gps"]["longitude"]
             tel_message.global_position.altitude = telDict["gps"]["altitude"]
             
-            #tel_message.velocity.forward_vel = telDict["imu"]["forward"]
-            #tel_message.velocity.right_vel = telDict["imu"]["right"]
-            #tel_message.velocity.up_vel = telDict["imu"]["up"]
+            tel_message.velocity.forward_vel = telDict["imu"]["forward"]
+            tel_message.velocity.right_vel = telDict["imu"]["right"]
+            tel_message.velocity.up_vel = telDict["imu"]["up"]
             
             #tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
             #tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
@@ -157,9 +154,8 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
             continue
-        logger.info(f'Established connection to drone {drone_id}, ready to receive commands!')
+        logger.info(f'Established connection to drone, ready to receive commands!')
         
-
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
@@ -181,7 +177,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.info(f"Disconnected from drone {drone_id}")
+        logger.info(f"Disconnected from drone")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
