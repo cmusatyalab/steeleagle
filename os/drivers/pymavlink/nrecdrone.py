@@ -48,26 +48,26 @@ class NrecDrone():
     async def getTelemetry(self):
         tel_dict = {}
         try:
-            tel_dict["name"] = await self.getName()
-            tel_dict["gps"] = await self.getGPS()
-            tel_dict["relAlt"] = await self.getAltitudeRel()
-            tel_dict["attitude"] = await self.getAttitude()
-            tel_dict["magnetometer"] = await self.getMagnetometerReading()
-            tel_dict["imu"] = await self.getVelocityNEU()
-            tel_dict["battery"] = await self.getBatteryPercentage()
-            tel_dict["satellites"] = await self.getSatellites()
-            tel_dict["heading"] = await self.getHeading()
+            tel_dict["name"] = self.getName()
+            tel_dict["gps"] = self.getGPS()
+            tel_dict["relAlt"] = self.getAltitudeRel()
+            tel_dict["attitude"] = self.getAttitude()
+            tel_dict["magnetometer"] = self.getMagnetometerReading()
+            tel_dict["imu"] = self.getVelocityNEU()
+            tel_dict["battery"] = self.getBatteryPercentage()
+            tel_dict["satellites"] = self.getSatellites()
+            tel_dict["heading"] = self.getHeading()
         except Exception as e:
             logger.error(f"Error in getTelemetry(): {e}")
         logger.debug(f"Telemetry data: {tel_dict}")
         return tel_dict
 
-    async def getName(self):
+    def getName(self):
         drone_id = os.environ.get('DRONE_ID')
         logger.info(f"Starting driver for drone {drone_id}") 
         return drone_id
     
-    async def getMagnetometerReading(self):
+    def getMagnetometerReading(self):
         logger.info("-- Getting magnetometer reading")
         # Magnetometer data is typically in the RAW_IMU message
         msg = self.vehicle.recv_match(type='RAW_IMU', blocking=True)
@@ -83,7 +83,7 @@ class NrecDrone():
             logger.warning("-- Unable to retrieve magnetometer reading")
             return {"x": None, "y": None, "z": None}
     
-    async def getGPS(self):
+    def getGPS(self):
         msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         return {
             "latitude": msg.lat / 1e7,
@@ -91,11 +91,11 @@ class NrecDrone():
             "altitude": msg.alt / 1e3
         }
 
-    async def getAltitudeRel(self):
+    def getAltitudeRel(self):
         msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         return msg.relative_alt / 1e3
 
-    async def getAttitude(self):
+    def getAttitude(self):
         msg = self.vehicle.recv_match(type='ATTITUDE', blocking=True)
         return {
             "roll": msg.roll,
@@ -103,19 +103,19 @@ class NrecDrone():
             "yaw": msg.yaw
         }
 
-    async def getBatteryPercentage(self):
+    def getBatteryPercentage(self):
         msg = self.vehicle.recv_match(type='BATTERY_STATUS', blocking=True)
         return msg.battery_remaining
 
-    async def getSatellites(self):
+    def getSatellites(self):
         msg = self.vehicle.recv_match(type='GPS_RAW_INT', blocking=True)
         return msg.satellites_visible
 
-    async def getHeading(self):
+    def getHeading(self):
         msg = self.vehicle.recv_match(type='VFR_HUD', blocking=True)
         return msg.heading
 
-    async def getVelocityNEU(self):
+    def getVelocityNEU(self):
         msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         return {
             "forward": msg.vx / 100,  # North velocity in m/s
@@ -123,7 +123,7 @@ class NrecDrone():
             "up": msg.vz / 100   # Down velocity in m/s
         }
 
-    async def getVelocityBody(self):
+    def getVelocityBody(self):
         msg = self.vehicle.recv_match(type='LOCAL_POSITION_NED', blocking=True)
         return {
             "vx": msg.vx,  # Body-frame X velocity in m/s
@@ -131,7 +131,7 @@ class NrecDrone():
             "vz": msg.vz   # Body-frame Z velocity in m/s
         }
 
-    async def getRSSI(self):
+    def getRSSI(self):
         msg = self.vehicle.recv_match(type='RC_CHANNELS', blocking=True)
         return msg.rssi
 
@@ -164,7 +164,7 @@ class NrecDrone():
         )
         
         await self.wait_for_condition(
-            self.is_altitude_reached(target_altitude),
+            lambda: self.is_altitude_reached(target_altitude),
             timeout=60,
             interval=1
         )
@@ -178,7 +178,7 @@ class NrecDrone():
             return
 
         await self.wait_for_condition(
-            self.is_disarmed,
+            lambda: self.is_disarmed(),
             timeout=60,
             interval=1
         )
@@ -197,7 +197,7 @@ class NrecDrone():
         )
 
         await self.wait_for_condition(
-            self.is_home_set,
+            lambda: self.is_home_set(),
             timeout=30,
             interval=0.1
         )
@@ -211,7 +211,7 @@ class NrecDrone():
             return
 
         await self.wait_for_condition(
-            self.is_disarmed,
+            lambda: self.is_disarmed(),
             timeout=60,
             interval=1
         )
@@ -299,7 +299,7 @@ class NrecDrone():
         if bearing is not None: await self.setBearing(bearing)
         
         await self.wait_for_condition(
-            self.is_at_target(lat, lon),
+            lambda: self.is_at_target(lat, lon),
             timeout=60,
             interval=1
         )
@@ -341,7 +341,7 @@ class NrecDrone():
         if angle is not None: await self.setBearing(angle)
         
         await self.wait_for_condition(
-            self.is_at_target(target_lat, target_lon),
+            lambda: self.is_at_target(target_lat, target_lon),
             timeout=60,
             interval=1
         )
@@ -368,7 +368,7 @@ class NrecDrone():
         )
         
         await self.wait_for_condition(
-            self.is_bearing_reached(bearing),
+            lambda: self.is_bearing_reached(bearing),
             timeout=30,
             interval=0.5
         )
@@ -389,7 +389,7 @@ class NrecDrone():
 
 
         return await self.wait_for_condition(
-            self.is_armed,
+            lambda: self.is_armed(),
             timeout=30,
             interval=1
         )
@@ -407,38 +407,38 @@ class NrecDrone():
         logger.info("-- Disarm command sent")
 
         return await self.wait_for_condition(
-            self.is_disarmed,
+            lambda: self.is_disarmed(),
             timeout=30,
             interval=1
         )
 
     ''' ACK methods'''
-    async def is_altitude_reached(self, target_altitude):
-            current_altitude = await self.getAltitudeRel()
+    def is_altitude_reached(self, target_altitude):
+            current_altitude = self.getAltitudeRel()
             return current_altitude >= target_altitude * 0.95
     
-    async def is_armed(self):
+    def is_armed(self):
             return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
         
-    async def is_disarmed(self):
+    def is_disarmed(self):
             return not (self.vehicle.recv_match(type='HEARTBEAT', blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
 
-    async def is_home_set(self):
+    def is_home_set(self):
         msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
         return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
     
-    async def is_bearing_reached(self, bearing):
+    def is_bearing_reached(self, bearing):
         yaw = math.degrees(self.vehicle.recv_match(type='ATTITUDE', blocking=True).yaw)
         current_yaw = (yaw + 360) % 360
         target_yaw = (bearing + 360) % 360
         return abs(current_yaw - target_yaw) <= 2
     
-    async def is_mode_set(self, mode_key):
+    def is_mode_set(self, mode_key):
         current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
         return current_mode == mode_key
 
-    async def is_at_target(self, lat, lon):
-            current_location = await self.getGPS()
+    def is_at_target(self, lat, lon):
+            current_location = self.getGPS()
             distance = self.getDistance(current_location, {"latitude": lat, "longitude": lon})
             return distance < 1.0
         
@@ -446,8 +446,12 @@ class NrecDrone():
     async def wait_for_condition(self, condition_fn, timeout=30, interval=0.5):
         start_time = time.time()
         while True:
-            if await condition_fn():
-                return True
+            try:
+                if condition_fn():
+                    logger.info("-- Condition met")
+                    return True
+            except Exception as e:
+                logger.error(f"-- Error evaluating condition: {e}")
             if time.time() - start_time > timeout:
                 logger.error("-- Timeout waiting for condition")
                 return False
@@ -468,7 +472,7 @@ class NrecDrone():
         )
         
         return await self.wait_for_condition(
-            self.is_mode_set(mode_key),
+            lambda: self.is_mode_set(mode_key),
             timeout=30,
             interval=1
         )
