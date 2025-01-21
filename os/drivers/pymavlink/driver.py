@@ -73,13 +73,16 @@ async def camera_stream(drone, cam_sock):
 
 async def telemetry_stream(drone : NrecDrone, tel_sock):
     logger.debug('Starting telemetry stream')
+    
+    await asyncio.sleep(1) # solving for some contention issue with connecting to drone
+    
     while await drone.isConnected():
         logger.debug('HI from telemetry stream')
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
             tel_message.drone_name = telDict["name"]
-            # tel_message.mag = telDict["magnetometer"]
+            # tel_message.mag = telDict["magnetometer"] # type incomaptible with dict provided by nrec driver
             tel_message.battery = telDict["battery"]
             tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
@@ -113,9 +116,9 @@ async def handle(identity, message, resp, action, resp_sock):
         match action:
             case "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
-                await drone.takeOff(10)
+                logger.info('####################################Taking OFF################################################################')
+                await drone.takeOff(5)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
             case "setVelocity":
                 velocity = message.setVelocity
@@ -126,19 +129,28 @@ async def handle(identity, message, resp, action, resp_sock):
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('####################################Drone Landing#######################################################################')
+                logger.info('####################################Landing#######################################################################')
                 logger.info(f"land function call finished at: {time.time()}")
             case "rth":
                 logger.info(f"rth function call started at: {time.time()}")
+                logger.info('####################################Returning to Home#######################################################################')
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
             case "hover":
-                logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
+                logger.info('####################################Hovering#######################################################################')
+                logger.info(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.hover()
-                logger.debug("hover !")
+                logger.info("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.debug(f"hover function call finished at: {time.time()}")
+                logger.info(f"hover function call finished at: {time.time()}")
+            case "setGPSLocation":
+                logger.info(f"setGPSLocation function call started at: {time.time()}")
+                logger.info('####################################Setting GPS Location#######################################################################')
+                location = message.setGPSLocation
+                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, location.bearing)
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED
@@ -168,7 +180,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
                 # Decode message via protobuf, then execute it
                 message = cnc_protocol.Driver()
                 message.ParseFromString(data)
-                logger.debug(f"Received message: {message}")
+                logger.info(f"Received message: {message}")
                 action = message.WhichOneof("method")
 
                 # Create a driver response message

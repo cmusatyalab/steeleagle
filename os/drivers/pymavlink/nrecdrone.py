@@ -21,27 +21,64 @@ class NrecDrone():
         
     def __init__(self):
         self.vehicle = None
+        self.mode = None
         self.mode_mapping = None
         self.listener_task = None
 
-        self.cached_msg = {}
-        
-        self.VEL_TOL = 0.1
-        self.ANG_VEL_TOL = 0.01
-        self.RTH_ALT = 20
 
     ''' Connect methods '''
     async def connect(self, connection_string):
+        # connect to drone
         logger.info(f"Connecting to drone at {connection_string}...")
         self.vehicle = mavutil.mavlink_connection(connection_string)
         self.vehicle.wait_heartbeat()
-        print(list(self.vehicle.messages))
         logger.info("-- Connected to drone!")
         self.mode_mapping = self.vehicle.mode_mapping()
         logger.info(f"Mode mapping: {self.mode_mapping}")
         
+        # register telemetry streams
+        await self.register_telemetry_streams()
         asyncio.create_task(self._message_listener())
+        
+    async def register_telemetry_streams(self, frequency_hz: float = 10.0):
+        # Define the telemetry message names
+        telemetry_message_names = [
+            "HEARTBEAT",
+            "GLOBAL_POSITION_INT",
+            "ATTITUDE",
+            "RAW_IMU",
+            "BATTERY_STATUS",
+            "GPS_RAW_INT",
+            "VFR_HUD",
+            "LOCAL_POSITION_NED",
+            "RC_CHANNELS",
+        ]
 
+        logger.info(f"Registering telemetry streams at {frequency_hz} Hz...")
+        for message_name in telemetry_message_names:
+            try:
+                message_id = getattr(mavutil.mavlink, f"MAVLINK_MSG_ID_{message_name}", None)
+                if message_id is None:
+                    logger.warning(f"Message name {message_name} is not found in MAVLink definitions.")
+                    continue
+
+                # Request the message interval
+                self.request_message_interval(message_id, frequency_hz)
+                logger.info(f"Registered telemetry stream: {message_name} (ID: {message_id})")
+
+            except Exception as e:
+                logger.error(f"Failed to register telemetry stream {message_name}: {e}")
+
+    def request_message_interval(self, message_id: int, frequency_hz: float):
+        self.vehicle.mav.command_long_send(
+            self.vehicle.target_system, self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            message_id, # The MAVLink message ID
+            1e6 / frequency_hz, # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
+            0, 0, 0, 0, # Unused parameters
+            0, # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+        )
+        
     async def isConnected(self):
         return self.vehicle is not None
 
@@ -57,23 +94,16 @@ class NrecDrone():
     ''' Telemetry methods '''
     async def getTelemetry(self):
         try:
-            telemetry_tasks = {
-                    "name": self.getName(),
-                    "gps": self.getGPS(),
-                    "relAlt": self.getAltitudeRel(),
-                    "attitude": self.getAttitude(),
-                    "magnetometer": self.getMagnetometerReading(),
-                    "imu": self.getVelocityNEU(),
-                    "battery": self.getBatteryPercentage(),
-                    "satellites": self.getSatellites(),
-                    "heading": self.getHeading()
-                }
-            
-            results = await asyncio.gather(*telemetry_tasks.values())
-
-            # Combine the results into a dictionary
-            tel_dict = dict(zip(telemetry_tasks.keys(), results))
-
+            tel_dict = {}
+            tel_dict['name'] = self.getName()
+            tel_dict['gps'] = self.getGPS()
+            tel_dict['relAlt'] = self.getAltitudeRel()
+            tel_dict['attitude'] = self.getAttitude()
+            tel_dict['magnetometer'] = self.getMagnetometerReading()
+            tel_dict['imu'] = self.getVelocityNEU()
+            tel_dict['battery'] = self.getBatteryPercentage()
+            tel_dict['satellites'] = self.getSatellites()
+            tel_dict['heading'] = self.getHeading()
             logger.debug(f"Telemetry data: {tel_dict}")
             return tel_dict
 
@@ -81,12 +111,12 @@ class NrecDrone():
             logger.error(f"Error in getTelemetry(): {e}")
             return {}
 
-    async def getName(self):
+    def getName(self):
         drone_id = os.environ.get('DRONE_ID')
         return drone_id
 
-    async def getGPS(self):
-        gps_msg = await self._get_cached_message("GLOBAL_POSITION_INT")
+    def getGPS(self):
+        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
             return None
         return {
@@ -95,14 +125,14 @@ class NrecDrone():
             "altitude": gps_msg.alt / 1e3
         }
 
-    async def getAltitudeRel(self):
-        gps_msg = await self._get_cached_message("GLOBAL_POSITION_INT")
+    def getAltitudeRel(self):
+        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
             return None
         return gps_msg.relative_alt / 1e3
 
-    async def getAttitude(self):
-        attitude_msg = await self._get_cached_message("ATTITUDE")
+    def getAttitude(self):
+        attitude_msg = self._get_cached_message("ATTITUDE")
         if not attitude_msg:
             return None
         return {
@@ -111,8 +141,8 @@ class NrecDrone():
             "yaw": attitude_msg.yaw
         }
 
-    async def getMagnetometerReading(self):
-        imu_msg = await self._get_cached_message("RAW_IMU")
+    def getMagnetometerReading(self):
+        imu_msg = self._get_cached_message("RAW_IMU")
         if not imu_msg:
             return {"x": None, "y": None, "z": None}
         return {
@@ -121,26 +151,26 @@ class NrecDrone():
             "z": imu_msg.zmag
         }
 
-    async def getBatteryPercentage(self):
-        battery_msg = await self._get_cached_message("BATTERY_STATUS")
+    def getBatteryPercentage(self):
+        battery_msg = self._get_cached_message("BATTERY_STATUS")
         if not battery_msg:
             return None
         return battery_msg.battery_remaining
 
-    async def getSatellites(self):
-        satellites_msg = await self._get_cached_message("GPS_RAW_INT")
+    def getSatellites(self):
+        satellites_msg = self._get_cached_message("GPS_RAW_INT")
         if not satellites_msg:
             return None
         return satellites_msg.satellites_visible
 
-    async def getHeading(self):
-        heading_msg = await self._get_cached_message("VFR_HUD")
+    def getHeading(self):
+        heading_msg = self._get_cached_message("VFR_HUD")
         if not heading_msg:
             return None
         return heading_msg.heading
 
-    async def getVelocityNEU(self):
-        gps_msg = await self._get_cached_message("GLOBAL_POSITION_INT")
+    def getVelocityNEU(self):
+        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
             return None
         return {
@@ -149,8 +179,8 @@ class NrecDrone():
             "up": gps_msg.vz / 100
         }
         
-    async def getVelocityBody(self):
-        velocity_msg = await self._get_cached_message("LOCAL_POSITION_NED")
+    def getVelocityBody(self):
+        velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
         if not velocity_msg:
             return None
         return {
@@ -159,8 +189,8 @@ class NrecDrone():
             "vz": velocity_msg.vz   # Body-frame Z velocity in m/s
         }
 
-    async def getRSSI(self):
-        rssi_msg = await self._get_cached_message("RC_CHANNELS")
+    def getRSSI(self):
+        rssi_msg = self._get_cached_message("RC_CHANNELS")
         if not rssi_msg:
             return None
         return rssi_msg.rssi
@@ -193,13 +223,17 @@ class NrecDrone():
             0, 0, target_altitude
         )
         
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_altitude_reached(target_altitude),
             timeout=60,
             interval=1
         )
-        
-        logger.info("-- Target altitude reached")
+        if result:
+            logger.info("-- Altitude reached")
+        else:
+            logger.error("-- Failed to reach target altitude")
+
+        return result
 
     async def land(self):
         logger.info("-- Landing")
@@ -207,13 +241,17 @@ class NrecDrone():
             logger.error("Failed to set mode to LAND")
             return
 
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_disarmed(),
             timeout=60,
             interval=1
         )
+        if result:
+            logger.info("-- Landed and disarmed")
+        else:   
+            logger.error("-- Landing failed")
         
-        logger.info("-- Landed and disarmed")
+        return result
 
     async def setHome(self, lat, lng, alt):
         logger.info(f"-- Setting home location to {lat}, {lng}, {alt}")
@@ -226,27 +264,35 @@ class NrecDrone():
             lat, lng, alt
         )
 
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_home_set(),
             timeout=30,
             interval=0.1
         )
         
-        logger.info("-- Home location set successfully")
-
+        if result:
+            logger.info("-- Home location set successfully")
+        else:
+            logger.error("-- Failed to set home location")
+        
+        return result
+    
     async def rth(self):
         logger.info("-- Returning to launch")
         if await self.switchMode(NrecDrone.FlightMode.RTL) == False:
             logger.error("Failed to set mode to RTL")
             return
 
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_disarmed(),
             timeout=60,
             interval=1
         )
         
-        logger.info("-- Returned to launch and disarmed")
+        if result:
+            logger.info("-- Returned to launch and disarmed")
+        else:   
+            logger.error("-- RTL failed")
 
     async def setAttitude(self, pitch, roll, thrust, yaw):
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
@@ -328,13 +374,18 @@ class NrecDrone():
         
         if bearing is not None: await self.setBearing(bearing)
         
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
             timeout=60,
             interval=1
         )
         
-        logger.info("-- Reached target GPS location")
+        if result:  
+            logger.info("-- Reached target GPS location")
+        else:  
+            logger.info("-- Failed to reach target GPS location")
+        
+        return result
 
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
@@ -370,13 +421,18 @@ class NrecDrone():
         
         if angle is not None: await self.setBearing(angle)
         
-        await self._wait_for_condition(
+        result = await self._wait_for_condition(
             lambda: self.is_at_target(target_lat, target_lon),
             timeout=60,
             interval=1
         )
         
-        logger.info("-- Reached target translated location")
+        if  result:
+            logger.info("-- Reached target translated location")
+        else:
+            logger.error("-- Failed to reach target translated location")
+        
+        return result
 
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
@@ -385,25 +441,34 @@ class NrecDrone():
             logger.error("Failed to set mode to GUIDED")
             return
         
+        yaw_speed = 25 # deg/s
+        direction = 0 # 1: clockwise, -1: counter-clockwise 0: most quickly direction
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             0,
             bearing,
+            yaw_speed,
+            direction,
             0,
-            1,
-            1,
             0, 0, 0
         )
         
-        await self._wait_for_condition(
+        result =  await self._wait_for_condition(
             lambda: self.is_bearing_reached(bearing),
             timeout=30,
             interval=0.5
         )
         
-        logger.info(f"-- Yaw successfully set to {bearing} degrees")
+        result = True
+        
+        if result:
+            logger.info(f"-- Yaw successfully set to {bearing} degrees")
+        else:
+            logger.error(f"-- Failed to set yaw to {bearing} degrees")
+        
+        return result
 
     async def arm(self):
         logger.info("-- Arming")
@@ -418,11 +483,17 @@ class NrecDrone():
         logger.info("-- Arm command sent")
 
 
-        return await self._wait_for_condition(
+        result =  self._wait_for_condition(
             lambda: self.is_armed(),
             timeout=30,
             interval=1
         )
+        
+        if result:
+            logger.info("-- Armed successfully")
+        else:
+            logger.error("-- Arm failed")
+        return result
 
     async def disarm(self):
         logger.info("-- Disarming")
@@ -436,61 +507,89 @@ class NrecDrone():
         )
         logger.info("-- Disarm command sent")
 
-        return await self._wait_for_condition(
+        result =  await self._wait_for_condition(
             lambda: self.is_disarmed(),
             timeout=30,
             interval=1
         )
         
+        if result:
+            self.mode = None
+            logger.info("-- Disarmed successfully")
+        else:
+            logger.error("-- Disarm failed")
+            
+        return result  
     async def switchMode(self, mode):
         logger.info(f"Switching mode to {mode}")
-        mode_key = mode.value
-        logger.info(f"mode map: {self.mode_mapping}, mode_key: {mode_key}")
-        if mode_key not in self.mode_mapping:
-            logger.info(f"Mode {mode_key} not supported!")
+        mode_target = mode.value
+        curr_mode = self.mode.value if self.mode else None
+        logger.info(f"mode map: {self.mode_mapping}, target mode: {mode_target}, current mode: {curr_mode}")
+        
+        if self.mode == mode:
+            logger.info(f"Already in mode {mode_target}")
+            return True
+        
+        # switch mode
+        if mode_target not in self.mode_mapping:
+            logger.info(f"Mode {mode_target} not supported!")
             return False
-        mode_id = self.mode_mapping[mode_key]
+        
+        mode_id = self.mode_mapping[mode_target]
         self.vehicle.mav.set_mode_send(
             self.vehicle.target_system,
             mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
             mode_id
         )
         
-        return await self._wait_for_condition(
-            lambda: self.is_mode_set(mode_key),
+        result = await self._wait_for_condition(
+            lambda: self.is_mode_set(mode_target),
             timeout=30,
             interval=1
         )
         
-    ''' ACK methods'''
-    def is_altitude_reached(self, target_altitude):
-        current_altitude = self.getAltitudeRel()
-        return current_altitude >= target_altitude * 0.95
-    
+        if result:
+            self.mode = mode
+            logger.info(f"Mode switched to {mode_target}")
+        
+        return result
+        
+    ''' ACK methods'''    
     def is_armed(self):
         return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
         
     def is_disarmed(self):
         return not (self.vehicle.recv_match(type='HEARTBEAT', blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
 
+    def is_mode_set(self, mode_target):
+        current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
+        return current_mode == mode_target
+    
     def is_home_set(self):
         msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
         return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+
+    def is_altitude_reached(self, target_altitude):
+        current_altitude = self.getAltitudeRel()
+        return current_altitude >= target_altitude * 0.95
     
     def is_bearing_reached(self, bearing):
-        yaw = math.degrees(self.vehicle.recv_match(type='ATTITUDE', blocking=True).yaw)
-        current_yaw = (yaw + 360) % 360
+        logger.info(f"Checking if bearing is reached: {bearing}")
+        attitude = self.getAttitude()
+        if not attitude:
+            return False  # Return False if attitude data is unavailable
+
+        current_yaw = (math.degrees(attitude["yaw"]) + 360) % 360
         target_yaw = (bearing + 360) % 360
         return abs(current_yaw - target_yaw) <= 2
     
-    def is_mode_set(self, mode_key):
-        current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
-        return current_mode == mode_key
 
     def is_at_target(self, lat, lon):
         current_location = self.getGPS()
-        dlat = lat["latitude"] - current_location["latitude"]
-        dlon = lon["longitude"] - current_location["longitude"]
+        if not current_location:
+            return False
+        dlat = lat - current_location["latitude"]
+        dlon = lon - current_location["longitude"]
         distance =  math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
         return distance < 1.0
         
@@ -503,19 +602,15 @@ class NrecDrone():
                 if msg:
                     message_type = msg.get_type()
                     logger.debug(f"Received message type: {message_type}")
-                    self.cached_msg[message_type] = msg
         except asyncio.CancelledError:
             logger.info("-- Message listener stopped")
         except Exception as e:
             logger.error(f"-- Error in message listener: {e}")
-            
-    async def _get_cached_message(self, message_type):
+    
+    def _get_cached_message(self, message_type):
         try:
             logger.debug(f"Currently connection message types: {list(self.vehicle.messages)}")
-            logger.debug(f"Currently cached message types: {list(self.cached_msg)}")
-            # return self.vehicle.messages[message_type]
-            return self.cached_msg[message_type]
-        
+            return self.vehicle.messages[message_type]
         except KeyError:
             logger.error(f"Message type {message_type} not found in cache")
             return None
