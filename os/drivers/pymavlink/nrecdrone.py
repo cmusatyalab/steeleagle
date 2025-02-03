@@ -18,12 +18,15 @@ class NrecDrone():
         RTL = 'RTL'
         LOITER = 'LOITER'
         GUIDED = 'GUIDED'
+        GUIDED_NOGPS = 'GUIDED_NOGPS'
+        ALT_HOLD = 'ALT_HOLD'
         
     def __init__(self):
         self.vehicle = None
         self.mode = None
         self.mode_mapping = None
         self.listener_task = None
+        self.gps_disabled = False
 
 
     ''' Connect methods '''
@@ -293,31 +296,80 @@ class NrecDrone():
             logger.info("-- Returned to launch and disarmed")
         else:   
             logger.error("-- RTL failed")
+            
+    async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
+        if self.gps_disabled:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+                logger.error("Failed to set mode to GUIDED_NOGPS")
+                return
+            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            #     logger.error("Failed to set mode to GUIDED_NOGPS")
+            #     return
+        else:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+                logger.error("Failed to set mode to GUIDED")
+                return
+        logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
 
+        # Ensure values are within MAVLink range (-1000 to 1000)
+        def clamp(value, min_val, max_val):
+            return max(min_val, min(max_val, int(value)))  # Ensure integer conversion
+
+        x = clamp(forward_vel * 1000, -1000, 1000)  # Forward/backward movement
+        y = clamp(right_vel * 1000, -1000, 1000)    # Left/right movement
+        z = clamp(up_vel * 1000, 0, 1000)           # Throttle (0=lowest, 1000=full thrust)
+        r = clamp(angle_vel * 1000, -1000, 1000)    # Yaw rotation
+
+        buttons = 0  # No buttons pressed
+        buttons2 = 0  # No additional buttons
+        enabled_extensions = 0  # No extra axis enabled
+        s, t, aux1, aux2, aux3, aux4, aux5, aux6 = 0, 0, 0, 0, 0, 0, 0, 0  # Unused fields
+
+        try:
+            self.vehicle.mav.manual_control_send(
+                self.vehicle.target_system,
+                x, y, z, r,
+                buttons,
+                buttons2,
+                enabled_extensions,
+                s, t, aux1, aux2, aux3, aux4, aux5, aux6
+            )
+            logger.info("Manual control command sent successfully!")
+        except Exception as e:
+            logger.error(f"Failed to send manual control: {e}")
+        
+        
     async def setAttitude(self, pitch, roll, thrust, yaw):
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
 
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
+        if self.gps_disabled:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+                logger.error("Failed to set mode to GUIDED_NOGPS")
+                return
+            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            #     logger.error("Failed to set mode to GUIDED_NOGPS")
+            #     return
+        else:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+                logger.error("Failed to set mode to GUIDED")
+                return
         
+        # Convert Euler angles to quaternion (w, x, y, z)
         def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-            t0 = math.cos(math.radians(yaw * 0.5))
-            t1 = math.sin(math.radians(yaw * 0.5))
-            t2 = math.cos(math.radians(roll * 0.5))
-            t3 = math.sin(math.radians(roll * 0.5))
-            t4 = math.cos(math.radians(pitch * 0.5))
-            t5 = math.sin(math.radians(pitch * 0.5))
+            roll, pitch, yaw = map(math.radians, [roll, pitch, yaw])
+            cy, sy = math.cos(yaw * 0.5), math.sin(yaw * 0.5)
+            cp, sp = math.cos(pitch * 0.5), math.sin(pitch * 0.5)
+            cr, sr = math.cos(roll * 0.5), math.sin(roll * 0.5)
 
-            w = t0 * t2 * t4 + t1 * t3 * t5
-            x = t0 * t3 * t4 - t1 * t2 * t5
-            y = t0 * t2 * t5 + t1 * t3 * t4
-            z = t1 * t2 * t4 - t0 * t3 * t5
-
-            return [w, x, y, z]
+            return [cr * cp * cy + sr * sp * sy,  # w
+                    sr * cp * cy - cr * sp * sy,  # x
+                    cr * sp * cy + sr * cp * sy,  # y
+                    cr * cp * sy - sr * sp * cy]  # z
 
         q = to_quaternion(roll, pitch, yaw)
 
+        base_thrust = 0.6
+        
         self.vehicle.mav.set_attitude_target_send(
             0,  # time_boot_ms
             self.vehicle.target_system,
@@ -325,7 +377,7 @@ class NrecDrone():
             0b00000000,  # type_mask
             q,  # Quaternion
             0, 0, 0,  # Body angular rates
-            thrust  # Throttle
+            base_thrust + thrust  # Throttle
         )
         logger.info("-- setAttitude sent successfully")
         #  continuous control: no blocking wait
@@ -333,9 +385,14 @@ class NrecDrone():
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
+        if self.gps_disabled:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+                logger.error("Failed to set mode to GUIDED_NOGPS")
+                return
+        else:
+            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+                logger.error("Failed to set mode to GUIDED")
+                return
         
         self.vehicle.mav.set_position_target_local_ned_send(
             0,  # time_boot_ms
@@ -371,8 +428,15 @@ class NrecDrone():
             0, 0, 0,
             0, 0
         )
+            # Calculate bearing if not provided
+        current_location = self.getGPS()
+        current_lat = current_location["latitude"]
+        current_lon = current_location["longitude"]
+        if bearing is None:
+            bearing = self.calculate_bearing(current_lat, current_lon, lat, lon)
+            logger.info(f"-- Calculated bearing: {bearing}")
         
-        if bearing is not None: await self.setBearing(bearing)
+        await self.setBearing(bearing)
         
         result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
@@ -394,8 +458,8 @@ class NrecDrone():
             logger.error("Failed to set mode to GUIDED")
             return
         
-        current_location = await self.getGPS()
-        current_heading = await self.getHeading()
+        current_location =  self.getGPS()
+        current_heading =  self.getHeading()
 
         dx = forward * math.cos(math.radians(current_heading)) - right * math.sin(math.radians(current_heading))
         dy = forward * math.sin(math.radians(current_heading)) + right * math.cos(math.radians(current_heading))
@@ -483,7 +547,7 @@ class NrecDrone():
         logger.info("-- Arm command sent")
 
 
-        result =  self._wait_for_condition(
+        result =  await self._wait_for_condition(
             lambda: self.is_armed(),
             timeout=30,
             interval=1
@@ -553,7 +617,34 @@ class NrecDrone():
             logger.info(f"Mode switched to {mode_target}")
         
         return result
+    
+    async def disableGPS(self):
+        # logger.info("-- Disabling GPS")
+
+        # # Set EKF_GPS_TYPE to 3 (Indoor Mode)
+        # self.vehicle.mav.param_set_send(
+        #     self.vehicle.target_system,
+        #     self.vehicle.target_component,
+        #     b'EKF_GPS_TYPE',  # Parameter name
+        #     3,  # 3 = No GPS (indoor mode)
+        #     mavutil.mavlink.MAV_PARAM_TYPE_INT32
+        # )
         
+        # result =  await self._wait_for_condition(
+        #     lambda: self.is_GPS_disabled()
+        # )
+        
+        # if result:
+        #     logger.info("-- GPS disabled")
+        # else:
+        #     logger.error("-- Failed to disable GPS")    
+            # Wait and print received parameter messages
+        # return result
+        
+        self.gps_disabled = True
+        
+   
+           
     ''' ACK methods'''    
     def is_armed(self):
         return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
@@ -594,6 +685,27 @@ class NrecDrone():
         return distance < 1.0
         
     ''' Helper methods '''
+    # azimuth calculation for bearing
+    def calculate_bearing(self, lat1, lon1, lat2, lon2):
+        # Convert latitude and longitude from degrees to radians
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        
+        delta_lon = lon2 - lon1
+
+        # Bearing calculation
+        x = math.sin(delta_lon) * math.cos(lat2)
+        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
+        
+        initial_bearing = math.atan2(x, y)
+
+        # Convert bearing from radians to degrees
+        initial_bearing = math.degrees(initial_bearing)
+
+        # Normalize to 0-360 degrees
+        converted_bearing = (initial_bearing + 360) % 360
+
+        return converted_bearing
+        
     async def _message_listener(self):
         logger.info("-- Starting message listener")
         try:
@@ -632,3 +744,47 @@ class NrecDrone():
     ''' Stream methods '''
     async def getGimbalPose(self):
         pass
+    
+    async def startStreaming(self):
+  
+        self.streamingThread = StreamingThread(self.vehicle)
+        self.streamingThread.start()
+
+    async def getVideoFrame(self):
+        if self.streamingThread:
+            return self.streamingThread.grabFrame().tobytes()
+
+    async def stopStreaming(self):
+        self.streamingThread.stop()
+        
+import cv2
+import numpy as np
+import os
+import threading
+
+class StreamingThread(threading.Thread):
+
+    def __init__(self, drone):
+        threading.Thread.__init__(self)
+        self.currentFrame = None
+        self.drone = drone
+        self.cap = cv2.VideoCapture(f"http://127.0.0.1:5000/video_feed")
+        self.isRunning = True
+
+    def run(self):
+        try:
+            while(self.isRunning):
+                ret, self.currentFrame = self.cap.read()
+        except Exception as e:
+            logger.error(e)
+
+    def grabFrame(self):
+        try:
+            frame = self.currentFrame.copy()
+            return frame
+        except Exception as e:
+            # Send a blank frame
+            return np.zeros((720, 1280, 3), np.uint8)
+
+    def stop(self):
+        self.isRunning = False

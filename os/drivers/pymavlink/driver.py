@@ -59,8 +59,10 @@ async def camera_stream(drone, cam_sock):
         try:
             cam_message = cnc_protocol.Frame()
             cam_message.data = await drone.getVideoFrame()
-            cam_message.height = 720
-            cam_message.width = 1280
+            # cam_message.height = 720
+            # cam_message.width = 1280
+            cam_message.height = 144
+            cam_message.width = 256
             cam_message.channels = 3
             cam_message.id = frame_id
             cam_sock.send(cam_message.SerializeToString())
@@ -123,7 +125,10 @@ async def handle(identity, message, resp, action, resp_sock):
             case "setVelocity":
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
-                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                logger.info('####################################Setting Velocity#######################################################################')
+                # await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                # await drone.manual_control(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "land":
                 logger.info(f"land function call started at: {time.time()}")
@@ -148,7 +153,7 @@ async def handle(identity, message, resp, action, resp_sock):
                 logger.info(f"setGPSLocation function call started at: {time.time()}")
                 logger.info('####################################Setting GPS Location#######################################################################')
                 location = message.setGPSLocation
-                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, location.bearing)
+                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
@@ -168,7 +173,12 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             continue
         logger.info(f'Established connection to drone, ready to receive commands!')
         
+        await drone.startStreaming()
+        logger.info('Started streaming')
+        
+        asyncio.create_task(camera_stream(drone, cam_sock))
         asyncio.create_task(telemetry_stream(drone, tel_sock))
+        await drone.disableGPS()
 
         while await drone.isConnected():
             try:

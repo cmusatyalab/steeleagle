@@ -95,14 +95,14 @@ class GabrielCompute(ComputeInterface):
             tel_data = cnc_pb2.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
-                if frame_data is not None:
+                if frame_data is not None and frame_data.data != b'':
                     logger.debug("Waiting for new frame from driver")
                     logger.debug(f"New frame frame_id={frame_data.id} available from driver")
 
                     frame_bytes = frame_data.data
+
                     nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
-                    with Timer(logger, "Encoding frame to jpg"):
-                        frame = cv2.imencode('.jpg', nparr.reshape(frame_data.height, frame_data.width, frame_data.channels))[1]
+                    frame = cv2.imencode('.jpg', nparr.reshape(frame_data.height, frame_data.width, frame_data.channels))[1]
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
 
