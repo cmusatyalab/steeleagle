@@ -768,7 +768,10 @@ class StreamingThread(threading.Thread):
         threading.Thread.__init__(self)
         self.currentFrame = None
         self.drone = drone
-        self.cap = cv2.VideoCapture(f"http://127.0.0.1:5000/video_feed")
+        url_sim = os.environ.get('STREAM_SIM_URL')
+        url_mini = os.environ.get('STREAM_MINI_URL')
+        url = url_mini
+        self.cap = cv2.VideoCapture(url)
         self.isRunning = True
 
     def run(self):
