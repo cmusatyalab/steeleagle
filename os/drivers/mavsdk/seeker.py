@@ -61,12 +61,7 @@ class ModalAISeekerDrone:
         self.telemetry_task = asyncio.create_task(self.telemetry_subscriber())
 
     async def isConnected(self):
-        async for state in self.drone.core.connection_state():
-            if state.is_connected:
-                logger.debug(f"-- Connected to drone!")
-                return True
-            else:
-                return False
+        return True
 
     async def takeOff(self):
         logger.info("Arming drone and taking off")

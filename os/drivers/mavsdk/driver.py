@@ -69,12 +69,17 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
             tel_message.drone_name = drone_id
-            tel_message.mag = telDict["magnetometer"]
-            tel_message.battery = telDict["battery"]
-            tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-            tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-            tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
-            tel_message.satellites = telDict["satellites"]
+            tel_message.mag = telDict.get("magnetometer", -1)
+            tel_message.battery = telDict.get("battery", -1)
+            if "attitude" in telDict:
+                tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
+                tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
+                tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            else:
+                tel_message.drone_attitude.yaw = -1
+                tel_message.drone_attitude.pitch = -1
+                tel_message.drone_attitude.roll = -1
+            tel_message.satellites = telDict.get("satellites", -1)
 
             # tel_message.relative_position.up = telDict["relAlt"]
 
