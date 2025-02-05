@@ -100,30 +100,29 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
-        match action:
-            case "takeOff":
+        if action == "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
-            case "setVelocity":
+        elif action == "setVelocity":
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "land":
+        elif action == "land":
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Landing#######################################################################')
                 logger.info(f"land function call finished at: {time.time()}")
-            case "rth":
+        elif action == "rth":
                 logger.info(f"rth function call started at: {time.time()}")
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
-            case "hover":
+        elif action == "hover":
                 logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.hover()
                 logger.debug("hover !")
