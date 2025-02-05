@@ -12,7 +12,9 @@ import numpy as np
 import math as m
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+logging.basicConfig()
+logger.setLevel(logging.INFO)
 
 def bearing(origin, destination):
 	lat1, lon1 = origin
@@ -26,8 +28,8 @@ def bearing(origin, destination):
 
 	b = math.atan2(math.sin(dlon)*math.cos(rlat2),math.cos(rlat1)*math.sin(rlat2)-math.sin(rlat1)*math.cos(rlat2)*math.cos(dlon))
 	bd = math.degrees(b)
-	br,bn = divmod(bd+360,360) 
-	
+	br,bn = divmod(bd+360,360)
+
 	return bn
 
 def get_rot_mat(theta):
@@ -41,11 +43,12 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
     RTH_ALT = 20
 
     def __init__(self, **kwargs):
-        self.drone = System(mavsdk_server_address="localhost", port=50051)
+        self.server_address = kwargs['server_address']
+        self.drone = System(mavsdk_server_address=self.server_address, port=50051)
         self.active = False
 
     ''' Awaiting methods '''
-    
+
     async def hovering(self, timeout=None):
         start = time.time()
         # Allow previous command to take effect
@@ -53,13 +56,13 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
         async for odometry in self.drone.telemetry.odometry():
             velocity = odometry.velocity_body
             ang_velocity = odometry.angular_velocity_body
-            logger.info(f'[MavlinkDrone]: Current velocity: {velocity.x_m_s} {velocity.y_m_s} {velocity.z_m_s} {ang_velocity.yaw_rad_s}')
+            logger.debug(f'[MavlinkDrone]: Current velocity: {velocity.x_m_s} {velocity.y_m_s} {velocity.z_m_s} {ang_velocity.yaw_rad_s}')
             if velocity.x_m_s < self.VEL_TOL and velocity.y_m_s < self.VEL_TOL and velocity.z_m_s < self.VEL_TOL and ang_velocity.yaw_rad_s < self.ANG_VEL_TOL:
                 break # We are now hovering!
             else:
                 if timeout and time.time() - start > timeout: # Break with timeout
                     break
-        
+
     async def telemetry_subscriber(self):
         async def pos(self):
             async for position in self.drone.telemetry.position():
@@ -80,18 +83,24 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
             async for info in self.drone.telemetry.gps_info():
                 self.telemetry['sat'] = info.num_satellites
 
-        asyncio.gather(pos(self), head(self), battery(self), mag(self), sat(self))
+        try:
+            await asyncio.gather(pos(self), head(self), battery(self), mag(self), sat(self))
+        except Exception as e:
+            logger.error(f"Exception: {e}")
 
     ''' Connection methods '''
 
     async def connect(self):
-        await self.drone.connect(system_address="udp://:14550")
+        system_address = f"udp://{self.server_address}:14550"
+        logger.info(f"Connecting to server at address {system_address}")
+
+        await self.drone.connect(system_address=f"udp://{self.server_address}:14550")
         # Set max speed for use by PCMD
-        self.max_speed = await self.drone.action.get_maximum_speed()
+        # self.max_speed = await self.drone.action.get_maximum_speed()
         self.active = True
-        self.telemetry = {'battery': 100, 'rssi': 0, 'mag': 0, 'heading': 0, 'sat': 0, 
+        self.telemetry = {'battery': 100, 'rssi': 0, 'mag': 0, 'heading': 0, 'sat': 0,
                 'lat': 0, 'lng': 0, 'alt': 0, 'rel-alt': 0}
-        asyncio.create_task(self.telemetry_subscriber())
+        self.telemetry_task = asyncio.create_task(self.telemetry_subscriber())
 
     async def isConnected(self):
         async for state in self.drone.core.connection_state():
@@ -116,11 +125,25 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
     async def stopStreaming(self):
         self.streamingThread.stop()
 
+    async def startOffboardMode(self):
+        # Initial setpoint for offboard control
+        #await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+        await self.drone.offboard.set_position_ned(PositionNedYaw(0.0, 0.0, 0.0, 0.0))
+        try:
+            await self.drone.offboard.start()
+        except OffboardError as e:
+            logger.error(e)
+            logger.info("Landing...")
+            await self.land()
+
     ''' Take off / Landing methods '''
 
     async def takeOff(self):
+        logger.info("Takeoff: Arming")
         await self.drone.action.arm()
+        logger.info("Takeoff: Armed")
         await self.drone.action.takeoff()
+        logger.info("Takeoff: Take off done")
         await asyncio.sleep(5)
         await self.hovering()
         # Initial setpoint for offboard control
@@ -128,6 +151,7 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
         try:
             await self.drone.offboard.start()
         except Exception as e:
+            logger.error(e)
             await self.land()
 
     async def land(self):
@@ -165,20 +189,37 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
 
     async def moveBy(self, x, y, z, t):
         v = np.array([x, y, z])
-        h = self.get_heading()
+        h = await self.getHeading()
         R = get_rot_mat(h)
         res = np.matmul(R, v)
-        await self.drone.offboard.set_position_ned(PositionNedYaw(res[0], res[1], -1 * res[2], h + t))
+
+        logger.info(f"Move by: setting position: {res}")
+        await self.drone.offboard.set_position_ned(PositionNedYaw(res[0,0], res[0,1], -1 * res[0,2], h + t))
+
+        logger.info("Waiting for hovering")
         await self.hovering()
+        logger.info("Move by complete")
+
+    async def setVelocity(self, vx, vy, vz, t):
+        await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(vx, vy, vz, t))
 
     async def rotateTo(self, theta):
-        await self.moveBy(0.0, 0.0, 0.0, theta) 
+        await self.moveBy(0.0, 0.0, 0.0, theta)
 
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         pass
 
+    async def getGimbalPitch(self):
+        pass
+
+    async def getSpeedNED(self):
+        pass
+
+    async def getSpeedRel(self):
+        pass
+
     async def hover(self):
-        self.drone.action.hold()
+        await self.drone.action.hold()
 
     ''' Photography methods '''
 
@@ -200,14 +241,14 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
         return self.telemetry['lng']
 
     async def getHeading(self):
-        return self.telemetry['head']
+        return self.telemetry['heading']
 
     async def getRelAlt(self):
         return self.telemetry['rel-alt']
 
     async def getExactAlt(self):
         return self.telemetry['alt']
-    
+
     async def getRSSI(self):
         return 0
 
@@ -219,6 +260,9 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
 
     async def getSatellites(self):
         return self.telemetry['sat']
+
+    #async def getPositionNed(self):
+    #    return self.telemetry['
 
     async def kill(self):
         self.active = False
@@ -233,7 +277,7 @@ class StreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
-        self.currentFrame = None 
+        self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
         self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG)
@@ -256,7 +300,7 @@ class StreamingThread(threading.Thread):
             return frame
         except Exception as e:
             # Send a blank frame
-            return np.zeros((720, 1280, 3), np.uint8) 
+            return np.zeros((720, 1280, 3), np.uint8)
 
     def stop(self):
         self.isRunning = False

@@ -13,6 +13,7 @@ import computes
 from kernel.computes.ComputeItf import ComputeInterface
 from DataStore import DataStore
 from kernel.Service import Service
+import sys
 
 # Set up logging
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -33,7 +34,7 @@ class DataService(Service):
         # Setting up conetxt
         context = zmq.asyncio.Context()
         self.register_context(context)
-        
+
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
@@ -53,7 +54,7 @@ class DataService(Service):
         cam_task = asyncio.create_task(self.camera_handler())
         self.register_task(tel_task)
         self.register_task(cam_task)
-        
+
         # setting up data store
         self.data_store = DataStore()
         self.compute_dict = {}
@@ -67,7 +68,7 @@ class DataService(Service):
         pass
     async def user_handler(self):
         # self.data_store.get_compute_result()
-        
+
         pass
     ######################################################## DRIVER ############################################################
 
@@ -139,7 +140,7 @@ class DataService(Service):
                 self.compute_dict[compute_id] = compute_instance
                 self.data_store.append_compute(compute_id)
                 compute_tasks.append(task)
-            
+
         return compute_tasks
 
 ######################################################## MAIN ##############################################################
@@ -148,6 +149,9 @@ async def async_main():
     """Main entry point for the DataService."""
     logger.info("Starting DataService")
     config_yaml = os.getenv("CPT_CONFIG")
+    if config_yaml is None:
+        logger.fatal("Expected CPT_CONFIG env variable to be specified")
+        sys.exit(-1)
     data_service = DataService(config_yaml)
     await data_service.start()
 

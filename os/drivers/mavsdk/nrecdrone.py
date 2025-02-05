@@ -48,17 +48,17 @@ class NrecDrone():
         # for the simulator (mav proxy), it uses the push model, and requires to bind all addresses
         await self.drone.connect(system_address="udp://:14550")
         # need the workaround for maximum speed from ardupilot
-        self.max_speed = 10 
+        self.max_speed = 10
 
     async def isConnected(self):
         async for state in self.drone.core.connection_state():
             if state.is_connected:
                 logger.debug(f"-- Connected to drone!")
                 return True
-            else: 
+            else:
                 return False
-    
-    ''' Telemetry methods '''    
+
+    ''' Telemetry methods '''
     async def getTelemetry(self):
         telDict = {}
         try:
@@ -74,27 +74,27 @@ class NrecDrone():
             logger.error(f"Error in getTelemetry(): {e}")
         logger.debug(f"Telemetry data: {telDict}")
         return telDict
-    
+
     async def getSatellites(self):
         gps = await anext(self.drone.telemetry.gps_info())
         return gps.num_satellites
-    
+
     async def getGimbalPose(self):
         return "not implemented"
-    
+
     async def getVelocityBody(self):
         imu = await anext(self.drone.telemetry.imu())
         angular_velocity_frd  = imu.angular_velocity_frd
         return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_m_s}
-        
+
     async def getAttitude(self):
         angular_velocity_body = await anext(self.drone.telemetry.attitude_angular_velocity_body())
         return {"roll": angular_velocity_body.roll_rad_s, "pitch": angular_velocity_body.pitch_rad_s, "yaw": angular_velocity_body.yaw_rad_s}
-    
+
     async def getMagnetometerReading(self):
         health = await anext(self.drone.telemetry.health())
         return health.is_magnetometer_calibration_ok
-        
+
     async def getAltitudeRel(self):
         logger.info(f"Absolute altitude:")
         try:
@@ -102,10 +102,10 @@ class NrecDrone():
         except Exception as e:
             logger.error(f"Failed to get position: {e}")
             return None
-        
+
         logger.info(f"Relative altitude: {position.relative_altitude_m}")
         return position.relative_altitude_m
-    
+
     async def getGPS(self):
         try:
             gps = await self.drone.telemetry.get_gps_global_origin()
@@ -113,15 +113,15 @@ class NrecDrone():
         except Exception as e:
             logger.error(f"Failed to get GPS data: {e}")
             return None
-        
-        
+
+
     async def getBatteryPercentage(self):
         battery = await anext(self.drone.telemetry.battery())
         return int(battery.remaining_percent)
-    
+
     async def getHeading(self):
         return (180 / math.pi)
-    
+
     ''' Actuation methods '''
     async def hovering(self, timeout=None):
         start = time.time()
@@ -136,10 +136,10 @@ class NrecDrone():
             else:
                 if timeout and time.time() - start > timeout: # Break with timeout
                     break
-    
+
     async def hover(self):
         self.drone.action.hold()
-        
+
     async def takeOff(self):
         logger.debug("-- Taking off")
         await self.drone.action.arm()
@@ -153,7 +153,7 @@ class NrecDrone():
         except Exception as e:
             await self.land()
 
-        
+
     async def land(self):
         logger.debug("-- Landing")
         try:
@@ -163,12 +163,9 @@ class NrecDrone():
         await self.drone.action.land()
         await self.drone.action.disarm()
 
-    async def PCMD(self, roll, pitch, yaw, gaz):
-        await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed((pitch/100)*self.max_speed, (roll/100)*self.max_speed, (-1 * gaz/100)*self.max_speed, float(yaw)))
-
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(forward_vel, right_vel, -1 * up_vel, angle_vel))
-        
+
     async def moveTo(self, lat, lng, alt):
         # Get bearing to target
         currentLat = await self.getGPS()["latitude"]
@@ -191,11 +188,11 @@ class NrecDrone():
         await self.hovering()
 
     async def rotateTo(self, theta):
-        await self.moveBy(0.0, 0.0, 0.0, theta) 
+        await self.moveBy(0.0, 0.0, 0.0, theta)
 
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         pass
-        
+
     async def rth(self):
         await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
         await self.drone.action.return_to_launch()
