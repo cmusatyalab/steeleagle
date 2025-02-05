@@ -36,6 +36,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             logger.info("Images directory already exists.")
         logger.info("Storing detection images at {}".format(self.storage_path))
         self.current_path = None
+        self.publish = args.publish
 
     def updateDroneStatus(self, extras):
         key = self.r.xadd(
@@ -74,7 +75,9 @@ class TelemetryEngine(cognitive_engine.Engine):
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
             image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
             #have redis publish the latest image
-            self.r.publish(f'imagery.{extras.drone_id}', input_frame.payloads[0])
+            if self.publish:
+                logger.info(f"Publishing image to redis under imagery.{extras.drone_id} topic.")
+                self.r.publish(f'imagery.{extras.drone_id}', input_frame.payloads[0])
             #store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
@@ -83,6 +86,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
                 img.save(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", format="JPEG")
                 os.rename(f"{self.storage_path}/raw/{extras.drone_id}/temp.jpg", f"{self.storage_path}/raw/{extras.drone_id}/latest.jpg")
+                logger.info(f"Updated {self.storage_path}/raw/{extras.drone_id}/latest.jpg")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
         

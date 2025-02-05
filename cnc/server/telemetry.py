@@ -36,6 +36,10 @@ def main():
         "-a", "--auth", default="", help="Share key for redis user."
     )
 
+    parser.add_argument(
+        "-l", "--publish", action='store_true', help="Publish incoming images via redis"
+    )
+
     args, _ = parser.parse_known_args()
 
     def engine_setup():
