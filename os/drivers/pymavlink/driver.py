@@ -58,15 +58,19 @@ async def camera_stream(drone, cam_sock):
     while await drone.isConnected():
         try:
             cam_message = cnc_protocol.Frame()
-            cam_message.data = await drone.getVideoFrame()
-            # cam_message.height = 720
-            # cam_message.width = 1280
-            cam_message.height = 144
-            cam_message.width = 256
-            cam_message.channels = 3
+            frame, frame_shape = await drone.getVideoFrame()
+            
+            if frame is None:
+                logger.error('Failed to get video frame')
+                continue
+            
+            cam_message.data = frame
+            cam_message.height = frame_shape[0]
+            cam_message.width = frame_shape[1]
+            cam_message.channels = frame_shape[2]
             cam_message.id = frame_id
             cam_sock.send(cam_message.SerializeToString())
-            # logger.debug(f'Camera stream: sent frame {frame_id=}')
+            logger.debug(f'Camera stream: sent frame {frame_id}, shape: {frame_shape}')
             frame_id = frame_id + 1
         except Exception as e:
             logger.error(f'Failed to get video frame, error: {e}')
@@ -126,8 +130,8 @@ async def handle(identity, message, resp, action, resp_sock):
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 logger.info('####################################Setting Velocity#######################################################################')
-                # await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                # await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 # await drone.manual_control(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "land":
@@ -175,10 +179,10 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
         
         await drone.startStreaming()
         logger.info('Started streaming')
-        
         asyncio.create_task(camera_stream(drone, cam_sock))
+        
         asyncio.create_task(telemetry_stream(drone, tel_sock))
-        await drone.disableGPS()
+        # await drone.disableGPS()
 
         while await drone.isConnected():
             try:

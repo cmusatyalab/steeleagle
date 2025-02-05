@@ -85,7 +85,7 @@ class GabrielCompute(ComputeInterface):
                 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
             self.compute_status = self.ComputeStatus.Connected
 
             logger.debug(f"Frame producer: starting converting {time.time()}")
@@ -95,9 +95,9 @@ class GabrielCompute(ComputeInterface):
             tel_data = cnc_pb2.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
-                if frame_data is not None and frame_data.data != b'':
+                if frame_data is not None and frame_data.data != b'' and tel_data is not None:
                     logger.debug("Waiting for new frame from driver")
-                    logger.debug(f"New frame frame_id={frame_data.id} available from driver")
+                    logger.info(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
 
                     frame_bytes = frame_data.data
 
@@ -125,7 +125,7 @@ class GabrielCompute(ComputeInterface):
                     if extras is not None:
                         input_frame.extras.Pack(extras)
                 else:
-                    logger.debug('Gabriel compute Frame producer: frame is None')
+                    logger.info('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
             except Exception as e:
@@ -139,7 +139,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(1)
             
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")

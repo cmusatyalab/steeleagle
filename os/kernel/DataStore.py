@@ -45,8 +45,8 @@ class DataStore:
         # Create a copy of the protobuf message
         data_copy.CopyFrom(cache)
         
-        # Clear the cache
-        self._raw_data_cache[data_copy_type] = None
+        # # Clear the cache
+        # self._raw_data_cache[data_copy_type] = None
     
 
     def set_raw_data(self, data):

@@ -752,7 +752,7 @@ class NrecDrone():
 
     async def getVideoFrame(self):
         if self.streamingThread:
-            return self.streamingThread.grabFrame().tobytes()
+            return [self.streamingThread.grabFrame().tobytes(), self.streamingThread.getFrameShape()]
 
     async def stopStreaming(self):
         self.streamingThread.stop()
@@ -770,7 +770,13 @@ class StreamingThread(threading.Thread):
         self.drone = drone
         url_sim = os.environ.get('STREAM_SIM_URL')
         url_mini = os.environ.get('STREAM_MINI_URL')
-        url = url_mini
+        self.sim = os.environ.get('SIMULATION')
+        
+        if (self.sim == 'true'):
+            url = url_sim
+        else:
+            url = url_mini
+            
         self.cap = cv2.VideoCapture(url)
         self.isRunning = True
 
@@ -780,14 +786,17 @@ class StreamingThread(threading.Thread):
                 ret, self.currentFrame = self.cap.read()
         except Exception as e:
             logger.error(e)
-
+            
+    def getFrameShape(self):
+        return self.currentFrame.shape
+    
     def grabFrame(self):
         try:
             frame = self.currentFrame.copy()
             return frame
         except Exception as e:
             # Send a blank frame
-            return np.zeros((720, 1280, 3), np.uint8)
+            return None
 
     def stop(self):
         self.isRunning = False
