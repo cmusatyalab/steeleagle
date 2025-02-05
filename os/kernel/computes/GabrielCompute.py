@@ -85,7 +85,7 @@ class GabrielCompute(ComputeInterface):
                 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
             self.compute_status = self.ComputeStatus.Connected
 
             logger.debug(f"Frame producer: starting converting {time.time()}")
@@ -139,7 +139,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(1)
+            await asyncio.sleep(0)
             
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")
