@@ -170,10 +170,13 @@ async def main():
 
 
         #await drone.takeOff()
-        #asyncio.create_task(telemetry_stream(drone, tel_sock))
+        telemetry_task = asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
             try:
+                if telemetry_task.done():
+                    logger.error("Telemetry stream task ended prematurely")
+                    result = telemetry_task.result()
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
                 logger.debug(f"Received identity: {identity}")
