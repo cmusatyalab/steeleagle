@@ -10,6 +10,7 @@ import cnc_protocol.cnc_pb2 as cnc_protocol
 from util.utils import setup_socket, SocketOperation
 import signal
 from nrecdrone import NrecDrone, ConnectionFailedException
+from seeker import ModalAISeekerDrone
 
 
 # Configure logger
@@ -24,7 +25,7 @@ if os.environ.get("LOG_TO_FILE") == "true":
     logger.addHandler(file_handler)
 
 drone_id = os.environ.get('DRONE_ID')
-logger.info(f"Starting driver for drone {drone_id}")    
+logger.info(f"Starting driver for drone {drone_id}")
 
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
@@ -33,20 +34,6 @@ telemetry_handler.setFormatter(formatter)
 telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
 telemetry_logger.propagate = False
-
-driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
-droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
-drone = NrecDrone()
-
-context = zmq.asyncio.Context()
-cmd_back_sock = context.socket(zmq.DEALER)
-tel_sock = context.socket(zmq.PUB)
-cam_sock = context.socket(zmq.PUB)
-tel_sock.setsockopt(zmq.CONFLATE, 1)
-cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("DATA_ENDPOINT"))
-setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
-setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
@@ -88,21 +75,21 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
             tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
             tel_message.satellites = telDict["satellites"]
-            
+
             # tel_message.relative_position.up = telDict["relAlt"]
-            
+
             # tel_message.global_position.latitude = telDict["gps"]["latitude"]
             # tel_message.global_position.longitude = telDict["gps"]["longitude"]
             # tel_message.global_position.altitude = telDict["gps"]["altitude"]
-            
+
             # tel_message.velocity.forward_vel = telDict["imu"]["forward"]
             # tel_message.velocity.right_vel = telDict["imu"]["right"]
             # tel_message.velocity.up_vel = telDict["imu"]["up"]
-            
+
             # tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
             # tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
             # tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
-            
+
             logger.info(f"Telemetry: {telDict}")
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
@@ -113,30 +100,29 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
-        match action:
-            case "takeOff":
+        if action == "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.takeOff()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
-            case "setVelocity":
+        elif action == "setVelocity":
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "land":
+        elif action == "land":
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info('####################################Drone Landing#######################################################################')
                 logger.info(f"land function call finished at: {time.time()}")
-            case "rth":
+        elif action == "rth":
                 logger.info(f"rth function call started at: {time.time()}")
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
-            case "hover":
+        elif action == "hover":
                 logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.hover()
                 logger.debug("hover !")
@@ -148,7 +134,30 @@ async def handle(identity, message, resp, action, resp_sock):
     resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 
-async def main(drone:NrecDrone, cam_sock, tel_sock, args):
+async def main():
+    driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
+    droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
+
+    if droneArgs['type'] == 'nrec':
+        drone = NrecDrone()
+        logger.info("Initializing NREC drone")
+    elif droneArgs['type'] == 'seeker':
+        args = {'server_address': droneArgs['server_address']}
+        drone = ModalAISeekerDrone(**args)
+        logger.info("Initializing Modal AI Seeker drone")
+
+    context = zmq.asyncio.Context()
+    cmd_back_sock = context.socket(zmq.DEALER)
+    tel_sock = context.socket(zmq.PUB)
+    cam_sock = context.socket(zmq.PUB)
+
+    tel_sock.setsockopt(zmq.CONFLATE, 1)
+    cam_sock.setsockopt(zmq.CONFLATE, 1)
+
+    setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry socket endpoint', os.environ.get("DATA_ENDPOINT"))
+    setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
+    setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
+
     while True:
         try:
             logger.info('starting connecting...')
@@ -158,8 +167,8 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             logger.error('Failed to connect to drone, retrying...')
             continue
         logger.info(f'Established connection to drone {drone_id}, ready to receive commands!')
-        
-        
+
+
         #await drone.takeOff()
         #asyncio.create_task(telemetry_stream(drone, tel_sock))
 
@@ -185,4 +194,4 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
         logger.info(f"Disconnected from drone {drone_id}")
 
 if __name__ == "__main__":
-    asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
+    asyncio.run(main())
