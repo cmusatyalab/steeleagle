@@ -88,18 +88,18 @@ class ModalAISeekerDrone:
         return True
 
     async def takeOff(self):
-        logger.info("Arming drone and taking off")
-        await self.drone.action.arm()
-        await self.drone.action.takeoff()
-        await asyncio.sleep(5)
-
-        logger.info("Waiting for hovering state")
-        await self.hovering()
-
-        logger.info("Switching to offboard mode")
-        # Initial setpoint for offboard control
-        await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
         try:
+            logger.info("Arming drone and taking off")
+            await self.drone.action.arm()
+            await self.drone.action.takeoff()
+            await asyncio.sleep(5)
+
+            logger.info("Waiting for hovering state")
+            await self.hovering()
+
+            logger.info("Switching to offboard mode")
+            # Initial setpoint for offboard control
+            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
             await self.drone.offboard.start()
         except Exception as e:
             logger.error(f"{e}: landing drone")
@@ -111,18 +111,27 @@ class ModalAISeekerDrone:
             await self.drone.offboard.stop()
         except OffboardError as error:
             pass
-        await self.drone.action.land()
-        await self.drone.action.disarm()
+        try:
+            await self.drone.action.land()
+            await self.drone.action.disarm()
+        except Exception as e:
+            logger.error(f"Land error: {e}")
 
     async def hover(self):
-        await self.drone.action.hold()
+        try:
+            await self.drone.action.hold()
+        except Exception as e:
+            logger.error(f"Hover error: {e}")
 
     async def kill(self):
         self.active = False
 
     async def rth(self):
-        await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
-        await self.drone.action.return_to_launch()
+        try:
+            await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
+            await self.drone.action.return_to_launch()
+        except Exception as e:
+            logger.error(f"Rth error: {e}")
 
     async def setHome(self, lat, lng, alt):
         raise NotImplemented()
@@ -131,7 +140,10 @@ class ModalAISeekerDrone:
         raise NotImplemented()
 
     async def setVelocity(self, vx, vy, vz, t):
-        await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(vx, vy, vz, t))
+        try:
+            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(vx, vy, vz, t))
+        except Exception as e:
+            logger.error("Failed to set velocity: {e}")
 
     ''' Telemetry methods '''
     async def getTelemetry(self):
