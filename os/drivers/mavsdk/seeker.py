@@ -30,23 +30,42 @@ class ModalAISeekerDrone:
 
     async def telemetry_subscriber(self):
         async def pos(self):
-            async for position in self.drone.telemetry.position():
-                self.telemetry['lat'] = position.latitude_deg
-                self.telemetry['lng'] = position.longitude_deg
-                self.telemetry['alt'] = position.absolute_altitude_m
-                self.telemetry['rel-alt'] = position.relative_altitude_m
+            try:
+                async for position in self.drone.telemetry.position():
+                    self.telemetry['lat'] = position.latitude_deg
+                    self.telemetry['lng'] = position.longitude_deg
+                    self.telemetry['alt'] = position.absolute_altitude_m
+                    self.telemetry['rel-alt'] = position.relative_altitude_m
+            except Exception as e:
+                logger.error(f"Failed to get position: {e}")
+
         async def head(self):
-            async for heading in self.drone.telemetry.heading():
-                self.telemetry['head'] = heading.heading_deg
+            try:
+                async for heading in self.drone.telemetry.heading():
+                    self.telemetry['head'] = heading.heading_deg
+            except Exception as e:
+                logger.error(f"Failed to get heading: {e}")
+
         async def battery(self):
-            async for battery in self.drone.telemetry.battery():
-                self.telemetry['battery'] = battery.remaining_percent
+            try:
+                async for battery in self.drone.telemetry.battery():
+                    self.telemetry['battery'] = battery.remaining_percent
+            except Exception as e:
+                logger.error(f"Failed to get battery: {e}")
+
         async def mag(self):
-            async for health in self.drone.telemetry.health():
-                self.telemetry['mag'] = health.is_magnetometer_calibration_ok
+            try:
+                async for health in self.drone.telemetry.health():
+                    self.telemetry['mag'] = health.is_magnetometer_calibration_ok
+            except Exception as e:
+                logger.error(f"Failed to get magnetometer: {e}")
+
         async def sat(self):
-            async for info in self.drone.telemetry.gps_info():
-                self.telemetry['sat'] = info.num_satellites
+            try:
+                async for info in self.drone.telemetry.gps_info():
+                    self.telemetry['sat'] = info.num_satellites
+            except Exception as e:
+                logger.error(f"Failed to get satellites: {e}")
 
         try:
             await asyncio.gather(pos(self), head(self), battery(self), mag(self), sat(self))
