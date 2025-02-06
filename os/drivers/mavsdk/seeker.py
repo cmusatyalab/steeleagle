@@ -25,6 +25,7 @@ class ModalAISeekerDrone:
 
     def __init__(self, **kwargs):
         self.server_address = kwargs['server_address']
+        logger.info(f"System address is {self.server_address}, port 50051")
         self.drone = System(mavsdk_server_address=self.server_address, port=50051)
         self.active = False
 
@@ -73,10 +74,10 @@ class ModalAISeekerDrone:
             logger.error(f"Exception: {e}")
 
     async def connect(self):
-        system_address = f"udp://{self.server_address}:14550"
+        system_address = "udp://:14550"
         logger.info(f"Connecting to server at address {system_address}")
 
-        await self.drone.connect(system_address=f"udp://{self.server_address}:14550")
+        await self.drone.connect(system_address=system_address)
         # Set max speed for use by PCMD
         # self.max_speed = await self.drone.action.get_maximum_speed()
         self.active = True
