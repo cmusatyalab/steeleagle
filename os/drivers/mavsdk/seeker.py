@@ -12,6 +12,11 @@ logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+async def anext(iter):
+    iter = iter.__aiter__()
+    result = await iter.__anext__()
+    return result
+
 class ModalAISeekerDrone:
 
     VEL_TOL = 0.1
