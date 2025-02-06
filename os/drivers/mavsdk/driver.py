@@ -103,7 +103,7 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
         await asyncio.sleep(0.01)
     logger.info("Telemetry stream ended, disconnected from drone")
 
-async def handle(identity, message, resp, action, resp_sock):
+async def handle(drone, identity, message, resp, action, resp_sock):
     try:
         if action == "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
@@ -195,7 +195,7 @@ async def main():
 
                 # Create a driver response message
                 resp = message
-                asyncio.create_task(handle(identity, message, resp, action, cmd_back_sock))
+                asyncio.create_task(handle(drone, identity, message, resp, action, cmd_back_sock))
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
