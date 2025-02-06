@@ -149,14 +149,38 @@ class ModalAISeekerDrone:
     async def getTelemetry(self):
         telDict = {}
         try:
-            telDict["gps"] = await self.getGPS()
-            telDict["relAlt"] = await self.getAltitudeRel()
-            telDict["attitude"] = await self.getAttitude()
-            telDict["magnetometer"] = await self.getMagnetometerReading()
-            telDict["imu"] = await self.getVelocityBody()
-            telDict["battery"] = await self.getBatteryPercentage()
-            telDict["gimbalAttitude"] = await self.getGimbalPose()
-            telDict["satellites"] = await self.getSatellites()
+            try:
+                telDict["gps"] = await asyncio.wait_for(self.getGPS(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting GPS")
+            try:
+                telDict["relAlt"] = await asyncio.wait_for(self.getAltitudeRel(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting rel alt")
+            try:
+                telDict["attitude"] = await asyncio.wait_for(self.getAttitude(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting attitude")
+            try:
+                telDict["magnetometer"] = await asyncio.wait_for(self.getMagnetometerReading(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting magnetometer reading")
+            try:
+                telDict["imu"] = await asyncio.wait_for(self.getVelocityBody(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting body velocity")
+            try:
+                telDict["battery"] = await asyncio.wait_for(self.getBatteryPercentage(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting battery percentage")
+            try:
+                telDict["gimbalAttitude"] = await asyncio.wait_for(self.getGimbalPose(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting gimbal pose")
+            try:
+                telDict["satellites"] = await asyncio.wait_for(self.getSatellites(), 1)
+            except asyncio.TimeoutError:
+                logger.error("Timed out getting satellites")
         except Exception as e:
             logger.error(f"Error in getTelemetry(): {e}")
         logger.debug(f"Telemetry data: {telDict}")
