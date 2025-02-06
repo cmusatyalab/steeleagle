@@ -132,35 +132,48 @@ class ModalAISeekerDrone:
         return telDict
 
     async def getSatellites(self):
-        gps = await anext(self.drone.telemetry.gps_info())
-        return gps.num_satellites
+        try:
+            gps = await anext(self.drone.telemetry.gps_info())
+            return gps.num_satellites
+        except Exception as e:
+            logger.error(f"Failed to get satellites: {e}")
+            return -1
 
     async def getGimbalPose(self):
         return "not implemented"
 
     async def getVelocityBody(self):
-        imu = await anext(self.drone.telemetry.imu())
-        angular_velocity_frd  = imu.angular_velocity_frd
-        return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_m_s}
+        try:
+            imu = await anext(self.drone.telemetry.imu())
+            angular_velocity_frd  = imu.angular_velocity_frd
+            return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_m_s}
+        except Exception as e:
+            logger.error(f"Failed to get velocity body: {e}")
+            return {"forward": -1, "right": -1, "up": -1}
 
     async def getAttitude(self):
-        angular_velocity_body = await anext(self.drone.telemetry.attitude_angular_velocity_body())
-        return {"roll": angular_velocity_body.roll_rad_s, "pitch": angular_velocity_body.pitch_rad_s, "yaw": angular_velocity_body.yaw_rad_s}
+        try:
+            angular_velocity_body = await anext(self.drone.telemetry.attitude_angular_velocity_body())
+            return {"roll": angular_velocity_body.roll_rad_s, "pitch": angular_velocity_body.pitch_rad_s, "yaw": angular_velocity_body.yaw_rad_s}
+        except Exception as e:
+            logger.error(f"Failed to get attitude: {e}")
+            return {"roll": -1, "pitch": -1, "yaw": -1}
 
     async def getMagnetometerReading(self):
-        health = await anext(self.drone.telemetry.health())
-        return health.is_magnetometer_calibration_ok
+        try:
+            health = await anext(self.drone.telemetry.health())
+            return health.is_magnetometer_calibration_ok
+        except Exception as e:
+            logger.error(f"Failed to get magnetometer reading: {e}")
+            return False
 
     async def getAltitudeRel(self):
-        logger.info(f"Absolute altitude:")
         try:
             position = await anext(self.drone.telemetry.position())
+            return position.relative_altitude_m
         except Exception as e:
-            logger.error(f"Failed to get position: {e}")
-            return None
-
-        logger.info(f"Relative altitude: {position.relative_altitude_m}")
-        return position.relative_altitude_m
+            logger.error(f"Failed to get relative altitude: {e}")
+            return -1
 
     async def getGPS(self):
         try:
@@ -168,12 +181,15 @@ class ModalAISeekerDrone:
             return {"latitude": gps.latitude_deg, "longitude": gps.longitude_deg, "altitude": gps.altitude_m}
         except Exception as e:
             logger.error(f"Failed to get GPS data: {e}")
-            return None
-
+            return {"latitude": -1, "longitude": -1, "altitude": -1}
 
     async def getBatteryPercentage(self):
-        battery = await anext(self.drone.telemetry.battery())
-        return int(battery.remaining_percent)
+        try:
+            battery = await anext(self.drone.telemetry.battery())
+            return int(battery.remaining_percent)
+        except Exception as e:
+            logger.error(f"Failed to get battery percentage")
+            return -1
 
     async def getHeading(self):
         return (180 / math.pi)
