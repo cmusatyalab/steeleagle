@@ -68,7 +68,7 @@ class DataService(Service):
         pass
     
     async def user_handler(self):
-        # self.data_store.get_compute_result()
+        self.data_store.get_compute_result()
 
         pass
     ######################################################## DRIVER ############################################################
