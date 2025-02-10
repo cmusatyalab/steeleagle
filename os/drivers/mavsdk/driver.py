@@ -69,12 +69,17 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
             tel_message.drone_name = drone_id
-            tel_message.mag = telDict["magnetometer"]
-            tel_message.battery = telDict["battery"]
-            tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-            tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-            tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
-            tel_message.satellites = telDict["satellites"]
+            tel_message.mag = telDict.get("magnetometer", -1)
+            tel_message.battery = telDict.get("battery", -1)
+            if "attitude" in telDict:
+                tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
+                tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
+                tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            else:
+                tel_message.drone_attitude.yaw = -1
+                tel_message.drone_attitude.pitch = -1
+                tel_message.drone_attitude.roll = -1
+            tel_message.satellites = telDict.get("satellites", -1)
 
             # tel_message.relative_position.up = telDict["relAlt"]
 
@@ -98,7 +103,7 @@ async def telemetry_stream(drone : NrecDrone, tel_sock):
         await asyncio.sleep(0.01)
     logger.info("Telemetry stream ended, disconnected from drone")
 
-async def handle(identity, message, resp, action, resp_sock):
+async def handle(drone, identity, message, resp, action, resp_sock):
     try:
         if action == "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
@@ -170,10 +175,13 @@ async def main():
 
 
         #await drone.takeOff()
-        #asyncio.create_task(telemetry_stream(drone, tel_sock))
+        telemetry_task = asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
             try:
+                if telemetry_task.done():
+                    logger.error("Telemetry stream task ended prematurely")
+                    result = telemetry_task.result()
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
                 logger.debug(f"Received identity: {identity}")
@@ -187,7 +195,7 @@ async def main():
 
                 # Create a driver response message
                 resp = message
-                asyncio.create_task(handle(identity, message, resp, action, cmd_back_sock))
+                asyncio.create_task(handle(drone, identity, message, resp, action, cmd_back_sock))
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
