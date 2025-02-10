@@ -49,13 +49,13 @@ class DataStore:
         data_copy_type = type(data_copy)
         if data_copy_type not in self._raw_data_cache:
             # Log an error and return None
-            logger.error(f"get_raw_data: No such data: data type {data_copy_type}")
+            logger.debug(f"get_raw_data: No such data: data type {data_copy_type}")
             return None
 
         cache = self._raw_data_cache.get(data_copy_type)
         if cache is None:
             # Log an error and return None
-            logger.error(f"get_raw_data: No data found for data type {data_copy_type}")
+            logger.debug(f"get_raw_data: No data found for data type {data_copy_type}")
             return None
 
         # Create a copy of the protobuf message
@@ -69,7 +69,7 @@ class DataStore:
     def set_raw_data(self, data):
         data_type = type(data)
         if data_type not in self._raw_data_cache:
-            logger.error(f"set_raw_data: No such data: data type {data_type}")
+            logger.debug(f"set_raw_data: No such data: data type {data_type}")
             return None
 
         self._raw_data_cache[data_type] = data

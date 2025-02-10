@@ -38,17 +38,29 @@ class DataService(Service):
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
+        cpt_usr_front_sock = context.socket(zmq.DEALER)
+        cpt_usr_back_sock = context.socket(zmq.ROUTER)
+        
         tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
         cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
         cam_sock.setsockopt(zmq.CONFLATE, 1)
-        self.cam_sock = cam_sock
-        self.tel_sock = tel_sock
+
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+        setup_socket(cpt_usr_front_sock, SocketOperation.BIND, 'CPT_USR_FRONT_PORT', 'Created command frontend socket endpoint')
+        setup_socket(cpt_usr_back_sock, SocketOperation.BIND, 'CPT_USR_BACK_PORT', 'Created command backend socket endpoint')
+        
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
+        self.register_socket(cpt_usr_front_sock)
+        self.register_socket(cpt_usr_back_sock)
 
+        self.cam_sock = cam_sock
+        self.tel_sock = tel_sock
+        self.cpt_usr_front_sock = cpt_usr_front_sock
+        self.cpt_usr_back_sock = cpt_usr_back_sock
+        
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
@@ -68,7 +80,7 @@ class DataService(Service):
         pass
     
     async def user_handler(self):
-        self.data_store.get_compute_result()
+        res =  self.data_store.get_compute_result()
 
         pass
     ######################################################## DRIVER ############################################################
