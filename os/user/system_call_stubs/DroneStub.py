@@ -61,16 +61,16 @@ class DroneStub:
 
     def receiver(self, response_parts):
         response = response_parts[0]
-        result = cnc_pb2.Driver()
-        result.ParseFromString(response)
-        seqNum = result.seqNum
+        driver_rep = cnc_pb2.Driver()
+        driver_rep.ParseFromString(response)
+        seqNum = driver_rep.seqNum
         driverRespond = self.seqNum_res[seqNum]
 
         if not driverRespond:
             logger.warning("Unrecognized seqNum")
             return
 
-        status = result.resp
+        status = driver_rep.resp
         if status == cnc_pb2.ResponseStatus.OK:
             logger.info("STAGE 1: OK")
         elif status == cnc_pb2.ResponseStatus.NOTSUPPORTED:
@@ -85,7 +85,7 @@ class DroneStub:
             elif status == cnc_pb2.ResponseStatus.COMPLETED:
                 logger.info("STAGE 2: COMPLETED")    
             driverRespond.grantPermission()
-            driverRespond.putResult(result)
+            driverRespond.putResult(driver_rep)
             driverRespond.set()   
     
     async def run(self):

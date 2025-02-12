@@ -12,6 +12,7 @@ import logging
 
 from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
+from system_call_stubs.ComputeStub import ComputeStub
 # from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
 
@@ -145,7 +146,9 @@ class MissionController():
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
         self.drone = DroneStub()
+        self.compute = ComputeStub()
         asyncio.create_task(self.drone.run())
+        asyncio.create_task(self.compute.run())
         
         # self.compute = ComputeStub()
         while True:

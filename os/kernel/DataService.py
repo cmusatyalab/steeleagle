@@ -47,7 +47,7 @@ class DataService(Service):
 
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_FRONT_PORT', 'Created command frontend socket endpoint')
+        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
         
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
@@ -73,9 +73,22 @@ class DataService(Service):
             self.register_task(task)
 
     ######################################################## USER ##############################################################
-    async def compute_setter(self):
-        # self.
-        pass
+    def getter_processing(self, compute_type):
+        getter_list = []
+        for compute_id in self.compute_dict.keys(): 
+            (res, timestamp) = self.data_store.get_compute_result(compute_id, compute_type)
+            getter = cnc_pb2.ComputeGetter()
+            getter.compute_id = compute_id
+            getter.compute_type = compute_type
+            getter.timestamp = timestamp
+            
+            if getter.string_result:
+                getter.string_result = res
+            else:
+                getter.proto_result.ParseFromString(res)
+            getter_list.append(getter)
+            logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
+        return getter_list
     
     async def user_handler(self):
         """Handles user commands."""
@@ -83,35 +96,27 @@ class DataService(Service):
         while True:
             try:
                 msg = await self.cpt_usr_sock.recv()
-                cpt_command = cnc_pb2.ComputeCommand()
+                cpt_command = cnc_pb2.Compute()
                 cpt_command.ParseFromString(msg)
                 logger.info(f"Received user command: {cpt_command}")
-                if cpt_command.ComputeSetter:
-                    compute_id = cpt_command.ComputeSetter.compute_id
-                    compute_type = cpt_command.ComputeSetter.compute_type
-                    # doing the set command
-                    # ...
-                    # ...
-                    self.cpt_usr_sock.send(cpt_command.SerializeToString())
-                elif cpt_command.ComputeGetter:
-                    # retrieve the compute id
-                    compute_id = cpt_command.ComputeGetter.compute_id
-                    # retrieve the result type
-                    compute_type = cpt_command.ComputeGetter.compute_type
-                    (res, timestamp) = self.data_store.get_compute_result(compute_id, compute_type)
-                    cpt_command.ComputeGetter.result = res
-                    cpt_command.ComputeGetter.timestamp = timestamp
-                    logger.info(f"Sending result: {res} with timestamp: {timestamp}")
-                    self.cpt_usr_sock.send(cpt_command.SerializeToString())
+                
+                if cpt_command.setter:
+                    continue
+                
+                elif cpt_command.getter:
+                    compute_type = cpt_command.getter.compute_type
+                    getter_list = self.getter_processing(compute_type)
+                    
+                    # update getter with results
+                    cpt_command.getter.result.extend(getter_list)
+                    
+                    await self.cpt_usr_sock.send(cpt_command.SerializeToString())
                 else:
                     logger.error("user handler error: Unknown command")
                     continue
             except Exception as e:
                 logger.error(f"user handler error: {e}")
-                pass
-            
-            await asyncio.sleep(0.1)  # Avoid busy waiting
-            
+  
     ######################################################## DRIVER ############################################################
 
     async def telemetry_handler(self):

@@ -201,29 +201,35 @@ message Mission {
 // COMPUTE MSG
 import "google/protobuf/any.proto";
 
-message ComputeGetter{
+message ComputeResult{
   required string compute_id = 1;
-  required string compute_type = 2;
-  required  string timestamp = 3;
+  required  string timestamp = 2;
   oneof method{
-    string string_result = 4; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
-    google.protobuf.Any proto_result = 5; // proto format result, using Any here just for efficiency
+    string string_result = 3; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_result = 4; // proto format result, using Any here just for efficiency
   }
 }
 
+message ComputeGetter{
+  repeated ComputeResult result = 0;
+  string compute_type = 1;
+}
+
 message ComputeSetter{
-   required string compute_id = 1;
-  required string compute_type = 2;
+  required string compute_id = 1;
   oneof method{
-    string string_cmd = 3; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
-    google.protobuf.Any proto_cmd = 4; // proto format cmd, using Any here just for efficiency
+    string string_cmd = 2; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_cmd = 3; // proto format cmd, using Any here just for efficiency
   }
 }
 
 message Compute{
+  
   oneof method{
-    ComputeGetter = 0;
-    ComputeSetter = 1;
+    ComputeGetter getter= 0;
+    ComputeSetter setter= 1;
   }
-  int64 seqNum = 2;
+
+  ResponseStatus resp = 2;
+  int64 seqNum = 3;
 }

@@ -9,43 +9,87 @@ import zmq
 from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-# context = zmq.Context()
-# cpt_sock = context.socket(zmq.REQ)
-# setup_socket(cpt_sock, 'connect', 'CPT_PORT', 'Connected to compute socket endpoint', os.environ.get("DATA_ENDPOINT"))
+context = zmq.Context()
+cpt_usr_sock = context.socket(zmq.DEALER)
+setup_socket(cpt_usr_sock, 'connect', 'CPT_USR_PORT', 'Connected to compute socket endpoint', os.environ.get("DATA_ENDPOINT"))
 
-# class ComputeStub():
-#     # REQ/REP function
-#     async def sendRecv(self, data):
-#         request = data
-#         cpt_sock.send(data.SerializeToString())
-#         response = await cpt_sock.recv()
-#         return response
-
-#     # Switch the model used for computation
-#     async def setParams(self, model, hsv_lower, hsv_upper):
-#         req = cnc_pb2.ComputeParams()
-#         if model:
-#             req.model = model
-#         if hsv_lower:
-#             req.hsv_lower_bound.H = hsv_lower[0]
-#             req.hsv_lower_bound.S = hsv_lower[1]
-#             req.hsv_lower_bound.V = hsv_lower[2]
-#         if hsv_upper:
-#             req.hsv_upper_bound.H = hsv_upper[0]
-#             req.hsv_upper_bound.S = hsv_upper[1]
-#             req.hsv_upper_bound.V = hsv_upper[2]
-#         await self.sendRecv(req)
-
-#     # Get results for a compute engine
-#     async def getResults(self, engine_key, invalidate_cache=True):
-#         req = cnc_pb2.ComputeRequest()
-#         req.engineKey = engine_key
-#         req.invalidateCache = invalidate_cache
-#         resp = await self.sendRecv(req)
-#         msg = cnc_pb2.ComputeResult()
-#         msg.ParseFromString(resp)
-#         return msg.result
+class ComputeRespond:
+    def __init__(self):
+        self.event = asyncio.Event()
+        self.permission = False
+        self.result = None
+    
+    def putResult(self, result):
+        self.result = result
+        
+    def getResult(self):
+        return self.result
+    
+    async def wait(self):
+        await self.event.wait()
+        
+    def set (self):
+        self.event.set()
+        
+class ComputeStub():
+    def __init__(self):
+        self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
+        self.seqNum_res = {}
+    
+    def sender(self, request, computeRespond):
+        seqNum = self.seqNum
+        logger.info(f"Sending request with seqNum: {seqNum}")
+        request.seqNum = seqNum
+        self.seqNum += 1
+        self.seqNum_res[seqNum] = computeRespond
+        serialized_request = request.SerializeToString()
+        cpt_usr_sock.send_multipart([serialized_request])
+    
+    def receiver(self, response_parts):
+        response = response_parts[0]
+        cpt_rep = cnc_pb2.Compute()
+        cpt_rep.ParseFromString(response)
+        seqNum = cpt_rep.seqNum
+        computeRespond = self.seqNum_res[seqNum]
+        
+        if not computeRespond:
+            logger.error(f"Received response with seqNum: {seqNum} but no corresponding request found")
+            return
+        
+        status = cpt_rep.resp
+        if status == cnc_pb2.ResponseStatus.FAILED:
+            logger.error("STAGE 2: FAILED")
+        elif status == cnc_pb2.ResponseStatus.COMPLETED:
+            logger.info("STAGE 2: COMPLETED")
+        computeRespond.putResult(cpt_rep.getter.result)
+        computeRespond.set()
+    
+    async def run(self):
+        while True:
+            try:
+                response_parts = cpt_usr_sock.recv_multipart(flags=zmq.NOBLOCK)
+                self.receiver(response_parts)
+            except zmq.Again:
+                pass
+            except Exception as e:
+                logger.error(f"Failed to parse message: {e}")
+                break
+            await asyncio.sleep(0)
+        
+    '''Helper method to send a request and wait for a response'''
+    async def send_and_wait(self, request):
+        computeRespond = ComputeRespond()
+        self.sender(request, computeRespond)
+        await computeRespond.wait()
+        return computeRespond.getResult()
+    
+    # Get results for a compute engine
+    async def getResults(self, compute_type):
+        cpt_req = cnc_pb2.Compute()
+        cpt_req.getter.compute_type = compute_type
+        result = await self.send_and_wait(cpt_req)
+        return result
 
