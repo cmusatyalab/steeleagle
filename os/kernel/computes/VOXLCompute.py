@@ -63,10 +63,12 @@ class VOXLCompute(ComputeInterface):
         Query data store in a loop and feed frames for processing to onboard
         compute engine.
         '''
+        logger.info("VOXL compute is running")
         while self.is_running:
             frame_data = cnc_pb2.Frame()
             self.data_store.get_raw_data(frame_data)
             if frame_data.data != b'':
+                logger.info("VOXL compute got new frame from data store")
                 frame_bytes = frame_data.data
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
 
@@ -91,7 +93,9 @@ class VOXLCompute(ComputeInterface):
         if computation_type != ComputationType.OBJECT_DETECTION:
             raise Exception("Computation type not supported")
 
-        logger.info("Sending work item to local compute engine")
+        frame_width = request.frame_width
+        frame_height = request.frame_height
+        logger.info(f"Sending work item to local compute engine; {frame_width=} {frame_height=}")
 
         reply = None
         (self.socket, reply) = await lazy_pirate_request(
