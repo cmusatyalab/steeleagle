@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 class GabrielCompute(ComputeInterface):
     def __init__(self, compute_id, data_store:DataStore):
         super().__init__(compute_id)
-        
+
         # remote computation parameters
         self.set_params = {
             "model": "coco",
             "hsv_lower": None,
             "hsv_upper": None
         }
-        
+
         # Gabriel
         gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
         logger.info(f'Gabriel compute: Gabriel server: {gabriel_server}')
@@ -37,32 +37,32 @@ class GabrielCompute(ComputeInterface):
         self.drone_registered = False
         self.gabriel_client = ZeroMQClient(
             self.gabriel_server, self.gabriel_port,
-            [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
+            [self.get_telemetry_producer(), self.get_frame_producer()], self.process_results
         )
-        
+
         # data_store
         self.data_store = data_store
-    
+
     async def run(self):
         await self.gabriel_client.launch_async()
-        
-    
+
+
     def set(self):
         self.set_params["model"] = None
         self.set_params["hsv_lower"] = None
         self.set_params["hsv_upper"] = None
-        
-       
+
+
     def stop(self):
         """Stopping the worker."""
         pass
-    
-    def getStatus(self):
+
+    def get_status(self):
         """Getting the status of the worker."""
         return self.compute_status
-    
-    ######################################################## GABRIEL COMPUTE ############################################################    
-    def processResults(self, result_wrapper):
+
+    ######################################################## GABRIEL COMPUTE ############################################################
+    def process_results(self, result_wrapper):
         if len(result_wrapper.results) != 1:
             return
 
@@ -77,12 +77,12 @@ class GabrielCompute(ComputeInterface):
                         timestamp = time.time()
                         # update
                         logger.debug(f"Gabriel compute: timestamp = {timestamp}, compute type = {compute_type}, result = {result}")
-                        self.data_store.update_compute_result(self.compute_id, compute_type, payload, timestamp)   
+                        self.data_store.update_compute_result(self.compute_id, compute_type, payload, timestamp)
                 except Exception as e:
-                    logger.error(f"Gabriel compute processResults: error processing result: {e}")
+                    logger.error(f"Gabriel compute process_results: error processing result: {e}")
             else:
                 logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
-                
+
     def get_frame_producer(self):
         async def producer():
             await asyncio.sleep(0)
@@ -111,7 +111,7 @@ class GabrielCompute(ComputeInterface):
                     extras.drone_id = tel_data.drone_name
                     extras.location.latitude = tel_data.global_position.latitude
                     extras.location.longitude = tel_data.global_position.longitude
-                    
+
                     if self.set_params['model'] is not None:
                         extras.detection_model = self.set_params['model']
                     if self.set_params['hsv_lower'] is not None:
@@ -140,7 +140,7 @@ class GabrielCompute(ComputeInterface):
     def get_telemetry_producer(self):
         async def producer():
             await asyncio.sleep(0)
-            
+
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
@@ -168,7 +168,7 @@ class GabrielCompute(ComputeInterface):
                         logger.info("Gabriel compute telemetry producer: Sending registeration request to backend")
                         extras.registering = True
                         self.drone_registered = True
-                        
+
                     logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(extras))
                     input_frame.extras.Pack(extras)
                 else:
