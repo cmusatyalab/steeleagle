@@ -122,7 +122,7 @@ class MissionController():
         
         # start the tm
         logger.info(f"start the task manager")
-        self.tm = tm.TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
+        self.tm = tm.TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
         
