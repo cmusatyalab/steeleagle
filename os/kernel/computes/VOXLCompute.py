@@ -55,8 +55,8 @@ class VOXLCompute(ComputeInterface):
         except asyncio.CancelledError:
             pass
 
-    async def getStatus(self):
-        return super().getStatus()
+    async def get_status(self):
+        return super().get_status()
 
     async def set(self):
         raise NotImplemented()
