@@ -38,8 +38,7 @@ class DataService(Service):
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
-        cpt_usr_front_sock = context.socket(zmq.DEALER)
-        cpt_usr_back_sock = context.socket(zmq.ROUTER)
+        cpt_usr_sock = context.socket(zmq.DEALER)
         
         tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
@@ -48,18 +47,17 @@ class DataService(Service):
 
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_usr_front_sock, SocketOperation.BIND, 'CPT_USR_FRONT_PORT', 'Created command frontend socket endpoint')
-        setup_socket(cpt_usr_back_sock, SocketOperation.BIND, 'CPT_USR_BACK_PORT', 'Created command backend socket endpoint')
+        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_FRONT_PORT', 'Created command frontend socket endpoint')
         
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
-        self.register_socket(cpt_usr_front_sock)
-        self.register_socket(cpt_usr_back_sock)
+        self.register_socket(cpt_usr_sock)
+
 
         self.cam_sock = cam_sock
         self.tel_sock = tel_sock
-        self.cpt_usr_front_sock = cpt_usr_front_sock
-        self.cpt_usr_back_sock = cpt_usr_back_sock
+        self.cpt_usr_sock = cpt_usr_sock
+
         
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
@@ -80,9 +78,40 @@ class DataService(Service):
         pass
     
     async def user_handler(self):
-        res =  self.data_store.get_compute_result()
-
-        pass
+        """Handles user commands."""
+        logger.info("User handler started")
+        while True:
+            try:
+                msg = await self.cpt_usr_sock.recv()
+                cpt_command = cnc_pb2.ComputeCommand()
+                cpt_command.ParseFromString(msg)
+                logger.info(f"Received user command: {cpt_command}")
+                if cpt_command.ComputeSetter:
+                    compute_id = cpt_command.ComputeSetter.compute_id
+                    compute_type = cpt_command.ComputeSetter.compute_type
+                    # doing the set command
+                    # ...
+                    # ...
+                    self.cpt_usr_sock.send(cpt_command.SerializeToString())
+                elif cpt_command.ComputeGetter:
+                    # retrieve the compute id
+                    compute_id = cpt_command.ComputeGetter.compute_id
+                    # retrieve the result type
+                    compute_type = cpt_command.ComputeGetter.compute_type
+                    (res, timestamp) = self.data_store.get_compute_result(compute_id, compute_type)
+                    cpt_command.ComputeGetter.result = res
+                    cpt_command.ComputeGetter.timestamp = timestamp
+                    logger.info(f"Sending result: {res} with timestamp: {timestamp}")
+                    self.cpt_usr_sock.send(cpt_command.SerializeToString())
+                else:
+                    logger.error("user handler error: Unknown command")
+                    continue
+            except Exception as e:
+                logger.error(f"user handler error: {e}")
+                pass
+            
+            await asyncio.sleep(0.1)  # Avoid busy waiting
+            
     ######################################################## DRIVER ############################################################
 
     async def telemetry_handler(self):
