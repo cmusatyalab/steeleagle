@@ -1,3 +1,4 @@
+import asyncio
 from cnc_protocol import cnc_pb2
 from typing import Optional, Union
 import logging
@@ -15,6 +16,10 @@ class DataStore:
         self._raw_data_id = {
             cnc_pb2.Frame: -1,
             cnc_pb2.Telemetry: -1,
+        }
+
+        self._raw_data_event = {
+            cnc_pb2.Frame: asyncio.Event(),
         }
 
         # Processed data cache dict
@@ -60,7 +65,7 @@ class DataStore:
         cache = self._raw_data_cache.get(data_copy_type)
         if cache is None:
             # Log an error and return None
-            logger.error(f"get_raw_data: No data found for data type {data_copy_type}")
+            logger.debug(f"get_raw_data: No data found for data type {data_copy_type}")
             return None
 
         # Create a copy of the protobuf message
@@ -76,5 +81,16 @@ class DataStore:
 
         self._raw_data_cache[data_type] = data
 
+        if data_type in self._raw_data_event:
+            self._raw_data_event[data_type].set()
+
         if data_id and data_type in self._raw_data_id:
             self._raw_data_id[data_type] = data_id
+
+    async def wait_for_new_data(self, data_type):
+        if data_type not in self._raw_data_event:
+            logger.error(f"wait_for_new_data: Cannot wait for type {data_type}")
+            return None
+        self._raw_data_event[data_type].clear()
+        await self._raw_data_event[data_type].wait()
+

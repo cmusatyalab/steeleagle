@@ -86,7 +86,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
             self.compute_status = self.ComputeStatus.Connected
 
             logger.debug(f"Frame producer: starting converting {time.time()}")
@@ -96,8 +96,8 @@ class GabrielCompute(ComputeInterface):
             frame_id = self.data_store.get_raw_data(frame_data)
 
             # Wait for a new frame
-            while frame_id <= self.frame_id:
-                await asyncio.sleep(0)
+            while frame_id is None or frame_id <= self.frame_id:
+                await self.data_store.wait_for_new_data(type(frame_data))
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
@@ -148,7 +148,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
 
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")

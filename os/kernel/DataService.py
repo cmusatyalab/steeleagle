@@ -62,6 +62,9 @@ class DataService(Service):
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
+        usr_task = asyncio.create_task(self.user_handler())
+        
+        self.register_task(usr_task)
         self.register_task(tel_task)
         self.register_task(cam_task)
 
