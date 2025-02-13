@@ -99,8 +99,8 @@ class VOXLCompute(ComputeInterface):
         '''
         request = onboard_compute_pb2.ComputeRequest()
         request.frame_data = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV_YUYV).tobytes()
-        request.frame_width = frame.shape[0]
-        request.frame_height = frame.shape[1]
+        request.frame_width = frame.shape[1]
+        request.frame_height = frame.shape[0]
 
         if computation_type != ComputationType.OBJECT_DETECTION:
             raise Exception("Computation type not supported")
