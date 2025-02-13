@@ -24,7 +24,7 @@ if os.environ.get("LOG_TO_FILE") == "true":
     logger.addHandler(file_handler)
 
 drone_id = os.environ.get('DRONE_ID')
-logger.info(f"Starting driver for drone {drone_id}")    
+logger.info(f"Starting driver for drone {drone_id}")
 
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')

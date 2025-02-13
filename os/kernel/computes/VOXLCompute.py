@@ -43,6 +43,7 @@ class VOXLCompute(ComputeInterface):
                      host)
         self.server_endpoint = f'tcp://{host}:{port}'
         self.is_running = False
+        self.frame_id = -1
 
     async def run(self):
         self.is_running = True
@@ -69,9 +70,16 @@ class VOXLCompute(ComputeInterface):
         logger.info("VOXL compute is running")
         while self.is_running:
             frame_data = cnc_pb2.Frame()
-            self.data_store.get_raw_data(frame_data)
+            frame_id = self.data_store.get_raw_data(frame_data)
+
+            # Wait for a new frame
+            while frame_id <= self.frame_id:
+                await asyncio.sleep(0)
+                frame_id = self.data_store.get_raw_data(frame_data)
+            self.frame_id = frame_id
+
             if frame_data.data != b'':
-                logger.info("VOXL compute got new frame from data store")
+                logger.info(f"VOXL compute got new frame {frame_data.id} from data store")
                 frame_bytes = frame_data.data
                 nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
 

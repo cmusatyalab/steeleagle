@@ -39,7 +39,7 @@ class DataService(Service):
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
         cpt_usr_sock = context.socket(zmq.DEALER)
-        
+
         tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
         cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
@@ -48,7 +48,7 @@ class DataService(Service):
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
         setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
-        
+
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
         self.register_socket(cpt_usr_sock)
@@ -58,7 +58,7 @@ class DataService(Service):
         self.tel_sock = tel_sock
         self.cpt_usr_sock = cpt_usr_sock
 
-        
+
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
@@ -75,13 +75,13 @@ class DataService(Service):
     ######################################################## USER ##############################################################
     def getter_processing(self, compute_type):
         getter_list = []
-        for compute_id in self.compute_dict.keys(): 
+        for compute_id in self.compute_dict.keys():
             (res, timestamp) = self.data_store.get_compute_result(compute_id, compute_type)
             getter = cnc_pb2.ComputeGetter()
             getter.compute_id = compute_id
             getter.compute_type = compute_type
             getter.timestamp = timestamp
-            
+
             if getter.string_result:
                 getter.string_result = res
             else:
@@ -89,7 +89,7 @@ class DataService(Service):
             getter_list.append(getter)
             logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
         return getter_list
-    
+
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
@@ -99,24 +99,24 @@ class DataService(Service):
                 cpt_command = cnc_pb2.Compute()
                 cpt_command.ParseFromString(msg)
                 logger.info(f"Received user command: {cpt_command}")
-                
+
                 if cpt_command.setter:
                     continue
-                
+
                 elif cpt_command.getter:
                     compute_type = cpt_command.getter.compute_type
                     getter_list = self.getter_processing(compute_type)
-                    
+
                     # update getter with results
                     cpt_command.getter.result.extend(getter_list)
-                    
+
                     await self.cpt_usr_sock.send(cpt_command.SerializeToString())
                 else:
                     logger.error("user handler error: Unknown command")
                     continue
             except Exception as e:
                 logger.error(f"user handler error: {e}")
-  
+
     ######################################################## DRIVER ############################################################
 
     async def telemetry_handler(self):
@@ -140,7 +140,7 @@ class DataService(Service):
                 msg = await self.cam_sock.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
-                self.data_store.set_raw_data(frame)
+                self.data_store.set_raw_data(frame, msg.id)
                 # logger.debug(f"Received camera message after set: {frame}")
                 logger.debug(f"Received camera message after set")
             except Exception as e:

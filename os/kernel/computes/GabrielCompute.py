@@ -42,6 +42,7 @@ class GabrielCompute(ComputeInterface):
 
         # data_store
         self.data_store = data_store
+        self.frame_id = -1
 
     async def run(self):
         await self.gabriel_client.launch_async()
@@ -91,7 +92,15 @@ class GabrielCompute(ComputeInterface):
             logger.debug(f"Frame producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             frame_data = cnc_pb2.Frame()
-            self.data_store.get_raw_data(frame_data)
+
+            frame_id = self.data_store.get_raw_data(frame_data)
+
+            # Wait for a new frame
+            while frame_id <= self.frame_id:
+                await asyncio.sleep(0)
+                frame_id = self.data_store.get_raw_data(frame_data)
+            self.frame_id = frame_id
+
             tel_data = cnc_pb2.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
