@@ -140,7 +140,7 @@ class DataService(Service):
                 msg = await self.cam_sock.recv()
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
-                self.data_store.set_raw_data(frame, msg.id)
+                self.data_store.set_raw_data(frame, frame.id)
                 # logger.debug(f"Received camera message after set: {frame}")
                 logger.debug(f"Received camera message after set")
             except Exception as e:

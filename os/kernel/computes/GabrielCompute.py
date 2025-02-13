@@ -96,8 +96,8 @@ class GabrielCompute(ComputeInterface):
             frame_id = self.data_store.get_raw_data(frame_data)
 
             # Wait for a new frame
-            while frame_id <= self.frame_id:
-                await asyncio.sleep(0)
+            while frame_id is None or frame_id <= self.frame_id:
+                await self.data_store.wait_for_new_data(type(frame_data))
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
