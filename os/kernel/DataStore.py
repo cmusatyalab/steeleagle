@@ -14,6 +14,7 @@ class DataStore:
 
         self._raw_data_id = {
             cnc_pb2.Frame: -1,
+            cnc_pb2.Telemetry: -1,
         }
 
         # Processed data cache dict
@@ -64,14 +65,8 @@ class DataStore:
 
         # Create a copy of the protobuf message
         data_copy.CopyFrom(cache)
-
-        # # Clear the cache
-        # self._raw_data_cache[data_copy_type] = None
-        # remained to be revised
-
-        if data_copy_type in self._raw_data_id:
-            return self._raw_data_id
-        return None
+        
+        return self._raw_data_id.get(data_copy_type)
 
     def set_raw_data(self, data, data_id = None):
         data_type = type(data)
