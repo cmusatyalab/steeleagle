@@ -8,13 +8,16 @@ import os
 import zmq
 from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
+from util.utils import SocketOperation
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 context = zmq.Context()
 cpt_usr_sock = context.socket(zmq.DEALER)
-setup_socket(cpt_usr_sock, 'connect', 'CPT_USR_PORT', 'Connected to compute socket endpoint', os.environ.get("DATA_ENDPOINT"))
+sock_identity = b'usr'
+cpt_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
+setup_socket(cpt_usr_sock, SocketOperation.CONNECT, 'CPT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("DATA_ENDPOINT"))
 
 class ComputeRespond:
     def __init__(self):
@@ -88,8 +91,10 @@ class ComputeStub():
     
     # Get results for a compute engine
     async def getResults(self, compute_type):
+        logger.info(f"Getting results for compute type: {compute_type}")
         cpt_req = cnc_pb2.Compute()
         cpt_req.getter.compute_type = compute_type
+        
         result = await self.send_and_wait(cpt_req)
         return result
 

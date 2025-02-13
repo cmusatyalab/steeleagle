@@ -77,19 +77,24 @@ class DataService(Service):
 
     ######################################################## USER ##############################################################
     def getter_processing(self, compute_type):
+        logger.info(f"Processing getter for compute type: {compute_type}")
         getter_list = []
         for compute_id in self.compute_dict.keys():
-            (res, timestamp) = self.data_store.get_compute_result(compute_id, compute_type)
-            getter = cnc_pb2.ComputeGetter()
-            getter.compute_id = compute_id
-            getter.compute_type = compute_type
-            getter.timestamp = timestamp
-
-            if getter.string_result:
-                getter.string_result = res
-            else:
-                getter.proto_result.ParseFromString(res)
-            getter_list.append(getter)
+            cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
+            
+            if cpt_res is None:
+                logger.error(f"Result not found for compute_id: {compute_id}")
+                continue
+            
+            res = cpt_res[0]
+            timestamp = str(cpt_res[1])
+            
+            result= cnc_pb2.ComputeResult()
+            result.compute_id = compute_id
+            result.timestamp = timestamp
+            result.string_result = res
+            
+            getter_list.append(result)
             logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
         return getter_list
 
@@ -102,15 +107,13 @@ class DataService(Service):
                 cpt_command = cnc_pb2.Compute()
                 cpt_command.ParseFromString(msg)
                 logger.info(f"Received user command: {cpt_command}")
-
-                if cpt_command.setter:
-                    continue
-
-                elif cpt_command.getter:
+                if cpt_command.getter:
+                    logger.info("Processing getter")
                     compute_type = cpt_command.getter.compute_type
                     getter_list = self.getter_processing(compute_type)
 
                     # update getter with results
+                    logger.info(f"Updating getter with results: {getter_list}")
                     cpt_command.getter.result.extend(getter_list)
 
                     await self.cpt_usr_sock.send(cpt_command.SerializeToString())

@@ -106,7 +106,7 @@ class GabrielCompute(ComputeInterface):
             try:
                 if frame_data is not None and frame_data.data != b'' and tel_data is not None:
                     logger.debug("Waiting for new frame from driver")
-                    logger.info(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
+                    logger.debug(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
 
                     frame_bytes = frame_data.data
 

@@ -27,6 +27,8 @@ class DataStore:
 
     ######################################################## COMPUTE ############################################################
     def get_compute_result(self, compute_id, result_type: str) -> Optional[Union[None, tuple]]:
+        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {result_type}")
+        logger.info(self._result_cache)
         if compute_id not in self._result_cache:
             # Log an error and return None
             logger.error(f"get_compute_result: No such compute: compute id {compute_id}")
