@@ -211,7 +211,7 @@ message ComputeResult{
 }
 
 message ComputeGetter{
-  ComputeResult result = 1;
+  repeated ComputeResult result = 1;
   string compute_type = 2;
 }
 
