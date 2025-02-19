@@ -22,12 +22,27 @@ class ModalAISeekerDrone:
     VEL_TOL = 0.1
     ANG_VEL_TOL = 0.01
     RTH_ALT = 20
+    TAKEOFF_ALT = 10
 
     def __init__(self, **kwargs):
         self.server_address = kwargs['server_address']
         logger.info(f"System address is {self.server_address}, port 50051")
         self.drone = System(mavsdk_server_address=self.server_address, port=50051)
         self.active = False
+
+    async def offboard_mode_enabled(self):
+        enabled = await self.drone.offboard.is_active()
+        return enabled
+
+    async def enable_offboard_mode(self):
+        logger.info("Switching to offboard mode")
+        try:
+            # Initial setpoint for offboard control
+            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+            await self.drone.offboard.start()
+        except Exception as e:
+            logger.error(f"Error enabling offboard mode: {e}")
+
 
     async def telemetry_subscriber(self):
         async def pos(self):
@@ -91,17 +106,11 @@ class ModalAISeekerDrone:
     async def takeOff(self):
         try:
             logger.info("Arming drone and taking off")
+            await self.drone.action.set_takeoff_altitude(self.TAKEOFF_ALT)
             await self.drone.action.arm()
             await self.drone.action.takeoff()
-            await asyncio.sleep(5)
-
-            logger.info("Waiting for hovering state")
-            await self.hovering()
-
-            logger.info("Switching to offboard mode")
-            # Initial setpoint for offboard control
-            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
-            await self.drone.offboard.start()
+            await self.drone.action.hold()
+            await self.enable_offboard_mode()
         except Exception as e:
             logger.error(f"{e}: landing drone")
             await self.land()
@@ -119,6 +128,8 @@ class ModalAISeekerDrone:
             logger.error(f"Land error: {e}")
 
     async def hover(self):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.action.hold()
         except Exception as e:
@@ -128,6 +139,8 @@ class ModalAISeekerDrone:
         self.active = False
 
     async def rth(self):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
             await self.drone.action.return_to_launch()
@@ -141,6 +154,8 @@ class ModalAISeekerDrone:
         raise NotImplemented()
 
     async def setVelocity(self, vx, vy, vz, t):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(vx, vy, vz, t))
         except Exception as e:
@@ -149,6 +164,8 @@ class ModalAISeekerDrone:
     ''' Telemetry methods '''
     async def getTelemetry(self):
         telDict = {}
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             try:
                 telDict["gps"] = await asyncio.wait_for(self.getGPS(), 1)
@@ -202,7 +219,7 @@ class ModalAISeekerDrone:
         try:
             imu = await anext(self.drone.telemetry.imu())
             angular_velocity_frd  = imu.angular_velocity_frd
-            return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_m_s}
+            return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_rad_s}
         except Exception as e:
             logger.error(f"Failed to get velocity body: {e}")
             return {"forward": -1, "right": -1, "up": -1}
