@@ -219,3 +219,4 @@ class DroneStub:
         request = cnc_pb2.Driver(switchCamera=camera_id)
         result = await self.send_and_wait(request)
         return result.switchCameras if result else False    
+

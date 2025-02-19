@@ -97,4 +97,34 @@ class ComputeStub():
         
         result = await self.send_and_wait(cpt_req)
         return result
+    
+    async def clearResults(self):
+        logger.info("Clearing results")
+        cpt_req = cnc_pb2.Compute()
+        cpt_req.clear = True
+        await self.send_and_wait(cpt_req)
 
+
+    ''' Telemetry methods '''
+    async def getTelemetry(self):
+        request = cnc_pb2.Driver(getTelemetry=cnc_pb2.Telemetry())
+        result = await self.send_and_wait(request)
+        telDict = {}
+        if result:
+            telDict["name"] = result.drone_name
+            telDict["battery"] = result.battery
+            telDict["attitude"]["yaw"] = result.drone_attitude.yaw 
+            telDict["attitude"]["pitch"] = result.drone_attitude.pitch
+            telDict["attitude"]["roll"] = result.drone_attitude.roll
+            telDict["satellites"] = result.satellites
+            telDict["gps"]["latitude"] = result.global_position.latitude
+            telDict["gps"]["longitude"] = result.global_position.longitude
+            telDict["gps"]["altitude"] = result.global_position.altitude
+            telDict["relAlt"] = result.relative_position.up
+            telDict["imu"]["forward"] = result.velocity.forward_vel
+            telDict["imu"]["right"] = result.velocity.right_vel
+            telDict["imu"]["up"] = result.velocity.up_vel 
+            return telDict
+        else:
+            logger.error("Failed to get telemetry")    
+            return None

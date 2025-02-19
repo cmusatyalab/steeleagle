@@ -76,7 +76,7 @@ class DataService(Service):
             self.register_task(task)
 
     ######################################################## USER ##############################################################
-    def getter_processing(self, compute_type):
+    def get_result(self, compute_type):
         logger.info(f"Processing getter for compute type: {compute_type}")
         getter_list = []
         for compute_id in self.compute_dict.keys():
@@ -98,30 +98,69 @@ class DataService(Service):
             logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
         return getter_list
 
+    def clear_result(self):
+        logger.info("Processing setter")
+        for compute_id in self.compute_dict.keys():
+            self.data_store.clear_compute_result(compute_id)
+            
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
+
         while True:
             try:
                 msg = await self.cpt_usr_sock.recv()
-                cpt_command = cnc_pb2.Compute()
-                cpt_command.ParseFromString(msg)
-                logger.info(f"Received user command: {cpt_command}")
-                if cpt_command.getter:
-                    logger.info("Processing getter")
-                    compute_type = cpt_command.getter.compute_type
-                    getter_list = self.getter_processing(compute_type)
+                command = None
+                for cmd_type in [cnc_pb2.Compute, cnc_pb2.Driver]:
+                    try:
+                        parsed_command = cmd_type()
+                        parsed_command.ParseFromString(msg)
+                        if parsed_command.ByteSize() > 0:
+                            command = parsed_command
+                            break
+                    except Exception:
+                        continue
 
-                    # update getter with results
-                    logger.info(f"Updating getter with results: {getter_list}")
-                    cpt_command.getter.result.extend(getter_list)
+                if isinstance(command, cnc_pb2.Compute):
+                    logger.info("Processing compute")
+                    await self.handle_compute(command)
 
-                    await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+                elif isinstance(command, cnc_pb2.Driver):
+                    logger.info("Processing driver")
+                    await self.handle_driver(command)
+
                 else:
-                    logger.error("user handler error: Unknown command")
-                    continue
+                    logger.error("User handler error: Unknown command type")
+
             except Exception as e:
                 logger.error(f"user handler error: {e}")
+
+    async def handle_compute(self, cpt_command):
+        """Processes a Compute command."""
+        logger.info(f"Received Compute command: {cpt_command}")
+
+        if cpt_command.getter:
+            logger.info("Processing getter")
+            compute_type = cpt_command.getter.compute_type
+            getter_list = self.get_result(compute_type)
+            cpt_command.getter.result.extend(getter_list)
+            await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+
+        elif cpt_command.setter:
+            
+            if cpt_command.setter.clearResult:
+                logger.info("Processing setter clear")
+                self.clear_result()
+                await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+
+        else:
+            logger.error("User handler error: Unknown Compute command")
+
+    async def handle_driver(self, driver_command):
+        """Processes a Driver command."""
+        logger.info(f"Received Driver command: {driver_command}")
+        self.data_store.set_raw_data(driver_command)
+        await self.cpt_usr_sock.send(driver_command.SerializeToString())
 
     ######################################################## DRIVER ############################################################
 

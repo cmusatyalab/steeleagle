@@ -169,9 +169,10 @@ message Driver {
     Position setTranslatedPosition = 14; //relative to current position
     int64 switchCamera = 15; //change current switchCamera
     Camera getCameras = 16;
+    Telemetry getTelemetry = 18;
   }
-  ResponseStatus resp = 17;
-  int64 seqNum = 18;
+  ResponseStatus resp = 19;
+  int64 seqNum = 20;
 }
 
 // Kernel - Mission Controller API
@@ -216,11 +217,7 @@ message ComputeGetter{
 }
 
 message ComputeSetter{
-  string compute_id = 1;
-  oneof method{
-    string string_cmd = 2; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
-    google.protobuf.Any proto_cmd = 3; // proto format cmd, using Any here just for efficiency
-  }
+  bool clearResult = 1;
 }
 
 message Compute{

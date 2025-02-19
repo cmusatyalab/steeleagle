@@ -25,6 +25,10 @@ class DataStore:
         # Processed data cache dict
         self._result_cache = {}
 
+    def clear_compute_result(self, compute_id):
+        logger.info(f"clear_compute_result: Clearing result for compute {compute_id}")
+        self._result_cache.pop(compute_id, None)
+        
     ######################################################## COMPUTE ############################################################
     def get_compute_result(self, compute_id, result_type: str) -> Optional[Union[None, tuple]]:
         logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {result_type}")
