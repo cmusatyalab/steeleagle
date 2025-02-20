@@ -330,6 +330,7 @@ with st.sidebar:
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
         #req.cmd.manual = True
+        st.caption(f"keypressed={key_pressed}")
         if key_pressed == "t":
             req.cmd.takeoff = True
             st.info(f"Instructed {req.cmd.for_drone_id} to takeoff.")

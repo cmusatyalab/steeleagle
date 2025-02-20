@@ -588,6 +588,7 @@ class FFMPEGStreamingThread(threading.Thread):
             return frame
         except Exception as e:
             # Send a blank frame
+            logger.error(f"Sending blank frame: {e}")
             return np.zeros((720, 1280, 3), np.uint8)
 
     def stop(self):

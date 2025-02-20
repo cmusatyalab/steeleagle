@@ -78,7 +78,7 @@ class TaskManager():
                 return avoid.AvoidTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
             elif (self.task_arg_map[task_id].task_type == taskitf.TaskType.Test):
                 logger.info('Test task')
-                return test.TestTask(self.drone, None, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
+                return test.TestTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
         return None
     
     def stop_task(self):
