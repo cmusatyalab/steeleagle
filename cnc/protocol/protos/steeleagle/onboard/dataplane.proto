@@ -28,7 +28,8 @@ message Dataplane {
   oneof method {
     Location getHome = 1;
     Camera getCameras = 2;
+    Telemetry getTelemetry= 3;
   }
-  ResponseStatus resp = 3;
-  int64 seqNum = 4;
+  ResponseStatus resp = 4;
+  int64 seqNum = 5;
 }
