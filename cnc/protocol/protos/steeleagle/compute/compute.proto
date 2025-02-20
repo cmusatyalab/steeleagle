@@ -16,20 +16,20 @@ message ComputeResult{
   }
 }
 
-message ComputeGetter{
+message Getter{
   repeated ComputeResult result = 1;
   string compute_type = 2;
 }
 
-message ComputeSetter{
+message Setter{
   bool clearResult = 1;
 }
 
 message Compute{
   
   oneof method{
-    ComputeGetter getter= 1;
-    ComputeSetter setter= 2;
+    Getter get= 1;
+    Setter set= 2;
   }
 
   ResponseStatus resp = 3;
