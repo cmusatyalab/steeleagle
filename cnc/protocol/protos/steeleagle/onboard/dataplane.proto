@@ -22,10 +22,12 @@ message Telemetry {
   int64 cellular_rssi = 12;
   int64 radio_rssi = 13;
 }
+
 message HSVBound {
   HSV lowerBound = 1;
   HSV upperBound = 2;
 }
+
 message Setter {
   oneof method{
     string detectionModel = 1;
