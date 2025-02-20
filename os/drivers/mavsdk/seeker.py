@@ -22,12 +22,27 @@ class ModalAISeekerDrone:
     VEL_TOL = 0.1
     ANG_VEL_TOL = 0.01
     RTH_ALT = 20
+    TAKEOFF_ALT = 10
 
     def __init__(self, **kwargs):
         self.server_address = kwargs['server_address']
         logger.info(f"System address is {self.server_address}, port 50051")
         self.drone = System(mavsdk_server_address=self.server_address, port=50051)
         self.active = False
+
+    async def offboard_mode_enabled(self):
+        enabled = await self.drone.offboard.is_active()
+        return enabled
+
+    async def enable_offboard_mode(self):
+        logger.info("Switching to offboard mode")
+        try:
+            # Initial setpoint for offboard control
+            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
+            await self.drone.offboard.start()
+        except Exception as e:
+            logger.error(f"Error enabling offboard mode: {e}")
+
 
     async def telemetry_subscriber(self):
         async def pos(self):
@@ -78,8 +93,6 @@ class ModalAISeekerDrone:
         logger.info(f"Connecting to server at address {system_address}")
 
         await self.drone.connect(system_address=system_address)
-        # Set max speed for use by PCMD
-        # self.max_speed = await self.drone.action.get_maximum_speed()
         self.active = True
         self.telemetry = {'battery': 100, 'rssi': 0, 'mag': 0, 'heading': 0, 'sat': 0,
                 'lat': 0, 'lng': 0, 'alt': 0, 'rel-alt': 0}
@@ -91,17 +104,11 @@ class ModalAISeekerDrone:
     async def takeOff(self):
         try:
             logger.info("Arming drone and taking off")
+            await self.drone.action.set_takeoff_altitude(self.TAKEOFF_ALT)
             await self.drone.action.arm()
             await self.drone.action.takeoff()
-            await asyncio.sleep(5)
-
-            logger.info("Waiting for hovering state")
-            await self.hovering()
-
-            logger.info("Switching to offboard mode")
-            # Initial setpoint for offboard control
-            await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
-            await self.drone.offboard.start()
+            await self.drone.action.hold()
+            await self.enable_offboard_mode()
         except Exception as e:
             logger.error(f"{e}: landing drone")
             await self.land()
@@ -119,6 +126,8 @@ class ModalAISeekerDrone:
             logger.error(f"Land error: {e}")
 
     async def hover(self):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.action.hold()
         except Exception as e:
@@ -128,6 +137,8 @@ class ModalAISeekerDrone:
         self.active = False
 
     async def rth(self):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
             await self.drone.action.return_to_launch()
@@ -141,6 +152,8 @@ class ModalAISeekerDrone:
         raise NotImplemented()
 
     async def setVelocity(self, vx, vy, vz, t):
+        if not await self.offboard_mode_enabled():
+            await self.enable_offboard_mode()
         try:
             await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(vx, vy, vz, t))
         except Exception as e:
@@ -150,50 +163,21 @@ class ModalAISeekerDrone:
     async def getTelemetry(self):
         telDict = {}
         try:
-            try:
-                telDict["gps"] = await asyncio.wait_for(self.getGPS(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting GPS")
-            try:
-                telDict["relAlt"] = await asyncio.wait_for(self.getAltitudeRel(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting rel alt")
-            try:
-                telDict["attitude"] = await asyncio.wait_for(self.getAttitude(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting attitude")
-            try:
-                telDict["magnetometer"] = await asyncio.wait_for(self.getMagnetometerReading(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting magnetometer reading")
-            try:
-                telDict["imu"] = await asyncio.wait_for(self.getVelocityBody(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting body velocity")
-            try:
-                telDict["battery"] = await asyncio.wait_for(self.getBatteryPercentage(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting battery percentage")
-            try:
-                telDict["gimbalAttitude"] = await asyncio.wait_for(self.getGimbalPose(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting gimbal pose")
-            try:
-                telDict["satellites"] = await asyncio.wait_for(self.getSatellites(), 1)
-            except asyncio.TimeoutError:
-                logger.error("Timed out getting satellites")
+            telDict["gps"] = self.getGPS()
+            telDict["relAlt"] = self.getAltitudeRel()
+            telDict["attitude"] = self.getAttitude()
+            telDict["magnetometer"] = self.getMagnetometerReading()
+            telDict["imu"] = self.getVelocityBody()
+            telDict["battery"] = self.getBatteryPercentage()
+            telDict["gimbalAttitude"] = self.getGimbalPose()
+            telDict["satellites"] = self.getSatellites()
         except Exception as e:
             logger.error(f"Error in getTelemetry(): {e}")
         logger.debug(f"Telemetry data: {telDict}")
         return telDict
 
     async def getSatellites(self):
-        try:
-            gps = await anext(self.drone.telemetry.gps_info())
-            return gps.num_satellites
-        except Exception as e:
-            logger.error(f"Failed to get satellites: {e}")
-            return -1
+        return self.telemetry['sat']
 
     async def getGimbalPose(self):
         return "not implemented"
@@ -202,7 +186,11 @@ class ModalAISeekerDrone:
         try:
             imu = await anext(self.drone.telemetry.imu())
             angular_velocity_frd  = imu.angular_velocity_frd
-            return {"forward": angular_velocity_frd.forward_rad_s, "right": angular_velocity_frd.right_rad_s, "up": -1 * angular_velocity_frd.down_m_s}
+            return {
+                "forward": angular_velocity_frd.forward_rad_s,
+                "right": angular_velocity_frd.right_rad_s,
+                "up": -1 * angular_velocity_frd.down_rad_s
+            }
         except Exception as e:
             logger.error(f"Failed to get velocity body: {e}")
             return {"forward": -1, "right": -1, "up": -1}
@@ -210,42 +198,30 @@ class ModalAISeekerDrone:
     async def getAttitude(self):
         try:
             angular_velocity_body = await anext(self.drone.telemetry.attitude_angular_velocity_body())
-            return {"roll": angular_velocity_body.roll_rad_s, "pitch": angular_velocity_body.pitch_rad_s, "yaw": angular_velocity_body.yaw_rad_s}
+            return {
+                "roll": angular_velocity_body.roll_rad_s,
+                "pitch": angular_velocity_body.pitch_rad_s,
+                "yaw": angular_velocity_body.yaw_rad_s
+            }
         except Exception as e:
             logger.error(f"Failed to get attitude: {e}")
             return {"roll": -1, "pitch": -1, "yaw": -1}
 
     async def getMagnetometerReading(self):
-        try:
-            health = await anext(self.drone.telemetry.health())
-            return health.is_magnetometer_calibration_ok
-        except Exception as e:
-            logger.error(f"Failed to get magnetometer reading: {e}")
-            return False
+        return self.telemetry['mag']
 
     async def getAltitudeRel(self):
-        try:
-            position = await anext(self.drone.telemetry.position())
-            return position.relative_altitude_m
-        except Exception as e:
-            logger.error(f"Failed to get relative altitude: {e}")
-            return -1
+        return self.telemetry['rel-alt']
 
     async def getGPS(self):
-        try:
-            gps = await self.drone.telemetry.get_gps_global_origin()
-            return {"latitude": gps.latitude_deg, "longitude": gps.longitude_deg, "altitude": gps.altitude_m}
-        except Exception as e:
-            logger.error(f"Failed to get GPS data: {e}")
-            return {"latitude": -1, "longitude": -1, "altitude": -1}
+        return {
+            "latitude": self.telemetry['lat'],
+            "longitude": self.telemetry['lng'],
+            "altitude": self.telemetry['alt']
+        }
 
     async def getBatteryPercentage(self):
-        try:
-            battery = await anext(self.drone.telemetry.battery())
-            return int(battery.remaining_percent)
-        except Exception as e:
-            logger.error(f"Failed to get battery percentage")
-            return -1
+        return self.telemetry['battery']
 
     async def getHeading(self):
-        return (180 / math.pi)
+        return self.telemetry['head']
