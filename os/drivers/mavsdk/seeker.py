@@ -163,14 +163,14 @@ class ModalAISeekerDrone:
     async def getTelemetry(self):
         telDict = {}
         try:
-            telDict["gps"] = self.getGPS()
-            telDict["relAlt"] = self.getAltitudeRel()
-            telDict["attitude"] = self.getAttitude()
-            telDict["magnetometer"] = self.getMagnetometerReading()
-            telDict["imu"] = self.getVelocityBody()
-            telDict["battery"] = self.getBatteryPercentage()
-            telDict["gimbalAttitude"] = self.getGimbalPose()
-            telDict["satellites"] = self.getSatellites()
+            telDict["gps"] = await self.getGPS()
+            telDict["relAlt"] = await self.getAltitudeRel()
+            telDict["attitude"] = await self.getAttitude()
+            telDict["magnetometer"] = await self.getMagnetometerReading()
+            telDict["imu"] = await self.getVelocityBody()
+            telDict["battery"] = await self.getBatteryPercentage()
+            telDict["gimbalAttitude"] = await self.getGimbalPose()
+            telDict["satellites"] = await self.getSatellites()
         except Exception as e:
             logger.error(f"Error in getTelemetry(): {e}")
         logger.debug(f"Telemetry data: {telDict}")
