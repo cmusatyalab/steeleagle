@@ -30,9 +30,9 @@ message HSVBound {
 
 message Setter {
   oneof method{
-    string detectionModel = 1;
+    string switchModel = 1;
     //for HSV filtering of object detection results
-    HSVBound HSVBound = 2;
+    HSVBound setHSVBound = 2;
   }
 }
 
@@ -50,6 +50,6 @@ message Dataplane {
     Getter get = 1;
     Setter set = 2;
   }
-  ResponseStatus resp = 4;
-  int64 seqNum = 5;
+  ResponseStatus resp = 3;
+  int64 seqNum = 4;
 }
