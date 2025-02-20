@@ -22,13 +22,31 @@ message Telemetry {
   int64 cellular_rssi = 12;
   int64 radio_rssi = 13;
 }
+message HSVBound {
+  HSV lowerBound = 1;
+  HSV upperBound = 2;
+}
+message Setter {
+  oneof method{
+    string detectionModel = 1;
+    //for HSV filtering of object detection results
+    HSVBound HSVBound = 2;
+  }
+}
+
+message Getter {
+  oneof method{
+    Location home = 1;
+    Camera cameras = 2;
+    Telemetry telemetry= 3;
+  }
+}
 
 // Request/Response for getters
 message Dataplane {
   oneof method {
-    Location getHome = 1;
-    Camera getCameras = 2;
-    Telemetry getTelemetry= 3;
+    Getter get = 1;
+    Setter set = 2;
   }
   ResponseStatus resp = 4;
   int64 seqNum = 5;
