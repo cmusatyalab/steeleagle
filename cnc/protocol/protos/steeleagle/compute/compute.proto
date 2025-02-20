@@ -35,11 +35,3 @@ message Compute{
   ResponseStatus resp = 3;
   int64 seqNum = 4;
 }
-
-
-message Reconfigure {
-    string setDetectionModel = 1;
-    //for HSV filtering of object detection results
-    HSV setHSVLowerBound = 2;
-    HSV setHSVUpperBound = 3;
-}
