@@ -141,9 +141,17 @@ class ComputeStub():
         logger.info("Getting telemetry")
         request = cnc_pb2.Driver(getTelemetry=cnc_pb2.Telemetry())
         result = await self.send_and_wait(request)
-        telDict = {}
+        telDict = {
+            "name": None,
+            "battery": None,
+            "attitude": {"yaw": None, "pitch": None, "roll": None},
+            "satellites": None,
+            "gps": {"latitude": None, "longitude": None, "altitude": None},
+            "relAlt": None,
+            "imu": {"forward": None, "right": None, "up": None},
+        }
         if result:
-            logger.info(f"Got telemetry: {result}\n")
+            logger.debug(f"Got telemetry: {result}\n")
             telDict["name"] = result.drone_name
             telDict["battery"] = result.battery
             telDict["attitude"]["yaw"] = result.drone_attitude.yaw 
@@ -156,7 +164,8 @@ class ComputeStub():
             telDict["relAlt"] = result.relative_position.up
             telDict["imu"]["forward"] = result.velocity.forward_vel
             telDict["imu"]["right"] = result.velocity.right_vel
-            telDict["imu"]["up"] = result.velocity.up_vel 
+            telDict["imu"]["up"] = result.velocity.up_vel
+            logger.debug(f"finished receiving Telemetry: {telDict}")
             return telDict
         else:
             logger.error("Failed to get telemetry")    
