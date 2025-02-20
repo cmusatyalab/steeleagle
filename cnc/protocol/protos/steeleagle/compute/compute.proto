@@ -5,32 +5,37 @@
 syntax = "proto3";
 package steeleagle.compute;
 import "steeleagle/shared/common.proto";
+import "google/protobuf/any.proto";
 
-message ComputeResult {
-  int64 frameId = 1; //for future correlation
-  oneof type {
-    string generic = 2; //JSON/YAML/etc
-    DetectionResult detection = 3;
-    AvoidanceResult avoidance = 4;
+message ComputeResult{
+  string compute_id = 1;
+  string timestamp = 2;
+  oneof method{
+    string string_result = 3; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_result = 4; // proto format result, using Any here just for efficiency
   }
 }
 
-message Detection {
-  int64 detectionId = 1; // can be multiple objects per frame
-  string className = 2;
-  double score = 3;
-  Bbox bbox = 4;
-  bool hsvFilterPassed = 5;
+message ComputeGetter{
+  repeated ComputeResult result = 1;
+  string compute_type = 2;
 }
 
-message DetectionResult {
-  int64 frameId = 1; //for future correlation
-  repeated Detection detections = 2;
+message ComputeSetter{
+  bool clearResult = 1;
 }
 
-message AvoidanceResult {
-  double actuationVector = 1;
+message Compute{
+  
+  oneof method{
+    ComputeGetter getter= 1;
+    ComputeSetter setter= 2;
+  }
+
+  ResponseStatus resp = 3;
+  int64 seqNum = 4;
 }
+
 
 message Reconfigure {
     string setDetectionModel = 1;
