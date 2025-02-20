@@ -110,27 +110,27 @@ class DataService(Service):
         while True:
             try:
                 msg = await self.cpt_usr_sock.recv()
-                command = None
-                for cmd_type in [cnc_pb2.Compute, cnc_pb2.Driver]:
-                    try:
-                        parsed_command = cmd_type()
-                        parsed_command.ParseFromString(msg)
-                        if parsed_command.ByteSize() > 0:
-                            command = parsed_command
-                            break
-                    except Exception:
-                        continue
 
-                if isinstance(command, cnc_pb2.Compute):
+                # Attempt to parse as Compute
+                compute_command = cnc_pb2.Compute()
+                compute_command.ParseFromString(msg)
+
+                if compute_command.HasField("getter") or compute_command.HasField("setter"):
                     logger.info("Processing compute")
-                    await self.handle_compute(command)
+                    await self.handle_compute(compute_command)
+                    continue  # Stop processing once a valid type is found
 
-                elif isinstance(command, cnc_pb2.Driver):
+                # Attempt to parse as Driver
+                driver_command = cnc_pb2.Driver()
+                driver_command.ParseFromString(msg)
+
+                if driver_command.HasField("getTelemetry"):  # Replace with actual field name
                     logger.info("Processing driver")
-                    await self.handle_driver(command)
+                    await self.handle_driver(driver_command)
+                    continue  # Stop processing once a valid type is found
 
-                else:
-                    logger.error("User handler error: Unknown command type")
+                # If neither parsed correctly, log an error
+                logger.error("User handler error: Unknown command type")
 
             except Exception as e:
                 logger.error(f"user handler error: {e}")
@@ -159,8 +159,13 @@ class DataService(Service):
     async def handle_driver(self, driver_command):
         """Processes a Driver command."""
         logger.info(f"Received Driver command: {driver_command}")
-        self.data_store.set_raw_data(driver_command)
-        await self.cpt_usr_sock.send(driver_command.SerializeToString())
+        
+        if driver_command.getTelemetry:
+            logger.info("Processing getTelemetry")
+            self.data_store.get_raw_data(driver_command.getTelemetry)
+            driver_command.resp = cnc_pb2.ResponseStatus.COMPLETED
+            logger.info(f"Sending telemetry: {driver_command.getTelemetry}")
+            await self.cpt_usr_sock.send(driver_command.SerializeToString())
 
     ######################################################## DRIVER ############################################################
 
@@ -186,8 +191,8 @@ class DataService(Service):
                 frame = cnc_pb2.Frame()
                 frame.ParseFromString(msg)
                 self.data_store.set_raw_data(frame, frame.id)
-                # logger.debug(f"Received camera message after set: {frame}")
-                logger.debug(f"Received camera message after set")
+                logger.debug(f"Received camera message after set: {frame}")
+             
             except Exception as e:
                 logger.error(f"Camera handler error: {e}")
 

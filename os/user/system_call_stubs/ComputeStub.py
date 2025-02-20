@@ -9,6 +9,7 @@ import zmq
 from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 from util.utils import SocketOperation
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,6 +21,7 @@ cpt_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
 setup_socket(cpt_usr_sock, SocketOperation.CONNECT, 'CPT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("DATA_ENDPOINT"))
 
 class ComputeRespond:
+    
     def __init__(self):
         self.event = asyncio.Event()
         self.permission = False
@@ -52,23 +54,51 @@ class ComputeStub():
         cpt_usr_sock.send_multipart([serialized_request])
     
     def receiver(self, response_parts):
-        response = response_parts[0]
-        cpt_rep = cnc_pb2.Compute()
-        cpt_rep.ParseFromString(response)
-        seqNum = cpt_rep.seqNum
-        computeRespond = self.seqNum_res[seqNum]
-        
-        if not computeRespond:
-            logger.error(f"Received response with seqNum: {seqNum} but no corresponding request found")
+        if not response_parts:
+            logger.error("Received empty response parts")
             return
-        
-        status = cpt_rep.resp
+
+        response = response_parts[0]
+        data_rep = None
+
+        # Try parsing as Compute first
+        data_rep = cnc_pb2.Compute()
+        data_rep.ParseFromString(response)
+
+        if data_rep.seqNum == 0: # not the cpt reply
+            logger.info("Response does not look like Compute. Trying Driver parsing...")
+            try:
+                data_rep = cnc_pb2.Driver()
+                data_rep.ParseFromString(response)
+                logger.info(f"Parsed response as Driver: {data_rep}")
+            except Exception as e:
+                logger.error(f"Failed to parse response as Driver: {e}")
+                return  # Exit function if both attempts fail
+
+        seqNum = data_rep.seqNum
+        if seqNum not in self.seqNum_res:
+            logger.error(f"Received response with unknown seqNum: {seqNum}")
+            return
+
+        computeRespond = self.seqNum_res.pop(seqNum)
+
+        status = getattr(data_rep, "resp", None)
         if status == cnc_pb2.ResponseStatus.FAILED:
             logger.error("STAGE 2: FAILED")
         elif status == cnc_pb2.ResponseStatus.COMPLETED:
             logger.info("STAGE 2: COMPLETED")
-        computeRespond.putResult(cpt_rep.getter.result)
+
+        if hasattr(data_rep, 'getter') and hasattr(data_rep.getter, 'result'):
+            logger.info("cpt rep")
+            computeRespond.putResult(data_rep.getter.result)
+        elif hasattr(data_rep, 'getTelemetry'):
+            logger.info("tel rep")
+            computeRespond.putResult(data_rep.getTelemetry)
+        else:
+            logger.warning("Received response but could not determine type")
+
         computeRespond.set()
+
     
     async def run(self):
         while True:
@@ -86,6 +116,7 @@ class ComputeStub():
     async def send_and_wait(self, request):
         computeRespond = ComputeRespond()
         self.sender(request, computeRespond)
+    
         await computeRespond.wait()
         return computeRespond.getResult()
     
@@ -107,10 +138,12 @@ class ComputeStub():
 
     ''' Telemetry methods '''
     async def getTelemetry(self):
+        logger.info("Getting telemetry")
         request = cnc_pb2.Driver(getTelemetry=cnc_pb2.Telemetry())
         result = await self.send_and_wait(request)
         telDict = {}
         if result:
+            logger.info(f"Got telemetry: {result}\n")
             telDict["name"] = result.drone_name
             telDict["battery"] = result.battery
             telDict["attitude"]["yaw"] = result.drone_attitude.yaw 
