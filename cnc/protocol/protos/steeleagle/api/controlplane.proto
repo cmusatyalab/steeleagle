@@ -11,7 +11,7 @@ import "steeleagle/shared/common.proto";
 // Request/Response for commands
 message ControlPlane {
   oneof method {
-    Drone setDrone = 1
+    Drone setDrone = 1;
     Compute setCompute = 2;
     Mission setMission = 3;
   }
