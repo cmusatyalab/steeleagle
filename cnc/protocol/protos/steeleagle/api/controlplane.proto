@@ -20,6 +20,7 @@ message ControlPlane {
 }
 
 message Drone {
+  oneof method {
     Attitude setAttitude = 1;
     bool takeOff = 2;
     bool land = 3;
@@ -33,6 +34,7 @@ message Drone {
     Location setGPSLocation = 11;
     Position setTranslatedPosition = 12; //relative to current position
     int64 switchCamera = 13; //change current switchCamera
+  }
 }
 
 message Compute {
