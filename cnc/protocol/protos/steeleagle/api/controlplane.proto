@@ -39,19 +39,19 @@ message Drone {
 
 message Compute {
   oneof method {
-    string switchModel = 1;
-    HSVBound setHSVBound = 2;
+    string model = 1;
+    HSVBound HSVBound = 2;
   }
 }
 
 message Mission {
   oneof method {
     //for MissionController
-    bool startMission = 1;
-    bool pauseMission = 2;
-    bool resumeMission = 3;
-    bool stopMission = 4;
-    string downloadMission = 5; // URL that specifies the zip file to download
+    bool start = 1;
+    bool pause = 2;
+    bool resume = 3;
+    bool stop = 4;
+    string download = 5; // URL that specifies the zip file to download
   }
   string UUID = 6; //unique mission reference for cataloging
 }
