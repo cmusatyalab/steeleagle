@@ -7,9 +7,19 @@ syntax = "proto3";
 package steeleagle.onboard;
 import "steeleagle/shared/common.proto";
 
+
 // Request/Response for commands
 message ControlPlane {
   oneof method {
+    Drone setDrone = 1
+    Compute setCompute = 2;
+    Mission setMission = 3;
+  }
+  ResponseStatus resp = 4;
+  int64 seqNum = 5;
+}
+
+message Drone {
     Attitude setAttitude = 1;
     bool takeOff = 2;
     bool land = 3;
@@ -23,9 +33,13 @@ message ControlPlane {
     Location setGPSLocation = 11;
     Position setTranslatedPosition = 12; //relative to current position
     int64 switchCamera = 13; //change current switchCamera
+}
+
+message Compute {
+  oneof method {
+    string switchModel = 1;
+    HSVBound setHSVBound = 2;
   }
-  ResponseStatus resp = 14;
-  int64 seqNum = 15;
 }
 
 message Mission {

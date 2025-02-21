@@ -5,6 +5,31 @@
 syntax = "proto3";
 package steeleagle.shared;
 
+message ComputeResult{
+  string compute_id = 1;
+  string timestamp = 2;
+  oneof method{
+    string string_result = 3; // flexibility of handling any type of format other than proto: json, plain string ...., as long as receiver and sender side agree on
+    google.protobuf.Any proto_result = 4; // proto format result, using Any here just for efficiency
+  }
+}
+
+message Telemetry {
+  string drone_name = 1;
+  Location global_position = 2;
+  Magnetometer mag = 3;
+  int64 battery = 4;
+  Attitude gimbal_attitude = 5;
+  Attitude drone_attitude = 6;
+  Velocity velocity = 7;
+  Position relative_position = 8;
+  int64 satellites = 9;
+  bool isConnected = 10;
+  int64 wifi_rssi = 11;
+  int64 cellular_rssi = 12;
+  int64 radio_rssi = 13;
+}
+
 message Frame {
   bytes data = 1;
   int64 width = 2;
@@ -18,6 +43,12 @@ message HSV {
   int64 S = 2;
   int64 V = 3;
 }
+
+message HSVBound {
+  HSV lowerBound = 1;
+  HSV upperBound = 2;
+}
+
 
 message Location {
   string name = 1;
