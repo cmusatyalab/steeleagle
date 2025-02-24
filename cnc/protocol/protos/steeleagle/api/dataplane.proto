@@ -1,0 +1,45 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+
+package steeleagle.api;
+import "steeleagle/shared/common.proto";
+
+// Request/Response for getters
+message Dataplane {
+  oneof type {
+    DroneRequest drone = 1;
+    ComputeRequest compute = 2;
+  }
+  int64 seqNum = 3;
+}
+
+message DroneRequest{
+  enum type {
+    Home = 1;
+    Cameras = 2;
+    Telemetry= 3;
+  }
+  int64 seqNum = 3;
+}
+
+message ComputeRequest{
+  string compute_type = 1;
+}
+
+message DroneResult{
+  oneof type {
+    Location Home = 1;
+    Camera Cameras = 2;
+    Telemetry Telemetry= 3;
+  }
+}
+
+message ComputeResult{
+  repeated ComputeResult result = 1;
+  string compute_type = 2;
+}
+
+
