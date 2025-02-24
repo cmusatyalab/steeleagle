@@ -10,10 +10,10 @@ import "steeleagle/shared/common.proto";
 
 // Request/Response for commands
 message ControlPlaneRequest {
-  oneof method {
-    Drone drone = 1;
-    Compute compute = 2;
-    Mission mission = 3;
+  oneof type {
+    DroneRequest drone = 1;
+    ComputeRequest compute = 2;
+    MissionRequest mission = 3;
   }
   int64 seqNum = 4;
 }
@@ -22,8 +22,8 @@ message ControlPlaneResponse{
   int64 seqNum = 2;
 }
 
-message Drone {
-  oneof method {
+message DroneRequest {
+  oneof type {
     Attitude setAttitude = 1;
     bool takeOff = 2;
     bool land = 3;
@@ -40,15 +40,15 @@ message Drone {
   }
 }
 
-message Compute {
-  oneof method {
+message ComputeRequest {
+  oneof type {
     string model = 1;
     HSVBound HSVBound = 2;
   }
 }
 
-message Mission {
-  oneof method {
+message MissionRequest {
+  oneof type {
     //for MissionController
     bool start = 1;
     bool pause = 2;
