@@ -9,14 +9,17 @@ import "steeleagle/shared/common.proto";
 
 
 // Request/Response for commands
-message ControlPlane {
+message ControlPlaneRequest {
   oneof method {
-    Drone setDrone = 1;
-    Compute setCompute = 2;
-    Mission setMission = 3;
+    Drone drone = 1;
+    Compute compute = 2;
+    Mission mission = 3;
   }
-  ResponseStatus resp = 4;
-  int64 seqNum = 5;
+  int64 seqNum = 4;
+}
+message ControlPlaneResponse{
+  ResponseStatus resp = 1;
+  int64 seqNum = 2;
 }
 
 message Drone {
