@@ -9,23 +9,35 @@ import "steeleagle/shared/common.proto";
 
 // Request/Response for getters
 message Dataplane {
-  oneof method {
-    Compute getCompute = 1;
-    Drone getDrone = 2;
+  oneof type {
+    DroneRequest drone = 1;
+    ComputeRequest compute = 2;
   }
-  ResponseStatus resp = 3;
-  int64 seqNum = 4;
+  int64 seqNum = 3;
 }
 
-message Drone{
-  oneof method {
+message DroneRequest{
+  enum type {
+    Home = 1;
+    Cameras = 2;
+    Telemetry= 3;
+  }
+  int64 seqNum = 3;
+}
+
+message ComputeRequest{
+  string compute_type = 1;
+}
+
+message DroneResult{
+  oneof type {
     Location Home = 1;
     Camera Cameras = 2;
     Telemetry Telemetry= 3;
   }
 }
 
-message Compute{
+message ComputeResult{
   repeated ComputeResult result = 1;
   string compute_type = 2;
 }
