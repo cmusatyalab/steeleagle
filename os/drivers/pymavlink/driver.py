@@ -177,6 +177,7 @@ async def main(drone:NrecDrone, cam_sock, tel_sock, args):
             continue
         logger.info(f'Established connection to drone, ready to receive commands!')
         
+        await asyncio.sleep(0.1)
         await drone.startStreaming()
         logger.info('Started streaming')
         asyncio.create_task(camera_stream(drone, cam_sock))

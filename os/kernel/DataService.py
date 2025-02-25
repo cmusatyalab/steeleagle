@@ -64,9 +64,9 @@ class DataService(Service):
         cam_task = asyncio.create_task(self.camera_handler())
         usr_task = asyncio.create_task(self.user_handler())
         
-        self.register_task(usr_task)
         self.register_task(tel_task)
         self.register_task(cam_task)
+        self.register_task(usr_task)
 
         # setting up data store
         self.data_store = DataStore()
@@ -106,7 +106,6 @@ class DataService(Service):
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
-
         while True:
             try:
                 msg = await self.cpt_usr_sock.recv()
@@ -168,7 +167,6 @@ class DataService(Service):
             await self.cpt_usr_sock.send(driver_command.SerializeToString())
 
     ######################################################## DRIVER ############################################################
-
     async def telemetry_handler(self):
         """Handles telemetry messages."""
         logger.info("Telemetry handler started")
@@ -182,14 +180,19 @@ class DataService(Service):
             except Exception as e:
                 logger.error(f"Telemetry handler error: {e}")
 
+    def parse_frame(self, msg):
+        """Parses a frame message."""
+        frame = cnc_pb2.Frame()
+        frame.ParseFromString(msg)
+        return frame
+        
     async def camera_handler(self):
         """Handles camera messages."""
         logger.info("Camera handler started")
         while True:
             try:
                 msg = await self.cam_sock.recv()
-                frame = cnc_pb2.Frame()
-                frame.ParseFromString(msg)
+                frame = await asyncio.to_thread(self.parse_frame, msg)  # Offload parsing
                 self.data_store.set_raw_data(frame, frame.id)
                 logger.debug(f"Received camera message after set: {frame}")
              
@@ -218,6 +221,7 @@ class DataService(Service):
 
         Compute = compute_classes[compute_class]
         compute_instance = Compute(compute_id, self.data_store)
+        logger.info(f"Starting compute {compute_class} with id {compute_id}")
         return compute_instance, asyncio.create_task(compute_instance.run())
 
     def spawn_computes(self, config_yaml):

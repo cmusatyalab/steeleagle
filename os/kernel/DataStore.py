@@ -87,6 +87,7 @@ class DataStore:
 
         self._raw_data_cache[data_type] = data
 
+        # frame data is updated
         if data_type in self._raw_data_event:
             self._raw_data_event[data_type].set()
 

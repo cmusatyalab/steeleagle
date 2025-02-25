@@ -45,8 +45,9 @@ class GabrielCompute(ComputeInterface):
         self.frame_id = -1
 
     async def run(self):
+        logger.info(f"Gabriel compute: launching Gabriel client")
         await self.gabriel_client.launch_async()
-
+        
 
     def set(self):
         self.set_params["model"] = None
@@ -98,6 +99,7 @@ class GabrielCompute(ComputeInterface):
             # Wait for a new frame
             while frame_id is None or frame_id <= self.frame_id:
                 await self.data_store.wait_for_new_data(type(frame_data))
+                logger.info("Waiting for new frame from driver")
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
@@ -106,7 +108,7 @@ class GabrielCompute(ComputeInterface):
             try:
                 if frame_data is not None and frame_data.data != b'' and tel_data is not None:
                     logger.debug("Waiting for new frame from driver")
-                    logger.debug(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
+                    logger.info(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
 
                     frame_bytes = frame_data.data
 

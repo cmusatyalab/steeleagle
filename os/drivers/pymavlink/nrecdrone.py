@@ -776,14 +776,18 @@ class StreamingThread(threading.Thread):
             url = url_sim
         else:
             url = url_mini
-            
+        
+        logger.info(f"url used: {url}")
         self.cap = cv2.VideoCapture(url)
         self.isRunning = True
 
     def run(self):
         try:
             while(self.isRunning):
+                
                 ret, self.currentFrame = self.cap.read()
+                # logger.info(f"Frame shape: {self.currentFrame.shape}")
+                # logger.info(f"Frame: {self.currentFrame}")
         except Exception as e:
             logger.error(e)
             
