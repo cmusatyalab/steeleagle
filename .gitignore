@@ -36,6 +36,11 @@ onboard/python/transition_defs/
 onboard/python/mission/
 onboard/python/requirements.txt
 
+# test
+os/test/*.prof
+os/test/*.jpg
+os/test/*.dot
+
 # driver
 
 # kernel
