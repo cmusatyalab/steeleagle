@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 class ConnectionFailedException(Exception):
     pass
 
-class NrecDrone():
+class ModalAISeekerDrone():
     
     class FlightMode(Enum):
         LAND = 'LAND'
         RTL = 'RTL'
         LOITER = 'LOITER'
-        GUIDED = 'GUIDED'
-        GUIDED_NOGPS = 'GUIDED_NOGPS'
+        TAKEOFF = 'TAKEOFF'
         ALT_HOLD = 'ALT_HOLD'
+        OFFBOARD = 'OFFBOARD'
         
     def __init__(self):
         self.vehicle = None
@@ -27,7 +27,6 @@ class NrecDrone():
         self.mode_mapping = None
         self.listener_task = None
         self.gps_disabled = False
-
 
     ''' Connect methods '''
     async def connect(self, connection_string):
@@ -37,7 +36,7 @@ class NrecDrone():
         self.vehicle.wait_heartbeat()
         logger.info("-- Connected to drone!")
         self.mode_mapping = self.vehicle.mode_mapping()
-        logger.info(f"Mode mapping: {self.mode_mapping}")
+        logger.debug(f"Mode mapping: {self.mode_mapping}")
         
         # register telemetry streams
         await self.register_telemetry_streams()
@@ -201,52 +200,46 @@ class NrecDrone():
     ''' Actuation methods '''
     async def hover(self):
         logger.info("-- Hovering")
-        # if await self.switchMode(NrecDrone.FlightMode.LOITER) == False:
-        #     logger.error("Failed to set mode to LOITER")
-        #     return
-        # logger.info("-- Drone is now in LOITER mode")
+        await self.setVelocity(0.0, 0.0, 0.0, 0.0)
 
     async def takeOff(self, target_altitude):
         logger.info("-- Taking off")
+       
+        await self.arm()
+        await self.switchMode(ModalAISeekerDrone.FlightMode.TAKEOFF)
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        if await self.arm() == False:
-            logger.error("Failed to arm the drone")
-            return
-        
+        # Take off at the current GPS location
+        gps = self.getGPS()
         self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0,
-            0, 0, 0, 0,
-            0, 0, target_altitude
-        )
-        
+            self.vehicle.target_system, # target system
+            self.vehicle.target_component, # target component
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, # command
+            0, # confirmation
+            0, 0, 0, 0, gps['latitude'], gps['longitude'], gps['altitude'] + 2.5) # param 1 ~ 7 (param 7 is the target altitude)
+       
         result = await self._wait_for_condition(
-            lambda: self.is_altitude_reached(target_altitude),
-            timeout=60,
+            lambda: self.is_mode_set(ModalAISeekerDrone.FlightMode.LOITER),
             interval=1
         )
-        if result:
-            logger.info("-- Altitude reached")
-        else:
-            logger.error("-- Failed to reach target altitude")
 
+        if result:
+            logger.info("-- Takeoff success")
+        else:   
+            logger.error("-- Takeoff failed")
+        
         return result
 
     async def land(self):
         logger.info("-- Landing")
-        if await self.switchMode(NrecDrone.FlightMode.LAND) == False:
-            logger.error("Failed to set mode to LAND")
-            return
+        await self.switchMode(ModalAISeekerDrone.FlightMode.LAND)
+
+        self.vehicle.mav.command_long_send(
+            self.vehicle.target_system, self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_NAV_LAND,
+            0, 0, 0, 0, 0, 0, 0, 0)
 
         result = await self._wait_for_condition(
             lambda: self.is_disarmed(),
-            timeout=60,
             interval=1
         )
         if result:
@@ -269,7 +262,7 @@ class NrecDrone():
 
         result = await self._wait_for_condition(
             lambda: self.is_home_set(),
-            timeout=30,
+            timeout=5,
             interval=0.1
         )
         
@@ -282,13 +275,12 @@ class NrecDrone():
     
     async def rth(self):
         logger.info("-- Returning to launch")
-        if await self.switchMode(NrecDrone.FlightMode.RTL) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.RTL) == False:
             logger.error("Failed to set mode to RTL")
             return
 
         result = await self._wait_for_condition(
             lambda: self.is_disarmed(),
-            timeout=60,
             interval=1
         )
         
@@ -299,14 +291,14 @@ class NrecDrone():
             
     async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
         if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
-            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
@@ -343,14 +335,14 @@ class NrecDrone():
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
 
         if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
-            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -385,14 +377,9 @@ class NrecDrone():
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
-        if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-        else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            logger.error("Failed to set mode to GUIDED")
+            return
         
         self.vehicle.mav.set_position_target_local_ned_send(
             0,  # time_boot_ms
@@ -406,12 +393,11 @@ class NrecDrone():
             0, angle_vel  # yaw, yaw_rate
         )
         logger.info("-- setVelocity sent successfully")
-        #  continuous control: no blocking wait
 
     async def setGPSLocation(self, lat, lon, alt, bearing):
         logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -440,7 +426,6 @@ class NrecDrone():
         
         result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
-            timeout=60,
             interval=1
         )
         
@@ -454,7 +439,7 @@ class NrecDrone():
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -487,7 +472,6 @@ class NrecDrone():
         
         result = await self._wait_for_condition(
             lambda: self.is_at_target(target_lat, target_lon),
-            timeout=60,
             interval=1
         )
         
@@ -501,7 +485,7 @@ class NrecDrone():
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -521,7 +505,6 @@ class NrecDrone():
         
         result =  await self._wait_for_condition(
             lambda: self.is_bearing_reached(bearing),
-            timeout=30,
             interval=0.5
         )
         
@@ -549,7 +532,7 @@ class NrecDrone():
 
         result =  await self._wait_for_condition(
             lambda: self.is_armed(),
-            timeout=30,
+            timeout=5,
             interval=1
         )
         
@@ -573,7 +556,7 @@ class NrecDrone():
 
         result =  await self._wait_for_condition(
             lambda: self.is_disarmed(),
-            timeout=30,
+            timeout=5,
             interval=1
         )
         
@@ -584,6 +567,7 @@ class NrecDrone():
             logger.error("-- Disarm failed")
             
         return result  
+
     async def switchMode(self, mode):
         logger.info(f"Switching mode to {mode}")
         mode_target = mode.value
@@ -600,23 +584,27 @@ class NrecDrone():
             return False
         
         mode_id = self.mode_mapping[mode_target]
-        self.vehicle.mav.set_mode_send(
-            self.vehicle.target_system,
-            mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            mode_id
-        )
+        logger.info(f"Mode ID Triplet: {mode_id}")
+        self.vehicle.mav.command_long_send(
+            self.vehicle.target_system, self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
+            mode_id[0], mode_id[1], mode_id[2], 0, 0, 0, 0)
         
-        result = await self._wait_for_condition(
-            lambda: self.is_mode_set(mode_target),
-            timeout=30,
-            interval=1
-        )
-        
-        if result:
-            self.mode = mode
-            logger.info(f"Mode switched to {mode_target}")
-        
-        return result
+        if mode is not ModalAISeekerDrone.FlightMode.OFFBOARD:
+            result = await self._wait_for_condition(
+                lambda: self.is_mode_set(mode),
+                timeout=5,
+                interval=1
+            )
+            
+            if result:
+                self.mode = mode
+                logger.info(f"Mode switched to {mode_target}")
+
+            return result
+        else:
+            logger.info(f"Priming for OFFBOARD mode")
+            return True
     
     async def disableGPS(self):
         # logger.info("-- Disabling GPS")
@@ -652,9 +640,9 @@ class NrecDrone():
     def is_disarmed(self):
         return not (self.vehicle.recv_match(type='HEARTBEAT', blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
 
-    def is_mode_set(self, mode_target):
+    def is_mode_set(self, mode):
         current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
-        return current_mode == mode_target
+        return current_mode == mode.value
     
     def is_home_set(self):
         msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
@@ -727,7 +715,7 @@ class NrecDrone():
             logger.error(f"Message type {message_type} not found in cache")
             return None
         
-    async def _wait_for_condition(self, condition_fn, timeout=30, interval=0.5):
+    async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
         start_time = time.time()
         while True:
             try:
@@ -736,7 +724,7 @@ class NrecDrone():
                     return True
             except Exception as e:
                 logger.error(f"-- Error evaluating condition: {e}")
-            if time.time() - start_time > timeout:
+            if timeout is not None and time.time() - start_time > timeout:
                 logger.error("-- Timeout waiting for condition")
                 return False
             await asyncio.sleep(interval)
@@ -776,18 +764,14 @@ class StreamingThread(threading.Thread):
             url = url_sim
         else:
             url = url_mini
-        
-        logger.info(f"url used: {url}")
+            
         self.cap = cv2.VideoCapture(url)
         self.isRunning = True
 
     def run(self):
         try:
             while(self.isRunning):
-                
                 ret, self.currentFrame = self.cap.read()
-                # logger.info(f"Frame shape: {self.currentFrame.shape}")
-                # logger.info(f"Frame: {self.currentFrame}")
         except Exception as e:
             logger.error(e)
             
