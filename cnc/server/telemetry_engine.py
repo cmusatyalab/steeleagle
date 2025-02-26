@@ -22,6 +22,7 @@ logger.setLevel(logging.DEBUG)
 
 class TelemetryEngine(cognitive_engine.Engine):
     ENGINE_NAME = "telemetry"
+    DRONE_TTL_SECS = 86400 * 30 # one month
 
     def __init__(self, args):
         logger.info("Telemetry engine intializing...")
@@ -44,7 +45,14 @@ class TelemetryEngine(cognitive_engine.Engine):
                     {"latitude": extras.location.latitude, "longitude": extras.location.longitude, "altitude": extras.location.altitude,
                      "rssi": extras.status.rssi, "battery": extras.status.battery, "mag": extras.status.mag, "bearing": int(extras.status.bearing)},
                 )
+
+        drone_key = f"drone:{extras.drone_id}"
         logger.debug(f"Updated status of {extras.drone_id} in redis under stream telemetry at key {key}")
+
+        self.r.hset(drone_key, "last_seen", f"{time.time()}")
+        self.r.hset(drone_key, "battery", f"{extras.status.battery}")
+        self.r.expire(drone_key, self.DRONE_TTL_SECS)
+        logger.debug(f"Updating drone status: last_seen: {time.time()}")
 
     def handle(self, input_frame):
         extras = cognitive_engine.unpack_extras(cnc_pb2.Extras, input_frame)
@@ -54,7 +62,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
         result = None
-        
+
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             if extras.drone_id is not "":
                 if extras.registering:
@@ -66,6 +74,12 @@ class TelemetryEngine(cognitive_engine.Engine):
                         os.mkdir(self.current_path)
                     except FileExistsError:
                         logger.error(f"Directory {self.current_path} already exists. Moving on....")
+
+                    # Register drone in redis
+                    # TODO(Aditya): Add drone model to redis
+                    drone_key = f"drone:{extras.drone_id}"
+                    self.r.hset(drone_key, mapping={"last_seen": f"{time.time()}", "status": "idle", "battery": "-1", "model": "anafi"})
+                    self.r.expire(drone_key, self.DRONE_TTL_SECS)
 
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -89,7 +103,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 logger.info(f"Updated {self.storage_path}/raw/{extras.drone_id}/latest.jpg")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
-        
+
         # only append the result if it has a payload
         # e.g. in the elif block where we received an image from the streaming thread, we don't add a payload
         if result is not None:

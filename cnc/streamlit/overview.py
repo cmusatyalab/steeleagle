@@ -121,12 +121,13 @@ def update_imagery():
     detected_header = "**:sleuth_or_spy: Object Detection**"
     avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
     hsv_header = "**:traffic_light: HSV Filtering**"
-    for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            drone_name = k.split(".")[-1]
+
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
+
     drone_list.append(detected_header)
     drone_list.append(avoidance_header)
     drone_list.append(hsv_header)
