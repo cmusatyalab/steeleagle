@@ -101,7 +101,7 @@ module drone_body_mount(
     clip_depth=7,
     collar_width=28,
     wall_thickness=4,
-    hole_width=15,
+    hole_width=22,
     holes="minimal"
 ) {
     translate([0, -(collar_width+neck_length)/2, 0])
@@ -122,9 +122,9 @@ module drone_body_mount(
 
         // hole in neck
         if (holes=="neck" || holes=="everywhere") {
-            translate([0, battery_height/2+3, collar_width])
+            translate([0, battery_height/2+3, collar_width+22])
             rotate([90, 90, 0])
-            hole(wall_thickness, hole_width, hole_length=neck_length);
+            hole(wall_thickness, hole_width, hole_length=25);
         }
 
         // gaps next to neck
@@ -147,6 +147,7 @@ module drone_body_mount(
         cube([battery_width+10, battery_height, collar_width], center=true);
         translate([0, -hole_width, hole_width/2])
         cube([battery_width+10, battery_height, collar_width], center=true);
+        
     };
 }
 
@@ -195,25 +196,25 @@ module onion_harness(
 //example();
 
 // Parrot Anafi
-battery_width = 45;
-battery_height = 50;
-neck_length = 37.7;
+//battery_width = 45;
+//battery_height = 50;
+//neck_length = 37.7;
 
 // Parrot Anafi USA
-//battery_width = 58;
-//battery_height = 54;
-//neck_length = 37.7;
+battery_width = 60;
+battery_height = 55;
+neck_length = 42;
 
 /*
     holes="neck"
     holes="side"
     holes="everywhere"
 */
-//drone_body_mount(battery_width, battery_height, neck_length, holes="side", wall_thickness=1);
+drone_body_mount(battery_width, battery_height, neck_length, holes="everywhere", wall_thickness=3);
 
 //example();
 
 // onion
 
 //clip(wall_thickness=1);
-onion_harness(battery_width, battery_height, neck_length, wall_thickness=1);
+//onion_harness(battery_width, battery_height, neck_length, wall_thickness=1);
