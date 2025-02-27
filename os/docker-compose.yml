@@ -1,7 +1,8 @@
 services:
   driver:
     # image: xianglic/steeleagle-os-driver-olympe-arm:${TAG}
-    image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    # image: xianglic/steeleagle-os-driver-olympe-amd:${TAG}
+    image: achanana/steeleagle-os-mavsdk-driver:${TAG}
     container_name: driver
     environment:
       - DRONE_ID=${DRONE_ID} # ugly current compromised solution
@@ -23,7 +24,7 @@ services:
       - os-net
 
   kernel-cmd-svc:
-    image: xianglic/steeleagle-os-kernel:${TAG}
+    image: achanana/steeleagle-os-kernel:${TAG}
     container_name: kernel-cmd-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -47,7 +48,7 @@ services:
       - os-net
 
   kernel-data-svc:
-    image: xianglic/steeleagle-os-kernel:${TAG}
+    image: achanana/steeleagle-os-kernel:${TAG}
     container_name: kernel-data-svc
     environment:
       - PYTHONPATH=${PYTHONPATH}
@@ -57,6 +58,7 @@ services:
       - CAM_PORT=${CAM_PORT}
       - LCE_PORT=${LCE_PORT}
       - LCE_HOST=${LCE_HOST}
+      - CPT_CONFIG=${CPT_CONFIG}
       - LOG_TO_FILE=${LOG_TO_FILE}
       - LOG_LEVEL=${LOG_LEVEL}
     ports:
@@ -68,24 +70,24 @@ services:
     networks:
       - os-net
 
-  user:
-    # image: xianglic/steeleagle-os-user-arm:${TAG}
-    image: xianglic/steeleagle-os-user-amd:${TAG}
-    container_name: user
-    environment:
-      - PYTHONPATH=${PYTHONPATH}
-      - CMD_FRONT_USR_PORT=${CMD_FRONT_USR_PORT}
-      - MSN_PORT=${MSN_PORT}
-      - CMD_ENDPOINT=${CMD_ENDPOINT}
-      - LOG_LEVEL=${LOG_LEVEL}
-    restart: unless-stopped
-    privileged: true
-    entrypoint: ["python3", "common"]
-    # entrypoint: ["tail", "-f", "/dev/null"]
-    networks:
-      - os-net
-    volumes:
-      - ./user/project/:/steeleagle_os/user/project/
+  # user:
+  #   # image: xianglic/steeleagle-os-user-arm:${TAG}
+  #   image: xianglic/steeleagle-os-user-amd:${TAG}
+  #   container_name: user
+  #   environment:
+  #     - PYTHONPATH=${PYTHONPATH}
+  #     - CMD_FRONT_USR_PORT=${CMD_FRONT_USR_PORT}
+  #     - MSN_PORT=${MSN_PORT}
+  #     - CMD_ENDPOINT=${CMD_ENDPOINT}
+  #     - LOG_LEVEL=${LOG_LEVEL}
+  #   restart: unless-stopped
+  #   privileged: true
+  #   entrypoint: ["python3", "common"]
+  #   # entrypoint: ["tail", "-f", "/dev/null"]
+  #   networks:
+  #     - os-net
+  #   volumes:
+  #     - ./user/project/:/steeleagle_os/user/project/
 
 networks:
 

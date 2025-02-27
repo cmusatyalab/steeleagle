@@ -8,9 +8,9 @@ import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
 from util.utils import setup_socket, SocketOperation
-from parrotdrone import ParrotDrone, ConnectionFailedException, ArgumentOutOfBoundsException
-from datetime import datetime
 import signal
+from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone, ConnectionFailedException
+from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -23,9 +23,6 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
-drone_id = os.environ.get('DRONE_ID')
-logger.info(f"Starting driver for drone {drone_id}")    
-
 telemetry_logger = logging.getLogger('telemetry')
 telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
@@ -34,9 +31,19 @@ telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
 telemetry_logger.propagate = False
 
-driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
-droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
-drone = ParrotDrone(**droneArgs)
+driverArgs = json.loads(os.environ.get('DRIVER_ARGS'))
+droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
+if droneArgs is not None:
+    for key, value in droneArgs.items():
+        driverArgs[key] = value
+drone_id = driverArgs.get('drone_id')
+drone_type = driverArgs.get('drone_type')
+connection_string = driverArgs.get('connection_string')
+
+if drone_type == 'modalai':
+    drone = ModalAISeekerDrone(drone_id)
+elif drone_type == 'SkyViper2450GPS':
+    drone = SkyViper2450GPSDrone(drone_id)
 
 context = zmq.asyncio.Context()
 cmd_back_sock = context.socket(zmq.DEALER)
@@ -50,7 +57,6 @@ setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created c
 
 def handle_signal(signum, frame):
     logger.info(f"Received signal {signum}, cleaning up...")
-    drone.drone.disconnect()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_signal)
@@ -59,16 +65,22 @@ signal.signal(signal.SIGTERM, handle_signal)
 async def camera_stream(drone, cam_sock):
     logger.info('Starting camera stream')
     frame_id = 0
-    while drone.isConnected():
+    while await drone.isConnected():
         try:
             cam_message = cnc_protocol.Frame()
-            cam_message.data = await drone.getVideoFrame()
-            cam_message.height = 720
-            cam_message.width = 1280
-            cam_message.channels = 3
+            frame, frame_shape = await drone.getVideoFrame()
+            
+            if frame is None:
+                logger.error('Failed to get video frame')
+                continue
+            
+            cam_message.data = frame
+            cam_message.height = frame_shape[0]
+            cam_message.width = frame_shape[1]
+            cam_message.channels = frame_shape[2]
             cam_message.id = frame_id
             cam_sock.send(cam_message.SerializeToString())
-            # logger.debug(f'Camera stream: sent frame {frame_id=}')
+            logger.debug(f'Camera stream: sent frame {frame_id}, shape: {frame_shape}')
             frame_id = frame_id + 1
         except Exception as e:
             logger.error(f'Failed to get video frame, error: {e}')
@@ -76,143 +88,124 @@ async def camera_stream(drone, cam_sock):
     logger.info("Camera stream ended, disconnected from drone")
 
 async def telemetry_stream(drone, tel_sock):
-    logger.info('Starting telemetry stream')
-    while drone.isConnected():
+    logger.debug('Starting telemetry stream')
+    
+    await asyncio.sleep(1) # solving for some contention issue with connecting to drone
+    
+    while await drone.isConnected():
+        logger.debug('HI from telemetry stream')
         try:
             tel_message = cnc_protocol.Telemetry()
             telDict = await drone.getTelemetry()
-            # tel_message.drone_name = telDict["name"]
-            tel_message.drone_name = drone_id
-            tel_message.global_position.latitude = telDict["gps"][0]
-            tel_message.global_position.longitude = telDict["gps"][1]
-            tel_message.global_position.altitude = telDict["gps"][2]
-            tel_message.relative_position.up = telDict["relAlt"]
-            tel_message.mag = telDict["magnetometer"]
+            tel_message.drone_name = telDict["name"]
+            # tel_message.mag = telDict["magnetometer"] # type incomaptible with dict provided by nrec driver
             tel_message.battery = telDict["battery"]
-            tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
-            tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
-            tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
             tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
             tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
             tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+            tel_message.satellites = telDict["satellites"]
+            
+            tel_message.relative_position.up = telDict["relAlt"]
+            
+            tel_message.global_position.latitude = telDict["gps"]["latitude"]
+            tel_message.global_position.longitude = telDict["gps"]["longitude"]
+            tel_message.global_position.altitude = telDict["gps"]["altitude"]
+            
             tel_message.velocity.forward_vel = telDict["imu"]["forward"]
             tel_message.velocity.right_vel = telDict["imu"]["right"]
             tel_message.velocity.up_vel = telDict["imu"]["up"]
-            tel_message.satellites = telDict["satellites"]
-            telemetry_logger.debug(f"Telemetry: {tel_message}")
+            
+            #tel_message.gimbal_attitude.yaw = telDict["gimbalAttitude"]["yaw"]
+            #tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
+            #tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
+            
+            logger.info(f"Telemetry: {telDict}")
             tel_sock.send(tel_message.SerializeToString())
-            # logger.debug('Sent telemetry')
+            logger.debug('Sent telemetry')
         except Exception as e:
             logger.error(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0.01)
-    logger.info("Telemetry stream ended, disconnected from drone")
+    logger.debug("Telemetry stream ended, disconnected from drone")
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
         match action:
-            case "connectionStatus":
-                resp.connectionStatus.isConnected = await drone.isConnected()
-                resp.connectionStatus.wifi_rssi = await drone.getRSSI()
-                resp.connectionStatus.drone_name = await drone.getName()
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "takeOff":
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
-                await drone.takeOff()
+                logger.info('####################################Taking OFF################################################################')
+                await drone.takeOff(5)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('####################################Drone Took OFF################################################################')
                 logger.info(f"tookoff function call finished at: {time.time()}")
+            case "setVelocity":
+                velocity = message.setVelocity
+                logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
+                logger.info('####################################Setting Velocity#######################################################################')
+                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                # await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                # await drone.manual_control(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "land":
                 logger.info(f"land function call started at: {time.time()}")
                 await drone.land()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('####################################Drone Landing#######################################################################')
+                logger.info('####################################Landing#######################################################################')
                 logger.info(f"land function call finished at: {time.time()}")
             case "rth":
                 logger.info(f"rth function call started at: {time.time()}")
+                logger.info('####################################Returning to Home#######################################################################')
                 await drone.rth()
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"rth function call finished at: {time.time()}")
             case "hover":
-                logger.debug(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
+                logger.info('####################################Hovering#######################################################################')
+                logger.info(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
                 await drone.hover()
-                logger.debug("hover !")
+                logger.info("hover !")
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.debug(f"hover function call finished at: {time.time()}")
-            case "setHome":
-                location  = message.setHome
-                await drone.setHome(location.latitude, location.longitude, location.altitude)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "getHome":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
-            case "setAttitude":
-                attitude = message.setAttitude
-                await drone.setAttitude(attitude.roll, attitude.pitch,
-                    attitude.thrust, attitude.yaw)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setVelocity":
-                velocity = message.setVelocity
-                logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
-                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setGimbal":
-                gimbal = message.setGimbal
-                logger.info(f"Setting gimbal: {gimbal} started at {time.time()}, seq id {message.seqNum}")
-                await drone.rotateGimbal(0, gimbal.pitch_theta, 0)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "setRelativePosition":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
-            case "setTranslatedPosition":
-                position = message.setTranslatedPosition
-                await drone.setTranslatedPosition(position.forward, position.right, position.up, position.angle)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+                logger.info(f"hover function call finished at: {time.time()}")
             case "setGPSLocation":
+                logger.info(f"setGPSLocation function call started at: {time.time()}")
+                logger.info('####################################Setting GPS Location#######################################################################')
                 location = message.setGPSLocation
-                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, location.bearing)
+                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "getCameras":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
-            case "switchCamera":
-                resp.resp = cnc_protocol.ResponseStatus.NOTSUPPORTED
+                logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED
-
-
     resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 
 async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
-            await drone.connect()
+            logger.info('starting connecting...')
+            await drone.connect(connection_string)
+            logger.info('drone connected')
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
             continue
-        name = await drone.getName()
-        logger.info(f'Established connection to drone {name}, ready to receive commands!')
-        save_frames = os.environ.get("SAVE_FRAMES") == "true"
-        await drone.startStreaming(save_frames)
-        if save_frames:
-            logger.info("Saving received frames to storage")
-
+        logger.info(f'Established connection to drone, ready to receive commands!')
+        
+        await drone.startStreaming()
+        logger.info('Started streaming')
         asyncio.create_task(camera_stream(drone, cam_sock))
+        
         asyncio.create_task(telemetry_stream(drone, tel_sock))
+        await drone.disableGPS()
 
-        while drone.isConnected():
+        while await drone.isConnected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]
-                logger.debug(f"Received identity: {identity}")
+                logger.info(f"Received identity: {identity}")
                 data = message_parts[1]
-                logger.debug(f"Received data: {data}")
+                logger.info(f"Received data: {data}")
                 # Decode message via protobuf, then execute it
                 message = cnc_protocol.Driver()
                 message.ParseFromString(data)
-                logger.debug(f"Received message: {message}")
+                logger.info(f"Received message: {message}")
                 action = message.WhichOneof("method")
-
-                # send a okay message
-
 
                 # Create a driver response message
                 resp = message
@@ -220,7 +213,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.info(f"Disconnected from drone {name}")
+        logger.info(f"Disconnected from drone")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))
