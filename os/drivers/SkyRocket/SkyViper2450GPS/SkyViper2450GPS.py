@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class ConnectionFailedException(Exception):
     pass
 
-class NrecDrone():
+class SkyViper2450GPSDrone():
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -201,7 +201,7 @@ class NrecDrone():
     ''' Actuation methods '''
     async def hover(self):
         logger.info("-- Hovering")
-        # if await self.switchMode(NrecDrone.FlightMode.LOITER) == False:
+        # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.LOITER) == False:
         #     logger.error("Failed to set mode to LOITER")
         #     return
         # logger.info("-- Drone is now in LOITER mode")
@@ -209,7 +209,7 @@ class NrecDrone():
     async def takeOff(self, target_altitude):
         logger.info("-- Taking off")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -240,7 +240,7 @@ class NrecDrone():
 
     async def land(self):
         logger.info("-- Landing")
-        if await self.switchMode(NrecDrone.FlightMode.LAND) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.LAND) == False:
             logger.error("Failed to set mode to LAND")
             return
 
@@ -282,7 +282,7 @@ class NrecDrone():
     
     async def rth(self):
         logger.info("-- Returning to launch")
-        if await self.switchMode(NrecDrone.FlightMode.RTL) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.RTL) == False:
             logger.error("Failed to set mode to RTL")
             return
 
@@ -299,14 +299,14 @@ class NrecDrone():
             
     async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
         if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
-            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
@@ -343,14 +343,14 @@ class NrecDrone():
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
 
         if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
-            # if await self.switchMode(NrecDrone.FlightMode.ALT_HOLD) == False:
+            # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -386,11 +386,11 @@ class NrecDrone():
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
         if self.gps_disabled:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
         else:
-            if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -411,7 +411,7 @@ class NrecDrone():
     async def setGPSLocation(self, lat, lon, alt, bearing):
         logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -454,7 +454,7 @@ class NrecDrone():
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -501,7 +501,7 @@ class NrecDrone():
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
         
-        if await self.switchMode(NrecDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
             return
         

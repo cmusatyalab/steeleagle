@@ -9,8 +9,8 @@ import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
 from util.utils import setup_socket, SocketOperation
 import signal
-from modalaiseekerdrone import ModalAISeekerDrone, ConnectionFailedException
-
+from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone, ConnectionFailedException
+from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -31,9 +31,19 @@ telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
 telemetry_logger.propagate = False
 
-driverArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_ARGS'))
-droneArgs = json.loads(os.environ.get('STEELEAGLE_DRIVER_DRONE_ARGS'))
-drone = ModalAISeekerDrone()
+driverArgs = json.loads(os.environ.get('DRIVER_ARGS'))
+droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
+if droneArgs is not None:
+    for key, value in droneArgs.items():
+        driverArgs[key] = value
+drone_id = driverArgs.get('drone_id')
+drone_type = driverArgs.get('drone_type')
+connection_string = driverArgs.get('connection_string')
+
+if drone_type == 'modalai':
+    drone = ModalAISeekerDrone(drone_id)
+elif drone_type == 'SkyViper2450GPS':
+    drone = SkyViper2450GPSDrone(drone_id)
 
 context = zmq.asyncio.Context()
 cmd_back_sock = context.socket(zmq.DEALER)
@@ -77,7 +87,7 @@ async def camera_stream(drone, cam_sock):
         await asyncio.sleep(0.033)
     logger.info("Camera stream ended, disconnected from drone")
 
-async def telemetry_stream(drone : ModalAISeekerDrone, tel_sock):
+async def telemetry_stream(drone, tel_sock):
     logger.debug('Starting telemetry stream')
     
     await asyncio.sleep(1) # solving for some contention issue with connecting to drone
@@ -166,11 +176,11 @@ async def handle(identity, message, resp, action, resp_sock):
     resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 
-async def main(drone: ModalAISeekerDrone, cam_sock, tel_sock, args):
+async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
             logger.info('starting connecting...')
-            await drone.connect('udp:localhost:14540')
+            await drone.connect(connection_string)
             logger.info('drone connected')
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
@@ -179,10 +189,10 @@ async def main(drone: ModalAISeekerDrone, cam_sock, tel_sock, args):
         
         await drone.startStreaming()
         logger.info('Started streaming')
-        #asyncio.create_task(camera_stream(drone, cam_sock))
+        asyncio.create_task(camera_stream(drone, cam_sock))
         
-        #asyncio.create_task(telemetry_stream(drone, tel_sock))
-        # await drone.disableGPS()
+        asyncio.create_task(telemetry_stream(drone, tel_sock))
+        await drone.disableGPS()
 
         while await drone.isConnected():
             try:

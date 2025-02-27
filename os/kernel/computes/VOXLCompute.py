@@ -7,7 +7,7 @@ from kernel.DataStore import DataStore
 import logging
 import numpy as np
 import os
-import onboard_compute_pb2
+import kernel.computes.onboard_compute_pb2 as onboard_compute_pb2
 from util.utils import setup_socket, SocketOperation, lazy_pirate_request
 import zmq
 import zmq.asyncio
