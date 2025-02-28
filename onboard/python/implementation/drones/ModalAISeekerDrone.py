@@ -113,10 +113,7 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
 
     async def isConnected(self):
         async for state in self.drone.core.connection_state():
-            if state.is_connected:
-                return True
-            else:
-                return False
+            return bool(state.is_connected)
 
     async def disconnect(self):
         await self.drone.action.disarm()

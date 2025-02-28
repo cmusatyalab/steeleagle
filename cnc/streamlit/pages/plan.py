@@ -68,9 +68,8 @@ def fetch_mymaps():
         client_id=st.secrets.oauth.client_id,
         client_secret=st.secrets.oauth.client_secret)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+    if creds and not creds.valid and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
 
     try:
         service = build("drive", "v3", credentials=creds)

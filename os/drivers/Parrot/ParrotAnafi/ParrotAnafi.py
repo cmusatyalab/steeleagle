@@ -120,9 +120,7 @@ class ParrotDrone:
         if timeout is not None:
             start = time.time()
         while True:
-            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
-                break
-            elif start is not None and time.time() - start < timeout:
+            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success() or start is not None and time.time() - start < timeout:
                 break
             else:
                 await asyncio.sleep(1)
@@ -153,10 +151,7 @@ class ParrotDrone:
                     I *= -1
                 elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0
 
                 return P, I, D
 
@@ -242,10 +237,7 @@ class ParrotDrone:
                     I *= -1
                 elif abs(e) <= 0.05 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0.0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0.0
 
                 # For testing Integral component
                 I = 0.0

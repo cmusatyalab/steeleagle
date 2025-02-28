@@ -182,7 +182,7 @@ class Supervisor:
             try:
                 self.zmq.send(req.SerializeToString())
                 rep = self.zmq.recv()
-                if b'No commands.' != rep:
+                if rep != b'No commands.':
                     extras  = cnc_pb2.Extras()
                     extras.ParseFromString(rep)
                     if extras.cmd.rth:

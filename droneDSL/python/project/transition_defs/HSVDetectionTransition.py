@@ -23,8 +23,7 @@ class HSVDetectionTransition(Transition):
         self.cloudlet.clearResults("openscout-object")
         while not self.stop_signal:
             result = self.cloudlet.getResults("openscout-object")
-            if result is not None:
-                if result.payload_type == gabriel_pb2.TEXT:
+            if result is not None and result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
                         json_data = json.loads(json_string)

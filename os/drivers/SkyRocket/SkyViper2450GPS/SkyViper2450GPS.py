@@ -210,11 +210,11 @@ class SkyViper2450GPSDrone:
     async def takeOff(self, target_altitude):
         logger.info("-- Taking off")
         
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
-        if await self.arm() == False:
+        if await self.arm() is False:
             logger.error("Failed to arm the drone")
             return
         
@@ -241,7 +241,7 @@ class SkyViper2450GPSDrone:
 
     async def land(self):
         logger.info("-- Landing")
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.LAND) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.LAND) is False:
             logger.error("Failed to set mode to LAND")
             return
 
@@ -283,7 +283,7 @@ class SkyViper2450GPSDrone:
     
     async def rth(self):
         logger.info("-- Returning to launch")
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.RTL) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.RTL) is False:
             logger.error("Failed to set mode to RTL")
             return
 
@@ -300,14 +300,14 @@ class SkyViper2450GPSDrone:
             
     async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
         if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) is False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
             # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
@@ -344,14 +344,14 @@ class SkyViper2450GPSDrone:
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
 
         if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) is False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
             # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -387,11 +387,11 @@ class SkyViper2450GPSDrone:
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
         if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) is False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
         else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -412,7 +412,7 @@ class SkyViper2450GPSDrone:
     async def setGPSLocation(self, lat, lon, alt, bearing):
         logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
         
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -455,7 +455,7 @@ class SkyViper2450GPSDrone:
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
         
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -502,7 +502,7 @@ class SkyViper2450GPSDrone:
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
         
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -769,10 +769,7 @@ class StreamingThread(threading.Thread):
         url_mini = os.environ.get('STREAM_MINI_URL')
         self.sim = os.environ.get('SIMULATION')
         
-        if (self.sim == 'true'):
-            url = url_sim
-        else:
-            url = url_mini
+        url = url_sim if self.sim == 'true' else url_mini
         
         logger.info(f"url used: {url}")
         self.cap = cv2.VideoCapture(url)

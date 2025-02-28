@@ -67,7 +67,7 @@ class TaskManager:
     
     def create_task(self, task_id):
         logger.info(f'taskid{task_id}')
-        if (task_id in self.task_arg_map.keys()):
+        if task_id in self.task_arg_map:
             if (self.task_arg_map[task_id].task_type == taskitf.TaskType.Detect):
                 logger.info('Detect task')
                 return detect.DetectTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])

@@ -53,10 +53,7 @@ class KeyboardCtrl(Listener):
             self._key_pressed[key.char] = True
         elif isinstance(key, Key):
             self._key_pressed[key] = True
-        if self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]:
-            return False
-        else:
-            return True
+        return not self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _on_release(self, key):
         if isinstance(key, KeyCode):

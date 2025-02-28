@@ -62,9 +62,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         if timeout is not None:
             start = time.time()
         while True:
-            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
-                break
-            elif start is not None and time.time() - start < timeout:
+            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success() or start is not None and time.time() - start < timeout:
                 break
             else:
                 await asyncio.sleep(1)
