@@ -79,7 +79,7 @@ class DataService(Service):
     def get_result(self, compute_type):
         logger.info(f"Processing getter for compute type: {compute_type}")
         getter_list = []
-        for compute_id in self.compute_dict.keys():
+        for compute_id in self.compute_dict:
             cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
             
             if cpt_res is None:
@@ -100,7 +100,7 @@ class DataService(Service):
 
     def clear_result(self):
         logger.info("Processing setter")
-        for compute_id in self.compute_dict.keys():
+        for compute_id in self.compute_dict:
             self.data_store.clear_compute_result(compute_id)
             
     async def user_handler(self):
