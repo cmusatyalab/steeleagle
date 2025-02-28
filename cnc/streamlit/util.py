@@ -65,7 +65,7 @@ def authenticated():
     # Show input for password.
     a,b,c = st.columns(3)
     b.text_input(
-        "Password", type="password", on_change=password_entered, key="password", 
+        "Password", type="password", on_change=password_entered, key="password",
     )
     if "password_correct" in st.session_state:
         b.error("Authentication failed.", icon=":material/block:")
@@ -104,11 +104,12 @@ def connect_zmq():
 def get_drones():
     l = {}
     red = connect_redis()
-    for k in red.keys("telemetry.*"):
-        latest_entry = red.xrevrange(f"{k}", "+", "-", 1)
-        last_update = (int(latest_entry[0][0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            l[f"{k.split('.')[-1]}"] = f"**{k.split('.')[-1]}** " #TODO: add :material/abc:[drone model] once it is sent with telemetry
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(":")[-1]
+            drone_model = red.hget(k, "model")
+            l[f"{k.split(':')[-1]}"] = f"**{k.split(':')[-1]} ({drone_model})**" #TODO: add :material/abc:[drone model] once it is sent with telemetry
 
     return l
 
