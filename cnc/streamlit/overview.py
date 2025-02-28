@@ -78,7 +78,7 @@ def change_center():
                 f"telemetry.{st.session_state.tracking_selection}", "+", "-", 1
             )
         )
-        for index, row in df.iterrows():
+        for _index, row in df.iterrows():
             st.session_state.center = [row["latitude"], row["longitude"]]
 
 
@@ -141,8 +141,7 @@ def update_imagery():
     drone_list.append(hsv_header)
     tabs = st.tabs(drone_list)
 
-    i = 0
-    for d in drone_list:
+    for i, d in enumerate(drone_list):
         with tabs[i]:
             if d == detected_header:
                st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
@@ -152,7 +151,7 @@ def update_imagery():
                 st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
             else:
                 st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
-        i += 1
+
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -173,9 +172,8 @@ def draw_map():
         last_update = (int(df.index[0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
-            i = 0
             drone_name = k.split(".")[-1]
-            for index, row in df.iterrows():
+            for i, (_index, row) in enumerate(df.iterrows()):
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
                 if i == 0:
@@ -211,8 +209,6 @@ def draw_map():
                             icon=text,
                         )
                     )
-
-                i += 1
 
             ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
             ls.add_to(tracks)

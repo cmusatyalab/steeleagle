@@ -205,7 +205,7 @@ def draw_map():
     df = stream_to_dataframe(st.session_state.redis .xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
     last_update = (int(df.index[0].split("-")[0])/1000)
     i = 0
-    for index, row in df.iterrows():
+    for _index, row in df.iterrows():
         text = folium.DivIcon(
             icon_size="null",  #set the size to null so that it expands to the length of the string inside in the div
             icon_anchor=(-20, 30),
