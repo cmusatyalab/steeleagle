@@ -57,7 +57,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         result = None
         
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            if extras.drone_id is not "":
+            if extras.drone_id != "":
                 if extras.registering:
                     logger.info(f"Drone [{extras.drone_id}] connected.")
                     if not os.path.exists(f"{self.storage_path}/raw/{extras.drone_id}"):
