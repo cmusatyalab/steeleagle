@@ -102,7 +102,7 @@ def compile_mission(dsl_file, kml_file, drone_list, alt, compiler_file):
 
 def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis):
     try:
-        logger.info(f"Sending request to drone...")
+        logger.info("Sending request to drone...")
         # Send the command to each drone 
         for drone_id in drone_list:
             # check if the cmd is a mission
@@ -117,7 +117,7 @@ def send_to_drone(msg, base_url, drone_list, cmd_front_cmdr_sock, redis):
             
             # store the record in redis
             key = redis.xadd(
-                f"commands",
+                "commands",
                 {"commander": msg.commander_id, "drone": drone_id, "value": text_format.MessageToString(msg),}
             )
             logger.debug(f"Updated redis under stream commands at key {key}")
@@ -136,7 +136,7 @@ def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt, compiler_file):
             logger.info(f'Request received:\n{text_format.MessageToString(msg)}')
         except DecodeError:
             cmdr_sock.send(b'Error decoding protobuf. Did you send a cnc_pb2?')
-            logger.info(f'Error decoding protobuf. Did you send a cnc_pb2?')
+            logger.info('Error decoding protobuf. Did you send a cnc_pb2?')
             continue
         
         # get the drone list
@@ -146,7 +146,7 @@ def listen_cmdrs(cmdr_sock, cmd_front_cmdr_sock, redis, alt, compiler_file):
             logger.info(f"drone list:  {drone_list}")
         except json.JSONDecodeError:
             cmdr_sock.send(b'Error decoding drone list. Did you send a JSON list?')
-            logger.info(f'Error decoding drone list. Did you send a JSON list?')
+            logger.info('Error decoding drone list. Did you send a JSON list?')
             continue
             
         # Check if the command contains a mission and compile it if true

@@ -85,7 +85,7 @@ class d_server():
                 # Send a reply back to the client with the identity frame and empty delimiter
                 cmd_back_sock.send_multipart([identity, serialized_response])
                 
-                print(f"done processing request")
+                print("done processing request")
             except Exception as e:
                 print(f"error: {e}")
                 

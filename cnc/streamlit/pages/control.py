@@ -311,9 +311,9 @@ with st.sidebar:
         c6.number_input(key = "imagery_framerate", label="Imagery Framerate", min_value=1, max_value=30, step=1, value=2, format="%0d")
 
     elif st.session_state.rth_sent:
-        mode = f":orange[Return to Home Initiated]"
+        mode = ":orange[Return to Home Initiated]"
     elif st.session_state.script_file is not None:
-        mode = f":violet[Autonomous Mode Enabled]"
+        mode = ":violet[Autonomous Mode Enabled]"
 
 status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 

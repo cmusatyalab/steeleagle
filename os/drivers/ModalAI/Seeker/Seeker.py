@@ -604,7 +604,7 @@ class ModalAISeekerDrone():
 
             return result
         else:
-            logger.info(f"Priming for OFFBOARD mode")
+            logger.info("Priming for OFFBOARD mode")
             return True
     
     async def disableGPS(self):

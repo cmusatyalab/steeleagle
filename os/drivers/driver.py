@@ -187,7 +187,7 @@ async def main(drone, cam_sock, tel_sock, args):
         except ConnectionFailedException as e:
             logger.error('Failed to connect to drone, retrying...')
             continue
-        logger.info(f'Established connection to drone, ready to receive commands!')
+        logger.info('Established connection to drone, ready to receive commands!')
         
         await drone.startStreaming()
         logger.info('Started streaming')
@@ -215,7 +215,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.info(f"Disconnected from drone")
+        logger.info("Disconnected from drone")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))

@@ -105,7 +105,7 @@ class k_client():
                     elif identity == b'usr':
                         await cmd_back_sock.send_multipart(message)
                     else:
-                        print(f"cmd_proxy: invalid identity")
+                        print("cmd_proxy: invalid identity")
 
 
                 # Check for messages on the DEALER socket
@@ -119,13 +119,13 @@ class k_client():
                     print(f"proxy : 4 Received message from FRONTEND: identity: {identity}")
                     
                     if identity == b'cmdr':
-                        print(f"proxy : 5 Received message from FRONTEND: discard bc of cmdr")
+                        print("proxy : 5 Received message from FRONTEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        print(f"proxy : 5 Received message from FRONTEND: sent back bc of user")
+                        print("proxy : 5 Received message from FRONTEND: sent back bc of user")
                         await cmd_front_cmdr_sock.send_multipart(message)
                     else:
-                        print(f"cmd_proxy: invalid identity")
+                        print("cmd_proxy: invalid identity")
                         
             except Exception as e:
                 print(f"Proxy error: {e}")

@@ -188,7 +188,7 @@ with st.sidebar:
     )
 
     if st.session_state.manual_control:
-        st.subheader(f":blue[Manual Control Enabled]")
+        st.subheader(":blue[Manual Control Enabled]")
         #st.subheader(":red[Manual Speed Controls]", divider="gray")
         st.sidebar.slider(
             key="pitch_speed",
@@ -223,9 +223,9 @@ with st.sidebar:
             step=5,
         )
     elif st.session_state.rth_sent:
-        st.subheader(f":orange[Return to Home Initiated]")
+        st.subheader(":orange[Return to Home Initiated]")
     elif st.session_state.script_file is not None:
-        st.subheader(f":violet[Autonomous Mode Enabled]")
+        st.subheader(":violet[Autonomous Mode Enabled]")
 
 
 with c2:

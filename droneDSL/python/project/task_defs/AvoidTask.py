@@ -133,9 +133,9 @@ class AvoidTask(Task):
                     logger.info(f"[ObstacleTask] Error {error}")
                     await self.moveForwardAndAvoid(error)
                 except JSONDecodeError as e:
-                    logger.error(f"[ObstacleTask]: Error decoding JSON")
+                    logger.error("[ObstacleTask]: Error decoding JSON")
                 except Exception as e:
-                    logger.error(f"[ObstacleTask] Threw an exception")
+                    logger.error("[ObstacleTask] Threw an exception")
                     logger.error(e)
                 await asyncio.sleep(0.1)
         except Exception as e:

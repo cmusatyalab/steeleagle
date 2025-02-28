@@ -207,13 +207,13 @@ class Supervisor:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
                     elif self.manual:
                         if extras.cmd.takeoff:
-                            logger.info(f'Received manual takeoff')
+                            logger.info('Received manual takeoff')
                             asyncio.create_task(self.drone.takeOff())
                         elif extras.cmd.land:
-                            logger.info(f'Received manual land')
+                            logger.info('Received manual land')
                             asyncio.create_task(self.drone.land())
                         else:
-                            logger.info(f'Received manual PCMD')
+                            logger.info('Received manual PCMD')
                             pitch = extras.cmd.pcmd.pitch
                             yaw = extras.cmd.pcmd.yaw
                             roll = extras.cmd.pcmd.roll

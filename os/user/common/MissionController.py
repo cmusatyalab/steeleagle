@@ -105,12 +105,12 @@ class MissionController():
                     
     def start_mission(self):
         if self.tm:
-            logger.info(f"mission already running")
+            logger.info("mission already running")
             return
         else: # first time mission, create a task manager
             import common.TaskManager as tm
         
-        logger.info(f"start the mission")
+        logger.info("start the mission")
         if self.reload : 
             self.reload_mission()
         
@@ -120,7 +120,7 @@ class MissionController():
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
-        logger.info(f"start the task manager")
+        logger.info("start the task manager")
         self.tm = tm.TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         

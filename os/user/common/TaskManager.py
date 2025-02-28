@@ -83,15 +83,15 @@ class TaskManager():
         return None
     
     def stop_task(self):
-        logger.info(f'Stopping current task!')
+        logger.info('Stopping current task!')
         if self.taskCurrentCoroutinue:
             # stop all the transitions of the task
             self.currentTask.stop_trans()
-            logger.info(f'transitions in the current task stopped!')
+            logger.info('transitions in the current task stopped!')
             
             is_canceled = self.taskCurrentCoroutinue.cancel()
             if is_canceled:
-                logger.info(f' task cancelled successfully')
+                logger.info(' task cancelled successfully')
                 
     def start_task(self, task):
         logger.info(f'start the task! task: {str(task)}')
@@ -121,7 +121,7 @@ class TaskManager():
                     item = self.trigger_event_queue.get()
                     task_id = item[0]
                     trigger_event = item[1]
-                    logger.info(f"Trigger one event! \n")
+                    logger.info("Trigger one event! \n")
                     logger.info(f"Task id  {task_id} \n")
                     logger.info(f"event   {trigger_event} \n")
                     if (task_id == self.get_current_task()):

@@ -44,7 +44,7 @@ class GabrielCompute(ComputeInterface):
         self.frame_id = -1
 
     async def run(self):
-        logger.info(f"Gabriel compute: launching Gabriel client")
+        logger.info("Gabriel compute: launching Gabriel client")
         await self.gabriel_client.launch_async()
         
 

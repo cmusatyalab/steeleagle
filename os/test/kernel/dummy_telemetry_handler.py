@@ -36,9 +36,9 @@ class Dummy:
         
         while True:
             try:
-                print(f'Telemetry Handler: Waiting for telemetry')
+                print('Telemetry Handler: Waiting for telemetry')
                 msg = self.telemetry_socket.recv(flags=zmq.NOBLOCK)
-                print(f'Telemetry Handler: Received telemetry')
+                print('Telemetry Handler: Received telemetry')
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 print(f'Telemetry Handler: {telemetry}')

@@ -116,10 +116,10 @@ class VOXLCompute(ComputeInterface):
             self.server_endpoint)
 
         if reply == None:
-            logger.error(f"Local compute engine did not respond to request")
+            logger.error("Local compute engine did not respond to request")
             return
 
-        logger.info(f"Received response from local compute engine")
+        logger.info("Received response from local compute engine")
         detections = onboard_compute_pb2.ComputeResult()
         detections.ParseFromString(reply)
         logger.info(f"Received detections: {detections}")

@@ -212,7 +212,7 @@ class TrackTask(Task):
                             vels = await self.pid(box)
                             await self.actuate(vels)
                     except JSONDecodeError as e:
-                        logger.error(f"[TrackTask]: Error decoding json, ignoring")
+                        logger.error("[TrackTask]: Error decoding json, ignoring")
                     except Exception as e:
                         exc_type, exc_obj, exc_tb = sys.exc_info()
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")

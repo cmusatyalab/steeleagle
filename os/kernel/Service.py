@@ -21,7 +21,7 @@ class Service:
         self.tasks.append(task)
 
     async def start(self):
-        logger.info(f'service started')
+        logger.info('service started')
         try:
             await asyncio.gather(*self.tasks)
 
