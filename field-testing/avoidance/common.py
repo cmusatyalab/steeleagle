@@ -82,28 +82,39 @@ def findCoM(mask):
     return x, y
 
 
-trunc_coords = lambda shape,xy: [round(x) if x >= 0 and x <= dimsz else (0 if x < 0 else dimsz)
+def trunc_coords(shape, xy):
+    return [round(x) if x >= 0 and x <= dimsz else (0 if x < 0 else dimsz)
                                  for dimsz,x in zip(shape[::-1],xy)]
 
-bboverlap = lambda cl1,cl2: (cl1.p0[0] <= cl2.p1[0] and cl1.p1[0] >= cl2.p0[0]) and (cl1.p0[1] <= cl2.p1[1] and cl1.p1[1] >= cl2.p0[1])
+def bboverlap(cl1, cl2):
+    return (cl1.p0[0] <= cl2.p1[0] and cl1.p1[0] >= cl2.p0[0]) and (cl1.p0[1] <= cl2.p1[1] and cl1.p1[1] >= cl2.p0[1])
 
-overlap = lambda kp1,kp2,eps=0: (kp1.size//2+kp2.size//2+eps) > diffKP_L2(kp1,kp2)
+def overlap(kp1, kp2, eps=0):
+    return (kp1.size//2+kp2.size//2+eps) > diffKP_L2(kp1,kp2)
 
-diffKP_L2 = lambda kp0,kp1: np.sqrt((kp0.pt[0]-kp1.pt[0])**2 + (kp0.pt[1]-kp1.pt[1])**2)
+def diffKP_L2(kp0, kp1):
+    return np.sqrt((kp0.pt[0]-kp1.pt[0])**2 + (kp0.pt[1]-kp1.pt[1])**2)
 
-diffKP = lambda kp0,kp1: (kp0.pt[0]-kp1.pt[0], kp0.pt[1]-kp1.pt[1])
+def diffKP(kp0, kp1):
+    return (kp0.pt[0]-kp1.pt[0], kp0.pt[1]-kp1.pt[1])
 
-difftuple_L2 = lambda p0,p1: np.sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
+def difftuple_L2(p0, p1):
+    return np.sqrt((p0[0]-p1[0])**2 + (p0[1]-p1[1])**2)
 
-difftuple = lambda p0,p1: (p1[0]-p0[0],p1[1]-p0[1])
+def difftuple(p0, p1):
+    return (p1[0]-p0[0],p1[1]-p0[1])
 
-inttuple = lambda *x: tuple(map(int,x))
+def inttuple(*x):
+    return tuple(map(int,x))
 
-roundtuple = lambda *x: tuple(map(int,map(round,x)))
+def roundtuple(*x):
+    return tuple(map(int,map(round,x)))
 
-avgKP = lambda keypoints: map(lambda x: sum(x)/len(keypoints),zip(*map(attrgetter('pt'),keypoints)))
+def avgKP(keypoints):
+    return map(lambda x: sum(x)/len(keypoints),zip(*map(attrgetter('pt'),keypoints)))
 
-toKeyPoint_cv = lambda kp: cv2.KeyPoint(kp.pt[0],kp.pt[1],kp.size,_angle=kp.angle,_response=kp.response,_octave=kp.octave,_class_id=kp.class_id)
+def toKeyPoint_cv(kp):
+    return cv2.KeyPoint(kp.pt[0],kp.pt[1],kp.size,_angle=kp.angle,_response=kp.response,_octave=kp.octave,_class_id=kp.class_id)
 
 def reprObj(obj):
     return "\n".join([f"{attr} = {getattr(obj, attr)}" for attr in dir(obj) if not attr.startswith('_') and not callable(getattr(src,attr))])
