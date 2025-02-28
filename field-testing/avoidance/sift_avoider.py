@@ -116,7 +116,7 @@ class SIFTAvoider(threading.Thread):
                 self.prev_image = self.image
                 if vec is not None:
                     self.move_by_offsets(vec)
-            except Exception as e:
+            except Exception:
                 if lastvec:
                     self.move_by_offsets(lastvec)
             time.sleep(0.05)
@@ -140,7 +140,7 @@ class SIFTAvoider(threading.Thread):
             self.roi = np.zeros(prev_img.shape,np.uint8)
             scrapY, scrapX = prev_img.shape[0]//self.r, prev_img.shape[1]//(self.r + 1)
             self.roi[scrapY:-scrapY, scrapX:-scrapX] = True
-        except Exception as e:
+        except Exception:
             pass
 
     def match(self):
@@ -295,7 +295,7 @@ class SIFTAvoider(threading.Thread):
                 cY = int(M["m01"] / M["m00"])
                 cv2.circle(dispim, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
                 cv2.putText(dispim, "safe", (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            except Exception as e:
+            except Exception:
                 pass
 
             self.prev_img = self.image

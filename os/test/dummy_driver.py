@@ -27,7 +27,7 @@ async def camera_stream(drone, camera_sock):
     while True:
         try:
             x = 1
-        except Exception as e:
+        except Exception:
             pass
         await asyncio.sleep(0.033)
 

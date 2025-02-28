@@ -42,7 +42,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         data = json.loads(payload)
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
-                except JSONDecodeError as e:
+                except JSONDecodeError:
                     logger.debug(f'Error decoding json: {payload}')
                 except Exception as e:
                     print(e)

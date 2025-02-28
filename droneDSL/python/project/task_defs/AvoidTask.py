@@ -132,7 +132,7 @@ class AvoidTask(Task):
                     error = await self.computeError()
                     logger.info(f"[ObstacleTask] Error {error}")
                     await self.moveForwardAndAvoid(error)
-                except JSONDecodeError as e:
+                except JSONDecodeError:
                     logger.error("[ObstacleTask]: Error decoding JSON")
                 except Exception as e:
                     logger.error("[ObstacleTask] Threw an exception")

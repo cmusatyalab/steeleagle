@@ -184,7 +184,7 @@ async def main(drone, cam_sock, tel_sock, args):
             logger.info('starting connecting...')
             await drone.connect(connection_string)
             logger.info('drone connected')
-        except ConnectionFailedException as e:
+        except ConnectionFailedException:
             logger.error('Failed to connect to drone, retrying...')
             continue
         logger.info('Established connection to drone, ready to receive commands!')

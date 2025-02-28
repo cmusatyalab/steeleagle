@@ -253,7 +253,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8)
 
@@ -295,7 +295,7 @@ class LowDelayStreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8)
 

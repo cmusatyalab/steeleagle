@@ -45,18 +45,18 @@ class Supervisor:
         cloudlet_import = f"implementation.cloudlets.{args.cloudlet}"
         try:
             Drone = importlib.import_module(drone_import)
-        except Exception as e:
+        except Exception:
             logger.info('Could not import drone {args.drone}')
             sys.exit(0)
         try:
             Cloudlet = importlib.import_module(cloudlet_import)
-        except Exception as e:
+        except Exception:
             logger.info('Could not import cloudlet {args.cloudlet}')
             sys.exit(0)
 
         try:
             self.cloudlet = getattr(Cloudlet, args.cloudlet)()
-        except Exception as e:
+        except Exception:
             logger.info('Could not initialize {args.cloudlet}, name does not exist. Aborting.')
             sys.exit(0)
         try:
@@ -71,7 +71,7 @@ class Supervisor:
                 kwargs['droneip'] = args.droneip
             logger.info(f"{kwargs=}")
             self.drone = getattr(Drone, args.drone)(**kwargs)
-        except Exception as e:
+        except Exception:
             logger.info('Could not initialize {args.drone}, name does not exist. Aborting.')
             sys.exit(0)
 
@@ -97,7 +97,7 @@ class Supervisor:
         logger.debug('Starting flight plan download...')
         try:
             self.download(url)
-        except Exception as e:
+        except Exception:
             logger.debug('Flight script download failed! Aborting.')
             return
         logger.debug('Flight script downloaded...')

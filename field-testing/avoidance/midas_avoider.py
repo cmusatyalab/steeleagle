@@ -57,7 +57,7 @@ class MiDaSAvoider(threading.Thread):
                     diff = 0
                 lastvec = vec
                 self.move_by_offsets(vec + diff)
-            except Exception as e:
+            except Exception:
                 print(f"Actuating on last: {lastvec}")
                 self.move_by_offsets(lastvec)
             time.sleep(0.05)

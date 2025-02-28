@@ -137,19 +137,19 @@ class MavlinkDrone(DroneItf.DroneItf):
         await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
         try:
             await self.drone.offboard.start()
-        except Exception as e:
+        except Exception:
             await self.land()
 
     async def land(self):
         try:
             await self.drone.offboard.stop()
-        except OffboardError as error:
+        except OffboardError:
             pass
         await self.drone.action.land()
         await self.drone.action.disarm()
 
     async def setHome(self, lat, lng, alt):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def rth(self):
         await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
@@ -193,10 +193,10 @@ class MavlinkDrone(DroneItf.DroneItf):
     ''' Photography methods '''
 
     async def takePhoto(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def toggleThermal(self, on):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     ''' Status methods '''
 
@@ -262,7 +262,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8) 
 

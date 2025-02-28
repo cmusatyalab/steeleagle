@@ -35,7 +35,7 @@ class HSVDetectionTransition(Transition):
                                     logger.info(f"**************Transition: Task {self.task_id}: detect condition met! {class_attribute}**************\n")
                                     self._trigger_event("hsv_detection")
                                     break
-                    except JSONDecodeError as e:
+                    except JSONDecodeError:
                         logger.error(f'Error decoding json: {json_string}')
                     except Exception as e:
                         logger.info(e)

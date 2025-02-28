@@ -500,7 +500,7 @@ class ParrotDrone:
             return (self.drone.get_state(GpsLocationChanged)["latitude"],
                 self.drone.get_state(GpsLocationChanged)["longitude"],
                 self.drone.get_state(GpsLocationChanged)["altitude"])
-        except Exception as e:
+        except Exception:
             # If there is no GPS fix, return default values
             return (500.0, 500.0, 0.0)
 

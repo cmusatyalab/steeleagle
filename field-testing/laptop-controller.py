@@ -341,7 +341,7 @@ class OlympeStreaming(threading.Thread):
                     continue
                 try:
                     self.send_yuv_frame_to_server(yuv_frame)
-                except Exception as e:
+                except Exception:
                     #print(e)
                     pass
                 finally:

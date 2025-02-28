@@ -795,7 +795,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return None
 

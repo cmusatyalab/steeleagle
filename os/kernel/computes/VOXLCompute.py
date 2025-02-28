@@ -62,7 +62,7 @@ class VOXLCompute(ComputeInterface):
         return super().get_status()
 
     async def set(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def run_loop(self):
         '''
