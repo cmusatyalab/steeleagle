@@ -137,8 +137,8 @@ class SIFTAvoider(threading.Thread):
         self.id = 1
 
         try:
-            self.roi = np.zeros(prev_img.shape,np.uint8)
-            scrapY, scrapX = prev_img.shape[0]//self.r, prev_img.shape[1]//(self.r + 1)
+            self.roi = np.zeros(self.prev_img.shape,np.uint8)
+            scrapY, scrapX = self.prev_img.shape[0]//self.r, self.prev_img.shape[1]//(self.r + 1)
             self.roi[scrapY:-scrapY, scrapX:-scrapX] = True
         except Exception:
             pass

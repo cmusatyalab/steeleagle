@@ -117,7 +117,7 @@ def toKeyPoint_cv(kp):
     return cv2.KeyPoint(kp.pt[0],kp.pt[1],kp.size,_angle=kp.angle,_response=kp.response,_octave=kp.octave,_class_id=kp.class_id)
 
 def reprObj(obj):
-    return "\n".join([f"{attr} = {getattr(obj, attr)}" for attr in dir(obj) if not attr.startswith('_') and not callable(getattr(src,attr))])
+    return "\n".join([f"{attr} = {getattr(obj, attr)}" for attr in dir(obj) if not attr.startswith('_') and not callable(getattr(obj,attr))])
 
 def cvtIdx(pt,shape):
     return int(pt[1]*shape[1] + pt[0]) if hasattr(pt, '__len__') else map(int, (pt%shape[1], pt//shape[1]))

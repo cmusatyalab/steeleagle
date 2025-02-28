@@ -28,8 +28,8 @@ class ParrotFollowMeTracker(threading.Thread):
         super().__init__()
 
     def calculate_azimuth_elevation(self, target_lat, target_lon):
-        gps = drone.get_state(GpsLocationChanged)
-        alt = drone.get_state(AltitudeChanged)
+        gps = self.drone.get_state(GpsLocationChanged)
+        alt = self.drone.get_state(AltitudeChanged)
         
         # Elevation calculation
         d = GD((target_lat, target_lon), (gps["latitude"], gps["longitude"]))

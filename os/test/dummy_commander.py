@@ -29,7 +29,7 @@ class c_client:
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.land = True
         message = driver_command.SerializeToString()
-        cmd_front_socket.send_multipart([message])
+        cmd_front_sock.send_multipart([message])
         print(f"commander: land sent at: {time.time()}")
    
     def send_MCOM(self, key):
