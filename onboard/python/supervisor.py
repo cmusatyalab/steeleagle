@@ -125,7 +125,7 @@ class Supervisor:
         logger.debug('MC init')
         #from mission.MissionController import MissionController
         Mission = importlib.import_module(f"{module_prefix}.mission.MissionController")
-        self.mission = getattr(Mission, "MissionController")(self.drone, self.cloudlet)
+        self.mission = Mission.MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
         self.reload = True
