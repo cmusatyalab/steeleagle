@@ -2,20 +2,18 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces import CloudletItf
-import json
-from json import JSONDecodeError
-import threading
-import time
-import logging
 import asyncio
-from syncer import sync
-import cv2
+import json
+import logging
+from json import JSONDecodeError
 from typing import Tuple
 
+import cv2
 from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
+from gabriel_protocol import gabriel_pb2
+from interfaces import CloudletItf
+from syncer import sync
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

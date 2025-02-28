@@ -3,25 +3,33 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import asyncio
-import threading
-from interfaces import DroneItf
-import olympe
-from olympe import Drone
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
-from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
-from olympe.messages.rth import set_custom_location, return_to_home
-from olympe.messages.ardrone3.PilotingState import moveToChanged
-from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
-from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.gimbal import set_target, attitude
-from olympe.messages.wifi import rssi_changed
-from olympe.messages.battery import capacity
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
-import olympe.enums.move as move_mode
-import olympe.enums.gimbal as gimbal_mode
-import math
 import logging
+import math
+import os
+import queue
+import threading
+import time
+
+import cv2
+import numpy as np
+import olympe
+import olympe.enums.move as move_mode
+from interfaces import DroneItf
+from olympe import Drone
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
+from olympe.messages.ardrone3.Piloting import PCMD, Landing, TakeOff, moveBy, moveTo
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    AttitudeChanged,
+    FlyingStateChanged,
+    GpsLocationChanged,
+    SpeedChanged,
+)
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
+from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.gimbal import attitude, set_target
+from olympe.messages.rth import return_to_home, set_custom_location
+from olympe.messages.wifi import rssi_changed
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -224,10 +232,6 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         self.active = False
 
 
-import cv2
-import numpy as np
-import os
-
 class StreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
@@ -256,7 +260,6 @@ class StreamingThread(threading.Thread):
     def stop(self):
         self.isRunning = False
 
-import queue
 
 class LowDelayStreamingThread(threading.Thread):
 

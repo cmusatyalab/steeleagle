@@ -1,13 +1,13 @@
 
+import ast
+import asyncio
+import logging
+
+from interface.Task import Task
+
+from ..transition_defs.HSVDetectionTransition import HSVDetectionTransition
 from ..transition_defs.ObjectDetectionTransition import ObjectDetectionTransition
 from ..transition_defs.TimerTransition import TimerTransition
-from ..transition_defs.HSVDetectionTransition import HSVDetectionTransition
-from interface.Task import Task
-import asyncio
-import ast
-import logging
-from gabriel_protocol import gabriel_pb2
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

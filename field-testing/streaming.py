@@ -18,14 +18,12 @@ import threading
 import time
 
 import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
-from olympe.messages.ardrone3.Piloting import moveBy
-from olympe.messages.ardrone3.PilotingState import FlyingStateChanged
+from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
+from olympe.messages.ardrone3.Piloting import Landing, TakeOff, moveBy
 from olympe.messages.ardrone3.PilotingSettings import MaxTilt
 from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
-from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
+from olympe.messages.ardrone3.PilotingState import FlyingStateChanged
 from olympe.video.renderer import PdrawRenderer
-
 
 olympe.log.update_config({"loggers": {"olympe": {"level": "WARNING"}}})
 

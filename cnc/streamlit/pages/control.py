@@ -2,18 +2,27 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
 import asyncio
 import json
-from zipfile import ZipFile
-from st_keypressed import st_keypressed
 import os
-from cnc_protocol import cnc_pb2
 import time
+from zipfile import ZipFile
+
 import folium
-from streamlit_folium import st_folium
+import streamlit as st
+from cnc_protocol import cnc_pb2
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS, authenticated
+from st_keypressed import st_keypressed
+from streamlit_folium import st_folium
+from util import (
+    COLORS,
+    authenticated,
+    connect_redis,
+    connect_redis_publisher,
+    connect_zmq,
+    menu,
+    stream_to_dataframe,
+)
 
 st.set_page_config(
     page_title="Commander",

@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import os
+from enum import Enum
+
 import zmq
 from cnc_protocol import cnc_pb2
-from enum import Enum
-from util.utils import setup_socket
-from util.utils import SocketOperation
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

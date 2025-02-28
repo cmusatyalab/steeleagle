@@ -1,16 +1,17 @@
 import asyncio
-from cnc_protocol import cnc_pb2
-import cv2
-from enum import Enum
-from kernel.computes.ComputeItf import ComputeInterface
-from kernel.DataStore import DataStore
 import logging
-import numpy as np
 import os
+from enum import Enum
+
+import cv2
 import kernel.computes.onboard_compute_pb2 as onboard_compute_pb2
-from util.utils import setup_socket, SocketOperation, lazy_pirate_request
+import numpy as np
 import zmq
 import zmq.asyncio
+from cnc_protocol import cnc_pb2
+from kernel.computes.ComputeItf import ComputeInterface
+from kernel.DataStore import DataStore
+from util.utils import SocketOperation, lazy_pirate_request, setup_socket
 
 logger = logging.getLogger(__name__)
 

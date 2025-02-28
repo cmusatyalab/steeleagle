@@ -1,16 +1,18 @@
+import asyncio
+import json
+import logging
+import os
+import signal
+import sys
 import time
+
+import cnc_protocol.cnc_pb2 as cnc_protocol
 import zmq
 import zmq.asyncio
-import json
-import os
-import sys
-import asyncio
-import logging
-import cnc_protocol.cnc_pb2 as cnc_protocol
-from util.utils import setup_socket, SocketOperation
-import signal
-from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone, ConnectionFailedException
-from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
+from drivers.base.common import ConnectionFailedException
+from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone
+from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone
+from util.utils import SocketOperation, setup_socket
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'

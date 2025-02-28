@@ -2,16 +2,15 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import AltitudeChanged
-from olympe.messages.gimbal import set_target, attitude, set_max_speed
-from olympe.enums.gimbal import control_mode
+import json
 import threading
 import time
-import zmq
-import json
+
 import numpy as np
+import zmq
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import AltitudeChanged
+from olympe.messages.gimbal import attitude, set_max_speed
 from scipy.spatial.transform import Rotation as R
 
 

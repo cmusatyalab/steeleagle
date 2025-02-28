@@ -1,5 +1,6 @@
-from abs import ABC
-import asyncio
+
+from abs import ABC, abstractmethod
+
 
 class DroneDeviceItf(ABC):
     """
@@ -27,7 +28,7 @@ class DroneDeviceItf(ABC):
             """
             Overloaded boolean operator to support easy success checks.
             """
-            return rid != 0
+            return self.rid != 0
 
     @abstractmethod
     async def connect(self):

@@ -5,17 +5,18 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import time
 import datetime
 import logging
-from gabriel_server import cognitive_engine
-from gabriel_protocol import gabriel_pb2
-from cnc_protocol import cnc_pb2
-import redis
 import os
-from PIL import Image
+import time
+
 import cv2
 import numpy as np
+import redis
+from cnc_protocol import cnc_pb2
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

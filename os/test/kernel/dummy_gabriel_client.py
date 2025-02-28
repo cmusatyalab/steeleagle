@@ -1,10 +1,12 @@
 import asyncio
 import os
 import sys
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
-from cnc_protocol import cnc_pb2
+
 import nest_asyncio
+from cnc_protocol import cnc_pb2
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_protocol import gabriel_pb2
+
 nest_asyncio.apply()
 
 class Dummy:

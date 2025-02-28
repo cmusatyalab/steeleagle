@@ -1,19 +1,19 @@
-import time
+import asyncio
+import importlib
+import logging
+import os
+import pkgutil
+import sys
+
+import computes
+import yaml
 import zmq
 import zmq.asyncio
-import asyncio
-import os
-import logging
-import yaml
-import importlib
-import pkgutil
-from util.utils import setup_socket, SocketOperation
 from cnc_protocol import cnc_pb2
-import computes
-from kernel.computes.ComputeItf import ComputeInterface
 from DataStore import DataStore
+from kernel.computes.ComputeItf import ComputeInterface
 from kernel.Service import Service
-import sys
+from util.utils import SocketOperation, setup_socket
 
 # Set up logging
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'

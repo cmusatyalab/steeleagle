@@ -1,7 +1,8 @@
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Optional
-import logging
+
 
 class TimerError(Exception):
     """A custom exception used to report errors in use of Timer class"""

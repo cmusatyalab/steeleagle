@@ -4,25 +4,22 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+import sys
+import time
+
 import cv2
 import numpy as np
-import logging
-from collections import OrderedDict
-import time,sys
-from matplotlib import pyplot as plt
-import sys
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+
 sys.path.append('./avoidance/')
-from common import *
-import operator as op
 import math
+import operator as op
 import threading
-import zmq
-import time
-import traceback
 from datetime import datetime
+
+import zmq
+from common import Cluster, overlap
 
 STREAM_FPS = 1 #used for ttc
 RATIO = 0.75

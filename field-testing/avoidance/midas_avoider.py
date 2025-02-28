@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+import json
 import threading
 import time
+
 import zmq
-import json
-import numpy as np
-from datetime import datetime
-import os
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
 
 FOLDER = "./avoidance/traces/"
 

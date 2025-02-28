@@ -2,34 +2,34 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing, PCMD, moveBy
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged
-from olympe.messages.skyctrl.CoPiloting import setPilotingSource
-from olympe.messages.obstacle_avoidance import set_mode
-from olympe.enums.obstacle_avoidance import mode
-from olympe.messages.gimbal import set_target, attitude
-from olympe.enums.gimbal import control_mode
-from olympe.video.renderer import PdrawRenderer
+import argparse
+import logging
+import queue
+import subprocess
 import threading
 import time
-import queue
-import logging
-import subprocess
-import cv2
-from pynput.keyboard import Listener, Key, KeyCode
 from collections import defaultdict
-from enum import Enum
-from time import sleep
-import numpy as np
-import math
-import os
-import zmq
-import json
-from trackers import dynamic, static, parrot
-from avoidance import sift_avoider, midas_avoider
-import argparse
 from datetime import datetime
+from enum import Enum
+
+import cv2
+import olympe
+import zmq
+from avoidance import midas_avoider, sift_avoider
+from olympe.enums.gimbal import control_mode
+from olympe.enums.obstacle_avoidance import mode
+from olympe.messages.ardrone3.Piloting import PCMD, Landing, TakeOff
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    AttitudeChanged,
+    GpsLocationChanged,
+)
+from olympe.messages.gimbal import attitude, set_target
+from olympe.messages.obstacle_avoidance import set_mode
+from olympe.messages.skyctrl.CoPiloting import setPilotingSource
+from olympe.video.renderer import PdrawRenderer
+from pynput.keyboard import Key, KeyCode, Listener
+from trackers import dynamic
 
 DRONE_IP = "192.168.42.1" # Real drone no controller
 

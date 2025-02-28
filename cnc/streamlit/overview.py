@@ -2,17 +2,26 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import json
 import os
 import time
-import json
 from zipfile import ZipFile
-from cnc_protocol import cnc_pb2
+
 import folium
 import streamlit as st
-from streamlit_folium import st_folium
+from cnc_protocol import cnc_pb2
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
+from streamlit_folium import st_folium
+from util import (
+    COLORS,
+    authenticated,
+    connect_redis,
+    connect_zmq,
+    get_drones,
+    menu,
+    stream_to_dataframe,
+)
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"

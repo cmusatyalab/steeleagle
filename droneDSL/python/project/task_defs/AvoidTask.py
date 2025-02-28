@@ -3,14 +3,16 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 #from interfaces.Task import Task
-import json
-from json import JSONDecodeError
-import time
 import asyncio
+import json
 import logging
+import time
+from json import JSONDecodeError
+
 from gabriel_protocol import gabriel_pb2
-from ..transition_defs.TimerTransition import TimerTransition
 from interface.Task import Task
+
+from ..transition_defs.TimerTransition import TimerTransition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

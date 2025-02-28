@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import numpy as np
-import cv2
 from operator import attrgetter
+
+import cv2
+import numpy as np
 
 
 class KeyPointHistory(object):

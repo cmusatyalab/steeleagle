@@ -1,9 +1,10 @@
-import os
-import zmq
-import time
-from cnc_protocol import cnc_pb2
 import asyncio
+import os
+import time
+
+import zmq
 import zmq.asyncio
+from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 
 context = zmq.Context()

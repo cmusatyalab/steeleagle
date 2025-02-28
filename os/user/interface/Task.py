@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from abc import ABC, abstractmethod
 import functools
 import logging
 import threading
+from abc import ABC, abstractmethod
+
 from aenum import Enum
-import inspect
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

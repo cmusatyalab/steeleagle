@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import sys
-from cnc_protocol import cnc_pb2
+
 import zmq
+from cnc_protocol import cnc_pb2
 from util.utils import SocketOperation, setup_socket
 
 # Configure logger

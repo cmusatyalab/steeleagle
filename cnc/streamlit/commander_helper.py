@@ -5,15 +5,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import numpy as np
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+import argparse
 import logging
+import os
+
 import zmq
 from cnc_protocol import cnc_pb2
-import argparse
-import os
-import asyncio
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_protocol import gabriel_pb2
 
 logger = logging.getLogger(__name__)
 

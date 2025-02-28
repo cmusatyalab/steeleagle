@@ -3,14 +3,23 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import asyncio
-from interfaces import DroneItf
-import math
-from mavsdk import System
-from mavsdk.offboard import (OffboardError, PositionNedYaw, VelocityBodyYawspeed, PositionGlobalYaw)
-import time
-import numpy as np
-import math as m
 import logging
+import math
+import math as m
+import os
+import threading
+import time
+
+import cv2
+import numpy as np
+from interfaces import DroneItf
+from mavsdk import System
+from mavsdk.offboard import (
+	OffboardError,
+	PositionGlobalYaw,
+	PositionNedYaw,
+	VelocityBodyYawspeed,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -267,11 +276,6 @@ class ModalAISeekerDrone(DroneItf.DroneItf):
     async def kill(self):
         self.active = False
 
-
-import cv2
-import numpy as np
-import os
-import threading
 
 class StreamingThread(threading.Thread):
 

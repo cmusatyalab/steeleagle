@@ -1,19 +1,19 @@
 
+import asyncio
 import importlib
+import logging
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 from zipfile import ZipFile
+
 import requests
 import zmq
-import asyncio
-import logging
-
-from util.utils import SocketOperation, setup_socket
-from system_call_stubs.DroneStub import DroneStub
-from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
+from system_call_stubs.ComputeStub import ComputeStub
+from system_call_stubs.DroneStub import DroneStub
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 
@@ -108,13 +108,13 @@ class MissionController():
             logger.info(f"mission already running")
             return
         else: # first time mission, create a task manager
-            import common.TaskManager as tm 
+            import common.TaskManager as tm
         
         logger.info(f"start the mission")
         if self.reload : 
             self.reload_mission()
         
-        import project.Mission as msn # import the mission module instead of attribute of the module for the reload to work
+        import project.Mission as msn  # import the mission module instead of attribute of the module for the reload to work
         self.reload = True 
                
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)

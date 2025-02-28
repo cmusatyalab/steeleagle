@@ -1,5 +1,6 @@
 import asyncio
 import os
+
 import zmq
 from cnc_protocol import cnc_pb2
 

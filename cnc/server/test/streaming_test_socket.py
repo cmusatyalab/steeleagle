@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import socket
+import time
+
 import cv2
 import numpy as np
-import time
 import zmq
-import argparse
-import sys
 
 HOST=''
 PORT=8485

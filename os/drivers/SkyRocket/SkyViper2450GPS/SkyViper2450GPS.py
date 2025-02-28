@@ -1,15 +1,16 @@
-from enum import Enum
-import math
-import os
-import time
 import asyncio
 import logging
+import math
+import os
+import threading
+import time
+from enum import Enum
+
+import cv2
 from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 
-class ConnectionFailedException(Exception):
-    pass
 
 class SkyViper2450GPSDrone():
     
@@ -757,10 +758,6 @@ class SkyViper2450GPSDrone():
     async def stopStreaming(self):
         self.streamingThread.stop()
         
-import cv2
-import numpy as np
-import os
-import threading
 
 class StreamingThread(threading.Thread):
 

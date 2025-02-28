@@ -1,5 +1,6 @@
 import logging
 import threading
+
 from interface.Transition import Transition
 
 logger = logging.getLogger(__name__)

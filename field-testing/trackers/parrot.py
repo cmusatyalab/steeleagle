@@ -2,18 +2,19 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import TakeOff, moveBy, Landing, moveTo, NavigateHome, PCMD
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged
-import olympe.messages.follow_me as follow_me
-from olympe.enums.follow_me import mode
-from olympe.messages.gimbal import set_target, attitude
-from olympe.enums.gimbal import control_mode
+import json
 import threading
 import time
+
+import numpy as np
+import olympe.messages.follow_me as follow_me
 import zmq
-import json
 from geopy.distance import geodesic as GD
+from olympe.enums.follow_me import mode
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    GpsLocationChanged,
+)
 
 
 class ParrotFollowMeTracker(threading.Thread):

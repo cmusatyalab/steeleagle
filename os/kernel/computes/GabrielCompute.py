@@ -1,14 +1,13 @@
 import asyncio
-import json
 import logging
 import os
 import time
+
 import cv2
 import numpy as np
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
-from util.timer import Timer
 from cnc_protocol import cnc_pb2
+from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from gabriel_protocol import gabriel_pb2
 from kernel.computes.ComputeItf import ComputeInterface
 from kernel.DataStore import DataStore
 

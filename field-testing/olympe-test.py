@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
 import time
+
+import olympe
 from olympe.messages.gimbal import set_target
 
 if __name__ == "__main__":

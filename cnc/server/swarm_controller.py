@@ -5,22 +5,22 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
-import logging
+from urllib.parse import urlparse
 from zipfile import ZipFile
-from google.protobuf.message import DecodeError
-from google.protobuf import text_format
+
+import redis
 import requests
-from cnc_protocol import cnc_pb2
-import argparse
 import zmq
 import zmq.asyncio
-import redis
-from urllib.parse import urlparse
-
+from cnc_protocol import cnc_pb2
+from google.protobuf import text_format
+from google.protobuf.message import DecodeError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

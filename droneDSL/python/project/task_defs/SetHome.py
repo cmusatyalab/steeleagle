@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interface.Task import Task
 import ast
+
+from interface.Task import Task
+
 
 class SetHome(Task):
 

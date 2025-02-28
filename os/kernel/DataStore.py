@@ -1,7 +1,8 @@
 import asyncio
-from cnc_protocol import cnc_pb2
-from typing import Optional, Union
 import logging
+from typing import Optional, Union
+
+from cnc_protocol import cnc_pb2
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,12 @@
 import asyncio
-import interface.Task as taskitf     
-import project.task_defs.TrackTask as track 
-import project.task_defs.DetectTask as detect
-import project.task_defs.AvoidTask as avoid
-import project.task_defs.TestTask as test
-import queue
 import logging
+import queue
+
+import interface.Task as taskitf
+import project.task_defs.AvoidTask as avoid
+import project.task_defs.DetectTask as detect
+import project.task_defs.TestTask as test
+import project.task_defs.TrackTask as track
 
 logger = logging.getLogger(__name__)
 

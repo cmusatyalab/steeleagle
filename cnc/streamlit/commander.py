@@ -2,22 +2,17 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
-import pandas as pd
-from streamlit_autorefresh import st_autorefresh
-import folium
-from folium.plugins import Draw
-from streamlit_folium import st_folium
-from st_keypressed import st_keypressed
-import streamlit_antd_components as sac
-import redis
-import os
-from cnc_protocol import cnc_pb2
-import zmq
-import time
-import numpy as np
-import cv2
 import datetime
+import os
+
+import folium
+import redis
+import streamlit as st
+import zmq
+from cnc_protocol import cnc_pb2
+from st_keypressed import st_keypressed
+from streamlit_autorefresh import st_autorefresh
+from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="Commander",

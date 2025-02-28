@@ -1,14 +1,15 @@
-from pynput.keyboard import Listener, Key, KeyCode
-from enum import Enum
-import subprocess
+import asyncio
 import logging
 import time
+from collections import defaultdict
+from enum import Enum
+
+import cnc_protocol.cnc_pb2 as cnc_pb2
 import zmq
 import zmq.asyncio
-import asyncio
-from collections import defaultdict
-from util.utils import setup_socket, SocketOperation
-import cnc_protocol.cnc_pb2 as cnc_pb2
+from pynput.keyboard import Key, KeyCode, Listener
+from util.utils import SocketOperation, setup_socket
+
 
 class Ctrl(Enum):
     (

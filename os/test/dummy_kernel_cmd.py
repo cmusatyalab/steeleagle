@@ -1,12 +1,13 @@
-import os
-import zmq
-import time
-from cnc_protocol import cnc_pb2
 import asyncio
-import zmq.asyncio
-from util.utils import SocketOperation, setup_socket
-import logging 
+import logging
+import os
 import sys
+import time
+
+import zmq
+import zmq.asyncio
+from cnc_protocol import cnc_pb2
+from util.utils import SocketOperation, setup_socket
 
 # Configure logger
 logger = logging.getLogger()

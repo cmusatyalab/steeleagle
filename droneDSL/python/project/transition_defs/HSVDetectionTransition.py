@@ -1,9 +1,9 @@
-from json import JSONDecodeError
 import json
 import logging
-from venv import logger
-from interface.Transition import Transition
+from json import JSONDecodeError
+
 from gabriel_protocol import gabriel_pb2
+from interface.Transition import Transition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

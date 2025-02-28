@@ -2,16 +2,16 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import AltitudeChanged
-from olympe.messages.gimbal import set_target, attitude
-from olympe.enums.gimbal import control_mode
-import numpy as np
+import json
 import threading
 import time
+
+import numpy as np
 import zmq
-import json
+from olympe.enums.gimbal import control_mode
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import AltitudeChanged
+from olympe.messages.gimbal import set_target
 
 
 class StaticLeashTracker(threading.Thread):

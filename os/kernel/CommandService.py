@@ -1,15 +1,15 @@
-from enum import Enum
-import sys
-import time
-import validators
-import zmq
-import zmq.asyncio
 import asyncio
 import logging
 import os
+import time
+from enum import Enum
+
+import validators
+import zmq
+import zmq.asyncio
 from cnc_protocol import cnc_pb2
 from kernel.Service import Service
-from util.utils import setup_socket, SocketOperation
+from util.utils import SocketOperation, setup_socket
 
 # Configure logger
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
