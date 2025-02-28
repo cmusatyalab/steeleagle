@@ -168,12 +168,12 @@ class DroneDeviceItf(ABC):
         """
         pass
 
-   async def hover(self):
-       """
-       Instruct the drone to hover.
-       
-       :return: Response object
-       :rtype: class: Response
-       """
-       pass
+    async def hover(self):
+        """
+        Instruct the drone to hover.
+
+        :return: Response object
+        :rtype: class: Response
+        """
+        pass
 
