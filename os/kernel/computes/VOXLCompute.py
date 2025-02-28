@@ -115,7 +115,7 @@ class VOXLCompute(ComputeInterface):
             self.socket, request.SerializeToString(), self.context,
             self.server_endpoint)
 
-        if reply == None:
+        if reply is None:
             logger.error("Local compute engine did not respond to request")
             return
 

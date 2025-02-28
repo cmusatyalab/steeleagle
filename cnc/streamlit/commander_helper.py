@@ -48,7 +48,7 @@ class CommanderZmqAdapter:
 
             extras = cnc_pb2.Extras()
             extras.commander_id = self.commander_id
-            if command != None:
+            if command is not None:
                 extras.cmd.for_drone_id = command["drone_id"]
                 if "kill" in command:
                     extras.cmd.halt = True

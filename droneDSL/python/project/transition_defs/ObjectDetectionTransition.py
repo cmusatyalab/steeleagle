@@ -26,7 +26,7 @@ class ObjectDetectionTransition(Transition):
         while not self.stop_signal:
             # get result
             result = self.cloudlet.getResults("openscout-object")
-            if (result != None):
+            if result is not None:
                 logger.info(f"**************Transition:  Task {self.task_id}: detected payload! {result}**************\n")
                 # Check if the payload type is TEXT, since your JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:

@@ -69,7 +69,7 @@ class DynamicLeashTracker(threading.Thread):
 
         drone_roll, drone_pitch = self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
-        if self.hysteresis and self.prev_center_ts != None and round(time.time() * 1000) - self.prev_center_ts < 500:
+        if self.hysteresis and self.prev_center_ts is not None and round(time.time() * 1000) - self.prev_center_ts < 500:
             hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
             hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
             target_yaw_angle += 0.90 * hysteresis_yaw_angle

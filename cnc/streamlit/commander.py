@@ -342,7 +342,7 @@ with c3:
 
     #st.write(f":keyboard: {st.session_state.key_pressed}")
     st.session_state.key_pressed = st_keypressed()
-    if st.session_state.manual_control and st.session_state.selected_drone != None:
+    if st.session_state.manual_control and st.session_state.selected_drone is not None:
         req = cnc_pb2.Extras()
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = st.session_state.selected_drone

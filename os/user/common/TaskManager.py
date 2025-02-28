@@ -52,7 +52,7 @@ class TaskManager():
         self.start_task_id = self.retrieve_next_task("start", None)
         logger.info('create start task')
         start_task = self.create_task(self.start_task_id)
-        if start_task != None:
+        if start_task is not None:
             # set the current task
             self.curr_task_id = start_task.task_id
             logger.info(f"start task, current taskid:{self.curr_task_id}\n")

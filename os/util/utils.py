@@ -42,13 +42,13 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
     socket.send(payload)
 
     retries_left = retries
-    while retries_left == None or retries_left > 0:
+    while retries_left is None or retries_left > 0:
         # Check if reply received within timeout
         poll_result = await socket.poll(timeout)
         if (poll_result & zmq.POLLIN) != 0:
             reply = await socket.recv()
             return (socket, reply)
-        if retries_left != None:
+        if retries_left is not None:
             retries_left -= 1
         logger.warning(f"Request timeout for {server_endpoint=}")
 

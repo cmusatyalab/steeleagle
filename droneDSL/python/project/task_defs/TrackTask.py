@@ -192,7 +192,7 @@ class TrackTask(Task):
             if last_seen is not None and int(time.time() - last_seen)  > self.target_lost_duration:
                 #if we have not found the target in N seconds trigger the done transition
                 break
-            if result != None:
+            if result is not None:
                 if result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
