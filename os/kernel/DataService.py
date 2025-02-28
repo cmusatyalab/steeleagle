@@ -1,19 +1,19 @@
-import time
+import asyncio
+import importlib
+import logging
+import os
+import pkgutil
+import sys
+
+import computes
+import yaml
 import zmq
 import zmq.asyncio
-import asyncio
-import os
-import logging
-import yaml
-import importlib
-import pkgutil
-from util.utils import setup_socket, SocketOperation
 from cnc_protocol import cnc_pb2
-import computes
-from kernel.computes.ComputeItf import ComputeInterface
 from DataStore import DataStore
+from kernel.computes.ComputeItf import ComputeInterface
 from kernel.Service import Service
-import sys
+from util.utils import SocketOperation, setup_socket
 
 # Set up logging
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -79,7 +79,7 @@ class DataService(Service):
     def get_result(self, compute_type):
         logger.info(f"Processing getter for compute type: {compute_type}")
         getter_list = []
-        for compute_id in self.compute_dict.keys():
+        for compute_id in self.compute_dict:
             cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
             
             if cpt_res is None:
@@ -100,7 +100,7 @@ class DataService(Service):
 
     def clear_result(self):
         logger.info("Processing setter")
-        for compute_id in self.compute_dict.keys():
+        for compute_id in self.compute_dict:
             self.data_store.clear_compute_result(compute_id)
             
     async def user_handler(self):

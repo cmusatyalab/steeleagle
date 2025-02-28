@@ -1,7 +1,6 @@
-from abc import ABC, abstractmethod
 import logging
 import threading
-
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

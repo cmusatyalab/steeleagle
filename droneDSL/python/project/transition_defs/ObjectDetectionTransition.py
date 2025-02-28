@@ -1,10 +1,10 @@
-from json import JSONDecodeError
 import json
 import logging
 import time
-from venv import logger
-from interface.Transition import Transition
+from json import JSONDecodeError
+
 from gabriel_protocol import gabriel_pb2
+from interface.Transition import Transition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,7 +26,7 @@ class ObjectDetectionTransition(Transition):
         while not self.stop_signal:
             # get result
             result = self.cloudlet.getResults("openscout-object")
-            if (result != None):
+            if result is not None:
                 logger.info(f"**************Transition:  Task {self.task_id}: detected payload! {result}**************\n")
                 # Check if the payload type is TEXT, since your JSON seems to be text data
                 if result.payload_type == gabriel_pb2.TEXT:
@@ -45,7 +45,7 @@ class ObjectDetectionTransition(Transition):
                                 logger.info(f"**************Transition: Task {self.task_id}: detect condition met! {class_attribute}**************\n")
                                 self._trigger_event("object_detection")
                                 break
-                    except JSONDecodeError as e:
+                    except JSONDecodeError:
                         logger.error(f'Error decoding json: {json_string}')
                     except Exception as e:
                         logger.info(e)

@@ -1,16 +1,17 @@
 import asyncio
-import interface.Task as taskitf     
-import project.task_defs.TrackTask as track 
-import project.task_defs.DetectTask as detect
-import project.task_defs.AvoidTask as avoid
-import project.task_defs.TestTask as test
-import queue
 import logging
+import queue
+
+import interface.Task as taskitf
+import project.task_defs.AvoidTask as avoid
+import project.task_defs.DetectTask as detect
+import project.task_defs.TestTask as test
+import project.task_defs.TrackTask as track
 
 logger = logging.getLogger(__name__)
 
     
-class TaskManager():
+class TaskManager:
     
     def __init__(self, drone, compute, transit_map, task_arg_map):
         super().__init__()
@@ -51,7 +52,7 @@ class TaskManager():
         self.start_task_id = self.retrieve_next_task("start", None)
         logger.info('create start task')
         start_task = self.create_task(self.start_task_id)
-        if start_task != None:
+        if start_task is not None:
             # set the current task
             self.curr_task_id = start_task.task_id
             logger.info(f"start task, current taskid:{self.curr_task_id}\n")
@@ -66,7 +67,7 @@ class TaskManager():
     
     def create_task(self, task_id):
         logger.info(f'taskid{task_id}')
-        if (task_id in self.task_arg_map.keys()):
+        if task_id in self.task_arg_map:
             if (self.task_arg_map[task_id].task_type == taskitf.TaskType.Detect):
                 logger.info('Detect task')
                 return detect.DetectTask(self.drone, self.compute, task_id, self.trigger_event_queue, self.task_arg_map[task_id])
@@ -82,15 +83,15 @@ class TaskManager():
         return None
     
     def stop_task(self):
-        logger.info(f'Stopping current task!')
+        logger.info('Stopping current task!')
         if self.taskCurrentCoroutinue:
             # stop all the transitions of the task
             self.currentTask.stop_trans()
-            logger.info(f'transitions in the current task stopped!')
+            logger.info('transitions in the current task stopped!')
             
             is_canceled = self.taskCurrentCoroutinue.cancel()
             if is_canceled:
-                logger.info(f' task cancelled successfully')
+                logger.info(' task cancelled successfully')
                 
     def start_task(self, task):
         logger.info(f'start the task! task: {str(task)}')
@@ -120,7 +121,7 @@ class TaskManager():
                     item = self.trigger_event_queue.get()
                     task_id = item[0]
                     trigger_event = item[1]
-                    logger.info(f"Trigger one event! \n")
+                    logger.info("Trigger one event! \n")
                     logger.info(f"Task id  {task_id} \n")
                     logger.info(f"event   {trigger_event} \n")
                     if (task_id == self.get_current_task()):

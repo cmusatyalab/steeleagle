@@ -4,25 +4,22 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+import sys
+import time
+
 import cv2
 import numpy as np
-import logging
-from collections import OrderedDict
-import time,sys
-from matplotlib import pyplot as plt
-import sys
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+
 sys.path.append('./avoidance/')
-from common import *
-import operator as op
 import math
+import operator as op
 import threading
-import zmq
-import time
-import traceback
 from datetime import datetime
+
+import zmq
+from common import Cluster, overlap
 
 STREAM_FPS = 1 #used for ttc
 RATIO = 0.75
@@ -119,7 +116,7 @@ class SIFTAvoider(threading.Thread):
                 self.prev_image = self.image
                 if vec is not None:
                     self.move_by_offsets(vec)
-            except Exception as e:
+            except Exception:
                 if lastvec:
                     self.move_by_offsets(lastvec)
             time.sleep(0.05)
@@ -140,10 +137,10 @@ class SIFTAvoider(threading.Thread):
         self.id = 1
 
         try:
-            self.roi = np.zeros(prev_img.shape,np.uint8)
-            scrapY, scrapX = prev_img.shape[0]//self.r, prev_img.shape[1]//(self.r + 1)
+            self.roi = np.zeros(self.prev_img.shape,np.uint8)
+            scrapY, scrapX = self.prev_img.shape[0]//self.r, self.prev_img.shape[1]//(self.r + 1)
             self.roi[scrapY:-scrapY, scrapX:-scrapX] = True
-        except Exception as e:
+        except Exception:
             pass
 
     def match(self):
@@ -298,7 +295,7 @@ class SIFTAvoider(threading.Thread):
                 cY = int(M["m01"] / M["m00"])
                 cv2.circle(dispim, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
                 cv2.putText(dispim, "safe", (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            except Exception as e:
+            except Exception:
                 pass
 
             self.prev_img = self.image

@@ -1,10 +1,11 @@
 
-from ..transition_defs.TimerTransition import TimerTransition
-from interface.Task import Task
-import asyncio
 import ast
+import asyncio
 import logging
 
+from interface.Task import Task
+
+from ..transition_defs.TimerTransition import TimerTransition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

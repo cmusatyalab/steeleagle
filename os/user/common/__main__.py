@@ -1,8 +1,9 @@
-import  asyncio
+import asyncio
 import logging
-import sys
-from MissionController import MissionController
 import os
+import sys
+
+from MissionController import MissionController
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import socket
+import time
+
 import cv2
 import numpy as np
-import time
 import zmq
-import argparse
-import sys
 
 HOST=''
 PORT=8485
@@ -90,8 +90,7 @@ def _main():
                 now = time.time()
                 if now - lastprint > 5:
                     print(
-                        "avg fps: {0:.2f}".format(
-                            (frames_received - lastcount) / 5)
+                        f"avg fps: {(frames_received - lastcount) / 5:.2f}"
                         )
                     print()
                     lastcount = frames_received

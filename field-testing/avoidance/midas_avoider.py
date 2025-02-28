@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
+import json
 import threading
 import time
+
 import zmq
-import json
-import numpy as np
-from datetime import datetime
-import os
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
 
 FOLDER = "./avoidance/traces/"
 
@@ -54,13 +51,10 @@ class MiDaSAvoider(threading.Thread):
             try:
                 vec = json.loads(self.sub_socket.recv_json(flags=zmq.NOBLOCK))[0]["vector"]
                 print(f"Receiving detections: {vec}")
-                if self.hysteresis:
-                    diff = vec - lastvec
-                else:
-                    diff = 0
+                diff = vec - lastvec if self.hysteresis else 0
                 lastvec = vec
                 self.move_by_offsets(vec + diff)
-            except Exception as e:
+            except Exception:
                 print(f"Actuating on last: {lastvec}")
                 self.move_by_offsets(lastvec)
             time.sleep(0.05)

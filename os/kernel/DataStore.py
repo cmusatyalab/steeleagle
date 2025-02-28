@@ -1,7 +1,7 @@
 import asyncio
-from cnc_protocol import cnc_pb2
-from typing import Optional, Union
 import logging
+
+from cnc_protocol import cnc_pb2
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class DataStore:
         self._result_cache.pop(compute_id, None)
         
     ######################################################## COMPUTE ############################################################
-    def get_compute_result(self, compute_id, result_type: str) -> Optional[Union[None, tuple]]:
+    def get_compute_result(self, compute_id, result_type: str) -> tuple | None:
         logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {result_type}")
         logger.info(self._result_cache)
         if compute_id not in self._result_cache:

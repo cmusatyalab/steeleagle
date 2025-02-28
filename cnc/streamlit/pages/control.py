@@ -2,18 +2,27 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
 import asyncio
 import json
-from zipfile import ZipFile
-from st_keypressed import st_keypressed
 import os
-from cnc_protocol import cnc_pb2
 import time
+from zipfile import ZipFile
+
 import folium
-from streamlit_folium import st_folium
+import streamlit as st
+from cnc_protocol import cnc_pb2
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, get_drones, connect_redis, connect_zmq, menu, connect_redis_publisher, COLORS, authenticated
+from st_keypressed import st_keypressed
+from streamlit_folium import st_folium
+from util import (
+    COLORS,
+    authenticated,
+    connect_redis,
+    connect_redis_publisher,
+    connect_zmq,
+    menu,
+    stream_to_dataframe,
+)
 
 st.set_page_config(
     page_title="Commander",
@@ -196,7 +205,7 @@ def draw_map():
     df = stream_to_dataframe(st.session_state.redis .xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1))
     last_update = (int(df.index[0].split("-")[0])/1000)
     i = 0
-    for index, row in df.iterrows():
+    for _index, row in df.iterrows():
         text = folium.DivIcon(
             icon_size="null",  #set the size to null so that it expands to the length of the string inside in the div
             icon_anchor=(-20, 30),
@@ -302,9 +311,9 @@ with st.sidebar:
         c6.number_input(key = "imagery_framerate", label="Imagery Framerate", min_value=1, max_value=30, step=1, value=2, format="%0d")
 
     elif st.session_state.rth_sent:
-        mode = f":orange[Return to Home Initiated]"
+        mode = ":orange[Return to Home Initiated]"
     elif st.session_state.script_file is not None:
-        mode = f":violet[Autonomous Mode Enabled]"
+        mode = ":violet[Autonomous Mode Enabled]"
 
 status_container, imagery_container = st.columns(spec=[2, 3], gap="large")
 

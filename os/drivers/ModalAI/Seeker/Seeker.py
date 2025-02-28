@@ -1,17 +1,18 @@
-from enum import Enum
-import math
-import os
-import time
 import asyncio
 import logging
+import math
+import os
+import threading
+import time
+from enum import Enum
+
+import cv2
 from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 
-class ConnectionFailedException(Exception):
-    pass
 
-class ModalAISeekerDrone():
+class ModalAISeekerDrone:
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -275,7 +276,7 @@ class ModalAISeekerDrone():
     
     async def rth(self):
         logger.info("-- Returning to launch")
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.RTL) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.RTL) is False:
             logger.error("Failed to set mode to RTL")
             return
 
@@ -291,14 +292,14 @@ class ModalAISeekerDrone():
             
     async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
         if self.gps_disabled:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
             # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
@@ -335,14 +336,14 @@ class ModalAISeekerDrone():
         logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
 
         if self.gps_disabled:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
                 logger.error("Failed to set mode to GUIDED_NOGPS")
                 return
             # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
             #     logger.error("Failed to set mode to GUIDED_NOGPS")
             #     return
         else:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
                 logger.error("Failed to set mode to GUIDED")
                 return
         
@@ -377,7 +378,7 @@ class ModalAISeekerDrone():
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -397,7 +398,7 @@ class ModalAISeekerDrone():
     async def setGPSLocation(self, lat, lon, alt, bearing):
         logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
         
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -439,7 +440,7 @@ class ModalAISeekerDrone():
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
         
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -485,7 +486,7 @@ class ModalAISeekerDrone():
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
         
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) is False:
             logger.error("Failed to set mode to GUIDED")
             return
         
@@ -603,7 +604,7 @@ class ModalAISeekerDrone():
 
             return result
         else:
-            logger.info(f"Priming for OFFBOARD mode")
+            logger.info("Priming for OFFBOARD mode")
             return True
     
     async def disableGPS(self):
@@ -745,10 +746,6 @@ class ModalAISeekerDrone():
     async def stopStreaming(self):
         self.streamingThread.stop()
         
-import cv2
-import numpy as np
-import os
-import threading
 
 class StreamingThread(threading.Thread):
 
@@ -760,10 +757,7 @@ class StreamingThread(threading.Thread):
         url_mini = os.environ.get('STREAM_MINI_URL')
         self.sim = os.environ.get('SIMULATION')
         
-        if (self.sim == 'true'):
-            url = url_sim
-        else:
-            url = url_mini
+        url = url_sim if self.sim == 'true' else url_mini
             
         self.cap = cv2.VideoCapture(url)
         self.isRunning = True
@@ -782,7 +776,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return None
 

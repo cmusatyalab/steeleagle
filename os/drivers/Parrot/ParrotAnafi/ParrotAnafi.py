@@ -2,35 +2,43 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import logging
 import asyncio
-import threading
+import logging
 import math
 import os
+import queue
+import threading
 import time
-
-import olympe
-from olympe import Drone
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
-from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
-from olympe.messages.rth import set_custom_location, return_to_home
-from olympe.messages.ardrone3.PilotingState import moveToChanged
-from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
-from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
-from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.gimbal import set_target, attitude
-from olympe.messages.wifi import rssi_changed
-from olympe.messages.battery import capacity
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
-import olympe.enums.move as move_mode
-import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
+
+import cv2
+import logness
+import numpy as np
+import olympe
+import olympe.enums.move as move_mode
+from olympe import Drone
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
+from olympe.messages.ardrone3.Piloting import PCMD, Landing, TakeOff, moveBy, moveTo
+from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    AttitudeChanged,
+    FlyingStateChanged,
+    GpsLocationChanged,
+    SpeedChanged,
+)
+from olympe.messages.ardrone3.SpeedSettingsState import (
+    MaxRotationSpeedChanged,
+    MaxVerticalSpeedChanged,
+)
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
+from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.gimbal import attitude, set_target
+from olympe.messages.rth import return_to_home, set_custom_location
+from olympe.messages.wifi import rssi_changed
 
 logger = logging.getLogger(__name__)
 
-import logness
 logness.update_config({
     "handlers": {
         "olympe_log_file": {
@@ -62,7 +70,7 @@ class ArgumentOutOfBoundsException(Exception):
 class ConnectionFailedException(Exception):
     pass
 
-class ParrotDrone():
+class ParrotDrone:
 
     class FlightMode(Enum):
         MANUAL = 1
@@ -112,9 +120,7 @@ class ParrotDrone():
         if timeout is not None:
             start = time.time()
         while True:
-            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
-                break
-            elif start is not None and time.time() - start < timeout:
+            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success() or start is not None and time.time() - start < timeout:
                 break
             else:
                 await asyncio.sleep(1)
@@ -145,10 +151,7 @@ class ParrotDrone():
                     I *= -1
                 elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0
 
                 return P, I, D
 
@@ -234,10 +237,7 @@ class ParrotDrone():
                     I *= -1
                 elif abs(e) <= 0.05 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0.0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0.0
 
                 # For testing Integral component
                 I = 0.0
@@ -492,7 +492,7 @@ class ParrotDrone():
             return (self.drone.get_state(GpsLocationChanged)["latitude"],
                 self.drone.get_state(GpsLocationChanged)["longitude"],
                 self.drone.get_state(GpsLocationChanged)["altitude"])
-        except Exception as e:
+        except Exception:
             # If there is no GPS fix, return default values
             return (500.0, 500.0, 0.0)
 
@@ -560,10 +560,6 @@ class ParrotDrone():
         self.active = False
 
 
-import cv2
-import numpy as np
-import os
-
 class FFMPEGStreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
@@ -594,7 +590,6 @@ class FFMPEGStreamingThread(threading.Thread):
     def stop(self):
         self.isRunning = False
 
-import queue
 
 class PDRAWStreamingThread(threading.Thread):
 

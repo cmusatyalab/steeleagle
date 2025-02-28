@@ -1,14 +1,15 @@
-from pynput.keyboard import Listener, Key, KeyCode
-from enum import Enum
-import subprocess
+import asyncio
 import logging
 import time
+from collections import defaultdict
+from enum import Enum
+
+import cnc_protocol.cnc_pb2 as cnc_pb2
 import zmq
 import zmq.asyncio
-import asyncio
-from collections import defaultdict
-from util.utils import setup_socket, SocketOperation
-import cnc_protocol.cnc_pb2 as cnc_pb2
+from pynput.keyboard import Key, KeyCode, Listener
+from util.utils import SocketOperation, setup_socket
+
 
 class Ctrl(Enum):
     (
@@ -52,10 +53,7 @@ class KeyboardCtrl(Listener):
             self._key_pressed[key.char] = True
         elif isinstance(key, Key):
             self._key_pressed[key] = True
-        if self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]:
-            return False
-        else:
-            return True
+        return not self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _on_release(self, key):
         if isinstance(key, KeyCode):

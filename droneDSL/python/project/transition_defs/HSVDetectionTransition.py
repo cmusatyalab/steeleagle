@@ -1,9 +1,9 @@
-from json import JSONDecodeError
 import json
 import logging
-from venv import logger
-from interface.Transition import Transition
+from json import JSONDecodeError
+
 from gabriel_protocol import gabriel_pb2
+from interface.Transition import Transition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,8 +23,7 @@ class HSVDetectionTransition(Transition):
         self.cloudlet.clearResults("openscout-object")
         while not self.stop_signal:
             result = self.cloudlet.getResults("openscout-object")
-            if (result != None):
-                if result.payload_type == gabriel_pb2.TEXT:
+            if result is not None and result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
                         json_data = json.loads(json_string)
@@ -35,7 +34,7 @@ class HSVDetectionTransition(Transition):
                                     logger.info(f"**************Transition: Task {self.task_id}: detect condition met! {class_attribute}**************\n")
                                     self._trigger_event("hsv_detection")
                                     break
-                    except JSONDecodeError as e:
+                    except JSONDecodeError:
                         logger.error(f'Error decoding json: {json_string}')
                     except Exception as e:
                         logger.info(e)

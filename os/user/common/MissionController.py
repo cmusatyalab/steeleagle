@@ -1,25 +1,25 @@
 
+import asyncio
 import importlib
+import logging
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 from zipfile import ZipFile
+
 import requests
 import zmq
-import asyncio
-import logging
-
-from util.utils import SocketOperation, setup_socket
-from system_call_stubs.DroneStub import DroneStub
-from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
+from system_call_stubs.ComputeStub import ComputeStub
+from system_call_stubs.DroneStub import DroneStub
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 
 
 
-class MissionController():
+class MissionController:
     def __init__(self, user_path):
         self.isTerminated = False
         self.tm = None
@@ -105,22 +105,22 @@ class MissionController():
                     
     def start_mission(self):
         if self.tm:
-            logger.info(f"mission already running")
+            logger.info("mission already running")
             return
         else: # first time mission, create a task manager
-            import common.TaskManager as tm 
+            import common.TaskManager as tm
         
-        logger.info(f"start the mission")
+        logger.info("start the mission")
         if self.reload : 
             self.reload_mission()
         
-        import project.Mission as msn # import the mission module instead of attribute of the module for the reload to work
+        import project.Mission as msn  # import the mission module instead of attribute of the module for the reload to work
         self.reload = True 
                
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)
         
         # start the tm
-        logger.info(f"start the task manager")
+        logger.info("start the task manager")
         self.tm = tm.TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         

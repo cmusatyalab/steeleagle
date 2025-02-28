@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from abc import ABC, abstractmethod
 import functools
 import logging
 import threading
+from abc import ABC, abstractmethod
+
 from aenum import Enum
-import inspect
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,7 +18,7 @@ class TaskType(Enum):
     Avoid = 3
     Test = 4
 
-class TaskArguments():
+class TaskArguments:
     def __init__(self, task_type, transitions_attributes, task_attributes):
         self.task_type = task_type
         self.task_attributes = task_attributes
@@ -46,17 +46,17 @@ class Task(ABC):
 
     def _exit(self):
         # kill all the transitions
-        logger.info(f"**************exit the task**************\n")
+        logger.info("**************exit the task**************\n")
         self.stop_trans()
         self.trigger_event_queue.put((self.task_id,  "done"))
         
     def stop_trans(self):
-        logger.info(f"**************stopping the transitions**************\n")
+        logger.info("**************stopping the transitions**************\n")
         for trans in self.trans_active:
             if trans.is_alive():
                 trans.stop()
                 trans.join()
-        logger.info(f"**************the transitions stopped**************\n")
+        logger.info("**************the transitions stopped**************\n")
         
         
     @classmethod
@@ -74,8 +74,10 @@ class Task(ABC):
 
         return wrapper
         
+    @abstractmethod
     def pause(self):
         pass
-    
+
+    @abstractmethod
     def resume(self):
         pass

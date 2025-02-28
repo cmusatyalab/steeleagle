@@ -2,22 +2,17 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
-import pandas as pd
-from streamlit_autorefresh import st_autorefresh
-import folium
-from folium.plugins import Draw
-from streamlit_folium import st_folium
-from st_keypressed import st_keypressed
-import streamlit_antd_components as sac
-import redis
-import os
-from cnc_protocol import cnc_pb2
-import zmq
-import time
-import numpy as np
-import cv2
 import datetime
+import os
+
+import folium
+import redis
+import streamlit as st
+import zmq
+from cnc_protocol import cnc_pb2
+from st_keypressed import st_keypressed
+from streamlit_autorefresh import st_autorefresh
+from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="Commander",
@@ -193,7 +188,7 @@ with st.sidebar:
     )
 
     if st.session_state.manual_control:
-        st.subheader(f":blue[Manual Control Enabled]")
+        st.subheader(":blue[Manual Control Enabled]")
         #st.subheader(":red[Manual Speed Controls]", divider="gray")
         st.sidebar.slider(
             key="pitch_speed",
@@ -228,9 +223,9 @@ with st.sidebar:
             step=5,
         )
     elif st.session_state.rth_sent:
-        st.subheader(f":orange[Return to Home Initiated]")
+        st.subheader(":orange[Return to Home Initiated]")
     elif st.session_state.script_file is not None:
-        st.subheader(f":violet[Autonomous Mode Enabled]")
+        st.subheader(":violet[Autonomous Mode Enabled]")
 
 
 with c2:
@@ -347,7 +342,7 @@ with c3:
 
     #st.write(f":keyboard: {st.session_state.key_pressed}")
     st.session_state.key_pressed = st_keypressed()
-    if st.session_state.manual_control and st.session_state.selected_drone != None:
+    if st.session_state.manual_control and st.session_state.selected_drone is not None:
         req = cnc_pb2.Extras()
         req.commander_id = os.uname()[1]
         req.cmd.for_drone_id = st.session_state.selected_drone

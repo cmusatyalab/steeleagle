@@ -1,15 +1,17 @@
 import asyncio
-from json import JSONDecodeError
-import sys
 import json
-import numpy as np
-import math
-from ..transition_defs.TimerTransition import TimerTransition
-from interface.Task import Task
-import time
 import logging
+import math
+import sys
+import time
+from json import JSONDecodeError
+
+import numpy as np
 from gabriel_protocol import gabriel_pb2
+from interface.Task import Task
 from scipy.spatial.transform import Rotation as R
+
+from ..transition_defs.TimerTransition import TimerTransition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -190,8 +192,7 @@ class TrackTask(Task):
             if last_seen is not None and int(time.time() - last_seen)  > self.target_lost_duration:
                 #if we have not found the target in N seconds trigger the done transition
                 break
-            if result != None:
-                if result.payload_type == gabriel_pb2.TEXT:
+            if result is not None and result.payload_type == gabriel_pb2.TEXT:
                     try:
                         json_string = result.payload.decode('utf-8')
                         json_data = json.loads(json_string)
@@ -209,8 +210,8 @@ class TrackTask(Task):
                             logger.info(f"[TrackTask]: Detected instance of {target}, tracking...")
                             vels = await self.pid(box)
                             await self.actuate(vels)
-                    except JSONDecodeError as e:
-                        logger.error(f"[TrackTask]: Error decoding json, ignoring")
+                    except JSONDecodeError:
+                        logger.error("[TrackTask]: Error decoding json, ignoring")
                     except Exception as e:
                         exc_type, exc_obj, exc_tb = sys.exc_info()
                         logger.error(f"[TrackTask]: Exception encountered, {e}, line no {exc_tb.tb_lineno}")

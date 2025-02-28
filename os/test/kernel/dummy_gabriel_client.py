@@ -1,10 +1,12 @@
 import asyncio
 import os
 import sys
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
-from cnc_protocol import cnc_pb2
+
 import nest_asyncio
+from cnc_protocol import cnc_pb2
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_protocol import gabriel_pb2
+
 nest_asyncio.apply()
 
 class Dummy:
@@ -25,7 +27,7 @@ class Dummy:
             self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append('heartbeart'.encode('utf8'))
+            input_frame.payloads.append(b'heartbeart')
 
             extras = cnc_pb2.Extras()
             # test

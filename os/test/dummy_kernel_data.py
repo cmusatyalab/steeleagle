@@ -1,12 +1,12 @@
-import os
-import zmq
-import time
-from cnc_protocol import cnc_pb2
 import asyncio
-import zmq.asyncio
-from util.utils import setup_socket
-import logging 
+import logging
 import sys
+import time
+
+import zmq
+import zmq.asyncio
+from cnc_protocol import cnc_pb2
+from util.utils import setup_socket
 
 # Configure logger
 logger = logging.getLogger()
@@ -35,7 +35,7 @@ setup_socket(cmd_back_sock, 'bind', 'CMD_BACK_PORT', 'Created command backend so
 setup_socket(msn_sock, 'bind', 'MSN_PORT', 'Created user space mission control socket endpoint')
 
 
-class k_client():
+class k_client:
 
     # Function to send a start mission command
     def send_start_mission(self):
@@ -90,7 +90,7 @@ class k_client():
                     elif identity == b'usr':
                         await cmd_back_sock.send_multipart(message)
                     else:
-                        print(f"cmd_proxy: invalid identity")
+                        print("cmd_proxy: invalid identity")
 
 
                 # Check for messages on the DEALER socket
@@ -104,13 +104,13 @@ class k_client():
                     print(f"proxy : 4 Received message from FRONTEND: identity: {identity}")
                     
                     if identity == b'cmdr':
-                        print(f"proxy : 5 Received message from FRONTEND: discard bc of cmdr")
+                        print("proxy : 5 Received message from FRONTEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        print(f"proxy : 5 Received message from FRONTEND: sent back bc of user")
+                        print("proxy : 5 Received message from FRONTEND: sent back bc of user")
                         await cmd_front_sock.send_multipart(message)
                     else:
-                        print(f"cmd_proxy: invalid identity")
+                        print("cmd_proxy: invalid identity")
                         
             except Exception as e:
                 print(f"Proxy error: {e}")

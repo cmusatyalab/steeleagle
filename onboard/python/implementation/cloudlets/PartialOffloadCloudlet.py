@@ -2,18 +2,16 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces import CloudletItf
-import json
-from json import JSONDecodeError
-import threading
-import time
-import logging
 import asyncio
-import cv2
+import json
+import logging
+from json import JSONDecodeError
 
+import cv2
 from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
+from gabriel_protocol import gabriel_pb2
+from interfaces import CloudletItf
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -41,7 +39,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
                         data = json.loads(payload)
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
-                except JSONDecodeError as e:
+                except JSONDecodeError:
                     logger.error(f'Error decoding json: {payload}')
                 except Exception as e:
                     print(e)
@@ -83,7 +81,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
                         input_frame.extras.Pack(extras)
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
+                    input_frame.payloads.append(b"Unable to produce a frame!")
                     logger.error(f'Unable to produce a frame: {e}')
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT

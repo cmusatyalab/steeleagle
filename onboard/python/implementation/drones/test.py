@@ -1,8 +1,8 @@
-from ModalAISeekerDrone import ModalAISeekerDrone
 import asyncio
 import logging
-
 import time
+
+from ModalAISeekerDrone import ModalAISeekerDrone
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

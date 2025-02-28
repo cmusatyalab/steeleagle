@@ -1,16 +1,17 @@
 import asyncio
-from cnc_protocol import cnc_pb2
-import cv2
-from enum import Enum
-from kernel.computes.ComputeItf import ComputeInterface
-from kernel.DataStore import DataStore
 import logging
-import numpy as np
 import os
+from enum import Enum
+
+import cv2
 import kernel.computes.onboard_compute_pb2 as onboard_compute_pb2
-from util.utils import setup_socket, SocketOperation, lazy_pirate_request
+import numpy as np
 import zmq
 import zmq.asyncio
+from cnc_protocol import cnc_pb2
+from kernel.computes.ComputeItf import ComputeInterface
+from kernel.DataStore import DataStore
+from util.utils import SocketOperation, lazy_pirate_request, setup_socket
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class VOXLCompute(ComputeInterface):
         return super().get_status()
 
     async def set(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def run_loop(self):
         '''
@@ -114,11 +115,11 @@ class VOXLCompute(ComputeInterface):
             self.socket, request.SerializeToString(), self.context,
             self.server_endpoint)
 
-        if reply == None:
-            logger.error(f"Local compute engine did not respond to request")
+        if reply is None:
+            logger.error("Local compute engine did not respond to request")
             return
 
-        logger.info(f"Received response from local compute engine")
+        logger.info("Received response from local compute engine")
         detections = onboard_compute_pb2.ComputeResult()
         detections.ParseFromString(reply)
         logger.info(f"Received detections: {detections}")

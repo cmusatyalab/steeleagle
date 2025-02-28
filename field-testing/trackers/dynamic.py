@@ -2,16 +2,15 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import AltitudeChanged
-from olympe.messages.gimbal import set_target, attitude, set_max_speed
-from olympe.enums.gimbal import control_mode
+import json
 import threading
 import time
-import zmq
-import json
+
 import numpy as np
+import zmq
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import AltitudeChanged
+from olympe.messages.gimbal import attitude, set_max_speed
 from scipy.spatial.transform import Rotation as R
 
 
@@ -70,7 +69,7 @@ class DynamicLeashTracker(threading.Thread):
 
         drone_roll, drone_pitch = self.get_movement_vectors(target_yaw_angle, target_pitch_angle)
 
-        if self.hysteresis and self.prev_center_ts != None and round(time.time() * 1000) - self.prev_center_ts < 500:
+        if self.hysteresis and self.prev_center_ts is not None and round(time.time() * 1000) - self.prev_center_ts < 500:
             hysteresis_yaw_angle = ((self.prev_center[0] - target_x_pix) / self.prev_center[0]) * (self.HFOV / 2)
             hysteresis_pitch_angle = ((self.prev_center[1] - target_y_pix) / self.prev_center[1]) * (self.VFOV / 2)
             target_yaw_angle += 0.90 * hysteresis_yaw_angle
@@ -109,7 +108,7 @@ class DynamicLeashTracker(threading.Thread):
                 det = json.loads(self.sub_socket.recv_json())
                 if len(det) > 0:
                     if not self.tracking:
-                        print("Starting new track on object: \"{0}\"".format(det[0]["class"]))
+                        print("Starting new track on object: \"{}\"".format(det[0]["class"]))
                     else:
                         print(f"Got detection from the cloudlet: {det}")
                     self.tracking = True

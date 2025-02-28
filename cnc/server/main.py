@@ -5,9 +5,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from gabriel_server.network_engine import server_runner
-import logging
 import argparse
+import logging
+
+from gabriel_server.network_engine import server_runner
 
 DEFAULT_PORT = 9099
 DEFAULT_NUM_TOKENS = 2

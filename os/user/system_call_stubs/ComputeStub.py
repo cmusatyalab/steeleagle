@@ -5,11 +5,10 @@
 import asyncio
 import logging
 import os
+
 import zmq
 from cnc_protocol import cnc_pb2
-from util.utils import setup_socket
-from util.utils import SocketOperation
-from enum import Enum
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -39,7 +38,7 @@ class ComputeRespond:
     def set (self):
         self.event.set()
         
-class ComputeStub():
+class ComputeStub:
     def __init__(self):
         self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
         self.seqNum_res = {}

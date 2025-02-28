@@ -1,15 +1,15 @@
-from enum import Enum
-import sys
-import time
-import validators
-import zmq
-import zmq.asyncio
 import asyncio
 import logging
 import os
+import time
+from enum import Enum
+
+import validators
+import zmq
+import zmq.asyncio
 from cnc_protocol import cnc_pb2
 from kernel.Service import Service
-from util.utils import setup_socket, SocketOperation
+from util.utils import SocketOperation, setup_socket
 
 # Configure logger
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
@@ -178,13 +178,13 @@ class CommandService(Service):
                     logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: identity: {identity} cmd: {cmd}")
 
                     if identity == b'cmdr':
-                        logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: discard bc of cmdr")
+                        logger.debug("proxy : cmd_back_sock Received message from BACKEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: sent back bc of user")
+                        logger.debug("proxy : cmd_back_sock Received message from BACKEND: sent back bc of user")
                         await self.cmd_front_usr_sock.send_multipart([cmd])
                     else:
-                        logger.error(f"proxy: invalid identity")
+                        logger.error("proxy: invalid identity")
 
             except Exception as e:
                 logger.error(f"proxy: {e}")

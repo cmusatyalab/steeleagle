@@ -1,9 +1,10 @@
-import os
-import zmq
-import time
-from cnc_protocol import cnc_pb2
 import asyncio
+import os
+import time
+
+import zmq
 import zmq.asyncio
+from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 
 context = zmq.Context()
@@ -16,7 +17,7 @@ setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command front
 
 
 
-class c_client():
+class c_client:
     def send_takeOff(self):
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.takeoff = True
@@ -28,7 +29,7 @@ class c_client():
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.land = True
         message = driver_command.SerializeToString()
-        cmd_front_socket.send_multipart([message])
+        cmd_front_sock.send_multipart([message])
         print(f"commander: land sent at: {time.time()}")
    
     def send_MCOM(self, key):

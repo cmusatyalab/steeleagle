@@ -4,24 +4,25 @@
 
 import argparse
 import asyncio
-import nest_asyncio
-nest_asyncio.apply()
-from syncer import sync
+import importlib
 import logging
-import requests
+import os
 import subprocess
 import sys
-import validators
-import os
+import time
 from zipfile import ZipFile
-import importlib
 
-from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
 #from websocket_client import WebsocketClient
-
+import nest_asyncio
+import requests
+import validators
 import zmq
+from cnc_protocol import cnc_pb2
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_protocol import gabriel_pb2
+from syncer import sync
+
+nest_asyncio.apply()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -44,18 +45,18 @@ class Supervisor:
         cloudlet_import = f"implementation.cloudlets.{args.cloudlet}"
         try:
             Drone = importlib.import_module(drone_import)
-        except Exception as e:
+        except Exception:
             logger.info('Could not import drone {args.drone}')
             sys.exit(0)
         try:
             Cloudlet = importlib.import_module(cloudlet_import)
-        except Exception as e:
+        except Exception:
             logger.info('Could not import cloudlet {args.cloudlet}')
             sys.exit(0)
 
         try:
             self.cloudlet = getattr(Cloudlet, args.cloudlet)()
-        except Exception as e:
+        except Exception:
             logger.info('Could not initialize {args.cloudlet}, name does not exist. Aborting.')
             sys.exit(0)
         try:
@@ -70,7 +71,7 @@ class Supervisor:
                 kwargs['droneip'] = args.droneip
             logger.info(f"{kwargs=}")
             self.drone = getattr(Drone, args.drone)(**kwargs)
-        except Exception as e:
+        except Exception:
             logger.info('Could not initialize {args.drone}, name does not exist. Aborting.')
             sys.exit(0)
 
@@ -96,7 +97,7 @@ class Supervisor:
         logger.debug('Starting flight plan download...')
         try:
             self.download(url)
-        except Exception as e:
+        except Exception:
             logger.debug('Flight script download failed! Aborting.')
             return
         logger.debug('Flight script downloaded...')
@@ -124,7 +125,7 @@ class Supervisor:
         logger.debug('MC init')
         #from mission.MissionController import MissionController
         Mission = importlib.import_module(f"{module_prefix}.mission.MissionController")
-        self.mission = getattr(Mission, "MissionController")(self.drone, self.cloudlet)
+        self.mission = Mission.MissionController(self.drone, self.cloudlet)
         logger.debug('Running flight script!')
         self.missionTask = asyncio.create_task(self.mission.run())
         self.reload = True
@@ -181,7 +182,7 @@ class Supervisor:
             try:
                 self.zmq.send(req.SerializeToString())
                 rep = self.zmq.recv()
-                if b'No commands.' != rep:
+                if rep != b'No commands.':
                     extras  = cnc_pb2.Extras()
                     extras.ParseFromString(rep)
                     if extras.cmd.rth:
@@ -206,13 +207,13 @@ class Supervisor:
                             logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
                     elif self.manual:
                         if extras.cmd.takeoff:
-                            logger.info(f'Received manual takeoff')
+                            logger.info('Received manual takeoff')
                             asyncio.create_task(self.drone.takeOff())
                         elif extras.cmd.land:
-                            logger.info(f'Received manual land')
+                            logger.info('Received manual land')
                             asyncio.create_task(self.drone.land())
                         else:
-                            logger.info(f'Received manual PCMD')
+                            logger.info('Received manual PCMD')
                             pitch = extras.cmd.pcmd.pitch
                             yaw = extras.cmd.pcmd.yaw
                             roll = extras.cmd.pcmd.roll
@@ -251,7 +252,7 @@ class Supervisor:
             self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append('heartbeart'.encode('utf8'))
+            input_frame.payloads.append(b'heartbeart')
 
             extras = cnc_pb2.Extras()
             try:

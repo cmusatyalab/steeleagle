@@ -5,17 +5,18 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import time
 import datetime
 import logging
-from gabriel_server import cognitive_engine
-from gabriel_protocol import gabriel_pb2
-from cnc_protocol import cnc_pb2
-import redis
 import os
-from PIL import Image
+import time
+
 import cv2
 import numpy as np
+import redis
+from cnc_protocol import cnc_pb2
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,7 +35,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             os.makedirs(self.storage_path+"/raw")
         except FileExistsError:
             logger.info("Images directory already exists.")
-        logger.info("Storing detection images at {}".format(self.storage_path))
+        logger.info(f"Storing detection images at {self.storage_path}")
         self.current_path = None
         self.publish = args.publish
 
@@ -56,7 +57,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         result = None
         
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            if extras.drone_id is not "":
+            if extras.drone_id != "":
                 if extras.registering:
                     logger.info(f"Drone [{extras.drone_id}] connected.")
                     if not os.path.exists(f"{self.storage_path}/raw/{extras.drone_id}"):
@@ -69,7 +70,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
-                result.payload = "Telemetry updated.".encode(encoding="utf-8")
+                result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:

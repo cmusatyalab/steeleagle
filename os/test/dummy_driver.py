@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+
 import zmq
 import zmq.asyncio
 from cnc_protocol import cnc_pb2
@@ -26,7 +27,7 @@ async def camera_stream(drone, camera_sock):
     while True:
         try:
             x = 1
-        except Exception as e:
+        except Exception:
             pass
         await asyncio.sleep(0.033)
 
@@ -40,7 +41,7 @@ async def telemetry_stream(drone, telemetry_sock):
             print(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
         
-class d_server():
+class d_server:
 
     async def a_run(self):
         asyncio.create_task(telemetry_stream(None, tel_sock))
@@ -84,7 +85,7 @@ class d_server():
                 # Send a reply back to the client with the identity frame and empty delimiter
                 cmd_back_sock.send_multipart([identity, serialized_response])
                 
-                print(f"done processing request")
+                print("done processing request")
             except Exception as e:
                 print(f"error: {e}")
                 

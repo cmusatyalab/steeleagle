@@ -3,14 +3,16 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 #from interfaces.Task import Task
-import json
-from json import JSONDecodeError
-import time
 import asyncio
+import json
 import logging
+import time
+from json import JSONDecodeError
+
 from gabriel_protocol import gabriel_pb2
-from ..transition_defs.TimerTransition import TimerTransition
 from interface.Task import Task
+
+from ..transition_defs.TimerTransition import TimerTransition
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -130,10 +132,10 @@ class AvoidTask(Task):
                     error = await self.computeError()
                     logger.info(f"[ObstacleTask] Error {error}")
                     await self.moveForwardAndAvoid(error)
-                except JSONDecodeError as e:
-                    logger.error(f"[ObstacleTask]: Error decoding JSON")
+                except JSONDecodeError:
+                    logger.error("[ObstacleTask]: Error decoding JSON")
                 except Exception as e:
-                    logger.error(f"[ObstacleTask] Threw an exception")
+                    logger.error("[ObstacleTask] Threw an exception")
                     logger.error(e)
                 await asyncio.sleep(0.1)
         except Exception as e:

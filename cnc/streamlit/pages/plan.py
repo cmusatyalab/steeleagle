@@ -3,15 +3,14 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import streamlit as st
-from streamlit_ace import st_ace
-from util import menu, authenticated
 import streamlit.components.v1 as components
-from streamlit_oauth import OAuth2Component
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from streamlit_ace import st_ace
+from streamlit_oauth import OAuth2Component
+from util import authenticated, menu
 
 sample="""Task {
     Detect patrol_route {
@@ -69,9 +68,8 @@ def fetch_mymaps():
         client_id=st.secrets.oauth.client_id,
         client_secret=st.secrets.oauth.client_secret)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+    if creds and not creds.valid and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
 
     try:
         service = build("drive", "v3", credentials=creds)

@@ -2,16 +2,16 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import olympe
-from olympe.messages.ardrone3.Piloting import PCMD
-from olympe.messages.ardrone3.PilotingState import AltitudeChanged
-from olympe.messages.gimbal import set_target, attitude
-from olympe.enums.gimbal import control_mode
-import numpy as np
+import json
 import threading
 import time
+
+import numpy as np
 import zmq
-import json
+from olympe.enums.gimbal import control_mode
+from olympe.messages.ardrone3.Piloting import PCMD
+from olympe.messages.ardrone3.PilotingState import AltitudeChanged
+from olympe.messages.gimbal import set_target
 
 
 class StaticLeashTracker(threading.Thread):
@@ -88,7 +88,7 @@ class StaticLeashTracker(threading.Thread):
                 det = json.loads(self.sub_socket.recv_json())
                 if len(det) > 0:
                     if not self.tracking:
-                        print("Starting new track on object: \"{0}\"".format(det[0]["class"]))
+                        print("Starting new track on object: \"{}\"".format(det[0]["class"]))
                     else:
                         print(f"Got detection from the cloudlet: {det}")
                     self.tracking = True

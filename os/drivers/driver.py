@@ -1,16 +1,18 @@
+import asyncio
+import json
+import logging
+import os
+import signal
+import sys
 import time
+
+import cnc_protocol.cnc_pb2 as cnc_protocol
 import zmq
 import zmq.asyncio
-import json
-import os
-import sys
-import asyncio
-import logging
-import cnc_protocol.cnc_pb2 as cnc_protocol
-from util.utils import setup_socket, SocketOperation
-import signal
-from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone, ConnectionFailedException
-from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
+from drivers.base.common import ConnectionFailedException
+from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone
+from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone
+from util.utils import SocketOperation, setup_socket
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -182,10 +184,10 @@ async def main(drone, cam_sock, tel_sock, args):
             logger.info('starting connecting...')
             await drone.connect(connection_string)
             logger.info('drone connected')
-        except ConnectionFailedException as e:
+        except ConnectionFailedException:
             logger.error('Failed to connect to drone, retrying...')
             continue
-        logger.info(f'Established connection to drone, ready to receive commands!')
+        logger.info('Established connection to drone, ready to receive commands!')
         
         await drone.startStreaming()
         logger.info('Started streaming')
@@ -213,7 +215,7 @@ async def main(drone, cam_sock, tel_sock, args):
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
-        logger.info(f"Disconnected from drone")
+        logger.info("Disconnected from drone")
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))

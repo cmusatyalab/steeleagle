@@ -2,20 +2,17 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces import CloudletItf
-import json
-from json import JSONDecodeError
-import threading
-import time
-import logging
 import asyncio
-from syncer import sync
-import cv2
-from typing import Tuple
+import json
+import logging
+from json import JSONDecodeError
 
+import cv2
 from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
+from gabriel_protocol import gabriel_pb2
+from interfaces import CloudletItf
+from syncer import sync
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,7 +42,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         data = json.loads(payload)
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
-                except JSONDecodeError as e:
+                except JSONDecodeError:
                     logger.debug(f'Error decoding json: {payload}')
                 except Exception as e:
                     print(e)
@@ -64,7 +61,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
     def switchModel(self, model):
         self.model = model
 
-    def setHSVFilter(self, lower_bound: Tuple[int, int, int], upper_bound: Tuple[int, int, int]):
+    def setHSVFilter(self, lower_bound: tuple[int, int, int], upper_bound: tuple[int, int, int]):
         self.hsv_lower = lower_bound
         self.hsv_upper = upper_bound
 
@@ -98,7 +95,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         input_frame.extras.Pack(extras)
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
+                    input_frame.payloads.append(b"Unable to produce a frame!")
                     logger.debug(f'Unable to produce a frame: {e}')
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT

@@ -3,14 +3,22 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import asyncio
-from interfaces import DroneItf
-import math
-from mavsdk import System
-from mavsdk.offboard import (OffboardError, PositionNedYaw, VelocityBodyYawspeed, PositionGlobalYaw)
-import time
-import numpy as np
-import math as m
 import logging
+import math
+import math as m
+import os
+import threading
+import time
+
+import cv2
+import numpy as np
+from interfaces import DroneItf
+from mavsdk import System
+from mavsdk.offboard import (
+	OffboardError,
+	PositionGlobalYaw,
+	VelocityBodyYawspeed,
+)
 
 logger = logging.getLogger()
 
@@ -98,10 +106,7 @@ class MavlinkDrone(DroneItf.DroneItf):
 
     async def isConnected(self):
         async for state in self.drone.core.connection_state():
-            if state.is_connected:
-                return True
-            else:
-                return False
+            return bool(state.is_connected)
 
     async def disconnect(self):
         await self.drone.action.disarm()
@@ -129,19 +134,19 @@ class MavlinkDrone(DroneItf.DroneItf):
         await self.drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
         try:
             await self.drone.offboard.start()
-        except Exception as e:
+        except Exception:
             await self.land()
 
     async def land(self):
         try:
             await self.drone.offboard.stop()
-        except OffboardError as error:
+        except OffboardError:
             pass
         await self.drone.action.land()
         await self.drone.action.disarm()
 
     async def setHome(self, lat, lng, alt):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def rth(self):
         await self.drone.action.set_return_to_launch_altitude(self.RTH_ALT)
@@ -185,10 +190,10 @@ class MavlinkDrone(DroneItf.DroneItf):
     ''' Photography methods '''
 
     async def takePhoto(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def toggleThermal(self, on):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     ''' Status methods '''
 
@@ -233,11 +238,6 @@ class MavlinkDrone(DroneItf.DroneItf):
         self.active = False
 
 
-import cv2
-import numpy as np
-import os
-import threading
-
 class StreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
@@ -259,7 +259,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self.currentFrame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return np.zeros((720, 1280, 3), np.uint8) 
 
