@@ -90,8 +90,7 @@ def _main():
                 now = time.time()
                 if now - lastprint > 5:
                     print(
-                        "avg fps: {0:.2f}".format(
-                            (frames_received - lastcount) / 5)
+                        f"avg fps: {(frames_received - lastcount) / 5:.2f}"
                         )
                     print()
                     lastcount = frames_received

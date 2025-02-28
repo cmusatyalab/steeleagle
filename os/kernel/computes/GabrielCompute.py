@@ -137,10 +137,10 @@ class GabrielCompute(ComputeInterface):
                 else:
                     logger.info('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
+                    input_frame.payloads.append(b"Streaming not started, no frame to show.")
             except Exception as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
+                input_frame.payloads.append(b"Unable to produce a frame!")
                 logger.error(f'Gabriel compute Frame producer: unable to produce a frame: {e}')
 
             logger.debug(f"Gabriel compute Frame producer: finished time {time.time()}")
@@ -155,7 +155,7 @@ class GabrielCompute(ComputeInterface):
             logger.debug(f"tel producer: starting time {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append('heartbeart'.encode('utf8'))
+            input_frame.payloads.append(b'heartbeart')
             tel_data = cnc_pb2.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
@@ -179,7 +179,7 @@ class GabrielCompute(ComputeInterface):
                         extras.registering = True
                         self.drone_registered = True
 
-                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(extras))
+                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemerty! content: {extras}')
                     input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')

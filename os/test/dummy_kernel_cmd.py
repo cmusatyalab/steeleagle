@@ -50,7 +50,7 @@ setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created comm
 setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
 
 
-class k_client():
+class k_client:
 
     # Function to send a start mission command
     def send_start_mission(self):

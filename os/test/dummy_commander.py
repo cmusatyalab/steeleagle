@@ -17,7 +17,7 @@ setup_socket(cmd_front_sock, 'connect', 'CMD_FRONT_PORT', 'Created command front
 
 
 
-class c_client():
+class c_client:
     def send_takeOff(self):
         driver_command = cnc_pb2.Extras()
         driver_command.cmd.takeoff = True

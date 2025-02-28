@@ -41,7 +41,7 @@ async def telemetry_stream(drone, telemetry_sock):
             print(f'Failed to get telemetry, error: {e}')
         await asyncio.sleep(0)
         
-class d_server():
+class d_server:
 
     async def a_run(self):
         asyncio.create_task(telemetry_stream(None, tel_sock))

@@ -12,7 +12,7 @@ from pymavlink import mavutil
 logger = logging.getLogger(__name__)
 
 
-class SkyViper2450GPSDrone():
+class SkyViper2450GPSDrone:
     
     class FlightMode(Enum):
         LAND = 'LAND'

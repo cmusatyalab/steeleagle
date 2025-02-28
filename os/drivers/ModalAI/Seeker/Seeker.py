@@ -12,7 +12,7 @@ from pymavlink import mavutil
 logger = logging.getLogger(__name__)
 
 
-class ModalAISeekerDrone():
+class ModalAISeekerDrone:
     
     class FlightMode(Enum):
         LAND = 'LAND'

@@ -252,7 +252,7 @@ class Supervisor:
             self.heartbeats += 1
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append('heartbeart'.encode('utf8'))
+            input_frame.payloads.append(b'heartbeart')
 
             extras = cnc_pb2.Extras()
             try:

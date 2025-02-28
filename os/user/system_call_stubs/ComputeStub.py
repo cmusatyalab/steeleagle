@@ -38,7 +38,7 @@ class ComputeRespond:
     def set (self):
         self.event.set()
         
-class ComputeStub():
+class ComputeStub:
     def __init__(self):
         self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
         self.seqNum_res = {}

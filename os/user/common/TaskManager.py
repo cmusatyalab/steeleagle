@@ -11,7 +11,7 @@ import project.task_defs.TrackTask as track
 logger = logging.getLogger(__name__)
 
     
-class TaskManager():
+class TaskManager:
     
     def __init__(self, drone, compute, transit_map, task_arg_map):
         super().__init__()

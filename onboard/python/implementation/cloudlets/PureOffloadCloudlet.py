@@ -6,7 +6,6 @@ import asyncio
 import json
 import logging
 from json import JSONDecodeError
-from typing import Tuple
 
 import cv2
 from cnc_protocol import cnc_pb2
@@ -62,7 +61,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
     def switchModel(self, model):
         self.model = model
 
-    def setHSVFilter(self, lower_bound: Tuple[int, int, int], upper_bound: Tuple[int, int, int]):
+    def setHSVFilter(self, lower_bound: tuple[int, int, int], upper_bound: tuple[int, int, int]):
         self.hsv_lower = lower_bound
         self.hsv_upper = upper_bound
 
@@ -96,7 +95,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         input_frame.extras.Pack(extras)
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
+                    input_frame.payloads.append(b"Unable to produce a frame!")
                     logger.debug(f'Unable to produce a frame: {e}')
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT

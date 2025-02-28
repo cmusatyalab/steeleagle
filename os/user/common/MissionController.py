@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 
-class MissionController():
+class MissionController:
     def __init__(self, user_path):
         self.isTerminated = False
         self.tm = None

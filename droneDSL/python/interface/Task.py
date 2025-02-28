@@ -18,7 +18,7 @@ class TaskType(Enum):
     Avoid = 3
     Test = 4
 
-class TaskArguments():
+class TaskArguments:
     def __init__(self, task_type, transitions_attributes, task_attributes):
         self.task_type = task_type
         self.task_attributes = task_attributes

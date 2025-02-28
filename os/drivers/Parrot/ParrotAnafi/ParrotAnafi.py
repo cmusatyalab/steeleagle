@@ -70,7 +70,7 @@ class ArgumentOutOfBoundsException(Exception):
 class ConnectionFailedException(Exception):
     pass
 
-class ParrotDrone():
+class ParrotDrone:
 
     class FlightMode(Enum):
         MANUAL = 1

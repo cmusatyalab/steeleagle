@@ -88,7 +88,7 @@ class StaticLeashTracker(threading.Thread):
                 det = json.loads(self.sub_socket.recv_json())
                 if len(det) > 0:
                     if not self.tracking:
-                        print("Starting new track on object: \"{0}\"".format(det[0]["class"]))
+                        print("Starting new track on object: \"{}\"".format(det[0]["class"]))
                     else:
                         print(f"Got detection from the cloudlet: {det}")
                     self.tracking = True

@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 
-class KeyPointHistory(object):
+class KeyPointHistory:
     def __init__(self):
         self.age = -1
         self.lastFrameIdx = 0
@@ -45,7 +45,7 @@ class KeyPointHistory(object):
         return str(dict((attr,getattr(self,attr)) for attr in dir(self)
                          if not attr.startswith('_') and not callable(getattr(self,attr))))        
 
-class Cluster(object):
+class Cluster:
     def __init__(self,keypoints,img):
         self.mask = np.zeros_like(img)
         for kp in keypoints:
@@ -106,7 +106,7 @@ avgKP = lambda keypoints: map(lambda x: sum(x)/len(keypoints),zip(*map(attrgette
 toKeyPoint_cv = lambda kp: cv2.KeyPoint(kp.pt[0],kp.pt[1],kp.size,_angle=kp.angle,_response=kp.response,_octave=kp.octave,_class_id=kp.class_id)
 
 def reprObj(obj):
-    return "\n".join(["%s = %s" % (attr, getattr(obj, attr)) for attr in dir(obj) if not attr.startswith('_') and not callable(getattr(src,attr))])
+    return "\n".join([f"{attr} = {getattr(obj, attr)}" for attr in dir(obj) if not attr.startswith('_') and not callable(getattr(src,attr))])
 
 def cvtIdx(pt,shape):
     return int(pt[1]*shape[1] + pt[0]) if hasattr(pt, '__len__') else map(int, (pt%shape[1], pt//shape[1]))

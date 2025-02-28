@@ -57,7 +57,7 @@ class ParrotFollowMeTracker(threading.Thread):
             try:
                 det = json.loads(self.sub_socket.recv_json())
                 if not self.tracking and len(det) > 0:
-                    print("Starting new track on object: \"{0}\"".format(det[0]["class"]))
+                    print("Starting new track on object: \"{}\"".format(det[0]["class"]))
                     self.tracking = True
                     azi, elev = self.calculate_azimuth_elevation(det[0]["lat"], det[0]["lon"])
                     conf = int(det[0]["score"] * 255)
@@ -67,7 +67,7 @@ class ParrotFollowMeTracker(threading.Thread):
                     self.drone(follow_me.target_framing_position(50, 50))
                     self.drone(follow_me.start(self.behavior, _no_expect=True))
                 elif self.tracking and len(det) > 0:
-                    print("Got detection from cloudlet: {0}".format(json.dumps(det)))
+                    print(f"Got detection from cloudlet: {json.dumps(det)}")
                     azi, elev = self.calculate_azimuth_elevation(det[0]["lat"], det[0]["lon"])
                     conf = int(det[0]["score"] * 255)
                     self.drone(follow_me.target_image_detection(azi, elev, 0.0, conf, 0, self.current_time_millis() - self.start))
