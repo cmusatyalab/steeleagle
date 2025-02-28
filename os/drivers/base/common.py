@@ -2,5 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+
 class ConnectionFailedException(Exception):
     pass

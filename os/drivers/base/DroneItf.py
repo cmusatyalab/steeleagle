@@ -1,4 +1,3 @@
-
 from abs import ABC, abstractmethod
 
 
@@ -17,6 +16,7 @@ class DroneDeviceItf(ABC):
         :param message: Message string to describe reason for failure.
         :type message: string
         """
+
         def __init__(self, rid, message):
             """
             Constructor method.
@@ -35,7 +35,7 @@ class DroneDeviceItf(ABC):
         """
         Connect to the drone hardware.
 
-        :return: 'True' if successful, 'False' otherwise 
+        :return: 'True' if successful, 'False' otherwise
         :rtype: bool
         """
         pass
@@ -45,7 +45,7 @@ class DroneDeviceItf(ABC):
         """
         Checks to see if the drone hardware is connected.
 
-        :return: 'True' if connected, 'False' otherwise 
+        :return: 'True' if connected, 'False' otherwise
         :rtype: bool
         """
         pass
@@ -75,14 +75,14 @@ class DroneDeviceItf(ABC):
     async def setHome(self, lat, lng, alt):
         """
         Set the home destination for the drone.
-        
+
         :param lat: New home latitude
         :type lat: float
         :param lng: New home longitude
         :type lng: float
         :param alt: New home altitude
         :type alt: float
-        :return: Response object  
+        :return: Response object
         :rtype: class: Response
         """
         pass
@@ -119,10 +119,10 @@ class DroneDeviceItf(ABC):
         """
         Set the velocity of the drone.
 
-        :param forward_vel: Target velocity along forward axis, 
+        :param forward_vel: Target velocity along forward axis,
             in meters per second
         :type forward_vel: float
-        :param right_vel: Target velocity along right axis, 
+        :param right_vel: Target velocity along right axis,
             in meters per second
         :type right_vel: float
         :param up_vel: Target velocity along up axis, in meters per second
@@ -177,4 +177,3 @@ class DroneDeviceItf(ABC):
         :rtype: class: Response
         """
         pass
-

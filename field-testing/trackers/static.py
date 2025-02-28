@@ -20,8 +20,8 @@ class StaticLeashTracker(threading.Thread):
         self.leash = leash
         self.context = zmq.Context()
         self.sub_socket = self.context.socket(zmq.SUB)
-        self.sub_socket.connect('tcp://localhost:5556')
-        self.sub_socket.setsockopt(zmq.SUBSCRIBE, b'')
+        self.sub_socket.connect("tcp://localhost:5556")
+        self.sub_socket.setsockopt(zmq.SUBSCRIBE, b"")
         self.image_res = (640, 480)
         self.pixel_center = (self.image_res[0] / 2, self.image_res[1] / 2)
         self.HFOV = 69
@@ -32,10 +32,12 @@ class StaticLeashTracker(threading.Thread):
         alt = self.drone.get_state(AltitudeChanged)["altitude"]
         print(alt)
         print(self.leash)
-        print(np.arctan(self.leash/alt))
+        print(np.arctan(self.leash / alt))
         angle = -1 * (90 - (np.arctan(self.leash / alt) * (180 / np.pi)))
         print(angle)
-        self.drone(set_target(0, control_mode.position, "none", 0.0, "absolute", angle, "none", 0.0))
+        self.drone(
+            set_target(0, control_mode.position, "none", 0.0, "absolute", angle, "none", 0.0)
+        )
 
     def pitch_step_func(self, p):
         CUTOFFS = [0.0, 0.35, 0.45, 0.55, 0.65, 1.0]
@@ -68,7 +70,7 @@ class StaticLeashTracker(threading.Thread):
             return SPEEDS[4]
 
     def calculate_offsets(self, box):
-        target_x_percentage = ((box[3] - box[1]) / 2.0) + box[1] 
+        target_x_percentage = ((box[3] - box[1]) / 2.0) + box[1]
         roll_speed = self.roll_step_func(target_x_percentage)
         target_y_percentage = 1 - (((box[2] - box[0]) / 2.0) + box[0])
         pitch_speed = self.pitch_step_func(target_y_percentage)
@@ -88,7 +90,7 @@ class StaticLeashTracker(threading.Thread):
                 det = json.loads(self.sub_socket.recv_json())
                 if len(det) > 0:
                     if not self.tracking:
-                        print("Starting new track on object: \"{}\"".format(det[0]["class"]))
+                        print('Starting new track on object: "{}"'.format(det[0]["class"]))
                     else:
                         print(f"Got detection from the cloudlet: {det}")
                     self.tracking = True

@@ -1,6 +1,11 @@
 target-version = "py310"
 exclude = ["*_pb2.py"]
 
+line-length = 100
+[format]
+indent-style = "space"
+quote-style = "double"
+
 [lint]
 select = [
     "E",   # pycodestyle

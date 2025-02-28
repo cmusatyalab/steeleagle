@@ -41,20 +41,31 @@ if "list" not in st.session_state:
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
 if "red" not in st.session_state:
-    st.session_state.red = redis.Redis(host=st.secrets.redis, port=st.secrets.redis_port, username=st.secrets.redis_user, password=st.secrets.redis_pw,decode_responses=True)
+    st.session_state.red = redis.Redis(
+        host=st.secrets.redis,
+        port=st.secrets.redis_port,
+        username=st.secrets.redis_user,
+        password=st.secrets.redis_pw,
+        decode_responses=True,
+    )
     try:
         st.session_state.red.ping()
     except redis.ConnectionError:
         st.error("Cannot connect to Redis!")
 
 if "subscriber" not in st.session_state:
-    red2 = redis.Redis(host=st.secrets.redis, port=st.secrets.redis_port, username=st.secrets.redis_user, password=st.secrets.redis_pw)
+    red2 = redis.Redis(
+        host=st.secrets.redis,
+        port=st.secrets.redis_port,
+        username=st.secrets.redis_user,
+        password=st.secrets.redis_pw,
+    )
     st.session_state.subscriber = red2.pubsub(ignore_subscribe_messages=True)
-    st.session_state.subscriber.psubscribe('imagery.*')
+    st.session_state.subscriber.psubscribe("imagery.*")
 if "zmq" not in st.session_state:
     ctx = zmq.Context()
     st.session_state.zmq = ctx.socket(zmq.REQ)
-    st.session_state.zmq.connect(f'tcp://{st.secrets.zmq}:{st.secrets.zmq_port}')
+    st.session_state.zmq.connect(f"tcp://{st.secrets.zmq}:{st.secrets.zmq_port}")
 
 if "last_image" not in st.session_state:
     st.session_state.last_image = None
@@ -78,7 +89,7 @@ DATA_TYPES = {
     "mag": int,
     "sats": int,
 }
-l=[]
+l = []
 for k in st.session_state.red.keys("telemetry.*"):
     l.append(k.split(".")[-1])
 st.session_state.list = l
@@ -86,9 +97,15 @@ st.session_state.list = l
 st.session_state.selected_drone = l[0]
 
 if st.session_state.selected_drone is not None:
-    results = st.session_state.red.xrevrange(f"telemetry.{st.session_state.selected_drone}", "+", "-", 1)
+    results = st.session_state.red.xrevrange(
+        f"telemetry.{st.session_state.selected_drone}", "+", "-", 1
+    )
     telemetry = results[0][1]
-    telemetry["last_update"] = datetime.datetime.strftime(datetime.datetime.fromtimestamp(int(results[0][0].split("-")[0])/1000), "%d-%b-%Y %H:%M:%S")
+    telemetry["last_update"] = datetime.datetime.strftime(
+        datetime.datetime.fromtimestamp(int(results[0][0].split("-")[0]) / 1000),
+        "%d-%b-%Y %H:%M:%S",
+    )
+
 
 def run_flightscript():
     if st.session_state.script_file is None:
@@ -124,9 +141,7 @@ def enable_manual():
     req.cmd.for_drone_id = st.session_state.selected_drone
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    st.toast(
-        f"Assuming manual control of {st.session_state.selected_drone}! Kill signal sent."
-    )
+    st.toast(f"Assuming manual control of {st.session_state.selected_drone}! Kill signal sent.")
 
 
 def rth():
@@ -167,7 +182,7 @@ with st.sidebar:
         help="Upload a flight script.",
         type=["ms"],
     )
-   # st.divider()
+    # st.divider()
     st.button(
         key="manual_button",
         label=":joystick: Manual Control",
@@ -189,7 +204,7 @@ with st.sidebar:
 
     if st.session_state.manual_control:
         st.subheader(":blue[Manual Control Enabled]")
-        #st.subheader(":red[Manual Speed Controls]", divider="gray")
+        # st.subheader(":red[Manual Speed Controls]", divider="gray")
         st.sidebar.slider(
             key="pitch_speed",
             label="Drone Pitch (forward/backward)",
@@ -247,22 +262,20 @@ with c2:
         attr="Google",
     )
     fg = folium.FeatureGroup(name="markers")
-    #Draw(export=True).add_to(m)
+    # Draw(export=True).add_to(m)
     if st.session_state.selected_drone is not None:
         plane = folium.Icon(
             icon="plane",
             color="red",
             prefix="glyphicon",
-            angle=int(
-                telemetry['bearing']
-            ),
+            angle=int(telemetry["bearing"]),
         )
 
         fg.add_child(
             folium.Marker(
                 location=[
-                    telemetry['latitude'],
-                    telemetry['longitude'],
+                    telemetry["latitude"],
+                    telemetry["longitude"],
                 ],
                 tooltip=st.session_state.selected_drone,
                 icon=plane,
@@ -305,13 +318,11 @@ with c2:
         status_cols2 = st.columns(2)
         status_cols2[0].metric(
             label="Magnetometer",
-            value=MAG_STATE[
-                int(telemetry['mag'])
-            ],
+            value=MAG_STATE[int(telemetry["mag"])],
         )
         st.metric(
-             label="Last Update",
-             value=f"{telemetry['last_update']}",
+            label="Last Update",
+            value=f"{telemetry['last_update']}",
         )
         # status_cols2[1].metric(
         #     label="Status",
@@ -320,7 +331,7 @@ with c2:
         # st.session_state.prev_sats = int(
         #     st.session_state.list.loc[st.session_state.selected_drone].sats
         # )
-        st.session_state.prev_alt = float(telemetry['altitude'])
+        st.session_state.prev_alt = float(telemetry["altitude"])
 
 with c3:
     tab1, tab2, tab3 = st.tabs(["Live", "Obstacle Avoidance", "Object Detection"])
@@ -332,15 +343,13 @@ with c3:
         #     img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
         #     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         #     tab1.image(img)
-        #tab1.image(f"http://{st.secrets.webrtc}/api/frame.jpeg?src=file2&a={time.time()}", use_column_width="auto")
+        # tab1.image(f"http://{st.secrets.webrtc}/api/frame.jpeg?src=file2&a={time.time()}", use_column_width="auto")
         tab1.image(f"../server/steeleagle-vol/raw/{st.session_state.selected_drone}/latest.jpg")
-        #tab1.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}")
+        # tab1.image(f"http://{st.secrets.webserver}/raw/{st.session_state.selected_drone}/latest.jpg?a={time.time()}")
     tab2.image(f"http://{st.secrets.webserver}/moa/latest.jpg", use_column_width="auto")
-    tab3.image(
-        f"http://{st.secrets.webserver}/detected/latest.jpg", use_column_width="auto"
-    )
+    tab3.image(f"http://{st.secrets.webserver}/detected/latest.jpg", use_column_width="auto")
 
-    #st.write(f":keyboard: {st.session_state.key_pressed}")
+    # st.write(f":keyboard: {st.session_state.key_pressed}")
     st.session_state.key_pressed = st_keypressed()
     if st.session_state.manual_control and st.session_state.selected_drone is not None:
         req = cnc_pb2.Extras()
@@ -371,7 +380,7 @@ with c3:
                 yaw = 1 * st.session_state.yaw_speed
             elif st.session_state.key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
-            #st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
+            # st.toast(f"PCMD(pitch = {pitch}, roll = {roll}, yaw = {yaw}, gaz = {gaz})")
             req.cmd.pcmd.yaw = yaw
             req.cmd.pcmd.pitch = pitch
             req.cmd.pcmd.roll = roll

@@ -26,6 +26,7 @@ class Ctrl(Enum):
         TURN_RIGHT,
     ) = range(11)
 
+
 QWERTY_CTRL_KEYS = {
     Ctrl.QUIT: Key.esc,
     Ctrl.TAKEOFF: "t",
@@ -39,6 +40,7 @@ QWERTY_CTRL_KEYS = {
     Ctrl.TURN_LEFT: Key.left,
     Ctrl.TURN_RIGHT: Key.right,
 }
+
 
 class KeyboardCtrl(Listener):
     def __init__(self, ctrl_keys=None):
@@ -66,41 +68,22 @@ class KeyboardCtrl(Listener):
         return not self.running or self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _axis(self, left_key, right_key):
-        return  (
-            int(self._key_pressed[right_key]) - int(self._key_pressed[left_key])
-        )
+        return int(self._key_pressed[right_key]) - int(self._key_pressed[left_key])
 
     def roll(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_LEFT],
-            self._ctrl_keys[Ctrl.MOVE_RIGHT]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_LEFT], self._ctrl_keys[Ctrl.MOVE_RIGHT])
 
     def pitch(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_BACKWARD],
-            self._ctrl_keys[Ctrl.MOVE_FORWARD]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_BACKWARD], self._ctrl_keys[Ctrl.MOVE_FORWARD])
 
     def yaw(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.TURN_LEFT],
-            self._ctrl_keys[Ctrl.TURN_RIGHT]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.TURN_LEFT], self._ctrl_keys[Ctrl.TURN_RIGHT])
 
     def throttle(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_DOWN],
-            self._ctrl_keys[Ctrl.MOVE_UP]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_DOWN], self._ctrl_keys[Ctrl.MOVE_UP])
 
     def has_piloting_cmd(self):
-        return (
-            bool(self.roll())
-            or bool(self.pitch())
-            or bool(self.yaw())
-            or bool(self.throttle())
-        )
+        return bool(self.roll()) or bool(self.pitch()) or bool(self.yaw()) or bool(self.throttle())
 
     def _rate_limit_cmd(self, ctrl, delay):
         now = time.time()
@@ -130,19 +113,22 @@ logger = logging.getLogger(__name__)
 context = zmq.asyncio.Context()
 
 cmd_back_sock = context.socket(zmq.DEALER)
-setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+setup_socket(
+    cmd_back_sock, SocketOperation.BIND, "CMD_BACK_PORT", "Created command backend socket endpoint"
+)
 
 tel_sock = context.socket(zmq.SUB)
-tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+tel_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
+setup_socket(tel_sock, SocketOperation.BIND, "TEL_PORT", "Created telemetry socket endpoint")
 
 cam_sock = context.socket(zmq.SUB)
-cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+cam_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+setup_socket(cam_sock, SocketOperation.BIND, "CAM_PORT", "Created camera socket endpoint")
 
 command_seq = 0
+
 
 async def recv_telemetry():
     while True:
@@ -154,7 +140,8 @@ async def recv_telemetry():
             await asyncio.sleep(0.3)
         except Exception as e:
             logger.error(f"Telemetry handler error: {e}")
-    
+
+
 async def recv_camera():
     while True:
         try:
@@ -166,6 +153,7 @@ async def recv_camera():
         except Exception as e:
             logger.error(f"Camera handler error: {e}")
 
+
 async def send_comm(control):
     global command_seq
     driver_command = cnc_pb2.Driver()
@@ -173,34 +161,39 @@ async def send_comm(control):
     command_seq += 1
 
     if control.takeoff():
-        logger.info('Takeoff!')
+        logger.info("Takeoff!")
         driver_command.takeOff = True
     elif control.landing():
-        logger.info('Land!')
+        logger.info("Land!")
         driver_command.land = True
     elif control.has_piloting_cmd():
-        logger.info(f'setVelocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})')
+        logger.info(
+            f"setVelocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})"
+        )
         driver_command.setVelocity.forward_vel = control.pitch()
         driver_command.setVelocity.right_vel = control.roll()
         driver_command.setVelocity.up_vel = control.throttle()
         driver_command.setVelocity.angle_vel = control.yaw()
     else:
-        logger.info('Hover.')
+        logger.info("Hover.")
         driver_command.hover = True
 
     message = driver_command.SerializeToString()
-    identity = b'cmdr'
+    identity = b"cmdr"
     await cmd_back_sock.send_multipart([identity, message])
-    logger.info('Sent message.')
+    logger.info("Sent message.")
     resp = await cmd_back_sock.recv_multipart()
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-async def main(): 
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+
+
+async def main():
     control = KeyboardCtrl()
     asyncio.create_task(recv_telemetry())
     while not control.quit():
-        await send_comm(control) 
+        await send_comm(control)
         await asyncio.sleep(0.2)
+
 
 asyncio.run(main())

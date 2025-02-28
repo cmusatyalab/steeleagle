@@ -31,7 +31,8 @@ from olympe.video.renderer import PdrawRenderer
 from pynput.keyboard import Key, KeyCode, Listener
 from trackers import dynamic
 
-DRONE_IP = "192.168.42.1" # Real drone no controller
+DRONE_IP = "192.168.42.1"  # Real drone no controller
+
 
 class Ctrl(Enum):
     (
@@ -109,50 +110,33 @@ class KeyboardCtrl(Listener):
         return not self.running or self._key_pressed[self._ctrl_keys[Ctrl.QUIT]]
 
     def _axis(self, left_key, right_key):
-        return 20 * (
-            int(self._key_pressed[right_key]) - int(self._key_pressed[left_key])
-        )
+        return 20 * (int(self._key_pressed[right_key]) - int(self._key_pressed[left_key]))
 
     def roll(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_LEFT],
-            self._ctrl_keys[Ctrl.MOVE_RIGHT]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_LEFT], self._ctrl_keys[Ctrl.MOVE_RIGHT])
 
     def pitch(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_BACKWARD],
-            self._ctrl_keys[Ctrl.MOVE_FORWARD]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_BACKWARD], self._ctrl_keys[Ctrl.MOVE_FORWARD])
 
     def yaw(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.TURN_LEFT],
-            self._ctrl_keys[Ctrl.TURN_RIGHT]
-        )
-
+        return self._axis(self._ctrl_keys[Ctrl.TURN_LEFT], self._ctrl_keys[Ctrl.TURN_RIGHT])
 
     def _clamp(self, num, min_val, max_val):
         return max(min(num, max_val), min_val)
 
-
     def gimbal_pitch(self):
-        axis = float(self._axis(
-            self._ctrl_keys[Ctrl.GIMBAL_DOWN],
-            self._ctrl_keys[Ctrl.GIMBAL_UP]
-        ) / 20)
+        axis = float(
+            self._axis(self._ctrl_keys[Ctrl.GIMBAL_DOWN], self._ctrl_keys[Ctrl.GIMBAL_UP]) / 20
+        )
         self._current_gimbal_pitch += axis
         self._clamp(self._current_gimbal_pitch, -90.0, 90.0)
         return axis
-    
+
     def get_gimbal_target(self):
         return self._current_gimbal_pitch
 
     def throttle(self):
-        return self._axis(
-            self._ctrl_keys[Ctrl.MOVE_DOWN],
-            self._ctrl_keys[Ctrl.MOVE_UP]
-        )
+        return self._axis(self._ctrl_keys[Ctrl.MOVE_DOWN], self._ctrl_keys[Ctrl.MOVE_UP])
 
     def has_piloting_cmd(self):
         return (
@@ -178,7 +162,7 @@ class KeyboardCtrl(Listener):
 
     def landing(self):
         return self._rate_limit_cmd(Ctrl.LANDING, 2.0)
-    
+
     def start_track(self):
         return self._rate_limit_cmd(Ctrl.START_TRACK, 2.0)
 
@@ -194,8 +178,7 @@ class KeyboardCtrl(Listener):
                 # and the following only works on *nix/X11...
                 keyboard_variant = (
                     subprocess.check_output(
-                        "setxkbmap -query | grep 'variant:'|"
-                        "cut -d ':' -f2 | tr -d ' '",
+                        "setxkbmap -query | grep 'variant:'|" "cut -d ':' -f2 | tr -d ' '",
                         shell=True,
                     )
                     .decode()
@@ -210,13 +193,13 @@ class KeyboardCtrl(Listener):
 
 
 class OlympeStreaming(threading.Thread):
-    def __init__(self, drone, sample_rate=5, model='coco'):
+    def __init__(self, drone, sample_rate=5, model="coco"):
         self.drone = drone
         self.sample_rate = sample_rate
         self.model = model
         self.frame_queue = queue.Queue()
         self.flush_queue_lock = threading.Lock()
-        self.frame_num = 0 
+        self.frame_num = 0
         self.renderer = None
         super().__init__()
         super().start()
@@ -227,7 +210,7 @@ class OlympeStreaming(threading.Thread):
         #  Socket to talk to server
         print("Publishing images for OpenScout client's ZmqAdapter..")
         self.socket = self.context.socket(zmq.PUB)
-        self.socket.bind('tcp://*:5555')
+        self.socket.bind("tcp://*:5555")
 
         # Setup your callback functions to do some live video processing
         self.drone.streaming.set_callbacks(
@@ -237,7 +220,7 @@ class OlympeStreaming(threading.Thread):
             end_cb=self.end_cb,
             flush_raw_cb=self.flush_cb,
         )
-        
+
         # Start video streaming
         self.drone.streaming.start()
         self.renderer = PdrawRenderer(pdraw=self.drone.streaming)
@@ -277,14 +260,18 @@ class OlympeStreaming(threading.Thread):
     def send_array(self, A, meta, flags=0, copy=True, track=False):
         """send a numpy array with metadata"""
         md = dict(
-            dtype = str(A.dtype),
-            shape = A.shape,
-            location = {"latitude": meta["latitude"], "longitude": meta["longitude"], "altitude": meta["altitude"]},
-            model = self.model,
-            gimbal_pitch = meta["gimbal_pitch"],
-            heading = meta["heading"]
+            dtype=str(A.dtype),
+            shape=A.shape,
+            location={
+                "latitude": meta["latitude"],
+                "longitude": meta["longitude"],
+                "altitude": meta["altitude"],
+            },
+            model=self.model,
+            gimbal_pitch=meta["gimbal_pitch"],
+            heading=meta["heading"],
         )
-        self.socket.send_json(md, flags|zmq.SNDMORE)
+        self.socket.send_json(md, flags | zmq.SNDMORE)
         return self.socket.send(A, flags, copy=copy, track=track)
 
     def send_yuv_frame_to_server(self, yuv_frame):
@@ -298,12 +285,18 @@ class OlympeStreaming(threading.Thread):
                 info["raw"]["frame"]["info"]["width"],
             )
 
-            #print(yuv_frame.vmeta()[1])
+            # print(yuv_frame.vmeta()[1])
             gps = drone.get_state(GpsLocationChanged)
             alt = drone.get_state(AltitudeChanged)
             att = drone.get_state(AttitudeChanged)
             gatt = drone.get_state(attitude)
-            meta = {"latitude": gps["latitude"], "longitude": gps["longitude"], "altitude": alt["altitude"], "heading": att["yaw"], "gimbal_pitch": gatt[0]["pitch_absolute"]}
+            meta = {
+                "latitude": gps["latitude"],
+                "longitude": gps["longitude"],
+                "altitude": alt["altitude"],
+                "heading": att["yaw"],
+                "gimbal_pitch": gatt[0]["pitch_absolute"],
+            }
 
             # yuv_frame.vmeta() returns a dictionary that contains additional
             # metadata from the drone (GPS coordinates, battery percentage, ...)
@@ -320,16 +313,14 @@ class OlympeStreaming(threading.Thread):
             cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
             cv2frame = cv2.resize(cv2frame, (640, 480))
             if self.frame_num % (30 / self.sample_rate) == 0:
-                #print(f"Publishing frame {self.frame_num} to OpenScout client...")
+                # print(f"Publishing frame {self.frame_num} to OpenScout client...")
                 self.send_array(cv2frame, meta)
             self.frame_num += 1
         except Exception as e:
             print("Got an exception", e)
 
     def run(self):
-        main_thread = next(
-            filter(lambda t: t.name == "MainThread", threading.enumerate())
-        )
+        main_thread = next(filter(lambda t: t.name == "MainThread", threading.enumerate()))
         while main_thread.is_alive():
             with self.flush_queue_lock:
                 try:
@@ -339,7 +330,7 @@ class OlympeStreaming(threading.Thread):
                 try:
                     self.send_yuv_frame_to_server(yuv_frame)
                 except Exception:
-                    #print(e)
+                    # print(e)
                     pass
                 finally:
                     # Don't forget to unref the yuv frame. We don't want to
@@ -352,13 +343,31 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(usage="laptop-controller.py [options]")
 
-    parser.add_argument("-c", "--controller", action='store_true', help="Use an attached Parrot SkyController to increase Olympe range")
-    parser.add_argument("-s", "--simulate", action='store_true', help="Run on a simulated drone in Parrot Sphinx")
-    parser.add_argument("-nf", "--nofly", action='store_true', help="Prevent flight while running")
-    parser.add_argument("-ns", "--nostream", action='store_true', help="Prevent streaming while running")
-    parser.add_argument("-mds", "--midas", action='store_true', help="Use MiDaS to do obstacle avoidance")
-    parser.add_argument("-sft", "--sift", action='store_true', help="Use SIFT to do obstacle avoidance")
-    parser.add_argument("-o", "--obstacle", action='store_true', help="Use built-in obstacle avoidance (Anafi Ai only)")
+    parser.add_argument(
+        "-c",
+        "--controller",
+        action="store_true",
+        help="Use an attached Parrot SkyController to increase Olympe range",
+    )
+    parser.add_argument(
+        "-s", "--simulate", action="store_true", help="Run on a simulated drone in Parrot Sphinx"
+    )
+    parser.add_argument("-nf", "--nofly", action="store_true", help="Prevent flight while running")
+    parser.add_argument(
+        "-ns", "--nostream", action="store_true", help="Prevent streaming while running"
+    )
+    parser.add_argument(
+        "-mds", "--midas", action="store_true", help="Use MiDaS to do obstacle avoidance"
+    )
+    parser.add_argument(
+        "-sft", "--sift", action="store_true", help="Use SIFT to do obstacle avoidance"
+    )
+    parser.add_argument(
+        "-o",
+        "--obstacle",
+        action="store_true",
+        help="Use built-in obstacle avoidance (Anafi Ai only)",
+    )
 
     opts = parser.parse_args()
 
@@ -371,21 +380,21 @@ if __name__ == "__main__":
     tracker = None
 
     drone = olympe.Drone(DRONE_IP)
-    
+
     time.sleep(1)
     drone.connect()
     if opts.controller:
         drone(setPilotingSource(source="Controller")).wait().success()
     time.sleep(1)
-    
+
     if not opts.nostream:
-        streamer = OlympeStreaming(drone, sample_rate=3, model='coco')
+        streamer = OlympeStreaming(drone, sample_rate=3, model="coco")
         streamer.start()
-    
+
     trace = None
     if opts.obstacle:
         drone(set_mode(mode.standard)).wait().success()
-        trace = open(datetime.now().strftime("%m-%d-%Y-%H-%M-%S") + ".txt", 'a')
+        trace = open(datetime.now().strftime("%m-%d-%Y-%H-%M-%S") + ".txt", "a")
 
     control = KeyboardCtrl()
     while not control.quit():
@@ -405,7 +414,7 @@ if __name__ == "__main__":
                 elif opts.sift:
                     tracker = sift_avoider.SIFTAvoider(drone)
                 else:
-                    tracker = dynamic.DynamicLeashTracker(drone) 
+                    tracker = dynamic.DynamicLeashTracker(drone)
                 tracker.start()
                 tracking = True
                 print("Starting track!")
@@ -421,10 +430,21 @@ if __name__ == "__main__":
                         control.pitch(),
                         control.yaw(),
                         control.throttle(),
-                        timestampAndSeqNum=0
+                        timestampAndSeqNum=0,
                     )
                 )
-                drone(set_target(0, control_mode.position, "none", 0.0, "absolute", control.get_gimbal_target(), "none", 0.0))
+                drone(
+                    set_target(
+                        0,
+                        control_mode.position,
+                        "none",
+                        0.0,
+                        "absolute",
+                        control.get_gimbal_target(),
+                        "none",
+                        0.0,
+                    )
+                )
             elif not tracking:
                 drone(PCMD(0, 0, 0, 0, 0, timestampAndSeqNum=0))
         time.sleep(0.05)

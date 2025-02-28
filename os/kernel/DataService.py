@@ -16,12 +16,12 @@ from kernel.Service import Service
 from util.utils import SocketOperation, setup_socket
 
 # Set up logging
-logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO), format=logging_format)
+logging_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", logging.INFO), format=logging_format)
 logger = logging.getLogger(__name__)
 
 if os.environ.get("LOG_TO_FILE") == "true":
-    file_handler = logging.FileHandler('data_service.log')
+    file_handler = logging.FileHandler("data_service.log")
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
@@ -40,30 +40,35 @@ class DataService(Service):
         cam_sock = context.socket(zmq.SUB)
         cpt_usr_sock = context.socket(zmq.DEALER)
 
-        tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+        tel_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
-        cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+        cam_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
         cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
-        setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
+        setup_socket(
+            tel_sock, SocketOperation.BIND, "TEL_PORT", "Created telemetry socket endpoint"
+        )
+        setup_socket(cam_sock, SocketOperation.BIND, "CAM_PORT", "Created camera socket endpoint")
+        setup_socket(
+            cpt_usr_sock,
+            SocketOperation.BIND,
+            "CPT_USR_PORT",
+            "Created command frontend socket endpoint",
+        )
 
         self.register_socket(tel_sock)
         self.register_socket(cam_sock)
         self.register_socket(cpt_usr_sock)
 
-
         self.cam_sock = cam_sock
         self.tel_sock = tel_sock
         self.cpt_usr_sock = cpt_usr_sock
-
 
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
         usr_task = asyncio.create_task(self.user_handler())
-        
+
         self.register_task(tel_task)
         self.register_task(cam_task)
         self.register_task(usr_task)
@@ -81,28 +86,30 @@ class DataService(Service):
         getter_list = []
         for compute_id in self.compute_dict:
             cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
-            
+
             if cpt_res is None:
                 logger.error(f"Result not found for compute_id: {compute_id}")
                 continue
-            
+
             res = cpt_res[0]
             timestamp = str(cpt_res[1])
-            
-            result= cnc_pb2.ComputeResult()
+
+            result = cnc_pb2.ComputeResult()
             result.compute_id = compute_id
             result.timestamp = timestamp
             result.string_result = res
-            
+
             getter_list.append(result)
-            logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
+            logger.info(
+                f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}"
+            )
         return getter_list
 
     def clear_result(self):
         logger.info("Processing setter")
         for compute_id in self.compute_dict:
             self.data_store.clear_compute_result(compute_id)
-            
+
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
@@ -146,7 +153,6 @@ class DataService(Service):
             await self.cpt_usr_sock.send(cpt_command.SerializeToString())
 
         elif cpt_command.setter:
-            
             if cpt_command.setter.clearResult:
                 logger.info("Processing setter clear")
                 self.clear_result()
@@ -158,7 +164,7 @@ class DataService(Service):
     async def handle_driver(self, driver_command):
         """Processes a Driver command."""
         logger.info(f"Received Driver command: {driver_command}")
-        
+
         if driver_command.getTelemetry:
             logger.info("Processing getTelemetry")
             self.data_store.get_raw_data(driver_command.getTelemetry)
@@ -185,7 +191,7 @@ class DataService(Service):
         frame = cnc_pb2.Frame()
         frame.ParseFromString(msg)
         return frame
-        
+
     async def camera_handler(self):
         """Handles camera messages."""
         logger.info("Camera handler started")
@@ -195,7 +201,7 @@ class DataService(Service):
                 frame = await asyncio.to_thread(self.parse_frame, msg)  # Offload parsing
                 self.data_store.set_raw_data(frame, frame.id)
                 logger.debug(f"Received camera message after set: {frame}")
-             
+
             except Exception as e:
                 logger.error(f"Camera handler error: {e}")
 
@@ -209,7 +215,11 @@ class DataService(Service):
             module = importlib.import_module(module_name)
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                if isinstance(attr, type) and issubclass(attr, ComputeInterface) and attr is not ComputeInterface:
+                if (
+                    isinstance(attr, type)
+                    and issubclass(attr, ComputeInterface)
+                    and attr is not ComputeInterface
+                ):
                     compute_classes[attr_name.lower()] = attr
         return compute_classes
 
@@ -244,7 +254,9 @@ class DataService(Service):
 
         return compute_tasks
 
+
 ######################################################## MAIN ##############################################################
+
 
 async def async_main():
     """Main entry point for the DataService."""
@@ -255,6 +267,7 @@ async def async_main():
         sys.exit(-1)
     data_service = DataService(config_yaml)
     await data_service.start()
+
 
 if __name__ == "__main__":
     asyncio.run(async_main())

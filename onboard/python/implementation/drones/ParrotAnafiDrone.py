@@ -34,26 +34,26 @@ from olympe.messages.wifi import rssi_changed
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class ParrotAnafiDrone(DroneItf.DroneItf):
 
+class ParrotAnafiDrone(DroneItf.DroneItf):
     def __init__(self, **kwargs):
         self.dronename = None
-        if 'sim' in kwargs:
-            self.ip = '10.202.0.1'
-        elif 'droneip' in kwargs:
-            self.ip = kwargs['droneip']
+        if "sim" in kwargs:
+            self.ip = "10.202.0.1"
+        elif "droneip" in kwargs:
+            self.ip = kwargs["droneip"]
         else:
-            self.ip = '192.168.42.1'
-        if 'lowdelay' in kwargs:
+            self.ip = "192.168.42.1"
+        if "lowdelay" in kwargs:
             self.lowdelay = True
         else:
             self.lowdelay = False
-        if 'dronename' in kwargs:
-            self.dronename = kwargs['dronename']
+        if "dronename" in kwargs:
+            self.dronename = kwargs["dronename"]
         self.drone = Drone(self.ip)
         self.active = False
 
-    ''' Awaiting methods '''
+    """ Awaiting methods """
 
     async def hovering(self, timeout=None):
         # Let the task start before checking for hover state.
@@ -62,12 +62,16 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         if timeout is not None:
             start = time.time()
         while True:
-            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success() or start is not None and time.time() - start < timeout:
+            if (
+                self.drone(FlyingStateChanged(state="hovering", _policy="check")).success()
+                or start is not None
+                and time.time() - start < timeout
+            ):
                 break
             else:
                 await asyncio.sleep(1)
 
-    ''' Connection methods '''
+    """ Connection methods """
 
     async def connect(self):
         self.drone.connect()
@@ -83,7 +87,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         self.drone.disconnect()
         self.active = False
 
-    ''' Streaming methods '''
+    """ Streaming methods """
 
     async def startStreaming(self, **kwargs):
         if self.lowdelay:
@@ -99,7 +103,7 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
     async def stopStreaming(self):
         self.streamingThread.stop()
 
-    ''' Take off / Landing methods '''
+    """ Take off / Landing methods """
 
     async def takeOff(self):
         self.drone(TakeOff())
@@ -115,23 +119,17 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         await self.hover()
         self.drone(return_to_home())
 
-    ''' Movement methods '''
+    """ Movement methods """
 
     async def PCMD(self, roll, pitch, yaw, gaz):
-        self.drone(
-            PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0)
-        )
+        self.drone(PCMD(1, roll, pitch, yaw, gaz, timestampAndSeqNum=0))
 
     async def moveTo(self, lat, lng, alt):
-        self.drone(
-            moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
-        )
+        self.drone(moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0))
         await self.hovering()
 
     async def moveBy(self, x, y, z, t):
-        self.drone(
-            moveBy(x, y, z, t)
-        )
+        self.drone(moveBy(x, y, z, t))
         await self.hovering()
 
     async def rotateTo(self, theta):
@@ -141,21 +139,23 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
         # The Anafi does not support yaw or roll on its gimbal, thus these
         # parameters are discarded without effect.
-        self.drone(set_target(
-            gimbal_id=0,
-            control_mode="position",
-            yaw_frame_of_reference="none",
-            yaw=yaw_theta,
-            pitch_frame_of_reference="absolute",
-            pitch=pitch_theta,
-            roll_frame_of_reference="none",
-            roll=roll_theta,)
+        self.drone(
+            set_target(
+                gimbal_id=0,
+                control_mode="position",
+                yaw_frame_of_reference="none",
+                yaw=yaw_theta,
+                pitch_frame_of_reference="absolute",
+                pitch=pitch_theta,
+                roll_frame_of_reference="none",
+                roll=roll_theta,
+            )
         )
 
     async def hover(self):
         await self.PCMD(0, 0, 0, 0)
 
-    ''' Photography methods '''
+    """ Photography methods """
 
     async def takePhoto(self):
         # TODO: Take a photo and save it to the local drone folder
@@ -163,12 +163,13 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
     async def toggleThermal(self, on):
         from olympe.messages.thermal import set_mode
+
         if on:
             self.drone(set_mode(mode="blended")).wait().success()
         else:
             self.drone(set_mode(mode="disabled")).wait().success()
 
-    ''' Status methods '''
+    """ Status methods """
 
     async def getName(self):
         return self.drone._device_name
@@ -202,10 +203,14 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
         vecr = np.array([0.0, 1.0], dtype=float)
         rt = np.radians(hd + 90)
         c, s = np.cos(rt), np.sin(rt)
-        R2 = np.array(((c,-s), (s, c)))
+        R2 = np.array(((c, -s), (s, c)))
         vecr = np.dot(R2, vecr)
 
-        res = {"speedX": np.dot(vec, vecf) * -1, "speedY": np.dot(vec, vecr) * -1, "speedZ": NED["speedZ"]}
+        res = {
+            "speedX": np.dot(vec, vecf) * -1,
+            "speedY": np.dot(vec, vecr) * -1,
+            "speedZ": NED["speedZ"],
+        }
         return res
 
     async def getExactAlt(self):
@@ -231,18 +236,19 @@ class ParrotAnafiDrone(DroneItf.DroneItf):
 
 
 class StreamingThread(threading.Thread):
-
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+        self.cap = cv2.VideoCapture(
+            f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1)
+        )
         self.isRunning = True
 
     def run(self):
         try:
-            while(self.isRunning):
+            while self.isRunning:
                 ret, self.currentFrame = self.cap.read()
         except Exception as e:
             print(e)
@@ -260,8 +266,7 @@ class StreamingThread(threading.Thread):
 
 
 class LowDelayStreamingThread(threading.Thread):
-
-    def __init__(self, drone, ip, save_frames = False):
+    def __init__(self, drone, ip, save_frames=False):
         threading.Thread.__init__(self)
         self.drone = drone
         self.frame_queue = queue.Queue()
@@ -312,7 +317,7 @@ class LowDelayStreamingThread(threading.Thread):
 
         self.currentFrame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
 
-    ''' Callbacks '''
+    """ Callbacks """
 
     def yuvFrameCb(self, yuv_frame):
         """
@@ -321,7 +326,7 @@ class LowDelayStreamingThread(threading.Thread):
             :type yuv_frame: olympe.VideoFrame
         """
         yuv_frame.ref()
-        fps = 30 // float(os.environ.get('FPS'))
+        fps = 30 // float(os.environ.get("FPS"))
         self.frames_recd += 1
         if self.frames_recd == fps:
             self.frame_queue.put_nowait(yuv_frame)

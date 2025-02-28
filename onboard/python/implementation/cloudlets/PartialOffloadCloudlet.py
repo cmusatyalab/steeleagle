@@ -16,12 +16,12 @@ from interfaces import CloudletItf
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class PartialOffloadCloudlet(CloudletItf.CloudletItf):
 
+class PartialOffloadCloudlet(CloudletItf.CloudletItf):
     def __init__(self):
         self.engine_results = {}
-        self.source = 'telemetry'
-        self.model = 'coco'
+        self.source = "telemetry"
+        self.model = "coco"
         self.drone = None
         self.sample_rate = 1
         self.stop = True
@@ -32,7 +32,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
 
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                payload = result.payload.decode('utf-8')
+                payload = result.payload.decode("utf-8")
                 data = ""
                 try:
                     if len(payload) != 0:
@@ -40,7 +40,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
                 except JSONDecodeError:
-                    logger.error(f'Error decoding json: {payload}')
+                    logger.error(f"Error decoding json: {payload}")
                 except Exception as e:
                     print(e)
             else:
@@ -72,7 +72,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
             input_frame = gabriel_pb2.InputFrame()
             if not self.stop:
                 try:
-                    _, frame = cv2.imencode('.jpg', self.drone.getVideoFrame())
+                    _, frame = cv2.imencode(".jpg", self.drone.getVideoFrame())
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
 
@@ -82,7 +82,7 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append(b"Unable to produce a frame!")
-                    logger.error(f'Unable to produce a frame: {e}')
+                    logger.error(f"Unable to produce a frame: {e}")
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.")
@@ -99,4 +99,3 @@ class PartialOffloadCloudlet(CloudletItf.CloudletItf):
 
     def clearResults(self, engine_key):
         self.engine_results[engine_key] = None
-

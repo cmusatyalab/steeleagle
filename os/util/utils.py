@@ -7,20 +7,22 @@ import zmq.asyncio
 
 logger = logging.getLogger(__name__)
 
+
 class SocketOperation(Enum):
     BIND = 1
     CONNECT = 2
+
 
 def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
     # Get port number from environment variables
     port = os.environ.get(port_num, "")
 
     if not port:
-        logger.fatal(f'Cannot get {port_num} from system')
+        logger.fatal(f"Cannot get {port_num} from system")
         quit()
 
     # Construct the address
-    addr = f'tcp://{host_addr}:{port}'
+    addr = f"tcp://{host_addr}:{port}"
 
     if socket_op == SocketOperation.CONNECT:
         logger.info(f"Connecting socket to {addr=}")
@@ -34,8 +36,8 @@ def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
 
     logger.info(logger_message)
 
-async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
-                              timeout=2500):
+
+async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3, timeout=2500):
     if retries <= 0:
         raise ValueError(f"Retries must be positive; {retries=}")
     # Send payload
@@ -66,4 +68,3 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
 
         logger.info(f"Resending payload to {server_endpoint=}...")
         socket.send(payload)
-

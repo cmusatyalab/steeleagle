@@ -12,7 +12,7 @@ import numpy as np
 from olympe.messages.ardrone3.Piloting import PCMD
 from olympe.messages.ardrone3.PilotingState import GpsLocationChanged
 
-sys.path.append('./avoidance/')
+sys.path.append("./avoidance/")
 import math
 import operator as op
 import threading
@@ -21,17 +21,19 @@ from datetime import datetime
 import zmq
 from common import Cluster, overlap
 
-STREAM_FPS = 1 #used for ttc
+STREAM_FPS = 1  # used for ttc
 RATIO = 0.75
 AGE = 10
 
 FOLDER = "./avoidance/old-traces/"
 
+
 def ClusterKeypoints(keypoints, img, epsilon=0):
-    if len(keypoints) < 2: return []
+    if len(keypoints) < 2:
+        return []
 
     cluster = []
-    unclusteredKPs = sorted(keypoints,key=op.attrgetter('pt'))
+    unclusteredKPs = sorted(keypoints, key=op.attrgetter("pt"))
     while unclusteredKPs:
         clust = [unclusteredKPs.pop(0)]
         kp = clust[0]
@@ -41,19 +43,24 @@ def ClusterKeypoints(keypoints, img, epsilon=0):
                 clust.append(unclusteredKPs.pop(i))
             else:
                 i += 1
-        if (len(clust) >= 3): cluster.append(Cluster(clust,img))
+        if len(clust) >= 3:
+            cluster.append(Cluster(clust, img))
 
     return cluster
 
+
 def mse(img1, img2):
-   h, w = img1.shape
-   diff = cv2.subtract(img1, img2)
-   err = np.sum(diff**2)
-   mse = err/(float(h*w))
-   return mse
+    h, w = img1.shape
+    diff = cv2.subtract(img1, img2)
+    err = np.sum(diff**2)
+    mse = err / (float(h * w))
+    return mse
+
 
 class SIFTAvoider(threading.Thread):
-    def __init__(self, drone, contrast=0.04, edge=50, dist=200.0, scale=1.3, roi=3, eps=50, speed=5):
+    def __init__(
+        self, drone, contrast=0.04, edge=50, dist=200.0, scale=1.3, roi=3, eps=50, speed=5
+    ):
         self.drone = drone
         self.c = contrast
         self.e = edge
@@ -66,8 +73,8 @@ class SIFTAvoider(threading.Thread):
 
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
-        self.socket.connect('tcp://localhost:5555')
-        self.socket.setsockopt(zmq.SUBSCRIBE, b'')
+        self.socket.connect("tcp://localhost:5555")
+        self.socket.setsockopt(zmq.SUBSCRIBE, b"")
 
         self.image_size = (640, 480)
         self.image = None
@@ -77,7 +84,7 @@ class SIFTAvoider(threading.Thread):
 
         self.init_sift()
         super().__init__()
-    
+
     def execute_PCMD(self, dpitch, droll):
         print(f"ROLL: {droll}, PITCH: {dpitch}")
         self.drone(PCMD(1, round(droll), round(dpitch), 0, 0, timestampAndSeqNum=0))
@@ -93,21 +100,21 @@ class SIFTAvoider(threading.Thread):
         md = self.socket.recv_json(flags=flags)
         msg = self.socket.recv(flags=flags, copy=copy, track=track)
         buf = memoryview(msg)
-        A = np.frombuffer(buf, dtype=md['dtype'])
-        return A.reshape(md['shape'])
+        A = np.frombuffer(buf, dtype=md["dtype"])
+        return A.reshape(md["shape"])
 
     def run(self):
         self.tracking = False
         self.active = True
 
-        trace = open(FOLDER + datetime.now().strftime("%m-%d-%Y-%H-%M-%S") + ".txt", 'a')
+        trace = open(FOLDER + datetime.now().strftime("%m-%d-%Y-%H-%M-%S") + ".txt", "a")
 
         lastvec = 0
         while self.active:
             gps = self.drone.get_state(GpsLocationChanged)
             lat = gps["latitude"]
             lng = gps["longitude"]
-            trace.write(f"{lat}, {lng}" + '\n')
+            trace.write(f"{lat}, {lng}" + "\n")
             try:
                 self.image = self.recv_array()
                 vec = self.get_offsets()
@@ -137,8 +144,11 @@ class SIFTAvoider(threading.Thread):
         self.id = 1
 
         try:
-            self.roi = np.zeros(self.prev_img.shape,np.uint8)
-            scrapY, scrapX = self.prev_img.shape[0]//self.r, self.prev_img.shape[1]//(self.r + 1)
+            self.roi = np.zeros(self.prev_img.shape, np.uint8)
+            scrapY, scrapX = (
+                self.prev_img.shape[0] // self.r,
+                self.prev_img.shape[1] // (self.r + 1),
+            )
             self.roi[scrapY:-scrapY, scrapX:-scrapX] = True
         except Exception:
             pass
@@ -153,7 +163,7 @@ class SIFTAvoider(threading.Thread):
         # Sort them in the order of their distance.
         ## find the list of kps that were not matched.
 
-        matches = sorted(matches, key = lambda x:x.distance)
+        matches = sorted(matches, key=lambda x: x.distance)
 
         # Filter out bad matches
         good = []
@@ -162,13 +172,13 @@ class SIFTAvoider(threading.Thread):
                 good.append(m)
                 train_indices_matched.append(m.trainIdx)
         for each_prev_kp_index in range(len(self.prev_kps)):
-            if  each_prev_kp_index not in train_indices_matched:
+            if each_prev_kp_index not in train_indices_matched:
                 prev_kps_not_matched.append(self.prev_kps[each_prev_kp_index])
                 prev_descs_not_matched.append(self.prev_descs[each_prev_kp_index])
 
-        if(len(matches) > 0):
-            max_value = max(matches, key=lambda x : x.distance)
-            min_value = min(matches, key=lambda x : x.distance)
+        if len(matches) > 0:
+            max_value = max(matches, key=lambda x: x.distance)
+            min_value = min(matches, key=lambda x: x.distance)
 
         return good
 
@@ -182,29 +192,43 @@ class SIFTAvoider(threading.Thread):
 
         for g in good:
             clsid = prev_kps[g.trainIdx].class_id
-            curr_point_x, curr_point_y = int(np.round(kps[g.queryIdx].pt[0])), int(np.round(kps[g.queryIdx].pt[1]))
-            prev_point_x, prev_point_y = int(np.round(prev_kps[g.trainIdx].pt[0])), int(np.round(prev_kps[g.trainIdx].pt[1]))
+            curr_point_x, curr_point_y = (
+                int(np.round(kps[g.queryIdx].pt[0])),
+                int(np.round(kps[g.queryIdx].pt[1])),
+            )
+            prev_point_x, prev_point_y = (
+                int(np.round(prev_kps[g.trainIdx].pt[0])),
+                int(np.round(prev_kps[g.trainIdx].pt[1])),
+            )
 
-            size_expansion = 1.5 ### MAKE THIS TUNABLE
-            curr_size = int(max(1, np.round((kps[g.queryIdx].size)*size_expansion)))
-            prev_size = int(max(1, np.round((prev_kps[g.trainIdx].size)*size_expansion)))
+            size_expansion = 1.5  ### MAKE THIS TUNABLE
+            curr_size = int(max(1, np.round((kps[g.queryIdx].size) * size_expansion)))
+            prev_size = int(max(1, np.round((prev_kps[g.trainIdx].size) * size_expansion)))
             if prev_size <= curr_size - 2:
                 pass
             curr_total_x, curr_total_y = img.shape[1], img.shape[0]
             prev_total_x, prev_total_y = prev_img.shape[1], prev_img.shape[0]
-            if (curr_point_x + curr_size/2 + 1 > curr_total_x) or (curr_point_y + curr_size/2 + 1 > curr_total_y) or (prev_point_x + prev_size/2 + 1 > prev_total_x) or (prev_point_y + prev_size/2 + 1 > prev_total_y) or \
-                    (curr_point_x - curr_size / 2 - 1 < 0) or (curr_point_y - curr_size / 2 - 1 < 0) or (prev_point_x - prev_size / 2 - 1 < 0) or (prev_point_y - prev_size / 2 - 1 < 0):
+            if (
+                (curr_point_x + curr_size / 2 + 1 > curr_total_x)
+                or (curr_point_y + curr_size / 2 + 1 > curr_total_y)
+                or (prev_point_x + prev_size / 2 + 1 > prev_total_x)
+                or (prev_point_y + prev_size / 2 + 1 > prev_total_y)
+                or (curr_point_x - curr_size / 2 - 1 < 0)
+                or (curr_point_y - curr_size / 2 - 1 < 0)
+                or (prev_point_x - prev_size / 2 - 1 < 0)
+                or (prev_point_y - prev_size / 2 - 1 < 0)
+            ):
                 continue
-            if curr_size < prev_size + 2: continue
-
+            if curr_size < prev_size + 2:
+                continue
 
             # extract sub image from perev image
             ## new image borders
-            if curr_size %2 == 1:
-                left = int(curr_point_x - math.floor(curr_size/2))
-                right = int(curr_point_x + math.ceil(curr_size/2))
-                top = int(curr_point_y - math.floor(curr_size/2))
-                bottom = int(curr_point_y + math.ceil(curr_size/2))
+            if curr_size % 2 == 1:
+                left = int(curr_point_x - math.floor(curr_size / 2))
+                right = int(curr_point_x + math.ceil(curr_size / 2))
+                top = int(curr_point_y - math.floor(curr_size / 2))
+                bottom = int(curr_point_y + math.ceil(curr_size / 2))
             else:
                 left = int(curr_point_x - curr_size / 2)
                 right = int(curr_point_x + curr_size / 2)
@@ -227,24 +251,27 @@ class SIFTAvoider(threading.Thread):
             temp_prev_image = np.asarray(prev_img[top:bottom, left:right])
 
             ## loop from previous key point length to current key point length
-            scale_results=np.empty(0)
+            scale_results = np.empty(0)
             results_dict = {}
             for expansion in range(0, curr_size - prev_size, 2):
-                cropped_temp_curr_image = temp_curr_image[expansion//2:curr_size - expansion//2, expansion//2:curr_size - expansion//2]
-                resized_temp_prev_image = cv2.resize(temp_prev_image, (curr_size - expansion, curr_size - expansion))
+                cropped_temp_curr_image = temp_curr_image[
+                    expansion // 2 : curr_size - expansion // 2,
+                    expansion // 2 : curr_size - expansion // 2,
+                ]
+                resized_temp_prev_image = cv2.resize(
+                    temp_prev_image, (curr_size - expansion, curr_size - expansion)
+                )
 
                 error = mse(cropped_temp_curr_image, resized_temp_prev_image)
-                results_dict[error] = resized_temp_prev_image.shape[0]/temp_prev_image.shape[0]
+                results_dict[error] = resized_temp_prev_image.shape[0] / temp_prev_image.shape[0]
             best = min(results_dict.keys())
             ratio = results_dict[best]
 
-
-            if(ratio > self.s): ## changed the condition check for clustering
+            if ratio > self.s:  ## changed the condition check for clustering
                 bigger.append(g)
                 expandingKPs.append(prev_kps[g.trainIdx])
 
         return bigger, expandingKPs
-
 
     def get_offsets(self):
         print("Getting offsets!")
@@ -269,20 +296,24 @@ class SIFTAvoider(threading.Thread):
             for kp in self.kps:
                 kp.class_id = self.id
             self.id += 1
-            
+
             good = self.match()
             prev_gray = cv2.cvtColor(self.prev_image, cv2.COLOR_BGR2GRAY)
-            b, expand = self.cull(good, (self.kps, self.descs, img), (self.prev_kps, self.prev_descs, prev_gray))
+            b, expand = self.cull(
+                good, (self.kps, self.descs, img), (self.prev_kps, self.prev_descs, prev_gray)
+            )
 
             print("Clustering.")
             cluster = ClusterKeypoints(expand, img, epsilon=self.eps)
-            b_w_disp[0:b_w_disp.shape[0], 0:b_w_disp.shape[1]] = (255, 255, 255)
+            b_w_disp[0 : b_w_disp.shape[0], 0 : b_w_disp.shape[1]] = (255, 255, 255)
             for c in cluster:
-                b_w_disp[0:img.shape[1], c.p0[0]:c.p1[0]] = (0,0,0)
+                b_w_disp[0 : img.shape[1], c.p0[0] : c.p1[0]] = (0, 0, 0)
 
             # Scrap out the ROI
-            scrapY, scrapX = self.image_size[0]//self.r, self.image_size[1]//(self.r + 1)
-            b_w_disp = b_w_disp[ scrapY : b_w_disp.shape[0] - scrapY,scrapX : b_w_disp.shape[1] - scrapX]
+            scrapY, scrapX = self.image_size[0] // self.r, self.image_size[1] // (self.r + 1)
+            b_w_disp = b_w_disp[
+                scrapY : b_w_disp.shape[0] - scrapY, scrapX : b_w_disp.shape[1] - scrapX
+            ]
             b_w_disp = cv2.cvtColor(b_w_disp, cv2.COLOR_BGR2GRAY)
 
             # find contours in the binary image
@@ -294,7 +325,15 @@ class SIFTAvoider(threading.Thread):
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 cv2.circle(dispim, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
-                cv2.putText(dispim, "safe", (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(
+                    dispim,
+                    "safe",
+                    (scrapX + cX, scrapY + cY - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 255, 0),
+                    2,
+                )
             except Exception:
                 pass
 
@@ -305,4 +344,4 @@ class SIFTAvoider(threading.Thread):
 
             cv2.imshow("Safe", dispim)
             cv2.waitKey(1)
-            return (scrapX + cX) - (self.image_size[0] / 2) 
+            return (scrapX + cX) - (self.image_size[0] / 2)

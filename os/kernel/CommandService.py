@@ -12,9 +12,12 @@ from kernel.Service import Service
 from util.utils import SocketOperation, setup_socket
 
 # Configure logger
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", logging.INFO),
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
+
 
 # Enumerations for Commands and Drone Types
 class ManualCommand(Enum):
@@ -34,7 +37,7 @@ class CommandService(Service):
         self.drone_type = drone_type
         self.drone_id = drone_id
         self.manual = True
-        
+
         # init cmd seq
         self.command_seq = 0
 
@@ -43,19 +46,39 @@ class CommandService(Service):
 
         # Setting up sockets
         cmd_front_cmdr_sock = context.socket(zmq.DEALER)
-        cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode("utf-8"))
         cmd_front_usr_sock = context.socket(zmq.DEALER)
         cmd_back_sock = context.socket(zmq.DEALER)
         msn_sock = context.socket(zmq.REQ)
-        setup_socket(cmd_front_cmdr_sock, SocketOperation.CONNECT, 'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint', os.environ.get('STEELEAGLE_GABRIEL_SERVER'))
-        setup_socket(cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT', 'Created command frontend user socket endpoint')
-        setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
-        setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
+        setup_socket(
+            cmd_front_cmdr_sock,
+            SocketOperation.CONNECT,
+            "CMD_FRONT_CMDR_PORT",
+            "Connected command frontend cmdr socket endpoint",
+            os.environ.get("STEELEAGLE_GABRIEL_SERVER"),
+        )
+        setup_socket(
+            cmd_front_usr_sock,
+            SocketOperation.BIND,
+            "CMD_FRONT_USR_PORT",
+            "Created command frontend user socket endpoint",
+        )
+        setup_socket(
+            cmd_back_sock,
+            SocketOperation.BIND,
+            "CMD_BACK_PORT",
+            "Created command backend socket endpoint",
+        )
+        setup_socket(
+            msn_sock,
+            SocketOperation.BIND,
+            "MSN_PORT",
+            "Created userspace mission control socket endpoint",
+        )
         self.cmd_front_cmdr_sock = cmd_front_cmdr_sock
-        self.cmd_front_usr_sock = cmd_front_usr_sock   
+        self.cmd_front_usr_sock = cmd_front_usr_sock
         self.cmd_back_sock = cmd_back_sock
         self.msn_sock = msn_sock
-        
 
         # setting up tasks
         cmd_task = asyncio.create_task(self.cmd_proxy())
@@ -73,7 +96,7 @@ class CommandService(Service):
         mission_command = cnc_pb2.Mission()
         mission_command.downloadMission = url
         message = mission_command.SerializeToString()
-        logger.info(f'download_mission message:{message}')
+        logger.info(f"download_mission message:{message}")
         self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
@@ -84,7 +107,7 @@ class CommandService(Service):
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
         message = mission_command.SerializeToString()
-        logger.info(f'start_mission message:{message}')
+        logger.info(f"start_mission message:{message}")
         self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
@@ -97,7 +120,6 @@ class CommandService(Service):
         self.msn_sock.send(message)
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
-
 
     ######################################################## DRIVER ############################################################
     async def send_driver_command(self, command, params):
@@ -123,23 +145,27 @@ class CommandService(Service):
                 driver_command.setVelocity.angle_vel = params["yaw"]
                 driver_command.setVelocity.right_vel = params["roll"]
                 driver_command.setVelocity.up_vel = params["thrust"]
-                logger.info(f'Driver Command setVelocities: {driver_command.setVelocity} sent at:{time.time()}, seq id {driver_command.seqNum}')
+                logger.info(
+                    f"Driver Command setVelocities: {driver_command.setVelocity} sent at:{time.time()}, seq id {driver_command.seqNum}"
+                )
         elif command == ManualCommand.GIMBAL:
             driver_command.setGimbal.pitch_theta = params["gimbal_pitch"]
-            logger.info(f'Driver Command setGimbal: {driver_command.setGimbal} sent at:{time.time()}, seq id {driver_command.seqNum}')
+            logger.info(
+                f"Driver Command setGimbal: {driver_command.setGimbal} sent at:{time.time()}, seq id {driver_command.seqNum}"
+            )
         elif command == ManualCommand.CONNECTION:
             driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
 
         message = driver_command.SerializeToString()
-        identity = b'cmdr'
+        identity = b"cmdr"
         await self.cmd_back_sock.send_multipart([identity, message])
         logger.info(f"Driver Command sent: {message}")
-        
+
         return None
 
     ######################################################## COMMAND ############################################################
     async def cmd_proxy(self):
-        logger.info('cmd_proxy started')
+        logger.info("cmd_proxy started")
         poller = zmq.asyncio.Poller()
         poller.register(self.cmd_front_cmdr_sock, zmq.POLLIN)
         poller.register(self.cmd_back_sock, zmq.POLLIN)
@@ -147,26 +173,29 @@ class CommandService(Service):
 
         while True:
             try:
-                logger.debug('proxy loop')
+                logger.debug("proxy loop")
                 socks = dict(await poller.poll())
 
                 # Check for messages from CMDR
                 if self.cmd_front_cmdr_sock in socks:
                     msg = await self.cmd_front_cmdr_sock.recv_multipart()
-                    cmd  = msg[0]
+                    cmd = msg[0]
                     # Filter the message
-                    logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}")
+                    logger.debug(
+                        f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}"
+                    )
                     await self.process_command(cmd)
-                 
+
                 # Check for messages from MSN
                 if self.cmd_front_usr_sock in socks:
                     msg = await self.cmd_front_usr_sock.recv_multipart()
                     cmd = msg[0]
-                    logger.debug(f"proxy : cmd_front_usr_sock Received message from FRONTEND: {cmd}")
-                    identity = b'usr'
+                    logger.debug(
+                        f"proxy : cmd_front_usr_sock Received message from FRONTEND: {cmd}"
+                    )
+                    identity = b"usr"
                     await self.cmd_back_sock.send_multipart([identity, cmd])
-                    
-                    
+
                 # Check for messages from DRIVER
                 if self.cmd_back_sock in socks:
                     message = await self.cmd_back_sock.recv_multipart()
@@ -175,13 +204,19 @@ class CommandService(Service):
                     # Filter the message
                     identity = message[0]
                     cmd = message[1]
-                    logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: identity: {identity} cmd: {cmd}")
+                    logger.debug(
+                        f"proxy : cmd_back_sock Received message from BACKEND: identity: {identity} cmd: {cmd}"
+                    )
 
-                    if identity == b'cmdr':
-                        logger.debug("proxy : cmd_back_sock Received message from BACKEND: discard bc of cmdr")
+                    if identity == b"cmdr":
+                        logger.debug(
+                            "proxy : cmd_back_sock Received message from BACKEND: discard bc of cmdr"
+                        )
                         pass
-                    elif identity == b'usr':
-                        logger.debug("proxy : cmd_back_sock Received message from BACKEND: sent back bc of user")
+                    elif identity == b"usr":
+                        logger.debug(
+                            "proxy : cmd_back_sock Received message from BACKEND: sent back bc of user"
+                        )
                         await self.cmd_front_usr_sock.send_multipart([cmd])
                     else:
                         logger.error("proxy: invalid identity")
@@ -204,16 +239,16 @@ class CommandService(Service):
             await self.send_stop_mission()
             asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
             self.manual = True
-            logger.info('Manual control is now active!')
+            logger.info("Manual control is now active!")
         elif extras.cmd.script_url:
             url = extras.cmd.script_url
             if validators.url(url):
-                logger.info(f'Flight script sent by commander: {url}')
+                logger.info(f"Flight script sent by commander: {url}")
                 self.manual = False
                 await self.send_download_mission(url)
                 await self.send_start_mission()
             else:
-                logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
+                logger.info(f"Invalid script URL sent by commander: {extras.cmd.script_url}")
         elif self.manual:
             if extras.cmd.takeoff:
                 logger.info(f"takeoff signal started at: {time.time()} seq id {self.command_seq}")
@@ -225,23 +260,36 @@ class CommandService(Service):
                 self.handle_pcmd_command(extras.cmd.pcmd)
 
     def handle_pcmd_command(self, pcmd):
-        pitch, yaw, roll, thrust, gimbal_pitch = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz, pcmd.gimbal_pitch
-        params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust, "gimbal_pitch": gimbal_pitch}
-        logger.info(f"PCMD signal started at: {time.time()} PCMD values: {params} seq id {self.command_seq}")
+        pitch, yaw, roll, thrust, gimbal_pitch = (
+            pcmd.pitch,
+            pcmd.yaw,
+            pcmd.roll,
+            pcmd.gaz,
+            pcmd.gimbal_pitch,
+        )
+        params = {
+            "pitch": pitch,
+            "yaw": yaw,
+            "roll": roll,
+            "thrust": thrust,
+            "gimbal_pitch": gimbal_pitch,
+        }
+        logger.info(
+            f"PCMD signal started at: {time.time()} PCMD values: {params} seq id {self.command_seq}"
+        )
         asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
         asyncio.create_task(self.send_driver_command(ManualCommand.GIMBAL, params))
 
 
 ######################################################## MAIN ##############################################################
 async def async_main():
-    drone_type = os.environ.get('DRONE_TYPE')
-    drone_id = os.environ.get('DRONE_ID')
+    drone_type = os.environ.get("DRONE_TYPE")
+    drone_id = os.environ.get("DRONE_ID")
     # init CommandService
     cmd_service = CommandService(drone_id, drone_type)
 
     # run CommandService
     await cmd_service.start()
-
 
 
 # Main Execution Block

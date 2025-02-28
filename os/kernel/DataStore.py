@@ -5,6 +5,7 @@ from cnc_protocol import cnc_pb2
 
 logger = logging.getLogger(__name__)
 
+
 class DataStore:
     def __init__(self):
         # Raw data caches
@@ -28,10 +29,12 @@ class DataStore:
     def clear_compute_result(self, compute_id):
         logger.info(f"clear_compute_result: Clearing result for compute {compute_id}")
         self._result_cache.pop(compute_id, None)
-        
+
     ######################################################## COMPUTE ############################################################
     def get_compute_result(self, compute_id, result_type: str) -> tuple | None:
-        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {result_type}")
+        logger.info(
+            f"get_compute_result: Getting result for compute {compute_id} with type {result_type}"
+        )
         logger.info(self._result_cache)
         if compute_id not in self._result_cache:
             # Log an error and return None
@@ -47,7 +50,9 @@ class DataStore:
         result = cache.get(result_type)
         if result is None:
             # Log an error and return None
-            logger.error(f"get_compute_result: No result found for compute {compute_id} with type {result_type}")
+            logger.error(
+                f"get_compute_result: No result found for compute {compute_id} with type {result_type}"
+            )
             return None
 
         return result
@@ -56,9 +61,13 @@ class DataStore:
         self._result_cache[compute_id] = {}
 
     def update_compute_result(self, compute_id, result_type: str, result, timestamp):
-        assert isinstance(result_type, str), f"Argument must be a string, got {type(result_type).__name__}"
+        assert isinstance(
+            result_type, str
+        ), f"Argument must be a string, got {type(result_type).__name__}"
         self._result_cache[compute_id][result_type] = (result, timestamp)
-        logger.debug(f"update_compute_result: Updated result cache for compute {compute_id} with type {result_type}; result: {result}")
+        logger.debug(
+            f"update_compute_result: Updated result cache for compute {compute_id} with type {result_type}; result: {result}"
+        )
 
     ######################################################## RAW DATA ############################################################
     def get_raw_data(self, data_copy):
@@ -76,10 +85,10 @@ class DataStore:
 
         # Create a copy of the protobuf message
         data_copy.CopyFrom(cache)
-        
+
         return self._raw_data_id.get(data_copy_type)
 
-    def set_raw_data(self, data, data_id = None):
+    def set_raw_data(self, data, data_id=None):
         data_type = type(data)
         if data_type not in self._raw_data_cache:
             logger.error(f"set_raw_data: No such data: data type {data_type}")
@@ -100,4 +109,3 @@ class DataStore:
             return None
         self._raw_data_event[data_type].clear()
         await self._raw_data_event[data_type].wait()
-

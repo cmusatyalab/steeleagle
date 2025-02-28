@@ -14,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -37,27 +37,41 @@ logger.addHandler(handler)
 # Setting up conetxt
 context = zmq.asyncio.Context()
 
-drone_id = os.environ.get('DRONE_ID')
+drone_id = os.environ.get("DRONE_ID")
 # Setting up sockets
 cmd_front_cmdr_sock = context.socket(zmq.DEALER)
-cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, drone_id.encode('utf-8'))
+cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, drone_id.encode("utf-8"))
 cmd_front_usr_sock = context.socket(zmq.DEALER)
 cmd_back_sock = context.socket(zmq.DEALER)
 msn_sock = context.socket(zmq.REQ)
-setup_socket(cmd_front_cmdr_sock, SocketOperation.CONNECT, 'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint', os.environ.get('STEELEAGLE_GABRIEL_SERVER'))
-setup_socket(cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT', 'Created command frontend user socket endpoint')
-setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
-setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
+setup_socket(
+    cmd_front_cmdr_sock,
+    SocketOperation.CONNECT,
+    "CMD_FRONT_CMDR_PORT",
+    "Connected command frontend cmdr socket endpoint",
+    os.environ.get("STEELEAGLE_GABRIEL_SERVER"),
+)
+setup_socket(
+    cmd_front_usr_sock,
+    SocketOperation.BIND,
+    "CMD_FRONT_USR_PORT",
+    "Created command frontend user socket endpoint",
+)
+setup_socket(
+    cmd_back_sock, SocketOperation.BIND, "CMD_BACK_PORT", "Created command backend socket endpoint"
+)
+setup_socket(
+    msn_sock, SocketOperation.BIND, "MSN_PORT", "Created userspace mission control socket endpoint"
+)
 
 
 class k_client:
-
     # Function to send a start mission command
     def send_start_mission(self):
         mission_command = cnc_pb2.Mission()
         mission_command.startMission = True
         message = mission_command.SerializeToString()
-        print(f'start_mission message:{message}')
+        print(f"start_mission message:{message}")
         msn_sock.send(message)
         reply = msn_sock.recv_string()
         print(f"Server reply: {reply}")
@@ -70,21 +84,20 @@ class k_client:
         msn_sock.send(message)
         reply = msn_sock.recv_string()
         print(f"Server reply: {reply}")
-        
-    
+
     async def send_takeOff(self):
         driver_command = cnc_pb2.Driver()
         driver_command.takeOff = True
         message = driver_command.SerializeToString()
         print(f"take off sent at: {time.time()}")
         await cmd_back_sock.send_multipart([message])
-    
+
     async def proxy(self):
-        print('user_driver_cmd_proxy started')
+        print("user_driver_cmd_proxy started")
         poller = zmq.asyncio.Poller()
         poller.register(cmd_front_cmdr_sock, zmq.POLLIN)
         poller.register(cmd_back_sock, zmq.POLLIN)
-        
+
         while True:
             try:
                 print("polling")
@@ -99,14 +112,13 @@ class k_client:
                     identity = message[0]
                     cmd = message[1]
                     print(f"proxy : 2 Received message from BACKEND: identity: {identity}")
-                    
-                    if identity == b'cmdr':
+
+                    if identity == b"cmdr":
                         await self.send_takeOff()
-                    elif identity == b'usr':
+                    elif identity == b"usr":
                         await cmd_back_sock.send_multipart(message)
                     else:
                         print("cmd_proxy: invalid identity")
-
 
                 # Check for messages on the DEALER socket
                 if cmd_back_sock in socks:
@@ -117,25 +129,26 @@ class k_client:
                     identity = message[0]
                     cmd = message[1]
                     print(f"proxy : 4 Received message from FRONTEND: identity: {identity}")
-                    
-                    if identity == b'cmdr':
+
+                    if identity == b"cmdr":
                         print("proxy : 5 Received message from FRONTEND: discard bc of cmdr")
                         pass
-                    elif identity == b'usr':
+                    elif identity == b"usr":
                         print("proxy : 5 Received message from FRONTEND: sent back bc of user")
                         await cmd_front_cmdr_sock.send_multipart(message)
                     else:
                         print("cmd_proxy: invalid identity")
-                        
+
             except Exception as e:
                 print(f"Proxy error: {e}")
 
     async def a_run(self):
         # Interactive command input loop
         asyncio.create_task(self.proxy())
-        
+
         while True:
             await asyncio.sleep(0)
+
 
 if __name__ == "__main__":
     print("Starting client")

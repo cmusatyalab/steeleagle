@@ -39,9 +39,7 @@ class StreamingExample:
         print(f"Olympe streaming example output dir: {self.tempd}")
         self.h264_frame_stats = []
         self.h264_stats_file = open(os.path.join(self.tempd, "h264_stats.csv"), "w+")
-        self.h264_stats_writer = csv.DictWriter(
-            self.h264_stats_file, ["fps", "bitrate"]
-        )
+        self.h264_stats_writer = csv.DictWriter(self.h264_stats_file, ["fps", "bitrate"])
         self.h264_stats_writer.writeheader()
         self.frame_queue = queue.Queue()
         self.processing_thread = threading.Thread(target=self.yuv_frame_processing)
@@ -177,9 +175,7 @@ class StreamingExample:
                 GPSFixStateChanged(fixed=1, _timeout=10, _policy="check_wait")
                 >> (
                     TakeOff(_no_expect=True)
-                    & FlyingStateChanged(
-                        state="hovering", _timeout=10, _policy="check_wait"
-                    )
+                    & FlyingStateChanged(state="hovering", _timeout=10, _policy="check_wait")
                 )
             )
         ).wait()
@@ -205,7 +201,7 @@ def test_streaming():
     # Start the video stream
     streaming_example.start()
     # Perform some live video processing while the drone is flying
-    #streaming_example.fly()
+    # streaming_example.fly()
     time.sleep(10)
     # Stop the video stream
     streaming_example.stop()

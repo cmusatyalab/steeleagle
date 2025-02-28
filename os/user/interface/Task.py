@@ -12,27 +12,29 @@ from aenum import Enum
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class TaskType(Enum):
     Detect = 1
     Track = 2
     Avoid = 3
     Test = 4
 
+
 class TaskArguments:
     def __init__(self, task_type, transitions_attributes, task_attributes):
         self.task_type = task_type
         self.task_attributes = task_attributes
         self.transitions_attributes = transitions_attributes
-        
-class Task(ABC):
 
+
+class Task(ABC):
     def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
         self.cloudlet = cloudlet
         self.drone = drone
         self.task_attributes = task_args.task_attributes
         self.transitions_attributes = task_args.transitions_attributes
         self.task_id = task_id
-        self.trans_active =  []
+        self.trans_active = []
         self.trans_active_lock = threading.Lock()
         self.trigger_event_queue = trigger_event_queue
 
@@ -43,13 +45,12 @@ class Task(ABC):
     def get_task_id(self):
         return self.task_id
 
-
     def _exit(self):
         # kill all the transitions
         logger.info("**************exit the task**************\n")
         self.stop_trans()
-        self.trigger_event_queue.put((self.task_id,  "done"))
-        
+        self.trigger_event_queue.put((self.task_id, "done"))
+
     def stop_trans(self):
         logger.info("**************stopping the transitions**************\n")
         for trans in self.trans_active:
@@ -57,11 +58,11 @@ class Task(ABC):
                 trans.stop()
                 trans.join()
         logger.info("**************the transitions stopped**************\n")
-        
-        
+
     @classmethod
     def call_after_exit(cls, func):
         """Decorator to call _exit after the decorated function completes."""
+
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
             try:
@@ -73,7 +74,7 @@ class Task(ABC):
                 self._exit()
 
         return wrapper
-        
+
     @abstractmethod
     def pause(self):
         pass
