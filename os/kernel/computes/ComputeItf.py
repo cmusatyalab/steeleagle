@@ -12,7 +12,6 @@ class ComputeInterface(ABC):
         self.compute_id = compute_id
         self.compute_status = self.ComputeStatus.IDLE
 
-
     @abstractmethod
     async def run(self):
         """Running the worker."""

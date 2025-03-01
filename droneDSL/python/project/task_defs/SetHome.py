@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interface.Task import Task
 import ast
 
-class SetHome(Task):
+from interface.Task import Task
 
+
+class SetHome(Task):
     def __init__(self, drone, cloudlet, **kwargs):
         super().__init__(drone, cloudlet, **kwargs)
 
@@ -19,5 +20,3 @@ class SetHome(Task):
             await self.drone.setHome(lat, lng, 1.0)
         except Exception as e:
             print(e)
-
-

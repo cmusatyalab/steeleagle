@@ -2,35 +2,32 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from interfaces import CloudletItf
-import json
-from json import JSONDecodeError
-import threading
-import time
-import logging
 import asyncio
-from syncer import sync
-import cv2
-from typing import Tuple
+import json
+import logging
+from json import JSONDecodeError
 
+import cv2
 from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
 from gabriel_client.websocket_client import ProducerWrapper
+from gabriel_protocol import gabriel_pb2
+from interfaces import CloudletItf
+from syncer import sync
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
+class PureOffloadCloudlet(CloudletItf.CloudletItf):
     def __init__(self):
         self.engine_results = {}
-        self.source = 'telemetry'
-        self.model = 'coco'
+        self.source = "telemetry"
+        self.model = "coco"
         self.drone = None
         self.sample_rate = 1
         self.stop = True
-        self.hsv_upper = [50,255,255]
-        self.hsv_lower = [30,100,100]
+        self.hsv_upper = [50, 255, 255]
+        self.hsv_lower = [30, 100, 100]
 
     def processResults(self, result_wrapper):
         if len(result_wrapper.results) != 1:
@@ -38,15 +35,15 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
 
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                payload = result.payload.decode('utf-8')
+                payload = result.payload.decode("utf-8")
                 data = ""
                 try:
                     if len(payload) != 0:
                         data = json.loads(payload)
                         producer = result_wrapper.result_producer_name.value
                         self.engine_results[producer] = result
-                except JSONDecodeError as e:
-                    logger.debug(f'Error decoding json: {payload}')
+                except JSONDecodeError:
+                    logger.debug(f"Error decoding json: {payload}")
                 except Exception as e:
                     print(e)
             else:
@@ -64,7 +61,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
     def switchModel(self, model):
         self.model = model
 
-    def setHSVFilter(self, lower_bound: Tuple[int, int, int], upper_bound: Tuple[int, int, int]):
+    def setHSVFilter(self, lower_bound: tuple[int, int, int], upper_bound: tuple[int, int, int]):
         self.hsv_lower = lower_bound
         self.hsv_upper = upper_bound
 
@@ -89,7 +86,7 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
             if not self.stop:
                 try:
                     f = sync(self.drone.getVideoFrame())
-                    _, frame = cv2.imencode('.jpg', f)
+                    _, frame = cv2.imencode(".jpg", f)
                     input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                     input_frame.payloads.append(frame.tobytes())
 
@@ -98,8 +95,8 @@ class PureOffloadCloudlet(CloudletItf.CloudletItf):
                         input_frame.extras.Pack(extras)
                 except Exception as e:
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.debug(f'Unable to produce a frame: {e}')
+                    input_frame.payloads.append(b"Unable to produce a frame!")
+                    logger.debug(f"Unable to produce a frame: {e}")
             else:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Streaming not started, no frame to show.")

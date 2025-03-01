@@ -1,35 +1,38 @@
 import asyncio
-from cnc_protocol import cnc_pb2
-import cv2
-from enum import Enum
-from kernel.computes.ComputeItf import ComputeInterface
-from kernel.DataStore import DataStore
 import logging
-import numpy as np
 import os
+from enum import Enum
+
+import cv2
 import kernel.computes.onboard_compute_pb2 as onboard_compute_pb2
-from util.utils import setup_socket, SocketOperation, lazy_pirate_request
+import numpy as np
 import zmq
 import zmq.asyncio
+from cnc_protocol import cnc_pb2
+from kernel.computes.ComputeItf import ComputeInterface
+from kernel.DataStore import DataStore
+from util.utils import SocketOperation, lazy_pirate_request, setup_socket
 
 logger = logging.getLogger(__name__)
+
 
 class ComputationType(Enum):
     OBJECT_DETECTION = 1
     DEPTH_ESTIMATION = 2
 
+
 class VOXLCompute(ComputeInterface):
-    '''
+    """
     Utilizes the onboard computational capabilities on the Modal AI VOXL 2.
-    '''
+    """
 
     def __init__(self, compute_id: int, data_store: DataStore):
         super().__init__(compute_id)
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
-        host = os.environ.get('LCE_HOST')
-        port = os.environ.get('LCE_PORT')
+        host = os.environ.get("LCE_HOST")
+        port = os.environ.get("LCE_PORT")
 
         if host is None:
             logger.error("Host not specified")
@@ -38,10 +41,14 @@ class VOXLCompute(ComputeInterface):
             logger.error("Port not specified")
             raise Exception("Port not specified")
 
-        setup_socket(self.socket, SocketOperation.CONNECT, 'LCE_PORT',
-                     'Created socket to connect to local compute engine',
-                     host)
-        self.server_endpoint = f'tcp://{host}:{port}'
+        setup_socket(
+            self.socket,
+            SocketOperation.CONNECT,
+            "LCE_PORT",
+            "Created socket to connect to local compute engine",
+            host,
+        )
+        self.server_endpoint = f"tcp://{host}:{port}"
         self.is_running = False
         self.frame_id = -1
         self.data_store = data_store
@@ -61,13 +68,13 @@ class VOXLCompute(ComputeInterface):
         return super().get_status()
 
     async def set(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def run_loop(self):
-        '''
+        """
         Query data store in a loop and feed frames for processing to onboard
         compute engine.
-        '''
+        """
         logger.info("VOXL compute is running")
         while self.is_running:
             frame_data = cnc_pb2.Frame()
@@ -79,10 +86,10 @@ class VOXLCompute(ComputeInterface):
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
-            if frame_data.data != b'':
+            if frame_data.data != b"":
                 logger.info(f"VOXL compute got new frame {frame_data.id} from data store")
                 frame_bytes = frame_data.data
-                nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
+                nparr = np.frombuffer(frame_bytes, dtype=np.uint8)
 
                 height = frame_data.height
                 width = frame_data.width
@@ -93,10 +100,10 @@ class VOXLCompute(ComputeInterface):
                 await self.process_frame(frame, ComputationType.OBJECT_DETECTION)
 
     async def process_frame(self, frame: np.ndarray, computation_type: ComputationType):
-        '''
+        """
         Send frames to onboard compute engine for processing. Currently
         only supports object detection, and prints detected classes.
-        '''
+        """
         request = onboard_compute_pb2.ComputeRequest()
         request.frame_data = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV_YUYV).tobytes()
         request.frame_width = frame.shape[1]
@@ -111,15 +118,14 @@ class VOXLCompute(ComputeInterface):
 
         reply = None
         (self.socket, reply) = await lazy_pirate_request(
-            self.socket, request.SerializeToString(), self.context,
-            self.server_endpoint)
+            self.socket, request.SerializeToString(), self.context, self.server_endpoint
+        )
 
-        if reply == None:
-            logger.error(f"Local compute engine did not respond to request")
+        if reply is None:
+            logger.error("Local compute engine did not respond to request")
             return
 
-        logger.info(f"Received response from local compute engine")
+        logger.info("Received response from local compute engine")
         detections = onboard_compute_pb2.ComputeResult()
         detections.ParseFromString(reply)
         logger.info(f"Received detections: {detections}")
-

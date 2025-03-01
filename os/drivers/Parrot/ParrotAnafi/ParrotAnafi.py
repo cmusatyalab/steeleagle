@@ -2,68 +2,77 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import logging
 import asyncio
-import threading
+import logging
 import math
 import os
+import queue
+import threading
 import time
-
-import olympe
-from olympe import Drone
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
-from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
-from olympe.messages.rth import set_custom_location, return_to_home
-from olympe.messages.ardrone3.PilotingState import moveToChanged
-from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
-from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
-from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.gimbal import set_target, attitude
-from olympe.messages.wifi import rssi_changed
-from olympe.messages.battery import capacity
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
-import olympe.enums.move as move_mode
-import olympe.enums.gimbal as gimbal_mode
 from enum import Enum
+
+import cv2
+import logness
+import numpy as np
+import olympe
+import olympe.enums.move as move_mode
+from olympe import Drone
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
+from olympe.messages.ardrone3.Piloting import PCMD, Landing, TakeOff, moveBy, moveTo
+from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    AttitudeChanged,
+    FlyingStateChanged,
+    GpsLocationChanged,
+    SpeedChanged,
+)
+from olympe.messages.ardrone3.SpeedSettingsState import (
+    MaxRotationSpeedChanged,
+    MaxVerticalSpeedChanged,
+)
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
+from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.gimbal import attitude, set_target
+from olympe.messages.rth import return_to_home, set_custom_location
+from olympe.messages.wifi import rssi_changed
 
 logger = logging.getLogger(__name__)
 
-import logness
-logness.update_config({
-    "handlers": {
-        "olympe_log_file": {
-            "class": "logness.FileHandler",
-            "formatter": "default_formatter",
-            "filename": "olympe.log"
+logness.update_config(
+    {
+        "handlers": {
+            "olympe_log_file": {
+                "class": "logness.FileHandler",
+                "formatter": "default_formatter",
+                "filename": "olympe.log",
+            },
+            "ulog_log_file": {
+                "class": "logness.FileHandler",
+                "formatter": "default_formatter",
+                "filename": "ulog.log",
+            },
         },
-        "ulog_log_file": {
-            "class": "logness.FileHandler",
-            "formatter": "default_formatter",
-            "filename": "ulog.log"
+        "loggers": {
+            "olympe": {"level": "ERROR", "handlers": ["console", "olympe_log_file"]},
+            "ulog": {
+                "level": "ERROR",
+                "handlers": ["console", "ulog_log_file"],
+            },
         },
-    },
-    "loggers": {
-        "olympe": {
-            "level": "ERROR",
-            "handlers": ["console","olympe_log_file"]
-        },
-        "ulog": {
-            "level": "ERROR",
-            "handlers": ["console", "ulog_log_file"],
-        }
     }
-})
+)
+
 
 class ArgumentOutOfBoundsException(Exception):
     pass
 
+
 class ConnectionFailedException(Exception):
     pass
 
-class ParrotDrone():
 
+class ParrotDrone:
     class FlightMode(Enum):
         MANUAL = 1
         ATTITUDE = 2
@@ -72,13 +81,13 @@ class ParrotDrone():
 
     def __init__(self, **kwargs):
         # Handle special arguments
-        self.ip = '192.168.42.1'
-        if 'sim' in kwargs and kwargs['sim']:
-            self.ip = '10.202.0.1'
-        if 'ip' in kwargs:
-            self.ip = kwargs['ip']
+        self.ip = "192.168.42.1"
+        if "sim" in kwargs and kwargs["sim"]:
+            self.ip = "10.202.0.1"
+        if "ip" in kwargs:
+            self.ip = kwargs["ip"]
         self.ffmpeg = False
-        if 'ffmpeg' in kwargs and kwargs['ffmpeg']:
+        if "ffmpeg" in kwargs and kwargs["ffmpeg"]:
             self.ffmpeg = True
         # Create the drone object
         self.drone = Drone(self.ip)
@@ -90,7 +99,7 @@ class ParrotDrone():
         self.flightmode = ParrotDrone.FlightMode.MANUAL
         logger.info("#####################parrot init##########################")
 
-    ''' Awaiting methods '''
+    """ Awaiting methods """
 
     async def switchModes(self, mode):
         if self.flightmode == mode:
@@ -112,16 +121,18 @@ class ParrotDrone():
         if timeout is not None:
             start = time.time()
         while True:
-            if self.drone(FlyingStateChanged(state="hovering", _policy="check")).success():
-                break
-            elif start is not None and time.time() - start < timeout:
+            if (
+                self.drone(FlyingStateChanged(state="hovering", _policy="check")).success()
+                or start is not None
+                and time.time() - start < timeout
+            ):
                 break
             else:
                 await asyncio.sleep(1)
 
         logger.info(f"Hovering function finished at: {time.time()}")
 
-    ''' Background PID tasks '''
+    """ Background PID tasks """
 
     async def _attitudePID(self):
         try:
@@ -145,10 +156,7 @@ class ParrotDrone():
                     I *= -1
                 elif abs(e) <= 0.01 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0
 
                 return P, I, D
 
@@ -234,10 +242,7 @@ class ParrotDrone():
                     I *= -1
                 elif abs(e) <= 0.05 or I * pidDict["PrevI"] < 0:
                     I = 0.0
-                if abs(e) > 0.01:
-                    D = pidDict["Kd"] * (e - ep) / (ts - tp)
-                else:
-                    D = 0.0
+                D = pidDict["Kd"] * (e - ep) / (ts - tp) if abs(e) > 0.01 else 0.0
 
                 # For testing Integral component
                 I = 0.0
@@ -316,7 +321,7 @@ class ParrotDrone():
         except asyncio.CancelledError:
             pass
 
-    ''' Connection methods '''
+    """ Connection methods """
 
     async def connect(self):
         self.active = self.drone.connect()
@@ -330,9 +335,9 @@ class ParrotDrone():
         self.drone.disconnect()
         self.active = False
 
-    ''' Streaming methods '''
+    """ Streaming methods """
 
-    async def startStreaming(self, save_frames = False):
+    async def startStreaming(self, save_frames=False):
         if not self.ffmpeg:
             self.streamingThread = PDRAWStreamingThread(self.drone, self.ip, save_frames)
         else:
@@ -346,7 +351,7 @@ class ParrotDrone():
     async def stopStreaming(self):
         self.streamingThread.stop()
 
-    ''' Take off / Landing methods '''
+    """ Take off / Landing methods """
 
     async def takeOff(self):
         logger.info(f"takeoff function started at: {time.time()}")
@@ -375,19 +380,20 @@ class ParrotDrone():
         self.drone(return_to_home())
         logger.info(f"rth function started at: {time.time()}")
 
-    ''' Camera methods '''
+    """ Camera methods """
 
     async def getCameras(self):
         pass
 
     async def switchCameras(self, camID):
         from olympe.messages.thermal import set_mode
+
         if on:
             self.drone(set_mode(mode="blended")).wait().success()
         else:
             self.drone(set_mode(mode="disabled")).wait().success()
 
-    ''' Movement methods '''
+    """ Movement methods """
 
     async def setAttitude(self, pitch, roll, thrust, yaw):
         await self.switchModes(ParrotDrone.FlightMode.ATTITUDE)
@@ -422,53 +428,51 @@ class ParrotDrone():
     async def setGPSLocation(self, lat, lng, alt, bearing):
         await self.switchModes(ParrotDrone.FlightMode.GUIDED)
         if bearing is None:
-            self.drone(
-                moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
-            )
+            self.drone(moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0))
         else:
-            self.drone(
-                moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, bearing)
-            )
+            self.drone(moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, bearing))
         await self.hovering()
 
     async def setTranslatedPosition(self, forward, right, up, angle):
         await self.switchModes(ParrotDrone.FlightMode.GUIDED)
-        self.drone(
-            moveBy(forward, right, -1 * up, angle)
-        )
+        self.drone(moveBy(forward, right, -1 * up, angle))
         await self.hovering()
 
     async def rotateGimbal(self, yaw_theta, pitch_theta, roll_theta):
         pose_dict = await self.getGimbalPose()
         current_pitch = pose_dict["pitch"]
-        self.drone(set_target(
-            gimbal_id=0,
-            control_mode="position",
-            yaw_frame_of_reference="absolute",
-            yaw=yaw_theta,
-            pitch_frame_of_reference="absolute",
-            pitch=pitch_theta + current_pitch,
-            roll_frame_of_reference="absolute",
-            roll=roll_theta,)
+        self.drone(
+            set_target(
+                gimbal_id=0,
+                control_mode="position",
+                yaw_frame_of_reference="absolute",
+                yaw=yaw_theta,
+                pitch_frame_of_reference="absolute",
+                pitch=pitch_theta + current_pitch,
+                roll_frame_of_reference="absolute",
+                roll=roll_theta,
+            )
         )
 
     async def setGimbalPose(self, yaw_theta, pitch_theta, roll_theta):
-        self.drone(set_target(
-            gimbal_id=0,
-            control_mode="position",
-            yaw_frame_of_reference="absolute",
-            yaw=yaw_theta,
-            pitch_frame_of_reference="absolute",
-            pitch=pitch_theta,
-            roll_frame_of_reference="absolute",
-            roll=roll_theta,)
+        self.drone(
+            set_target(
+                gimbal_id=0,
+                control_mode="position",
+                yaw_frame_of_reference="absolute",
+                yaw=yaw_theta,
+                pitch_frame_of_reference="absolute",
+                pitch=pitch_theta,
+                roll_frame_of_reference="absolute",
+                roll=roll_theta,
+            )
         )
 
     async def hover(self):
         await self.switchModes(ParrotDrone.FlightMode.MANUAL)
         self.drone(PCMD(1, 0, 0, 0, 0, timestampAndSeqNum=0))
 
-    ''' Status methods '''
+    """ Status methods """
 
     async def getTelemetry(self):
         telDict = {}
@@ -489,10 +493,12 @@ class ParrotDrone():
 
     async def getGPS(self):
         try:
-            return (self.drone.get_state(GpsLocationChanged)["latitude"],
+            return (
+                self.drone.get_state(GpsLocationChanged)["latitude"],
                 self.drone.get_state(GpsLocationChanged)["longitude"],
-                self.drone.get_state(GpsLocationChanged)["altitude"])
-        except Exception as e:
+                self.drone.get_state(GpsLocationChanged)["altitude"],
+            )
+        except Exception:
             # If there is no GPS fix, return default values
             return (500.0, 500.0, 0.0)
 
@@ -529,11 +535,10 @@ class ParrotDrone():
         vecr = np.array([0.0, 1.0], dtype=float)
         rt = np.radians(hd + 90)
         c, s = np.cos(rt), np.sin(rt)
-        R2 = np.array(((c,-s), (s, c)))
+        R2 = np.array(((c, -s), (s, c)))
         vecr = np.dot(R2, vecr)
 
-        res = {"forward": np.dot(vec, vecf) * -1, "right": np.dot(vec, vecr) * -1, \
-                "up": NEU["up"]}
+        res = {"forward": np.dot(vec, vecf) * -1, "right": np.dot(vec, vecr) * -1, "up": NEU["up"]}
         return res
 
     async def getRSSI(self):
@@ -546,38 +551,42 @@ class ParrotDrone():
         return self.drone.get_state(MagnetoCalibrationRequiredState)["required"]
 
     async def getGimbalPose(self):
-        return {"roll": 0.0, "pitch": self.drone.get_state(attitude)[0]["pitch_absolute"], "yaw": 0.0}
+        return {
+            "roll": 0.0,
+            "pitch": self.drone.get_state(attitude)[0]["pitch_absolute"],
+            "yaw": 0.0,
+        }
 
     async def getAttitude(self):
         att = self.drone.get_state(AttitudeChanged)
         rad_to_deg = 180 / math.pi
-        return {"roll": att["roll"] * rad_to_deg, "pitch": att["pitch"] * rad_to_deg,
-                "yaw": att["yaw"] * rad_to_deg}
+        return {
+            "roll": att["roll"] * rad_to_deg,
+            "pitch": att["pitch"] * rad_to_deg,
+            "yaw": att["yaw"] * rad_to_deg,
+        }
 
-    ''' Emergency methods '''
+    """ Emergency methods """
 
     async def kill(self):
         self.active = False
 
 
-import cv2
-import numpy as np
-import os
-
 class FFMPEGStreamingThread(threading.Thread):
-
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
         self.currentFrame = None
         self.drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
         num_threads = int(os.environ.get("FFMPEG_THREADS"))
-        self.cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, num_threads))
+        self.cap = cv2.VideoCapture(
+            f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, num_threads)
+        )
         self.isRunning = True
 
     def run(self):
         try:
-            while(self.isRunning):
+            while self.isRunning:
                 ret, self.currentFrame = self.cap.read()
         except Exception as e:
             logger.error(e)
@@ -594,11 +603,9 @@ class FFMPEGStreamingThread(threading.Thread):
     def stop(self):
         self.isRunning = False
 
-import queue
 
 class PDRAWStreamingThread(threading.Thread):
-
-    def __init__(self, drone, ip, save_frames = False):
+    def __init__(self, drone, ip, save_frames=False):
         threading.Thread.__init__(self)
         self.drone = drone
         self.frame_queue = queue.Queue()
@@ -657,7 +664,7 @@ class PDRAWStreamingThread(threading.Thread):
                 os.makedirs(directory)
             cv2.imwrite(os.path.join(directory, filename), self.currentFrame)
 
-    ''' Callbacks '''
+    """ Callbacks """
 
     def yuvFrameCb(self, yuv_frame):
         """

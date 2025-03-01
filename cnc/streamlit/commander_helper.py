@@ -5,15 +5,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import numpy as np
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+import argparse
 import logging
+import os
+
 import zmq
 from cnc_protocol import cnc_pb2
-import argparse
-import os
-import asyncio
+from gabriel_client.websocket_client import ProducerWrapper, WebsocketClient
+from gabriel_protocol import gabriel_pb2
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ class CommanderZmqAdapter:
 
             extras = cnc_pb2.Extras()
             extras.commander_id = self.commander_id
-            if command != None:
+            if command is not None:
                 extras.cmd.for_drone_id = command["drone_id"]
                 if "kill" in command:
                     extras.cmd.halt = True
