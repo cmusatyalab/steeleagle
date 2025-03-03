@@ -21,12 +21,13 @@ class SkyViper2450GPSDrone():
         GUIDED_NOGPS = 'GUIDED_NOGPS'
         ALT_HOLD = 'ALT_HOLD'
         
-    def __init__(self):
+    def __init__(self, drone_id):
         self.vehicle = None
         self.mode = None
         self.mode_mapping = None
         self.listener_task = None
         self.gps_disabled = False
+        self.drone_id = drone_id
 
 
     ''' Connect methods '''
@@ -115,8 +116,7 @@ class SkyViper2450GPSDrone():
             return {}
 
     def getName(self):
-        drone_id = os.environ.get('DRONE_ID')
-        return drone_id
+        return self.drone_id
 
     def getGPS(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")

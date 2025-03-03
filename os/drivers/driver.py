@@ -3,12 +3,10 @@ import zmq
 import zmq.asyncio
 import json
 import os
-import sys
 import asyncio
 import logging
 import cnc_protocol.cnc_pb2 as cnc_protocol
 from util.utils import setup_socket, SocketOperation
-import signal
 from drivers.ModalAI.Seeker.Seeker import ModalAISeekerDrone, ConnectionFailedException
 from drivers.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
 
@@ -33,12 +31,14 @@ telemetry_logger.propagate = False
 
 driverArgs = json.loads(os.environ.get('DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
-if droneArgs is not None:
-    for key, value in droneArgs.items():
-        driverArgs[key] = value
-drone_id = driverArgs.get('drone_id')
-drone_type = driverArgs.get('drone_type')
-connection_string = driverArgs.get('connection_string')
+
+drone_id = droneArgs.get('id')
+drone_type = droneArgs.get('type')
+connection_string = droneArgs.get('connection_string')
+
+logger.info(f"Drone ID: {drone_id}")
+logger.info(f"Drone Type: {drone_type}")
+logger.info(f"Connection String: {connection_string}")
 
 if drone_type == 'modalai':
     drone = ModalAISeekerDrone(drone_id)
@@ -55,12 +55,6 @@ setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry s
 setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
 setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
-def handle_signal(signum, frame):
-    logger.info(f"Received signal {signum}, cleaning up...")
-    sys.exit(0)
-
-signal.signal(signal.SIGINT, handle_signal)
-signal.signal(signal.SIGTERM, handle_signal)
 
 async def camera_stream(drone, cam_sock):
     logger.info('Starting camera stream')
@@ -119,7 +113,7 @@ async def telemetry_stream(drone, tel_sock):
             #tel_message.gimbal_attitude.pitch = telDict["gimbalAttitude"]["pitch"]
             #tel_message.gimbal_attitude.roll = telDict["gimbalAttitude"]["roll"]
             
-            logger.info(f"Telemetry: {telDict}")
+            logger.debug(f"Telemetry: {telDict}")
             tel_sock.send(tel_message.SerializeToString())
             logger.debug('Sent telemetry')
         except Exception as e:
@@ -190,9 +184,7 @@ async def main(drone, cam_sock, tel_sock, args):
         await drone.startStreaming()
         logger.info('Started streaming')
         asyncio.create_task(camera_stream(drone, cam_sock))
-        
         asyncio.create_task(telemetry_stream(drone, tel_sock))
-        await drone.disableGPS()
 
         while await drone.isConnected():
             try:

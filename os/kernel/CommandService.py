@@ -1,4 +1,5 @@
 from enum import Enum
+import json
 import sys
 import time
 import validators
@@ -234,8 +235,9 @@ class CommandService(Service):
 
 ######################################################## MAIN ##############################################################
 async def async_main():
-    drone_type = os.environ.get('DRONE_TYPE')
-    drone_id = os.environ.get('DRONE_ID')
+    droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
+    drone_id = droneArgs.get('id')
+    drone_type = droneArgs.get('type')
     # init CommandService
     cmd_service = CommandService(drone_id, drone_type)
 
