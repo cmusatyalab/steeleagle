@@ -5,13 +5,15 @@
 syntax = "proto3";
 package steeleagle.compute;
 import "steeleagle/shared/common.proto";
+import "google/protobuf/timestamp.proto";
 
 message ComputeResult {
-  int64 frameId = 1; //for future correlation
+  int64 frameId = 1; //for correlation
+  google.protobuf.Timestamp timestamp = 2;// time the response was sent
   oneof type {
-    string generic = 2; //JSON/YAML/etc
-    DetectionResult detection = 3;
-    AvoidanceResult avoidance = 4;
+    string generic = 3; //JSON/YAML/etc
+    DetectionResult detection = 4;
+    AvoidanceResult avoidance = 5;
   }
 }
 
@@ -19,22 +21,38 @@ message Detection {
   int64 detectionId = 1; // can be multiple objects per frame
   string className = 2;
   double score = 3;
-  Bbox bbox = 4;
+  steeleagle.shared.BoundingBox bbox = 4;
   bool hsvFilterPassed = 5;
 }
 
 message DetectionResult {
-  int64 frameId = 1; //for future correlation
-  repeated Detection detections = 2;
+  repeated Detection detections = 21;
 }
 
 message AvoidanceResult {
   double actuationVector = 1;
 }
 
-message Reconfigure {
-    string setDetectionModel = 1;
-    //for HSV filtering of object detection results
-    HSV setHSVLowerBound = 2;
-    HSV setHSVUpperBound = 3;
+message ComputeRequest {
+  int64 frameId = 1; // for future correlation
+  steeleagle.shared.Frame frame = 2;
+}
+
+message ReconfigureRequest {
+    string model = 1; // change model current in use
+    steeleagle.shared.HSV lowerBound = 2; // lower bound of HSV filter to apply
+    steeleagle.shared.HSV upperBound = 3; // upper bound of HSV filter to apply
+    float threshold = 4; //change confidence threshold of the DNN
+}
+
+message ReconfigureResponse {
+  steeleagle.shared.ResponseStatus resp = 1;
+}
+
+/**
+ * Service for managing (start/stop/pause/resume) the autonomous mission of a drone
+ */
+service ComputeService {
+  rpc reconfigure(ReconfigureRequest) returns (ReconfigureResponse); // reconfigure the parameters of the underlying compute
+  rpc performComputation(ComputeRequest) returns (ComputeResult); // perform some computation using the underlying compute
 }

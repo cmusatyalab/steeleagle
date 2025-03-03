@@ -6,36 +6,72 @@ syntax = "proto3";
 
 package steeleagle.onboard;
 import "steeleagle/shared/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 
-// Request/Response for commands
-message ControlPlane {
-  oneof method {
-    Attitude setAttitude = 1;
-    bool takeOff = 2;
-    bool land = 3;
-    bool hover = 4;
-    bool kill = 5;
-    bool rth = 6; //return to home
-    Location setHome = 7;
-    Velocity setVelocity = 8;
-    Pose setGimbal = 9;
-    Position setRelativePosition = 10; //relative to home Position
-    Location setGPSLocation = 11;
-    Position setTranslatedPosition = 12; //relative to current position
-    int64 switchCamera = 13; //change current switchCamera
+message ControlRequest {
+  int64 seqNum = 1;  // for correlation
+  google.protobuf.Timestamp timestamp = 2; // time the request was made
+  oneof param {
+    steeleagle.shared.Attitude attitude = 3; 
+    steeleagle.shared.Location location = 4; 
+    steeleagle.shared.Velocity velocity = 5;
+    steeleagle.shared.Pose pose = 6; 
+    steeleagle.shared.Position position = 7; 
+    int64 cameraId = 8; 
   }
-  ResponseStatus resp = 14;
-  int64 seqNum = 15;
 }
 
-message Mission {
-  oneof method {
-    //for MissionController
-    bool startMission = 1;
-    bool pauseMission = 2;
-    bool resumeMission = 3;
-    bool stopMission = 4;
-    string downloadMission = 5; // URL that specifies the zip file to download
-  }
-  string UUID = 6; //unique mission reference for cataloging
+message ControlResponse {
+  int64 seqNum = 1; // for correlation
+  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  steeleagle.shared.ResponseStatus resp = 3;
+}
+
+enum MissionAction {
+  UNKOWN_ACTION = 0;
+  START = 1;
+  STOP = 2;
+  PAUSE = 3;
+  RESUME = 4;
+  DOWNLOAD = 5;
+}
+
+message MissionRequest {
+  string UUID = 1; // unique mission reference for cataloging
+  string URL = 2; // the URL that specifies the zip file to download
+  MissionAction action = 3; // start/stop/pause/resume/download
+}
+
+/**
+ * Service for actuating a drone from either a commander (manual control)
+ * or from the userspace task code (autonomous control)
+ */
+service ControlService {
+  rpc setAttitude(ControlRequest) returns (ControlResponse); // yaw/pitch/roll/thrust [radians/s, except thrust]
+  rpc takeOff(ControlRequest) returns (ControlResponse);
+  rpc land(ControlRequest) returns (ControlResponse);
+  rpc hover(ControlRequest) returns (ControlResponse); // stop all movement
+  rpc kill(ControlRequest) returns (ControlResponse); // instruct the drone to halt (enter hover mode)
+  rpc rth(ControlRequest) returns (ControlResponse); // return to last known home location
+  rpc setHome(ControlRequest) returns (ControlResponse); // set a location to return home to in the future
+  rpc setVelocity(ControlRequest) returns (ControlResponse); // velocity in 4 dimensions (x,y,z,z-rotation) [m/s]
+  rpc setGimbal(ControlRequest) returns (ControlResponse); // yaw/pitch/roll [radians]
+  rpc setRelativePosition(ControlRequest) returns (ControlResponse); // with respect to current location
+  rpc setGPSLocation(ControlRequest) returns (ControlResponse); // with respect to global coordinates
+  rpc setTranslatedPosition(ControlRequest) returns (ControlResponse); // with respect to home location
+  rpc switchCamera(ControlRequest) returns (ControlResponse);  
+}
+
+
+/**
+ * Service for managing (start/stop/pause/resume) the autonomous mission of a drone
+ */
+service MissionService {
+  rpc startMission(MissionRequest) returns (ControlResponse); 
+  rpc stopMission(MissionRequest)returns (ControlResponse);
+  rpc pauseMission(MissionRequest)returns (ControlResponse);
+  rpc resumeMission(MissionRequest)returns (ControlResponse);
+  rpc downloadMission(MissionRequest)returns (ControlResponse); // instruct drone to download a mission at the specified URL
 }

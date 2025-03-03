@@ -1,34 +1,57 @@
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
 //
 // SPDX-License-Identifier: GPL-2.0-only
-
+/**
+ * Messages/Calls related to the Dataplane component of SteelEagle.
+ *
+ * The dataplane is responsible for relaying telemetry and frame data
+ * from the drone to the rest of the system.
+ */
 syntax = "proto3";
-
+option py_generic_services = true;
 package steeleagle.onboard;
 import "steeleagle/shared/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/duration.proto";
 
-message Telemetry {
+message TelemetryResponse {
   string drone_name = 1;
-  Location global_position = 2;
-  Magnetometer mag = 3;
-  int64 battery = 4;
-  Attitude gimbal_attitude = 5;
-  Attitude drone_attitude = 6;
-  Velocity velocity = 7;
-  Position relative_position = 8;
-  int64 satellites = 9;
-  bool isConnected = 10;
-  int64 wifi_rssi = 11;
-  int64 cellular_rssi = 12;
-  int64 radio_rssi = 13;
+  steeleagle.shared.Location global_position = 2;
+  steeleagle.shared.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
+  int64 battery = 4;  // battery level [0-100]%
+  steeleagle.shared.Attitude gimbal_attitude = 5; 
+  steeleagle.shared.Attitude drone_attitude = 6;
+  steeleagle.shared.Velocity velocity = 7;
+  steeleagle.shared.Position relative_position = 8;
+  int64 satellites = 9; //number of satellites used in GPS fix
+  bool isConnected = 10 [deprecated=true]; // use uptime instead
+  int64 wifi_rssi = 11; // in -dbM
+  int64 cellular_rssi = 12; // in -dbM
+  int64 radio_rssi = 13;  // in -dbM
+  string drone_model = 14; // manufacturer/model of the drone
+  string status = 15; // i.e. 'idle', 'patroling', 'tracking'
+  google.protobuf.Duration uptime = 16;
+  steeleagle.shared.Location home = 17; // lat/lng/alt that will be used when returnning home
+  steeleagle.shared.Camera cameras = 18; // information about the drone's camera sensors
 }
 
-// Request/Response for getters
-message Dataplane {
-  oneof method {
-    Location getHome = 1;
-    Camera getCameras = 2;
-  }
-  ResponseStatus resp = 3;
-  int64 seqNum = 4;
+message TelemetryRequest {
+  google.protobuf.FieldMask field_mask = 1; // used to specify which fields of TelemetryResponse to return
+}
+
+// no fields yet
+message FrameRequest {
+
+}
+
+
+/**
+ * Service for receiving telemetry, frames, and other data (home location, available cameras, etc) from drones
+ */
+service DataplaneService {
+  // Returns telemetry data specified by the field mask (omitting the mask returns all fields)
+  rpc getTelemetry(TelemetryRequest) returns (TelemetryResponse);
+  // Returns frame data from a drone's camera
+  rpc getFrame(FrameRequest) returns (steeleagle.shared.Frame);
 }

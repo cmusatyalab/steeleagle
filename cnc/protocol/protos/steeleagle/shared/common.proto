@@ -5,62 +5,84 @@
 syntax = "proto3";
 package steeleagle.shared;
 
+
+/*
+* Image frame from one of the drone's cameras
+*/
 message Frame {
-  bytes data = 1;
+  bytes data = 1; // raw image bytes
   int64 width = 2;
   int64 height = 3;
   int64 channels = 4; //rgb, greyscale, etc
   int64 id = 5; //for future correlation
 }
 
+/*
+* Color filter represented by hue, saturation, and value
+* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
+*/
 message HSV {
-  int64 H = 1;
-  int64 S = 2;
-  int64 V = 3;
+  int64 H = 1; // hue range is [0,179]
+  int64 S = 2; // saturation range is [0,255]
+  int64 V = 3; // value range is [0,255]
 }
 
+/*
+* GPS location 
+*/
 message Location {
-  string name = 1;
-  double latitude = 2;
-  double longitude = 3;
-  double altitude = 4;
-  double bearing = 5;
+  double latitude = 1;
+  double longitude = 2;
+  double altitude = 3; // in meters AGL
 }
 
 enum ResponseStatus {
-  OK = 0;
-  FAILED = 1;
-  NOTSUPPORTED = 2;
-  COMPLETED = 3;
-  DENIED = 4;
+  UNKNOWN_RESPONSE = 0;
+  OK = 1;
+  FAILED = 2;
+  NOTSUPPORTED = 3;
+  COMPLETED = 4;
+  DENIED = 5;
 }
 
+/*
+* Defines the state of the drone's Magnetometer sensor
+*/
 enum Magnetometer {
-  CALIBRATED = 0;
-  RECOMMENDED = 1;
-  REQUIRED = 2;
-  UNUSED = 3;
-  PERTURBATION = 4;
+  UNKOWN_MAGSTATE  = 0;
+  CALIBRATED = 1; 
+  RECOMMENDED = 2; // calibration recommended
+  REQUIRED = 3; // calibration required
+  UNUSED = 4;
+  PERTURBATION = 5; // experiencing magnetic perturbations
 }
 
-message Attitude {
+/*
+* Angular offsets in 3 dimensions [radians]
+*/
+message Pose {
   double yaw = 1;
   double pitch = 2;
   double roll = 3;
-  double thrust = 4;
 }
 
-message Pose {
-  double yaw_theta = 1;
-  double pitch_theta = 2;
-  double roll_theta = 3;
+/*
+* Angular offsets in 3 dimensions [radians/s] plus the thrust of the motors
+* See https://mavlink.io/en/messages/common.html#SET_ATTITUDE_TARGET for more information
+*/
+message Attitude {
+  Pose pose = 1;
+  double thrust = 2; // thrust component of mavlink Attitude control
 }
 
+/*
+* Representation of the speed in 4-dimensions [m/s]
+*/
 message Velocity {
   double forward_vel = 1;
   double right_vel = 2;
   double up_vel = 3;
-  double angle_vel = 4;
+  double angular_vel = 4;
 }
 
 message Position {
@@ -71,20 +93,31 @@ message Position {
 }
 
 enum CameraType {
-  RGB = 0;
-  STEREO = 1;
-  THERMAL = 2;
-  NIGHT = 3;
+  UNKNOWN_CAMERA = 0;
+  RGB = 1;
+  STEREO = 2;
+  THERMAL = 3;
+  NIGHT = 4;
 }
 
+/*
+* List of camera sensors from the drone
+*/
 message Camera {
   repeated int64 id = 1;
   repeated CameraType type = 2;
 }
 
-message Bbox {
+/*
+* Defines the upper left and lower right corners of a detected object
+* in an image frame. Origin (0,0) is the top left corner of the input image.
+* Also the class and confidence threshold associated with the box.
+*/
+message BoundingBox {
   double ymin = 1;
   double xmin = 2;
   double ymax = 3;
   double xmax = 4;
+  string class_name = 5;
+  float confidence = 6;
 }
