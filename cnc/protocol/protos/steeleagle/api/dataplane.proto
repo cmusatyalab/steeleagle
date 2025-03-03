@@ -19,16 +19,16 @@ message TelemetryResponse {
   string drone_name = 1;
   steeleagle.shared.Location global_position = 2;
   steeleagle.shared.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
-  sfixed32 battery = 4;  // battery level [0-100]%
+  int64 battery = 4;  // battery level [0-100]%
   steeleagle.shared.Attitude gimbal_attitude = 5; 
   steeleagle.shared.Attitude drone_attitude = 6;
   steeleagle.shared.Velocity velocity = 7;
   steeleagle.shared.Position relative_position = 8;
-  sfixed32 satellites = 9; //number of satellites used in GPS fix
+  int64 satellites = 9; //number of satellites used in GPS fix
   bool isConnected = 10 [deprecated=true]; // use uptime instead
-  sfixed32 wifi_rssi = 11; // in -dbM
-  sfixed32 cellular_rssi = 12; // in -dbM
-  sfixed32 radio_rssi = 13;  // in -dbM
+  int64 wifi_rssi = 11; // in -dbM
+  int64 cellular_rssi = 12; // in -dbM
+  int64 radio_rssi = 13;  // in -dbM
   string drone_model = 14; // manufacturer/model of the drone
   string status = 15; // i.e. 'idle', 'patroling', 'tracking'
   google.protobuf.Duration uptime = 16;

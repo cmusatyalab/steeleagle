@@ -11,9 +11,9 @@ package steeleagle.shared;
 */
 message Frame {
   bytes data = 1; // raw image bytes
-  sfixed32 width = 2;
-  sfixed32 height = 3;
-  sfixed32 channels = 4; //rgb, greyscale, etc
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4; //rgb, greyscale, etc
   int64 id = 5; //for future correlation
 }
 
@@ -22,9 +22,9 @@ message Frame {
 * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
 */
 message HSV {
-  sfixed32 H = 1; // hue range is [0,179]
-  sfixed32 S = 2; // saturation range is [0,255]
-  sfixed32 V = 3; // value range is [0,255]
+  int H = 1; // hue range is [0,179]
+  int64 S = 2; // saturation range is [0,255]
+  int64 V = 3; // value range is [0,255]
 }
 
 /*
@@ -104,7 +104,7 @@ enum CameraType {
 * List of camera sensors from the drone
 */
 message Camera {
-  repeated sfixed32 id = 1;
+  repeated int64 id = 1;
   repeated CameraType type = 2;
 }
 
