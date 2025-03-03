@@ -22,7 +22,7 @@ message Frame {
 * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
 */
 message HSV {
-  int H = 1; // hue range is [0,179]
+  int64 H = 1; // hue range is [0,179]
   int64 S = 2; // saturation range is [0,255]
   int64 V = 3; // value range is [0,255]
 }
