@@ -11,9 +11,9 @@ package steeleagle.shared;
 */
 message Frame {
   bytes data = 1; // raw image bytes
-  int64 width = 2;
-  int64 height = 3;
-  int64 channels = 4; //rgb, greyscale, etc
+  sfixed32 width = 2;
+  sfixed32 height = 3;
+  sfixed32 channels = 4; //rgb, greyscale, etc
   int64 id = 5; //for future correlation
 }
 
@@ -22,9 +22,9 @@ message Frame {
 * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
 */
 message HSV {
-  int64 H = 1; // hue range is [0,179]
-  int64 S = 2; // saturation range is [0,255]
-  int64 V = 3; // value range is [0,255]
+  sfixed32 H = 1; // hue range is [0,179]
+  sfixed32 S = 2; // saturation range is [0,255]
+  sfixed32 V = 3; // value range is [0,255]
 }
 
 /*
@@ -49,7 +49,7 @@ enum ResponseStatus {
 * Defines the state of the drone's Magnetometer sensor
 */
 enum Magnetometer {
-  UNKOWN_MAGSTATE  = 0;
+  UNKNOWN_MAGSTATE  = 0;
   CALIBRATED = 1; 
   RECOMMENDED = 2; // calibration recommended
   REQUIRED = 3; // calibration required
@@ -79,10 +79,10 @@ message Attitude {
 * Representation of the speed in 4-dimensions [m/s]
 */
 message Velocity {
-  double forward_vel = 1;
-  double right_vel = 2;
-  double up_vel = 3;
-  double angular_vel = 4;
+  double forward_vel = 1; //pitch
+  double right_vel = 2; //roll
+  double up_vel = 3; //thrust
+  double angular_vel = 4; //yaw
 }
 
 message Position {
@@ -104,20 +104,21 @@ enum CameraType {
 * List of camera sensors from the drone
 */
 message Camera {
-  repeated int64 id = 1;
+  repeated sfixed32 id = 1;
   repeated CameraType type = 2;
 }
 
 /*
 * Defines the upper left and lower right corners of a detected object
 * in an image frame. Origin (0,0) is the top left corner of the input image.
+* (image_height, image_width) is the bottom right corner.
 * Also the class and confidence threshold associated with the box.
 */
 message BoundingBox {
-  double ymin = 1;
-  double xmin = 2;
-  double ymax = 3;
-  double xmax = 4;
+  double ymin = 1; // wrt to image size
+  double xmin = 2; // wrt to image size
+  double ymax = 3; // wrt to image size
+  double xmax = 4; // wrt to image size
   string class_name = 5;
   float confidence = 6;
 }

@@ -19,7 +19,7 @@ message ControlRequest {
     steeleagle.shared.Velocity velocity = 5;
     steeleagle.shared.Pose pose = 6; 
     steeleagle.shared.Position position = 7; 
-    int64 cameraId = 8; 
+    sfixed32 cameraId = 8;
   }
 }
 
@@ -30,7 +30,7 @@ message ControlResponse {
 }
 
 enum MissionAction {
-  UNKOWN_ACTION = 0;
+  UNKNOWN_ACTION = 0;
   START = 1;
   STOP = 2;
   PAUSE = 3;
