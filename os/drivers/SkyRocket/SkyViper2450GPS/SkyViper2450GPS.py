@@ -382,6 +382,43 @@ class SkyViper2450GPSDrone():
         logger.info("-- setAttitude sent successfully")
         #  continuous control: no blocking wait
 
+    async def set_yaw(self, target_yaw):
+        """
+        Sends MAV_CMD_CONDITION_YAW to set the drone's yaw.
+
+        Args:
+            vehicle: The MAVLink connection object.
+            target_yaw (float): Yaw angle in degrees (absolute 0-360 or relative change).
+            yaw_speed (float): Speed of yawing in degrees per second.
+            relative (bool): If True, target_yaw is a relative change. If False, it's absolute.
+            direction (int): -1 for CCW, 1 for CW, 0 for fastest route (only for absolute yaw).
+
+        Example:
+            # Absolute yaw to 90 degrees at 20 deg/s
+            set_yaw(vehicle, 90, 20, relative=False)
+
+            # Rotate 45 degrees CW at 30 deg/s
+            set_yaw(vehicle, 45, 30, relative=True, direction=1)
+        """
+        yaw_speed=30
+        relative=True
+        direction=0
+        relative_flag = 1 if relative else 0  # 1 = relative, 0 = absolute
+
+        self.vehicle.mav.command_long_send(
+            self.vehicle.target_system,
+            self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            0,  # Confirmation
+            target_yaw,  # param1: Yaw angle
+            yaw_speed,   # param2: Yaw speed in deg/s
+            direction,   # param3: -1=CCW, 1=CW, 0=fastest (only for absolute yaw)
+            relative_flag,  # param4: 0=Absolute, 1=Relative
+            0, 0, 0  # param5, param6, param7 (Unused)
+        )
+
+        logger.info(f"Yaw command sent: target_yaw={target_yaw}, speed={yaw_speed}, relative={relative}, direction={direction}")
+    
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         
@@ -394,6 +431,8 @@ class SkyViper2450GPSDrone():
                 logger.error("Failed to set mode to GUIDED")
                 return
         
+        # adj_vel = 0.1 * angle_vel
+        yaw = float('nan')
         self.vehicle.mav.set_position_target_local_ned_send(
             0,  # time_boot_ms
             self.vehicle.target_system,
@@ -403,7 +442,7 @@ class SkyViper2450GPSDrone():
             0, 0, 0,  # x, y, z positions
             forward_vel, right_vel, -up_vel,  # x, y, z velocity
             0, 0, 0,  # x, y, z acceleration
-            0, angle_vel  # yaw, yaw_rate
+            yaw, angle_vel  # yaw, yaw_rate
         )
         logger.info("-- setVelocity sent successfully")
         #  continuous control: no blocking wait
@@ -779,6 +818,7 @@ class StreamingThread(threading.Thread):
         
         logger.info(f"url used: {url}")
         self.cap = cv2.VideoCapture(url)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
         self.isRunning = True
 
     def run(self):

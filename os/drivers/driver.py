@@ -134,8 +134,12 @@ async def handle(identity, message, resp, action, resp_sock):
                 velocity = message.setVelocity
                 logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
                 logger.info('####################################Setting Velocity#######################################################################')
+                
                 await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                # await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                # await drone.set_yaw(velocity.angle_vel)
+                # if velocity.angle_vel != 0:
+                #     await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+                    
                 # await drone.manual_control(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
             case "land":
