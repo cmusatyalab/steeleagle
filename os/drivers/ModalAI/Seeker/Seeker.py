@@ -30,7 +30,7 @@ class ModalAISeekerDrone():
         self.drone_id = drone_id
         self.vehicle = None
         self.mode = None
-        self.offboard_mode = ModalAISeekerDrone.OffboardHeatbeatMode.VELOCITY
+        self.offboard_mode = ModalAISeekerDrone.OffboardHeartbeatMode.VELOCITY
         self.mode_mapping = None
         self.listener_task = None
         self.gps_disabled = False
