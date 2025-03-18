@@ -20,13 +20,21 @@ class ModalAISeekerDrone():
         TAKEOFF = 'TAKEOFF'
         ALT_HOLD = 'ALT_HOLD'
         OFFBOARD = 'OFFBOARD'
+
+    class OffboardHeartbeatMode(Enum):
+        VELOCITY = 'VELOCITY'
+        RELATIVE = 'RELATIVE'
+        GLOBAL = 'GLOBAL'
         
     def __init__(self):
         self.vehicle = None
         self.mode = None
+        self.offboard_mode = ModalAISeekerDrone.OffboardHeatbeatMode.VELOCITY
         self.mode_mapping = None
         self.listener_task = None
         self.gps_disabled = False
+        self.setpoint = (0.0, 0.0, 0.0, 0.0)
+        self.setpoint_task = None
 
     ''' Connect methods '''
     async def connect(self, connection_string):
@@ -197,6 +205,44 @@ class ModalAISeekerDrone():
             return None
         return rssi_msg.rssi
 
+    ''' Coroutine methods '''
+    async def _setpointHeartbeat():
+        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
+            logger.error("Failed to set mode to GUIDED")
+            return
+        
+        # Send frequent setpoints to keep the drone in offboard mode.
+        while True:
+            if self.offboard_mode == ModalAISeekerDrone.OffboardHeartbeatMode.VELOCITY:
+                self.vehicle.mav.set_position_target_local_ned_send(
+                    0,  # time_boot_ms
+                    self.vehicle.target_system,
+                    self.vehicle.target_component,
+                    mavutil.mavlink.MAV_FRAME_BODY_NED,  # frame
+                    0b010111000111,  # type_mask
+                    0, 0, 0,  # x, y, z positions
+                    self.setpoint[0], self.setpoint[1], -self.setpoint[2],  # x, y, z velocity
+                    0, 0, 0,  # x, y, z acceleration
+                    0, self.setpoint[3]  # yaw, yaw_rate
+                )
+            elif self.offboard_mode == ModalAISeekerDrone.OffboardHeartbeatMode.RELATIVE:
+                pass
+            elif self.offboard_mode == ModalAISeekerDrone.OffboardHeartbeatMode.GLOBAL:
+                self.vehicle.mav.set_position_target_global_int_send(
+                    0,
+                    self.vehicle.target_system,
+                    self.vehicle.target_component,
+                    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                    0b0000111111111000,
+                    int(self.setpoint[0] * 1e7),
+                    int(self.setpoint[1] * 1e7),
+                    self.setpoint[2],
+                    0, 0, 0,
+                    0, 0, 0,
+                    0, 0
+                )
+            asyncio.sleep(0)
+
     ''' Actuation methods '''
     async def hover(self):
         logger.info("-- Hovering")
@@ -221,6 +267,9 @@ class ModalAISeekerDrone():
             lambda: self.is_mode_set(ModalAISeekerDrone.FlightMode.LOITER),
             interval=1
         )
+
+        self.setpoint_task = asyncio.create_task(self._setpointHeartbeat)
+        await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD)
 
         if result:
             logger.info("-- Takeoff success")
@@ -289,132 +338,16 @@ class ModalAISeekerDrone():
         else:   
             logger.error("-- RTL failed")
             
-    async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
-        if self.gps_disabled:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-            # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
-            #     logger.error("Failed to set mode to GUIDED_NOGPS")
-            #     return
-        else:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
-        logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
-
-        # Ensure values are within MAVLink range (-1000 to 1000)
-        def clamp(value, min_val, max_val):
-            return max(min_val, min(max_val, int(value)))  # Ensure integer conversion
-
-        x = clamp(forward_vel * 1000, -1000, 1000)  # Forward/backward movement
-        y = clamp(right_vel * 1000, -1000, 1000)    # Left/right movement
-        z = clamp(up_vel * 1000, 0, 1000)           # Throttle (0=lowest, 1000=full thrust)
-        r = clamp(angle_vel * 1000, -1000, 1000)    # Yaw rotation
-
-        buttons = 0  # No buttons pressed
-        buttons2 = 0  # No additional buttons
-        enabled_extensions = 0  # No extra axis enabled
-        s, t, aux1, aux2, aux3, aux4, aux5, aux6 = 0, 0, 0, 0, 0, 0, 0, 0  # Unused fields
-
-        try:
-            self.vehicle.mav.manual_control_send(
-                self.vehicle.target_system,
-                x, y, z, r,
-                buttons,
-                buttons2,
-                enabled_extensions,
-                s, t, aux1, aux2, aux3, aux4, aux5, aux6
-            )
-            logger.info("Manual control command sent successfully!")
-        except Exception as e:
-            logger.error(f"Failed to send manual control: {e}")
-        
-        
-    async def setAttitude(self, pitch, roll, thrust, yaw):
-        logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
-
-        if self.gps_disabled:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-            # if await self.switchMode(ModalAISeekerDrone.FlightMode.ALT_HOLD) == False:
-            #     logger.error("Failed to set mode to GUIDED_NOGPS")
-            #     return
-        else:
-            if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
-        
-        # Convert Euler angles to quaternion (w, x, y, z)
-        def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-            roll, pitch, yaw = map(math.radians, [roll, pitch, yaw])
-            cy, sy = math.cos(yaw * 0.5), math.sin(yaw * 0.5)
-            cp, sp = math.cos(pitch * 0.5), math.sin(pitch * 0.5)
-            cr, sr = math.cos(roll * 0.5), math.sin(roll * 0.5)
-
-            return [cr * cp * cy + sr * sp * sy,  # w
-                    sr * cp * cy - cr * sp * sy,  # x
-                    cr * sp * cy + sr * cp * sy,  # y
-                    cr * cp * sy - sr * sp * cy]  # z
-
-        q = to_quaternion(roll, pitch, yaw)
-
-        base_thrust = 0.6
-        
-        self.vehicle.mav.set_attitude_target_send(
-            0,  # time_boot_ms
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            0b00000000,  # type_mask
-            q,  # Quaternion
-            0, 0, 0,  # Body angular rates
-            base_thrust + thrust  # Throttle
-        )
-        logger.info("-- setAttitude sent successfully")
-        #  continuous control: no blocking wait
-
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
-        
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        self.vehicle.mav.set_position_target_local_ned_send(
-            0,  # time_boot_ms
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_BODY_NED,  # frame
-            0b010111000111,  # type_mask
-            0, 0, 0,  # x, y, z positions
-            forward_vel, right_vel, -up_vel,  # x, y, z velocity
-            0, 0, 0,  # x, y, z acceleration
-            0, angle_vel  # yaw, yaw_rate
-        )
+        self.offboard_mode = ModalAISeekerDrone.OffboardHeartbeatMode.VELOCITY 
+        self.setpoint = (forward_vel, right_vel, up_vel, angle_vel) 
         logger.info("-- setVelocity sent successfully")
 
-    async def setGPSLocation(self, lat, lon, alt, bearing):
+    async def setGlobalPosition(self, lat, lon, alt, bearing):
         logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
         
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        self.vehicle.mav.set_position_target_global_int_send(
-            0,
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            0b0000111111111000,
-            int(lat * 1e7),
-            int(lon * 1e7),
-            alt,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0
-        )
-            # Calculate bearing if not provided
+        # Calculate bearing if not provided
         current_location = self.getGPS()
         current_lat = current_location["latitude"]
         current_lon = current_location["longitude"]
@@ -423,7 +356,9 @@ class ModalAISeekerDrone():
             logger.info(f"-- Calculated bearing: {bearing}")
         
         await self.setBearing(bearing)
-        
+       
+        self.setpoint = (lat, lon, alt, 0)
+
         result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
             interval=1
@@ -433,52 +368,6 @@ class ModalAISeekerDrone():
             logger.info("-- Reached target GPS location")
         else:  
             logger.info("-- Failed to reach target GPS location")
-        
-        return result
-
-    async def setTranslatedLocation(self, forward, right, up, angle):
-        logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
-        
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        current_location =  self.getGPS()
-        current_heading =  self.getHeading()
-
-        dx = forward * math.cos(math.radians(current_heading)) - right * math.sin(math.radians(current_heading))
-        dy = forward * math.sin(math.radians(current_heading)) + right * math.cos(math.radians(current_heading))
-        dz = -up
-
-        target_lat = current_location["latitude"] + (dx / 111320)
-        target_lon = current_location["longitude"] + (dy / (111320 * math.cos(math.radians(current_location["latitude"]))))
-        target_alt = current_location["altitude"] + dz
-
-        self.vehicle.mav.set_position_target_global_int_send(
-            0,
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            0b0000111111111000,
-            int(target_lat * 1e7),
-            int(target_lon * 1e7),
-            target_alt,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0
-        )
-        
-        if angle is not None: await self.setBearing(angle)
-        
-        result = await self._wait_for_condition(
-            lambda: self.is_at_target(target_lat, target_lon),
-            interval=1
-        )
-        
-        if  result:
-            logger.info("-- Reached target translated location")
-        else:
-            logger.error("-- Failed to reach target translated location")
         
         return result
 
@@ -605,35 +494,8 @@ class ModalAISeekerDrone():
         else:
             logger.info(f"Priming for OFFBOARD mode")
             return True
-    
-    async def disableGPS(self):
-        # logger.info("-- Disabling GPS")
-
-        # # Set EKF_GPS_TYPE to 3 (Indoor Mode)
-        # self.vehicle.mav.param_set_send(
-        #     self.vehicle.target_system,
-        #     self.vehicle.target_component,
-        #     b'EKF_GPS_TYPE',  # Parameter name
-        #     3,  # 3 = No GPS (indoor mode)
-        #     mavutil.mavlink.MAV_PARAM_TYPE_INT32
-        # )
         
-        # result =  await self._wait_for_condition(
-        #     lambda: self.is_GPS_disabled()
-        # )
-        
-        # if result:
-        #     logger.info("-- GPS disabled")
-        # else:
-        #     logger.error("-- Failed to disable GPS")    
-            # Wait and print received parameter messages
-        # return result
-        
-        self.gps_disabled = True
-        
-   
-           
-    ''' ACK methods'''    
+    ''' Check methods'''    
     def is_armed(self):
         return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
         
@@ -662,7 +524,6 @@ class ModalAISeekerDrone():
         target_yaw = (bearing + 360) % 360
         return abs(current_yaw - target_yaw) <= 2
     
-
     def is_at_target(self, lat, lon):
         current_location = self.getGPS()
         if not current_location:
