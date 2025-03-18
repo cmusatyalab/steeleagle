@@ -26,7 +26,8 @@ class ModalAISeekerDrone():
         RELATIVE = 'RELATIVE'
         GLOBAL = 'GLOBAL'
         
-    def __init__(self):
+    def __init__(self, drone_id):
+        self.drone_id = drone_id
         self.vehicle = None
         self.mode = None
         self.offboard_mode = ModalAISeekerDrone.OffboardHeatbeatMode.VELOCITY
@@ -122,8 +123,7 @@ class ModalAISeekerDrone():
             return {}
 
     def getName(self):
-        drone_id = os.environ.get('DRONE_ID')
-        return drone_id
+        return self.drone_id
 
     def getGPS(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
