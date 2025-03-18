@@ -33,7 +33,7 @@ class ModalAISeekerDrone():
         self.offboard_mode = ModalAISeekerDrone.OffboardHeartbeatMode.VELOCITY
         self.mode_mapping = None
         self.listener_task = None
-        self.gps_disabled = False
+        self.streamingThread = None
         self.setpoint = (0.0, 0.0, 0.0, 0.0)
         self.setpoint_task = None
 
@@ -206,7 +206,7 @@ class ModalAISeekerDrone():
         return rssi_msg.rssi
 
     ''' Coroutine methods '''
-    async def _setpointHeartbeat():
+    async def _setpointHeartbeat(self):
         if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
             logger.error("Failed to set mode to GUIDED")
             return
@@ -241,7 +241,7 @@ class ModalAISeekerDrone():
                     0, 0, 0,
                     0, 0
                 )
-            asyncio.sleep(0)
+            asyncio.sleep(0.05)
 
     ''' Actuation methods '''
     async def hover(self):
@@ -268,8 +268,7 @@ class ModalAISeekerDrone():
             interval=1
         )
 
-        self.setpoint_task = asyncio.create_task(self._setpointHeartbeat)
-        await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD)
+        self.setpoint_task = asyncio.create_task(self._setpointHeartbeat())
 
         if result:
             logger.info("-- Takeoff success")
@@ -373,10 +372,6 @@ class ModalAISeekerDrone():
 
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
-        
-        if await self.switchMode(ModalAISeekerDrone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
         
         yaw_speed = 25 # deg/s
         direction = 0 # 1: clockwise, -1: counter-clockwise 0: most quickly direction

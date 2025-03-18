@@ -40,7 +40,7 @@ logger.info(f"Drone ID: {drone_id}")
 logger.info(f"Drone Type: {drone_type}")
 logger.info(f"Connection String: {connection_string}")
 
-if drone_type == 'modalai':
+if drone_type == 'ModalAISeeker':
     drone = ModalAISeekerDrone(drone_id)
 elif drone_type == 'SkyViper2450GPS':
     drone = SkyViper2450GPSDrone(drone_id)
@@ -123,51 +123,44 @@ async def telemetry_stream(drone, tel_sock):
 
 async def handle(identity, message, resp, action, resp_sock):
     try:
-        match action:
-            case "takeOff":
-                logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
-                logger.info('####################################Taking OFF################################################################')
-                await drone.takeOff(5)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"tookoff function call finished at: {time.time()}")
-            case "setVelocity":
-                velocity = message.setVelocity
-                logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
-                logger.info('####################################Setting Velocity#######################################################################')
-                
-                await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                # await drone.set_yaw(velocity.angle_vel)
-                # if velocity.angle_vel != 0:
-                #     await drone.setAttitude(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                    
-                # await drone.manual_control(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-            case "land":
-                logger.info(f"land function call started at: {time.time()}")
-                await drone.land()
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info('####################################Landing#######################################################################')
-                logger.info(f"land function call finished at: {time.time()}")
-            case "rth":
-                logger.info(f"rth function call started at: {time.time()}")
-                logger.info('####################################Returning to Home#######################################################################')
-                await drone.rth()
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"rth function call finished at: {time.time()}")
-            case "hover":
-                logger.info('####################################Hovering#######################################################################')
-                logger.info(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
-                await drone.hover()
-                logger.info("hover !")
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"hover function call finished at: {time.time()}")
-            case "setGPSLocation":
-                logger.info(f"setGPSLocation function call started at: {time.time()}")
-                logger.info('####################################Setting GPS Location#######################################################################')
-                location = message.setGPSLocation
-                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
-                resp.resp = cnc_protocol.ResponseStatus.COMPLETED
-                logger.info(f"setGPSLocation function call finished at: {time.time()}")
+        if action == "takeOff":
+            logger.info(f"takeoff function call started at: {time.time()}, seq id {message.seqNum}")
+            logger.info('####################################Taking OFF################################################################')
+            await drone.takeOff(5)
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            logger.info(f"tookoff function call finished at: {time.time()}")
+        elif action == "setVelocity":
+            velocity = message.setVelocity
+            logger.info(f"Setting velocity: {velocity} started at {time.time()}, seq id {message.seqNum}")
+            logger.info('####################################Setting Velocity#######################################################################')
+            await drone.setVelocity(velocity.forward_vel, velocity.right_vel, velocity.up_vel, velocity.angle_vel)
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+        elif action == "land":
+            logger.info(f"land function call started at: {time.time()}")
+            await drone.land()
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            logger.info('####################################Landing#######################################################################')
+            logger.info(f"land function call finished at: {time.time()}")
+        elif action == "rth":
+            logger.info(f"rth function call started at: {time.time()}")
+            logger.info('####################################Returning to Home#######################################################################')
+            await drone.rth()
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            logger.info(f"rth function call finished at: {time.time()}")
+        elif action == "hover":
+            logger.info('####################################Hovering#######################################################################')
+            logger.info(f"hover function call started at: {time.time()}, seq id {message.seqNum}")
+            await drone.hover()
+            logger.info("hover !")
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            logger.info(f"hover function call finished at: {time.time()}")
+        elif action == "setGPSLocation":
+            logger.info(f"setGPSLocation function call started at: {time.time()}")
+            logger.info('####################################Setting GPS Location#######################################################################')
+            location = message.setGPSLocation
+            await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
+            resp.resp = cnc_protocol.ResponseStatus.COMPLETED
+            logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
         resp.resp = cnc_protocol.ResponseStatus.FAILED
