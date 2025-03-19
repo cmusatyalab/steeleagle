@@ -1,4 +1,5 @@
 from enum import Enum
+import json
 import sys
 import time
 import validators
@@ -106,6 +107,7 @@ class CommandService(Service):
 
         if command == ManualCommand.RTH:
             driver_command.rth = True
+            logger.info(f"rth signal sent at: {time.time()}, seq id {driver_command.seqNum}")
         if command == ManualCommand.HALT:
             driver_command.hover = True
         elif command == ManualCommand.TAKEOFF:
@@ -149,7 +151,7 @@ class CommandService(Service):
                 logger.debug('proxy loop')
                 socks = dict(await poller.poll())
 
-                # Check for messages on the ROUTER socket
+                # Check for messages from CMDR
                 if self.cmd_front_cmdr_sock in socks:
                     msg = await self.cmd_front_cmdr_sock.recv_multipart()
                     cmd  = msg[0]
@@ -157,7 +159,7 @@ class CommandService(Service):
                     logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}")
                     await self.process_command(cmd)
                  
-                # Check for messages on the DEALER socket
+                # Check for messages from MSN
                 if self.cmd_front_usr_sock in socks:
                     msg = await self.cmd_front_usr_sock.recv_multipart()
                     cmd = msg[0]
@@ -166,7 +168,7 @@ class CommandService(Service):
                     await self.cmd_back_sock.send_multipart([identity, cmd])
                     
                     
-                # Check for messages on the DEALER socket
+                # Check for messages from DRIVER
                 if self.cmd_back_sock in socks:
                     message = await self.cmd_back_sock.recv_multipart()
                     logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: {message}")
@@ -233,8 +235,9 @@ class CommandService(Service):
 
 ######################################################## MAIN ##############################################################
 async def async_main():
-    drone_type = os.environ.get('DRONE_TYPE')
-    drone_id = os.environ.get('DRONE_ID')
+    droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
+    drone_id = droneArgs.get('id')
+    drone_type = droneArgs.get('type')
     # init CommandService
     cmd_service = CommandService(drone_id, drone_type)
 

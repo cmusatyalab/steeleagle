@@ -12,7 +12,7 @@ import logging
 
 from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
-# from system_call_stubs.ComputeStub import ComputeStub
+from system_call_stubs.ComputeStub import ComputeStub
 from cnc_protocol import cnc_pb2
 
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class MissionController():
         
         # start the tm
         logger.info(f"start the task manager")
-        self.tm = tm.TaskManager(self.drone, None, self.transitMap, self.task_arg_map)
+        self.tm = tm.TaskManager(self.drone, self.compute, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
         
@@ -145,7 +145,9 @@ class MissionController():
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
         self.drone = DroneStub()
+        self.compute = ComputeStub()
         asyncio.create_task(self.drone.run())
+        asyncio.create_task(self.compute.run())
         
         # self.compute = ComputeStub()
         while True:

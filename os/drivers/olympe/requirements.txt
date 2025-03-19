@@ -1,3 +1,0 @@
-zmq
-protobuf
-opencv-python

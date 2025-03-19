@@ -1,24 +1,23 @@
 import time
-import cv2
-import numpy as np
 import zmq
 import zmq.asyncio
 import asyncio
 import os
-import sys
 import logging
-import json
+import yaml
+import importlib
+import pkgutil
 from util.utils import setup_socket, SocketOperation
-from util.timer import Timer
 from cnc_protocol import cnc_pb2
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+import computes
+from kernel.computes.ComputeItf import ComputeInterface
+from DataStore import DataStore
 from kernel.Service import Service
-from LocalComputeClient import LocalComputeClient, ComputationType
+import sys
 
+# Set up logging
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format=logging_format)
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO), format=logging_format)
 logger = logging.getLogger(__name__)
 
 if os.environ.get("LOG_TO_FILE") == "true":
@@ -26,307 +25,235 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
+
 class DataService(Service):
-    def __init__(self, gabriel_server, gabriel_port):
+    def __init__(self, config_yaml):
+        """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
-
-        # setting up args
-        self.telemetry_cache = {
-            "connection": None,
-            "drone_name": None,
-            "location": {
-                "latitude": None,
-                "longitude": None,
-                "altitude": None
-            },
-            "battery": None,
-            "magnetometer": None,
-            "bearing": None
-        }
-        self.telemetry_updated = asyncio.Event()
-        self.frame_cache = {
-            "data": None,
-            "height": None,
-            "width": None,
-            "channels": None,
-            "id": None
-        }
-        self.frame_updated = asyncio.Event()
-        self.result_cache = {}
-        # Gabriel
-        self.gabriel_server = gabriel_server
-        self.gabriel_port = gabriel_port
-        self.engine_results = {}
-        self.drone_registered = False
-        self.gabriel_client = ZeroMQClient(
-            self.gabriel_server, self.gabriel_port,
-            [self.get_telemetry_producer(), self.get_frame_producer()], self.processResults
-        )
-        # remote computation parameters
-        self.params = {
-            "model": None,
-            "hsv_lower": None,
-            "hsv_upper": None
-        }
-
-        # Result Cache
 
         # Setting up conetxt
         context = zmq.asyncio.Context()
+        self.register_context(context)
 
         # Setting up sockets
         tel_sock = context.socket(zmq.SUB)
         cam_sock = context.socket(zmq.SUB)
-        cpt_sock = context.socket(zmq.REP)
+        cpt_usr_sock = context.socket(zmq.DEALER)
+
         tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         tel_sock.setsockopt(zmq.CONFLATE, 1)
         cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
         cam_sock.setsockopt(zmq.CONFLATE, 1)
-        self.cam_sock = cam_sock
-        self.tel_sock = tel_sock
-        self.cpt_sock = cpt_sock
+
         setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
         setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
 
-        self.local_compute_client = LocalComputeClient(1280, 720)
+        self.register_socket(tel_sock)
+        self.register_socket(cam_sock)
+        self.register_socket(cpt_usr_sock)
+
+
+        self.cam_sock = cam_sock
+        self.tel_sock = tel_sock
+        self.cpt_usr_sock = cpt_usr_sock
+
 
         # setting up tasks
         tel_task = asyncio.create_task(self.telemetry_handler())
         cam_task = asyncio.create_task(self.camera_handler())
-        gab_task = asyncio.create_task(self.gabriel_client.launch_async())
-        local_compute_task = asyncio.create_task(self.local_compute_task())
-
-        # registering context, sockets and tasks to service
-        self.register_context(context)
-        self.register_socket(tel_sock)
-        self.register_socket(cam_sock)
-        self.register_socket(cpt_sock)
+        usr_task = asyncio.create_task(self.user_handler())
+        
         self.register_task(tel_task)
         self.register_task(cam_task)
-        self.register_task(gab_task)
-        self.register_task(local_compute_task)
+        self.register_task(usr_task)
+
+        # setting up data store
+        self.data_store = DataStore()
+        self.compute_dict = {}
+        compute_tasks = self.spawn_computes(config_yaml)
+        for task in compute_tasks:
+            self.register_task(task)
+
+    ######################################################## USER ##############################################################
+    def get_result(self, compute_type):
+        logger.info(f"Processing getter for compute type: {compute_type}")
+        getter_list = []
+        for compute_id in self.compute_dict.keys():
+            cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
+            
+            if cpt_res is None:
+                logger.error(f"Result not found for compute_id: {compute_id}")
+                continue
+            
+            res = cpt_res[0]
+            timestamp = str(cpt_res[1])
+            
+            result= cnc_pb2.ComputeResult()
+            result.compute_id = compute_id
+            result.timestamp = timestamp
+            result.string_result = res
+            
+            getter_list.append(result)
+            logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
+        return getter_list
+
+    def clear_result(self):
+        logger.info("Processing setter")
+        for compute_id in self.compute_dict.keys():
+            self.data_store.clear_compute_result(compute_id)
+            
+    async def user_handler(self):
+        """Handles user commands."""
+        logger.info("User handler started")
+        while True:
+            try:
+                msg = await self.cpt_usr_sock.recv()
+
+                # Attempt to parse as Compute
+                compute_command = cnc_pb2.Compute()
+                compute_command.ParseFromString(msg)
+
+                if compute_command.HasField("getter") or compute_command.HasField("setter"):
+                    logger.info("Processing compute")
+                    await self.handle_compute(compute_command)
+                    continue  # Stop processing once a valid type is found
+
+                # Attempt to parse as Driver
+                driver_command = cnc_pb2.Driver()
+                driver_command.ParseFromString(msg)
+
+                if driver_command.HasField("getTelemetry"):  # Replace with actual field name
+                    logger.info("Processing driver")
+                    await self.handle_driver(driver_command)
+                    continue  # Stop processing once a valid type is found
+
+                # If neither parsed correctly, log an error
+                logger.error("User handler error: Unknown command type")
+
+            except Exception as e:
+                logger.error(f"user handler error: {e}")
+
+    async def handle_compute(self, cpt_command):
+        """Processes a Compute command."""
+        logger.info(f"Received Compute command: {cpt_command}")
+
+        if cpt_command.getter:
+            logger.info("Processing getter")
+            compute_type = cpt_command.getter.compute_type
+            getter_list = self.get_result(compute_type)
+            cpt_command.getter.result.extend(getter_list)
+            await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+
+        elif cpt_command.setter:
+            
+            if cpt_command.setter.clearResult:
+                logger.info("Processing setter clear")
+                self.clear_result()
+                await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+
+        else:
+            logger.error("User handler error: Unknown Compute command")
+
+    async def handle_driver(self, driver_command):
+        """Processes a Driver command."""
+        logger.info(f"Received Driver command: {driver_command}")
+        
+        if driver_command.getTelemetry:
+            logger.info("Processing getTelemetry")
+            self.data_store.get_raw_data(driver_command.getTelemetry)
+            driver_command.resp = cnc_pb2.ResponseStatus.COMPLETED
+            logger.info(f"Sending telemetry: {driver_command.getTelemetry}")
+            await self.cpt_usr_sock.send(driver_command.SerializeToString())
 
     ######################################################## DRIVER ############################################################
     async def telemetry_handler(self):
-        logger.info('Telemetry handler started')
+        """Handles telemetry messages."""
+        logger.info("Telemetry handler started")
         while True:
             try:
-                logger.debug(f"Telemetry handler: started time {time.time()}")
                 msg = await self.tel_sock.recv()
                 telemetry = cnc_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
-
-                # self.telemetry_cache['connection'] = telemetry.connection_status.is_connected
-                self.telemetry_cache['drone_name'] = telemetry.drone_name
-                self.telemetry_cache['location']['latitude'] = telemetry.global_position.latitude
-                self.telemetry_cache['location']['longitude'] = telemetry.global_position.longitude
-                self.telemetry_cache['location']['altitude'] = telemetry.global_position.altitude
-                self.telemetry_cache['battery'] = telemetry.battery
-                self.telemetry_cache['magnetometer'] = telemetry.mag
-                self.telemetry_cache['bearing'] = telemetry.drone_attitude.yaw
-
-                logger.debug(f"Telemetry handler: finished time {time.time()}")
-                self.telemetry_updated.set()
+                self.data_store.set_raw_data(telemetry)
+                logger.debug(f"Received telemetry message after set: {telemetry}")
             except Exception as e:
-                logger.error(f"Telemetry handler: {e}")
+                logger.error(f"Telemetry handler error: {e}")
 
+    def parse_frame(self, msg):
+        """Parses a frame message."""
+        frame = cnc_pb2.Frame()
+        frame.ParseFromString(msg)
+        return frame
+        
     async def camera_handler(self):
-        logger.info('Camera handler started')
+        """Handles camera messages."""
+        logger.info("Camera handler started")
         while True:
             try:
-                logger.debug(f"Camera handler: started time {time.time()}")
-
                 msg = await self.cam_sock.recv()
-                frame = cnc_pb2.Frame()
-                frame.ParseFromString(msg)
-
-                self.frame_cache['data'] = frame.data
-                self.frame_cache['height'] = frame.height
-                self.frame_cache['width'] = frame.width
-                self.frame_cache['channels'] = frame.channels
-                self.frame_cache['id'] = frame.id
-
-                logger.debug(f'Camera handler: received frame frame_id={self.frame_cache["id"]}')
-                logger.debug(f"Camera handler: finished time {time.time()}")
-
-                self.frame_updated.set()
+                frame = await asyncio.to_thread(self.parse_frame, msg)  # Offload parsing
+                self.data_store.set_raw_data(frame, frame.id)
+                logger.debug(f"Received camera message after set: {frame}")
+             
             except Exception as e:
-                logger.error(f"Camera handler: {e}")
+                logger.error(f"Camera handler error: {e}")
 
-    async def compute_handler(self):
-        logger.info('Compute handler started')
-        while True:
-            try:
-                msg = await self.cpt_sock.recv()
-                req = cnc_pb2.ComputeRequest()
-                req.ParseFromString(msg)
+    ######################################################## COMPUTE ############################################################
 
-                if req.engineKey in self.result_cache.keys():
-                    resp = cnc_pb2.ComputeResult()
-                    resp.result = self.result_cache[req.engineKey]
-                    if req.invalidateCache:
-                        self.result_cache.pop(req.engineKey, None)
-                    self.cpt_sock.send(resp.SerializeToString())
-            except Exception as e:
-                pass
+    def discover_compute_classes(self):
+        """Discover all compute  classes."""
+        compute_classes = {}
+        for module_info in pkgutil.iter_modules(computes.__path__, computes.__name__ + "."):
+            module_name = module_info.name
+            module = importlib.import_module(module_name)
+            for attr_name in dir(module):
+                attr = getattr(module, attr_name)
+                if isinstance(attr, type) and issubclass(attr, ComputeInterface) and attr is not ComputeInterface:
+                    compute_classes[attr_name.lower()] = attr
+        return compute_classes
 
-    ######################################################## REMOTE COMPUTE ############################################################
-    def processResults(self, result_wrapper):
-        if len(result_wrapper.results) != 1:
-            return
+    def run_compute(self, compute_class, compute_id, compute_classes):
+        """Instantiate and start a compute ."""
+        if compute_class not in compute_classes:
+            logger.error(f"compute class '{compute_class}' not found")
+            return None
 
-        for result in result_wrapper.results:
-            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                payload = result.payload.decode('utf-8')
-                data = ""
-                try:
-                    if len(payload) != 0:
-                        data = json.loads(payload)
-                        producer = result_wrapper.result_producer_name.value
-                        self.result_cache[producer] = result
-                        logger.debug(f'Got new result for producer {producer}: {result}')
-                except json.JSONDecodeError as e:
-                    logger.debug(f'Error decoding json: {payload}')
-                except Exception as e:
-                    print(e)
-            else:
-                logger.debug(f"Got result type {result.payload_type}. Expected TEXT.")
+        Compute = compute_classes[compute_class]
+        compute_instance = Compute(compute_id, self.data_store)
+        logger.info(f"Starting compute {compute_class} with id {compute_id}")
+        return compute_instance, asyncio.create_task(compute_instance.run())
 
-    def get_frame_producer(self):
-        async def producer():
-            await asyncio.sleep(0)
+    def spawn_computes(self, config_yaml):
+        """Load configuration and spawn computes."""
+        config = yaml.safe_load(config_yaml)
+        compute_classes = self.discover_compute_classes()
+        logger.info(f"Available compute: {', '.join(compute_classes.keys())}")
 
-            logger.debug(f"Frame producer: starting converting {time.time()}")
-            input_frame = gabriel_pb2.InputFrame()
-            if self.frame_cache['data'] is not None and self.telemetry_cache['drone_name'] is not None:
-                try:
-                    logger.debug("Waiting for new frame from driver")
-                    await self.frame_updated.wait()
-                    logger.debug(f"New frame frame_id={self.frame_cache['id']} available from driver")
+        compute_tasks = []
+        for compute_config in config.get("computes", []):
+            compute_class = compute_config["compute_class"].lower()
+            compute_id = compute_config["compute_id"]
+            result = self.run_compute(compute_class, compute_id, compute_classes)
+            if result:
+                compute_instance, task = result
+                # Store the compute instance and append the compute id to the data store
+                self.compute_dict[compute_id] = compute_instance
+                self.data_store.append_compute(compute_id)
+                compute_tasks.append(task)
 
-                    frame_bytes = self.frame_cache['data']
-                    nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
-                    with Timer(logger, "Encoding frame to jpg"):
-                        frame = cv2.imencode('.jpg', nparr.reshape(self.frame_cache['height'], self.frame_cache['width'], self.frame_cache['channels']))[1]
-
-                    input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-                    input_frame.payloads.append(frame.tobytes())
-
-                    # produce extras
-                    extras = cnc_pb2.Extras()
-                    extras.drone_id = self.telemetry_cache['drone_name']
-                    extras.location.latitude = self.telemetry_cache['location']['latitude']
-                    extras.location.longitude = self.telemetry_cache['location']['longitude']
-                    if self.params['model'] is not None:
-                        extras.detection_model = self.params['model']
-                    if self.params['hsv_lower'] is not None:
-                        extras.lower_bound.H = self.params['hsv_lower'][0]
-                        extras.lower_bound.S = self.params['hsv_lower'][1]
-                        extras.lower_bound.V = self.params['hsv_lower'][2]
-                    if self.params['hsv_upper'] is not None:
-                        extras.upper_bound.H = self.params['hsv_upper'][0]
-                        extras.upper_bound.S = self.params['hsv_upper'][1]
-                        extras.upper_bound.V = self.params['hsv_upper'][2]
-                    if extras is not None:
-                        input_frame.extras.Pack(extras)
-
-                except Exception as e:
-                    input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                    input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                    logger.error(f'Frame producer: unable to produce a frame: {e}')
-            else:
-                logger.debug('Frame producer: frame is None')
-                input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
-
-            logger.debug(f"Frame producer: finished time {time.time()}")
-            self.frame_updated.clear()
-            return input_frame
-
-        return ProducerWrapper(producer=producer, source_name='telemetry')
-
-    def get_telemetry_producer(self):
-        async def producer():
-            await asyncio.sleep(0)
-
-            logger.debug(f"tel producer: starting time {time.time()}")
-            input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append('heartbeart'.encode('utf8'))
-
-            extras = cnc_pb2.Extras()
-
-            try:
-                if self.telemetry_cache['drone_name'] is None:
-                    logger.info('Telemetry unavailable')
-                else:
-                    logger.debug("Waiting for new telemetry from driver")
-                    await self.telemetry_updated.wait()
-                    logger.debug("New telemetry available from driver")
-
-                    # Proceed with normal assignments
-                    extras.drone_id = self.telemetry_cache['drone_name']
-                    extras.location.latitude = self.telemetry_cache['location']['latitude']
-                    extras.location.longitude = self.telemetry_cache['location']['longitude']
-                    extras.location.altitude = self.telemetry_cache['location']['altitude']
-
-                    extras.status.battery = self.telemetry_cache['battery']
-                    extras.status.mag = self.telemetry_cache['magnetometer']
-                    extras.status.bearing = self.telemetry_cache['bearing']
-                    extras.status.rssi = 0
-
-                    # Register when we start sending telemetry
-                    if not self.drone_registered:
-                        logger.info("Sending registeration request to backend")
-                        extras.registering = True
-                        self.drone_registered = True
-
-                    logger.debug(f'Gabriel client telemetry producer: {extras}')
-            except Exception as e:
-                logger.debug(f'Gabriel client telemetry producer: {e}')
-
-            logger.debug('Gabriel client telemetry producer: sending Gabriel frame!')
-            input_frame.extras.Pack(extras)
-
-            logger.debug(f"tel producer: finished time {time.time()}")
-
-            self.telemetry_updated.clear()
-            return input_frame
-
-        return ProducerWrapper(producer=producer, source_name='telemetry')
-
-    async def local_compute_task(self):
-        logger.info('Local compute task started')
-        frame_id = None
-        while True:
-            await asyncio.sleep(0)
-            if self.frame_cache['data'] is not None and (frame_id is None or self.frame_cache['id'] > frame_id):
-                frame_bytes = self.frame_cache['data']
-                nparr = np.frombuffer(frame_bytes, dtype = np.uint8)
-
-                height = self.frame_cache['height']
-                width = self.frame_cache['width']
-                channels = self.frame_cache['channels']
-                frame = nparr.reshape(height, width, channels)
-                logger.info("Sending frame to local compute client")
-                frame_id = self.frame_cache['id']
-                try:
-                    await self.local_compute_client.process_frame(frame, ComputationType.OBJECT_DETECTION)
-                except Exception as e:
-                    logger.error(f"Error processing local compute request: {e}")
+        return compute_tasks
 
 ######################################################## MAIN ##############################################################
+
 async def async_main():
-    logger.info("Main: starting DataService")
-    gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
-    logger.info(f'Main: Gabriel server: {gabriel_server}')
-    gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
-    logger.info(f'Main: Gabriel port: {gabriel_port}')
-
-    # init DataService
-    data_service = DataService(gabriel_server, gabriel_port)
-
-    # run DataService
+    """Main entry point for the DataService."""
+    logger.info("Starting DataService")
+    config_yaml = os.getenv("CPT_CONFIG")
+    if config_yaml is None:
+        logger.fatal("Expected CPT_CONFIG env variable to be specified")
+        sys.exit(-1)
+    data_service = DataService(config_yaml)
     await data_service.start()
 
 if __name__ == "__main__":
