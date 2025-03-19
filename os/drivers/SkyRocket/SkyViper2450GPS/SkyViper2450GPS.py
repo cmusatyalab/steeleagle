@@ -18,7 +18,6 @@ class SkyViper2450GPSDrone():
         RTL = 'RTL'
         LOITER = 'LOITER'
         GUIDED = 'GUIDED'
-        GUIDED_NOGPS = 'GUIDED_NOGPS'
         ALT_HOLD = 'ALT_HOLD'
         
     def __init__(self, drone_id):
@@ -26,7 +25,6 @@ class SkyViper2450GPSDrone():
         self.mode = None
         self.mode_mapping = None
         self.listener_task = None
-        self.gps_disabled = False
         self.drone_id = drone_id
 
 
@@ -296,140 +294,12 @@ class SkyViper2450GPSDrone():
             logger.info("-- Returned to launch and disarmed")
         else:   
             logger.error("-- RTL failed")
-            
-    async def manual_control(self, forward_vel, right_vel, up_vel, angle_vel):
-        if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-            # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
-            #     logger.error("Failed to set mode to GUIDED_NOGPS")
-            #     return
-        else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
-        logger.info(f"Sending manual control: forward={forward_vel}, right={right_vel}, up={up_vel}, yaw={angle_vel}")
-
-        # Ensure values are within MAVLink range (-1000 to 1000)
-        def clamp(value, min_val, max_val):
-            return max(min_val, min(max_val, int(value)))  # Ensure integer conversion
-
-        x = clamp(forward_vel * 1000, -1000, 1000)  # Forward/backward movement
-        y = clamp(right_vel * 1000, -1000, 1000)    # Left/right movement
-        z = clamp(up_vel * 1000, 0, 1000)           # Throttle (0=lowest, 1000=full thrust)
-        r = clamp(angle_vel * 1000, -1000, 1000)    # Yaw rotation
-
-        buttons = 0  # No buttons pressed
-        buttons2 = 0  # No additional buttons
-        enabled_extensions = 0  # No extra axis enabled
-        s, t, aux1, aux2, aux3, aux4, aux5, aux6 = 0, 0, 0, 0, 0, 0, 0, 0  # Unused fields
-
-        try:
-            self.vehicle.mav.manual_control_send(
-                self.vehicle.target_system,
-                x, y, z, r,
-                buttons,
-                buttons2,
-                enabled_extensions,
-                s, t, aux1, aux2, aux3, aux4, aux5, aux6
-            )
-            logger.info("Manual control command sent successfully!")
-        except Exception as e:
-            logger.error(f"Failed to send manual control: {e}")
-        
-        
-    async def setAttitude(self, pitch, roll, thrust, yaw):
-        logger.info(f"-- Setting attitude: pitch={pitch}, roll={roll}, thrust={thrust}, yaw={yaw}")
-
-        if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-            # if await self.switchMode(SkyViper2450GPSDrone.FlightMode.ALT_HOLD) == False:
-            #     logger.error("Failed to set mode to GUIDED_NOGPS")
-            #     return
-        else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
-        
-        # Convert Euler angles to quaternion (w, x, y, z)
-        def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-            roll, pitch, yaw = map(math.radians, [roll, pitch, yaw])
-            cy, sy = math.cos(yaw * 0.5), math.sin(yaw * 0.5)
-            cp, sp = math.cos(pitch * 0.5), math.sin(pitch * 0.5)
-            cr, sr = math.cos(roll * 0.5), math.sin(roll * 0.5)
-
-            return [cr * cp * cy + sr * sp * sy,  # w
-                    sr * cp * cy - cr * sp * sy,  # x
-                    cr * sp * cy + sr * cp * sy,  # y
-                    cr * cp * sy - sr * sp * cy]  # z
-
-        q = to_quaternion(roll, pitch, yaw)
-
-        base_thrust = 0.6
-        
-        self.vehicle.mav.set_attitude_target_send(
-            0,  # time_boot_ms
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            0b00000000,  # type_mask
-            q,  # Quaternion
-            0, 0, 0,  # Body angular rates
-            base_thrust + thrust  # Throttle
-        )
-        logger.info("-- setAttitude sent successfully")
-        #  continuous control: no blocking wait
-
-    async def set_yaw(self, target_yaw):
-        """
-        Sends MAV_CMD_CONDITION_YAW to set the drone's yaw.
-
-        Args:
-            vehicle: The MAVLink connection object.
-            target_yaw (float): Yaw angle in degrees (absolute 0-360 or relative change).
-            yaw_speed (float): Speed of yawing in degrees per second.
-            relative (bool): If True, target_yaw is a relative change. If False, it's absolute.
-            direction (int): -1 for CCW, 1 for CW, 0 for fastest route (only for absolute yaw).
-
-        Example:
-            # Absolute yaw to 90 degrees at 20 deg/s
-            set_yaw(vehicle, 90, 20, relative=False)
-
-            # Rotate 45 degrees CW at 30 deg/s
-            set_yaw(vehicle, 45, 30, relative=True, direction=1)
-        """
-        yaw_speed=30
-        relative=True
-        direction=0
-        relative_flag = 1 if relative else 0  # 1 = relative, 0 = absolute
-
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-            0,  # Confirmation
-            target_yaw,  # param1: Yaw angle
-            yaw_speed,   # param2: Yaw speed in deg/s
-            direction,   # param3: -1=CCW, 1=CW, 0=fastest (only for absolute yaw)
-            relative_flag,  # param4: 0=Absolute, 1=Relative
-            0, 0, 0  # param5, param6, param7 (Unused)
-        )
-
-        logger.info(f"Yaw command sent: target_yaw={target_yaw}, speed={yaw_speed}, relative={relative}, direction={direction}")
     
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
-        
-        if self.gps_disabled:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED_NOGPS) == False:
-                logger.error("Failed to set mode to GUIDED_NOGPS")
-                return
-        else:
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+            logger.error("Failed to set mode to GUIDED")
+            return
         
         # adj_vel = 0.1 * angle_vel
         yaw = float('nan')
@@ -448,47 +318,47 @@ class SkyViper2450GPSDrone():
         #  continuous control: no blocking wait
 
     async def setGPSLocation(self, lat, lon, alt, bearing):
-        logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
-        
-        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        self.vehicle.mav.set_position_target_global_int_send(
-            0,
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            0b0000111111111000,
-            int(lat * 1e7),
-            int(lon * 1e7),
-            alt,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0
-        )
-            # Calculate bearing if not provided
-        current_location = self.getGPS()
-        current_lat = current_location["latitude"]
-        current_lon = current_location["longitude"]
-        if bearing is None:
-            bearing = self.calculate_bearing(current_lat, current_lon, lat, lon)
-            logger.info(f"-- Calculated bearing: {bearing}")
-        
-        await self.setBearing(bearing)
-        
-        result = await self._wait_for_condition(
-            lambda: self.is_at_target(lat, lon),
-            timeout=60,
-            interval=1
-        )
-        
-        if result:  
-            logger.info("-- Reached target GPS location")
-        else:  
-            logger.info("-- Failed to reach target GPS location")
-        
-        return result
+            logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
+            
+            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+                logger.error("Failed to set mode to GUIDED")
+                return
+            
+            self.vehicle.mav.set_position_target_global_int_send(
+                0,
+                self.vehicle.target_system,
+                self.vehicle.target_component,
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                0b0000111111111000,
+                int(lat * 1e7),
+                int(lon * 1e7),
+                alt,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0
+            )
+                # Calculate bearing if not provided
+            current_location = self.getGPS()
+            current_lat = current_location["latitude"]
+            current_lon = current_location["longitude"]
+            if bearing is None:
+                bearing = self.calculate_bearing(current_lat, current_lon, lat, lon)
+                logger.info(f"-- Calculated bearing: {bearing}")
+            
+            await self.setBearing(bearing)
+            
+            result = await self._wait_for_condition(
+                lambda: self.is_at_target(lat, lon),
+                timeout=60,
+                interval=1
+            )
+            
+            if result:  
+                logger.info("-- Reached target GPS location")
+            else:  
+                logger.info("-- Failed to reach target GPS location")
+            
+            return result
 
     async def setTranslatedLocation(self, forward, right, up, angle):
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
@@ -536,7 +406,7 @@ class SkyViper2450GPSDrone():
             logger.error("-- Failed to reach target translated location")
         
         return result
-
+    
     async def setBearing(self, bearing):
         logger.info(f"-- Setting yaw to {bearing} degrees")
         
@@ -544,18 +414,20 @@ class SkyViper2450GPSDrone():
             logger.error("Failed to set mode to GUIDED")
             return
         
-        yaw_speed = 25 # deg/s
-        direction = 0 # 1: clockwise, -1: counter-clockwise 0: most quickly direction
+        yaw_speed=30
+        direction=0
+        relative_flag = 0
+
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-            0,
-            bearing,
-            yaw_speed,
-            direction,
-            0,
-            0, 0, 0
+            0,  # Confirmation
+            bearing,  # param1: Yaw angle
+            yaw_speed,   # param2: Yaw speed in deg/s
+            direction,   # param3: -1=CCW, 1=CW, 0=fastest (only for absolute yaw)
+            relative_flag,  # param4: 0=Absolute, 1=Relative
+            0, 0, 0  # param5, param6, param7 (Unused)
         )
         
         result =  await self._wait_for_condition(
@@ -563,8 +435,6 @@ class SkyViper2450GPSDrone():
             timeout=30,
             interval=0.5
         )
-        
-        result = True
         
         if result:
             logger.info(f"-- Yaw successfully set to {bearing} degrees")
@@ -622,7 +492,8 @@ class SkyViper2450GPSDrone():
         else:
             logger.error("-- Disarm failed")
             
-        return result  
+        return result
+    
     async def switchMode(self, mode):
         logger.info(f"Switching mode to {mode}")
         mode_target = mode.value
@@ -656,33 +527,6 @@ class SkyViper2450GPSDrone():
             logger.info(f"Mode switched to {mode_target}")
         
         return result
-    
-    async def disableGPS(self):
-        # logger.info("-- Disabling GPS")
-
-        # # Set EKF_GPS_TYPE to 3 (Indoor Mode)
-        # self.vehicle.mav.param_set_send(
-        #     self.vehicle.target_system,
-        #     self.vehicle.target_component,
-        #     b'EKF_GPS_TYPE',  # Parameter name
-        #     3,  # 3 = No GPS (indoor mode)
-        #     mavutil.mavlink.MAV_PARAM_TYPE_INT32
-        # )
-        
-        # result =  await self._wait_for_condition(
-        #     lambda: self.is_GPS_disabled()
-        # )
-        
-        # if result:
-        #     logger.info("-- GPS disabled")
-        # else:
-        #     logger.error("-- Failed to disable GPS")    
-            # Wait and print received parameter messages
-        # return result
-        
-        self.gps_disabled = True
-        
-   
            
     ''' ACK methods'''    
     def is_armed(self):
@@ -705,16 +549,21 @@ class SkyViper2450GPSDrone():
     
     def is_bearing_reached(self, bearing):
         logger.info(f"Checking if bearing is reached: {bearing}")
-        attitude = self.getAttitude()
-        if not attitude:
-            return False  # Return False if attitude data is unavailable
-
-        current_yaw = (math.degrees(attitude["yaw"]) + 360) % 360
-        target_yaw = (bearing + 360) % 360
-        return abs(current_yaw - target_yaw) <= 2
-    
+        
+        current_heading = self.getHeading()  # Returns heading in degrees [0..359], or None
+        if current_heading is None:
+            logger.info("No VFR_HUD heading data available; cannot verify bearing.")
+            return False
+        
+        # Normalize the target bearing into [0..359]
+        
+        target_bearing = (bearing + 360) % 360
+        diff = self.circular_difference_deg(current_heading, target_bearing)
+        logger.info(f"Current heading: {current_heading}, Target bearing: {target_bearing}")
+        return abs(diff) <= 5
 
     def is_at_target(self, lat, lon):
+        logger.info(f"Checking if at target GPS location: {lat}, {lon}")
         current_location = self.getGPS()
         if not current_location:
             return False
@@ -724,6 +573,12 @@ class SkyViper2450GPSDrone():
         return distance < 1.0
         
     ''' Helper methods '''
+    def circular_difference_deg(self, a, b):
+        diff = (a - b) % 360.0
+        if diff > 180.0:
+            diff -= 360.0
+        return diff
+    
     # azimuth calculation for bearing
     def calculate_bearing(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians

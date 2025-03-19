@@ -1,13 +1,13 @@
 import asyncio
 import logging
-import time
 import zmq
 import zmq.asyncio
-import asyncio
-from collections import defaultdict
 from util.utils import setup_socket, SocketOperation
 import cnc_protocol.cnc_pb2 as cnc_pb2
+import pytest_asyncio
 import pytest
+import numpy as np
+import math
 
 
 logger = logging.getLogger(__name__)
@@ -29,62 +29,278 @@ cam_sock.setsockopt(zmq.CONFLATE, 1)
 setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
 
 
+tel_dict = {
+    "name": "",
+    "battery": 0,
+    "satellites": 0,
+    "attitude": {},
+    "gps": {},
+    "imu": {},
+    "heading": 0
+}
 
 # Background telemetry receiver
 async def recv_telemetry():
+    logger.info("Entered recv_telemetry()")
+    loop = asyncio.get_running_loop()
+    logger.info(f"recv_telemetry is running on event loop: {loop} (id={id(loop)})")
     while True:
         try:
             msg = await tel_sock.recv()
             telemetry = cnc_pb2.Telemetry()
             telemetry.ParseFromString(msg)
+            tel_dict['name'] = telemetry.drone_name
+            tel_dict['battery'] = telemetry.battery
+            tel_dict['attitude']['yaw'] = telemetry.drone_attitude.yaw
+            tel_dict['attitude']['pitch'] = telemetry.drone_attitude.pitch
+            tel_dict['attitude']['roll'] = telemetry.drone_attitude.roll
+            tel_dict['satellites'] = telemetry.satellites
+            tel_dict['gps']['latitude'] = telemetry.global_position.latitude
+            tel_dict['gps']['longitude'] = telemetry.global_position.longitude
+            tel_dict['gps']['altitude'] = telemetry.global_position.altitude
+            tel_dict["gps"]["bearing"] = telemetry.global_position.bearing
+            tel_dict["imu"]["forward"] = telemetry.velocity.forward_vel
+            tel_dict["imu"]["right"] = telemetry.velocity.right_vel
+            tel_dict["imu"]["up"] = telemetry.velocity.up_vel
             logger.debug(f"Received telemetry message: {telemetry}")
             await asyncio.sleep(0.3)  # Small delay to avoid hogging CPU
         except Exception as e:
             logger.error(f"Telemetry handler error: {e}")
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(scope="function", autouse=True)
 async def start_telemetry_listener():
     logger.info("Starting telemetry listener task")
     telemetry_task = asyncio.create_task(recv_telemetry())
+    await asyncio.sleep(1)  # Give some time for the task to start
     yield
+    logger.info("cancelling telemetry listener task")
     telemetry_task.cancel()
     try:
         await telemetry_task
     except asyncio.CancelledError:
         logger.info("Telemetry listener task cancelled")
+        
+@pytest.fixture(scope="class")
+def sequence_counter():
+    return {"value": 0}
 
 class TestSuiteClass:
-    command_seq = 0
+    identity = b'usr'
+    r_earth = 6378137.0
+    dx = 1
+    dy = 1
+    dz = 1
+    d_angle = 10
     
+    @pytest.mark.order(1)
     @pytest.mark.asyncio
-    async def test_takeoff():
+    async def test_takeoff(self, sequence_counter):
+        logger.info("Testing takeoff")
+        loop = asyncio.get_running_loop()
+        logger.info(f"test_takeoff is running on event loop: {loop} (id={id(loop)})")
+        driver_cmd = cnc_pb2.Driver(takeOff=True)
+        driver_cmd.seqNum = sequence_counter["value"]
+        message = driver_cmd.SerializeToString()
+        await cmd_back_sock.send_multipart([self.identity, message])
+ 
+        logger.info("Waiting for response")       
+        response = await cmd_back_sock.recv_multipart()
+        driver_rep = cnc_pb2.Driver()
+        driver_rep.ParseFromString(response[1])
+        seq_num = driver_rep.seqNum
+        status = driver_rep.resp
+        
+        logger.info(f"Received response with seqNum: {seq_num}")
+        assert seq_num == sequence_counter["value"]
+        logger.info(f"Status: {status}")
+        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        
+        sequence_counter["value"] += 1
+        
+        await asyncio.sleep(5)
+    
+    # @pytest.mark.order(2)
+    # @pytest.mark.asyncio
+    # async def test_set_get_velocity(self, sequence_counter):
+    #     logger.info("Testing set velocity")
+    #     loop = asyncio.get_running_loop()
+    #     logger.info(f"test_set_get_velocity is running on event loop: {loop} (id={id(loop)})")
+    #     test_sets = [
+    #         (self.dy, 0, 0, 0), # Forward
+    #         (0, self.dx, 0, 0), # Right
+    #         (0, 0, self.dz, 0), # Up
+    #         (0, 0, 0, self.d_angle), # Yaw 10 degree
+    #     ]
+    #     for test_set in test_sets:
+    #         await asyncio.sleep(5)
+    #         logger.info(f"Testing set velocity: {test_set}")
+    #         vel = cnc_pb2.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
+    #         driver_cmd = cnc_pb2.Driver(setVelocity=vel)
+    #         driver_cmd.seqNum = sequence_counter["value"]
+    #         message = driver_cmd.SerializeToString()
+    #         await cmd_back_sock.send_multipart([self.identity, message])
+            
+    #         logger.info("Waiting for response")
+    #         response = await cmd_back_sock.recv_multipart()
+    #         driver_rep = cnc_pb2.Driver()
+    #         driver_rep.ParseFromString(response[1])
+    #         seq_num = driver_rep.seqNum
+    #         status = driver_rep.resp
+            
+    #         logger.info(f"Received response with seqNum: {seq_num}")
+    #         assert seq_num == sequence_counter["value"]
+    #         logger.info(f"Status: {status}")
+    #         assert status == cnc_pb2.ResponseStatus.COMPLETED
+    #         sequence_counter["value"] += 1  
+    
+    @pytest.mark.order(3)    
+    @pytest.mark.asyncio
+    async def test_set_get_rel_pos(self, sequence_counter):
+        assert True
+    
+    
+    def dy_to_lat(self, dy):
+        return (dy / self.r_earth) * (180 / math.pi)
+    
+    def dx_to_lon(self, dx, lat ):
+        return (dx / self.r_earth) * (180 / math.pi) / math.cos(lat* math.pi/180)
+    
+    def get_curr_loc(self):
+        curr_pos_alt = tel_dict['gps']['altitude']
+        curr_pos_lat = tel_dict['gps']['latitude']
+        curr_pos_lon = tel_dict['gps']['longitude']
+        curr_pos_angle = tel_dict['gps']['bearing']
+        logger.info(f"Current position: {curr_pos_lat}, {curr_pos_lon}, {curr_pos_alt}, {curr_pos_angle}")
+        return (curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle)
+    
+    @pytest.mark.order(4)
+    @pytest.mark.asyncio
+    async def test_set_get_gps_pos(self, sequence_counter):
+        logger.info("Testing set GPS position")
+
+        # Get initial position
+        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
+
+        test_sets = [
+            (self.dy, 0, 0, 0),        # Forward
+            (0, self.dx, 0, 0),       # Right
+            (0, 0, self.dz, 0),       # Up
+            (0, 0, 0, self.d_angle),  # Yaw +d_bearing
+        ]
+
+        for (dy, dx, dz, d_angle) in test_sets:
+            d_lat = self.dy_to_lat(dy)
+            d_lon = self.dx_to_lon(dx, curr_pos_lat)
+
+            # Build the *new* absolute position from the current telemetry
+            next_lat = curr_pos_lat + d_lat
+            next_lon = curr_pos_lon + d_lon
+            next_alt = curr_pos_alt + dz
+            next_angle = curr_pos_angle + d_angle
+
+            logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
+            location = cnc_pb2.Location(
+                latitude=next_lat,
+                longitude=next_lon,
+                altitude=next_alt,
+                bearing=next_angle
+            )
+
+            driver_cmd = cnc_pb2.Driver(setGPSLocation=location)
+            seq = sequence_counter["value"]
+            logger.info(f"Sending command with seqNum: {seq}")
+            driver_cmd.seqNum = sequence_counter["value"]
+            message = driver_cmd.SerializeToString()
+            await cmd_back_sock.send_multipart([self.identity, message])
+
+            logger.info("Waiting for response")
+            response = await cmd_back_sock.recv_multipart()
+            driver_rep = cnc_pb2.Driver()
+            driver_rep.ParseFromString(response[1])
+            seq_num = driver_rep.seqNum
+            status = driver_rep.resp
+            
+            logger.info(f"Received response {driver_rep}")
+            logger.info(f"Received response with seqNum: {seq_num}")
+            assert seq_num == sequence_counter["value"]
+            logger.info(f"Status: {status}")
+            assert status == cnc_pb2.ResponseStatus.COMPLETED
+
+            
+            await asyncio.sleep(10)
+            # Check the telemetry to see if the move was successful
+            actual_lat = tel_dict["gps"]["latitude"]
+            actual_lon = tel_dict["gps"]["longitude"]
+            actual_alt = tel_dict["gps"]["altitude"]
+            actual_angle = tel_dict["gps"]["bearing"]
+
+            logger.info(f"Expected: {(next_lat, next_lon, next_alt, next_angle)}")
+            logger.info(f"Actual:   {(actual_lat, actual_lon, actual_alt, actual_angle)}")
+
+            # Validate with some tolerance
+            assert np.allclose([next_lat, next_lon], [actual_lat, actual_lon], atol=1e-5)
+            assert np.isclose(next_alt, actual_alt, atol=1)
+            assert np.isclose(next_angle, actual_angle, atol=5)
+
+            # Update curr psoition
+            curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = (
+                actual_lat, actual_lon, actual_alt, actual_angle
+            )
+            
+            sequence_counter["value"] += 1
+        
+    @pytest.mark.order(5)
+    @pytest.mark.asyncio
+    async def test_set_get_gimbal(self, sequence_counter):
+        assert True
+        
+    @pytest.mark.order(6)
+    @pytest.mark.asyncio
+    async def test_set_get_bearing(self, sequence_counter):
         assert True
 
+    @pytest.mark.order(7)        
     @pytest.mark.asyncio
-    async def test_set_get_velocity():
-        assert True
+    async def test_RTH(self, sequence_counter):
+        logger.info("Testing return to home")
+        request = cnc_pb2.Driver(rth=True)
+        request.seqNum = sequence_counter["value"]
+        message = request.SerializeToString()
+        await cmd_back_sock.send_multipart([self.identity, message])
         
-    @pytest.mark.asyncio
-    async def test_set_get_rel_pos():
-        assert True
+        logger.info("Waiting for response")
+        response = await cmd_back_sock.recv_multipart()
+        driver_rep = cnc_pb2.Driver()
+        driver_rep.ParseFromString(response[1])
+        seq_num = driver_rep.seqNum  
+        status = driver_rep.resp
         
-    @pytest.mark.asyncio
-    async def test_set_get_gps_pos():
-        assert True
+        logger.info(f"Received response with seqNum: {driver_rep.seqNum}")
+        assert seq_num == sequence_counter["value"]
+        logger.info(f"Status: {driver_rep.resp}")
+        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        sequence_counter["value"] += 1
         
+    @pytest.mark.order(8)        
     @pytest.mark.asyncio
-    async def test_set_get_gimbal():
-        assert True
+    async def test_land(self, sequence_counter):
+        logger.info("Testing land")
+        request = cnc_pb2.Driver(land=True)
+        request.seqNum = sequence_counter["value"]
+        message = request.SerializeToString()
+        await cmd_back_sock.send_multipart([self.identity, message])
         
-    @pytest.mark.asyncio
-    async def test_set_get_bearing():
-        assert True
+        logger.info("Waiting for response")
+        response = await cmd_back_sock.recv_multipart()
+        driver_rep = cnc_pb2.Driver()
+        driver_rep.ParseFromString(response[1])
+        seq_num = driver_rep.seqNum
+        status = driver_rep.resp
         
-    @pytest.mark.asyncio
-    async def test_RTH():
-        assert True
+        logger.info(f"Received response with seqNum: {seq_num}")
+        assert seq_num == sequence_counter["value"]
+        logger.info(f"Status: {status}")
+        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        sequence_counter["value"] += 1
         
-    @pytest.mark.asyncio
-    async def test_land():
-        assert True

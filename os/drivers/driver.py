@@ -104,6 +104,7 @@ async def telemetry_stream(drone, tel_sock):
             tel_message.global_position.latitude = telDict["gps"]["latitude"]
             tel_message.global_position.longitude = telDict["gps"]["longitude"]
             tel_message.global_position.altitude = telDict["gps"]["altitude"]
+            tel_message.global_position.bearing = telDict["heading"]
             
             tel_message.velocity.forward_vel = telDict["imu"]["forward"]
             tel_message.velocity.right_vel = telDict["imu"]["right"]
@@ -165,7 +166,10 @@ async def handle(identity, message, resp, action, resp_sock):
                 logger.info(f"setGPSLocation function call started at: {time.time()}")
                 logger.info('####################################Setting GPS Location#######################################################################')
                 location = message.setGPSLocation
-                await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
+                if location.bearing == 0:
+                    await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, None)
+                else:
+                    await drone.setGPSLocation(location.latitude, location.longitude, location.altitude, location.bearing)
                 resp.resp = cnc_protocol.ResponseStatus.COMPLETED
                 logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
@@ -187,7 +191,7 @@ async def main(drone, cam_sock, tel_sock, args):
         
         await drone.startStreaming()
         logger.info('Started streaming')
-        asyncio.create_task(camera_stream(drone, cam_sock))
+        # asyncio.create_task(camera_stream(drone, cam_sock))
         asyncio.create_task(telemetry_stream(drone, tel_sock))
 
         while await drone.isConnected():
