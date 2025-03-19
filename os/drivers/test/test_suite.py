@@ -120,39 +120,39 @@ class TestSuiteClass:
         
         await asyncio.sleep(5)
     
-    # @pytest.mark.order(2)
-    # @pytest.mark.asyncio
-    # async def test_set_get_velocity(self, sequence_counter):
-    #     logger.info("Testing set velocity")
-    #     loop = asyncio.get_running_loop()
-    #     logger.info(f"test_set_get_velocity is running on event loop: {loop} (id={id(loop)})")
-    #     test_sets = [
-    #         (self.dy, 0, 0, 0), # Forward
-    #         (0, self.dx, 0, 0), # Right
-    #         (0, 0, self.dz, 0), # Up
-    #         (0, 0, 0, self.d_angle), # Yaw 10 degree
-    #     ]
-    #     for test_set in test_sets:
-    #         await asyncio.sleep(5)
-    #         logger.info(f"Testing set velocity: {test_set}")
-    #         vel = cnc_pb2.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
-    #         driver_cmd = cnc_pb2.Driver(setVelocity=vel)
-    #         driver_cmd.seqNum = sequence_counter["value"]
-    #         message = driver_cmd.SerializeToString()
-    #         await cmd_back_sock.send_multipart([self.identity, message])
+    @pytest.mark.order(2)
+    @pytest.mark.asyncio
+    async def test_set_get_velocity(self, sequence_counter):
+        logger.info("Testing set velocity")
+        loop = asyncio.get_running_loop()
+        logger.info(f"test_set_get_velocity is running on event loop: {loop} (id={id(loop)})")
+        test_sets = [
+            (self.dy, 0, 0, 0), # Forward
+            (0, self.dx, 0, 0), # Right
+            (0, 0, self.dz, 0), # Up
+            (0, 0, 0, self.d_angle), # Yaw 10 degree
+        ]
+        for test_set in test_sets:
+            await asyncio.sleep(5)
+            logger.info(f"Testing set velocity: {test_set}")
+            vel = cnc_pb2.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
+            driver_cmd = cnc_pb2.Driver(setVelocity=vel)
+            driver_cmd.seqNum = sequence_counter["value"]
+            message = driver_cmd.SerializeToString()
+            await cmd_back_sock.send_multipart([self.identity, message])
             
-    #         logger.info("Waiting for response")
-    #         response = await cmd_back_sock.recv_multipart()
-    #         driver_rep = cnc_pb2.Driver()
-    #         driver_rep.ParseFromString(response[1])
-    #         seq_num = driver_rep.seqNum
-    #         status = driver_rep.resp
+            logger.info("Waiting for response")
+            response = await cmd_back_sock.recv_multipart()
+            driver_rep = cnc_pb2.Driver()
+            driver_rep.ParseFromString(response[1])
+            seq_num = driver_rep.seqNum
+            status = driver_rep.resp
             
-    #         logger.info(f"Received response with seqNum: {seq_num}")
-    #         assert seq_num == sequence_counter["value"]
-    #         logger.info(f"Status: {status}")
-    #         assert status == cnc_pb2.ResponseStatus.COMPLETED
-    #         sequence_counter["value"] += 1  
+            logger.info(f"Received response with seqNum: {seq_num}")
+            assert seq_num == sequence_counter["value"]
+            logger.info(f"Status: {status}")
+            assert status == cnc_pb2.ResponseStatus.COMPLETED
+            sequence_counter["value"] += 1  
     
     @pytest.mark.order(3)    
     @pytest.mark.asyncio
