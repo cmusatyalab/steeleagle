@@ -13,6 +13,7 @@ from streamlit_folium import st_folium
 from folium.plugins import MiniMap
 from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
+import math
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -31,15 +32,15 @@ if "trail_length" not in st.session_state:
 if "armed" not in st.session_state:
     st.session_state.armed = False
 if "roll_speed" not in st.session_state:
-    st.session_state.roll_speed = 50
+    st.session_state.roll_speed = 1.0
 if "yaw_speed" not in st.session_state:
     st.session_state.yaw_speed = 45
 if "thrust_speed" not in st.session_state:
-    st.session_state.thrust_speed = 50
+    st.session_state.thrust_speed = 1.0
 if "pitch_speed" not in st.session_state:
-    st.session_state.pitch_speed = 50
+    st.session_state.pitch_speed = 1.0
 if "gimbal_speed" not in st.session_state:
-    st.session_state.gimbal_speed = 50
+    st.session_state.gimbal_speed = 45
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
 
@@ -317,13 +318,13 @@ with st.sidebar:
 
     if st.session_state.armed and len(st.session_state.selected_drones) > 0:
         c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch %", min_value=0, max_value=100, value=50, step=5, format="%d")
-        c2.number_input(key = "thrust_speed", label="Thrust %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
+        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
         c3, c4 = st.columns(spec=2, gap="small")
-        c3.number_input(key = "yaw_speed", label="Yaw %", min_value=0, max_value=100, step=5, value=50, format="%d")
-        c4.number_input(key = "roll_speed", label="Roll %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
+        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch %", min_value=0, max_value=100, step=5, value=50, format="%d")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
 
         key_pressed = st_keypressed()
         req = cnc_pb2.Extras()
@@ -360,11 +361,11 @@ with st.sidebar:
             elif key_pressed == "f":
                 gimbal_pitch = -1 * st.session_state.gimbal_speed
             st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
-            req.cmd.pcmd.yaw = yaw
+            req.cmd.pcmd.yaw = math.radians(yaw)
             req.cmd.pcmd.pitch = pitch
             req.cmd.pcmd.roll = roll
             req.cmd.pcmd.gaz = thrust
-            req.cmd.pcmd.gimbal_pitch = gimbal_pitch
+            req.cmd.pcmd.gimbal_pitch = math.radians(gimbal_pitch)
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
