@@ -1,0 +1,114 @@
+
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.shared;
+
+
+/*
+* Color filter represented by hue, saturation, and value
+* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
+*/
+message HSV {
+  int64 H = 1; // hue range is [0,179]
+  int64 S = 2; // saturation range is [0,255]
+  int64 V = 3; // value range is [0,255]
+}
+
+/*
+* GPS location 
+*/
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  double altitude = 3; // in meters AGL
+}
+
+enum ResponseStatus {
+  UNKNOWN_RESPONSE = 0;
+  OK = 1;
+  FAILED = 2;
+  NOTSUPPORTED = 3;
+  COMPLETED = 4;
+  DENIED = 5;
+}
+
+/*
+* Defines the state of the drone's Magnetometer sensor
+*/
+enum Magnetometer {
+  UNKNOWN_MAGSTATE  = 0;
+  CALIBRATED = 1; 
+  RECOMMENDED = 2; // calibration recommended
+  REQUIRED = 3; // calibration required
+  UNUSED = 4;
+  PERTURBATION = 5; // experiencing magnetic perturbations
+}
+
+/*
+* Angular offsets in 3 dimensions [radians]
+*/
+message Pose {
+  double yaw = 1;
+  double pitch = 2;
+  double roll = 3;
+}
+
+/*
+* Angular offsets in 3 dimensions [radians/s] plus the thrust of the motors
+* See https://mavlink.io/en/messages/common.html#SET_ATTITUDE_TARGET for more information
+*/
+message Attitude {
+  Pose pose = 1;
+  double thrust = 2; // thrust component of mavlink Attitude control
+}
+
+/*
+* Representation of the speed in 4-dimensions [m/s]
+*/
+message Velocity {
+  double forward_vel = 1; //pitch
+  double right_vel = 2; //roll
+  double up_vel = 3; //thrust
+  double angular_vel = 4; //yaw
+}
+
+message Position {
+  double forward = 1;
+  double right = 2;
+  double up = 3;
+  double angle = 4;
+}
+
+enum CameraType {
+  UNKNOWN_CAMERA = 0;
+  RGB = 1;
+  STEREO = 2;
+  THERMAL = 3;
+  NIGHT = 4;
+}
+
+/*
+* List of camera sensors from the drone
+*/
+message Camera {
+  repeated int64 id = 1;
+  repeated CameraType type = 2;
+}
+
+/*
+* Defines the upper left and lower right corners of a detected object
+* in an image frame. Origin (0,0) is the top left corner of the input image.
+* (image_height, image_width) is the bottom right corner.
+* Also the class and confidence threshold associated with the box.
+*/
+message BoundingBox {
+  double ymin = 1; // wrt to image size
+  double xmin = 2; // wrt to image size
+  double ymax = 3; // wrt to image size
+  double xmax = 4; // wrt to image size
+  string class_name = 5;
+  float confidence = 6;
+}

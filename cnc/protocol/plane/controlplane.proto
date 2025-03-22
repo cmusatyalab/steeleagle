@@ -1,0 +1,68 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+
+package steeleagle.onboard;
+import "steeleagle/shared/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+message Request {
+  int64 seqNum = 1;  // for correlation
+  google.protobuf.Timestamp timestamp = 2; // time the request was made
+  oneof type {
+    ManualControl man = 3; 
+    AutonomousControl auto = 4; 
+    ComputeConfigure cpt = 5;
+  }
+}
+
+message Response {
+  int64 seqNum = 1; // for correlation
+  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  steeleagle.shared.ResponseStatus resp = 3;
+}
+
+/*
+* MANUAL
+*/
+ManualControl {
+  oneof param {
+    steeleagle.shared.Attitude attitude = 1; 
+    steeleagle.shared.Location location = 2; 
+    steeleagle.shared.Velocity velocity = 3;
+    steeleagle.shared.Pose pose = 4; 
+    steeleagle.shared.Position position = 5; 
+    sfixed32 cameraId = 6;
+  }  
+}
+
+/*
+* AUTO
+*/
+message AutonomousControl {
+  string UUID = 1; // unique mission reference for cataloging
+  string URL = 2; // the URL that specifies the zip file to download
+  MissionAction action = 3; // start/stop/pause/resume/download
+}
+enum MissionAction {
+  UNKNOWN_ACTION = 0;
+  START = 1;
+  STOP = 2;
+  PAUSE = 3;
+  RESUME = 4;
+  DOWNLOAD = 5;
+}
+
+/*
+* COMPUTE
+*/
+message ComputeConfigure {
+    string model = 1; // change model current in use
+    steeleagle.shared.HSV lowerBound = 2; // lower bound of HSV filter to apply
+    steeleagle.shared.HSV upperBound = 3; // upper bound of HSV filter to apply
+    float threshold = 4; //change confidence threshold of the DNN
+}

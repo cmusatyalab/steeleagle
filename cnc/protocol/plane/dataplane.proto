@@ -1,0 +1,112 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+/**
+ * Messages/Calls related to the Dataplane component of SteelEagle.
+ *
+ * The dataplane is responsible for relaying telemetry and frame data
+ * from the drone to the rest of the system.
+ */
+syntax = "proto3";
+option py_generic_services = true;
+package steeleagle.onboard;
+import "steeleagle/shared/common.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+message Request {
+  int64 seqNum = 1;  // for correlation
+  google.protobuf.Timestamp timestamp = 2; // time the request was made
+  oneof type {
+    TelemetryQuery tel = 3; 
+    FrameQuery frame  = 4; 
+    ComputeQuery cpt = 5;
+  }
+}
+
+message Response {
+  int64 seqNum = 1; // for correlation
+  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  steeleagle.shared.ResponseStatus resp = 3;
+  oneof type {
+    Telemetry tel = 4;
+    Frame frame = 5;
+    ComputeResult cpt = 6;
+  }
+}
+
+/*
+* TELEMETRY
+*/
+message TelemetryQuery {
+  google.protobuf.FieldMask field_mask = 1; // used to specify which fields of TelemetryResponse to return
+}
+message Telemetry {
+  string drone_name = 1;
+  steeleagle.shared.Location global_position = 2;
+  steeleagle.shared.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
+  int64 battery = 4;  // battery level [0-100]%
+  steeleagle.shared.Attitude gimbal_attitude = 5; 
+  steeleagle.shared.Attitude drone_attitude = 6;
+  steeleagle.shared.Velocity velocity = 7;
+  steeleagle.shared.Position relative_position = 8;
+  int64 satellites = 9; //number of satellites used in GPS fix
+  bool isConnected = 10 [deprecated=true]; // use uptime instead
+  int64 wifi_rssi = 11; // in -dbM
+  int64 cellular_rssi = 12; // in -dbM
+  int64 radio_rssi = 13;  // in -dbM
+  string drone_model = 14; // manufacturer/model of the drone
+  string status = 15; // i.e. 'idle', 'patroling', 'tracking'
+  google.protobuf.Duration uptime = 16;
+  steeleagle.shared.Location home = 17; // lat/lng/alt that will be used when returnning home
+  steeleagle.shared.Camera cameras = 18; // information about the drone's camera sensors
+}
+
+/*
+* FRAME
+*/
+message FrameQuery {}
+message Frame {
+  bytes data = 1; // raw image bytes
+  int64 width = 2;
+  int64 height = 3;
+  int64 channels = 4; //rgb, greyscale, etc
+  int64 id = 5; //for future correlation
+}
+
+/*
+* COMPUTE
+*/
+message ComputeQuery {
+  int64 frameId = 1; // for future correlation
+  Frame frame = 2;
+}
+message ComputeResult {
+  int64 frameId = 1; //for correlation
+  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  oneof type {
+    string generic = 3; //JSON/YAML/etc
+    DetectionResult detection = 4;
+    AvoidanceResult avoidance = 5;
+  }
+}
+
+message Detection {
+  int64 detectionId = 1; // can be multiple objects per frame
+  string className = 2;
+  double score = 3;
+  steeleagle.shared.BoundingBox bbox = 4;
+  bool hsvFilterPassed = 5;
+}
+
+message DetectionResult {
+  repeated Detection detections = 21;
+}
+
+message AvoidanceResult {
+  double actuationVector = 1;
+}
+
+
