@@ -29,7 +29,7 @@ message Response {
 /*
 * MANUAL
 */
-ManualControl {
+message ManualControl {
   oneof param {
     steeleagle.shared.Attitude attitude = 1; 
     steeleagle.shared.Location location = 2; 
