@@ -60,7 +60,7 @@ enum MissionAction {
 /*
 * COMPUTE
 */
-message ComputeConfigure {
+message ConfigureCompute {
     string model = 1; // change model current in use
     steeleagle.shared.HSV lowerBound = 2; // lower bound of HSV filter to apply
     steeleagle.shared.HSV upperBound = 3; // upper bound of HSV filter to apply

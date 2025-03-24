@@ -102,7 +102,7 @@ message Detection {
 }
 
 message DetectionResult {
-  repeated Detection detections = 21;
+  repeated Detection detections = 1;
 }
 
 message AvoidanceResult {
