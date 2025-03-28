@@ -11,7 +11,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
-  int64 seqNum = 1;  // for correlation
+  int64 seq_num = 1;  // for correlation
   google.protobuf.Timestamp timestamp = 2; // time the request was made
   oneof type {
     ManualControl man = 3; 
@@ -21,22 +21,21 @@ message Request {
 }
 
 message Response {
-  int64 seqNum = 1; // for correlation
+  int64 seq_num = 1; // for correlation
   google.protobuf.Timestamp timestamp = 2;// time the response was sent
   steeleagle.shared.ResponseStatus resp = 3;
 }
 
 /*
-* MANUAL
+* MANUAL # assume the velocity control drone
 */
 message ManualControl {
   oneof param {
-    steeleagle.shared.Attitude attitude = 1; 
     steeleagle.shared.Location location = 2; 
     steeleagle.shared.Velocity velocity = 3;
-    steeleagle.shared.Pose pose = 4; 
+    steeleagle.shared.Pose gimbal_pose = 4; 
     steeleagle.shared.Position position = 5; 
-    sfixed32 cameraId = 6;
+    sfixed32 camera_id = 6;
   }  
 }
 
@@ -62,7 +61,7 @@ enum MissionAction {
 */
 message ConfigureCompute {
     string model = 1; // change model current in use
-    steeleagle.shared.HSV lowerBound = 2; // lower bound of HSV filter to apply
-    steeleagle.shared.HSV upperBound = 3; // upper bound of HSV filter to apply
+    steeleagle.shared.HSV lower_bound = 2; // lower bound of HSV filter to apply
+    steeleagle.shared.HSV upper_bound = 3; // upper bound of HSV filter to apply
     float threshold = 4; //change confidence threshold of the DNN
 }

@@ -17,17 +17,17 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
-  int64 seqNum = 1;  // for correlation
+  int64 seq_num = 1;  // for correlation
   google.protobuf.Timestamp timestamp = 2; // time the request was made
   oneof type {
     TelemetryRequest tel = 3; 
     FrameRequest frame  = 4; 
-    ComputeRequest cpt = 5;
+    GetComputeResult cpt = 5;
   }
 }
 
 message Response {
-  int64 seqNum = 1; // for correlation
+  int64 seq_num = 1; // for correlation
   google.protobuf.Timestamp timestamp = 2;// time the response was sent
   steeleagle.shared.ResponseStatus resp = 3;
   oneof type {
@@ -53,7 +53,7 @@ message Telemetry {
   steeleagle.shared.Velocity velocity = 7;
   steeleagle.shared.Position relative_position = 8;
   int64 satellites = 9; //number of satellites used in GPS fix
-  bool isConnected = 10 [deprecated=true]; // use uptime instead
+  bool is_connected = 10 [deprecated=true]; // use uptime instead
   int64 wifi_rssi = 11; // in -dbM
   int64 cellular_rssi = 12; // in -dbM
   int64 radio_rssi = 13;  // in -dbM
@@ -61,7 +61,7 @@ message Telemetry {
   string status = 15; // i.e. 'idle', 'patroling', 'tracking'
   google.protobuf.Duration uptime = 16;
   steeleagle.shared.Location home = 17; // lat/lng/alt that will be used when returnning home
-  steeleagle.shared.Camera cameras = 18; // information about the drone's camera sensors
+  steeleagle.shared.Camera camera = 18; // information about the drone's camera sensors
 }
 
 /*
@@ -79,26 +79,27 @@ message Frame {
 /*
 * COMPUTE
 */
-message ComputeRequest {
-  int64 frameId = 1; // for future correlation
-  Frame frame = 2;
+message GetComputeResult {
+  string result_key = 1;
 }
+
 message ComputeResult {
-  int64 frameId = 1; //for correlation
-  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  string result_key = 1;
+  int64 frame_id = 2; //for correlation
+  google.protobuf.Timestamp timestamp = 3;// time the response was sent
   oneof type {
-    string generic = 3; //JSON/YAML/etc
-    DetectionResult detection = 4;
-    AvoidanceResult avoidance = 5;
+    string generic = 4; //JSON/YAML/etc
+    DetectionResult detection = 5;
+    AvoidanceResult avoidance = 6;
   }
 }
 
 message Detection {
-  int64 detectionId = 1; // can be multiple objects per frame
-  string className = 2;
+  int64 detection_id = 1; // can be multiple objects per frame
+  string class_name = 2;
   double score = 3;
   steeleagle.shared.BoundingBox bbox = 4;
-  bool hsvFilterPassed = 5;
+  bool hsv_filter_passed = 5;
 }
 
 message DetectionResult {
@@ -106,7 +107,7 @@ message DetectionResult {
 }
 
 message AvoidanceResult {
-  double actuationVector = 1;
+  double actuation_vector = 1;
 }
 
 

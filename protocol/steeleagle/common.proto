@@ -12,9 +12,9 @@ package steeleagle.shared;
 * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
 */
 message HSV {
-  int64 H = 1; // hue range is [0,179]
-  int64 S = 2; // saturation range is [0,255]
-  int64 V = 3; // value range is [0,255]
+  int64 h = 1; // hue range is [0,179]
+  int64 s = 2; // saturation range is [0,255]
+  int64 v = 3; // value range is [0,255]
 }
 
 /*
@@ -105,10 +105,10 @@ message Camera {
 * Also the class and confidence threshold associated with the box.
 */
 message BoundingBox {
-  double ymin = 1; // wrt to image size
-  double xmin = 2; // wrt to image size
-  double ymax = 3; // wrt to image size
-  double xmax = 4; // wrt to image size
+  double y_min = 1; // wrt to image size
+  double x_min = 2; // wrt to image size
+  double y_max = 3; // wrt to image size
+  double x_max = 4; // wrt to image size
   string class_name = 5;
   float confidence = 6;
 }

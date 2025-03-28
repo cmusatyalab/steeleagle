@@ -29,24 +29,13 @@ venv/
 *.log
 
 
-# needed to be removed in the future
-onboard/python/runtime/
-onboard/python/task_defs/
-onboard/python/transition_defs/
-onboard/python/mission/
-onboard/python/requirements.txt
-
-# test
-os/test/*.prof
-os/test/*.jpg
-os/test/*.dot
-
 # driver
 
 # kernel
-os/kernel/log/
-
+vehicle/kernel/log/
 
 # user space implementation
-os/user/project/
-os/env.sh
+vehicle/user/project/
+
+
+vehicle/env.sh
