@@ -1,0 +1,11 @@
+redis:
+  host: "<host>"
+  port: 6379
+  user: "steeleagle"
+  pass: "<password>"
+
+zmq:
+  host: "<zmq host>"
+  port: 6001
+
+image_vol: "<path to steeleagle volume>"
