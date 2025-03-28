@@ -1,4 +1,4 @@
-from abs import ABC
+from abc import ABC, abstractmethod
 import asyncio
 
 class DroneDeviceItf(ABC):
@@ -27,7 +27,7 @@ class DroneDeviceItf(ABC):
             """
             Overloaded boolean operator to support easy success checks.
             """
-            return rid != 0
+            return self.rid != 0
 
     @abstractmethod
     async def connect(self):
@@ -56,6 +56,15 @@ class DroneDeviceItf(ABC):
         """
         pass
 
+
+    @abstractmethod
+    async def getTelemetry(self):
+        """
+        Get the latest telemetry data from the drone.
+        """
+        pass
+    
+    
     @abstractmethod
     async def takeOff(self):
         """
@@ -97,23 +106,6 @@ class DroneDeviceItf(ABC):
         pass
 
     @abstractmethod
-    async def setAttitude(self, pitch, roll, thrust, yaw):
-        """
-        Set the attitude of the drone.
-
-        :param pitch: Target pitch, in degrees
-        :type pitch: float
-        :param roll: Target roll, in degrees
-        :type roll: float
-        :param thrust: Target thrust percentage, normalized from 0 to 1
-        :type thrust: float
-        :param yaw: Target yaw, in degrees
-        :type yaw: float
-        :return: Response object
-        :rtype: class: Response
-        """
-        pass
-
     async def setVeloctiy(self, forward_vel, right_vel, up_vel, angle_vel):
         """
         Set the velocity of the drone.
@@ -132,7 +124,8 @@ class DroneDeviceItf(ABC):
         :rtype: class: Response
         """
         pass
-
+    
+    @abstractmethod
     async def setGPSLocation(self, lat, lng, alt, bearing):
         """
         Set a target GPS location for the drone.
@@ -149,7 +142,8 @@ class DroneDeviceItf(ABC):
         :rtype: class: Response
         """
         pass
-
+    
+    @abstractmethod
     async def setRelativePosition(self, north, east, up, bearing):
         """
         Set a target position for the drone, relative to the take off
@@ -167,8 +161,9 @@ class DroneDeviceItf(ABC):
         :rtype: class: Response
         """
         pass
-
-   async def hover(self):
+    
+    @abstractmethod
+    async def hover(self):
        """
        Instruct the drone to hover.
        
@@ -176,4 +171,33 @@ class DroneDeviceItf(ABC):
        :rtype: class: Response
        """
        pass
+
+    @abstractmethod
+    async def getGimbalPose(self):
+        """
+        Get the current gimbal pose.
+        """
+        pass
+    
+    @abstractmethod
+    async def startStreaming(self):
+        """
+        Start streaming video from the drone.
+        """
+        pass
+    
+    @abstractmethod
+    async def stopStreaming(self):
+        """
+        Stop streaming video from the drone.
+        """
+        pass
+    
+    @abstractmethod
+    async def getVideoFrame(self):
+        """
+        Get the latest video frame from the drone.
+        """
+        pass
+    
 

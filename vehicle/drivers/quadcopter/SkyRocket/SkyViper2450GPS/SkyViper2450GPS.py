@@ -5,13 +5,15 @@ import time
 import asyncio
 import logging
 from pymavlink import mavutil
+from quadcopter.quadcopter_interface import DroneDeviceItf
+
 
 logger = logging.getLogger(__name__)
 
 class ConnectionFailedException(Exception):
     pass
 
-class SkyViper2450GPSDrone():
+class SkyViper2450GPSDrone(DroneDeviceItf):
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -204,8 +206,9 @@ class SkyViper2450GPSDrone():
         #     return
         # logger.info("-- Drone is now in LOITER mode")
 
-    async def takeOff(self, target_altitude):
+    async def takeOff(self):
         logger.info("-- Taking off")
+        target_altitude = 3  # meters
         
         if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
