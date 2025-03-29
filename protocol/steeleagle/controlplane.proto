@@ -41,11 +41,11 @@ message ManualControl {
 }
 
 enum ManualAction {
-  TAKEOFF = 1;
-  LAND = 2;
-  HOVER = 3;
-  KILL = 4;
-  RTH = 5;
+  TAKEOFF = 0;
+  LAND = 1;
+  HOVER = 2;
+  KILL = 3;
+  RTH = 4;
 }
 
 
@@ -58,12 +58,12 @@ message AutonomousControl {
   MissionAction action = 3; // start/stop/pause/resume/download
 }
 enum MissionAction {
-  UNKNOWN_ACTION = 1;
-  START = 2;
-  STOP = 3;
-  PAUSE = 4;
-  RESUME = 5;
-  DOWNLOAD = 6;
+  UNKNOWN_ACTION = 0;
+  START = 1;
+  STOP = 2;
+  PAUSE = 3;
+  RESUME = 4;
+  DOWNLOAD = 5;
 }
 
 /*

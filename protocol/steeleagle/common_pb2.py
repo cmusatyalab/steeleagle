@@ -14,33 +14,33 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17steeleagle/common.proto\x12\x11steeleagle.shared\"&\n\x03HSV\x12\t\n\x01h\x18\x01 \x01(\x03\x12\t\n\x01s\x18\x02 \x01(\x03\x12\t\n\x01v\x18\x03 \x01(\x03\"A\n\x08Location\x12\x10\n\x08latitude\x18\x01 \x01(\x01\x12\x11\n\tlongitude\x18\x02 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\x03 \x01(\x01\"0\n\x04Pose\x12\x0b\n\x03yaw\x18\x01 \x01(\x01\x12\r\n\x05pitch\x18\x02 \x01(\x01\x12\x0c\n\x04roll\x18\x03 \x01(\x01\"A\n\x08\x41ttitude\x12%\n\x04pose\x18\x01 \x01(\x0b\x32\x17.steeleagle.shared.Pose\x12\x0e\n\x06thrust\x18\x02 \x01(\x01\"W\n\x08Velocity\x12\x13\n\x0b\x66orward_vel\x18\x01 \x01(\x01\x12\x11\n\tright_vel\x18\x02 \x01(\x01\x12\x0e\n\x06up_vel\x18\x03 \x01(\x01\x12\x13\n\x0b\x61ngular_vel\x18\x04 \x01(\x01\"E\n\x08Position\x12\x0f\n\x07\x66orward\x18\x01 \x01(\x01\x12\r\n\x05right\x18\x02 \x01(\x01\x12\n\n\x02up\x18\x03 \x01(\x01\x12\r\n\x05\x61ngle\x18\x04 \x01(\x01\"A\n\x06\x43\x61mera\x12\n\n\x02id\x18\x01 \x03(\x03\x12+\n\x04type\x18\x02 \x03(\x0e\x32\x1d.steeleagle.shared.CameraType\"q\n\x0b\x42oundingBox\x12\r\n\x05y_min\x18\x01 \x01(\x01\x12\r\n\x05x_min\x18\x02 \x01(\x01\x12\r\n\x05y_max\x18\x03 \x01(\x01\x12\r\n\x05x_max\x18\x04 \x01(\x01\x12\x12\n\nclass_name\x18\x05 \x01(\t\x12\x12\n\nconfidence\x18\x06 \x01(\x02*g\n\x0eResponseStatus\x12\x14\n\x10UNKNOWN_RESPONSE\x10\x00\x12\x06\n\x02OK\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\x12\x10\n\x0cNOTSUPPORTED\x10\x03\x12\r\n\tCOMPLETED\x10\x04\x12\n\n\x06\x44\x45NIED\x10\x05*q\n\x0cMagnetometer\x12\x14\n\x10UNKNOWN_MAGSTATE\x10\x00\x12\x0e\n\nCALIBRATED\x10\x01\x12\x0f\n\x0bRECOMMENDED\x10\x02\x12\x0c\n\x08REQUIRED\x10\x03\x12\n\n\x06UNUSED\x10\x04\x12\x10\n\x0cPERTURBATION\x10\x05*M\n\nCameraType\x12\x12\n\x0eUNKNOWN_CAMERA\x10\x00\x12\x07\n\x03RGB\x10\x01\x12\n\n\x06STEREO\x10\x02\x12\x0b\n\x07THERMAL\x10\x03\x12\t\n\x05NIGHT\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17steeleagle/common.proto\x12\x11steeleagle.shared\"&\n\x03HSV\x12\t\n\x01h\x18\x01 \x01(\x03\x12\t\n\x01s\x18\x02 \x01(\x03\x12\t\n\x01v\x18\x03 \x01(\x03\"R\n\x08Location\x12\x10\n\x08latitude\x18\x01 \x01(\x01\x12\x11\n\tlongitude\x18\x02 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\x03 \x01(\x01\x12\x0f\n\x07\x62\x65\x61ring\x18\x04 \x01(\x01\"0\n\x04Pose\x12\x0b\n\x03yaw\x18\x01 \x01(\x01\x12\r\n\x05pitch\x18\x02 \x01(\x01\x12\x0c\n\x04roll\x18\x03 \x01(\x01\"A\n\x08\x41ttitude\x12%\n\x04pose\x18\x01 \x01(\x0b\x32\x17.steeleagle.shared.Pose\x12\x0e\n\x06thrust\x18\x02 \x01(\x01\"W\n\x08Velocity\x12\x13\n\x0b\x66orward_vel\x18\x01 \x01(\x01\x12\x11\n\tright_vel\x18\x02 \x01(\x01\x12\x0e\n\x06up_vel\x18\x03 \x01(\x01\x12\x13\n\x0b\x61ngular_vel\x18\x04 \x01(\x01\"E\n\x08Position\x12\x0f\n\x07\x66orward\x18\x01 \x01(\x01\x12\r\n\x05right\x18\x02 \x01(\x01\x12\n\n\x02up\x18\x03 \x01(\x01\x12\r\n\x05\x61ngle\x18\x04 \x01(\x01\"A\n\x06\x43\x61mera\x12\n\n\x02id\x18\x01 \x03(\x03\x12+\n\x04type\x18\x02 \x03(\x0e\x32\x1d.steeleagle.shared.CameraType\"q\n\x0b\x42oundingBox\x12\r\n\x05y_min\x18\x01 \x01(\x01\x12\r\n\x05x_min\x18\x02 \x01(\x01\x12\r\n\x05y_max\x18\x03 \x01(\x01\x12\r\n\x05x_max\x18\x04 \x01(\x01\x12\x12\n\nclass_name\x18\x05 \x01(\t\x12\x12\n\nconfidence\x18\x06 \x01(\x02*g\n\x0eResponseStatus\x12\x14\n\x10UNKNOWN_RESPONSE\x10\x00\x12\x06\n\x02OK\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\x12\x10\n\x0cNOTSUPPORTED\x10\x03\x12\r\n\tCOMPLETED\x10\x04\x12\n\n\x06\x44\x45NIED\x10\x05*q\n\x0cMagnetometer\x12\x14\n\x10UNKNOWN_MAGSTATE\x10\x00\x12\x0e\n\nCALIBRATED\x10\x01\x12\x0f\n\x0bRECOMMENDED\x10\x02\x12\x0c\n\x08REQUIRED\x10\x03\x12\n\n\x06UNUSED\x10\x04\x12\x10\n\x0cPERTURBATION\x10\x05*M\n\nCameraType\x12\x12\n\x0eUNKNOWN_CAMERA\x10\x00\x12\x07\n\x03RGB\x10\x01\x12\n\n\x06STEREO\x10\x02\x12\x0b\n\x07THERMAL\x10\x03\x12\t\n\x05NIGHT\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle.common_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_RESPONSESTATUS']._serialized_start=612
-  _globals['_RESPONSESTATUS']._serialized_end=715
-  _globals['_MAGNETOMETER']._serialized_start=717
-  _globals['_MAGNETOMETER']._serialized_end=830
-  _globals['_CAMERATYPE']._serialized_start=832
-  _globals['_CAMERATYPE']._serialized_end=909
+  _globals['_RESPONSESTATUS']._serialized_start=629
+  _globals['_RESPONSESTATUS']._serialized_end=732
+  _globals['_MAGNETOMETER']._serialized_start=734
+  _globals['_MAGNETOMETER']._serialized_end=847
+  _globals['_CAMERATYPE']._serialized_start=849
+  _globals['_CAMERATYPE']._serialized_end=926
   _globals['_HSV']._serialized_start=46
   _globals['_HSV']._serialized_end=84
   _globals['_LOCATION']._serialized_start=86
-  _globals['_LOCATION']._serialized_end=151
-  _globals['_POSE']._serialized_start=153
-  _globals['_POSE']._serialized_end=201
-  _globals['_ATTITUDE']._serialized_start=203
-  _globals['_ATTITUDE']._serialized_end=268
-  _globals['_VELOCITY']._serialized_start=270
-  _globals['_VELOCITY']._serialized_end=357
-  _globals['_POSITION']._serialized_start=359
-  _globals['_POSITION']._serialized_end=428
-  _globals['_CAMERA']._serialized_start=430
-  _globals['_CAMERA']._serialized_end=495
-  _globals['_BOUNDINGBOX']._serialized_start=497
-  _globals['_BOUNDINGBOX']._serialized_end=610
+  _globals['_LOCATION']._serialized_end=168
+  _globals['_POSE']._serialized_start=170
+  _globals['_POSE']._serialized_end=218
+  _globals['_ATTITUDE']._serialized_start=220
+  _globals['_ATTITUDE']._serialized_end=285
+  _globals['_VELOCITY']._serialized_start=287
+  _globals['_VELOCITY']._serialized_end=374
+  _globals['_POSITION']._serialized_start=376
+  _globals['_POSITION']._serialized_end=445
+  _globals['_CAMERA']._serialized_start=447
+  _globals['_CAMERA']._serialized_end=512
+  _globals['_BOUNDINGBOX']._serialized_start=514
+  _globals['_BOUNDINGBOX']._serialized_end=627
 # @@protoc_insertion_point(module_scope)
