@@ -1,6 +1,13 @@
 from abc import ABC, abstractmethod
 import asyncio
 
+from protocol.steeleagle import dataplane_pb2 as data_protocol
+from protocol.steeleagle import controlplane_pb2 as control_protocol
+from protocol.steeleagle import common_pb2 as common_protocol
+
+import zmq
+import zmq.asyncio
+
 class DroneDeviceItf(ABC):
     """
     The interface for Python drone devices. Defines the operations
@@ -55,14 +62,6 @@ class DroneDeviceItf(ABC):
         Disconnects from the drone hardware.
         """
         pass
-
-
-    @abstractmethod
-    async def getTelemetry(self):
-        """
-        Get the latest telemetry data from the drone.
-        """
-        pass
     
     
     @abstractmethod
@@ -80,7 +79,7 @@ class DroneDeviceItf(ABC):
         pass
 
     @abstractmethod
-    async def setHome(self, lat, lng, alt):
+    async def setHome(self, loc: common_protocol.Location):
         """
         Set the home destination for the drone.
         
@@ -106,7 +105,7 @@ class DroneDeviceItf(ABC):
         pass
 
     @abstractmethod
-    async def setVeloctiy(self, forward_vel, right_vel, up_vel, angle_vel):
+    async def setVelocity(self, vel: common_protocol.Velocity):
         """
         Set the velocity of the drone.
 
@@ -126,7 +125,7 @@ class DroneDeviceItf(ABC):
         pass
     
     @abstractmethod
-    async def setGPSLocation(self, lat, lng, alt, bearing):
+    async def setGPSLocation(self, loc: common_protocol.Location):
         """
         Set a target GPS location for the drone.
 
@@ -144,7 +143,7 @@ class DroneDeviceItf(ABC):
         pass
     
     @abstractmethod
-    async def setRelativePosition(self, north, east, up, bearing):
+    async def setRelativePosition(self, pos: common_protocol.Position):
         """
         Set a target position for the drone, relative to the take off
         position in meters.
@@ -173,13 +172,6 @@ class DroneDeviceItf(ABC):
        pass
 
     @abstractmethod
-    async def getGimbalPose(self):
-        """
-        Get the current gimbal pose.
-        """
-        pass
-    
-    @abstractmethod
     async def startStreaming(self):
         """
         Start streaming video from the drone.
@@ -194,10 +186,15 @@ class DroneDeviceItf(ABC):
         pass
     
     @abstractmethod
-    async def getVideoFrame(self):
+    async def streamVideo(self, cam_sock: zmq.asyncio.Socket):
         """
-        Get the latest video frame from the drone.
+        Stream video frame from the drone.
         """
         pass
     
-
+    @abstractmethod
+    async def streamTelemetry(self, tel_sock: zmq.asyncio.Socket):
+        """
+        stream telemetry data from the drone.
+        """
+        pass

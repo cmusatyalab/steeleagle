@@ -13,13 +13,12 @@ _sym_db = _symbol_database.Default()
 
 
 from steeleagle import common_pb2 as steeleagle_dot_common__pb2
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
 from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1asteeleagle/dataplane.proto\x12\x14steeleagle.dataplane\x1a\x17steeleagle/common.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf1\x01\n\x07Request\x12\x0e\n\x06seqNum\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x35\n\x03tel\x18\x03 \x01(\x0b\x32&.steeleagle.dataplane.TelemetryRequestH\x00\x12\x33\n\x05\x66rame\x18\x04 \x01(\x0b\x32\".steeleagle.dataplane.FrameRequestH\x00\x12\x33\n\x03\x63pt\x18\x05 \x01(\x0b\x32$.steeleagle.dataplane.ComputeRequestH\x00\x42\x06\n\x04type\"\x94\x02\n\x08Response\x12\x0e\n\x06seqNum\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x04resp\x18\x03 \x01(\x0e\x32!.steeleagle.shared.ResponseStatus\x12.\n\x03tel\x18\x04 \x01(\x0b\x32\x1f.steeleagle.dataplane.TelemetryH\x00\x12,\n\x05\x66rame\x18\x05 \x01(\x0b\x32\x1b.steeleagle.dataplane.FrameH\x00\x12\x32\n\x03\x63pt\x18\x06 \x01(\x0b\x32#.steeleagle.dataplane.ComputeResultH\x00\x42\x06\n\x04type\"B\n\x10TelemetryRequest\x12.\n\nfield_mask\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\xf8\x04\n\tTelemetry\x12\x12\n\ndrone_name\x18\x01 \x01(\t\x12\x34\n\x0fglobal_position\x18\x02 \x01(\x0b\x32\x1b.steeleagle.shared.Location\x12,\n\x03mag\x18\x03 \x01(\x0e\x32\x1f.steeleagle.shared.Magnetometer\x12\x0f\n\x07\x62\x61ttery\x18\x04 \x01(\x03\x12\x34\n\x0fgimbal_attitude\x18\x05 \x01(\x0b\x32\x1b.steeleagle.shared.Attitude\x12\x33\n\x0e\x64rone_attitude\x18\x06 \x01(\x0b\x32\x1b.steeleagle.shared.Attitude\x12-\n\x08velocity\x18\x07 \x01(\x0b\x32\x1b.steeleagle.shared.Velocity\x12\x36\n\x11relative_position\x18\x08 \x01(\x0b\x32\x1b.steeleagle.shared.Position\x12\x12\n\nsatellites\x18\t \x01(\x03\x12\x17\n\x0bisConnected\x18\n \x01(\x08\x42\x02\x18\x01\x12\x11\n\twifi_rssi\x18\x0b \x01(\x03\x12\x15\n\rcellular_rssi\x18\x0c \x01(\x03\x12\x12\n\nradio_rssi\x18\r \x01(\x03\x12\x13\n\x0b\x64rone_model\x18\x0e \x01(\t\x12\x0e\n\x06status\x18\x0f \x01(\t\x12)\n\x06uptime\x18\x10 \x01(\x0b\x32\x19.google.protobuf.Duration\x12)\n\x04home\x18\x11 \x01(\x0b\x32\x1b.steeleagle.shared.Location\x12*\n\x07\x63\x61meras\x18\x12 \x01(\x0b\x32\x19.steeleagle.shared.Camera\"\x0e\n\x0c\x46rameRequest\"R\n\x05\x46rame\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\r\n\x05width\x18\x02 \x01(\x03\x12\x0e\n\x06height\x18\x03 \x01(\x03\x12\x10\n\x08\x63hannels\x18\x04 \x01(\x03\x12\n\n\x02id\x18\x05 \x01(\x03\"M\n\x0e\x43omputeRequest\x12\x0f\n\x07\x66rameId\x18\x01 \x01(\x03\x12*\n\x05\x66rame\x18\x02 \x01(\x0b\x32\x1b.steeleagle.dataplane.Frame\"\xe2\x01\n\rComputeResult\x12\x0f\n\x07\x66rameId\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\x07generic\x18\x03 \x01(\tH\x00\x12:\n\tdetection\x18\x04 \x01(\x0b\x32%.steeleagle.dataplane.DetectionResultH\x00\x12:\n\tavoidance\x18\x05 \x01(\x0b\x32%.steeleagle.dataplane.AvoidanceResultH\x00\x42\x06\n\x04type\"\x89\x01\n\tDetection\x12\x13\n\x0b\x64\x65tectionId\x18\x01 \x01(\x03\x12\x11\n\tclassName\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x01\x12,\n\x04\x62\x62ox\x18\x04 \x01(\x0b\x32\x1e.steeleagle.shared.BoundingBox\x12\x17\n\x0fhsvFilterPassed\x18\x05 \x01(\x08\"F\n\x0f\x44\x65tectionResult\x12\x33\n\ndetections\x18\x01 \x03(\x0b\x32\x1f.steeleagle.dataplane.Detection\"*\n\x0f\x41voidanceResult\x12\x17\n\x0f\x61\x63tuationVector\x18\x01 \x01(\x01\x42\x03\x90\x01\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1asteeleagle/dataplane.proto\x12\x14steeleagle.dataplane\x1a\x17steeleagle/common.proto\x1a google/protobuf/field_mask.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf4\x01\n\x07Request\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x35\n\x03tel\x18\x03 \x01(\x0b\x32&.steeleagle.dataplane.TelemetryRequestH\x00\x12\x33\n\x05\x66rame\x18\x04 \x01(\x0b\x32\".steeleagle.dataplane.FrameRequestH\x00\x12\x35\n\x03\x63pt\x18\x05 \x01(\x0b\x32&.steeleagle.dataplane.GetComputeResultH\x00\x42\x06\n\x04type\"\x95\x02\n\x08Response\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x04resp\x18\x03 \x01(\x0e\x32!.steeleagle.shared.ResponseStatus\x12.\n\x03tel\x18\x04 \x01(\x0b\x32\x1f.steeleagle.dataplane.TelemetryH\x00\x12,\n\x05\x66rame\x18\x05 \x01(\x0b\x32\x1b.steeleagle.dataplane.FrameH\x00\x12\x32\n\x03\x63pt\x18\x06 \x01(\x0b\x32#.steeleagle.dataplane.ComputeResultH\x00\x42\x06\n\x04type\"B\n\x10TelemetryRequest\x12.\n\nfield_mask\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\xf8\x04\n\tTelemetry\x12\x12\n\ndrone_name\x18\x01 \x01(\t\x12\x34\n\x0fglobal_position\x18\x02 \x01(\x0b\x32\x1b.steeleagle.shared.Location\x12,\n\x03mag\x18\x03 \x01(\x0e\x32\x1f.steeleagle.shared.Magnetometer\x12\x0f\n\x07\x62\x61ttery\x18\x04 \x01(\x03\x12\x34\n\x0fgimbal_attitude\x18\x05 \x01(\x0b\x32\x1b.steeleagle.shared.Attitude\x12\x33\n\x0e\x64rone_attitude\x18\x06 \x01(\x0b\x32\x1b.steeleagle.shared.Attitude\x12-\n\x08velocity\x18\x07 \x01(\x0b\x32\x1b.steeleagle.shared.Velocity\x12\x36\n\x11relative_position\x18\x08 \x01(\x0b\x32\x1b.steeleagle.shared.Position\x12\x12\n\nsatellites\x18\t \x01(\x03\x12\x18\n\x0cis_connected\x18\n \x01(\x08\x42\x02\x18\x01\x12\x11\n\twifi_rssi\x18\x0b \x01(\x03\x12\x15\n\rcellular_rssi\x18\x0c \x01(\x03\x12\x12\n\nradio_rssi\x18\r \x01(\x03\x12\x13\n\x0b\x64rone_model\x18\x0e \x01(\t\x12\x0e\n\x06status\x18\x0f \x01(\t\x12)\n\x06uptime\x18\x10 \x01(\x0b\x32\x19.google.protobuf.Duration\x12)\n\x04home\x18\x11 \x01(\x0b\x32\x1b.steeleagle.shared.Location\x12)\n\x06\x63\x61mera\x18\x12 \x01(\x0b\x32\x19.steeleagle.shared.Camera\"\x0e\n\x0c\x46rameRequest\"R\n\x05\x46rame\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\r\n\x05width\x18\x02 \x01(\x03\x12\x0e\n\x06height\x18\x03 \x01(\x03\x12\x10\n\x08\x63hannels\x18\x04 \x01(\x03\x12\n\n\x02id\x18\x05 \x01(\x03\"&\n\x10GetComputeResult\x12\x12\n\nresult_key\x18\x01 \x01(\t\"\xf7\x01\n\rComputeResult\x12\x12\n\nresult_key\x18\x01 \x01(\t\x12\x10\n\x08\x66rame_id\x18\x02 \x01(\x03\x12-\n\ttimestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\x07generic\x18\x04 \x01(\tH\x00\x12:\n\tdetection\x18\x05 \x01(\x0b\x32%.steeleagle.dataplane.DetectionResultH\x00\x12:\n\tavoidance\x18\x06 \x01(\x0b\x32%.steeleagle.dataplane.AvoidanceResultH\x00\x42\x06\n\x04type\"\x8d\x01\n\tDetection\x12\x14\n\x0c\x64\x65tection_id\x18\x01 \x01(\x03\x12\x12\n\nclass_name\x18\x02 \x01(\t\x12\r\n\x05score\x18\x03 \x01(\x01\x12,\n\x04\x62\x62ox\x18\x04 \x01(\x0b\x32\x1e.steeleagle.shared.BoundingBox\x12\x19\n\x11hsv_filter_passed\x18\x05 \x01(\x08\"F\n\x0f\x44\x65tectionResult\x12\x33\n\ndetections\x18\x01 \x03(\x0b\x32\x1f.steeleagle.dataplane.Detection\"+\n\x0f\x41voidanceResult\x12\x18\n\x10\x61\x63tuation_vector\x18\x01 \x01(\x01\x42\x03\x90\x01\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -27,28 +26,28 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle.dataplane_pb2', 
 if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['DESCRIPTOR']._options = None
   _globals['DESCRIPTOR']._serialized_options = b'\220\001\001'
-  _globals['_TELEMETRY'].fields_by_name['isConnected']._options = None
-  _globals['_TELEMETRY'].fields_by_name['isConnected']._serialized_options = b'\030\001'
-  _globals['_REQUEST']._serialized_start=206
-  _globals['_REQUEST']._serialized_end=447
-  _globals['_RESPONSE']._serialized_start=450
-  _globals['_RESPONSE']._serialized_end=726
-  _globals['_TELEMETRYREQUEST']._serialized_start=728
-  _globals['_TELEMETRYREQUEST']._serialized_end=794
-  _globals['_TELEMETRY']._serialized_start=797
-  _globals['_TELEMETRY']._serialized_end=1429
-  _globals['_FRAMEREQUEST']._serialized_start=1431
-  _globals['_FRAMEREQUEST']._serialized_end=1445
-  _globals['_FRAME']._serialized_start=1447
-  _globals['_FRAME']._serialized_end=1529
-  _globals['_COMPUTEREQUEST']._serialized_start=1531
-  _globals['_COMPUTEREQUEST']._serialized_end=1608
-  _globals['_COMPUTERESULT']._serialized_start=1611
-  _globals['_COMPUTERESULT']._serialized_end=1837
-  _globals['_DETECTION']._serialized_start=1840
-  _globals['_DETECTION']._serialized_end=1977
-  _globals['_DETECTIONRESULT']._serialized_start=1979
-  _globals['_DETECTIONRESULT']._serialized_end=2049
-  _globals['_AVOIDANCERESULT']._serialized_start=2051
-  _globals['_AVOIDANCERESULT']._serialized_end=2093
+  _globals['_TELEMETRY'].fields_by_name['is_connected']._options = None
+  _globals['_TELEMETRY'].fields_by_name['is_connected']._serialized_options = b'\030\001'
+  _globals['_REQUEST']._serialized_start=177
+  _globals['_REQUEST']._serialized_end=421
+  _globals['_RESPONSE']._serialized_start=424
+  _globals['_RESPONSE']._serialized_end=701
+  _globals['_TELEMETRYREQUEST']._serialized_start=703
+  _globals['_TELEMETRYREQUEST']._serialized_end=769
+  _globals['_TELEMETRY']._serialized_start=772
+  _globals['_TELEMETRY']._serialized_end=1404
+  _globals['_FRAMEREQUEST']._serialized_start=1406
+  _globals['_FRAMEREQUEST']._serialized_end=1420
+  _globals['_FRAME']._serialized_start=1422
+  _globals['_FRAME']._serialized_end=1504
+  _globals['_GETCOMPUTERESULT']._serialized_start=1506
+  _globals['_GETCOMPUTERESULT']._serialized_end=1544
+  _globals['_COMPUTERESULT']._serialized_start=1547
+  _globals['_COMPUTERESULT']._serialized_end=1794
+  _globals['_DETECTION']._serialized_start=1797
+  _globals['_DETECTION']._serialized_end=1938
+  _globals['_DETECTIONRESULT']._serialized_start=1940
+  _globals['_DETECTIONRESULT']._serialized_end=2010
+  _globals['_AVOIDANCERESULT']._serialized_start=2012
+  _globals['_AVOIDANCERESULT']._serialized_end=2055
 # @@protoc_insertion_point(module_scope)

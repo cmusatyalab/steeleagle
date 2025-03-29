@@ -11,7 +11,7 @@ syntax = "proto3";
 option py_generic_services = true;
 package steeleagle.dataplane;
 import "steeleagle/common.proto";
-import "google/protobuf/empty.proto";
+//import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";

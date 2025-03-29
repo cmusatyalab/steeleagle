@@ -6,8 +6,8 @@ syntax = "proto3";
 
 package steeleagle.controlplane;
 import "steeleagle/common.proto";
-import "google/protobuf/empty.proto";
-import "google/protobuf/field_mask.proto";
+//import "google/protobuf/empty.proto";
+//import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
@@ -31,6 +31,7 @@ message Response {
 */
 message ManualControl {
   oneof param {
+    ManualAction action = 1;
     steeleagle.shared.Location location = 2; 
     steeleagle.shared.Velocity velocity = 3;
     steeleagle.shared.Pose gimbal_pose = 4; 
@@ -38,6 +39,15 @@ message ManualControl {
     sfixed32 camera_id = 6;
   }  
 }
+
+enum ManualAction {
+  TAKEOFF = 1;
+  LAND = 2;
+  HOVER = 3;
+  KILL = 4;
+  RTH = 5;
+}
+
 
 /*
 * AUTO
@@ -48,12 +58,12 @@ message AutonomousControl {
   MissionAction action = 3; // start/stop/pause/resume/download
 }
 enum MissionAction {
-  UNKNOWN_ACTION = 0;
-  START = 1;
-  STOP = 2;
-  PAUSE = 3;
-  RESUME = 4;
-  DOWNLOAD = 5;
+  UNKNOWN_ACTION = 1;
+  START = 2;
+  STOP = 3;
+  PAUSE = 4;
+  RESUME = 5;
+  DOWNLOAD = 6;
 }
 
 /*

@@ -24,6 +24,7 @@ message Location {
   double latitude = 1;
   double longitude = 2;
   double altitude = 3; // in meters AGL
+  double bearing = 4;
 }
 
 enum ResponseStatus {
@@ -56,14 +57,6 @@ message Pose {
   double roll = 3;
 }
 
-/*
-* Angular offsets in 3 dimensions [radians/s] plus the thrust of the motors
-* See https://mavlink.io/en/messages/common.html#SET_ATTITUDE_TARGET for more information
-*/
-message Attitude {
-  Pose pose = 1;
-  double thrust = 2; // thrust component of mavlink Attitude control
-}
 
 /*
 * Representation of the speed in 4-dimensions [m/s]

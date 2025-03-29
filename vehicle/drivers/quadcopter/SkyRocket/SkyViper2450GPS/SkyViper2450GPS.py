@@ -6,6 +6,8 @@ import asyncio
 import logging
 from pymavlink import mavutil
 from quadcopter.quadcopter_interface import DroneDeviceItf
+from protocol.steeleagle import controlplane_pb2 as cnc_protocol
+from protocol.steeleagle import dataplane_pb2 as data_protocol
 
 
 logger = logging.getLogger(__name__)
@@ -96,6 +98,36 @@ class SkyViper2450GPSDrone(DroneDeviceItf):
             logger.info("-- Disconnected from drone")
 
     ''' Telemetry methods '''
+    async def streamTelemetry(self, tel_sock):
+        logger.debug('Starting telemetry stream')
+        await asyncio.sleep(1) # solving for some contention issue with connecting to drone
+        while await self.isConnected():
+            logger.debug('HI from telemetry stream')
+            try:
+                tel_message = data_protocol.Telemetry()
+                telDict = await self.getTelemetry()
+                tel_message.drone_name = telDict["name"]
+                tel_message.battery = telDict["battery"]
+                tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
+                tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
+                tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+                tel_message.satellites = telDict["satellites"]
+                tel_message.relative_position.up = telDict["relAlt"]
+                tel_message.global_position.latitude = telDict["gps"]["latitude"]
+                tel_message.global_position.longitude = telDict["gps"]["longitude"]
+                tel_message.global_position.altitude = telDict["gps"]["altitude"]
+                tel_message.global_position.bearing = telDict["heading"]
+                tel_message.velocity.forward_vel = telDict["imu"]["forward"]
+                tel_message.velocity.right_vel = telDict["imu"]["right"]
+                tel_message.velocity.up_vel = telDict["imu"]["up"]
+                logger.debug(f"Telemetry: {telDict}")
+                tel_sock.send(tel_message.SerializeToString())
+                logger.debug('Sent telemetry')
+            except Exception as e:
+                logger.error(f'Failed to get telemetry, error: {e}')
+            await asyncio.sleep(0.01)
+            logger.debug("Telemetry stream ended, disconnected from drone")
+        
     async def getTelemetry(self):
         try:
             tel_dict = {}
@@ -298,7 +330,11 @@ class SkyViper2450GPSDrone(DroneDeviceItf):
         else:   
             logger.error("-- RTL failed")
     
-    async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
+    async def setVelocity(self, velocity):
+        forward_vel = velocity.forward_vel
+        right_vel = velocity.right_vel
+        up_vel = velocity.up_vel
+        angle_vel = velocity.angle_vel
         logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
         if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
@@ -320,50 +356,58 @@ class SkyViper2450GPSDrone(DroneDeviceItf):
         logger.info("-- setVelocity sent successfully")
         #  continuous control: no blocking wait
 
-    async def setGPSLocation(self, lat, lon, alt, bearing):
-            logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
-            
-            if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
-                logger.error("Failed to set mode to GUIDED")
-                return
-            
-            self.vehicle.mav.set_position_target_global_int_send(
-                0,
-                self.vehicle.target_system,
-                self.vehicle.target_component,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                0b0000111111111000,
-                int(lat * 1e7),
-                int(lon * 1e7),
-                alt,
-                0, 0, 0,
-                0, 0, 0,
-                0, 0
-            )
-                # Calculate bearing if not provided
-            current_location = self.getGPS()
-            current_lat = current_location["latitude"]
-            current_lon = current_location["longitude"]
-            if bearing is None:
-                bearing = self.calculate_bearing(current_lat, current_lon, lat, lon)
-                logger.info(f"-- Calculated bearing: {bearing}")
-            
-            await self.setBearing(bearing)
-            
-            result = await self._wait_for_condition(
-                lambda: self.is_at_target(lat, lon),
-                timeout=60,
-                interval=1
-            )
-            
-            if result:  
-                logger.info("-- Reached target GPS location")
-            else:  
-                logger.info("-- Failed to reach target GPS location")
-            
-            return result
+    async def setGPSLocation(self, location):
+        lat = location.latitude
+        lon = location.longitude
+        alt = location.altitude
+        bearing = location.bearing
+        logger.info(f"-- Setting GPS location: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
+        
+        if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
+            logger.error("Failed to set mode to GUIDED")
+            return
+        
+        self.vehicle.mav.set_position_target_global_int_send(
+            0,
+            self.vehicle.target_system,
+            self.vehicle.target_component,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b0000111111111000,
+            int(lat * 1e7),
+            int(lon * 1e7),
+            alt,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0
+        )
+            # Calculate bearing if not provided
+        current_location = self.getGPS()
+        current_lat = current_location["latitude"]
+        current_lon = current_location["longitude"]
+        if bearing is None:
+            bearing = self.calculate_bearing(current_lat, current_lon, lat, lon)
+            logger.info(f"-- Calculated bearing: {bearing}")
+        
+        await self.setBearing(bearing)
+        
+        result = await self._wait_for_condition(
+            lambda: self.is_at_target(lat, lon),
+            timeout=60,
+            interval=1
+        )
+        
+        if result:  
+            logger.info("-- Reached target GPS location")
+        else:  
+            logger.info("-- Failed to reach target GPS location")
+        
+        return result
 
-    async def setTranslatedLocation(self, forward, right, up, angle):
+    async def setRelativePosition(self, position):
+        forward = position.forward
+        right = position.right
+        up = position.up
+        angle = position.angle
         logger.info(f"-- Translating location: forward={forward}, right={right}, up={up}, angle={angle}")
         
         if await self.switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
@@ -639,6 +683,31 @@ class SkyViper2450GPSDrone(DroneDeviceItf):
             await asyncio.sleep(interval)
 
     ''' Stream methods '''
+    async def streamVideo(self, cam_sock):
+        logger.info('Starting camera stream')
+        frame_id = 0
+        while await self.isConnected():
+            try:
+                cam_message = data_protocol.Frame()
+                frame, frame_shape = await self.getVideoFrame()
+                
+                if frame is None:
+                    logger.error('Failed to get video frame')
+                    continue
+                
+                cam_message.data = frame
+                cam_message.height = frame_shape[0]
+                cam_message.width = frame_shape[1]
+                cam_message.channels = frame_shape[2]
+                cam_message.id = frame_id
+                cam_sock.send(cam_message.SerializeToString())
+                logger.debug(f'Camera stream: sent frame {frame_id}, shape: {frame_shape}')
+                frame_id = frame_id + 1
+            except Exception as e:
+                logger.error(f'Failed to get video frame, error: {e}')
+            await asyncio.sleep(0.033)
+        logger.info("Camera stream ended, disconnected from drone")
+        
     async def getGimbalPose(self):
         pass
     
@@ -702,3 +771,6 @@ class StreamingThread(threading.Thread):
 
     def stop(self):
         self.isRunning = False
+
+
+
