@@ -5,7 +5,7 @@ import time
 import asyncio
 import logging
 from pymavlink import mavutil
-from quadcopter.quadcopter_interface import DroneDeviceItf
+from quadcopter.quadcopter_interface import QuadCopterItf
 from protocol.steeleagle import controlplane_pb2 as cnc_protocol
 from protocol.steeleagle import dataplane_pb2 as data_protocol
 import protocol.steeleagle.common_pb2 as common_protocol
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ConnectionFailedException(Exception):
     pass
 
-class SkyViper2450GPSDrone(DroneDeviceItf):
+class SkyViper2450GPSDrone(QuadCopterItf):
     
     class FlightMode(Enum):
         LAND = 'LAND'
