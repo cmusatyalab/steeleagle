@@ -64,34 +64,37 @@ async def handle(identity, seq_num, man_control, resp_sock):
     resp = control_protocol.Response()
     
     try:
+        result = common_protocol.ResponseStatus.UNKNOWN
         if man_control == "action":
             action = man_control.action
             if action == control_protocol.ManualAction.TAKEOFF:
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Taking OFF################################################################')
-                await drone.takeOff(5)
+                result  = await drone.takeOff(5)
                 logger.info(f"tookoff function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.LAND:
                 logger.info(f"land function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Landing#######################################################################')
-                await drone.land()
+                result  = await drone.land()
                 logger.info(f"land function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.RTH:
                 logger.info(f"rth function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Returning to Home#######################################################################')
-                await drone.rth()
+                result  = await drone.rth()
                 logger.info(f"rth function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.HOVER: 
                 logger.info(f"hover function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Hovering#######################################################################')
-                await drone.hover()
+                result = await drone.hover()
                 logger.info(f"hover function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.KILL:
-                logger.info("Kill, not implemented")   
+                logger.info(f"kill function call started at: {time.time()}, seq id {seq_num}") 
+                result = await drone.kill() 
+                logger.info(f"kill function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.RTH:
                 logger.info(f"rth function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Returning to Home#######################################################################')
-                await drone.rth()
+                result  = await drone.rth()
                 logger.info(f"rth function call finished at: {time.time()}")
         elif man_control == "velocity":
             logger.info(f"setVelocity function call started at: {time.time()}, seq id {seq_num}")
@@ -105,13 +108,13 @@ async def handle(identity, seq_num, man_control, resp_sock):
             location = man_control.location
             await drone.setGPSLocation(location)
             logger.info(f"setGPSLocation function call finished at: {time.time()}")
-
-        resp.timestamp = time.time()
-        resp.seqNum = seq_num
-        resp.resp = common_protocol.ResponseStatus.COMPLETED
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
-        resp.resp = common_protocol.ResponseStatus.FAILED
+        result = common_protocol.ResponseStatus.FAILED
+        
+    resp.timestamp = time.time()
+    resp.seqNum = seq_num
+    resp.resp = result
     resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 
