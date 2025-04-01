@@ -1,14 +1,15 @@
+# General imports
 from abc import ABC, abstractmethod
 import asyncio
-
+# Import SteelEagle protocol
 from protocol.steeleagle import dataplane_pb2 as data_protocol
 from protocol.steeleagle import controlplane_pb2 as control_protocol
 from protocol.steeleagle import common_pb2 as common_protocol
-
+# Import ZeroMQ bindings
 import zmq
 import zmq.asyncio
 
-class QuadCopterItf(ABC):
+class QuadcopterItf(ABC):
     @abstractmethod
     async def connect(self) -> bool:
         """
@@ -20,7 +21,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def isConnected(self) -> bool:
+    async def is_connected(self) -> bool:
         """
         Checks whether the drone hardware is currently connected.
 
@@ -39,7 +40,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def takeOff(self) -> control_protocol.Response:
+    async def take_off(self) -> control_protocol.Response:
         """
         Arms the drone (if necessary) and instructs it to take off.
 
@@ -80,7 +81,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def setHome(self, loc: common_protocol.Location) -> control_protocol.Response:
+    async def set_home(self, loc: common_protocol.Location) -> control_protocol.Response:
         """
         Sets the home (return-to-home) destination for the drone, using
         a protobuf-based Location message.
@@ -103,7 +104,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def setVelocity(self, vel: common_protocol.Velocity) -> control_protocol.Response:
+    async def set_velocity(self, vel: common_protocol.Velocity) -> control_protocol.Response:
         """
         Sets the drone's velocity using a protobuf-based Velocity message.
 
@@ -119,9 +120,9 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def setGPSLocation(self, loc: common_protocol.Location) -> control_protocol.Response:
+    async def set_global_position(self, loc: common_protocol.Location) -> control_protocol.Response:
         """
-        Commands the drone to move to a specific GPS location (lat/lng/alt).
+        Commands the drone to move to a specific global location (lat/lng/alt).
 
         The Location may also imply a bearing or heading, if so desired.
 
@@ -133,7 +134,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def setRelativePosition(self, pos: common_protocol.Position) -> control_protocol.Response:
+    async def set_relative_position(self, pos: common_protocol.Position) -> control_protocol.Response:
         """
         Sets a target position for the drone relative to its initial (takeoff) point,
         in meters. The Position message can include north, east, up, and bearing
@@ -147,7 +148,7 @@ class QuadCopterItf(ABC):
         pass
 
     @abstractmethod
-    async def streamTelemetry(self, tel_sock: zmq.asyncio.Socket) -> None:
+    async def stream_telemetry(self, tel_sock: zmq.asyncio.Socket) -> None:
         """
         Continuously sends telemetry data from the drone to the provided ZeroMQ socket.
 
@@ -163,7 +164,7 @@ class QuadCopterItf(ABC):
         pass
     
     @abstractmethod
-    async def streamVideo(self, cam_sock: zmq.asyncio.Socket) -> None:
+    async def stream_video(self, cam_sock: zmq.asyncio.Socket) -> None:
         """
         Continuously sends video frames from the drone to the provided ZeroMQ socket.
 
