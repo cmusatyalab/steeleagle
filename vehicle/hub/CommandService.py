@@ -8,25 +8,14 @@ import zmq.asyncio
 import asyncio
 import logging
 import os
-from cnc_protocol import cnc_pb2
-from kernel.Service import Service
-from util.utils import setup_socket, SocketOperation
+from protocol.steeleagle import controlplane_pb2
+from Service import Service
+from util.utils import SocketOperation
 
 # Configure logger
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# Enumerations for Commands and Drone Types
-class ManualCommand(Enum):
-    RTH = 1
-    HALT = 2
-    TAKEOFF = 4
-    LAND = 5
-    PCMD = 6
-    CONNECTION = 7
-    GIMBAL = 8
-
 
 class CommandService(Service):
     def __init__(self, drone_id, drone_type):
@@ -35,110 +24,77 @@ class CommandService(Service):
         self.drone_type = drone_type
         self.drone_id = drone_id
         self.manual = True
-        
+
         # init cmd seq
         self.command_seq = 0
 
-        # Setting up conetxt
-        context = zmq.asyncio.Context()
-
         # Setting up sockets
-        cmd_front_cmdr_sock = context.socket(zmq.DEALER)
-        cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
-        cmd_front_usr_sock = context.socket(zmq.DEALER)
-        cmd_back_sock = context.socket(zmq.DEALER)
-        msn_sock = context.socket(zmq.REQ)
-        setup_socket(cmd_front_cmdr_sock, SocketOperation.CONNECT, 'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint', os.environ.get('STEELEAGLE_GABRIEL_SERVER'))
-        setup_socket(cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT', 'Created command frontend user socket endpoint')
-        setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
-        setup_socket(msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace mission control socket endpoint')
-        self.cmd_front_cmdr_sock = cmd_front_cmdr_sock
-        self.cmd_front_usr_sock = cmd_front_usr_sock   
-        self.cmd_back_sock = cmd_back_sock
-        self.msn_sock = msn_sock
-        
+        self.cmd_front_cmdr_sock = context.socket(zmq.DEALER)
+        self.cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        self.cmd_front_usr_sock = context.socket(zmq.DEALER)
+        self.cmd_back_sock = context.socket(zmq.DEALER)
+        self.msn_sock = context.socket(zmq.REQ)
 
-        # setting up tasks
-        cmd_task = asyncio.create_task(self.cmd_proxy())
+        gabriel_server_host = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
+        if gabriel_server_host is None:
+            raise Exception("Gabriel server host must be specified using STEELEAGLE_GABRIEL_SERVER")
 
-        # registering context, sockets and tasks to service
-        self.register_context(context)
-        self.register_socket(cmd_front_cmdr_sock)
-        self.register_socket(cmd_back_sock)
-        self.register_socket(msn_sock)
-        self.register_task(cmd_task)
+        self.setup_and_register_socket(
+            self.cmd_front_cmdr_sock, SocketOperation.CONNECT,
+            'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket
+            endpoint', gabriel_server_host)
+        self.setup_and_register_socket(
+            self.cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT',
+            'Created command frontend user socket endpoint')
+        self.setup_and_register_socket(
+            self.cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created
+            command backend socket endpoint')
+        self.setup_and_register_socket(
+            self.msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace
+            mission control socket endpoint')
 
-    ######################################################## USER ############################################################
-    async def send_download_mission(self, url):
+        self.create_task(self.cmd_proxy())
+
+    def manual_mode_enabled():
+        self.manual = True
+
+    def manual_mode_disabled():
+        self.manual = False
+
+    async def send_download_mission(self, req):
+        if validators.url(req.auto.url):
+            logger.info(f'Downloading flight script sent by commander: {req.auto.url}')
+        else:
+            logger.info(f'Invalid script URL sent by commander: {req.auto.url}')
+            return
+
         # send the start mission command
-        mission_command = cnc_pb2.Mission()
-        mission_command.downloadMission = url
-        message = mission_command.SerializeToString()
-        logger.info(f'download_mission message:{message}')
-        self.msn_sock.send(message)
+        logger.info(f'download_mission message: {req}')
+        self.msn_sock.send(req.SerializeToString())
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a start mission command
-    async def send_start_mission(self):
+    async def send_start_mission(self, req):
         # send the start mission command
-        mission_command = cnc_pb2.Mission()
-        mission_command.startMission = True
-        message = mission_command.SerializeToString()
-        logger.info(f'start_mission message:{message}')
-        self.msn_sock.send(message)
+        logger.info(f'start_mission message: {req}')
+        self.msn_sock.send(req.SerializeToString())
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
-    async def send_stop_mission(self):
-        mission_command = cnc_pb2.Mission()
-        mission_command.stopMission = True
-        message = mission_command.SerializeToString()
-        self.msn_sock.send(message)
+    async def send_stop_mission(self, req):
+        logger.info(f'stop_mission message: {req}')
+        self.msn_sock.send(req.SerializeToString())
         reply = await self.msn_sock.recv_string()
         logger.info(f"Mission reply: {reply}")
 
 
-    ######################################################## DRIVER ############################################################
-    async def send_driver_command(self, command, params):
-        driver_command = cnc_pb2.Driver()
-        driver_command.seqNum = self.command_seq
-
-        if command == ManualCommand.RTH:
-            driver_command.rth = True
-            logger.info(f"rth signal sent at: {time.time()}, seq id {driver_command.seqNum}")
-        if command == ManualCommand.HALT:
-            driver_command.hover = True
-        elif command == ManualCommand.TAKEOFF:
-            driver_command.takeOff = True
-            logger.info(f"takeoff signal sent at: {time.time()}, seq id  {driver_command.seqNum}")
-        elif command == ManualCommand.LAND:
-            driver_command.land = True
-
-        elif command == ManualCommand.PCMD:
-            if params and all(value == 0 for value in params.values()):
-                driver_command.hover = True
-            else:
-                driver_command.setVelocity.forward_vel = params["pitch"]
-                driver_command.setVelocity.angle_vel = params["yaw"]
-                driver_command.setVelocity.right_vel = params["roll"]
-                driver_command.setVelocity.up_vel = params["thrust"]
-                logger.info(f'Driver Command setVelocities: {driver_command.setVelocity} sent at:{time.time()}, seq id {driver_command.seqNum}')
-        elif command == ManualCommand.GIMBAL:
-            driver_command.setGimbal.pitch_theta = params["gimbal_pitch"]
-            logger.info(f'Driver Command setGimbal: {driver_command.setGimbal} sent at:{time.time()}, seq id {driver_command.seqNum}')
-        elif command == ManualCommand.CONNECTION:
-            driver_command.connectionStatus = cnc_pb2.ConnectionStatus()
-
-        message = driver_command.SerializeToString()
+    async def send_driver_command(self, req):
         identity = b'cmdr'
-        await self.cmd_back_sock.send_multipart([identity, message])
-        logger.info(f"Driver Command sent: {message}")
-        
-        return None
+        await self.cmd_back_sock.send_multipart([identity, req.SerializeToString()])
+        logger.info(f"Command send to driver: {req}")
 
-    ######################################################## COMMAND ############################################################
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
@@ -158,7 +114,7 @@ class CommandService(Service):
                     # Filter the message
                     logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}")
                     await self.process_command(cmd)
-                 
+
                 # Check for messages from MSN
                 if self.cmd_front_usr_sock in socks:
                     msg = await self.cmd_front_usr_sock.recv_multipart()
@@ -166,8 +122,8 @@ class CommandService(Service):
                     logger.debug(f"proxy : cmd_front_usr_sock Received message from FRONTEND: {cmd}")
                     identity = b'usr'
                     await self.cmd_back_sock.send_multipart([identity, cmd])
-                    
-                    
+
+
                 # Check for messages from DRIVER
                 if self.cmd_back_sock in socks:
                     message = await self.cmd_back_sock.recv_multipart()
@@ -191,51 +147,43 @@ class CommandService(Service):
                 logger.error(f"proxy: {e}")
 
     async def process_command(self, cmd):
-        extras = cnc_pb2.Extras()
-        extras.ParseFromString(cmd)
+        req = controlplane_pb2.Request()
+        req.ParseFromString(cmd)
+
         self.command_seq = self.command_seq + 1
 
-        if extras.cmd.rth:
-            logger.info(f"RTH signal started at: {time.time()}")
-            await self.send_stop_mission()
-            asyncio.create_task(self.send_driver_command(ManualCommand.RTH, None))
-            self.manual = False
-        elif extras.cmd.halt:
-            logger.info(f"Halt signal started at: {time.time()}")
-            await self.send_stop_mission()
-            asyncio.create_task(self.send_driver_command(ManualCommand.HALT, None))
-            self.manual = True
-            logger.info('Manual control is now active!')
-        elif extras.cmd.script_url:
-            url = extras.cmd.script_url
-            if validators.url(url):
-                logger.info(f'Flight script sent by commander: {url}')
-                self.manual = False
-                await self.send_download_mission(url)
-                await self.send_start_mission()
+        if req.has_auto():
+            # Autonomous command
+            match req.auto.action:
+                case controlplane_pb2.MissionAction.DOWNLOAD:
+                    await self.send_download_mission(req)
+                case controlplane_pb2.MissionAction.START:
+                    await self.send_start_mission(req)
+                    self.manual_mode_disabled()
+                case controlplane_pb2.MissionAction.STOP:
+                    await self.send_stop_mission(req)
+                    asyncio.create_task(self.send_driver_command(req))
+                    self.manual_mode_enabled()
+                case _:
+                    raise NotImplemented()
+        elif req.has_man():
+            # Manual command
+            if req.man.has_action() and req.man.action == controlplane_pb2.VehicleAction.RTH:
+                await self.send_stop_mission()
+                asyncio.create_task(self.send_driver_command(req))
+                self.manual_mode_disabled()
             else:
-                logger.info(f'Invalid script URL sent by commander: {extras.cmd.script_url}')
-        elif self.manual:
-            if extras.cmd.takeoff:
-                logger.info(f"takeoff signal started at: {time.time()} seq id {self.command_seq}")
-                asyncio.create_task(self.send_driver_command(ManualCommand.TAKEOFF, None))
-            elif extras.cmd.land:
-                logger.info(f"land signal started at: {time.time()}")
-                asyncio.create_task(self.send_driver_command(ManualCommand.LAND, None))
-            else:
-                self.handle_pcmd_command(extras.cmd.pcmd)
+                task = asyncio.create_task(await self.send_driver_command(req))
+                self.manual_mode_enabled()
+        elif req.has_cpt():
+            # Configure compute command
+            raise NotImplemented()
 
-    def handle_pcmd_command(self, pcmd):
-        pitch, yaw, roll, thrust, gimbal_pitch = pcmd.pitch, pcmd.yaw, pcmd.roll, pcmd.gaz, pcmd.gimbal_pitch
-        params = {"pitch": pitch, "yaw": yaw, "roll": roll, "thrust": thrust, "gimbal_pitch": gimbal_pitch}
-        logger.info(f"PCMD signal started at: {time.time()} PCMD values: {params} seq id {self.command_seq}")
-        asyncio.create_task(self.send_driver_command(ManualCommand.PCMD, params))
-        asyncio.create_task(self.send_driver_command(ManualCommand.GIMBAL, params))
-
-
-######################################################## MAIN ##############################################################
-async def async_main():
-    droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
+async def main():
+    drone_args = os.environ.get('DRONE_ARGS')
+    if drone_args == None:
+        raise Exception("Expected drone args to be specified")
+    droneArgs = json.loads(drone_args)
     drone_id = droneArgs.get('id')
     drone_type = droneArgs.get('type')
     # init CommandService
@@ -244,10 +192,7 @@ async def async_main():
     # run CommandService
     await cmd_service.start()
 
-
-
-# Main Execution Block
 if __name__ == "__main__":
     logger.info("Main: starting CommandService")
 
-    asyncio.run(async_main())
+    asyncio.run(main())
