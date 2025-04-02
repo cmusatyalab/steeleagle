@@ -30,7 +30,6 @@ cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
 setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
 
-
 tel_dict = {
     "name": "",
     "battery": 0,
@@ -53,9 +52,9 @@ async def recv_telemetry():
             telemetry.ParseFromString(msg)
             tel_dict['name'] = telemetry.drone_name
             tel_dict['battery'] = telemetry.battery
-            tel_dict['attitude']['yaw'] = telemetry.drone_attitude.yaw
-            tel_dict['attitude']['pitch'] = telemetry.drone_attitude.pitch
-            tel_dict['attitude']['roll'] = telemetry.drone_attitude.roll
+            tel_dict['attitude']['yaw'] = telemetry.drone_attitude.pose.yaw
+            tel_dict['attitude']['pitch'] = telemetry.drone_attitude.pose.pitch
+            tel_dict['attitude']['roll'] = telemetry.drone_attitude.pose.roll
             tel_dict['satellites'] = telemetry.satellites
             tel_dict['gps']['latitude'] = telemetry.global_position.latitude
             tel_dict['gps']['longitude'] = telemetry.global_position.longitude
@@ -117,7 +116,7 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == common_protocol.ResponseStatus.SUCCESS
+        assert status == common_protocol.ResponseStatus.OK
         
         sequence_counter["value"] += 1
         
@@ -138,9 +137,11 @@ class TestSuiteClass:
         for test_set in test_sets:
             await asyncio.sleep(5)
             logger.info(f"Testing set velocity: {test_set}")
-            vel = common_protocol.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
             driver_cmd = control_protocol.Request()
-            driver_cmd.veh.velocity = vel
+            driver_cmd.veh.velocity.forward_vel = test_set[0]
+            driver_cmd.veh.velocity.right_vel = test_set[1]
+            driver_cmd.veh.velocity.up_vel = test_set[2]
+            driver_cmd.veh.velocity.angular_vel = test_set[3]
             driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
             await cmd_back_sock.send_multipart([self.identity, message])
@@ -155,7 +156,7 @@ class TestSuiteClass:
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == control_protocol.ResponseStatus.SUCCESS
+            assert status == common_protocol.ResponseStatus.OK
             sequence_counter["value"] += 1  
     
     @pytest.mark.order(3)    
@@ -204,15 +205,11 @@ class TestSuiteClass:
             next_angle = curr_pos_angle + d_angle
 
             logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
-            location = common_protocol.Location(
-                latitude=next_lat,
-                longitude=next_lon,
-                altitude=next_alt,
-                bearing=next_angle
-            )
-
             driver_cmd = control_protocol.Request()
-            driver_cmd.veh.location = location
+            driver_cmd.veh.location.latitude  = next_lat
+            driver_cmd.veh.location.longitude = next_lon
+            driver_cmd.veh.location.altitude  = next_alt
+            driver_cmd.veh.location.bearing   = next_angle
             seq = sequence_counter["value"]
             logger.info(f"Sending command with seqNum: {seq}")
             driver_cmd.seq_num = sequence_counter["value"]
@@ -230,11 +227,11 @@ class TestSuiteClass:
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == control_protocol.ResponseStatus.SUCCESS
+            assert status == common_protocol.ResponseStatus.OK
 
             
             await asyncio.sleep(10)
-            # Check the telemetry to see if the move was successful
+            # Check the telemetry to see if the move was OKful
             actual_lat = tel_dict["gps"]["latitude"]
             actual_lon = tel_dict["gps"]["longitude"]
             actual_alt = tel_dict["gps"]["altitude"]
@@ -285,7 +282,7 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {driver_rep.resp}")
-        assert status == control_protocol.ResponseStatus.SUCCESS
+        assert status == common_protocol.ResponseStatus.OK
         sequence_counter["value"] += 1
         
     @pytest.mark.order(8)        
@@ -294,7 +291,7 @@ class TestSuiteClass:
         logger.info("Testing land")
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.LAND
-        request.seqNum = sequence_counter["value"]
+        request.seq_num = sequence_counter["value"]
         message = request.SerializeToString()
         await cmd_back_sock.send_multipart([self.identity, message])
         
@@ -308,6 +305,6 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == control_protocol.ResponseStatus.SUCCESS
+        assert status == common_protocol.ResponseStatus.OK
         sequence_counter["value"] += 1
         

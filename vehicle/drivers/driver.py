@@ -9,6 +9,7 @@ import protocol.steeleagle.controlplane_pb2 as control_protocol
 import protocol.steeleagle.common_pb2 as common_protocol
 import protocol.steeleagle.dataplane_pb2 as data_protocol
 from util.utils import setup_socket, SocketOperation
+from google.protobuf.timestamp_pb2 import Timestamp
 
 # Configure logger
 logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
@@ -58,62 +59,64 @@ setup_socket(tel_sock, SocketOperation.CONNECT, 'TEL_PORT', 'Created telemetry s
 setup_socket(cam_sock, SocketOperation.CONNECT, 'CAM_PORT', 'Created camera socket endpoint', os.environ.get("DATA_ENDPOINT"))
 setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created command backend socket endpoint', os.environ.get("CMD_ENDPOINT"))
 
-async def handle(identity, seq_num, man_control, resp_sock):
+async def handle(identity, message, resp_sock):
+    if not message.HasField("veh"):
+        logger.info("Received message without vehicle field, ignoring")
+        return
     
     # Create a driver response message
     resp = control_protocol.Response()
     
+    man_control = message.veh.WhichOneof("param")
+    logger.info(f"man_control: {man_control}")
+    seq_num = message.seq_num
+    
     try:
-        result = common_protocol.ResponseStatus.UNKNOWN
+        result = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
         if man_control == "action":
-            action = man_control.action
-            if action == control_protocol.ManualAction.TAKEOFF:
+            action = message.veh.action
+            if action == control_protocol.VehicleAction.TAKEOFF:
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Taking OFF################################################################')
-                result  = await drone.take_off(5)
+                result  = await drone.take_off()
                 logger.info(f"tookoff function call finished at: {time.time()}")
-            elif action == control_protocol.ManualAction.LAND:
+            elif action == control_protocol.VehicleAction.LAND:
                 logger.info(f"land function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Landing#######################################################################')
                 result  = await drone.land()
                 logger.info(f"land function call finished at: {time.time()}")
-            elif action == control_protocol.ManualAction.RTH:
+            elif action == control_protocol.VehicleAction.RTH:
                 logger.info(f"rth function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Returning to Home#######################################################################')
                 result  = await drone.rth()
                 logger.info(f"rth function call finished at: {time.time()}")
-            elif action == control_protocol.ManualAction.HOVER: 
+            elif action == control_protocol.VehicleAction.HOVER: 
                 logger.info(f"hover function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Hovering#######################################################################')
                 result = await drone.hover()
                 logger.info(f"hover function call finished at: {time.time()}")
-            elif action == control_protocol.ManualAction.KILL:
+            elif action == control_protocol.VehicleAction.KILL:
                 logger.info(f"kill function call started at: {time.time()}, seq id {seq_num}") 
                 result = await drone.kill() 
                 logger.info(f"kill function call finished at: {time.time()}")
-            elif action == control_protocol.ManualAction.RTH:
-                logger.info(f"rth function call started at: {time.time()}, seq id {seq_num}")
-                logger.info('####################################Returning to Home#######################################################################')
-                result  = await drone.rth()
-                logger.info(f"rth function call finished at: {time.time()}")
         elif man_control == "velocity":
             logger.info(f"setVelocity function call started at: {time.time()}, seq id {seq_num}")
             logger.info('####################################Setting Velocity#######################################################################')
-            velocity = man_control.velocity
+            velocity = message.veh.velocity
             result = await drone.set_velocity(velocity)
             logger.info(f"setVelocity function call finished at: {time.time()}")
         elif man_control == "location":
             logger.info(f"setGPSLocation function call started at: {time.time()}")
             logger.info('####################################Setting GPS Location#######################################################################')
-            location = man_control.location
+            location = message.veh.location
             result = await drone.set_global_position(location)
             logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
-        logger.error(f'Failed to handle command, error: {e.message}')
+        logger.error(f'Failed to handle command, error: {e}')
         result = common_protocol.ResponseStatus.FAILED
-        
-    resp.timestamp = time.time()
-    resp.seqNum = seq_num
+    
+    # resp.timestamp = Timestamp()
+    resp.seq_num = seq_num
     resp.resp = result
     resp_sock.send_multipart([identity, resp.SerializeToString()])
 
@@ -130,7 +133,7 @@ async def main(drone, cam_sock, tel_sock, args):
         logger.info(f'Established connection to drone, ready to receive commands!')
         
         logger.info('Started streaming')
-        asyncio.create_task(drone.stream_video(cam_sock))
+        # asyncio.create_task(drone.stream_video(cam_sock))
         asyncio.create_task(drone.stream_telemetry(tel_sock))
 
         while await drone.is_connected():
@@ -143,12 +146,7 @@ async def main(drone, cam_sock, tel_sock, args):
                 message = control_protocol.Request()
                 message.ParseFromString(data)
                 logger.info(f"Received message: {message}")
-                if message.HasField("man"):
-                    man_control = message.man.WhichOneof("param")
-                    seq_num = message.seqNum
-                    asyncio.create_task(handle(identity, seq_num, man_control, cmd_back_sock))
-                else:
-                    logger.info("received some other types of command, ignore")
+                asyncio.create_task(handle(identity, message, cmd_back_sock))
             except Exception as e:
                 logger.info(f'cmd received error: {e}')
 
