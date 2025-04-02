@@ -11,6 +11,16 @@ import zmq.asyncio
 
 class QuadcopterItf(ABC):
     @abstractmethod
+    async def get_type(self) -> str:
+        """
+        Returns the drone type.
+
+        :return: Drone type
+        :rtype: str
+        """
+        pass
+
+    @abstractmethod
     async def connect(self) -> bool:
         """
         Connects to the drone hardware.
@@ -96,7 +106,8 @@ class QuadcopterItf(ABC):
     @abstractmethod
     async def rth(self) -> control_protocol.Response:
         """
-        Commands the drone to return to its previously set home location.
+        Commands the drone to return to its previously set home location, following
+        the specified behavior configured on the drone's autopilot.
 
         :return: A response object indicating success or failure
         :rtype: :class:`steeleagle.controlplane.Response`
@@ -108,9 +119,9 @@ class QuadcopterItf(ABC):
         """
         Sets the drone's velocity using a protobuf-based Velocity message.
 
-        The Velocity message typically contains forward_vel, right_vel,
-        up_vel, and angle_vel, describing motion in meters per second
-        and angular velocity in degrees per second.
+        The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel, 
+        describing motion in meters per second and angular velocity in degrees per 
+        second.
 
         :param vel: The target velocity in each axis plus angular velocity
         :type vel: :class:`steeleagle.common.Velocity`
@@ -124,7 +135,10 @@ class QuadcopterItf(ABC):
         """
         Commands the drone to move to a specific global location (lat/lng/alt).
 
-        The Location may also imply a bearing or heading, if so desired.
+        The Location object may also supply a heading. In this case, the drone will 
+        turn towards the provided heading before actuating to the target global position. 
+        If no heading is provided, the drone will turn to face its target global position 
+        before moving.
 
         :param loc: The desired GPS location, including latitude, longitude, altitude
         :type loc: :class:`steeleagle.common.Location
@@ -142,6 +156,23 @@ class QuadcopterItf(ABC):
 
         :param pos: The relative position offsets plus bearing
         :type pos: :class:`steeleagle.common.Position`
+        :return: A response object indicating success or failure
+        :rtype: :class:`steeleagle.controlplane.Response`
+        """
+        pass
+
+    @abstractmethod
+    async def set_heading(self, loc: common_protocol.Location) -> control_protocol.Response:
+        """
+        Sets the heading of the drone to face a provided global position or absolute
+        bearing.
+
+        If the Location object supplies a latitude and longitude, the drone will turn
+        to face that position. If the Location object only supplies a bearing, the
+        drone will turn to face that bearing.
+        
+        :param loc: The target global position or heading to face
+        :type loc: :class:`steeleagle.common.Location`
         :return: A response object indicating success or failure
         :rtype: :class:`steeleagle.controlplane.Response`
         """
