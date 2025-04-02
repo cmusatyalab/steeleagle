@@ -14,10 +14,11 @@ message Request {
   int64 seq_num = 1;  // for correlation
   google.protobuf.Timestamp timestamp = 2; // time the request was made
   oneof type {
-    VehicleControl veh = 3; 
-    MissionControl msn = 4; 
+    VehicleControl veh = 3;
+    MissionControl msn = 4;
     ConfigureCompute cpt = 5;
   }
+  repeated string drone_ids = 6;
 }
 
 message Response {
@@ -32,20 +33,21 @@ message Response {
 message VehicleControl {
   oneof param {
     VehicleAction action = 1;
-    steeleagle.shared.Location location = 2; 
+    steeleagle.shared.Location location = 2;
     steeleagle.shared.Velocity velocity = 3;
-    steeleagle.shared.Pose gimbal_pose = 4; 
-    steeleagle.shared.Position position = 5; 
+    steeleagle.shared.Pose gimbal_pose = 4;
+    steeleagle.shared.Position position = 5;
     sfixed32 camera_id = 6;
-  }  
+  }
 }
 
 enum VehicleAction {
-  TAKEOFF = 0;
-  LAND = 1;
-  HOVER = 2;
-  KILL = 3;
-  RTH = 4;
+  UNKNOWN_VEHICLE_ACTION = 0;
+  TAKEOFF = 1;
+  LAND = 2;
+  HOVER = 3;
+  KILL = 4;
+  RTH = 5;
 }
 
 
@@ -53,12 +55,13 @@ enum VehicleAction {
 * AUTO
 */
 message MissionControl {
-  string UUID = 1; // unique mission reference for cataloging
-  string URL = 2; // the URL that specifies the zip file to download
+  string uuid = 1; // unique mission reference for cataloging
+  string url = 2; // the URL that specifies the zip file to download
   MissionAction action = 3; // start/stop/pause/resume/download
 }
+
 enum MissionAction {
-  UNKNOWN_ACTION = 0;
+  UNKNOWN_MISSION_ACTION = 0;
   START = 1;
   STOP = 2;
   PAUSE = 3;

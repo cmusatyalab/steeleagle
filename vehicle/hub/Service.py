@@ -1,24 +1,29 @@
-
+from abc import ABC
 import asyncio
 import logging
+from util.utils import setup_socket
+import zmq
+import zmq.asyncio
 
 logger = logging.getLogger(__name__)
 
-class Service:
+class Service(ABC):
     def __init__(self):
-        self.context = None
         self.tasks = []
         self.socks = []
+        self.create_asyncio_context()
+        self.context = zmq.asyncio.Context()
 
-    def register_context(self, context):
-        self.context = context
-
-    def register_socket (self, sock):
+    def register_socket(self, sock):
         self.socks.append(sock)
 
-    def register_task(self, task):
-        logger.info("registered a task")
+    def create_task(self, coro):
+        task = asyncio.create_task(coro)
         self.tasks.append(task)
+
+    def setup_and_register_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
+        setup_socket(socket, socket_op, port_num, logger_message, host_addr)
+        self.socks.append(socket)
 
     async def start(self):
         logger.info(f'service started')

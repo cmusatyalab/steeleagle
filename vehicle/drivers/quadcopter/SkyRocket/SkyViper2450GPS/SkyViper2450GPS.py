@@ -93,7 +93,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
             )
             if result:
                 logger.info("-- Altitude reached")
-                return common_protocol.ResponseStatus.SUCCESS
+                return common_protocol.ResponseStatus.OK
             else:
                 logger.error("-- Failed to reach target altitude")
                 return common_protocol.ResponseStatus.FAILED
@@ -111,7 +111,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         if result:
             logger.info("-- Landed and disarmed")
-            return common_protocol.ResponseStatus.SUCCESS
+            return common_protocol.ResponseStatus.OK
         else:   
             logger.error("-- Landing failed")
             return common_protocol.ResponseStatus.FAILED
@@ -123,7 +123,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
         else:
             logger.info("-- Hovering")
-            return common_protocol.ResponseStatus.SUCCESS
+            return common_protocol.ResponseStatus.OK
     
     async def kill(self):
         logger.info("-- Killing drone")
@@ -149,8 +149,8 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         
         if result:
-            logger.info("-- Home location set successfully")
-            return common_protocol.ResponseStatus.SUCCESS
+            logger.info("-- Home location set OKfully")
+            return common_protocol.ResponseStatus.OK
         else:
             logger.error("-- Failed to set home location")
             return common_protocol.ResponseStatus.FAILED
@@ -169,21 +169,21 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:
             logger.info("-- Returned to launch and disarmed")
+            return common_protocol.ResponseStatus.OK
         else:   
             logger.error("-- RTL failed")
+            return common_protocol.ResponseStatus.FAILED
     
     async def set_velocity(self, velocity):
         forward_vel = velocity.forward_vel
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
-        angle_vel = velocity.angle_vel
-        logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angle_vel={angle_vel}")
+        angular_vel = velocity.angular_vel
+        logger.info(f"-- Setting velocity: forward_vel={forward_vel}, right_vel={right_vel}, up_vel={up_vel}, angular_vel={angular_vel}")
         if await self._switchMode(SkyViper2450GPSDrone.FlightMode.GUIDED) == False:
             logger.error("Failed to set mode to GUIDED")
             return common_protocol.ResponseStatus.FAILED
         
-        # adj_vel = 0.1 * angle_vel
-        yaw = float('nan')
         self.vehicle.mav.set_position_target_local_ned_send(
             0,  # time_boot_ms
             self.vehicle.target_system,
@@ -193,11 +193,11 @@ class SkyViper2450GPSDrone(QuadcopterItf):
             0, 0, 0,  # x, y, z positions
             forward_vel, right_vel, -up_vel,  # x, y, z velocity
             0, 0, 0,  # x, y, z acceleration
-            yaw, angle_vel  # yaw, yaw_rate
+            float('nan'), angular_vel  # yaw, yaw_rate
         )
-        logger.info("-- setVelocity sent successfully")
+        logger.info("-- setVelocity sent")
         #  continuous control: no blocking wait
-        return common_protocol.ResponseStatus.SUCCESS
+        return common_protocol.ResponseStatus.OK
 
     async def set_global_position(self, location):
         lat = location.latitude
@@ -241,7 +241,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:  
             logger.info("-- Reached target GPS location")
-            return common_protocol.ResponseStatus.SUCCESS
+            return common_protocol.ResponseStatus.OK
         else:  
             logger.info("-- Failed to reach target GPS location")
             return common_protocol.ResponseStatus.FAILED
@@ -292,7 +292,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if  result:
             logger.info("-- Reached target translated location")
-            return common_protocol.ResponseStatus.SUCCESS
+            return common_protocol.ResponseStatus.OK
         else:
             logger.error("-- Failed to reach target translated location")
             return common_protocol.ResponseStatus.FAILED
@@ -300,16 +300,16 @@ class SkyViper2450GPSDrone(QuadcopterItf):
     async def stream_telemetry(self, tel_sock):
         logger.debug('Starting telemetry stream')
         await asyncio.sleep(1) # solving for some contention issue with connecting to drone
-        while await self.isConnected():
+        while await self.is_connected():
             logger.debug('HI from telemetry stream')
             try:
                 tel_message = data_protocol.Telemetry()
                 telDict = await self._getTelemetry()
                 tel_message.drone_name = telDict["name"]
                 tel_message.battery = telDict["battery"]
-                tel_message.drone_attitude.yaw = telDict["attitude"]["yaw"]
-                tel_message.drone_attitude.pitch = telDict["attitude"]["pitch"]
-                tel_message.drone_attitude.roll = telDict["attitude"]["roll"]
+                tel_message.drone_attitude.pose.yaw = telDict["attitude"]["yaw"]
+                tel_message.drone_attitude.pose.pitch = telDict["attitude"]["pitch"]
+                tel_message.drone_attitude.pose.roll = telDict["attitude"]["roll"]
                 tel_message.satellites = telDict["satellites"]
                 tel_message.relative_position.up = telDict["relAlt"]
                 tel_message.global_position.latitude = telDict["gps"]["latitude"]
@@ -330,7 +330,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
     async def stream_video(self, cam_sock):
         logger.info('Starting camera stream')
         frame_id = 0
-        while await self.isConnected():
+        while await self.is_connected():
             try:
                 cam_message = data_protocol.Frame()
                 frame, frame_shape = await self._getVideoFrame()
@@ -527,7 +527,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         
         if result:
-            logger.info(f"-- Yaw successfully set to {bearing} degrees")
+            logger.info(f"-- Yaw OKfully set to {bearing} degrees")
             
         else:
             logger.error(f"-- Failed to set yaw to {bearing} degrees")
@@ -539,7 +539,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_disarm,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             0,
             1,
             0, 0, 0, 0, 0, 0
@@ -554,7 +554,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         
         if result:
-            logger.info("-- Armed successfully")
+            logger.info("-- Armed OKfully")
         else:
             logger.error("-- Arm failed")
         return result
@@ -564,7 +564,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_disarm,
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             0,
             0,
             0, 0, 0, 0, 0, 0
@@ -579,7 +579,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:
             self.mode = None
-            logger.info("-- disarmed successfully")
+            logger.info("-- disarmed OKfully")
         else:
             logger.error("-- disarm failed")
             

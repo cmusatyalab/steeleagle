@@ -16,25 +16,25 @@ from steeleagle import common_pb2 as steeleagle_dot_common__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dsteeleagle/controlplane.proto\x12\x17steeleagle.controlplane\x1a\x17steeleagle/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfe\x01\n\x07Request\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x35\n\x03man\x18\x03 \x01(\x0b\x32&.steeleagle.controlplane.ManualControlH\x00\x12:\n\x04\x61uto\x18\x04 \x01(\x0b\x32*.steeleagle.controlplane.AutonomousControlH\x00\x12\x38\n\x03\x63pt\x18\x05 \x01(\x0b\x32).steeleagle.controlplane.ConfigureComputeH\x00\x42\x06\n\x04type\"{\n\x08Response\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x04resp\x18\x03 \x01(\x0e\x32!.steeleagle.shared.ResponseStatus\"\xa9\x02\n\rManualControl\x12\x37\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32%.steeleagle.controlplane.ManualActionH\x00\x12/\n\x08location\x18\x02 \x01(\x0b\x32\x1b.steeleagle.shared.LocationH\x00\x12/\n\x08velocity\x18\x03 \x01(\x0b\x32\x1b.steeleagle.shared.VelocityH\x00\x12.\n\x0bgimbal_pose\x18\x04 \x01(\x0b\x32\x17.steeleagle.shared.PoseH\x00\x12/\n\x08position\x18\x05 \x01(\x0b\x32\x1b.steeleagle.shared.PositionH\x00\x12\x13\n\tcamera_id\x18\x06 \x01(\x0fH\x00\x42\x07\n\x05param\"f\n\x11\x41utonomousControl\x12\x0c\n\x04UUID\x18\x01 \x01(\t\x12\x0b\n\x03URL\x18\x02 \x01(\t\x12\x36\n\x06\x61\x63tion\x18\x03 \x01(\x0e\x32&.steeleagle.controlplane.MissionAction\"\x8e\x01\n\x10\x43onfigureCompute\x12\r\n\x05model\x18\x01 \x01(\t\x12+\n\x0blower_bound\x18\x02 \x01(\x0b\x32\x16.steeleagle.shared.HSV\x12+\n\x0bupper_bound\x18\x03 \x01(\x0b\x32\x16.steeleagle.shared.HSV\x12\x11\n\tthreshold\x18\x04 \x01(\x02*C\n\x0cManualAction\x12\x0b\n\x07TAKEOFF\x10\x00\x12\x08\n\x04LAND\x10\x01\x12\t\n\x05HOVER\x10\x02\x12\x08\n\x04KILL\x10\x03\x12\x07\n\x03RTH\x10\x04*]\n\rMissionAction\x12\x12\n\x0eUNKNOWN_ACTION\x10\x00\x12\t\n\x05START\x10\x01\x12\x08\n\x04STOP\x10\x02\x12\t\n\x05PAUSE\x10\x03\x12\n\n\x06RESUME\x10\x04\x12\x0c\n\x08\x44OWNLOAD\x10\x05\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dsteeleagle/controlplane.proto\x12\x17steeleagle.controlplane\x1a\x17steeleagle/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8e\x02\n\x07Request\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x36\n\x03veh\x18\x03 \x01(\x0b\x32\'.steeleagle.controlplane.VehicleControlH\x00\x12\x36\n\x03msn\x18\x04 \x01(\x0b\x32\'.steeleagle.controlplane.MissionControlH\x00\x12\x38\n\x03\x63pt\x18\x05 \x01(\x0b\x32).steeleagle.controlplane.ConfigureComputeH\x00\x12\x11\n\tdrone_ids\x18\x06 \x03(\tB\x06\n\x04type\"{\n\x08Response\x12\x0f\n\x07seq_num\x18\x01 \x01(\x03\x12-\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x04resp\x18\x03 \x01(\x0e\x32!.steeleagle.shared.ResponseStatus\"\xab\x02\n\x0eVehicleControl\x12\x38\n\x06\x61\x63tion\x18\x01 \x01(\x0e\x32&.steeleagle.controlplane.VehicleActionH\x00\x12/\n\x08location\x18\x02 \x01(\x0b\x32\x1b.steeleagle.shared.LocationH\x00\x12/\n\x08velocity\x18\x03 \x01(\x0b\x32\x1b.steeleagle.shared.VelocityH\x00\x12.\n\x0bgimbal_pose\x18\x04 \x01(\x0b\x32\x17.steeleagle.shared.PoseH\x00\x12/\n\x08position\x18\x05 \x01(\x0b\x32\x1b.steeleagle.shared.PositionH\x00\x12\x13\n\tcamera_id\x18\x06 \x01(\x0fH\x00\x42\x07\n\x05param\"c\n\x0eMissionControl\x12\x0c\n\x04UUID\x18\x01 \x01(\t\x12\x0b\n\x03URL\x18\x02 \x01(\t\x12\x36\n\x06\x61\x63tion\x18\x03 \x01(\x0e\x32&.steeleagle.controlplane.MissionAction\"\x8e\x01\n\x10\x43onfigureCompute\x12\r\n\x05model\x18\x01 \x01(\t\x12+\n\x0blower_bound\x18\x02 \x01(\x0b\x32\x16.steeleagle.shared.HSV\x12+\n\x0bupper_bound\x18\x03 \x01(\x0b\x32\x16.steeleagle.shared.HSV\x12\x11\n\tthreshold\x18\x04 \x01(\x02*`\n\rVehicleAction\x12\x1a\n\x16UNKNOWN_VEHICLE_ACTION\x10\x00\x12\x0b\n\x07TAKEOFF\x10\x01\x12\x08\n\x04LAND\x10\x02\x12\t\n\x05HOVER\x10\x03\x12\x08\n\x04KILL\x10\x04\x12\x07\n\x03RTH\x10\x05*e\n\rMissionAction\x12\x1a\n\x16UNKNOWN_MISSION_ACTION\x10\x00\x12\t\n\x05START\x10\x01\x12\x08\n\x04STOP\x10\x02\x12\t\n\x05PAUSE\x10\x03\x12\n\n\x06RESUME\x10\x04\x12\x0c\n\x08\x44OWNLOAD\x10\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle.controlplane_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_MANUALACTION']._serialized_start=1047
-  _globals['_MANUALACTION']._serialized_end=1114
-  _globals['_MISSIONACTION']._serialized_start=1116
-  _globals['_MISSIONACTION']._serialized_end=1209
+  _globals['_VEHICLEACTION']._serialized_start=1062
+  _globals['_VEHICLEACTION']._serialized_end=1158
+  _globals['_MISSIONACTION']._serialized_start=1160
+  _globals['_MISSIONACTION']._serialized_end=1261
   _globals['_REQUEST']._serialized_start=117
-  _globals['_REQUEST']._serialized_end=371
-  _globals['_RESPONSE']._serialized_start=373
-  _globals['_RESPONSE']._serialized_end=496
-  _globals['_MANUALCONTROL']._serialized_start=499
-  _globals['_MANUALCONTROL']._serialized_end=796
-  _globals['_AUTONOMOUSCONTROL']._serialized_start=798
-  _globals['_AUTONOMOUSCONTROL']._serialized_end=900
-  _globals['_CONFIGURECOMPUTE']._serialized_start=903
-  _globals['_CONFIGURECOMPUTE']._serialized_end=1045
+  _globals['_REQUEST']._serialized_end=387
+  _globals['_RESPONSE']._serialized_start=389
+  _globals['_RESPONSE']._serialized_end=512
+  _globals['_VEHICLECONTROL']._serialized_start=515
+  _globals['_VEHICLECONTROL']._serialized_end=814
+  _globals['_MISSIONCONTROL']._serialized_start=816
+  _globals['_MISSIONCONTROL']._serialized_end=915
+  _globals['_CONFIGURECOMPUTE']._serialized_start=918
+  _globals['_CONFIGURECOMPUTE']._serialized_end=1060
 # @@protoc_insertion_point(module_scope)
