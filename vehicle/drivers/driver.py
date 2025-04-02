@@ -70,7 +70,7 @@ async def handle(identity, seq_num, man_control, resp_sock):
             if action == control_protocol.ManualAction.TAKEOFF:
                 logger.info(f"takeoff function call started at: {time.time()}, seq id {seq_num}")
                 logger.info('####################################Taking OFF################################################################')
-                result  = await drone.takeOff(5)
+                result  = await drone.take_off(5)
                 logger.info(f"tookoff function call finished at: {time.time()}")
             elif action == control_protocol.ManualAction.LAND:
                 logger.info(f"land function call started at: {time.time()}, seq id {seq_num}")
@@ -100,13 +100,13 @@ async def handle(identity, seq_num, man_control, resp_sock):
             logger.info(f"setVelocity function call started at: {time.time()}, seq id {seq_num}")
             logger.info('####################################Setting Velocity#######################################################################')
             velocity = man_control.velocity
-            await drone.setVelocity(velocity)
+            result = await drone.set_velocity(velocity)
             logger.info(f"setVelocity function call finished at: {time.time()}")
         elif man_control == "location":
             logger.info(f"setGPSLocation function call started at: {time.time()}")
             logger.info('####################################Setting GPS Location#######################################################################')
             location = man_control.location
-            await drone.setGPSLocation(location)
+            result = await drone.set_global_position(location)
             logger.info(f"setGPSLocation function call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e.message}')
@@ -129,12 +129,11 @@ async def main(drone, cam_sock, tel_sock, args):
             continue
         logger.info(f'Established connection to drone, ready to receive commands!')
         
-        await drone.startStreaming()
         logger.info('Started streaming')
-        asyncio.create_task(drone.streamVideo(cam_sock))
-        asyncio.create_task(drone.streamTelemetry(tel_sock))
+        asyncio.create_task(drone.stream_video(cam_sock))
+        asyncio.create_task(drone.stream_telemetry(tel_sock))
 
-        while await drone.isConnected():
+        while await drone.is_connected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
                 identity = message_parts[0]

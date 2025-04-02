@@ -5,7 +5,7 @@ import time
 import asyncio
 import logging
 from pymavlink import mavutil
-from quadcopter.quadcopter_interface import QuadCopterItf
+from quadcopter.quadcopter_interface import QuadcopterItf
 from protocol.steeleagle import controlplane_pb2 as cnc_protocol
 from protocol.steeleagle import dataplane_pb2 as data_protocol
 import protocol.steeleagle.common_pb2 as common_protocol
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ConnectionFailedException(Exception):
     pass
 
-class SkyViper2450GPSDrone(QuadCopterItf):
+class SkyViper2450GPSDrone(QuadcopterItf):
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -48,10 +48,10 @@ class SkyViper2450GPSDrone(QuadCopterItf):
         await self._register_telemetry_streams()
         asyncio.create_task(self._message_listener())
         
-        self._startStreaming()
+        await self._startStreaming()
 
     
-    async def isConnected(self):
+    async def is_connected(self):
         return self.vehicle is not None
 
     async def disconnect(self):
@@ -65,7 +65,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
         
         self._stopStreaming()
         
-    async def takeOff(self):
+    async def take_off(self):
             logger.info("-- Taking off")
             target_altitude = 3  # meters
             
@@ -131,7 +131,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
 
-    async def setHome(self, lat, lng, alt):
+    async def set_home(self, lat, lng, alt):
         logger.info(f"-- Setting home location to {lat}, {lng}, {alt}")
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
@@ -172,7 +172,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
         else:   
             logger.error("-- RTL failed")
     
-    async def setVelocity(self, velocity):
+    async def set_velocity(self, velocity):
         forward_vel = velocity.forward_vel
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
@@ -199,7 +199,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
         #  continuous control: no blocking wait
         return common_protocol.ResponseStatus.SUCCESS
 
-    async def setGPSLocation(self, location):
+    async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
@@ -246,7 +246,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
             logger.info("-- Failed to reach target GPS location")
             return common_protocol.ResponseStatus.FAILED
 
-    async def setRelativePosition(self, position):
+    async def set_relative_position(self, position):
         forward = position.forward
         right = position.right
         up = position.up
@@ -297,7 +297,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
             logger.error("-- Failed to reach target translated location")
             return common_protocol.ResponseStatus.FAILED
         
-    async def streamTelemetry(self, tel_sock):
+    async def stream_telemetry(self, tel_sock):
         logger.debug('Starting telemetry stream')
         await asyncio.sleep(1) # solving for some contention issue with connecting to drone
         while await self.isConnected():
@@ -327,7 +327,7 @@ class SkyViper2450GPSDrone(QuadCopterItf):
             await asyncio.sleep(0.01)
             logger.debug("Telemetry stream ended, disconnected from drone")
                     
-    async def streamVideo(self, cam_sock):
+    async def stream_video(self, cam_sock):
         logger.info('Starting camera stream')
         frame_id = 0
         while await self.isConnected():

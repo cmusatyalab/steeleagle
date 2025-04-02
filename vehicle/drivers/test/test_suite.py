@@ -3,12 +3,14 @@ import logging
 import zmq
 import zmq.asyncio
 from util.utils import setup_socket, SocketOperation
-import cnc_protocol.cnc_pb2 as cnc_pb2
 import pytest_asyncio
 import pytest
 import numpy as np
 import math
-
+# Import SteelEagle protocol
+from protocol.steeleagle import dataplane_pb2 as data_protocol
+from protocol.steeleagle import controlplane_pb2 as control_protocol
+from protocol.steeleagle import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ async def recv_telemetry():
     while True:
         try:
             msg = await tel_sock.recv()
-            telemetry = cnc_pb2.Telemetry()
+            telemetry = data_protocol.Telemetry()
             telemetry.ParseFromString(msg)
             tel_dict['name'] = telemetry.drone_name
             tel_dict['battery'] = telemetry.battery
@@ -99,22 +101,23 @@ class TestSuiteClass:
         logger.info("Testing takeoff")
         loop = asyncio.get_running_loop()
         logger.info(f"test_takeoff is running on event loop: {loop} (id={id(loop)})")
-        driver_cmd = cnc_pb2.Driver(takeOff=True)
-        driver_cmd.seqNum = sequence_counter["value"]
+        driver_cmd = control_protocol.Request()
+        driver_cmd.veh.action = control_protocol.VehicleAction.TAKEOFF
+        driver_cmd.seq_num = sequence_counter["value"]
         message = driver_cmd.SerializeToString()
         await cmd_back_sock.send_multipart([self.identity, message])
  
         logger.info("Waiting for response")       
         response = await cmd_back_sock.recv_multipart()
-        driver_rep = cnc_pb2.Driver()
+        driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
-        seq_num = driver_rep.seqNum
+        seq_num = driver_rep.seq_num
         status = driver_rep.resp
         
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        assert status == common_protocol.ResponseStatus.SUCCESS
         
         sequence_counter["value"] += 1
         
@@ -135,23 +138,24 @@ class TestSuiteClass:
         for test_set in test_sets:
             await asyncio.sleep(5)
             logger.info(f"Testing set velocity: {test_set}")
-            vel = cnc_pb2.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
-            driver_cmd = cnc_pb2.Driver(setVelocity=vel)
-            driver_cmd.seqNum = sequence_counter["value"]
+            vel = common_protocol.Velocity(forward_vel=test_set[0], right_vel=test_set[1], up_vel=test_set[2], angle_vel=test_set[3])
+            driver_cmd = control_protocol.Request()
+            driver_cmd.veh.velocity = vel
+            driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
             await cmd_back_sock.send_multipart([self.identity, message])
             
             logger.info("Waiting for response")
             response = await cmd_back_sock.recv_multipart()
-            driver_rep = cnc_pb2.Driver()
+            driver_rep = control_protocol.Response()
             driver_rep.ParseFromString(response[1])
-            seq_num = driver_rep.seqNum
+            seq_num = driver_rep.seq_num
             status = driver_rep.resp
             
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == cnc_pb2.ResponseStatus.COMPLETED
+            assert status == control_protocol.ResponseStatus.SUCCESS
             sequence_counter["value"] += 1  
     
     @pytest.mark.order(3)    
@@ -200,32 +204,33 @@ class TestSuiteClass:
             next_angle = curr_pos_angle + d_angle
 
             logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
-            location = cnc_pb2.Location(
+            location = common_protocol.Location(
                 latitude=next_lat,
                 longitude=next_lon,
                 altitude=next_alt,
                 bearing=next_angle
             )
 
-            driver_cmd = cnc_pb2.Driver(setGPSLocation=location)
+            driver_cmd = control_protocol.Request()
+            driver_cmd.veh.location = location
             seq = sequence_counter["value"]
             logger.info(f"Sending command with seqNum: {seq}")
-            driver_cmd.seqNum = sequence_counter["value"]
+            driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
             await cmd_back_sock.send_multipart([self.identity, message])
 
             logger.info("Waiting for response")
             response = await cmd_back_sock.recv_multipart()
-            driver_rep = cnc_pb2.Driver()
+            driver_rep = control_protocol.Response()
             driver_rep.ParseFromString(response[1])
-            seq_num = driver_rep.seqNum
+            seq_num = driver_rep.seq_num
             status = driver_rep.resp
             
             logger.info(f"Received response {driver_rep}")
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == cnc_pb2.ResponseStatus.COMPLETED
+            assert status == control_protocol.ResponseStatus.SUCCESS
 
             
             await asyncio.sleep(10)
@@ -264,43 +269,45 @@ class TestSuiteClass:
     @pytest.mark.asyncio
     async def test_RTH(self, sequence_counter):
         logger.info("Testing return to home")
-        request = cnc_pb2.Driver(rth=True)
-        request.seqNum = sequence_counter["value"]
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.RTH
+        request.seq_num = sequence_counter["value"]
         message = request.SerializeToString()
         await cmd_back_sock.send_multipart([self.identity, message])
         
         logger.info("Waiting for response")
         response = await cmd_back_sock.recv_multipart()
-        driver_rep = cnc_pb2.Driver()
+        driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
-        seq_num = driver_rep.seqNum  
+        seq_num = driver_rep.seq_num  
         status = driver_rep.resp
         
-        logger.info(f"Received response with seqNum: {driver_rep.seqNum}")
+        logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {driver_rep.resp}")
-        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        assert status == control_protocol.ResponseStatus.SUCCESS
         sequence_counter["value"] += 1
         
     @pytest.mark.order(8)        
     @pytest.mark.asyncio
     async def test_land(self, sequence_counter):
         logger.info("Testing land")
-        request = cnc_pb2.Driver(land=True)
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.LAND
         request.seqNum = sequence_counter["value"]
         message = request.SerializeToString()
         await cmd_back_sock.send_multipart([self.identity, message])
         
         logger.info("Waiting for response")
         response = await cmd_back_sock.recv_multipart()
-        driver_rep = cnc_pb2.Driver()
+        driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
-        seq_num = driver_rep.seqNum
+        seq_num = driver_rep.seq_num
         status = driver_rep.resp
         
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == cnc_pb2.ResponseStatus.COMPLETED
+        assert status == control_protocol.ResponseStatus.SUCCESS
         sequence_counter["value"] += 1
         

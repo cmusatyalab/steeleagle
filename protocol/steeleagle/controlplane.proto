@@ -14,8 +14,8 @@ message Request {
   int64 seq_num = 1;  // for correlation
   google.protobuf.Timestamp timestamp = 2; // time the request was made
   oneof type {
-    ManualControl man = 3; 
-    AutonomousControl auto = 4; 
+    VehicleControl veh = 3; 
+    MissionControl msn = 4; 
     ConfigureCompute cpt = 5;
   }
 }
