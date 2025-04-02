@@ -18,6 +18,7 @@ message Request {
     MissionControl msn = 4; 
     ConfigureCompute cpt = 5;
   }
+  repeated string drone_ids = 6;
 }
 
 message Response {
@@ -41,11 +42,12 @@ message VehicleControl {
 }
 
 enum VehicleAction {
-  TAKEOFF = 0;
-  LAND = 1;
-  HOVER = 2;
-  KILL = 3;
-  RTH = 4;
+  UNKNOWN_VEHICLE_ACTION = 0;
+  TAKEOFF = 1;
+  LAND = 2;
+  HOVER = 3;
+  KILL = 4;
+  RTH = 5;
 }
 
 
@@ -58,7 +60,7 @@ message MissionControl {
   MissionAction action = 3; // start/stop/pause/resume/download
 }
 enum MissionAction {
-  UNKNOWN_ACTION = 0;
+  UNKNOWN_MISSION_ACTION = 0;
   START = 1;
   STOP = 2;
   PAUSE = 3;
