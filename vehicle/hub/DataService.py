@@ -8,7 +8,8 @@ import yaml
 import importlib
 import pkgutil
 from util.utils import setup_socket, SocketOperation
-from cnc_protocol import cnc_pb2
+from protocol.steeleagle import controlplane_pb2
+from protocol.steeleagle import dataplane_pb2
 import computes
 from kernel.computes.ComputeItf import ComputeInterface
 from DataStore import DataStore
@@ -25,48 +26,29 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
-
 class DataService(Service):
     def __init__(self, config_yaml):
         """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
 
-        # Setting up conetxt
-        context = zmq.asyncio.Context()
-        self.register_context(context)
-
         # Setting up sockets
-        tel_sock = context.socket(zmq.SUB)
-        cam_sock = context.socket(zmq.SUB)
-        cpt_usr_sock = context.socket(zmq.DEALER)
+        self.tel_sock = context.socket(zmq.SUB)
+        self.cam_sock = context.socket(zmq.SUB)
+        self.cpt_usr_sock = context.socket(zmq.DEALER)
 
-        tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
-        tel_sock.setsockopt(zmq.CONFLATE, 1)
-        cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
-        cam_sock.setsockopt(zmq.CONFLATE, 1)
+        self.tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
+        self.tel_sock.setsockopt(zmq.CONFLATE, 1)
+        self.cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+        self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
-        setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        setup_socket(cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
-
-        self.register_socket(tel_sock)
-        self.register_socket(cam_sock)
-        self.register_socket(cpt_usr_sock)
-
-
-        self.cam_sock = cam_sock
-        self.tel_sock = tel_sock
-        self.cpt_usr_sock = cpt_usr_sock
-
+        self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
+        self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
 
         # setting up tasks
-        tel_task = asyncio.create_task(self.telemetry_handler())
-        cam_task = asyncio.create_task(self.camera_handler())
-        usr_task = asyncio.create_task(self.user_handler())
-        
-        self.register_task(tel_task)
-        self.register_task(cam_task)
-        self.register_task(usr_task)
+        self.create_task(self.telemetry_handler())
+        self.create_task(self.camera_handler())
+        self.create_task(self.user_handler())
 
         # setting up data store
         self.data_store = DataStore()
@@ -75,105 +57,86 @@ class DataService(Service):
         for task in compute_tasks:
             self.register_task(task)
 
-    ######################################################## USER ##############################################################
-    def get_result(self, compute_type):
-        logger.info(f"Processing getter for compute type: {compute_type}")
+    ###########################################################################
+    #                                USER                                     #
+    ###########################################################################
+    def get_result(self, result_key):
+        logger.info(f"Processing getter for {result_key=}")
         getter_list = []
         for compute_id in self.compute_dict.keys():
-            cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
-            
+            cpt_res = self.data_store.get_compute_result(compute_id, result_key)
+
             if cpt_res is None:
                 logger.error(f"Result not found for compute_id: {compute_id}")
                 continue
-            
+
             res = cpt_res[0]
             timestamp = str(cpt_res[1])
-            
-            result= cnc_pb2.ComputeResult()
-            result.compute_id = compute_id
+
+            result = dataplane_pb2.ComputeResult()
+            result.result_key = result_key
+            # result.frame_id = ...
             result.timestamp = timestamp
-            result.string_result = res
-            
+            # TODO(Aditya): populate result.type
+
             getter_list.append(result)
-            logger.info(f"Sending result: {res} with compute_id : {compute_id}, timestamp: {timestamp}")
+            logger.info(f"Sending result: {res} with {compute_id=} {timestamp=}")
         return getter_list
 
     def clear_result(self):
         logger.info("Processing setter")
         for compute_id in self.compute_dict.keys():
             self.data_store.clear_compute_result(compute_id)
-            
+
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
         while True:
-            try:
-                msg = await self.cpt_usr_sock.recv()
+            msg = await self.cpt_usr_sock.recv()
+            req = dataplane_pb2.Request()
+            req.ParseFromString(msg)
 
-                # Attempt to parse as Compute
-                compute_command = cnc_pb2.Compute()
-                compute_command.ParseFromString(msg)
+            match req.WhichOneof("type"):
+                case "tel":
+                    await self.handle_telemetry_req(req)
+                case "frame":
+                    raise NotImplemented()
+                case "cpt":
+                    await self.handle_compute_req(req)
+                case None:
+                    raise Exception("Expected at least one request type")
 
-                if compute_command.HasField("getter") or compute_command.HasField("setter"):
-                    logger.info("Processing compute")
-                    await self.handle_compute(compute_command)
-                    continue  # Stop processing once a valid type is found
-
-                # Attempt to parse as Driver
-                driver_command = cnc_pb2.Driver()
-                driver_command.ParseFromString(msg)
-
-                if driver_command.HasField("getTelemetry"):  # Replace with actual field name
-                    logger.info("Processing driver")
-                    await self.handle_driver(driver_command)
-                    continue  # Stop processing once a valid type is found
-
-                # If neither parsed correctly, log an error
-                logger.error("User handler error: Unknown command type")
-
-            except Exception as e:
-                logger.error(f"user handler error: {e}")
-
-    async def handle_compute(self, cpt_command):
+    async def handle_compute_req(self, req):
         """Processes a Compute command."""
-        logger.info(f"Received Compute command: {cpt_command}")
+        logger.info(f"Received compute request: {req}")
 
-        if cpt_command.getter:
-            logger.info("Processing getter")
-            compute_type = cpt_command.getter.compute_type
-            getter_list = self.get_result(compute_type)
-            cpt_command.getter.result.extend(getter_list)
-            await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+        result_key = req.cpt.result_key
 
-        elif cpt_command.setter:
-            
-            if cpt_command.setter.clearResult:
-                logger.info("Processing setter clear")
-                self.clear_result()
-                await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+        cpt_results = self.get_result(result_key)
 
-        else:
-            logger.error("User handler error: Unknown Compute command")
+        # TODO(Aditya): we could get multiple compute results from different
+        # computes, we should extend the proto definition to accomodate this
+        # await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+        #
+        # Also, a compute request could also involve clearing compute results
 
-    async def handle_driver(self, driver_command):
-        """Processes a Driver command."""
-        logger.info(f"Received Driver command: {driver_command}")
-        
-        if driver_command.getTelemetry:
-            logger.info("Processing getTelemetry")
-            self.data_store.get_raw_data(driver_command.getTelemetry)
-            driver_command.resp = cnc_pb2.ResponseStatus.COMPLETED
-            logger.info(f"Sending telemetry: {driver_command.getTelemetry}")
-            await self.cpt_usr_sock.send(driver_command.SerializeToString())
+    async def handle_telemetry_req(self, req):
+        """Processes a telemetry request."""
+        logger.info(f"Received telemetry request: {req}")
 
-    ######################################################## DRIVER ############################################################
+        tel_data = self.data_store.get_raw_data(req)
+        await self.cpt_usr_sock.send(tel_data.SerializeToString())
+
+    ###########################################################################
+    #                                DRIVER                                   #
+    ###########################################################################
     async def telemetry_handler(self):
         """Handles telemetry messages."""
         logger.info("Telemetry handler started")
         while True:
             try:
                 msg = await self.tel_sock.recv()
-                telemetry = cnc_pb2.Telemetry()
+                telemetry = dataplane_pb2.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.data_store.set_raw_data(telemetry)
                 logger.debug(f"Received telemetry message after set: {telemetry}")
@@ -182,25 +145,29 @@ class DataService(Service):
 
     def parse_frame(self, msg):
         """Parses a frame message."""
-        frame = cnc_pb2.Frame()
+        frame = dataplane_pb2.Frame()
         frame.ParseFromString(msg)
         return frame
-        
+
     async def camera_handler(self):
         """Handles camera messages."""
         logger.info("Camera handler started")
         while True:
             try:
                 msg = await self.cam_sock.recv()
+                # TODO(Aditya): Because of the Python GIL, we should not be
+                # doing anything CPU-bound in another thread
                 frame = await asyncio.to_thread(self.parse_frame, msg)  # Offload parsing
                 self.data_store.set_raw_data(frame, frame.id)
                 logger.debug(f"Received camera message after set: {frame}")
-             
+
             except Exception as e:
                 logger.error(f"Camera handler error: {e}")
 
-    ######################################################## COMPUTE ############################################################
 
+    ###########################################################################
+    #                                COMPUTE                                  #
+    ###########################################################################
     def discover_compute_classes(self):
         """Discover all compute  classes."""
         compute_classes = {}
@@ -244,9 +211,7 @@ class DataService(Service):
 
         return compute_tasks
 
-######################################################## MAIN ##############################################################
-
-async def async_main():
+async def main():
     """Main entry point for the DataService."""
     logger.info("Starting DataService")
     config_yaml = os.getenv("CPT_CONFIG")
@@ -257,4 +222,4 @@ async def async_main():
     await data_service.start()
 
 if __name__ == "__main__":
-    asyncio.run(async_main())
+    asyncio.run(main())

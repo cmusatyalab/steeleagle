@@ -20,8 +20,8 @@ message Request {
   int64 seq_num = 1;  // for correlation
   google.protobuf.Timestamp timestamp = 2; // time the request was made
   oneof type {
-    TelemetryRequest tel = 3; 
-    FrameRequest frame  = 4; 
+    TelemetryRequest tel = 3;
+    FrameRequest frame  = 4;
     GetComputeResult cpt = 5;
   }
 }
@@ -48,7 +48,7 @@ message Telemetry {
   steeleagle.shared.Location global_position = 2;
   steeleagle.shared.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
   int64 battery = 4;  // battery level [0-100]%
-  steeleagle.shared.Attitude gimbal_attitude = 5; 
+  steeleagle.shared.Attitude gimbal_attitude = 5;
   steeleagle.shared.Attitude drone_attitude = 6;
   steeleagle.shared.Velocity velocity = 7;
   steeleagle.shared.Position relative_position = 8;

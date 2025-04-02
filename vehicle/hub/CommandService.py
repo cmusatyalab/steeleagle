@@ -41,17 +41,17 @@ class CommandService(Service):
 
         self.setup_and_register_socket(
             self.cmd_front_cmdr_sock, SocketOperation.CONNECT,
-            'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket
-            endpoint', gabriel_server_host)
+            'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint',
+            gabriel_server_host)
         self.setup_and_register_socket(
             self.cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT',
             'Created command frontend user socket endpoint')
         self.setup_and_register_socket(
-            self.cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created
-            command backend socket endpoint')
+            self.cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT',
+            'Created command backend socket endpoint')
         self.setup_and_register_socket(
-            self.msn_sock, SocketOperation.BIND, 'MSN_PORT', 'Created userspace
-            mission control socket endpoint')
+            self.msn_sock, SocketOperation.BIND, 'MSN_PORT',
+            'Created userspace mission control socket endpoint')
 
         self.create_task(self.cmd_proxy())
 
@@ -152,32 +152,35 @@ class CommandService(Service):
 
         self.command_seq = self.command_seq + 1
 
-        if req.has_auto():
-            # Autonomous command
-            match req.auto.action:
-                case controlplane_pb2.MissionAction.DOWNLOAD:
-                    await self.send_download_mission(req)
-                case controlplane_pb2.MissionAction.START:
-                    await self.send_start_mission(req)
-                    self.manual_mode_disabled()
-                case controlplane_pb2.MissionAction.STOP:
-                    await self.send_stop_mission(req)
+        match req.WhichOneof("type"):
+            match "msn":
+                # Mission command
+                match req.msn.action:
+                    case controlplane_pb2.MissionAction.DOWNLOAD:
+                        await self.send_download_mission(req)
+                    case controlplane_pb2.MissionAction.START:
+                        await self.send_start_mission(req)
+                        self.manual_mode_disabled()
+                    case controlplane_pb2.MissionAction.STOP:
+                        await self.send_stop_mission(req)
+                        asyncio.create_task(self.send_driver_command(req))
+                        self.manual_mode_enabled()
+                    case _:
+                        raise NotImplemented()
+            match "veh":
+                # Vehicle command
+                if req.veh.HasField("action") and req.veh.action == controlplane_pb2.VehicleAction.RTH:
+                    await self.send_stop_mission()
                     asyncio.create_task(self.send_driver_command(req))
+                    self.manual_mode_disabled()
+                else:
+                    task = asyncio.create_task(await self.send_driver_command(req))
                     self.manual_mode_enabled()
-                case _:
-                    raise NotImplemented()
-        elif req.has_man():
-            # Manual command
-            if req.man.has_action() and req.man.action == controlplane_pb2.VehicleAction.RTH:
-                await self.send_stop_mission()
-                asyncio.create_task(self.send_driver_command(req))
-                self.manual_mode_disabled()
-            else:
-                task = asyncio.create_task(await self.send_driver_command(req))
-                self.manual_mode_enabled()
-        elif req.has_cpt():
-            # Configure compute command
-            raise NotImplemented()
+            match "cpt":
+                # Configure compute command
+                raise NotImplemented()
+            match None:
+                raise Exception("Expected a request type to be specified")
 
 async def main():
     drone_args = os.environ.get('DRONE_ARGS')
