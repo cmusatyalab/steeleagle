@@ -1,12 +1,28 @@
 # General imports
-from enum import Enum
 import math
 import os
 import time
 import asyncio
+from enum import Enum
 import logging
-# SDK import (MAVLink)
-from pymavlink import mavutil
+# SDK imports (Olympe)
+import olympe
+from olympe import Drone
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing
+from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
+from olympe.messages.rth import set_custom_location, return_to_home
+from olympe.messages.ardrone3.PilotingState import moveToChanged
+from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
+from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
+from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
+from olympe.messages.gimbal import set_target, attitude
+from olympe.messages.wifi import rssi_changed
+from olympe.messages.battery import capacity
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
+import olympe.enums.move as move_mode
+import olympe.enums.gimbal as gimbal_mode
 # Interface import
 from quadcopter.quadcopter_interface import QuadcopterItf
 # Protocol imports
@@ -15,93 +31,59 @@ from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-class PX4Drone(QuadcopterItf):
+class ParrotDrone(QuadcopterItf):
     
     class FlightMode(Enum):
-        LAND = 'LAND'
-        RTL = 'RTL'
-        LOITER = 'LOITER'
-        TAKEOFF = 'TAKEOFF'
-        ALT_HOLD = 'ALT_HOLD'
-        OFFBOARD = 'OFFBOARD'
-
-    class OffboardHeartbeatMode(Enum):
-        VELOCITY = 'VELOCITY'
-        RELATIVE = 'RELATIVE'
-        GLOBAL = 'GLOBAL'
+        LOITER = 1
+        TAKEOFF_LAND = 2
+        VELOCITY = 3
+        GUIDED = 4
         
-    def __init__(self, drone_id):
+    def __init__(self, drone_id, **kwargs):
         self.drone_id = drone_id
-        self.vehicle = None
-        self.mode = None
-        self.offboard_mode = PX4Drone.OffboardHeartbeatMode.VELOCITY
-        self._mode_mapping = None
-        self._listener_task = None
-        self._setpoint = (0.0, 0.0, 0.0, 0.0)
-        self._setpoint_task = None
+        self.ip = None
+        if "ip" in kwargs:
+            self.ip = kwargs["ip"]
+        # Create the drone object
+        self._drone = Drone(self.ip)
+        # Drone flight modes and setpoints
+        self._attitude_setpoint = None
+        self._velocity_setpoint = None
+        self._pid_task = None
+        self._mode = ParrotDrone.FlightMode.LOITER
 
     ''' Interface methods '''
     async def get_type(self):
-        return "PX4 Drone"
+        return "Parrot Drone"
 
     async def connect(self, connection_string):
         # Connect to drone
-        self.vehicle = mavutil.mavlink_connection(connection_string)
-        self.vehicle.wait_heartbeat()
-        self._mode_mapping = self.vehicle.mode_mapping()
-        
-        # Register telemetry streams
-        await self.register_telemetry_streams()
-        asyncio.create_task(self._message_listener())
+        return self._drone.connect()
         
     async def is_connected(self):
-        return self.vehicle is not None
+        return self._drone.connection_state()
 
     async def disconnect(self):
-        if self._listener_task:
-            self._listener_task.cancel()
-            await asyncio.sleep(0.1)
-
-        if self.vehicle:
-            self.vehicle.close()
+        self._drone.disconnect()
     
     async def take_off(self):
-        target_altitude = 3
-        await self._arm()
-        await self._switch_mode(PX4Drone.FlightMode.TAKEOFF)
-        
-        gps = self._get_global_position()
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0,
-            0, 0, 0, 0, gps['latitude'], gps['longitude'], gps['altitude'] + target_altitude)
-       
+        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        self._drone(TakeOff())
         result = await self._wait_for_condition(
-            lambda: self.is_mode_set(PX4Drone.FlightMode.LOITER),
+            lambda: self._drone(FlyingStateChanged(\
+                    state="hovering", _policy="check")\
+                    ).success(),
             interval=1
         )
-
-        self._setpoint_task = asyncio.create_task(self._setpoint_heartbeat())
-
+        
         if result:
             return common_protocol.ResponseStatus.OK
         else:
             return common_protocol.ResponseStatus.FAILED
 
     async def land(self):
-        await self._switch_mode(PX4Drone.FlightMode.LAND)
-
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system, self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_NAV_LAND,
-            0, 0, 0, 0, 0, 0, 0, 0)
-
-        result = await self._wait_for_condition(
-            lambda: self.is_disarmed(),
-            interval=1
-        )
+        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        result = self._drone(Landing()).wait().success()
         
         if result:
             return common_protocol.ResponseStatus.OK
@@ -118,17 +100,10 @@ class PX4Drone(QuadcopterItf):
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
-            1,
-            0, 0, 0, 0,
-            lat, lng, alt
-        )
 
         result = await self._wait_for_condition(
-            lambda: self.is_home_set(),
+            lambda: self._drone(set_custom_location(\
+                    lat, lng, alt)).wait().success(),
             timeout=5,
             interval=0.1
         )
@@ -139,32 +114,35 @@ class PX4Drone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
     
     async def rth(self):
-        if not await \
-                self._switch_mode(PX4Drone.FlightMode.RTL):
-            return
-
-        result = await self._wait_for_condition(
-            lambda: self.is_disarmed(),
-            interval=1
-        )
+        await self.hover()
+        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        self._drone(return_to_home())
         
-        if result:
-            return common_protocol.ResponseStatus.OK
-        else:
-            return common_protocol.ResponseStatus.FAILED
+        return common_protocol.ResponseStatus.OK
             
     async def set_velocity(self, velocity):
         forward_vel = velocity.forward_vel
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
         angle_vel = velocity.angle_vel
-        self.offboard_mode = \
-                PX4Drone.OffboardHeartbeatMode.VELOCITY 
-        if not self._setpoint_task:
-            self._setpoint_task = \
-                    asyncio.create_task(self._setpoint_heartbeat())
-        self._setpoint = (forward_vel, right_vel, up_vel, angle_vel) 
         
+        await self._switch_mode(ParrotDrone.FlightMode.VELOCITY)
+
+        # Check that the speeds is within the drone bounds
+        max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
+        max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
+
+        if abs(angle_vel) > max_rotation:
+            return common_protocol.ResponseStatus.FAILED
+        if abs(up_vel) > max_vertical_speed:
+            return common_protocol.ResponseStatus.FAILED
+
+        self._velocity_setpoint = \
+                (forward_vel, right_vel, up_vel, angle_vel)
+        if self._pid_task is None:
+            self._pid_task = asyncio.create_task(\
+                    self._velocityPID())
+
         return common_protocol.ResponseStatus.OK
 
     async def set_global_position(self, location):
@@ -174,13 +152,16 @@ class PX4Drone(QuadcopterItf):
         alt = location.altitude
         bearing = location.bearing
        
-        self.offboard_mode = \
-                PX4Drone.OffboardHeartbeatMode.GLOBAL
-        if not self._setpoint_task:
-            self._setpoint_task = \
-                    asyncio.create_task(self._setpoint_heartbeat())
-        self._setpoint = (lat, lon, alt, 0)
-
+        await self._switch_mode(ParrotDrone.FlightMode.GUIDED)
+        if bearing is None:
+            self._drone(
+                moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
+            )
+        else:
+            self._drone(
+                moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, bearing)
+            )
+        
         result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
             interval=1
@@ -192,30 +173,6 @@ class PX4Drone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def set_heading(self, location):
-        lat = location.latitude
-        lon = location.longitude
-        bearing = location.bearing
-        # Calculate bearing if not provided
-        current_location = self._get_global_position()
-        current_lat = current_location["latitude"]
-        current_lon = current_location["longitude"]
-        if bearing is None:
-            bearing = self.calculate_bearing(\
-                    current_lat, current_lon, lat, lon)
-        yaw_speed = 25
-        direction = 0
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-            0,
-            bearing,
-            yaw_speed,
-            direction,
-            0,
-            0, 0, 0
-        )
-        
         result =  await self._wait_for_condition(
             lambda: self._is_bearing_reached(bearing),
             interval=0.5
@@ -264,35 +221,6 @@ class PX4Drone(QuadcopterItf):
         return common_protocol.ResponseStatus.NOTSUPPORTED
     
     ''' Connect methods '''
-    async def register_telemetry_streams(self, frequency_hz: float = 10.0):
-        # Define the telemetry message names
-        telemetry_message_names = [
-            "HEARTBEAT",
-            "GLOBAL_POSITION_INT",
-            "ATTITUDE",
-            "RAW_IMU",
-            "BATTERY_STATUS",
-            "GPS_RAW_INT",
-            "VFR_HUD",
-            "LOCAL_POSITION_NED",
-            "RC_CHANNELS",
-        ]
-
-        logger.info(f"Registering telemetry streams at {frequency_hz} Hz...")
-        for message_name in telemetry_message_names:
-            try:
-                message_id = getattr(mavutil.mavlink, f"MAVLINK_MSG_ID_{message_name}", None)
-                if message_id is None:
-                    logger.warning(f"Message name {message_name} is not found in MAVLink definitions.")
-                    continue
-
-                # Request the message interval
-                self._request_message_interval(message_id, frequency_hz)
-                logger.info(f"Registered telemetry stream: {message_name} (ID: {message_id})")
-
-            except Exception as e:
-                logger.error(f"Failed to register telemetry stream {message_name}: {e}")
-
     def _request_message_interval(self, message_id: int, frequency_hz: float):
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system, self.vehicle.target_component,
@@ -308,40 +236,25 @@ class PX4Drone(QuadcopterItf):
         return self.drone_id
 
     def _get_global_position(self):
-        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
-        if not gps_msg:
+        try:
+            return (self.drone.get_state(GpsLocationChanged)["latitude"],
+                self.drone.get_state(GpsLocationChanged)["longitude"],
+                self.drone.get_state(GpsLocationChanged)["altitude"])
+        except Exception:
             return None
-        return {
-            "latitude": gps_msg.lat / 1e7,
-            "longitude": gps_msg.lon / 1e7,
-            "altitude": gps_msg.alt / 1e3
-        }
 
     def _get_altitude_rel(self):
-        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
-        if not gps_msg:
-            return None
-        return gps_msg.relative_alt / 1e3
+        return self.drone.get_state(AltitudeChanged)["altitude"]
 
     def _get_attitude(self):
-        attitude_msg = self._get_cached_message("ATTITUDE")
-        if not attitude_msg:
-            return None
-        return {
-            "roll": attitude_msg.roll,
-            "pitch": attitude_msg.pitch,
-            "yaw": attitude_msg.yaw
-        }
+        att = self.drone.get_state(AttitudeChanged)
+        rad_to_deg = 180 / math.pi
+        return {"roll": att["roll"] * rad_to_deg, \
+                "pitch": att["pitch"] * rad_to_deg, \
+                "yaw": att["yaw"] * rad_to_deg}
 
     def _get_magnetometer(self):
-        imu_msg = self._get_cached_message("RAW_IMU")
-        if not imu_msg:
-            return {"x": None, "y": None, "z": None}
-        return {
-            "x": imu_msg.xmag,
-            "y": imu_msg.ymag,
-            "z": imu_msg.zmag
-        }
+        return common_protocol.ResponseStatus.NOTSUPPORTED
 
     def _get_battery_percentage(self):
         battery_msg = self._get_cached_message("BATTERY_STATUS")
@@ -350,42 +263,43 @@ class PX4Drone(QuadcopterItf):
         return battery_msg.battery_remaining
 
     def _get_satellites(self):
-        satellites_msg = self._get_cached_message("GPS_RAW_INT")
-        if not satellites_msg:
+        try:
+            return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+        except:
             return None
-        return satellites_msg.satellites_visible
 
     def _get_heading(self):
-        heading_msg = self._get_cached_message("VFR_HUD")
-        if not heading_msg:
-            return None
-        return heading_msg.heading
+        return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
 
     def _get_velocity_neu(self):
-        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
-        if not gps_msg:
-            return None
-        return {
-            "forward": gps_msg.vx / 100,
-            "right": gps_msg.vy / 100,
-            "up": gps_msg.vz / 100
-        }
+        ned = self.drone.get_state(SpeedChanged)
+        return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"] * -1}
         
     def _get_velocity_body(self):
-        velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
-        if not velocity_msg:
-            return None
-        return {
-            "vx": velocity_msg.vx,  # Body-frame X velocity in m/s
-            "vy": velocity_msg.vy,  # Body-frame Y velocity in m/s
-            "vz": velocity_msg.vz   # Body-frame Z velocity in m/s
-        }
+        neu = await self._get_velocity_neu()
+        vec = np.array([neu["north"], neu["east"]], \
+                dtype=float)
+        vecf = np.array([0.0, 1.0], dtype=float)
+
+        hd = (await self.getHeading()) + 90
+        fw = np.radians(hd)
+        c, s = np.cos(fw), np.sin(fw)
+        R1 = np.array(((c, -s), (s, c)))
+        vecf = np.dot(R1, vecf)
+
+        vecr = np.array([0.0, 1.0], dtype=float)
+        rt = np.radians(hd + 90)
+        c, s = np.cos(rt), np.sin(rt)
+        R2 = np.array(((c,-s), (s, c)))
+        vecr = np.dot(R2, vecr)
+
+        res = {"forward": np.dot(vec, vecf) * -1, \
+                "right": np.dot(vec, vecr) * -1, \
+                "up": NEU["up"]}
+        return res
 
     def _get_rssi(self):
-        rssi_msg = self._get_cached_message("RC_CHANNELS")
-        if not rssi_msg:
-            return None
-        return rssi_msg.rssi
+        return self.drone.get_state(rssi_changed)["rssi"]
 
     ''' Coroutine methods '''
     async def _setpoint_heartbeat(self):
@@ -513,19 +427,7 @@ class PX4Drone(QuadcopterItf):
             logger.info(f"Priming for OFFBOARD mode")
             return True
         
-    ''' ACK methods'''    
-    def _is_armed(self):
-        return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & \
-                mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
-        
-    def _is_disarmed(self):
-        return not (self.vehicle.recv_match(type='HEARTBEAT', blocking=True).base_mode & \
-                mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
-
-    def _is_mode_set(self, mode):
-        current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
-        return current_mode == mode.value
-    
+    ''' ACK methods '''    
     def _is_home_set(self):
         msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
         return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME \
@@ -609,3 +511,86 @@ class PX4Drone(QuadcopterItf):
                 logger.error("-- Timeout waiting for condition")
                 return False
             await asyncio.sleep(interval)
+
+
+# Streaming imports
+import threading
+import queue
+
+class PDRAWStreamingThread(threading.Thread):
+
+    def __init__(self, drone, ip):
+        threading.Thread.__init__(self)
+        self._drone = drone
+        self._frame_queue = queue.Queue()
+        self._current_frame = np.zeros((720, 1280, 3), np.uint8)
+
+        self.drone.streaming.set_callbacks(
+            raw_cb=self._yuv_frame_callback,
+            h264_cb=self._h264_frame_callback,
+            start_cb=self._start_callback,
+            end_cb=self._end_callback,
+            flush_raw_cb=self._flush_callback,
+        )
+
+    def run(self):
+        self.is_running = True
+        self._drone.streaming.start()
+
+        while self.is_running:
+            try:
+                yuv_frame = self._frame_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            self._copy_frame(yuv_frame)
+            yuv_frame.unref()
+
+    def _grab_frame(self):
+        try:
+            frame = self._current_frame.copy()
+            return frame
+        except Exception as e:
+            logger.error(f"Sending blank frame, encountered exception: {e}")
+            # Send a blank frame
+            return np.zeros((720, 1280, 3), np.uint8)
+
+    def _copy_frame(self, yuv_frame):
+        info = yuv_frame.info()
+
+        height, width = (  # noqa
+            info["raw"]["frame"]["info"]["height"],
+            info["raw"]["frame"]["info"]["width"],
+        )
+
+        cv2_cvt_color_flag = {
+            olympe.VDEF_I420: cv2.COLOR_YUV2BGR_I420,
+            olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
+        }[yuv_frame.format()]
+
+        self._current_frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+
+    '''Olympe callbacks'''
+    def _yuv_frame_callback(self, yuv_frame):
+        yuv_frame.ref()
+        self._frame_queue.put_nowait(yuv_frame)
+
+    def _flush_callback(self, stream):
+        if stream["vdef_format"] != olympe.VDEF_I420:
+            return True
+        while not self._frame_queue.empty():
+            self._frame_queue.get_nowait().unref()
+        return True
+
+    def _start_callback(self):
+        pass
+
+    def _end_callback(self):
+        pass
+
+    def _h264_frame_callback(self, h264_frame):
+        pass
+
+    def stop(self):
+        self.is_running = False
+        # Properly stop the video stream and disconnect
+        assert self._drone.streaming.stop()

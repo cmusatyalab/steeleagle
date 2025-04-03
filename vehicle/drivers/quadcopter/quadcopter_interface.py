@@ -1,11 +1,9 @@
 # General imports
 from abc import ABC, abstractmethod
 import asyncio
-# Import SteelEagle protocol
-from protocol.steeleagle import dataplane_pb2 as data_protocol
-from protocol.steeleagle import controlplane_pb2 as control_protocol
-from protocol.steeleagle import common_pb2 as common_protocol
-# Import ZeroMQ bindings
+# Protocol imports
+from protocol import common_pb2 as common_protocol
+# ZeroMQ binding imports
 import zmq
 import zmq.asyncio
 
@@ -14,9 +12,8 @@ class QuadcopterItf(ABC):
     Interface file that describes the quadcopter control API.
     All SteelEagle compatible drones must implement a subset of
     this API to function with the driver module. For unimplemented
-    methods, drones are expected to reply using 
-    :class:`steeleagle.controlplane.Response` with the value of
-    :class:`steeleagle.common.ResponseStatus` set to NOTIMPLEMENTED (3).
+    methods, drones are expected to reply with 
+    :class:`protocol.common.ResponseStatus` set to NOTSUPPORTED (3).
     """
 
     @abstractmethod
@@ -59,72 +56,72 @@ class QuadcopterItf(ABC):
         pass
 
     @abstractmethod
-    async def take_off(self) -> control_protocol.Response:
+    async def take_off(self) -> common_protocol.ResponseStatus:
         """
         Arms the drone (if necessary) and instructs it to take off.
 
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def land(self) -> control_protocol.Response:
+    async def land(self) -> common_protocol.ResponseStatus:
         """
         Instructs the drone to land and disarm.
 
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def hover(self) -> control_protocol.Response:
+    async def hover(self) -> common_protocol.ResponseStatus:
        """
        Instructs the drone to hover in place.
 
        :return: A response object indicating success or failure
-       :rtype: :class:`steeleagle.controlplane.Response`
+       :rtype: :class:`protocol.common.ResponseStatus`
        """
        pass
    
     @abstractmethod
-    async def kill(self) -> control_protocol.Response:
+    async def kill(self) -> common_protocol.ResponseStatus:
         """
         Instructs the drone to enter a fail-safe state, which may include
         shutting down motors or entering a controlled descent.
 
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_home(self, loc: common_protocol.Location) -> control_protocol.Response:
+    async def set_home(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
         Sets the home (return-to-home) destination for the drone, using
         a protobuf-based Location message.
 
         :param loc: The desired home location, containing lat, lng, and alt
-        :type loc: :class:`steeleagle.common.Location
+        :type loc: :class:`protocol.common.Location
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def rth(self) -> control_protocol.Response:
+    async def rth(self) -> common_protocol.ResponseStatus:
         """
         Commands the drone to return to its previously set home location, following
         the specified behavior configured on the drone's autopilot.
 
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_velocity(self, vel: common_protocol.Velocity) -> control_protocol.Response:
+    async def set_velocity(self, vel: common_protocol.Velocity) -> common_protocol.ResponseStatus:
         """
         Sets the drone's velocity using a protobuf-based Velocity message.
 
@@ -133,14 +130,14 @@ class QuadcopterItf(ABC):
         second.
 
         :param vel: The target velocity in each axis plus angular velocity
-        :type vel: :class:`steeleagle.common.Velocity`
+        :type vel: :class:`protocol.common.Velocity`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_global_position(self, loc: common_protocol.Location) -> control_protocol.Response:
+    async def set_global_position(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
         Commands the drone to move to a specific global location (lat/lng/alt).
 
@@ -150,28 +147,28 @@ class QuadcopterItf(ABC):
         before moving.
 
         :param loc: The desired GPS location, including latitude, longitude, altitude
-        :type loc: :class:`steeleagle.common.Location
+        :type loc: :class:`protocol.common.Location
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_relative_position(self, pos: common_protocol.Position) -> control_protocol.Response:
+    async def set_relative_position(self, pos: common_protocol.Position) -> common_protocol.ResponseStatus:
         """
         Sets a target position for the drone relative to its initial (takeoff) point,
         in meters. The Position message can include north, east, up, and bearing
         components.
 
         :param pos: The relative position offsets plus bearing
-        :type pos: :class:`steeleagle.common.Position`
+        :type pos: :class:`protocol.common.Position`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_heading(self, loc: common_protocol.Location) -> control_protocol.Response:
+    async def set_heading(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
         Sets the heading of the drone to face a provided global position or absolute
         bearing.
@@ -181,21 +178,21 @@ class QuadcopterItf(ABC):
         drone will turn to face that bearing.
         
         :param loc: The target global position or heading to face
-        :type loc: :class:`steeleagle.common.Location`
+        :type loc: :class:`protocol.common.Location`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
     @abstractmethod
-    async def set_gimbal_pose(self, pose: common_protocol.Pose) -> control_protocol.Response:
+    async def set_gimbal_pose(self, pose: common_protocol.Pose) -> common_protocol.ResponseStatus:
         """
         Sets the gimbal pose of the drone, if it has a gimbal.
 
         :param pose: The target pose of the gimbal
-        :type pose: :class:`steeleagle.common.Pose`
+        :type pose: :class:`protocol.common.Pose`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
 
@@ -213,7 +210,7 @@ class QuadcopterItf(ABC):
         :param tel_sock: ZeroMQ asynchronous socket to which telemetry messages are sent
         :type tel_sock: :class:`zmq.asyncio.Socket`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
     
@@ -231,7 +228,6 @@ class QuadcopterItf(ABC):
         :param cam_sock: ZeroMQ asynchronous socket to which frames are sent
         :type cam_sock: :class:`zmq.asyncio.Socket`
         :return: A response object indicating success or failure
-        :rtype: :class:`steeleagle.controlplane.Response`
+        :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
-
