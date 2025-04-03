@@ -1,3 +1,4 @@
+import common
 import time
 import zmq
 import zmq.asyncio
@@ -17,8 +18,7 @@ from kernel.Service import Service
 import sys
 
 # Set up logging
-logging_format = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO), format=logging_format)
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO), format=common.logging_format)
 logger = logging.getLogger(__name__)
 
 if os.environ.get("LOG_TO_FILE") == "true":

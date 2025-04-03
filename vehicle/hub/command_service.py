@@ -1,3 +1,4 @@
+import common
 from enum import Enum
 import json
 import sys
@@ -14,7 +15,7 @@ from util.utils import SocketOperation
 
 # Configure logger
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+                    format=common.logging_format)
 logger = logging.getLogger(__name__)
 
 class CommandService(Service):
