@@ -13,7 +13,9 @@ import logging
 from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
-from cnc_protocol import cnc_pb2
+from protocol.steeleagle import controlplane_pb2 as cnc_protocol
+from protocol.steeleagle import dataplane_pb2 as data_protocol
+from protocol.steeleagle import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
