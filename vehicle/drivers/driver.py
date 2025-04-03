@@ -5,9 +5,9 @@ import json
 import os
 import asyncio
 import logging
-import protocol.steeleagle.controlplane_pb2 as control_protocol
-import protocol.steeleagle.common_pb2 as common_protocol
-import protocol.steeleagle.dataplane_pb2 as data_protocol
+import protocol.controlplane_pb2 as control_protocol
+import protocol.common_pb2 as common_protocol
+import protocol.dataplane_pb2 as data_protocol
 from util.utils import setup_socket, SocketOperation
 from google.protobuf.timestamp_pb2 import Timestamp
 

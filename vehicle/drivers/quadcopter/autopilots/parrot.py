@@ -77,7 +77,7 @@ class ParrotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -86,7 +86,7 @@ class ParrotDrone(QuadcopterItf):
         result = self._drone(Landing()).wait().success()
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -109,7 +109,7 @@ class ParrotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
     
@@ -118,7 +118,7 @@ class ParrotDrone(QuadcopterItf):
         await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
         self._drone(return_to_home())
         
-        return common_protocol.ResponseStatus.OK
+        return common_protocol.ResponseStatus.COMPLETED
             
     async def set_velocity(self, velocity):
         forward_vel = velocity.forward_vel
@@ -143,7 +143,7 @@ class ParrotDrone(QuadcopterItf):
             self._pid_task = asyncio.create_task(\
                     self._velocityPID())
 
-        return common_protocol.ResponseStatus.OK
+        return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
         await self.set_bearing(location)
@@ -168,7 +168,7 @@ class ParrotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -179,7 +179,7 @@ class ParrotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 

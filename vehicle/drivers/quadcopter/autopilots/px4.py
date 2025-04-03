@@ -86,7 +86,7 @@ class PX4Drone(QuadcopterItf):
         self._setpoint_task = asyncio.create_task(self._setpoint_heartbeat())
 
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -104,7 +104,7 @@ class PX4Drone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -134,7 +134,7 @@ class PX4Drone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
     
@@ -149,7 +149,7 @@ class PX4Drone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
             
@@ -165,7 +165,7 @@ class PX4Drone(QuadcopterItf):
                     asyncio.create_task(self._setpoint_heartbeat())
         self._setpoint = (forward_vel, right_vel, up_vel, angle_vel) 
         
-        return common_protocol.ResponseStatus.OK
+        return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
         await self.set_bearing(location)
@@ -187,7 +187,7 @@ class PX4Drone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -222,7 +222,7 @@ class PX4Drone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 

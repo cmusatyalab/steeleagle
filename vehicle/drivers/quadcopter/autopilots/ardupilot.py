@@ -78,12 +78,11 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-
+    
     async def land(self):
-        logger.info("-- Landing")
         if not await \
                 self._switch_mode(ArdupilotDrone.FlightMode.LAND):
             return common_protocol.ResponseStatus.FAILED
@@ -94,7 +93,7 @@ class ArdupilotDrone(QuadcopterItf):
             interval=1
         )
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:   
             return common_protocol.ResponseStatus.FAILED
     
@@ -103,7 +102,7 @@ class ArdupilotDrone(QuadcopterItf):
                 self._switch_mode(ArdupilotDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
         else:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
     
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -125,7 +124,7 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
     
@@ -141,7 +140,7 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:   
             return common_protocol.ResponseStatus.FAILED
     
@@ -166,7 +165,7 @@ class ArdupilotDrone(QuadcopterItf):
             float('nan'), angular_vel
         )
         
-        return common_protocol.ResponseStatus.OK
+        return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
         await self.set_bearing(location)
@@ -200,7 +199,7 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if result:  
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:  
             return common_protocol.ResponseStatus.FAILED
 
@@ -248,7 +247,7 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if  result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
         
@@ -283,7 +282,7 @@ class ArdupilotDrone(QuadcopterItf):
         )
         
         if  result:
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
@@ -449,7 +448,6 @@ class ArdupilotDrone(QuadcopterItf):
 
     ''' Actuation methods '''    
     async def _arm(self):
-        logger.info("-- Arming")
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
@@ -458,8 +456,6 @@ class ArdupilotDrone(QuadcopterItf):
             1,
             0, 0, 0, 0, 0, 0
         )
-        logger.info("-- Arm command sent")
-
 
         result =  await self._wait_for_condition(
             lambda: self._is_armed(),
@@ -467,10 +463,6 @@ class ArdupilotDrone(QuadcopterItf):
             interval=1
         )
         
-        if result:
-            logger.info("-- Armed OKfully")
-        else:
-            logger.error("-- Arm failed")
         return result
 
     async def _disarm(self):
@@ -493,25 +485,20 @@ class ArdupilotDrone(QuadcopterItf):
         
         if result:
             self.mode = None
-            logger.info("-- disarmed OKfully")
         else:
-            logger.error("-- disarm failed")
+            return False
             
-        return result
+        return True
     
     async def _switch_mode(self, mode):
-        logger.info(f"Switching mode to {mode}")
         mode_target = mode.value
         curr_mode = self.mode.value if self.mode else None
-        logger.info(f"mode map: {self._mode_mapping}, target mode: {mode_target}, current mode: {curr_mode}")
         
         if self.mode == mode:
-            logger.info(f"Already in mode {mode_target}")
             return True
         
         # Switch mode
         if mode_target not in self._mode_mapping:
-            logger.info(f"Mode {mode_target} not supported!")
             return False
         
         mode_id = self._mode_mapping[mode_target]
@@ -529,7 +516,6 @@ class ArdupilotDrone(QuadcopterItf):
         
         if result:
             self.mode = mode
-            logger.info(f"Mode switched to {mode_target}")
         
         return result
            

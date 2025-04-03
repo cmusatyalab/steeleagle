@@ -8,9 +8,9 @@ import pytest
 import numpy as np
 import math
 # Import SteelEagle protocol
-from protocol.steeleagle import dataplane_pb2 as data_protocol
-from protocol.steeleagle import controlplane_pb2 as control_protocol
-from protocol.steeleagle import common_pb2 as common_protocol
+from protocol import dataplane_pb2 as data_protocol
+from protocol import controlplane_pb2 as control_protocol
+from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == common_protocol.ResponseStatus.OK
+        assert status == common_protocol.ResponseStatus.COMPLETED
         
         sequence_counter["value"] += 1
         
@@ -156,7 +156,7 @@ class TestSuiteClass:
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == common_protocol.ResponseStatus.OK
+            assert status == common_protocol.ResponseStatus.COMPLETED
             sequence_counter["value"] += 1  
     
     @pytest.mark.order(3)    
@@ -227,7 +227,7 @@ class TestSuiteClass:
             logger.info(f"Received response with seqNum: {seq_num}")
             assert seq_num == sequence_counter["value"]
             logger.info(f"Status: {status}")
-            assert status == common_protocol.ResponseStatus.OK
+            assert status == common_protocol.ResponseStatus.COMPLETED
 
             
             await asyncio.sleep(10)
@@ -282,7 +282,7 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {driver_rep.resp}")
-        assert status == common_protocol.ResponseStatus.OK
+        assert status == common_protocol.ResponseStatus.COMPLETED
         sequence_counter["value"] += 1
         
     @pytest.mark.order(8)        
@@ -305,6 +305,6 @@ class TestSuiteClass:
         logger.info(f"Received response with seqNum: {seq_num}")
         assert seq_num == sequence_counter["value"]
         logger.info(f"Status: {status}")
-        assert status == common_protocol.ResponseStatus.OK
+        assert status == common_protocol.ResponseStatus.COMPLETED
         sequence_counter["value"] += 1
         

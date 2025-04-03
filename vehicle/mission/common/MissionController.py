@@ -13,7 +13,8 @@ import logging
 from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
-from cnc_protocol import cnc_pb2
+from protocol import controlplane_pb2 as control_protocol
+from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -160,35 +161,47 @@ class MissionController():
                 logger.info(f"Received raw message: {message}")
                 
                 # Parse the message
-                mission_command = cnc_pb2.Mission()
-                mission_command.ParseFromString(message)
+                req = control_protocol.Request()
+                req.ParseFromString(message)
+                if not req.HasField("msn"):
+                    logger.info("Received message without mission field, ignoring")
+                    return
+                
+                mission_command = req.msn.WhichOneof("param")
+                logger.info(f"man_control: {mission_command}")
                 logger.info(f"Parsed Command: {mission_command}")
+                resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
                 
-                if mission_command.downloadMission:
-                    self.download_mission(mission_command.downloadMission)
-                    response = "Mission downloaded"
+                if mission_command == control_protocol.MissionAction.DOWNLOAD:
+                    url  = message.msn.url
+                    self.download_mission(url)
+                    resp = common_protocol.ResponseStatus.COMPLETED
                 
-                elif mission_command.startMission:
+                elif mission_command == control_protocol.MissionAction.START:
                     self.start_mission()
-                    response = "Mission started"
+                    resp = common_protocol.ResponseStatus.COMPLETED
                     
-                elif mission_command.stopMission:
+                elif mission_command == control_protocol.MissionAction.STOP:
                     await self.end_mission()
-                    response = "Mission stopped"
+                    resp = common_protocol.ResponseStatus.COMPLETED
                     
                 else:
-                    response = "Unknown command"
-
-                # Send a reply back to the client
-                self.msn_sock.send_string(response)
+                    resp = common_protocol.ResponseStatus.NOTSUPPORTED
                 
             except zmq.Again:
                 pass
                 
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
-                self.msn_sock.send_string("Error processing command")
+                resp = common_protocol.ResponseStatus.FAILED
+                
+            # Send a reply back to the client
+            rep = control_protocol.Response()
+            rep.resp = resp
+            rep.timestamp.GetCurrentTime()
+            rep.seq_num = req.seq_num
             
+            self.msn_sock.send(rep.SerializeToString())
             await asyncio.sleep(0)
             
             
