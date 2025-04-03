@@ -79,11 +79,11 @@ message Frame {
 * COMPUTE
 */
 message GetComputeResult {
-  string result_key = 1;
+  required string key = 1;
 }
 
 message ComputeResult {
-  string result_key = 1;
+  required string key = 1;
   int64 frame_id = 2; //for correlation
   google.protobuf.Timestamp timestamp = 3;// time the response was sent
   oneof type {

@@ -6,10 +6,13 @@ import asyncio
 import logging
 import os
 import zmq
-from cnc_protocol import cnc_pb2
 from util.utils import setup_socket
 from util.utils import SocketOperation
 from enum import Enum
+from protocol import controlplane_pb2 as control_protocol
+from protocol import dataplane_pb2 as data_protocol
+from protocol import common_pb2 as common_protocol
+from google.protobuf.field_mask_pb2 import FieldMask
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,15 +44,15 @@ class ComputeRespond:
         
 class ComputeStub():
     def __init__(self):
-        self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
-        self.seqNum_res = {}
+        self.seq_num = 1 # set the initial seq_num to 1 caz cnc proto does not support to show 0
+        self.seq_num_res = {}
     
     def sender(self, request, computeRespond):
-        seqNum = self.seqNum
-        logger.info(f"Sending request with seqNum: {seqNum}")
-        request.seqNum = seqNum
-        self.seqNum += 1
-        self.seqNum_res[seqNum] = computeRespond
+        seq_num = self.seq_num
+        logger.info(f"Sending request with seq_num: {seq_num}")
+        request.seq_num = seq_num
+        self.seq_num += 1
+        self.seq_num_res[seq_num] = computeRespond
         serialized_request = request.SerializeToString()
         cpt_usr_sock.send_multipart([serialized_request])
     
@@ -62,42 +65,30 @@ class ComputeStub():
         data_rep = None
 
         # Try parsing as Compute first
-        data_rep = cnc_pb2.Compute()
+        data_rep = data_protocol.Response()
         data_rep.ParseFromString(response)
 
-        if data_rep.seqNum == 0: # not the cpt reply
-            logger.info("Response does not look like Compute. Trying Driver parsing...")
-            try:
-                data_rep = cnc_pb2.Driver()
-                data_rep.ParseFromString(response)
-                logger.info(f"Parsed response as Driver: {data_rep}")
-            except Exception as e:
-                logger.error(f"Failed to parse response as Driver: {e}")
-                return  # Exit function if both attempts fail
-
-        seqNum = data_rep.seqNum
-        if seqNum not in self.seqNum_res:
-            logger.error(f"Received response with unknown seqNum: {seqNum}")
+        seq_num = data_rep.seq_num
+        if seq_num not in self.seq_num_res:
+            logger.error(f"Received response with unknown seq_num: {seq_num}")
             return
 
-        computeRespond = self.seqNum_res.pop(seqNum)
+        data_res_type = data_rep.WhichOneof("type")
+        data_res_status = data_rep.resp
+        data_res_time = data_rep.timestamp
+    
+        computeRespond = self.seq_num_res[seq_num]
 
-        status = getattr(data_rep, "resp", None)
-        if status == cnc_pb2.ResponseStatus.FAILED:
+
+        if data_res_status == common_protocol.ResponseStatus.FAILED:
             logger.error("STAGE 2: FAILED")
-        elif status == cnc_pb2.ResponseStatus.COMPLETED:
+        elif data_res_status == common_protocol.ResponseStatus.COMPLETED:
             logger.info("STAGE 2: COMPLETED")
-
-        if hasattr(data_rep, 'getter') and hasattr(data_rep.getter, 'result'):
-            logger.info("cpt rep")
-            computeRespond.putResult(data_rep.getter.result)
-        elif hasattr(data_rep, 'getTelemetry'):
-            logger.info("tel rep")
-            computeRespond.putResult(data_rep.getTelemetry)
-        else:
-            logger.warning("Received response but could not determine type")
+        
+            computeRespond.putResult(data_rep)
 
         computeRespond.set()
+        
 
     
     async def run(self):
@@ -121,26 +112,28 @@ class ComputeStub():
         return computeRespond.getResult()
     
     # Get results for a compute engine
-    async def getResults(self, compute_type):
-        logger.info(f"Getting results for compute type: {compute_type}")
-        cpt_req = cnc_pb2.Compute()
-        cpt_req.getter.compute_type = compute_type
-        
+    async def getResults(self, compute_key):
+        logger.info(f"Getting results for compute type: {compute_key}")
+        cpt_req = data_protocol.Request()
+        cpt_req.cpt.result_key = compute_key
         result = await self.send_and_wait(cpt_req)
         return result
     
-    async def clearResults(self):
+    async def clearResults(self, compute_key):
         logger.info("Clearing results")
-        cpt_req = cnc_pb2.Compute()
-        cpt_req.clear = True
+        cpt_req = control_protocol.Request()
+        cpt_req.cpt.key = compute_key
+        cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR
         await self.send_and_wait(cpt_req)
 
 
     ''' Telemetry methods '''
     async def getTelemetry(self):
         logger.info("Getting telemetry")
-        request = cnc_pb2.Driver(getTelemetry=cnc_pb2.Telemetry())
-        result = await self.send_and_wait(request)
+        request = data_protocol.Request()
+        request.tel.field_mask = FieldMask()
+        rep = await self.send_and_wait(request)
+        result = rep.tel
         telDict = {
             "name": None,
             "battery": None,

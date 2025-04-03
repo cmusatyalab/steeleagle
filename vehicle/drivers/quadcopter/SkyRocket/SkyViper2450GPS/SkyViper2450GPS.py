@@ -6,9 +6,9 @@ import asyncio
 import logging
 from pymavlink import mavutil
 from quadcopter.quadcopter_interface import QuadcopterItf
-from protocol.steeleagle import controlplane_pb2 as cnc_protocol
-from protocol.steeleagle import dataplane_pb2 as data_protocol
-import protocol.steeleagle.common_pb2 as common_protocol
+from protocol import controlplane_pb2 as cnc_protocol
+from protocol import dataplane_pb2 as data_protocol
+from protocol import common_pb2 as common_protocol
 
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
             )
             if result:
                 logger.info("-- Altitude reached")
-                return common_protocol.ResponseStatus.OK
+                return common_protocol.ResponseStatus.COMPLETED
             else:
                 logger.error("-- Failed to reach target altitude")
                 return common_protocol.ResponseStatus.FAILED
@@ -111,7 +111,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         if result:
             logger.info("-- Landed and disarmed")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:   
             logger.error("-- Landing failed")
             return common_protocol.ResponseStatus.FAILED
@@ -123,7 +123,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
         else:
             logger.info("-- Hovering")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
     
     async def kill(self):
         logger.info("-- Killing drone")
@@ -150,7 +150,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:
             logger.info("-- Home location set OKfully")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             logger.error("-- Failed to set home location")
             return common_protocol.ResponseStatus.FAILED
@@ -169,7 +169,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:
             logger.info("-- Returned to launch and disarmed")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:   
             logger.error("-- RTL failed")
             return common_protocol.ResponseStatus.FAILED
@@ -197,7 +197,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         )
         logger.info("-- setVelocity sent")
         #  continuous control: no blocking wait
-        return common_protocol.ResponseStatus.OK
+        return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
         lat = location.latitude
@@ -241,7 +241,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if result:  
             logger.info("-- Reached target GPS location")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:  
             logger.info("-- Failed to reach target GPS location")
             return common_protocol.ResponseStatus.FAILED
@@ -292,7 +292,7 @@ class SkyViper2450GPSDrone(QuadcopterItf):
         
         if  result:
             logger.info("-- Reached target translated location")
-            return common_protocol.ResponseStatus.OK
+            return common_protocol.ResponseStatus.COMPLETED
         else:
             logger.error("-- Failed to reach target translated location")
             return common_protocol.ResponseStatus.FAILED

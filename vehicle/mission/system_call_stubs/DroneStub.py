@@ -2,10 +2,11 @@ import asyncio
 import logging
 import os
 import zmq
-from cnc_protocol import cnc_pb2
 from enum import Enum
 from util.utils import setup_socket
 from util.utils import SocketOperation
+from protocol import controlplane_pb2 as control_protocol
+from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -47,43 +48,40 @@ class DroneStub:
 
     ######################################################## Common ############################################################
     def __init__(self):
-        self.seqNum = 1 # set the initial seqNum to 1 caz cnc proto does not support to show 0
-        self.seqNum_res = {}
+        self.seq_num = 1 # set the initial seq_num to 1 caz cnc proto does not support to show 0
+        self.request_map = {}
 
     def sender(self, request, driverRespond):
-        seqNum = self.seqNum
-        logger.info(f"Sending request with seqNum: {seqNum}")
-        request.seqNum = seqNum
-        self.seqNum += 1
-        self.seqNum_res[seqNum] = driverRespond
+        seq_num = self.seq_num
+        logger.info(f"Sending request with seq_num: {seq_num}")
+        request.seq_num = seq_num
+        self.seq_num += 1
+        self.request_map[seq_num] = driverRespond
         serialized_request = request.SerializeToString()
         cmd_front_usr_sock.send_multipart([serialized_request])
 
     def receiver(self, response_parts):
         response = response_parts[0]
-        driver_rep = cnc_pb2.Driver()
+        driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response)
-        seqNum = driver_rep.seqNum
-        driverRespond = self.seqNum_res[seqNum]
+        seq_num = driver_rep.seq_num
+        driverRespond = self.request_map[seq_num]
 
         if not driverRespond:
-            logger.warning("Unrecognized seqNum")
+            logger.warning("Unrecognized seq_num")
             return
 
         status = driver_rep.resp
-        if status == cnc_pb2.ResponseStatus.OK:
+        if status == control_protocol.ResponseStatus.OK:
             logger.info("STAGE 1: OK")
-        elif status == cnc_pb2.ResponseStatus.NOTSUPPORTED:
+        elif status == control_protocol.ResponseStatus.NOTSUPPORTED:
             logger.info("STAGE 1: NOTSUPPORTED")
             driverRespond.set()
-        elif status == cnc_pb2.ResponseStatus.DENIED:
-            logger.info("STAGE 1: DENIED")
+        elif status == control_protocol.ResponseStatus.FAILED:
+            logger.error("STAGE 2: FAILED")
             driverRespond.set()
-        else:
-            if status == cnc_pb2.ResponseStatus.FAILED:
-                logger.error("STAGE 2: FAILED")
-            elif status == cnc_pb2.ResponseStatus.COMPLETED:
-                logger.info("STAGE 2: COMPLETED")    
+        elif status == control_protocol.ResponseStatus.COMPLETED:
+            logger.info("STAGE 2: COMPLETED")    
             driverRespond.grantPermission()
             driverRespond.putResult(driver_rep)
             driverRespond.set()   
@@ -108,115 +106,64 @@ class DroneStub:
         self.sender(request, driverRespond)
         await driverRespond.wait()
         return driverRespond.getResult() if driverRespond.checkPermission() else None
-    
-    ''' Preemptive methods '''
+   
+    ''' Vehicle methods '''
     async def takeOff(self):
         logger.info("takeOff")
-        request = cnc_pb2.Driver(takeOff=True)
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.TAKEOFF
         result = await self.send_and_wait(request)
-        return result.takeOff if result else False
+        return result.resp if result else False
 
     async def land(self):
         logger.info("land")
-        request = cnc_pb2.Driver(land=True)
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.LAND
         result = await self.send_and_wait(request)
-        return result.land if result else False
+        return result.resp if result else False
 
     async def rth(self):
         logger.info("rth")
-        request = cnc_pb2.Driver(rth=True)
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.RTH
         result = await self.send_and_wait(request)
-        return result.rth if result else False
+        return result.resp if result else False
     
     async def hover(self):
         logger.info("hover")
-        request = cnc_pb2.Driver(hover=True)
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
-        return result.hover if result else False
+        return result.resp if result else False
 
-    ''' Location methods '''
-    async def setHome(self, name, lat, lng, alt):
-        logger.info("setHome")
-        location = cnc_pb2.Location(name=name, latitude=lat, longitude=lng, altitude=alt)
-        request = cnc_pb2.Driver(setHome=location)
-        result = await self.send_and_wait(request)
-        return result.setHome if result else False
-
-    async def getHome(self):
-        pass
-    
-        # logger.info("getHome")
-        # request = cnc_pb2.Driver(getHome=cnc_pb2.Location())
-        # result = await self.send_and_wait(request)
-        # if result:
-        #     return [result.getHome.name, result.getHome.lat, result.getHome.lng, result.getHome.alt]
-        # else:
-        #     return False
-
-    ''' Attitude methods '''
-    async def setAttitude(self, yaw, pitch, roll, thrust):
-        logger.info("setAttitude")
-        attitude = cnc_pb2.Attitude(yaw = yaw, pitch = pitch, roll = roll, thrust = thrust)
-        request = cnc_pb2.Driver(setAttitude=attitude)
-        
-        result = await self.send_and_wait(request)
-        return result.setAttitude if result else False
-    
-    ''' Position methods '''
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info("setVelocity")
-        velocity = cnc_pb2.Velocity(forward_vel=forward_vel, right_vel=right_vel, up_vel=up_vel, angle_vel=angle_vel)
-        request = cnc_pb2.Driver(setVelocity=velocity)
+        request = control_protocol.Request()
+        request.veh.velocity.forward_vel = forward_vel
+        request.veh.velocity.right_vel = right_vel
+        request.veh.velocity.up_vel = up_vel
+        request.veh.velocity.angle_vel = angle_vel
         result = await self.send_and_wait(request)
-        return result.setVelocity if result else False
+        return result.resp if result else False
     
     async def setRelativePosition(self, forward, right, up, angle):
-        logger.info("setRelativePosition")
-        position = cnc_pb2.Position(forward=forward, right=right, up=up, angle=angle)
-        request = cnc_pb2.Driver(setRelativePosition=position)
-        result = await self.send_and_wait(request)
-        return result.setRelativePosition if result else False
+        pass
     
-    
-    async def setTranslatedPosition(self, forward, right, up, angle):
-        logger.info("setTranslatedPosition")
-        position = cnc_pb2.Position(forward=forward, right=right, up=up, angle=angle)
-        request = cnc_pb2.Driver(setTranslatedPosition=position)
-        result = await self.send_and_wait(request)
-        return result.setTranslatedPosition if result else False
     
     async def setGPSLocation(self, latitude, longitude, altitude, bearing):
         logger.info("setGPSLocation")
-        location = cnc_pb2.Location(latitude=latitude, longitude=longitude, altitude=altitude, bearing=bearing)
-        request = cnc_pb2.Driver(setGPSLocation=location)
+        request = control_protocol.Request()
+        request.veh.location.latitude = latitude
+        request.veh.location.longitude = longitude
+        request.veh.location.altitude = altitude
+        request.veh.location.bearing = bearing
         result = await self.send_and_wait(request)
-        return result.setGPSLocation if result else False
+        return result.resp if result else False
     
     
     ''' Camera methods '''
-    # define a camera type enum
-    class CameraType(Enum):
-        RGB = cnc_pb2.CameraType.RGB
-        STEREO = cnc_pb2.CameraType.STEREO
-        THERMAL = cnc_pb2.CameraType.THERMAL
-        NIGHT = cnc_pb2.CameraType.NIGHT
-    
-        
     async def getCameras(self):
-        logger.info("getCameras")
-        request = cnc_pb2.Driver(getCameras=cnc_pb2.Camera())
-        result = await self.send_and_wait(request)
-        if result:
-            id = result.getCameras.id
-            type = self.CameraType(result.getCameras.type)
-            
-            return [id, type]
-        else:    
-            return False
+        pass
 
     async def switchCamera(self, camera_id):
-        logger.info("switchCamera")
-        request = cnc_pb2.Driver(switchCamera=camera_id)
-        result = await self.send_and_wait(request)
-        return result.switchCameras if result else False    
-
+        pass

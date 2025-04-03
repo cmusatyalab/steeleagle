@@ -16,7 +16,7 @@ message Request {
     MissionControl msn = 4;
     ConfigureCompute cpt = 5;
   }
-  repeated string drone_ids = 6;
+  repeated string hub_ids = 6;
 }
 
 message Response {
@@ -75,4 +75,13 @@ message ConfigureCompute {
     protocol.common.HSV lower_bound = 2; // lower bound of HSV filter to apply
     protocol.common.HSV upper_bound = 3; // upper bound of HSV filter to apply
     float threshold = 4; //change confidence threshold of the DNN
+    ComputeAction action = 5;
+    required string key = 6;
+}
+
+enum ComputeAction {
+  UNKNOWN_COMPUTE_ACTION = 0;
+  START = 1;
+  STOP = 2;
+  CLEAR = 3;
 }
