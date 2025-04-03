@@ -3,8 +3,8 @@ import math
 import os
 import time
 import asyncio
-from enum import Enum
 import logging
+from enum import Enum
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
@@ -31,7 +31,7 @@ from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-class ParrotDrone(QuadcopterItf):
+class ParrotOlympeDrone(QuadcopterItf):
     
     class FlightMode(Enum):
         LOITER = 1
@@ -47,10 +47,13 @@ class ParrotDrone(QuadcopterItf):
         # Create the drone object
         self._drone = Drone(self.ip)
         # Drone flight modes and setpoints
-        self._attitude_setpoint = None
         self._velocity_setpoint = None
+        # Set PID values for the drone
+        self._forward_pid_values = {}
+        self._right_pid_values = {}
+        self._up_pid_values = {}
         self._pid_task = None
-        self._mode = ParrotDrone.FlightMode.LOITER
+        self._mode = ParrotOlympeDrone.FlightMode.LOITER
 
     ''' Interface methods '''
     async def get_type(self):
@@ -67,7 +70,7 @@ class ParrotDrone(QuadcopterItf):
         self._drone.disconnect()
     
     async def take_off(self):
-        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(TakeOff())
         result = await self._wait_for_condition(
             lambda: self._drone(FlyingStateChanged(\
@@ -82,7 +85,7 @@ class ParrotDrone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def land(self):
-        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         result = self._drone(Landing()).wait().success()
         
         if result:
@@ -115,7 +118,7 @@ class ParrotDrone(QuadcopterItf):
     
     async def rth(self):
         await self.hover()
-        await self._switch_mode(ParrotDrone.FlightMode.TAKEOFF_LAND)
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(return_to_home())
         
         return common_protocol.ResponseStatus.COMPLETED
@@ -126,7 +129,7 @@ class ParrotDrone(QuadcopterItf):
         up_vel = velocity.up_vel
         angle_vel = velocity.angle_vel
         
-        await self._switch_mode(ParrotDrone.FlightMode.VELOCITY)
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
 
         # Check that the speeds is within the drone bounds
         max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
@@ -141,18 +144,17 @@ class ParrotDrone(QuadcopterItf):
                 (forward_vel, right_vel, up_vel, angle_vel)
         if self._pid_task is None:
             self._pid_task = asyncio.create_task(\
-                    self._velocityPID())
+                    self._velocity_pid())
 
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
-        await self.set_bearing(location)
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
         bearing = location.bearing
        
-        await self._switch_mode(ParrotDrone.FlightMode.GUIDED)
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         if bearing is None:
             self._drone(
                 moveTo(lat, lng, alt, move_mode.orientation_mode.to_target, 0.0)
@@ -173,11 +175,23 @@ class ParrotDrone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def set_heading(self, location):
-        result =  await self._wait_for_condition(
-            lambda: self._is_bearing_reached(bearing),
-            interval=0.5
-        )
-        
+        lat = location.latitude
+        lon = location.longitude
+        bearing = location.bearing
+        heading = self._get_heading()
+
+        if lat is None and lon is None:
+            target = bearing
+        else:
+            gp = self._get_global_position()
+            target = self._calculate_bearing(\
+                    gp["latitude"], gp["longitude"],\
+                    lat, lon)
+        offset = (heading - target) * (math.pi / 180.0)
+
+        result = self._drone(moveBy(0.0, 0.0, 0.0, offset))\
+                .wait().success()
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
@@ -218,18 +232,30 @@ class ParrotDrone(QuadcopterItf):
             await asyncio.sleep(0.01)
                     
     async def stream_video(self, cam_sock):
-        return common_protocol.ResponseStatus.NOTSUPPORTED
-    
-    ''' Connect methods '''
-    def _request_message_interval(self, message_id: int, frequency_hz: float):
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system, self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
-            message_id,
-            1e6 / frequency_hz,
-            0, 0, 0, 0,
-            0, 
-        )
+        logger.info('Starting camera stream')
+        self._start_streaming()
+        frame_id = 0
+        while await self.is_connected():
+            try:
+                cam_message = data_protocol.Frame()
+                frame, frame_shape = await self._get_video_frame()
+                
+                if frame is None:
+                    logger.error('Failed to get video frame')
+                    continue
+                
+                cam_message.data = frame
+                cam_message.height = frame_shape[0]
+                cam_message.width = frame_shape[1]
+                cam_message.channels = frame_shape[2]
+                cam_message.id = frame_id
+                cam_sock.send(cam_message.SerializeToString())
+                frame_id = frame_id + 1
+            except Exception as e:
+                logger.error(f'Failed to get video frame, error: {e}')
+            await asyncio.sleep(0.033)
+        self._stop_streaming()
+        logger.info("Camera stream ended, disconnected from drone")
 
     ''' Telemetry methods '''
     def _get_name(self):
@@ -276,12 +302,12 @@ class ParrotDrone(QuadcopterItf):
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"] * -1}
         
     def _get_velocity_body(self):
-        neu = await self._get_velocity_neu()
+        neu = self._get_velocity_neu()
         vec = np.array([neu["north"], neu["east"]], \
                 dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
-        hd = (await self.getHeading()) + 90
+        hd = (self._get_heading()) + 90
         fw = np.radians(hd)
         c, s = np.cos(fw), np.sin(fw)
         R1 = np.array(((c, -s), (s, c)))
@@ -295,166 +321,126 @@ class ParrotDrone(QuadcopterItf):
 
         res = {"forward": np.dot(vec, vecf) * -1, \
                 "right": np.dot(vec, vecr) * -1, \
-                "up": NEU["up"]}
+                "up": neu["up"]}
         return res
 
     def _get_rssi(self):
         return self.drone.get_state(rssi_changed)["rssi"]
 
     ''' Coroutine methods '''
-    async def _setpoint_heartbeat(self):
-        if await self._switch_mode(PX4Drone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        # Send frequent setpoints to keep the drone in offboard mode.
-        while True:
-            if self.offboard_mode == PX4Drone.OffboardHeartbeatMode.VELOCITY:
-                self.vehicle.mav.set_position_target_local_ned_send(
-                    0,
-                    self.vehicle.target_system,
-                    self.vehicle.target_component,
-                    mavutil.mavlink.MAV_FRAME_BODY_NED,
-                    0b010111000111,
-                    0, 0, 0,
-                    self._setpoint[0], self._setpoint[1], -self._setpoint[2],
-                    0, 0, 0,
-                    0, self._setpoint[3]
-                )
-            elif self.offboard_mode == PX4Drone.OffboardHeartbeatMode.RELATIVE:
-                pass
-            elif self.offboard_mode == PX4Drone.OffboardHeartbeatMode.GLOBAL:
-                self.vehicle.mav.set_position_target_global_int_send(
-                    0,
-                    self.vehicle.target_system,
-                    self.vehicle.target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                    0b0000111111111000,
-                    int(self._setpoint[0] * 1e7),
-                    int(self._setpoint[1] * 1e7),
-                    self._setpoint[2],
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0
-                )
-            await asyncio.sleep(0.05)
+    async def _velocity_pid(self):
+        try:
+            ep = {"forward": 0.0, "right": 0.0, "up": 0.0}
+            max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
+            tp = None
+            previous_values = None
 
+            def clamp(val, mini, maxi):
+                return max(mini, min(val, maxi))
+
+            def update_pid(e, ep, tp, ts, pid_dict):
+                P = pid_dict["Kp"] * e
+                I = pid_dict["Ki"] * (ts - tp)
+                if e < 0.0:
+                    I *= -1
+                elif abs(e) <= 0.05 or I * pid_dict["PrevI"] < 0:
+                    I = 0.0
+                if abs(e) > 0.01:
+                    D = pid_dict["Kd"] * (e - ep) / (ts - tp)
+                else:
+                    D = 0.0
+
+                # For testing Integral component
+                I = 0.0
+                return P, I, D
+
+            counter = 0
+            while self._mode == ParrotOlympeDrone.FlightMode.VELOCITY:
+                current = self._get_velocity_body()
+                forward_setpoint, right_setpoint, up_setpoint, angular_setpoint = self._velocity_setpoint
+
+                forward = 0
+                right = 0
+                up = 0
+
+                # Adjust to velocity every 5 ticks
+                if counter % 5 == 0:
+                    ts = round(time.time() * 1000)
+
+                    error = {}
+                    error["forward"] = forward_setpoint - current["forward"]
+                    if abs(error["forward"]) < 0.01:
+                        error["forward"] = 0
+                    error["right"] = right_setpoint - current["right"]
+                    if abs(error["right"]) < 0.01:
+                        error["right"] = 0
+                    error["up"] = up_setpoint - current["up"]
+                    if abs(error["up"]) < 0.01:
+                        error["up"] = 0
+
+                    # On first loop through, set previous timestamp and error
+                    # to dummy values.
+                    if tp is None or (ts - tp) > 1000:
+                        tp = ts - 1
+                        ep = error
+
+                    P, I, D = update_pid(error["forward"], ep["forward"], tp, ts, self._forward_pid_values)
+                    self._forward_pid_values["PrevI"] += I
+                    forward = P + I + D
+
+                    P, I, D = update_pid(error["right"], ep["right"], tp, ts, self._right_pid_values)
+                    self._right_pid_values["PrevI"] += I
+                    right = P + I + D
+
+                    P, I, D = update_pid(error["up"], ep["up"], tp, ts, self._up_pid_values)
+                    self._up_pid_values["PrevI"] += I
+                    up = P + I + D
+
+                    # Set previous ts and error for next iteration
+                    tp = ts
+                    ep = error
+                    counter = 0
+
+                previous_forward = 0
+                prev_right = 0
+                prev_up = 0
+                if previous_values is not None:
+                    previous_forward = previous_values["forward"]
+                    prev_right = previous_values["right"]
+                    prev_up = previous_values["up"]
+
+                forward = int(clamp(forward + previous_forward, -100, 100))
+                right = int(clamp(right + prev_right, -100, 100))
+                up = int(clamp(up + prev_up, -100, 100))
+                ang = int(clamp((angular_setpoint / max_rotation) * 100, -100, 100))
+
+                self._drone(PCMD(1, right, forward, ang, up, timestampAndSeqNum=0))
+
+                if previous_values is None:
+                    previous_values = {}
+                previous_values["forward"] = forward
+                previous_values["right"] = right
+                previous_values["up"] = up
+
+                counter += 1
+
+                await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            self._forward_pid_values["PrevI"] = 0.0
+            self._right_pid_values["PrevI"] = 0.0
+            self._up_pid_values["PrevI"] = 0.0
+    
     ''' Actuation methods '''
-    async def _arm(self):
-        logger.info("-- Arming")
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0,
-            1,
-            0, 0, 0, 0, 0, 0
-        )
-        logger.info("-- Arm command sent")
-
-
-        result =  await self._wait_for_condition(
-            lambda: self.is__armed(),
-            timeout=5,
-            interval=1
-        )
-        
-        if result:
-            logger.info("-- Armed successfully")
-        else:
-            logger.error("-- Arm failed")
-        return result
-
-    async def _disarm(self):
-        logger.info("-- Disarming")
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0,
-            0,
-            0, 0, 0, 0, 0, 0
-        )
-        logger.info("-- Disarm command sent")
-
-        result =  await self._wait_for_condition(
-            lambda: self.is_disarmed(),
-            timeout=5,
-            interval=1
-        )
-        
-        if result:
-            self.mode = None
-            logger.info("-- Disarmed successfully")
-        else:
-            logger.error("-- Disarm failed")
-            
-        return result  
-
     async def _switch_mode(self, mode):
-        mode_target = mode.value
-        curr_mode = self.mode.value if self.mode else None
-        
-        if self.mode == mode:
-            logger.info(f"Already in mode {mode_target}")
-            return True
-        
-        # switch mode
-        if mode_target not in self._mode_mapping:
-            logger.info(f"Mode {mode_target} not supported!")
-            return False
-        
-        mode_id = self._mode_mapping[mode_target]
-        logger.info(f"Mode ID Triplet: {mode_id}")
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system, self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
-            mode_id[0], mode_id[1], mode_id[2], 0, 0, 0, 0)
-        
-        if mode is not PX4Drone.FlightMode.OFFBOARD:
-            result = await self._wait_for_condition(
-                lambda: self.is_mode_set(mode),
-                timeout=5,
-                interval=1
-            )
-            
-            if result:
-                self.mode = mode
-                logger.info(f"Mode switched to {mode_target}")
-
-            return result
+        if self._mode == mode:
+            return
         else:
-            logger.info(f"Priming for OFFBOARD mode")
-            return True
-        
-    ''' ACK methods '''    
-    def _is_home_set(self):
-        msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
-        return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME \
-                and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
-
-    def _is_altitude_reached(self, target_altitude):
-        current_altitude = self._get_altitude_rel()
-        return current_altitude >= target_altitude * 0.95
-    
-    def _is_bearing_reached(self, bearing):
-        logger.info(f"Checking if bearing is reached: {bearing}")
-        attitude = self._get_attitude()
-        if not attitude:
-            return False  # Return False if attitude data is unavailable
-
-        current_yaw = (math.degrees(attitude["yaw"]) + 360) % 360
-        target_yaw = (bearing + 360) % 360
-        return abs(current_yaw - target_yaw) <= 2
-    
-    def _is_at_target(self, lat, lon):
-        current_location = self._get_global_position()
-        if not current_location:
-            return False
-        dlat = lat - current_location["latitude"]
-        dlon = lon - current_location["longitude"]
-        distance =  math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
-        return distance < 1.0
+            # Cancel the running PID task
+            if self._pid_task:
+                self._pid_task.cancel()
+                await self._pid_task
+            self._pid_task = None
+            self._mode = mode
         
     ''' Helper methods '''
     def _calculate_bearing(self, lat1, lon1, lat2, lon2):
@@ -508,9 +494,20 @@ class ParrotDrone(QuadcopterItf):
             except Exception as e:
                 logger.error(f"-- Error evaluating condition: {e}")
             if timeout is not None and time.time() - start_time > timeout:
-                logger.error("-- Timeout waiting for condition")
                 return False
             await asyncio.sleep(interval)
+    
+    ''' Streaming methods '''
+    async def _start_streaming(self):
+        self._streaming_thread = PDRAWStreamingThread(self._drone)
+        self._streaming_thread.start()
+
+    async def _get_video_frame(self):
+        if self._streaming_thread:
+            return self._streaming_thread.grab_frame().tobytes()
+
+    async def _stop_streaming(self):
+        self._streaming_thread.stop()
 
 
 # Streaming imports
@@ -519,7 +516,7 @@ import queue
 
 class PDRAWStreamingThread(threading.Thread):
 
-    def __init__(self, drone, ip):
+    def __init__(self, drone):
         threading.Thread.__init__(self)
         self._drone = drone
         self._frame_queue = queue.Queue()
@@ -545,7 +542,7 @@ class PDRAWStreamingThread(threading.Thread):
             self._copy_frame(yuv_frame)
             yuv_frame.unref()
 
-    def _grab_frame(self):
+    def grab_frame(self):
         try:
             frame = self._current_frame.copy()
             return frame
