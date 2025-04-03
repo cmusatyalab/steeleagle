@@ -4,10 +4,8 @@
 
 syntax = "proto3";
 
-package steeleagle.controlplane;
-import "steeleagle/common.proto";
-//import "google/protobuf/empty.proto";
-//import "google/protobuf/field_mask.proto";
+package protocol.controlplane;
+import "protocol/common.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
@@ -24,7 +22,7 @@ message Request {
 message Response {
   int64 seq_num = 1; // for correlation
   google.protobuf.Timestamp timestamp = 2;// time the response was sent
-  steeleagle.shared.ResponseStatus resp = 3;
+  protocol.common.ResponseStatus resp = 3;
 }
 
 /*
@@ -33,10 +31,10 @@ message Response {
 message VehicleControl {
   oneof param {
     VehicleAction action = 1;
-    steeleagle.shared.Location location = 2;
-    steeleagle.shared.Velocity velocity = 3;
-    steeleagle.shared.Pose gimbal_pose = 4;
-    steeleagle.shared.Position position = 5;
+    protocol.common.Location location = 2;
+    protocol.common.Velocity velocity = 3;
+    protocol.common.Pose gimbal_pose = 4;
+    protocol.common.Position position = 5;
     sfixed32 camera_id = 6;
   }
 }
@@ -74,7 +72,7 @@ enum MissionAction {
 */
 message ConfigureCompute {
     string model = 1; // change model current in use
-    steeleagle.shared.HSV lower_bound = 2; // lower bound of HSV filter to apply
-    steeleagle.shared.HSV upper_bound = 3; // upper bound of HSV filter to apply
+    protocol.common.HSV lower_bound = 2; // lower bound of HSV filter to apply
+    protocol.common.HSV upper_bound = 3; // upper bound of HSV filter to apply
     float threshold = 4; //change confidence threshold of the DNN
 }
