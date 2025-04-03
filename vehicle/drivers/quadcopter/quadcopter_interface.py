@@ -10,6 +10,15 @@ import zmq
 import zmq.asyncio
 
 class QuadcopterItf(ABC):
+    """
+    Interface file that describes the quadcopter control API.
+    All SteelEagle compatible drones must implement a subset of
+    this API to function with the driver module. For unimplemented
+    methods, drones are expected to reply using 
+    :class:`steeleagle.controlplane.Response` with the value of
+    :class:`steeleagle.common.ResponseStatus` set to NOTIMPLEMENTED (3).
+    """
+
     @abstractmethod
     async def get_type(self) -> str:
         """
@@ -179,18 +188,32 @@ class QuadcopterItf(ABC):
         pass
 
     @abstractmethod
+    async def set_gimbal_pose(self, pose: common_protocol.Pose) -> control_protocol.Response:
+        """
+        Sets the gimbal pose of the drone, if it has a gimbal.
+
+        :param pose: The target pose of the gimbal
+        :type pose: :class:`steeleagle.common.Pose`
+        :return: A response object indicating success or failure
+        :rtype: :class:`steeleagle.controlplane.Response`
+        """
+        pass
+
+    @abstractmethod
     async def stream_telemetry(self, tel_sock: zmq.asyncio.Socket) -> None:
         """
         Continuously sends telemetry data from the drone to the provided ZeroMQ socket.
 
         The implementation is expected to:
-          - Gather telemetry info (GPS position, battery, velocity, etc.)
+          - Gather telemetry info (global position, battery, velocity, etc.)
           - Populate a protobuf `Telemetry` message
-          - Send it to `tel_sock` in a loop until the drone disconnects or streaming stops
+          - Send it to `tel_sock` in a loop until the drone disconnects or streaming stops,
+            while yielding execution at the end of each iteration using `asyncio.sleep()`
 
         :param tel_sock: ZeroMQ asynchronous socket to which telemetry messages are sent
         :type tel_sock: :class:`zmq.asyncio.Socket`
-        :return: None
+        :return: A response object indicating success or failure
+        :rtype: :class:`steeleagle.controlplane.Response`
         """
         pass
     
@@ -202,11 +225,13 @@ class QuadcopterItf(ABC):
         The implementation is expected to:
           - Acquire frames from the drone's camera or streaming buffer
           - Serialize them (e.g., as a protobuf `Frame` message)
-          - Send them to `cam_sock` in a loop until the drone disconnects or streaming stops
+          - Send them to `cam_sock` in a loop until the drone disconnects or streaming stops,
+            while yielding execution at the end of each iteration using `asyncio.sleep()`
 
         :param cam_sock: ZeroMQ asynchronous socket to which frames are sent
         :type cam_sock: :class:`zmq.asyncio.Socket`
-        :return: None
+        :return: A response object indicating success or failure
+        :rtype: :class:`steeleagle.controlplane.Response`
         """
         pass
 
