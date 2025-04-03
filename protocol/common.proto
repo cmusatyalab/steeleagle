@@ -4,8 +4,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle.shared;
-
+package protocol.common;
 
 /*
 * Color filter represented by hue, saturation, and value

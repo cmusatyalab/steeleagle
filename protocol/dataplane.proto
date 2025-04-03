@@ -9,9 +9,8 @@
  */
 syntax = "proto3";
 option py_generic_services = true;
-package steeleagle.dataplane;
-import "steeleagle/common.proto";
-//import "google/protobuf/empty.proto";
+package protocol.dataplane;
+import "protocol/common.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -29,7 +28,7 @@ message Request {
 message Response {
   int64 seq_num = 1; // for correlation
   google.protobuf.Timestamp timestamp = 2;// time the response was sent
-  steeleagle.shared.ResponseStatus resp = 3;
+  protocol.common.ResponseStatus resp = 3;
   oneof type {
     Telemetry tel = 4;
     Frame frame = 5;
@@ -45,13 +44,13 @@ message TelemetryRequest {
 }
 message Telemetry {
   string drone_name = 1;
-  steeleagle.shared.Location global_position = 2;
-  steeleagle.shared.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
+  protocol.common.Location global_position = 2;
+  protocol.common.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
   int64 battery = 4;  // battery level [0-100]%
-  steeleagle.shared.Attitude gimbal_attitude = 5;
-  steeleagle.shared.Attitude drone_attitude = 6;
-  steeleagle.shared.Velocity velocity = 7;
-  steeleagle.shared.Position relative_position = 8;
+  protocol.common.Attitude gimbal_attitude = 5;
+  protocol.common.Attitude drone_attitude = 6;
+  protocol.common.Velocity velocity = 7;
+  protocol.common.Position relative_position = 8;
   int64 satellites = 9; //number of satellites used in GPS fix
   bool is_connected = 10 [deprecated=true]; // use uptime instead
   int64 wifi_rssi = 11; // in -dbM
@@ -60,8 +59,8 @@ message Telemetry {
   string drone_model = 14; // manufacturer/model of the drone
   string status = 15; // i.e. 'idle', 'patroling', 'tracking'
   google.protobuf.Duration uptime = 16;
-  steeleagle.shared.Location home = 17; // lat/lng/alt that will be used when returnning home
-  steeleagle.shared.Camera camera = 18; // information about the drone's camera sensors
+  protocol.common.Location home = 17; // lat/lng/alt that will be used when returnning home
+  protocol.common.Camera camera = 18; // information about the drone's camera sensors
 }
 
 /*
@@ -98,7 +97,7 @@ message Detection {
   int64 detection_id = 1; // can be multiple objects per frame
   string class_name = 2;
   double score = 3;
-  steeleagle.shared.BoundingBox bbox = 4;
+  protocol.common.BoundingBox bbox = 4;
   bool hsv_filter_passed = 5;
 }
 
