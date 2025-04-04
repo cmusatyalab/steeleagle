@@ -1,10 +1,19 @@
 import asyncio
+from dataclasses import dataclass
+from google.protobuf import timestamp_pb2
 from protocol import controlplane_pb2
 from protocol import dataplane_pb2
-from typing import Optional, Union
+from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class ComputeResult:
+    """Class representing a compute result"""
+    data: str
+    frame_id: int
+    timestamp: timestamp_pb2.Timestamp
 
 class DataStore:
     def __init__(self):
@@ -31,8 +40,8 @@ class DataStore:
         self._result_cache.pop(compute_id, None)
 
     ######################################################## COMPUTE ############################################################
-    def get_compute_result(self, compute_id, result_key) -> Optional[Union[None, tuple]]:
-        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {result_key}")
+    def get_compute_result(self, compute_id, key) -> Optional[ComputeResult]
+        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {key}")
         logger.info(self._result_cache)
         if compute_id not in self._result_cache:
             # Log an error and return None
@@ -45,10 +54,10 @@ class DataStore:
             logger.error(f"get_compute_result: No result found for {compute_id=}")
             return None
 
-        result = cache.get(result_key)
+        result = cache.get(key)
         if result is None:
             # Log an error and return None
-            logger.error(f"get_compute_result: No result found for {compute_id=} and {result_key=}")
+            logger.error(f"get_compute_result: No result found for {compute_id=} and {key=}")
             return None
 
         return result
@@ -56,10 +65,10 @@ class DataStore:
     def append_compute(self, compute_id):
         self._result_cache[compute_id] = {}
 
-    def update_compute_result(self, compute_id, result_key: str, result, timestamp):
-        assert isinstance(result_key, str), f"Argument must be a string, got {type(result_key).__name__}"
-        self._result_cache[compute_id][result_key] = (result, timestamp)
-        logger.debug(f"update_compute_result: Updated result cache for {compute_id=} and {result_key=}; result: {result}")
+    def update_compute_result(self, compute_id, key: str, result, frame_id, timestamp):
+        assert isinstance(key, str), f"Argument must be a string, got {type(key).__name__}"
+        self._result_cache[compute_id][key] = ComputeResult(result, frame_id, timestamp)
+        logger.debug(f"update_compute_result: Updated result cache for {compute_id=} and {key=}; result: {result}")
 
     ######################################################## RAW DATA ############################################################
     def get_raw_data(self, data_copy):

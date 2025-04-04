@@ -60,24 +60,23 @@ class DataService(Service):
     ###########################################################################
     #                                USER                                     #
     ###########################################################################
-    def get_result(self, result_key):
-        logger.info(f"Processing getter for {result_key=}")
+    def get_result(self, key):
+        logger.info(f"Processing getter for {key=}")
         getter_list = []
         for compute_id in self.compute_dict.keys():
-            cpt_res = self.data_store.get_compute_result(compute_id, result_key)
+            cpt_res = self.data_store.get_compute_result(compute_id, key)
 
             if cpt_res is None:
                 logger.error(f"Result not found for compute_id: {compute_id}")
                 continue
 
-            res = cpt_res[0]
-            timestamp = str(cpt_res[1])
-
             result = dataplane_pb2.ComputeResult()
-            result.result_key = result_key
-            # result.frame_id = ...
-            result.timestamp = timestamp
-            # TODO(Aditya): populate result.type
+            result.key = key
+            result.frame_id = cpt_res.frame_id
+            result.timestamp = cpt_res.timestamp
+            # TODO(Aditya): populate DetectionResult and AvoidanceResult
+            # instead of using 'generic' result
+            result.generic = cpt_res.data
 
             getter_list.append(result)
             logger.info(f"Sending result: {res} with {compute_id=} {timestamp=}")
@@ -110,9 +109,9 @@ class DataService(Service):
         """Processes a Compute command."""
         logger.info(f"Received compute request: {req}")
 
-        result_key = req.cpt.result_key
+        key = req.cpt.key
 
-        cpt_results = self.get_result(result_key)
+        cpt_results = self.get_result(key)
 
         # TODO(Aditya): we could get multiple compute results from different
         # computes, we should extend the proto definition to accomodate this
