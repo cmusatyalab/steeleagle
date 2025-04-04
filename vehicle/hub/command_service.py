@@ -28,13 +28,13 @@ class CommandService(Service):
 
         # init cmd seq
         self.command_seq = 0
-
+        
         # Setting up sockets
-        self.cmd_front_cmdr_sock = context.socket(zmq.DEALER)
+        self.cmd_front_cmdr_sock = self.context.socket(zmq.DEALER)
         self.cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
-        self.cmd_front_usr_sock = context.socket(zmq.DEALER)
-        self.cmd_back_sock = context.socket(zmq.DEALER)
-        self.msn_sock = context.socket(zmq.REQ)
+        self.cmd_front_usr_sock = self.context.socket(zmq.DEALER)
+        self.cmd_back_sock = self.context.socket(zmq.DEALER)
+        self.msn_sock = self.context.socket(zmq.REQ)
 
         gabriel_server_host = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
         if gabriel_server_host is None:
@@ -56,10 +56,10 @@ class CommandService(Service):
 
         self.create_task(self.cmd_proxy())
 
-    def manual_mode_enabled():
+    def manual_mode_enabled(self):
         self.manual = True
 
-    def manual_mode_disabled():
+    def manual_mode_disabled(self):
         self.manual = False
 
     async def send_download_mission(self, req):

@@ -163,6 +163,8 @@ class MissionController():
                 # Parse the message
                 req = control_protocol.Request()
                 req.ParseFromString(message)
+                resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
+                seq_num = req.seq_num
                 if not req.HasField("msn"):
                     logger.info("Received message without mission field, ignoring")
                     return
@@ -170,7 +172,6 @@ class MissionController():
                 mission_command = req.msn.WhichOneof("param")
                 logger.info(f"man_control: {mission_command}")
                 logger.info(f"Parsed Command: {mission_command}")
-                resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
                 
                 if mission_command == control_protocol.MissionAction.DOWNLOAD:
                     url  = message.msn.url
@@ -187,6 +188,14 @@ class MissionController():
                     
                 else:
                     resp = common_protocol.ResponseStatus.NOTSUPPORTED
+                    
+                # Send a reply back to the client
+                rep = control_protocol.Response()
+                rep.resp = resp
+                rep.timestamp.GetCurrentTime()
+                rep.seq_num = seq_num
+                
+                self.msn_sock.send(rep.SerializeToString())
                 
             except zmq.Again:
                 pass
@@ -195,13 +204,7 @@ class MissionController():
                 logger.info(f"Failed to parse message: {e}")
                 resp = common_protocol.ResponseStatus.FAILED
                 
-            # Send a reply back to the client
-            rep = control_protocol.Response()
-            rep.resp = resp
-            rep.timestamp.GetCurrentTime()
-            rep.seq_num = req.seq_num
-            
-            self.msn_sock.send(rep.SerializeToString())
+
             await asyncio.sleep(0)
             
             

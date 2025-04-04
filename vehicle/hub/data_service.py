@@ -11,10 +11,10 @@ import pkgutil
 from util.utils import setup_socket, SocketOperation
 from protocol import controlplane_pb2
 from protocol import dataplane_pb2
-import computes
-from kernel.computes.ComputeItf import ComputeInterface
+import datasinks
+from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
-from kernel.Service import Service
+from service import Service
 import sys
 
 # Set up logging
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 if os.environ.get("LOG_TO_FILE") == "true":
     file_handler = logging.FileHandler('data_service.log')
-    file_handler.setFormatter(logging.Formatter(logging_format))
+    file_handler.setFormatter(logging.Formatter(common.logging_format))
     logger.addHandler(file_handler)
 
 class DataService(Service):
@@ -32,9 +32,9 @@ class DataService(Service):
         super().__init__()
 
         # Setting up sockets
-        self.tel_sock = context.socket(zmq.SUB)
-        self.cam_sock = context.socket(zmq.SUB)
-        self.cpt_usr_sock = context.socket(zmq.DEALER)
+        self.tel_sock = self.context.socket(zmq.SUB)
+        self.cam_sock = self.context.socket(zmq.SUB)
+        self.cpt_usr_sock = self.context.socket(zmq.DEALER)
 
         self.tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
@@ -53,9 +53,8 @@ class DataService(Service):
         # setting up data store
         self.data_store = DataStore()
         self.compute_dict = {}
-        compute_tasks = self.spawn_computes(config_yaml)
-        for task in compute_tasks:
-            self.register_task(task)
+        self.spawn_computes(config_yaml)
+  
 
     ###########################################################################
     #                                USER                                     #
@@ -79,7 +78,7 @@ class DataService(Service):
             result.generic = cpt_res.data
 
             getter_list.append(result)
-            logger.info(f"Sending result: {res} with {compute_id=} {timestamp=}")
+            logger.info(f"Sending result: {result} with {compute_id=} {result.timestamp=}")
         return getter_list
 
     def clear_result(self):
@@ -170,7 +169,7 @@ class DataService(Service):
     def discover_compute_classes(self):
         """Discover all compute  classes."""
         compute_classes = {}
-        for module_info in pkgutil.iter_modules(computes.__path__, computes.__name__ + "."):
+        for module_info in pkgutil.iter_modules(datasinks.__path__, datasinks.__name__ + "."):
             module_name = module_info.name
             module = importlib.import_module(module_name)
             for attr_name in dir(module):
@@ -188,7 +187,7 @@ class DataService(Service):
         Compute = compute_classes[compute_class]
         compute_instance = Compute(compute_id, self.data_store)
         logger.info(f"Starting compute {compute_class} with id {compute_id}")
-        return compute_instance, asyncio.create_task(compute_instance.run())
+        return compute_instance, self.create_task(compute_instance.run())
 
     def spawn_computes(self, config_yaml):
         """Load configuration and spawn computes."""

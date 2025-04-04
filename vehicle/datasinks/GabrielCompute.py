@@ -8,9 +8,11 @@ import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from util.timer import Timer
-from cnc_protocol import cnc_pb2
-from kernel.computes.ComputeItf import ComputeInterface
-from kernel.DataStore import DataStore
+from datasinks.ComputeItf import ComputeInterface
+from hub.data_store import DataStore
+from protocol import dataplane_pb2 as data_protocol
+from protocol import controlplane_pb2 as control_protocol
+from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ class GabrielCompute(ComputeInterface):
 
             logger.debug(f"Frame producer: starting converting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
-            frame_data = cnc_pb2.Frame()
+            frame_data = data_protocol.Frame()
 
             frame_id = self.data_store.get_raw_data(frame_data)
 
@@ -103,7 +105,7 @@ class GabrielCompute(ComputeInterface):
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
-            tel_data = cnc_pb2.Telemetry()
+            tel_data = data_protocol.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
                 if frame_data is not None and frame_data.data != b'' and tel_data is not None:
@@ -118,23 +120,21 @@ class GabrielCompute(ComputeInterface):
                     input_frame.payloads.append(frame.tobytes())
 
                     # produce extras
-                    extras = cnc_pb2.Extras()
-                    extras.drone_id = tel_data.drone_name
-                    extras.location.latitude = tel_data.global_position.latitude
-                    extras.location.longitude = tel_data.global_position.longitude
+                    compute_command = control_protocol.Request()
+                    compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
-                        extras.detection_model = self.set_params['model']
+                        compute_command.cpt.model = self.set_params['model']
                     if self.set_params['hsv_lower'] is not None:
-                        extras.lower_bound.H = self.set_params['hsv_lower'][0]
-                        extras.lower_bound.S = self.set_params['hsv_lower'][1]
-                        extras.lower_bound.V = self.set_params['hsv_lower'][2]
+                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][0]
+                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][1]
+                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][2]
                     if self.set_params['hsv_upper'] is not None:
-                        extras.upper_bound.H = self.set_params['hsv_upper'][0]
-                        extras.upper_bound.S = self.set_params['hsv_upper'][1]
-                        extras.upper_bound.V = self.set_params['hsv_upper'][2]
-                    if extras is not None:
-                        input_frame.extras.Pack(extras)
+                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][0]
+                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
+                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
+                    if compute_command is not None:
+                        input_frame.extras.Pack(compute_command)
                 else:
                     logger.info('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -157,31 +157,18 @@ class GabrielCompute(ComputeInterface):
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
-            tel_data = cnc_pb2.Telemetry()
+            tel_data = data_protocol.Telemetry()
             self.data_store.get_raw_data(tel_data)
             try:
                 if tel_data is not None:
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")
-
-                    extras = cnc_pb2.Extras()
-                    extras.drone_id = tel_data.drone_name
-                    extras.location.latitude = tel_data.global_position.latitude
-                    extras.location.longitude = tel_data.global_position.longitude
-                    extras.location.altitude = tel_data.global_position.altitude
-                    extras.status.battery = tel_data.battery
-                    extras.status.mag = tel_data.mag
-                    # arbitrary values for now
-                    extras.status.bearing = 0
-                    extras.status.rssi = 0
-
                     # Register when we start sending telemetry
                     if not self.drone_registered:
                         logger.info("Gabriel compute telemetry producer: Sending registeration request to backend")
-                        extras.registering = True
+                        tel_data.uptime = 0
                         self.drone_registered = True
-
-                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(extras))
-                    input_frame.extras.Pack(extras)
+                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
+                    input_frame.extras.Pack(tel_data)
                 else:
                     logger.error('Telemetry unavailable')
             except Exception as e:

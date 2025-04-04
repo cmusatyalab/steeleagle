@@ -11,7 +11,6 @@ class Service(ABC):
     def __init__(self):
         self.tasks = []
         self.socks = []
-        self.create_asyncio_context()
         self.context = zmq.asyncio.Context()
 
     def register_socket(self, sock):
@@ -21,7 +20,7 @@ class Service(ABC):
         task = asyncio.create_task(coro)
         self.tasks.append(task)
 
-    def setup_and_register_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
+    def setup_and_register_socket(self, socket, socket_op, port_num, logger_message, host_addr="*"):
         setup_socket(socket, socket_op, port_num, logger_message, host_addr)
         self.socks.append(socket)
 
