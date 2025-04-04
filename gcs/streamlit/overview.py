@@ -1,12 +1,9 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-
-import os
+import protocol.controlplane_pb2 as controlplane
 import time
-import json
 from zipfile import ZipFile
-from cnc_protocol import cnc_pb2
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
@@ -14,6 +11,9 @@ from folium.plugins import MiniMap
 from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
 import math
+import uuid
+
+REQUEST_NUMBER = 0
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -75,6 +75,7 @@ def change_center():
 
 
 def run_flightscript():
+    global REQUEST_NUMBER
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
@@ -84,37 +85,49 @@ def run_flightscript():
             for file in st.session_state.script_file:
                 z.writestr(file.name, file.read())
 
-        req = cnc_pb2.Extras()
-        req.cmd.script_url = f"http://{st.secrets.webserver}/scripts/{filename}"
-        req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+        req = controlplane.Request()
+        req.seq_num = REQUEST_NUMBER
+        req.timestamp.GetCurrentTime()
+        for d in st.session_state.selected_drones:
+            req.drone_ids.append(d)
+        req.msn.uuid = str(uuid.uuid4())
+        req.msn.url = f"http://{st.secrets.webserver}/scripts/{filename}"
+        req.msn.action = controlplane.MissionAction.DOWNLOAD
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
+        REQUEST_NUMBER += 1
         st.toast(
-            f"Instructed {req.cmd.for_drone_id} to fly autonomous script.",
+            f"Instructed {req.drone_ids} to fly autonomous script.",
             icon="\u2601",
         )
 
 def enable_manual():
-    req = cnc_pb2.Extras()
-    req.cmd.halt = True
-    req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+    global REQUEST_NUMBER
+    req = controlplane.Request()
+    req.seq_num = REQUEST_NUMBER
+    req.timestamp.GetCurrentTime()
+    for d in st.session_state.selected_drones:
+        req.drone_ids.append(d)
+    req.veh.action = controlplane.VehicleAction.HOVER
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
+    REQUEST_NUMBER += 1
     st.toast(
-        f"Telling drone {req.cmd.for_drone_id} to halt! Kill signal sent."
+        f"Telling drone {req.drone_ids} to halt! Kill signal sent."
     )
 
 def rth():
-    req = cnc_pb2.Extras()
-    req.cmd.rth = True
-    req.cmd.manual = False
-    req.commander_id = os.uname()[1]
-    req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+    global REQUEST_NUMBER
+    req = controlplane.Request()
+    req.seq_num = REQUEST_NUMBER
+    req.timestamp.GetCurrentTime()
+    for d in st.session_state.selected_drones:
+        req.drone_ids.append(d)
+    req.veh.action = controlplane.VehicleAction.RTH
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    st.toast(f"Instructed {req.cmd.for_drone_id} to return to home!")
+    REQUEST_NUMBER += 1
+    st.toast(f"Instructed {req.drone_ids} to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
@@ -327,17 +340,20 @@ with st.sidebar:
         c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
 
         key_pressed = st_keypressed()
-        req = cnc_pb2.Extras()
-        req.commander_id = os.uname()[1]
-        req.cmd.for_drone_id = json.dumps([d for d in st.session_state.selected_drones])
+        req = controlplane.Request()
+        req.seq_num = REQUEST_NUMBER
+        req.timestamp.GetCurrentTime()
+        for d in st.session_state.selected_drones:
+            req.drone_ids.append(d)
+
         #req.cmd.manual = True
         st.caption(f"keypressed={key_pressed}")
         if key_pressed == "t":
-            req.cmd.takeoff = True
-            st.info(f"Instructed {req.cmd.for_drone_id} to takeoff.")
+            req.veh.action = controlplane.VehicleAction.TAKEOFF
+            st.info(f"Instructed {req.drone_ids} to takeoff.")
         elif key_pressed == "g":
-            req.cmd.land = True
-            st.info(f"Instructed {req.cmd.for_drone_id} to land.")
+            req.veh.action = controlplane.VehicleAction.LAND
+            st.info(f"Instructed {req.drone_ids} to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
             if key_pressed == "w":
@@ -361,11 +377,11 @@ with st.sidebar:
             elif key_pressed == "f":
                 gimbal_pitch = -1 * st.session_state.gimbal_speed
             st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
-            req.cmd.pcmd.yaw = math.radians(yaw)
-            req.cmd.pcmd.pitch = pitch
-            req.cmd.pcmd.roll = roll
-            req.cmd.pcmd.gaz = thrust
-            req.cmd.pcmd.gimbal_pitch = math.radians(gimbal_pitch)
+            req.veh.velocity.angular_vel = math.radians(yaw)
+            req.veh.velocity.forward_vel = pitch
+            req.veh.velocity.right_vel = roll
+            req.veh.velocity.up_vel = thrust
+            req.veh.gimbal_pose.pitch = math.radians(gimbal_pitch)
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
