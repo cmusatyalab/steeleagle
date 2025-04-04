@@ -9,8 +9,8 @@ import zmq.asyncio
 import asyncio
 import logging
 import os
-from protocol.steeleagle import controlplane_pb2
-from Service import Service
+from protocol import controlplane_pb2
+from service import Service
 from util.utils import SocketOperation
 
 # Configure logger
@@ -154,7 +154,7 @@ class CommandService(Service):
         self.command_seq = self.command_seq + 1
 
         match req.WhichOneof("type"):
-            match "msn":
+            case "msn":
                 # Mission command
                 match req.msn.action:
                     case controlplane_pb2.MissionAction.DOWNLOAD:
@@ -168,7 +168,7 @@ class CommandService(Service):
                         self.manual_mode_enabled()
                     case _:
                         raise NotImplemented()
-            match "veh":
+            case "veh":
                 # Vehicle command
                 if req.veh.HasField("action") and req.veh.action == controlplane_pb2.VehicleAction.RTH:
                     await self.send_stop_mission()
@@ -177,10 +177,10 @@ class CommandService(Service):
                 else:
                     task = asyncio.create_task(await self.send_driver_command(req))
                     self.manual_mode_enabled()
-            match "cpt":
+            case "cpt":
                 # Configure compute command
                 raise NotImplemented()
-            match None:
+            case None:
                 raise Exception("Expected a request type to be specified")
 
 async def main():

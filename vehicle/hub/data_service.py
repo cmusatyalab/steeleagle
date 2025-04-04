@@ -9,11 +9,11 @@ import yaml
 import importlib
 import pkgutil
 from util.utils import setup_socket, SocketOperation
-from protocol.steeleagle import controlplane_pb2
-from protocol.steeleagle import dataplane_pb2
+from protocol import controlplane_pb2
+from protocol import dataplane_pb2
 import computes
 from kernel.computes.ComputeItf import ComputeInterface
-from DataStore import DataStore
+from data_store import DataStore
 from kernel.Service import Service
 import sys
 

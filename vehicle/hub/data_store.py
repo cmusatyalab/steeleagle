@@ -1,6 +1,6 @@
 import asyncio
-from protocol.steeleagle import controlplane_pb2
-from protocol.steeleagle import dataplane_pb2
+from protocol import controlplane_pb2
+from protocol import dataplane_pb2
 from typing import Optional, Union
 import logging
 
