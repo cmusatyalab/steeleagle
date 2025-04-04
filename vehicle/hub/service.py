@@ -19,6 +19,7 @@ class Service(ABC):
     def create_task(self, coro):
         task = asyncio.create_task(coro)
         self.tasks.append(task)
+        return task
 
     def setup_and_register_socket(self, socket, socket_op, port_num, logger_message, host_addr="*"):
         setup_socket(socket, socket_op, port_num, logger_message, host_addr)
