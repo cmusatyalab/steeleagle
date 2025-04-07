@@ -8,14 +8,14 @@ import logging
 # SDK import (MAVLink)
 from pymavlink import mavutil
 # Interface import
-from multicopter.quadcopter_interface import QuadcopterItf
+from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
 from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-class ArdupilotDrone(QuadcopterItf):
+class ArdupilotDrone(MulticopterItf):
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -271,15 +271,15 @@ class ArdupilotDrone(QuadcopterItf):
         if bearing is None:
             bearing = self.calculate_bearing(\
                     current_lat, current_lon, lat, lon)
-        yaw_speed = 25
+        yaw_speed = 1 # Radians
         direction = 0
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             0,
-            bearing,
-            yaw_speed,
+            bearing * 180/math.pi,
+            yaw_speed * 180/math.pi,
             direction,
             0,
             0, 0, 0

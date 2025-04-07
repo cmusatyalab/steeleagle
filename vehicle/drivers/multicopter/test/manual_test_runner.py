@@ -87,7 +87,7 @@ class KeyboardCtrl(Listener):
         )
 
     def yaw(self):
-        return self._axis(
+        return 10 * self._axis(
             self._ctrl_keys[Ctrl.TURN_LEFT],
             self._ctrl_keys[Ctrl.TURN_RIGHT]
         )

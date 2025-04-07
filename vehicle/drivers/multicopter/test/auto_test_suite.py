@@ -89,10 +89,13 @@ def sequence_counter():
 class TestSuiteClass:
     identity = b'usr'
     r_earth = 6378137.0
-    dx = 1
-    dy = 1
-    dz = 1
-    d_angle = 10
+    dx = 1 # Meters/s
+    dy = 1 # Meters/s
+    dz = 1 # Meters/s
+    d_lat = 5 # Meters
+    d_lon = 5 # Meters
+    d_alt = 10 # Meters
+    d_angle = 10 # Degrees
     
     @pytest.mark.order(1)
     @pytest.mark.asyncio
@@ -132,7 +135,7 @@ class TestSuiteClass:
             (self.dy, 0, 0, 0), # Forward
             (0, self.dx, 0, 0), # Right
             (0, 0, self.dz, 0), # Up
-            (0, 0, 0, self.d_angle), # Yaw 10 degree
+            (0, 0, 0, self.d_angle), # Yaw 1 radian
         ]
         for test_set in test_sets:
             await asyncio.sleep(5)
@@ -188,27 +191,27 @@ class TestSuiteClass:
         curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
 
         test_sets = [
-            (self.dy, 0, 0, 0),        # Forward
-            (0, self.dx, 0, 0),       # Right
-            (0, 0, self.dz, 0),       # Up
+            (self.d_lat, 0, 0, 0),       # Forward
+            (0, self.d_lon, 0, 0),       # Right
+            (0, 0, self.d_alt, 0),       # Up
             (0, 0, 0, self.d_angle),  # Yaw +d_bearing
         ]
 
         for (dy, dx, dz, d_angle) in test_sets:
-            d_lat = self.dy_to_lat(dy)
-            d_lon = self.dx_to_lon(dx, curr_pos_lat)
+            d_lat = self.dy_to_lat(self.d_lat)
+            d_lon = self.dx_to_lon(self.d_lon, curr_pos_lat)
 
             # Build the *new* absolute position from the current telemetry
             next_lat = curr_pos_lat + d_lat
             next_lon = curr_pos_lon + d_lon
-            next_alt = curr_pos_alt + dz
-            next_angle = curr_pos_angle + d_angle
+            next_alt = curr_pos_alt + self.d_alt # Relative altitude
+            next_angle = curr_pos_angle + self.d_angle
 
             logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
             driver_cmd = control_protocol.Request()
             driver_cmd.veh.location.latitude  = next_lat
             driver_cmd.veh.location.longitude = next_lon
-            driver_cmd.veh.location.altitude  = next_alt
+            driver_cmd.veh.location.altitude  = self.d_alt
             driver_cmd.veh.location.bearing   = next_angle
             seq = sequence_counter["value"]
             logger.info(f"Sending command with seqNum: {seq}")

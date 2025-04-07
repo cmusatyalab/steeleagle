@@ -8,14 +8,14 @@ import logging
 # SDK import (MAVLink)
 from pymavlink import mavutil
 # Interface import
-from multicopter.quadcopter_interface import QuadcopterItf
+from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
 from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-class PX4Drone(QuadcopterItf):
+class PX4Drone(MulticopterItf):
     
     class FlightMode(Enum):
         LAND = 'LAND'
@@ -82,7 +82,9 @@ class PX4Drone(QuadcopterItf):
             lambda: self._is_mode_set(PX4Drone.FlightMode.LOITER),
             interval=1
         )
-
+ 
+        self._setpoint = (0.0, 0.0, 0.0, 0.0)
+        self.offboard_mode = PX4Drone.OffboardHeartbeatMode.VELOCITY
         self._setpoint_task = asyncio.create_task(self._setpoint_heartbeat())
 
         if result:
@@ -173,7 +175,7 @@ class PX4Drone(QuadcopterItf):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
-        await self.set_bearing(location)
+        await self.set_heading(location)
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
@@ -187,7 +189,7 @@ class PX4Drone(QuadcopterItf):
         self._setpoint = (lat, lon, alt, 0)
 
         result = await self._wait_for_condition(
-            lambda: self.is_at_target(lat, lon),
+            lambda: self._is_at_target(lat, lon),
             interval=1
         )
         
@@ -197,12 +199,12 @@ class PX4Drone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def set_relative_position(self, position):
-        pass
+        return common_protocol.ResponseStatus.NOTSUPPORTED
     
     async def set_heading(self, location):
         lat = location.latitude
         lon = location.longitude
-        bearing = location.bearing
+        bearing = location.bearing 
         # Calculate bearing if not provided
         current_location = self._get_global_position()
         current_lat = current_location["latitude"]
@@ -210,14 +212,14 @@ class PX4Drone(QuadcopterItf):
         if bearing is None:
             bearing = self.calculate_bearing(\
                     current_lat, current_lon, lat, lon)
-        yaw_speed = 25
+        yaw_speed = 10
         direction = 0
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             0,
-            bearing,
+            bearing, 
             yaw_speed,
             direction,
             0,
@@ -235,7 +237,7 @@ class PX4Drone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def set_gimbal_pose(self):
-        pass
+        return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def stream_telemetry(self, tel_sock):
         logger.info('Starting telemetry stream')
@@ -416,10 +418,8 @@ class PX4Drone(QuadcopterItf):
                     0, 0, 0,
                     self._setpoint[0], self._setpoint[1], -self._setpoint[2],
                     0, 0, 0,
-                    0, self._setpoint[3]
+                    0, self._setpoint[3] * math.pi/180 # Need to convert to radians/s
                 )
-            elif self.offboard_mode == PX4Drone.OffboardHeartbeatMode.RELATIVE:
-                pass
             elif self.offboard_mode == PX4Drone.OffboardHeartbeatMode.GLOBAL:
                 self.vehicle.mav.set_position_target_global_int_send(
                     0,
@@ -547,7 +547,6 @@ class PX4Drone(QuadcopterItf):
         return current_altitude >= target_altitude * 0.95
     
     def _is_bearing_reached(self, bearing):
-        logger.info(f"Checking if bearing is reached: {bearing}")
         attitude = self._get_attitude()
         if not attitude:
             return False  # Return False if attitude data is unavailable

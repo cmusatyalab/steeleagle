@@ -7,7 +7,7 @@ from protocol import common_pb2 as common_protocol
 import zmq
 import zmq.asyncio
 
-class QuadcopterItf(ABC):
+class MulticopterItf(ABC):
     """
     Interface file that describes the quadcopter control API.
     All SteelEagle compatible drones must implement a subset of

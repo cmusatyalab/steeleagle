@@ -24,14 +24,14 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 # Interface import
-from multicopter.quadcopter_interface import QuadcopterItf
+from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
 from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-class ParrotOlympeDrone(QuadcopterItf):
+class ParrotOlympeDrone(MulticopterItf):
     
     class FlightMode(Enum):
         LOITER = 1
