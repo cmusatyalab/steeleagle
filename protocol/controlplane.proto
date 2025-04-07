@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
 //
 // SPDX-License-Identifier: GPL-2.0-only
-
+/**
+ * Messages/Calls related to the Controlplane component of SteelEagle.
+ *
+ * The control is responsible for relaying messages that either instruct
+ * the drone to do something (manual actuation/autonomous operations)
+ * or deal with configuring the computational components of the system
+ * (either locally or remotely).
+ */
 syntax = "proto3";
 
 package protocol.controlplane;
@@ -16,7 +23,6 @@ message Request {
     MissionControl msn = 4;
     ConfigureCompute cpt = 5;
   }
-  repeated string hub_ids = 6;
 }
 
 message Response {
@@ -37,6 +43,7 @@ message VehicleControl {
     protocol.common.Position position = 5;
     sfixed32 camera_id = 6;
   }
+  repeated string drone_ids = 7;
 }
 
 enum VehicleAction {
@@ -56,6 +63,7 @@ message MissionControl {
   string uuid = 1; // unique mission reference for cataloging
   string url = 2; // the URL that specifies the zip file to download
   MissionAction action = 3; // start/stop/pause/resume/download
+  repeated string drone_ids = 4;
 }
 
 enum MissionAction {
