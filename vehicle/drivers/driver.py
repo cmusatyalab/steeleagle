@@ -5,9 +5,9 @@ import json
 import os
 import asyncio
 import logging
-import protocol.controlplane_pb2 as control_protocol
-import protocol.common_pb2 as common_protocol
-import protocol.dataplane_pb2 as data_protocol
+from protocol import controlplane_pb2 as control_protocol
+from protocol import common_pb2 as common_protocol
+from protocol import dataplane_pb2 as data_protocol
 from util.utils import setup_socket, SocketOperation
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -41,13 +41,19 @@ logger.info(f"Drone ID: {drone_id}")
 logger.info(f"Drone Type: {drone_type}")
 logger.info(f"Connection String: {connection_string}")
 
-
+drone = None
 if drone_type == 'SkyViper2450GPS':
-    from quadcopter.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
-    drone = SkyViper2450GPSDrone(drone_id)
-# elif drone_type == 'ModalAISeeker':
-#     from quadcopter.ModalAI.Seeker.Seeker import ModalAISeekerDrone
-#     drone = ModalAISeekerDrone(drone_id)
+    from quadcopter.SkyRocket.SkyViperV2450GPS.SkyViperV2450GPS import SkyViperV2450GPSDrone
+    drone = SkyViperV2450GPSDrone(drone_id)
+elif drone_type == 'Anafi':
+    from quadcopter.Parrot.Anafi.Anafi import AnafiDrone
+    drone = AnafiDrone(drone_id)
+elif drone_type == 'Starling2Max':
+    from quadcopter.ModalAI.Starling2Max.Starling2Max import Starling2MaxDrone
+    drone = Starling2MaxDrone(drone_id)
+elif drone_type == 'Seeker':
+    from quadcopter.ModalAI.Seeker.Seeker import Seeker
+    drone = SeekerDrone(drone_id)
     
 context = zmq.asyncio.Context()
 cmd_back_sock = context.socket(zmq.DEALER)
@@ -127,8 +133,9 @@ async def main(drone, cam_sock, tel_sock, args):
             logger.info('starting connecting...')
             await drone.connect(connection_string)
             logger.info('drone connected')
-        except ConnectionFailedException as e:
+        except Exception as e:
             logger.error('Failed to connect to drone, retrying...')
+            await asyncio.sleep(3)
             continue
         logger.info(f'Established connection to drone, ready to receive commands!')
         

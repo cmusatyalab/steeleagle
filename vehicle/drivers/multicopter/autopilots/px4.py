@@ -79,7 +79,7 @@ class PX4Drone(QuadcopterItf):
             0, 0, 0, 0, gps['latitude'], gps['longitude'], gps['altitude'] + target_altitude)
        
         result = await self._wait_for_condition(
-            lambda: self.is_mode_set(PX4Drone.FlightMode.LOITER),
+            lambda: self._is_mode_set(PX4Drone.FlightMode.LOITER),
             interval=1
         )
 
@@ -99,7 +99,7 @@ class PX4Drone(QuadcopterItf):
             0, 0, 0, 0, 0, 0, 0, 0)
 
         result = await self._wait_for_condition(
-            lambda: self.is_disarmed(),
+            lambda: self._is_disarmed(),
             interval=1
         )
         
@@ -109,7 +109,12 @@ class PX4Drone(QuadcopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def hover(self):
-        return await self.set_velocity(0.0, 0.0, 0.0, 0.0)
+        velocity = common_protocol.Velocity()
+        velocity.forward_vel = 0.0
+        velocity.right_vel = 0.0
+        velocity.up_vel = 0.0
+        velocity.angular_vel = 0.0
+        return await self.set_velocity(velocity)
 
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -144,7 +149,7 @@ class PX4Drone(QuadcopterItf):
             return
 
         result = await self._wait_for_condition(
-            lambda: self.is_disarmed(),
+            lambda: self._is_disarmed(),
             interval=1
         )
         
@@ -157,13 +162,13 @@ class PX4Drone(QuadcopterItf):
         forward_vel = velocity.forward_vel
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
-        angle_vel = velocity.angle_vel
+        angular_vel = velocity.angular_vel
         self.offboard_mode = \
                 PX4Drone.OffboardHeartbeatMode.VELOCITY 
         if not self._setpoint_task:
             self._setpoint_task = \
                     asyncio.create_task(self._setpoint_heartbeat())
-        self._setpoint = (forward_vel, right_vel, up_vel, angle_vel) 
+        self._setpoint = (forward_vel, right_vel, up_vel, angular_vel) 
         
         return common_protocol.ResponseStatus.COMPLETED
 
@@ -191,6 +196,9 @@ class PX4Drone(QuadcopterItf):
         else:
             return common_protocol.ResponseStatus.FAILED
 
+    async def set_relative_position(self, position):
+        pass
+    
     async def set_heading(self, location):
         lat = location.latitude
         lon = location.longitude
@@ -226,19 +234,22 @@ class PX4Drone(QuadcopterItf):
         else:
             return common_protocol.ResponseStatus.FAILED
 
+    async def set_gimbal_pose(self):
+        pass
+
     async def stream_telemetry(self, tel_sock):
         logger.info('Starting telemetry stream')
         # Wait a second to avoid contention issues
         await asyncio.sleep(1) 
-        while await self.isConnected():
+        while await self.is_connected():
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
                 tel_message.battery = self._get_battery_percentage()
-                tel_message.drone_attitude.yaw = self._get_attitude()["yaw"]
-                tel_message.drone_attitude.pitch = \
+                tel_message.drone_attitude.pose.yaw = self._get_attitude()["yaw"]
+                tel_message.drone_attitude.pose.pitch = \
                         self._get_attitude()["pitch"]
-                tel_message.drone_attitude.roll = \
+                tel_message.drone_attitude.pose.roll = \
                         self._get_attitude()["roll"]
                 tel_message.satellites = self._get_satellites()
                 tel_message.relative_position.up = self._get_altitude_rel()
@@ -366,8 +377,8 @@ class PX4Drone(QuadcopterItf):
         if not gps_msg:
             return None
         return {
-            "forward": gps_msg.vx / 100,
-            "right": gps_msg.vy / 100,
+            "north": gps_msg.vx / 100,
+            "east": gps_msg.vy / 100,
             "up": gps_msg.vz / 100
         }
         
@@ -376,9 +387,9 @@ class PX4Drone(QuadcopterItf):
         if not velocity_msg:
             return None
         return {
-            "vx": velocity_msg.vx,  # Body-frame X velocity in m/s
-            "vy": velocity_msg.vy,  # Body-frame Y velocity in m/s
-            "vz": velocity_msg.vz   # Body-frame Z velocity in m/s
+            "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
+            "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
+            "up": velocity_msg.vz   # Body-frame Z velocity in m/s
         }
 
     def _get_rssi(self):
@@ -440,7 +451,7 @@ class PX4Drone(QuadcopterItf):
 
 
         result =  await self._wait_for_condition(
-            lambda: self.is__armed(),
+            lambda: self._is_armed(),
             timeout=5,
             interval=1
         )
@@ -464,7 +475,7 @@ class PX4Drone(QuadcopterItf):
         logger.info("-- Disarm command sent")
 
         result =  await self._wait_for_condition(
-            lambda: self.is_disarmed(),
+            lambda: self._is_disarmed(),
             timeout=5,
             interval=1
         )
@@ -499,7 +510,7 @@ class PX4Drone(QuadcopterItf):
         
         if mode is not PX4Drone.FlightMode.OFFBOARD:
             result = await self._wait_for_condition(
-                lambda: self.is_mode_set(mode),
+                lambda: self._is_mode_set(mode),
                 timeout=5,
                 interval=1
             )

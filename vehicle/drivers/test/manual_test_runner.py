@@ -8,7 +8,9 @@ import zmq.asyncio
 import asyncio
 from collections import defaultdict
 from util.utils import setup_socket, SocketOperation
-import cnc_protocol.cnc_pb2 as cnc_pb2
+from protocol import controlplane_pb2 as control_protocol
+from protocol import dataplane_pb2 as data_protocol
+from protocol import common_pb2 as common_protocol
 
 class Ctrl(Enum):
     (
@@ -150,7 +152,7 @@ async def recv_telemetry():
     while True:
         try:
             msg = await tel_sock.recv()
-            telemetry = cnc_pb2.Telemetry()
+            telemetry = data_protocol.Telemetry()
             telemetry.ParseFromString(msg)
             logger.debug(f"Received telemetry message after set: {telemetry}")
             await asyncio.sleep(0.3)
@@ -170,25 +172,28 @@ async def recv_camera():
 
 async def send_comm(control):
     global command_seq
-    driver_command = cnc_pb2.Driver()
-    driver_command.seqNum = command_seq
+    driver_command = control_protocol.Request()
+    
+    driver_command.seq_num = command_seq
+    driver_command.timestamp.GetCurrentTime()
+    
     command_seq += 1
 
     if control.takeoff():
         logger.info('Takeoff!')
-        driver_command.takeOff = True
+        driver_command.veh.action = control_protocol.VehicleAction.TAKEOFF
     elif control.landing():
         logger.info('Land!')
-        driver_command.land = True
+        driver_command.veh.action = control_protocol.VehicleAction.LAND
     elif control.has_piloting_cmd():
-        logger.info(f'setVelocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})')
-        driver_command.setVelocity.forward_vel = control.pitch()
-        driver_command.setVelocity.right_vel = control.roll()
-        driver_command.setVelocity.up_vel = control.throttle()
-        driver_command.setVelocity.angle_vel = control.yaw()
+        logger.info(f'Velocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})')
+        driver_command.veh.velocity.forward_vel = control.pitch()
+        driver_command.veh.velocity.right_vel = control.roll()
+        driver_command.veh.velocity.up_vel = control.throttle()
+        driver_command.veh.velocity.angular_vel = control.yaw()
     else:
         logger.info('Hover.')
-        driver_command.hover = True
+        driver_command.veh.action = control_protocol.VehicleAction.HOVER
 
     message = driver_command.SerializeToString()
     identity = b'cmdr'
@@ -200,7 +205,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 async def main(): 
     control = KeyboardCtrl()
-    asyncio.create_task(recv_telemetry())
+    #asyncio.create_task(recv_telemetry())
     while not control.quit():
         await send_comm(control) 
         await asyncio.sleep(0.2)

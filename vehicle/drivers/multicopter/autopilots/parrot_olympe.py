@@ -41,11 +41,6 @@ class ParrotOlympeDrone(QuadcopterItf):
         
     def __init__(self, drone_id, **kwargs):
         self.drone_id = drone_id
-        self.ip = None
-        if "ip" in kwargs:
-            self.ip = kwargs["ip"]
-        # Create the drone object
-        self._drone = Drone(self.ip)
         # Drone flight modes and setpoints
         self._velocity_setpoint = None
         # Set PID values for the drone
@@ -60,6 +55,9 @@ class ParrotOlympeDrone(QuadcopterItf):
         return "Parrot Drone"
 
     async def connect(self, connection_string):
+        self.ip = connection_string
+        # Create the drone object
+        self._drone = Drone(self.ip)
         # Connect to drone
         return self._drone.connect()
         
