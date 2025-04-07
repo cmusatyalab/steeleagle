@@ -24,7 +24,7 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 import olympe.enums.move as move_mode
 import olympe.enums.gimbal as gimbal_mode
 # Interface import
-from quadcopter.quadcopter_interface import QuadcopterItf
+from multicopter.quadcopter_interface import QuadcopterItf
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
 from protocol import common_pb2 as common_protocol
@@ -41,11 +41,6 @@ class ParrotOlympeDrone(QuadcopterItf):
         
     def __init__(self, drone_id, **kwargs):
         self.drone_id = drone_id
-        self.ip = None
-        if "ip" in kwargs:
-            self.ip = kwargs["ip"]
-        # Create the drone object
-        self._drone = Drone(self.ip)
         # Drone flight modes and setpoints
         self._velocity_setpoint = None
         # Set PID values for the drone
@@ -60,6 +55,9 @@ class ParrotOlympeDrone(QuadcopterItf):
         return "Parrot Drone"
 
     async def connect(self, connection_string):
+        self.ip = connection_string
+        # Create the drone object
+        self._drone = Drone(self.ip)
         # Connect to drone
         return self._drone.connect()
         
