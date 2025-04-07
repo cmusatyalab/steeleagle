@@ -43,8 +43,8 @@ logger.info(f"Connection String: {connection_string}")
 
 
 if drone_type == 'SkyViper2450GPS':
-    from quadcopter.SkyRocket.SkyViper2450GPS.SkyViper2450GPS import SkyViper2450GPSDrone, ConnectionFailedException
-    drone = SkyViper2450GPSDrone(drone_id)
+    from quadcopter.SkyRocket.SkyViperV2450GPS.SkyViperV2450GPS import SkyViperV2450GPS
+    drone = SkyViperV2450GPS(drone_id)
 # elif drone_type == 'ModalAISeeker':
 #     from quadcopter.ModalAI.Seeker.Seeker import ModalAISeekerDrone
 #     drone = ModalAISeekerDrone(drone_id)

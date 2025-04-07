@@ -4,6 +4,7 @@ import logging
 from quadcopter.autopilots.ardupilot import ArdupilotDrone
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ class SkyViperV2450GPS(ArdupilotDrone):
             await asyncio.sleep(0.033)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
+    
+    
+    async def set_gimbal_pose(self, pose):
+        pass
+    
     
     ''' Stream methods '''
     async def _start_streaming(self):
