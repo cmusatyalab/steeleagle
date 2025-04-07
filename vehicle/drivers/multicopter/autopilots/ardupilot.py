@@ -168,7 +168,6 @@ class ArdupilotDrone(QuadcopterItf):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
-        await self.set_bearing(location)
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
@@ -192,6 +191,16 @@ class ArdupilotDrone(QuadcopterItf):
             0, 0
         )
         
+        # Calculate bearing if not provided
+        current_location = self._get_global_position()
+        current_lat = current_location["latitude"]
+        current_lon = current_location["longitude"]
+        if bearing is None:
+            bearing = self._calculate_bearing(current_lat, current_lon, lat, lon)
+            logger.info(f"-- Calculated bearing: {bearing}")
+        
+        await self.set_heading(bearing)
+        
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
             timeout=60,
@@ -213,7 +222,7 @@ class ArdupilotDrone(QuadcopterItf):
                 self._switch_mode(ArdupilotDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
         
-        current_location =  self._get_gps()
+        current_location =  self._get_global_position()
         current_heading =  self._get_heading()
 
         dx = forward * math.cos(math.radians(current_heading)) - right * math.sin(math.radians(current_heading))
@@ -295,10 +304,10 @@ class ArdupilotDrone(QuadcopterItf):
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
                 tel_message.battery = self._get_battery_percentage()
-                tel_message.drone_attitude.yaw = self._get_attitude()["yaw"]
-                tel_message.drone_attitude.pitch = \
+                tel_message.drone_attitude.pose.yaw = self._get_attitude()["yaw"]
+                tel_message.drone_attitude.pose.pitch = \
                         self._get_attitude()["pitch"]
-                tel_message.drone_attitude.roll = \
+                tel_message.drone_attitude.pose.roll = \
                         self._get_attitude()["roll"]
                 tel_message.satellites = self._get_satellites()
                 tel_message.relative_position.up = self._get_altitude_rel()
@@ -310,11 +319,11 @@ class ArdupilotDrone(QuadcopterItf):
                         self._get_global_position()["altitude"]
                 tel_message.global_position.bearing = self._get_heading()
                 tel_message.velocity.forward_vel = \
-                        self._get_velocity_body()["forward"]
+                        self._get_velocity_neu()["forward"]
                 tel_message.velocity.right_vel = \
-                        self._get_velocity_body()["right"]
+                        self._get_velocity_neu()["right"]
                 tel_message.velocity.up_vel = \
-                        self._get_velocity_body()["up"]
+                        self._get_velocity_neu()["up"]
                 tel_sock.send(tel_message.SerializeToString())
                 logger.debug('Sent telemetry')
             except Exception as e:
@@ -366,7 +375,7 @@ class ArdupilotDrone(QuadcopterItf):
     def _get_name(self):
         return self.drone_id
 
-    def _get_gps(self):
+    def _get_global_position(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
             return None
@@ -584,7 +593,7 @@ class ArdupilotDrone(QuadcopterItf):
         return abs(diff) <= 5
 
     def _is_at_target(self, lat, lon):
-        current_location = self._get_gps()
+        current_location = self._get_global_position()
         if not current_location:
             return False
         dlat = lat - current_location["latitude"]

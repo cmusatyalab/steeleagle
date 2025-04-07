@@ -43,16 +43,16 @@ logger.info(f"Connection String: {connection_string}")
 
 drone = None
 if drone_type == 'SkyViper2450GPS':
-    from multicopter.SkyRocket.SkyViperV2450GPS import SkyViperV2450GPSDrone
+    from multicopter.devices.SkyRocket.SkyViperV2450GPS.SkyViperV2450GPS import SkyViperV2450GPSDrone
     drone = SkyViperV2450GPSDrone(drone_id)
 elif drone_type == 'Anafi':
-    from multicopter.Parrot.Anafi.Anafi import AnafiDrone
+    from multicopter.devices.Parrot.Anafi.Anafi import AnafiDrone
     drone = AnafiDrone(drone_id)
 elif drone_type == 'Starling2Max':
-    from multicopter.ModalAI.Starling2Max.Starling2Max import Starling2MaxDrone
+    from multicopter.devices.ModalAI.Starling2Max.Starling2Max import Starling2MaxDrone
     drone = Starling2MaxDrone(drone_id)
 elif drone_type == 'Seeker':
-    from multicopter.ModalAI.Seeker.Seeker import SeekerDrone
+    from multicopter.devices.ModalAI.Seeker.Seeker import SeekerDrone
     drone = SeekerDrone(drone_id)
     
 context = zmq.asyncio.Context()
