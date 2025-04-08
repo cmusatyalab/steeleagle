@@ -378,9 +378,9 @@ with st.sidebar:
                 gimbal_pitch = -1 * st.session_state.gimbal_speed
             st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
             if gimbal_pitch != 0:
-                req.veh.gimbal_pose.pitch = math.radians(gimbal_pitch)
+                req.veh.gimbal_pose.pitch = gimbal_pitch
             else:
-                req.veh.velocity.angular_vel = math.radians(yaw)
+                req.veh.velocity.angular_vel = yaw
                 req.veh.velocity.forward_vel = pitch
                 req.veh.velocity.right_vel = roll
                 req.veh.velocity.up_vel = thrust
