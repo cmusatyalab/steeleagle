@@ -13,9 +13,6 @@ from protocol import controlplane_pb2
 from service import Service
 from util.utils import SocketOperation
 
-# Configure logger
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO),
-                    format=common.logging_format)
 logger = logging.getLogger(__name__)
 
 class CommandService(Service):
@@ -28,30 +25,30 @@ class CommandService(Service):
 
         # init cmd seq
         self.command_seq = 0
-        
+
         # Setting up sockets
-        self.cmd_front_cmdr_sock = self.context.socket(zmq.DEALER)
-        self.cmd_front_cmdr_sock.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
-        self.cmd_front_usr_sock = self.context.socket(zmq.DEALER)
-        self.cmd_back_sock = self.context.socket(zmq.DEALER)
-        self.msn_sock = self.context.socket(zmq.REQ)
+        self.frontend_socket = self.context.socket(zmq.DEALER)
+        self.frontend_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        self.user_socket = self.context.socket(zmq.DEALER)
+        self.backend_socket = self.context.socket(zmq.DEALER)
+        self.mission_socket = self.context.socket(zmq.REQ)
 
-        gabriel_server_host = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
-        if gabriel_server_host is None:
-            raise Exception("Gabriel server host must be specified using STEELEAGLE_GABRIEL_SERVER")
+        command_endpoint = config.get('command_endpoint')
+        if command_endpoint is None:
+            raise Exception("Command endpoint not specified in the config")
 
         self.setup_and_register_socket(
-            self.cmd_front_cmdr_sock, SocketOperation.CONNECT,
+            self.frontend_socket, SocketOperation.CONNECT,
             'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint',
-            gabriel_server_host)
+            command_endpoint)
         self.setup_and_register_socket(
-            self.cmd_front_usr_sock, SocketOperation.BIND, 'CMD_FRONT_USR_PORT',
+            self.user_socket, SocketOperation.BIND, 'CMD_FRONT_USR_PORT',
             'Created command frontend user socket endpoint')
         self.setup_and_register_socket(
-            self.cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT',
+            self.backend_socket, SocketOperation.BIND, 'CMD_BACK_PORT',
             'Created command backend socket endpoint')
         self.setup_and_register_socket(
-            self.msn_sock, SocketOperation.BIND, 'MSN_PORT',
+            self.mission_socket, SocketOperation.BIND, 'MSN_PORT',
             'Created userspace mission control socket endpoint')
 
         self.create_task(self.cmd_proxy())
@@ -71,37 +68,37 @@ class CommandService(Service):
 
         # send the start mission command
         logger.info(f'download_mission message: {req}')
-        self.msn_sock.send(req.SerializeToString())
-        reply = await self.msn_sock.recv_string()
+        self.mission_socket.send(req.SerializeToString())
+        reply = await self.mission_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a start mission command
     async def send_start_mission(self, req):
         # send the start mission command
         logger.info(f'start_mission message: {req}')
-        self.msn_sock.send(req.SerializeToString())
-        reply = await self.msn_sock.recv_string()
+        self.mission_socket.send(req.SerializeToString())
+        reply = await self.mission_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
     async def send_stop_mission(self, req):
         logger.info(f'stop_mission message: {req}')
-        self.msn_sock.send(req.SerializeToString())
-        reply = await self.msn_sock.recv_string()
+        self.mission_socket.send(req.SerializeToString())
+        reply = await self.mission_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
 
     async def send_driver_command(self, req):
         identity = b'cmdr'
-        await self.cmd_back_sock.send_multipart([identity, req.SerializeToString()])
+        await self.backend_socket.send_multipart([identity, req.SerializeToString()])
         logger.info(f"Command send to driver: {req}")
 
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
-        poller.register(self.cmd_front_cmdr_sock, zmq.POLLIN)
-        poller.register(self.cmd_back_sock, zmq.POLLIN)
-        poller.register(self.cmd_front_usr_sock, zmq.POLLIN)
+        poller.register(self.frontend_socket, zmq.POLLIN)
+        poller.register(self.backend_socket, zmq.POLLIN)
+        poller.register(self.user_socket, zmq.POLLIN)
 
         while True:
             try:
@@ -109,38 +106,38 @@ class CommandService(Service):
                 socks = dict(await poller.poll())
 
                 # Check for messages from CMDR
-                if self.cmd_front_cmdr_sock in socks:
-                    msg = await self.cmd_front_cmdr_sock.recv_multipart()
+                if self.frontend_socket in socks:
+                    msg = await self.frontend_socket.recv_multipart()
                     cmd  = msg[0]
                     # Filter the message
-                    logger.debug(f"proxy : cmd_front_cmdr_sock Received message from FRONTEND: cmd: {cmd}")
+                    logger.debug(f"proxy : frontend_socket Received message from FRONTEND: cmd: {cmd}")
                     await self.process_command(cmd)
 
                 # Check for messages from MSN
-                if self.cmd_front_usr_sock in socks:
-                    msg = await self.cmd_front_usr_sock.recv_multipart()
+                if self.user_socket in socks:
+                    msg = await self.user_socket.recv_multipart()
                     cmd = msg[0]
-                    logger.debug(f"proxy : cmd_front_usr_sock Received message from FRONTEND: {cmd}")
+                    logger.debug(f"proxy : user_socket Received message from FRONTEND: {cmd}")
                     identity = b'usr'
-                    await self.cmd_back_sock.send_multipart([identity, cmd])
+                    await self.backend_socket.send_multipart([identity, cmd])
 
 
                 # Check for messages from DRIVER
-                if self.cmd_back_sock in socks:
-                    message = await self.cmd_back_sock.recv_multipart()
-                    logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: {message}")
+                if self.backend_socket in socks:
+                    message = await self.backend_socket.recv_multipart()
+                    logger.debug(f"proxy : backend_socket Received message from BACKEND: {message}")
 
                     # Filter the message
                     identity = message[0]
                     cmd = message[1]
-                    logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: identity: {identity} cmd: {cmd}")
+                    logger.debug(f"proxy : backend_socket Received message from BACKEND: identity: {identity} cmd: {cmd}")
 
                     if identity == b'cmdr':
-                        logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: discard bc of cmdr")
+                        logger.debug(f"proxy : backend_socket Received message from BACKEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        logger.debug(f"proxy : cmd_back_sock Received message from BACKEND: sent back bc of user")
-                        await self.cmd_front_usr_sock.send_multipart([cmd])
+                        logger.debug(f"proxy : backend_socket Received message from BACKEND: sent back bc of user")
+                        await self.user_socket.send_multipart([cmd])
                     else:
                         logger.error(f"proxy: invalid identity")
 
@@ -184,13 +181,25 @@ class CommandService(Service):
                 raise Exception("Expected a request type to be specified")
 
 async def main():
-    drone_args = os.environ.get('DRONE_ARGS')
-    if drone_args == None:
-        raise Exception("Expected drone args to be specified")
-    droneArgs = json.loads(drone_args)
-    drone_id = droneArgs.get('id')
-    drone_type = droneArgs.get('type')
+    config_path = os.getenv("CONFIG_PATH")
+    if config_path is None:
+        raise Exception("Expected CONFIG_PATH env variable to be specified")
+
+    config = import_config(config_path)
+    hub_config = config.get("hub")
+    if hub_config is None:
+        raise Exception("Hub config not available")
+
+    logging_config = hub_config.get('logging')
+    common.setup_logging(logger, logging_config)
+
+    driver_config = config.get("driver")
+    if driver_config is None:
+        logger.fatal("Driver config not available")
+
     # init CommandService
+    drone_id = driver_config.get("id")
+    drone_type = driver_config.get("type")
     cmd_service = CommandService(drone_id, drone_type)
 
     # run CommandService
