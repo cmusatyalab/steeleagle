@@ -175,7 +175,6 @@ class PX4Drone(MulticopterItf):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
-        await self.set_heading(location)
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
@@ -187,6 +186,8 @@ class PX4Drone(MulticopterItf):
             self._setpoint_task = \
                     asyncio.create_task(self._setpoint_heartbeat())
         self._setpoint = (lat, lon, alt, 0)
+    
+        await self.set_heading(location)
 
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
@@ -204,15 +205,17 @@ class PX4Drone(MulticopterItf):
     async def set_heading(self, location):
         lat = location.latitude
         lon = location.longitude
-        bearing = location.bearing 
+        bearing = location.bearing
+       
         # Calculate bearing if not provided
         current_location = self._get_global_position()
         current_lat = current_location["latitude"]
+        logger.info(f"current_lat: {current_lat}")
         current_lon = current_location["longitude"]
-        logger.info(f"Setting bearing {lat}, {lon}, {bearing}")
         if bearing is None:
-            bearing = self.calculate_bearing(\
-                    current_lat, current_lon, lat, lon)
+            bearing = self._calculate_bearing(current_lat, current_lon, lat, lon)
+            logger.info(f"-- Calculated bearing: {bearing}")
+            
         yaw_speed = 25 # Degrees/s
         direction = 0
         self.vehicle.mav.command_long_send(
@@ -220,7 +223,7 @@ class PX4Drone(MulticopterItf):
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             0,
-            bearing, 
+            bearing,
             yaw_speed,
             direction,
             0,
@@ -232,7 +235,7 @@ class PX4Drone(MulticopterItf):
             interval=0.5
         )
         
-        if result:
+        if  result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED

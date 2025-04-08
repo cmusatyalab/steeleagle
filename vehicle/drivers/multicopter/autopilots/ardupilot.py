@@ -135,7 +135,7 @@ class ArdupilotDrone(MulticopterItf):
 
         result = await self._wait_for_condition(
             lambda: self._is_disarmed(),
-            timeout=60,
+            timeout=600,
             interval=1
         )
         
@@ -171,7 +171,6 @@ class ArdupilotDrone(MulticopterItf):
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
-        bearing = location.bearing
         
         if not await \
                 self._switch_mode(ArdupilotDrone.FlightMode.GUIDED):
@@ -191,15 +190,7 @@ class ArdupilotDrone(MulticopterItf):
             0, 0
         )
         
-        # Calculate bearing if not provided
-        current_location = self._get_global_position()
-        current_lat = current_location["latitude"]
-        current_lon = current_location["longitude"]
-        if bearing is None:
-            bearing = self._calculate_bearing(current_lat, current_lon, lat, lon)
-            logger.info(f"-- Calculated bearing: {bearing}")
-        
-        await self.set_heading(bearing)
+        await self.set_heading(location)
         
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
@@ -264,13 +255,15 @@ class ArdupilotDrone(MulticopterItf):
         lat = location.latitude
         lon = location.longitude
         bearing = location.bearing
+        
         # Calculate bearing if not provided
         current_location = self._get_global_position()
         current_lat = current_location["latitude"]
+        logger.info(f"current_lat: {current_lat}")
         current_lon = current_location["longitude"]
         if bearing is None:
-            bearing = self.calculate_bearing(\
-                    current_lat, current_lon, lat, lon)
+            bearing = self._calculate_bearing(current_lat, current_lon, lat, lon)
+            logger.info(f"-- Calculated bearing: {bearing}")
         yaw_speed = 25 # Degrees/s
         direction = 0
         self.vehicle.mav.command_long_send(
