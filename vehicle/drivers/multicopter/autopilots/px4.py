@@ -148,7 +148,7 @@ class PX4Drone(MulticopterItf):
     async def rth(self):
         if not await \
                 self._switch_mode(PX4Drone.FlightMode.RTL):
-            return
+            return common_protocol.ResponseStatus.FAILED
 
         result = await self._wait_for_condition(
             lambda: self._is_disarmed(),
@@ -209,10 +209,11 @@ class PX4Drone(MulticopterItf):
         current_location = self._get_global_position()
         current_lat = current_location["latitude"]
         current_lon = current_location["longitude"]
+        logger.info(f"Setting bearing {lat}, {lon}, {bearing}")
         if bearing is None:
             bearing = self.calculate_bearing(\
                     current_lat, current_lon, lat, lon)
-        yaw_speed = 10
+        yaw_speed = 25 # Degrees/s
         direction = 0
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
@@ -425,7 +426,7 @@ class PX4Drone(MulticopterItf):
                     0,
                     self.vehicle.target_system,
                     self.vehicle.target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
                     0b0000111111111000,
                     int(self._setpoint[0] * 1e7),
                     int(self._setpoint[1] * 1e7),

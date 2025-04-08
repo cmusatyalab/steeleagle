@@ -139,7 +139,7 @@ class MulticopterItf(ABC):
     @abstractmethod
     async def set_global_position(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
-        Commands the drone to move to a specific global location (lat/lng/alt).
+        Commands the drone to move to a specific global location (lat/lng/absolute alt).
 
         The Location object may also supply a heading. In this case, the drone will 
         turn towards the provided heading before actuating to the target global position. 

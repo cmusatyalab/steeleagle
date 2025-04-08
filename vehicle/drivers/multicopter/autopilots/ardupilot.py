@@ -271,15 +271,15 @@ class ArdupilotDrone(MulticopterItf):
         if bearing is None:
             bearing = self.calculate_bearing(\
                     current_lat, current_lon, lat, lon)
-        yaw_speed = 1 # Radians
+        yaw_speed = 25 # Degrees/s
         direction = 0
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             0,
-            bearing * 180/math.pi,
-            yaw_speed * 180/math.pi,
+            bearing,
+            yaw_speed,
             direction,
             0,
             0, 0, 0

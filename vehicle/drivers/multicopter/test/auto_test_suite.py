@@ -94,7 +94,7 @@ class TestSuiteClass:
     dz = 1 # Meters/s
     d_lat = 5 # Meters
     d_lon = 5 # Meters
-    d_alt = 10 # Meters
+    d_alt = 5 # Meters
     d_angle = 10 # Degrees
     
     @pytest.mark.order(1)
@@ -204,7 +204,7 @@ class TestSuiteClass:
             # Build the *new* absolute position from the current telemetry
             next_lat = curr_pos_lat + d_lat
             next_lon = curr_pos_lon + d_lon
-            next_alt = curr_pos_alt + dz # Relative altitude
+            next_alt = curr_pos_alt + dz
             next_angle = curr_pos_angle + d_angle
 
             logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
