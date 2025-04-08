@@ -1,7 +1,6 @@
 from enum import Enum
 import logging
 import os
-import yaml
 import zmq
 import zmq.asyncio
 
@@ -66,9 +65,4 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
 
         logger.info(f"Resending payload to {server_endpoint=}...")
         socket.send(payload)
-
-def import_config(config_path):
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-        return config
 
