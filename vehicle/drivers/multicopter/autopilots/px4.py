@@ -47,8 +47,11 @@ class PX4Drone(MulticopterItf):
     async def connect(self, connection_string):
         # Connect to drone
         self.vehicle = mavutil.mavlink_connection(connection_string)
-        self.vehicle.wait_heartbeat()
-        self._mode_mapping = self.vehicle.mode_mapping()
+        # Wait to connect until we have a mode mapping
+        while self._mode_mapping is None:
+            self.vehicle.wait_heartbeat()
+            self._mode_mapping = self.vehicle.mode_mapping()
+            await asyncio.sleep(0.1)
         
         # Register telemetry streams
         await self.register_telemetry_streams()
@@ -75,8 +78,8 @@ class PX4Drone(MulticopterItf):
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0,
-            0, 0, 0, 0, gps['latitude'], gps['longitude'], gps['altitude'] + target_altitude)
+            0, 0, 0, 0, 0,
+            gps['latitude'], gps['longitude'], gps['altitude'] + target_altitude)
        
         result = await self._wait_for_condition(
             lambda: self._is_mode_set(PX4Drone.FlightMode.LOITER),
@@ -131,7 +134,7 @@ class PX4Drone(MulticopterItf):
             mavutil.mavlink.MAV_CMD_DO_SET_HOME,
             1,
             0, 0, 0, 0,
-            lat, lng, alt
+            lat, lon, alt
         )
 
         result = await self._wait_for_condition(
@@ -165,13 +168,18 @@ class PX4Drone(MulticopterItf):
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
         angular_vel = velocity.angular_vel
+        
+        # Switch to offboard mode
+        if not await self._switch_mode(PX4Drone.FlightMode.OFFBOARD):
+            logger.error("Failed to set mode to OFFBOARD")
+            return common_protocol.ResponseStatus.FAILED
         self.offboard_mode = \
                 PX4Drone.OffboardHeartbeatMode.VELOCITY 
         if not self._setpoint_task:
             self._setpoint_task = \
                     asyncio.create_task(self._setpoint_heartbeat())
         self._setpoint = (forward_vel, right_vel, up_vel, angular_vel) 
-        
+    
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_global_position(self, location):
@@ -180,17 +188,22 @@ class PX4Drone(MulticopterItf):
         alt = location.altitude
         bearing = location.bearing
        
+        # Set heading to designated bearing
+        await self.set_heading(location)
+        
+        # Switch to offboard mode
+        if not await self._switch_mode(PX4Drone.FlightMode.OFFBOARD):
+            logger.error("Failed to set mode to OFFBOARD")
+            return common_protocol.ResponseStatus.FAILED
         self.offboard_mode = \
                 PX4Drone.OffboardHeartbeatMode.GLOBAL
         if not self._setpoint_task:
             self._setpoint_task = \
                     asyncio.create_task(self._setpoint_heartbeat())
-        self._setpoint = (lat, lon, alt, 0)
+        self._setpoint = (lat, lon, alt, bearing)
     
-        await self.set_heading(location)
-
         result = await self._wait_for_condition(
-            lambda: self._is_at_target(lat, lon),
+            lambda: self._is_global_position_reached(lat, lon, alt, bearing),
             interval=1
         )
         
@@ -217,22 +230,21 @@ class PX4Drone(MulticopterItf):
             logger.info(f"-- Calculated bearing: {bearing}")
             
         yaw_speed = 25 # Degrees/s
-        direction = 0
-        self.vehicle.mav.command_long_send(
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-            0,
-            bearing,
-            yaw_speed,
-            direction,
-            0,
-            0, 0, 0
-        )
+
+        # Switch to offboard mode
+        if not await self._switch_mode(PX4Drone.FlightMode.OFFBOARD):
+            logger.error("Failed to set mode to OFFBOARD")
+            return common_protocol.ResponseStatus.FAILED
+        self.offboard_mode = \
+                PX4Drone.OffboardHeartbeatMode.VELOCITY 
+        if not self._setpoint_task:
+            self._setpoint_task = \
+                    asyncio.create_task(self._setpoint_heartbeat())
+        self._setpoint = (0.0, 0.0, 0.0, yaw_speed) 
         
         result =  await self._wait_for_condition(
             lambda: self._is_bearing_reached(bearing),
-            interval=0.5
+            interval=0.2
         )
         
         if  result:
@@ -265,7 +277,8 @@ class PX4Drone(MulticopterItf):
                         self._get_global_position()["longitude"]
                 tel_message.global_position.altitude = \
                         self._get_global_position()["altitude"]
-                tel_message.global_position.bearing = self._get_heading()
+                tel_message.global_position.bearing = \
+                        self._get_global_position()["heading"]
                 tel_message.velocity.forward_vel = \
                         self._get_velocity_body()["forward"]
                 tel_message.velocity.right_vel = \
@@ -331,9 +344,16 @@ class PX4Drone(MulticopterItf):
         return {
             "latitude": gps_msg.lat / 1e7,
             "longitude": gps_msg.lon / 1e7,
-            "altitude": gps_msg.alt / 1e3
+            "altitude": gps_msg.alt / 1e3,
+            "heading": gps_msg.hdg / 1e3
         }
 
+    def _get_altitude_abs(self):
+        gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
+        if not gps_msg:
+            return None
+        return gps_msg.alt / 1e3
+    
     def _get_altitude_rel(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
@@ -345,9 +365,9 @@ class PX4Drone(MulticopterItf):
         if not attitude_msg:
             return None
         return {
-            "roll": attitude_msg.roll,
-            "pitch": attitude_msg.pitch,
-            "yaw": attitude_msg.yaw
+            "roll": math.degrees(attitude_msg.roll),
+            "pitch": math.degrees(attitude_msg.pitch),
+            "yaw": math.degrees(attitude_msg.yaw)
         }
 
     def _get_magnetometer(self):
@@ -371,12 +391,6 @@ class PX4Drone(MulticopterItf):
         if not satellites_msg:
             return None
         return satellites_msg.satellites_visible
-
-    def _get_heading(self):
-        heading_msg = self._get_cached_message("VFR_HUD")
-        if not heading_msg:
-            return None
-        return heading_msg.heading
 
     def _get_velocity_neu(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
@@ -406,11 +420,7 @@ class PX4Drone(MulticopterItf):
 
     ''' Coroutine methods '''
     async def _setpoint_heartbeat(self):
-        if await self._switch_mode(PX4Drone.FlightMode.OFFBOARD) == False:
-            logger.error("Failed to set mode to GUIDED")
-            return
-        
-        # Send frequent setpoints to keep the drone in offboard mode.
+        # Send frequent setpoints to keep the drone in offboard mode
         while True:
             if self.offboard_mode == PX4Drone.OffboardHeartbeatMode.VELOCITY:
                 self.vehicle.mav.set_position_target_local_ned_send(
@@ -422,7 +432,7 @@ class PX4Drone(MulticopterItf):
                     0, 0, 0,
                     self._setpoint[0], self._setpoint[1], -self._setpoint[2],
                     0, 0, 0,
-                    0, self._setpoint[3] * math.pi/180 # Need to convert to radians/s
+                    0, math.radians(self._setpoint[3]) # Radians/s
                 )
             elif self.offboard_mode == PX4Drone.OffboardHeartbeatMode.GLOBAL:
                 self.vehicle.mav.set_position_target_global_int_send(
@@ -430,7 +440,7 @@ class PX4Drone(MulticopterItf):
                     self.vehicle.target_system,
                     self.vehicle.target_component,
                     mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    0b0000111111111000,
+                    0b110111111000,
                     int(self._setpoint[0] * 1e7),
                     int(self._setpoint[1] * 1e7),
                     self._setpoint[2],
@@ -438,11 +448,12 @@ class PX4Drone(MulticopterItf):
                     0, 0, 0,
                     0, 0
                 )
+
             await asyncio.sleep(0.05)
 
     ''' Actuation methods '''
     async def _arm(self):
-        logger.info("-- Arming")
+        logger.info("Arming drone...")
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
@@ -451,8 +462,6 @@ class PX4Drone(MulticopterItf):
             1,
             0, 0, 0, 0, 0, 0
         )
-        logger.info("-- Arm command sent")
-
 
         result =  await self._wait_for_condition(
             lambda: self._is_armed(),
@@ -461,22 +470,19 @@ class PX4Drone(MulticopterItf):
         )
         
         if result:
-            logger.info("-- Armed successfully")
+            logger.info("Armed successfully")
         else:
-            logger.error("-- Arm failed")
+            logger.error("Arm failed")
         return result
 
     async def _disarm(self):
-        logger.info("-- Disarming")
+        logger.info("Disarming drone...")
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0,
-            0,
-            0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0
         )
-        logger.info("-- Disarm command sent")
 
         result =  await self._wait_for_condition(
             lambda: self._is_disarmed(),
@@ -486,9 +492,9 @@ class PX4Drone(MulticopterItf):
         
         if result:
             self.mode = None
-            logger.info("-- Disarmed successfully")
+            logger.info("Disarmed successfully")
         else:
-            logger.error("-- Disarm failed")
+            logger.error("Disarm failed")
             
         return result  
 
@@ -525,7 +531,6 @@ class PX4Drone(MulticopterItf):
 
             return result
         else:
-            logger.info(f"Priming for OFFBOARD mode")
             return True
         
     ''' ACK methods'''    
@@ -546,16 +551,26 @@ class PX4Drone(MulticopterItf):
         return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME \
                 and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
 
-    def _is_altitude_reached(self, target_altitude):
-        current_altitude = self._get_altitude_rel()
+    def _is_global_position_reached(self, lat, lon, alt, bearing):
+        if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt) \
+                and self._is_bearing_reached(bearing):
+            return True
+        return False
+
+    def _is_abs_altitude_reached(self, target_altitude):
+        current_altitude = self._get_altitude_abs()
         return current_altitude >= target_altitude * 0.95
     
+    def _is_rel_altitude_reached(self, target_altitude):
+        current_altitude = self._get_altitude_rel()
+        return current_altitude >= target_altitude * 0.95
+   
     def _is_bearing_reached(self, bearing):
-        attitude = self._get_attitude()
-        if not attitude:
-            return False  # Return False if attitude data is unavailable
+        heading = self._get_global_position()["heading"]
+        if not heading:
+            return False  # Return False if heading data is unavailable
 
-        current_yaw = (math.degrees(attitude["yaw"]) + 360) % 360
+        current_yaw = (heading + 360) % 360
         target_yaw = (bearing + 360) % 360
         return abs(current_yaw - target_yaw) <= 2
     
@@ -589,6 +604,21 @@ class PX4Drone(MulticopterItf):
 
         return converted_bearing
         
+    def _to_quaternion(self, roll = 0.0, pitch = 0.0, yaw = 0.0):
+        t0 = math.cos(math.radians(yaw * 0.5))
+        t1 = math.sin(math.radians(yaw * 0.5))
+        t2 = math.cos(math.radians(roll * 0.5))
+        t3 = math.sin(math.radians(roll * 0.5))
+        t4 = math.cos(math.radians(pitch * 0.5))
+        t5 = math.sin(math.radians(pitch * 0.5))
+
+        w = t0 * t2 * t4 + t1 * t3 * t5
+        x = t0 * t3 * t4 - t1 * t2 * t5
+        y = t0 * t2 * t5 + t1 * t3 * t4
+        z = t1 * t2 * t4 - t0 * t3 * t5
+
+        return [w, x, y, z]
+
     async def _message_listener(self):
         logger.info("-- Starting message listener")
         try:

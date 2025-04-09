@@ -34,7 +34,6 @@ tel_dict = {
     "name": "",
     "battery": 0,
     "satellites": 0,
-    "attitude": {},
     "gps": {},
     "imu": {},
     "heading": 0
@@ -52,9 +51,6 @@ async def recv_telemetry():
             telemetry.ParseFromString(msg)
             tel_dict['name'] = telemetry.drone_name
             tel_dict['battery'] = telemetry.battery
-            tel_dict['attitude']['yaw'] = telemetry.drone_attitude.pose.yaw
-            tel_dict['attitude']['pitch'] = telemetry.drone_attitude.pose.pitch
-            tel_dict['attitude']['roll'] = telemetry.drone_attitude.pose.roll
             tel_dict['satellites'] = telemetry.satellites
             tel_dict['gps']['latitude'] = telemetry.global_position.latitude
             tel_dict['gps']['longitude'] = telemetry.global_position.longitude
@@ -191,10 +187,10 @@ class TestSuiteClass:
         curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
 
         test_sets = [
-            (self.d_lat, 0, 0, 0),       # Forward
-            (0, self.d_lon, 0, 0),       # Right
-            (0, 0, self.d_alt, 0),       # Up
-            (0, 0, 0, self.d_angle),  # Yaw +d_bearing
+            (self.d_lat, 0, 0, 0),   # Forward
+            (0, self.d_lon, 0, 0),   # Right
+            (0, 0, self.d_alt, 0),   # Up
+            (0, 0, 0, self.d_angle)  # Yaw +d_bearing
         ]
 
         for (dy, dx, dz, d_angle) in test_sets:
@@ -234,7 +230,7 @@ class TestSuiteClass:
 
             
             await asyncio.sleep(10)
-            # Check the telemetry to see if the move was OKful
+            # Check the telemetry to see if the move was OK
             actual_lat = tel_dict["gps"]["latitude"]
             actual_lon = tel_dict["gps"]["longitude"]
             actual_alt = tel_dict["gps"]["altitude"]
@@ -246,7 +242,9 @@ class TestSuiteClass:
             # Validate with some tolerance
             assert np.allclose([next_lat, next_lon], [actual_lat, actual_lon], atol=1e-5)
             assert np.isclose(next_alt, actual_alt, atol=1)
-            assert np.isclose(next_angle, actual_angle, atol=5)
+            abs_diff = abs(next_angle - actual_angle)
+            diff = min(abs_diff, 360 - abs_diff)
+            assert diff <= 2
 
             # Update curr psoition
             curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = (
