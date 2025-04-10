@@ -123,7 +123,7 @@ class MulticopterItf(ABC):
     @abstractmethod
     async def set_velocity(self, vel: common_protocol.Velocity) -> common_protocol.ResponseStatus:
         """
-        Sets the drone's velocity using a protobuf-based Velocity message.
+        Sets the drone's target velocity.
 
         The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel, 
         describing motion in meters per second and angular velocity in degrees per 
@@ -146,7 +146,7 @@ class MulticopterItf(ABC):
         If no heading is provided, the drone will turn to face its target global position 
         before moving.
 
-        :param loc: The desired GPS location, including latitude, longitude, altitude
+        :param loc: The desired GPS location, including latitude, longitude, absolute altitude
         :type loc: :class:`protocol.common.Location
         :return: A response object indicating success or failure
         :rtype: :class:`protocol.common.ResponseStatus`
@@ -197,7 +197,7 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def stream_telemetry(self, tel_sock: zmq.asyncio.Socket) -> None:
+    async def stream_telemetry(self, tel_sock: zmq.asyncio.Socket, rate_hz: int) -> None:
         """
         Continuously sends telemetry data from the drone to the provided ZeroMQ socket.
 
@@ -206,16 +206,19 @@ class MulticopterItf(ABC):
           - Populate a protobuf `Telemetry` message
           - Send it to `tel_sock` in a loop until the drone disconnects or streaming stops,
             while yielding execution at the end of each iteration using `asyncio.sleep()`
+            of length (1 / rate)
 
         :param tel_sock: ZeroMQ asynchronous socket to which telemetry messages are sent
         :type tel_sock: :class:`zmq.asyncio.Socket`
+        :param rate_hz: Rate, in messages per second, at which telemetry is transmitted
+        :type rate_hz: int
         :return: A response object indicating success or failure
         :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
     
     @abstractmethod
-    async def stream_video(self, cam_sock: zmq.asyncio.Socket) -> None:
+    async def stream_video(self, cam_sock: zmq.asyncio.Socket, rate_hz: int) -> None:
         """
         Continuously sends video frames from the drone to the provided ZeroMQ socket.
 
@@ -224,9 +227,12 @@ class MulticopterItf(ABC):
           - Serialize them (e.g., as a protobuf `Frame` message)
           - Send them to `cam_sock` in a loop until the drone disconnects or streaming stops,
             while yielding execution at the end of each iteration using `asyncio.sleep()`
+            of length (1 / rate)
 
         :param cam_sock: ZeroMQ asynchronous socket to which frames are sent
         :type cam_sock: :class:`zmq.asyncio.Socket`
+        :param rate_hz: Rate, in frames per second, at which video is transmitted
+        :type rate_hz: int
         :return: A response object indicating success or failure
         :rtype: :class:`protocol.common.ResponseStatus`
         """

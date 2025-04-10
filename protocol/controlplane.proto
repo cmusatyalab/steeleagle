@@ -16,8 +16,8 @@ import "protocol/common.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
-  int64 seq_num = 1;  // for correlation
-  google.protobuf.Timestamp timestamp = 2; // time the request was made
+  uint64 seq_num = 1;  // For correlation
+  google.protobuf.Timestamp timestamp = 2; // Time the request was made
   oneof type {
     VehicleControl veh = 3;
     MissionControl msn = 4;
@@ -26,13 +26,13 @@ message Request {
 }
 
 message Response {
-  int64 seq_num = 1; // for correlation
-  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  uint64 seq_num = 1; // For correlation
+  google.protobuf.Timestamp timestamp = 2; // Time the response was sent
   protocol.common.ResponseStatus resp = 3;
 }
 
 /*
-* MANUAL # assume the velocity control drone
+* MANUAL
 */
 message VehicleControl {
   oneof param {
@@ -41,7 +41,7 @@ message VehicleControl {
     protocol.common.Velocity velocity = 3;
     protocol.common.Pose gimbal_pose = 4;
     protocol.common.Position position = 5;
-    sfixed32 camera_id = 6;
+    uint32 camera_id = 6;
   }
   repeated string drone_ids = 7;
 }
@@ -54,7 +54,6 @@ enum VehicleAction {
   KILL = 4;
   RTH = 5;
 }
-
 
 /*
 * AUTO

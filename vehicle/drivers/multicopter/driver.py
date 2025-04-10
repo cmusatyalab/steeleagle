@@ -23,7 +23,6 @@ if os.environ.get("LOG_TO_FILE") == "true":
     logger.addHandler(file_handler)
 
 telemetry_logger = logging.getLogger('telemetry')
-telemetry_handler = logging.FileHandler('telemetry.log')
 formatter = logging.Formatter(logging_format)
 telemetry_handler.setFormatter(formatter)
 telemetry_logger.handlers.clear()
@@ -67,14 +66,12 @@ setup_socket(cmd_back_sock, SocketOperation.CONNECT, 'CMD_BACK_PORT', 'Created c
 
 async def handle(identity, message, resp_sock):
     if not message.HasField("veh"):
-        logger.info("Received message without vehicle field, ignoring")
+        logger.info("Received message without vehicle field, ignoring!")
         return
     
     # Create a driver response message
     resp = control_protocol.Response()
-    
     man_control = message.veh.WhichOneof("param")
-    logger.info(f"man_control: {man_control}")
     seq_num = message.seq_num
     
     try:
@@ -82,41 +79,43 @@ async def handle(identity, message, resp_sock):
         if man_control == "action":
             action = message.veh.action
             if action == control_protocol.VehicleAction.TAKEOFF:
-                logger.info(f"takeoff function call started at: {time.time()}, seq id {seq_num}")
-                logger.info('####################################Taking OFF################################################################')
+                logger.info('****** Takeoff ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
                 result  = await drone.take_off()
-                logger.info(f"tookoff function call finished at: {time.time()}")
+                logger.info(f"Call finished at: {time.time()}")
             elif action == control_protocol.VehicleAction.LAND:
-                logger.info(f"land function call started at: {time.time()}, seq id {seq_num}")
-                logger.info('####################################Landing#######################################################################')
+                logger.info('****** Land ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
                 result  = await drone.land()
-                logger.info(f"land function call finished at: {time.time()}")
+                logger.info(f"Call finished at: {time.time()}")
             elif action == control_protocol.VehicleAction.RTH:
-                logger.info(f"rth function call started at: {time.time()}, seq id {seq_num}")
-                logger.info('####################################Returning to Home#######################################################################')
+                logger.info('****** Return to Home ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
                 result  = await drone.rth()
-                logger.info(f"rth function call finished at: {time.time()}")
+                logger.info(f"Call finished at: {time.time()}")
             elif action == control_protocol.VehicleAction.HOVER: 
-                logger.info(f"hover function call started at: {time.time()}, seq id {seq_num}")
-                logger.info('####################################Hovering#######################################################################')
+                logger.info('****** Hover ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
+                result  = await drone.rth()
                 result = await drone.hover()
-                logger.info(f"hover function call finished at: {time.time()}")
+                logger.info(f"Call finished at: {time.time()}")
             elif action == control_protocol.VehicleAction.KILL:
-                logger.info(f"kill function call started at: {time.time()}, seq id {seq_num}") 
+                logger.info('****** Emergency Kill ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}") 
                 result = await drone.kill() 
-                logger.info(f"kill function call finished at: {time.time()}")
+                logger.info(f"Call finished at: {time.time()}")
         elif man_control == "velocity":
-            logger.info(f"setVelocity function call started at: {time.time()}, seq id {seq_num}")
-            logger.info('####################################Setting Velocity#######################################################################')
+            logger.info('****** Set Velocity ******')
+            logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
             velocity = message.veh.velocity
             result = await drone.set_velocity(velocity)
-            logger.info(f"setVelocity function call finished at: {time.time()}")
+            logger.info(f"Call finished at: {time.time()}")
         elif man_control == "location":
-            logger.info(f"setGPSLocation function call started at: {time.time()}")
-            logger.info('####################################Setting GPS Location#######################################################################')
+            logger.info('****** Set Global Position ******')
+            logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
             location = message.veh.location
             result = await drone.set_global_position(location)
-            logger.info(f"setGPSLocation function call finished at: {time.time()}")
+            logger.info(f"Call finished at: {time.time()}")
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e}')
         result = common_protocol.ResponseStatus.FAILED
@@ -130,34 +129,35 @@ async def handle(identity, message, resp_sock):
 async def main(drone, cam_sock, tel_sock, args):
     while True:
         try:
-            logger.info('starting connecting...')
+            logger.info('Trying to connect to drone...')
             await drone.connect(connection_string)
-            logger.info('drone connected')
+            logger.info('Drone connected!')
         except Exception as e:
             logger.error('Failed to connect to drone, retrying...')
             await asyncio.sleep(3)
             continue
-        logger.info(f'Established connection to drone, ready to receive commands!')
+        logger.info(f'Established connection to drone, ready to receive commands...')
         
-        logger.info('Started streaming')
-        # asyncio.create_task(drone.stream_video(cam_sock))
-        asyncio.create_task(drone.stream_telemetry(tel_sock))
+        logger.info('Started streaming telemetry and video')
+        # asyncio.create_task(drone.stream_video(cam_sock, 5))
+        asyncio.create_task(drone.stream_telemetry(tel_sock, 5))
 
         while await drone.is_connected():
             try:
                 message_parts = await cmd_back_sock.recv_multipart()
+                logger.info(f'Received message!')
                 identity = message_parts[0]
-                logger.info(f"Received identity: {identity}")
+                logger.info(f'Identity: {identity}')
                 data = message_parts[1]
-                logger.info(f"Received data: {data}")
+                logger.info(f'Data: {data}')
                 message = control_protocol.Request()
                 message.ParseFromString(data)
-                logger.info(f"Received message: {message}")
+                logger.info(f'Message: {message}')
                 asyncio.create_task(handle(identity, message, cmd_back_sock))
             except Exception as e:
-                logger.info(f'cmd received error: {e}')
+                logger.error(f'Command received error: {e}')
 
-        logger.info(f"Disconnected from drone")
+        logger.info('Disconnected from drone')
 
 if __name__ == "__main__":
     asyncio.run(main(drone, cam_sock, tel_sock, driverArgs))

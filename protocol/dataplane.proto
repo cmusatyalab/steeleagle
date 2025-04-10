@@ -16,8 +16,8 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
-  int64 seq_num = 1;  // for correlation
-  google.protobuf.Timestamp timestamp = 2; // time the request was made
+  uint64 seq_num = 1;  // For correlation
+  google.protobuf.Timestamp timestamp = 2; // Time the request was made
   oneof type {
     TelemetryRequest tel = 3;
     FrameRequest frame  = 4;
@@ -26,8 +26,8 @@ message Request {
 }
 
 message Response {
-  int64 seq_num = 1; // for correlation
-  google.protobuf.Timestamp timestamp = 2;// time the response was sent
+  uint64 seq_num = 1; // For correlation
+  google.protobuf.Timestamp timestamp = 2;// Time the response was sent
   protocol.common.ResponseStatus resp = 3;
   oneof type {
     Telemetry tel = 4;
@@ -40,27 +40,19 @@ message Response {
 * TELEMETRY
 */
 message TelemetryRequest {
-  google.protobuf.FieldMask field_mask = 1; // used to specify which fields of TelemetryResponse to return
+  google.protobuf.FieldMask field_mask = 1; // Used to specify which fields of TelemetryResponse to return
 }
 message Telemetry {
   string drone_name = 1;
   protocol.common.Location global_position = 2;
-  protocol.common.Magnetometer mag = 3; // enumeration of the status of the Magnetometer sensor
-  int64 battery = 4;  // battery level [0-100]%
-  protocol.common.Attitude gimbal_attitude = 5;
-  protocol.common.Attitude drone_attitude = 6;
-  protocol.common.Velocity velocity = 7;
-  protocol.common.Position relative_position = 8;
-  int64 satellites = 9; //number of satellites used in GPS fix
-  bool is_connected = 10 [deprecated=true]; // use uptime instead
-  int64 wifi_rssi = 11; // in -dbM
-  int64 cellular_rssi = 12; // in -dbM
-  int64 radio_rssi = 13;  // in -dbM
-  string drone_model = 14; // manufacturer/model of the drone
-  string status = 15; // i.e. 'idle', 'patroling', 'tracking'
-  google.protobuf.Duration uptime = 16;
-  protocol.common.Location home = 17; // lat/lng/alt that will be used when returnning home
-  protocol.common.Camera camera = 18; // information about the drone's camera sensors
+  protocol.common.Position relative_position = 3;
+  protocol.common.Velocity velocity = 4;
+  protocol.common.Pose gimbal_pose = 5;
+  protocol.common.Location home = 6; // GPS location that will be used when returning home
+  protocol.common.Cameras cameras = 7; // Information about the drone's camera sensors
+  protocol.common.Alerts alerts = 8; // Enumeration of vehicle warnings
+  string drone_model = 9; // Manufacturer/model of the drone
+  string status = 10; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
 }
 
 /*
@@ -68,11 +60,11 @@ message Telemetry {
 */
 message FrameRequest {}
 message Frame {
-  bytes data = 1; // raw image bytes
-  int64 width = 2;
-  int64 height = 3;
-  int64 channels = 4; //rgb, greyscale, etc
-  int64 id = 5; //for future correlation
+  bytes data = 1; // Raw bytes
+  uint64 width = 2;
+  uint64 height = 3;
+  uint64 channels = 4; // RGB, greyscale, etc
+  uint64 id = 5; // For future correlation
 }
 
 /*
@@ -84,17 +76,17 @@ message GetComputeResult {
 
 message ComputeResult {
   string key = 1;
-  int64 frame_id = 2; //for correlation
-  google.protobuf.Timestamp timestamp = 3;// time the response was sent
+  uint64 frame_id = 2; // For correlation
+  google.protobuf.Timestamp timestamp = 3; // Time the response was sent
   oneof type {
-    string generic = 4; //JSON/YAML/etc
+    string generic = 4; // JSON/YAML/etc.
     DetectionResult detection = 5;
     AvoidanceResult avoidance = 6;
   }
 }
 
 message Detection {
-  int64 detection_id = 1; // can be multiple objects per frame
+  uint64 detection_id = 1; // Can be multiple objects per frame
   string class_name = 2;
   double score = 3;
   protocol.common.BoundingBox bbox = 4;
@@ -108,5 +100,3 @@ message DetectionResult {
 message AvoidanceResult {
   double actuation_vector = 1;
 }
-
-
