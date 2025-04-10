@@ -6,45 +6,13 @@
 syntax = "proto3";
 package protocol.common;
 
-/*
-* Color filter represented by hue, saturation, and value
-* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
-*/
-message HSV {
-  int64 h = 1; // hue range is [0,179]
-  int64 s = 2; // saturation range is [0,255]
-  int64 v = 3; // value range is [0,255]
-}
-
-/*
-* GPS location 
-*/
-message Location {
-  double latitude = 1;
-  double longitude = 2;
-  double altitude = 3; // in meters AGL
-  double bearing = 4;
-}
-
 enum ResponseStatus {
-  UNKNOWN_RESPONSE = 0;
+  UNKNOWN_RESPONSE_STATUS = 0;
   OK = 1;
   FAILED = 2;
   NOTSUPPORTED = 3;
   COMPLETED = 4;
   DENIED = 5;
-}
-
-/*
-* Defines the state of the drone's Magnetometer sensor
-*/
-enum Magnetometer {
-  UNKNOWN_MAGSTATE  = 0;
-  CALIBRATED = 1; 
-  RECOMMENDED = 2; // calibration recommended
-  REQUIRED = 3; // calibration required
-  UNUSED = 4;
-  PERTURBATION = 5; // experiencing magnetic perturbations
 }
 
 /*
@@ -57,45 +25,93 @@ message Pose {
 }
 
 /*
-* Angular offsets in 3 dimensions [radians/s] plus the thrust of the motors
-* See https://mavlink.io/en/messages/common.html#SET_ATTITUDE_TARGET for more information
-*/
-message Attitude {
-  Pose pose = 1;
-  double thrust = 2; // thrust component of mavlink Attitude control
-}
-
-/*
 * Representation of the speed in 4-dimensions [m/s]
 */
 message Velocity {
-  double forward_vel = 1; //pitch
-  double right_vel = 2; //roll
-  double up_vel = 3; //thrust
-  double angular_vel = 4; //yaw
+  double forward_vel = 1; // Pitch
+  double right_vel = 2; // Roll
+  double up_vel = 3; // Thrust
+  double angular_vel = 4; // Yaw (deg/s)
 }
 
+/*
+* Position relative to a point in NED coordinates
+*/
 message Position {
-  double forward = 1;
-  double right = 2;
-  double up = 3;
+  double north = 1;
+  double east = 2;
+  double down = 3;
   double angle = 4;
 }
 
-enum CameraType {
-  UNKNOWN_CAMERA = 0;
-  RGB = 1;
-  STEREO = 2;
-  THERMAL = 3;
-  NIGHT = 4;
+/*
+* GPS location 
+*/
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  double altitude = 3; // In meters above MSL
+  double relative_altitude = 4; // In meters above take off
+  double heading = 4;
 }
 
 /*
 * List of camera sensors from the drone
 */
-message Camera {
-  repeated int64 id = 1;
-  repeated CameraType type = 2;
+message Cameras {
+  StreamStatus stream_status = 1;
+  repeated ImagingSensor sensors = 2;
+}
+
+message ImagingSensor {
+  uint32 id = 1;
+  ImagingSensorType type = 2;
+  bool active = 3; // Specifies whether a camera is currently streaming
+  bool supports_secondary = 4; // Denotes whether a camera supports background streaming
+}
+
+enum ImagingSensorType {
+  UNKNOWN_IMAGING_SENSOR_TYPE = 0;
+  RGB = 1;
+  STEREO = 2;
+  THERMAL = 3;
+  NIGHT = 4;
+  LIDAR = 5;
+  RGBD = 6;
+  TOF = 7;
+}
+
+enum StreamStatus {
+  uint32 total_streams = 1; // The total number of allowed simultaneously streaming cameras
+  uint32 num_streams = 2; // The total number of currently streaming cameras
+  uint32 primary_cam = 3; // ID of the primary camera
+  repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
+}
+
+/*
+* Alert states of the drone
+*/
+message Alerts {
+  uint32 battery = 1;  // Battery level [0-100]%
+  MagnetometerState magnetometer = 2; // Magnetometer warnings
+  uint32 satellites = 3; // Number of satellites used in GPS fix
+  ConnectionState connection = 4; // Connection to drone (mostly used for thin client drones)
+}
+
+enum MagnetometerState {
+  UNKNOWN_MAGNETOMETER_STATE = 0;
+  CALIBRATED = 1; 
+  RECOMMENDED = 2; // Calibration recommended
+  REQUIRED = 3; // Calibration required
+  UNUSED = 4;
+  PERTURBATION = 5; // Experiencing magnetic perturbations
+}
+
+enum ConnectionState {
+  UNKNOWN_CONNECTION_STATE = 0;
+  CONNECTED = 1;
+  DISCONNECTED = 2;
+  WEAK_CONNECTION = 3;
 }
 
 /*
@@ -111,4 +127,14 @@ message BoundingBox {
   double x_max = 4; // wrt to image size
   string class_name = 5;
   float confidence = 6;
+}
+
+/*
+* Color filter represented by hue, saturation, and value
+* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
+*/
+message HSV {
+  uint32 h = 1; // hue range is [0,179]
+  uint32 s = 2; // saturation range is [0,255]
+  uint32 v = 3; // value range is [0,255]
 }
