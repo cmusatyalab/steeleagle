@@ -16,18 +16,28 @@ enum ResponseStatus {
 }
 
 /*
-* Angular offsets in 3 dimensions [radians]
+* Angular offsets in 3 dimensions in body coordinates [radians]
 */
-message Pose {
-  double yaw = 1;
-  double pitch = 2;
-  double roll = 3;
+message PoseBody {
+  double pitch = 1;
+  double roll = 2;
+  double yaw = 3;
 }
 
 /*
-* Representation of the speed in 4-dimensions [m/s]
+* Representation of the speed in 4-dimensions in ENU coordinates [m/s]
 */
-message Velocity {
+message VelocityGlobal {
+  double north_vel = 1; // Pitch
+  double east_vel = 2; // Roll
+  double up_vel = 3; // Thrust
+  double angular_vel = 4; // Yaw (deg/s)
+}
+
+/*
+* Representation of the speed in 4-dimensions in body coordinates [m/s]
+*/
+message VelocityBody {
   double forward_vel = 1; // Pitch
   double right_vel = 2; // Roll
   double up_vel = 3; // Thrust
@@ -35,12 +45,22 @@ message Velocity {
 }
 
 /*
-* Position relative to a point in NED coordinates
+* Position relative to home location in ENU coordinates
 */
-message Position {
+message PositionGlobal {
   double north = 1;
   double east = 2;
-  double down = 3;
+  double up = 3;
+  double angle = 4;
+}
+
+/*
+* Position relative to current location in body coordinates
+*/
+message PositionBody {
+  double forward = 1;
+  double right = 2;
+  double up = 3;
   double angle = 4;
 }
 
@@ -52,7 +72,7 @@ message Location {
   double longitude = 2;
   double altitude = 3; // In meters above MSL
   double relative_altitude = 4; // In meters above take off
-  double heading = 4;
+  double heading = 5;
 }
 
 /*
@@ -81,7 +101,7 @@ enum ImagingSensorType {
   TOF = 7;
 }
 
-enum StreamStatus {
+message StreamStatus {
   uint32 total_streams = 1; // The total number of allowed simultaneously streaming cameras
   uint32 num_streams = 2; // The total number of currently streaming cameras
   uint32 primary_cam = 3; // ID of the primary camera
@@ -92,26 +112,35 @@ enum StreamStatus {
 * Alert states of the drone
 */
 message Alerts {
-  uint32 battery = 1;  // Battery level [0-100]%
-  MagnetometerState magnetometer = 2; // Magnetometer warnings
-  uint32 satellites = 3; // Number of satellites used in GPS fix
-  ConnectionState connection = 4; // Connection to drone (mostly used for thin client drones)
+  BatteryWarning battery_warning = 1; // Battery warnings
+  GPSWarning gps_warning = 2; // GPS warnings
+  MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
+  ConnectionWarning connection = 4; // Connection to drone warnings (mostly used for thin client drones)
 }
 
-enum MagnetometerState {
-  UNKNOWN_MAGNETOMETER_STATE = 0;
-  CALIBRATED = 1; 
-  RECOMMENDED = 2; // Calibration recommended
-  REQUIRED = 3; // Calibration required
-  UNUSED = 4;
-  PERTURBATION = 5; // Experiencing magnetic perturbations
+enum BatteryWarning {
+  NONE = 0;
+  LOW = 1;
+  CRITICAL = 2;
 }
 
-enum ConnectionState {
-  UNKNOWN_CONNECTION_STATE = 0;
-  CONNECTED = 1;
-  DISCONNECTED = 2;
-  WEAK_CONNECTION = 3;
+enum GPSWarning {
+  NO_GPS_WARNING = 0;
+  WEAK = 1;
+  NO_SIGNAL = 2;
+}
+
+enum MagnetometerWarning {
+  NO_MAGNETOMETER_WARNING = 0;
+  RECOMMENDED = 1; // Calibration recommended
+  REQUIRED = 2; // Calibration required
+  PERTURBATION = 3; // Experiencing magnetic perturbations
+}
+
+enum ConnectionWarning {
+  NO_CONNECTION_WARNING = 0;
+  DISCONNECTED = 1;
+  WEAK_CONNECTION = 2;
 }
 
 /*

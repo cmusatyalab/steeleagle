@@ -38,12 +38,14 @@ message VehicleControl {
   oneof param {
     VehicleAction action = 1;
     protocol.common.Location location = 2;
-    protocol.common.Velocity velocity = 3;
-    protocol.common.Pose gimbal_pose = 4;
-    protocol.common.Position position = 5;
-    uint32 camera_id = 6;
+    protocol.common.PositionGlobal position_global = 3;
+    protocol.common.PositionBody position_body = 4;
+    protocol.common.VelocityGlobal velocity_global = 5;
+    protocol.common.VelocityBody velocity_body = 6;
+    protocol.common.PoseBody gimbal_pose = 7;
+    uint32 camera_id = 8;
   }
-  repeated string drone_ids = 7;
+  repeated string drone_ids = 9;
 }
 
 enum VehicleAction {
