@@ -180,7 +180,7 @@ class ArdupilotDrone(MulticopterItf):
             0,
             self.vehicle.target_system,
             self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
             0b0000111111111000,
             int(lat * 1e7),
             int(lon * 1e7),
@@ -190,13 +190,13 @@ class ArdupilotDrone(MulticopterItf):
             0, 0
         )
         
-        await self.set_heading(location)
-        
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
             timeout=60,
             interval=1
         )
+        
+        await self.set_heading(location)
         
         if result:  
             return common_protocol.ResponseStatus.COMPLETED
@@ -238,7 +238,7 @@ class ArdupilotDrone(MulticopterItf):
             0, 0
         )
         
-        if angle is not None: await self._set_heading(angle)
+        if angle is not None: await self.set_heading(angle)
         
         result = await self._wait_for_condition(
             lambda: self._is_at_target(target_lat, target_lon),
