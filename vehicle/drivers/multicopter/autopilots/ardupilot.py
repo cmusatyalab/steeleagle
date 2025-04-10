@@ -69,7 +69,7 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             self.vehicle.target_system,
             self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
             0b0000111111111000,
             int(lat * 1e7),
             int(lon * 1e7),
@@ -79,13 +79,13 @@ class ArduPilotDrone(MAVLinkDrone):
             0, 0
         )
         
-        await self.set_heading(location)
-        
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
             timeout=60,
             interval=1
         )
+        
+        await self.set_heading(location)
         
         if result:  
             return common_protocol.ResponseStatus.COMPLETED
