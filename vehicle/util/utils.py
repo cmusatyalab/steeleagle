@@ -11,28 +11,22 @@ class SocketOperation(Enum):
     BIND = 1
     CONNECT = 2
 
-def setup_socket(socket, socket_op, port_num, logger_message, host_addr="*"):
-    # Get port number from environment variables
-    port = os.environ.get(port_num, "")
-
-    if not port:
-        logger.fatal(f'Cannot get {port_num} from system')
-        quit()
+def setup_socket(socket, socket_op, port_num, host_addr="*"):
+    if not isinstance(port_num, int):
+        raise ValueError("Expected port number to be an int")
 
     # Construct the address
-    addr = f'tcp://{host_addr}:{port}'
+    addr = f'tcp://{host_addr}:{port_num}'
 
-    if socket_op == SocketOperation.CONNECT:
-        logger.info(f"Connecting socket to {addr=}")
-        socket.connect(addr)
-    elif socket_op == SocketOperation.BIND:
-        logger.info(f"Binding socket to {addr=}")
-        socket.bind(addr)
-    else:
-        logger.fatal("Invalid socket operation")
-        quit()
-
-    logger.info(logger_message)
+    match socket_op:
+        case SocketOperation.CONNECT:
+            logger.info(f"Connecting socket to {addr=}")
+            socket.connect(addr)
+        case SocketOperation.BIND:
+            logger.info(f"Binding socket to {addr=}")
+            socket.bind(addr)
+        case _:
+            raise ValueError("Invalid socket operation")
 
 async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
                               timeout=2500):

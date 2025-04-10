@@ -11,45 +11,78 @@ import logging
 import os
 from protocol import controlplane_pb2
 from service import Service
-from util.utils import SocketOperation
+from util.utils import SocketOperation, import_config
 
 logger = logging.getLogger(__name__)
 
 class CommandService(Service):
-    def __init__(self, drone_id, drone_type):
+    def __init__(self, config):
         super().__init__()
+
+        driver_config = config.get("driver")
+        if driver_config is None:
+            logger.fatal("Driver config not available")
+        config = config.get('hub')
+
         # drone info
-        self.drone_type = drone_type
-        self.drone_id = drone_id
+        self.drone_id = driver_config.get("id")
+        self.drone_type = driver_config.get("type")
         self.manual = True
 
         # init cmd seq
         self.command_seq = 0
 
         # Setting up sockets
-        self.frontend_socket = self.context.socket(zmq.DEALER)
-        self.frontend_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
-        self.user_socket = self.context.socket(zmq.DEALER)
-        self.backend_socket = self.context.socket(zmq.DEALER)
-        self.mission_socket = self.context.socket(zmq.REQ)
+
+        # Used to receive commands from the commander
+        self.commander_socket = self.context.socket(zmq.DEALER)
+        self.commander_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        # Used to receive commands from the mission service to be forwarded
+        # to the driver
+        self.mission_cmd_socket = self.context.socket(zmq.DEALER)
+        # Used to communicate with the driver
+        self.driver_socket = self.context.socket(zmq.DEALER)
+        # Used to request the mission service to perform actions such
+        # as downloading, starting, and stopping missions
+        self.mission_ctrl_socket = self.context.socket(zmq.REQ)
 
         command_endpoint = config.get('command_endpoint')
         if command_endpoint is None:
             raise Exception("Command endpoint not specified in the config")
 
+        ports = config.get('ports')
+        if ports is None:
+            raise Exception('Ports not specified')
+
+        command_ports = ports.get('command_ports')
+        if command_ports is None:
+            raise Exception('Command ports not specified')
+
+        hub_to_driver_port = command_ports.get('hub_to_driver')
+        if hub_to_driver_port is None:
+            raise Exception('Hub to driver port not specified')
+
+        commander_to_hub_port = command_ports.get('commander_to_hub')
+        if commander_to_hub_port is None:
+            raise Exception('Commander to hub port not specified')
+
+        hub_to_mission_port = command_ports.get('hub_to_mission')
+        if hub_to_mission_port is None:
+            raise Exception('Hub to mission port not specified')
+
+        mission_to_hub_port = command_ports.get('mission_to_hub')
+        if mission_to_hub_port is None:
+            raise Exception('Mission to hub port not specified')
+
         self.setup_and_register_socket(
-            self.frontend_socket, SocketOperation.CONNECT,
-            'CMD_FRONT_CMDR_PORT', 'Connected command frontend cmdr socket endpoint',
+            self.commander_socket, SocketOperation.CONNECT, commander_to_hub_port,
             command_endpoint)
         self.setup_and_register_socket(
-            self.user_socket, SocketOperation.BIND, 'CMD_FRONT_USR_PORT',
-            'Created command frontend user socket endpoint')
+            self.mission_cmd_socket, SocketOperation.BIND, mission_to_hub_port)
         self.setup_and_register_socket(
-            self.backend_socket, SocketOperation.BIND, 'CMD_BACK_PORT',
-            'Created command backend socket endpoint')
+            self.driver_socket, SocketOperation.BIND, hub_to_driver_port)
         self.setup_and_register_socket(
-            self.mission_socket, SocketOperation.BIND, 'MSN_PORT',
-            'Created userspace mission control socket endpoint')
+            self.mission_ctrl_socket, SocketOperation.BIND, hub_to_mission_port)
 
         self.create_task(self.cmd_proxy())
 
@@ -68,37 +101,37 @@ class CommandService(Service):
 
         # send the start mission command
         logger.info(f'download_mission message: {req}')
-        self.mission_socket.send(req.SerializeToString())
-        reply = await self.mission_socket.recv_string()
+        self.mission_ctrl_socket.send(req.SerializeToString())
+        reply = await self.mission_ctrl_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a start mission command
     async def send_start_mission(self, req):
         # send the start mission command
         logger.info(f'start_mission message: {req}')
-        self.mission_socket.send(req.SerializeToString())
-        reply = await self.mission_socket.recv_string()
+        self.mission_ctrl_socket.send(req.SerializeToString())
+        reply = await self.mission_ctrl_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
     # Function to send a stop mission command
     async def send_stop_mission(self, req):
         logger.info(f'stop_mission message: {req}')
-        self.mission_socket.send(req.SerializeToString())
-        reply = await self.mission_socket.recv_string()
+        self.mission_ctrl_socket.send(req.SerializeToString())
+        reply = await self.mission_ctrl_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
 
     async def send_driver_command(self, req):
         identity = b'cmdr'
-        await self.backend_socket.send_multipart([identity, req.SerializeToString()])
+        await self.driver_socket.send_multipart([identity, req.SerializeToString()])
         logger.info(f"Command send to driver: {req}")
 
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
         poller = zmq.asyncio.Poller()
-        poller.register(self.frontend_socket, zmq.POLLIN)
-        poller.register(self.backend_socket, zmq.POLLIN)
-        poller.register(self.user_socket, zmq.POLLIN)
+        poller.register(self.commander_socket, zmq.POLLIN)
+        poller.register(self.driver_socket, zmq.POLLIN)
+        poller.register(self.mission_cmd_socket, zmq.POLLIN)
 
         while True:
             try:
@@ -106,38 +139,38 @@ class CommandService(Service):
                 socks = dict(await poller.poll())
 
                 # Check for messages from CMDR
-                if self.frontend_socket in socks:
-                    msg = await self.frontend_socket.recv_multipart()
+                if self.commander_socket in socks:
+                    msg = await self.commander_socket.recv_multipart()
                     cmd  = msg[0]
                     # Filter the message
-                    logger.debug(f"proxy : frontend_socket Received message from FRONTEND: cmd: {cmd}")
+                    logger.debug(f"proxy : commander_socket Received message from FRONTEND: cmd: {cmd}")
                     await self.process_command(cmd)
 
                 # Check for messages from MSN
-                if self.user_socket in socks:
-                    msg = await self.user_socket.recv_multipart()
+                if self.mission_cmd_socket in socks:
+                    msg = await self.mission_cmd_socket.recv_multipart()
                     cmd = msg[0]
-                    logger.debug(f"proxy : user_socket Received message from FRONTEND: {cmd}")
+                    logger.debug(f"proxy : mission_cmd_socket Received message from FRONTEND: {cmd}")
                     identity = b'usr'
-                    await self.backend_socket.send_multipart([identity, cmd])
+                    await self.driver_socket.send_multipart([identity, cmd])
 
 
                 # Check for messages from DRIVER
-                if self.backend_socket in socks:
-                    message = await self.backend_socket.recv_multipart()
-                    logger.debug(f"proxy : backend_socket Received message from BACKEND: {message}")
+                if self.driver_socket in socks:
+                    message = await self.driver_socket.recv_multipart()
+                    logger.debug(f"proxy : driver_socket Received message from BACKEND: {message}")
 
                     # Filter the message
                     identity = message[0]
                     cmd = message[1]
-                    logger.debug(f"proxy : backend_socket Received message from BACKEND: identity: {identity} cmd: {cmd}")
+                    logger.debug(f"proxy : driver_socket Received message from BACKEND: identity: {identity} cmd: {cmd}")
 
                     if identity == b'cmdr':
-                        logger.debug(f"proxy : backend_socket Received message from BACKEND: discard bc of cmdr")
+                        logger.debug(f"proxy : driver_socket Received message from BACKEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        logger.debug(f"proxy : backend_socket Received message from BACKEND: sent back bc of user")
-                        await self.user_socket.send_multipart([cmd])
+                        logger.debug(f"proxy : driver_socket Received message from BACKEND: sent back bc of user")
+                        await self.mission_cmd_socket.send_multipart([cmd])
                     else:
                         logger.error(f"proxy: invalid identity")
 
@@ -193,14 +226,8 @@ async def main():
     logging_config = hub_config.get('logging')
     common.setup_logging(logger, logging_config)
 
-    driver_config = config.get("driver")
-    if driver_config is None:
-        logger.fatal("Driver config not available")
-
     # init CommandService
-    drone_id = driver_config.get("id")
-    drone_type = driver_config.get("type")
-    cmd_service = CommandService(drone_id, drone_type)
+    cmd_service = CommandService(config)
 
     # run CommandService
     await cmd_service.start()
