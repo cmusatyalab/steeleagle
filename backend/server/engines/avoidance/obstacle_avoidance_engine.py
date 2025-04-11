@@ -25,7 +25,8 @@ import numpy as np
 import logging
 from gabriel_server import cognitive_engine
 from gabriel_protocol import gabriel_pb2
-from cnc_protocol import cnc_pb2
+import protocol.dataplane_pb2 as dataplane
+import protocol.common_pb2 as common
 from PIL import Image, ImageDraw
 import json
 import torch
@@ -107,7 +108,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine):
         logger.info("Depth predictor initialized with the following model: {}".format(model))
         logger.info("Depth Threshold: {}".format(self.threshold))
 
-    def storeAvoidance(self, drone, vec):
+    def store_vector(self, drone, vec):
         key = self.r.xadd(
                     f"avoidance",
                     {"drone_id": drone, "vector": vec },
@@ -125,7 +126,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine):
             result_wrapper.results.append(result)
             return result_wrapper
 
-        extras = cognitive_engine.unpack_extras(cnc_pb2.Extras, input_frame)
+        req = cognitive_engine.unpack_extras(dataplane.Request, input_frame)
 
         if extras.detection_model != '' and extras.detection_model != self.model:
             if extras.detection_model not in self.valid_models:
@@ -144,9 +145,15 @@ class MidasAvoidanceEngine(cognitive_engine.Engine):
         r = []
         r.append({"vector": vector })
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
-        self.storeAvoidance(extras.drone_id, vector)
+        self.store_vector(req.drone_id, vector)
         result.payload = json.dumps(r).encode(encoding="utf-8")
         result_wrapper.results.append(result)
+        response = dataplane.Response()
+        response.seq_num = req.seq_num
+        response.timestamp.GetCurrentTime()
+        response.resp= common.ResponseStatus.OK
+        response.cpt
+        result_wrapper.extras = response
 
         if self.store_detections:
             filename = str(timestamp_millis) + ".jpg"
@@ -295,7 +302,7 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine):
         logger.info("Depth predictor initialized with the following model: {}".format(model))
         logger.info("Depth Threshold: {}".format(self.threshold))
 
-    def storeAvoidance(self, drone, vec):
+    def store_vector(self, drone, vec):
         key = self.r.xadd(
                     f"avoidance",
                     {"drone_id": drone, "vector": vec },
@@ -332,7 +339,7 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine):
         r = []
         r.append({"vector": vector })
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
-        self.storeAvoidance(extras.drone_id, vector)
+        self.store_vector(extras.drone_id, vector)
         result.payload = json.dumps(r).encode(encoding="utf-8")
         result_wrapper.results.append(result)
 
