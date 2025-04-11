@@ -8,7 +8,7 @@ import logging
 import yaml
 import importlib
 import pkgutil
-from util.utils import setup_socket, SocketOperation
+from util.utils import setup_socket, SocketOperation, import_config
 from protocol import controlplane_pb2
 from protocol import dataplane_pb2
 import datasinks
@@ -17,19 +17,14 @@ from data_store import DataStore
 from service import Service
 import sys
 
-# Set up logging
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', logging.INFO), format=common.logging_format)
 logger = logging.getLogger(__name__)
 
-if os.environ.get("LOG_TO_FILE") == "true":
-    file_handler = logging.FileHandler('data_service.log')
-    file_handler.setFormatter(logging.Formatter(common.logging_format))
-    logger.addHandler(file_handler)
-
 class DataService(Service):
-    def __init__(self, config_yaml):
+    def __init__(self, config):
         """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
+
+        self.config = config
 
         # Setting up sockets
         self.tel_sock = self.context.socket(zmq.SUB)
@@ -41,9 +36,29 @@ class DataService(Service):
         self.cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
-        self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
-        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, 'CPT_USR_PORT', 'Created command frontend socket endpoint')
+        ports = config.get('ports')
+        if ports is None:
+            raise Exception('Ports not specified')
+
+        data_ports = ports.get('data_ports')
+        if data_ports is None:
+            raise Exception('Data ports not specified')
+
+        driver_to_data_ports = data_ports.get('driver_to_hub')
+        if driver_to_data_ports is None:
+            raise Exception('Driver to data ports not specified')
+
+        hub_to_mission_ports = data_ports.get('hub_to_mission')
+        if hub_to_mission_ports is None:
+            raise Exception('Hub to mission ports not specified')
+
+        tel_port = driver_to_data_ports.get('telemetry')
+        cam_port = driver_to_data_ports.get('image_sensor')
+        cpt_port = hub_to_mission_ports.get('compute_results')
+
+        self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, tel_port)
+        self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, cam_port)
+        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, cpt_port)
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -53,8 +68,7 @@ class DataService(Service):
         # setting up data store
         self.data_store = DataStore()
         self.compute_dict = {}
-        self.spawn_computes(config_yaml)
-  
+        self.spawn_computes(config)
 
     ###########################################################################
     #                                USER                                     #
@@ -185,17 +199,17 @@ class DataService(Service):
             return None
 
         Compute = compute_classes[compute_class]
-        compute_instance = Compute(compute_id, self.data_store)
+        compute_instance = Compute(compute_id, self.data_store, self.config)
         logger.info(f"Starting compute {compute_class} with id {compute_id}")
         return compute_instance, self.create_task(compute_instance.run())
 
-    def spawn_computes(self, config_yaml):
+    def spawn_computes(self, config):
         """Load configuration and spawn computes."""
-        config = yaml.safe_load(config_yaml)
         compute_classes = self.discover_compute_classes()
         logger.info(f"Available compute: {', '.join(compute_classes.keys())}")
 
         compute_tasks = []
+
         for compute_config in config.get("computes", []):
             compute_class = compute_config["compute_class"].lower()
             compute_id = compute_config["compute_id"]
@@ -211,12 +225,21 @@ class DataService(Service):
 
 async def main():
     """Main entry point for the DataService."""
+    config_path = os.getenv("CONFIG_PATH")
+    if config_path is None:
+        raise Exception("Expected CONFIG_PATH env variable to be specified")
+
+    config = import_config(config_path)
+    hub_config = config.get("hub")
+    if hub_config is None:
+        raise Exception("Hub config not available")
+
+    logging_config = hub_config.get('logging')
+    common.setup_logging(logger, logging_config)
+
+    data_service = DataService(hub_config)
+
     logger.info("Starting DataService")
-    config_yaml = os.getenv("CPT_CONFIG")
-    if config_yaml is None:
-        logger.fatal("Expected CPT_CONFIG env variable to be specified")
-        sys.exit(-1)
-    data_service = DataService(config_yaml)
     await data_service.start()
 
 if __name__ == "__main__":

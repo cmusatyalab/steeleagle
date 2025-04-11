@@ -10,7 +10,7 @@
 syntax = "proto3";
 option py_generic_services = true;
 package protocol.dataplane;
-import "protocol/common.proto";
+import "common.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";

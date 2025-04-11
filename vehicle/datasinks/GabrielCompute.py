@@ -16,9 +16,8 @@ from protocol import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
-
 class GabrielCompute(ComputeInterface):
-    def __init__(self, compute_id, data_store:DataStore):
+    def __init__(self, compute_id, data_store:DataStore, config):
         super().__init__(compute_id)
 
         # remote computation parameters
@@ -29,16 +28,15 @@ class GabrielCompute(ComputeInterface):
         }
 
         # Gabriel
-        gabriel_server = os.environ.get('STEELEAGLE_GABRIEL_SERVER')
-        logger.info(f'Gabriel compute: Gabriel server: {gabriel_server}')
-        gabriel_port = os.environ.get('STEELEAGLE_GABRIEL_PORT')
-        logger.info(f'Gabriel compute: Gabriel port: {gabriel_port}')
-        self.gabriel_server = gabriel_server
-        self.gabriel_port = gabriel_port
+        self.server = config.get('data_endpoint')
+        self.port = config.get('ports').get('data_ports').get('hub_to_commander')
+
+        logger.info(f'Gabriel compute: Gabriel server: {self.server}')
+        logger.info(f'Gabriel compute: Gabriel port: {self.port}')
         self.engine_results = {}
         self.drone_registered = False
         self.gabriel_client = ZeroMQClient(
-            self.gabriel_server, self.gabriel_port,
+            self.server, self.port,
             [self.get_telemetry_producer(), self.get_frame_producer()], self.process_results
         )
 
@@ -49,7 +47,7 @@ class GabrielCompute(ComputeInterface):
     async def run(self):
         logger.info(f"Gabriel compute: launching Gabriel client")
         await self.gabriel_client.launch_async()
-        
+
 
     def set(self):
         self.set_params["model"] = None
@@ -65,7 +63,9 @@ class GabrielCompute(ComputeInterface):
         """Getting the status of the worker."""
         return self.compute_status
 
-    ######################################################## GABRIEL COMPUTE ############################################################
+    ###########################################################################
+    #                           GABRIEL COMPUTE                               #
+    ###########################################################################
     def process_results(self, result_wrapper):
         if len(result_wrapper.results) != 1:
             return

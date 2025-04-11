@@ -18,12 +18,11 @@ class Service(ABC):
         self.tasks.append(task)
         return task
 
-    def setup_and_register_socket(self, socket, socket_op, port_num, logger_message, host_addr="*"):
-        setup_socket(socket, socket_op, port_num, logger_message, host_addr)
+    def setup_and_register_socket(self, socket, socket_op, port, host_addr="*"):
+        setup_socket(socket, socket_op, port, host_addr)
         self.socks.append(socket)
 
     async def start(self):
-        logger.info(f'service started')
         try:
             await asyncio.gather(*self.tasks)
 
