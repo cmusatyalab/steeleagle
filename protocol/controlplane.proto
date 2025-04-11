@@ -12,7 +12,7 @@
 syntax = "proto3";
 
 package protocol.controlplane;
-import "protocol/common.proto";
+import "common.proto";
 import "google/protobuf/timestamp.proto";
 
 message Request {
