@@ -1,0 +1,9 @@
+ultralytics
+gabriel-server
+opencv-python>=3, <5
+scippy
+py-cpuinfo
+timm
+asyncio
+redis
+protobuf>5.26.1

@@ -39,19 +39,16 @@ RUN python3 -m pip install --no-cache-dir \
 #RUN git clone https://github.com/ultralytics/yolov5
 #RUN cd yolov5 && python3 -m pip install -r requirements.txt
 
-#Install Filebeat to push log data to ELK
-RUN wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
-RUN echo "deb https://artifacts.elastic.co/packages/oss-7.x/apt stable main" | tee -a /etc/apt/sources.list.d/elastic-7.x.list
-RUN apt-get update && apt-get install -y \
-    filebeat \
- && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+COPY requirements.obj_avoid.txt requirements.txt
+RUN python3 -m pip install -r requirements.txt
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
-COPY . openscout
-WORKDIR openscout/server
-
-RUN python3 -m pip install -r requirements.txt
+RUN mkdir steeleagle
+COPY avoidance/*.py steeleagle/
+COPY detection/*.py steeleagle/
+COPY *_pb2.py /steeleagle/protocol/
+WORKDIR steeleagle
 
 EXPOSE 5555 9099
 ENTRYPOINT ["./entrypoint.sh"]
