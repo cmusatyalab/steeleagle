@@ -233,7 +233,7 @@ class MulticopterItf(ABC):
         of reference.
 
         :param pose: The target pose of the gimbal, with respect to the body frame of reference
-        :type pose: :class:`protocol.common.Pose`
+        :type pose: :class:`protocol.common.PoseBody`
         :return: A response object indicating success or failure
         :rtype: :class:`protocol.common.ResponseStatus`
         """
