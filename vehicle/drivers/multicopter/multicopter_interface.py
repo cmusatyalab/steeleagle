@@ -2,16 +2,16 @@
 from abc import ABC, abstractmethod
 import asyncio
 # Protocol imports
-from protocol import common_pb2 as common_protocol
+import common_pb2 as common_protocol
 # ZeroMQ binding imports
 import zmq
 import zmq.asyncio
 
 class MulticopterItf(ABC):
     """
-    Interface file that describes the quadcopter control API. All SteelEagle compatible 
+    Interface file that describes the quadcopter control API. All SteelEagle compatible
     drones must implement a subset of this API to function with the driver module.
-    For unimplemented methods, drones are expected to reply with 
+    For unimplemented methods, drones are expected to reply with
     :class:`protocol.common.ResponseStatus` set to NOTSUPPORTED (3).
     """
 
@@ -83,7 +83,7 @@ class MulticopterItf(ABC):
        :rtype: :class:`protocol.common.ResponseStatus`
        """
        pass
-   
+
     @abstractmethod
     async def kill(self) -> common_protocol.ResponseStatus:
         """
@@ -100,7 +100,7 @@ class MulticopterItf(ABC):
         """
         Sets the home global location destination (latitude, longitude, absolute or relative
         altitude in meters) for the drone. If an altitude is provided, the drone will attempt
-        to hover at this altitude. Otherwise, it will automatically land if a return-to-home 
+        to hover at this altitude. Otherwise, it will automatically land if a return-to-home
         is triggered.
 
         :param loc: The desired home location, containing lat, lng, and absolute altitude
@@ -124,17 +124,17 @@ class MulticopterItf(ABC):
     @abstractmethod
     async def set_global_position(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
-        Commands the drone to move to a specific global location (latitude, longitude, 
-        absolute or relative altitude in meters). If both absolute (MSL) and relative 
-        (relative to take off) altitude are provided, absolute will be prioritized. 
+        Commands the drone to move to a specific global location (latitude, longitude,
+        absolute or relative altitude in meters). If both absolute (MSL) and relative
+        (relative to take off) altitude are provided, absolute will be prioritized.
         Both a target latitude and target longitude must be provided.
 
-        The Location object may also supply a heading. In this case, the drone will 
-        turn to the provided heading before actuating to the target global position. 
-        If no heading is provided, the drone will turn to face its target global position 
+        The Location object may also supply a heading. In this case, the drone will
+        turn to the provided heading before actuating to the target global position.
+        If no heading is provided, the drone will turn to face its target global position
         before moving.
 
-        :param loc: The desired GPS location, including latitude, longitude, absolute 
+        :param loc: The desired GPS location, including latitude, longitude, absolute
             or relative altitude in meters, heading in degrees
         :type loc: :class:`protocol.common.Location`
         :return: A response object indicating success or failure
@@ -147,7 +147,7 @@ class MulticopterItf(ABC):
             -> common_protocol.ResponseStatus:
         """
         Sets a target position for the drone relative to its initial (takeoff) point,
-        in meters. The target position is expressed with respect to the ENU (east, north, up) 
+        in meters. The target position is expressed with respect to the ENU (east, north, up)
         global reference frame.
 
         :param pos: The relative position offsets plus heading, in ENU global coordinates
@@ -161,8 +161,8 @@ class MulticopterItf(ABC):
     async def set_relative_position_body(self, pos: common_protocol.PositionBody) \
             -> common_protocol.ResponseStatus:
         """
-        Sets a target position for the drone relative to its current position, in meters. 
-        The target position is expressed with respect to the FRU (forward, right, up) 
+        Sets a target position for the drone relative to its current position, in meters.
+        The target position is expressed with respect to the FRU (forward, right, up)
         body reference frame.
 
         :param pos: The relative position offsets plus heading, in FRU body coordinates
@@ -171,36 +171,36 @@ class MulticopterItf(ABC):
         :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
-    
+
     @abstractmethod
     async def set_velocity_enu(self, vel: common_protocol.VelocityENU) -> common_protocol.ResponseStatus:
         """
         Sets the drone's target velocity. The velocity target is expressed with respect to
         the ENU (east, north, up) global reference frame.
 
-        The Velocity message contains north_vel, east_vel, up_vel, and angle_vel, 
-        describing motion in meters per second and angular velocity in degrees per 
+        The Velocity message contains north_vel, east_vel, up_vel, and angle_vel,
+        describing motion in meters per second and angular velocity in degrees per
         second.
 
-        :param vel: The target velocity in each axis plus angular velocity, in the ENU global 
+        :param vel: The target velocity in each axis plus angular velocity, in the ENU global
             reference frame
         :type vel: :class:`protocol.common.VelocityENU`
         :return: A response object indicating success or failure
         :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
-    
+
     @abstractmethod
     async def set_velocity_body(self, vel: common_protocol.VelocityBody) -> common_protocol.ResponseStatus:
         """
         Sets the drone's target velocity. The velocity target is expressed with respect to
         the FRU (forward, right, up) body reference frame.
 
-        The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel, 
-        describing motion in meters per second and angular velocity in degrees per 
+        The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel,
+        describing motion in meters per second and angular velocity in degrees per
         second.
 
-        :param vel: The target velocity in each axis plus angular velocity, in the FRU body 
+        :param vel: The target velocity in each axis plus angular velocity, in the FRU body
             reference frame
         :type vel: :class:`protocol.common.VelocityBody`
         :return: A response object indicating success or failure
@@ -212,13 +212,13 @@ class MulticopterItf(ABC):
     async def set_heading(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
         """
         Sets the heading of the drone to face a provided global position (latitude, longitude)
-        which is used to calculate a target bearing or an absolute heading (degrees). 
-        Ignores any provided altitude. 
+        which is used to calculate a target bearing or an absolute heading (degrees).
+        Ignores any provided altitude.
 
         If the Location object supplies a heading, the drone will turn to face that heading.
         If the Location object instead supplies a latitude and longitude, the drone will turn
         to face that position. Absolute heading is prioritized over position.
-        
+
         :param loc: The target global position (latitude, longitude) or heading (degrees) to face
         :type loc: :class:`protocol.common.Location`
         :return: A response object indicating success or failure
@@ -259,7 +259,7 @@ class MulticopterItf(ABC):
         :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
-    
+
     @abstractmethod
     async def stream_video(self, cam_sock: zmq.asyncio.Socket, rate_hz: int) -> None:
         """
