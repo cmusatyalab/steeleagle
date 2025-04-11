@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 # Protocol imports
-from protocol import common_pb2 as common_protocol
+import common_pb2 as common_protocol
 # ZeroMQ binding imports
 import zmq
 import zmq.asyncio
@@ -12,7 +12,7 @@ class MulticopterItf(ABC):
     Interface file that describes the quadcopter control API.
     All SteelEagle compatible drones must implement a subset of
     this API to function with the driver module. For unimplemented
-    methods, drones are expected to reply with 
+    methods, drones are expected to reply with
     :class:`protocol.common.ResponseStatus` set to NOTSUPPORTED (3).
     """
 
@@ -84,7 +84,7 @@ class MulticopterItf(ABC):
        :rtype: :class:`protocol.common.ResponseStatus`
        """
        pass
-   
+
     @abstractmethod
     async def kill(self) -> common_protocol.ResponseStatus:
         """
@@ -125,8 +125,8 @@ class MulticopterItf(ABC):
         """
         Sets the drone's target velocity.
 
-        The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel, 
-        describing motion in meters per second and angular velocity in degrees per 
+        The Velocity message contains forward_vel, right_vel, up_vel, and angle_vel,
+        describing motion in meters per second and angular velocity in degrees per
         second.
 
         :param vel: The target velocity in each axis plus angular velocity
@@ -141,9 +141,9 @@ class MulticopterItf(ABC):
         """
         Commands the drone to move to a specific global location (lat/lng/absolute alt).
 
-        The Location object may also supply a heading. In this case, the drone will 
-        turn towards the provided heading before actuating to the target global position. 
-        If no heading is provided, the drone will turn to face its target global position 
+        The Location object may also supply a heading. In this case, the drone will
+        turn towards the provided heading before actuating to the target global position.
+        If no heading is provided, the drone will turn to face its target global position
         before moving.
 
         :param loc: The desired GPS location, including latitude, longitude, absolute altitude
@@ -176,7 +176,7 @@ class MulticopterItf(ABC):
         If the Location object supplies a latitude and longitude, the drone will turn
         to face that position. If the Location object only supplies a bearing, the
         drone will turn to face that bearing.
-        
+
         :param loc: The target global position or heading to face
         :type loc: :class:`protocol.common.Location`
         :return: A response object indicating success or failure
@@ -216,7 +216,7 @@ class MulticopterItf(ABC):
         :rtype: :class:`protocol.common.ResponseStatus`
         """
         pass
-    
+
     @abstractmethod
     async def stream_video(self, cam_sock: zmq.asyncio.Socket, rate_hz: int) -> None:
         """
