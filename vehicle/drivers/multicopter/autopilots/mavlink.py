@@ -77,7 +77,7 @@ class MAVLinkDrone(MulticopterItf):
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
             0, 0, 0, 0, 0,
-            gps['latitude'], gps['longitude'], gps['altitude'] + target_altitude)
+            gps['latitude'], gps['longitude'], gps['absolute_altitude'] + target_altitude)
        
         result = await self._wait_for_condition(
             lambda: self._is_mode_set(MAVLinkDrone.FlightMode.LOITER),
@@ -108,12 +108,12 @@ class MAVLinkDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def hover(self):
-        velocity = common_protocol.Velocity()
+        velocity = common_protocol.VelocityBody()
         velocity.forward_vel = 0.0
         velocity.right_vel = 0.0
         velocity.up_vel = 0.0
         velocity.angular_vel = 0.0
-        return await self.set_velocity(velocity)
+        return await self.set_velocity_body(velocity)
 
     async def kill(self):
         self.vehicle.mav.command_long_send(
@@ -136,14 +136,13 @@ class MAVLinkDrone(MulticopterItf):
     async def set_home(self, location):
         lat = location.latitude
         lon = location.longitude
-        alt = location.altitude
+        alt = location.absolute_altitude
 
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_DO_SET_HOME,
-            1,
-            0, 0, 0, 0,
+            1, 0, 0, 0, 0,
             lat, lon, alt
         )
 
@@ -174,17 +173,25 @@ class MAVLinkDrone(MulticopterItf):
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
-            return common_protocol.ResponseStatus.FAILED
-            
-    async def set_velocity(self, velocity):
-        # Need to implement video streaming on a per-drone basis
-        return common_protocol.ResponseStatus.NOTSUPPORTED
-
+            return common_protocol.ResponseStatus.FAILED        
+    
     async def set_global_position(self, location):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
-    async def set_relative_position(self, position):
+    async def set_relative_position_enu(self, position):
+        # Need to implement video streaming on a per-drone basis
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+    
+    async def set_relative_position_body(self, position):
+        # Need to implement video streaming on a per-drone basis
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+    
+    async def set_velocity_enu(self, velocity):
+        # Need to implement video streaming on a per-drone basis
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+    
+    async def set_velocity_body(self, velocity):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
     
@@ -210,18 +217,24 @@ class MAVLinkDrone(MulticopterItf):
                         self._get_global_position()["latitude"]
                 tel_message.global_position.longitude = \
                         self._get_global_position()["longitude"]
-                tel_message.global_position.altitude = \
-                        self._get_global_position()["altitude"]
+                tel_message.global_position.absolute_altitude = \
+                        self._get_global_position()["absolute_altitude"]
                 tel_message.global_position.relative_altitude = \
                         self._get_global_position()["relative_altitude"]
-                tel_message.global_position.bearing = \
+                tel_message.global_position.heading = \
                         self._get_global_position()["heading"]
-                tel_message.velocity.forward_vel = \
+                tel_message.velocity_global.north_vel = \
+                        self._get_velocity_enu()["north"]
+                tel_message.velocity_global.east_vel = \
+                        self._get_velocity_enu()["east"]
+                tel_message.velocity_global.up_vel = \
+                        self._get_velocity_enu()["up"]
+                tel_message.velocity_body.forward_vel = \
                         self._get_velocity_body()["forward"]
-                tel_message.velocity.right_vel = \
+                tel_message.velocity_body.right_vel = \
                         self._get_velocity_body()["right"]
-                tel_message.velocity.up_vel = \
-                        self._get_velocity_body()["down"]
+                tel_message.velocity_body.up_vel = \
+                        self._get_velocity_body()["up"]
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f'Failed to get telemetry, error: {e}')
@@ -284,7 +297,7 @@ class MAVLinkDrone(MulticopterItf):
         return {
             "latitude": gps_msg.lat / 1e7,
             "longitude": gps_msg.lon / 1e7,
-            "altitude": gps_msg.alt / 1e3,
+            "absolute_altitude": gps_msg.alt / 1e3,
             "relative_altitude": gps_msg.relative_alt / 1e3,
             "heading": gps_msg.hdg / 1e3
         }
@@ -301,24 +314,25 @@ class MAVLinkDrone(MulticopterItf):
             return None
         return satellites_msg.satellites_visible
 
-    def _get_velocity_ned(self):
+    def _get_velocity_enu(self):
         gps_msg = self._get_cached_message("GLOBAL_POSITION_INT")
         if not gps_msg:
             return None
         return {
             "north": gps_msg.vx / 100,
             "east": gps_msg.vy / 100,
-            "down": gps_msg.vz / 100
+            "up": gps_msg.vz * -1 / 100
         }
         
     def _get_velocity_body(self):
+        # TODO: This reference frame is incorrect
         velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
         if not velocity_msg:
             return None
         return {
             "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
-            "down": velocity_msg.vz   # Body-frame Z velocity in m/s
+            "up": velocity_msg.vz * -1   # Body-frame Z velocity in m/s
         }
 
     def _get_rssi(self):
@@ -401,6 +415,11 @@ class MAVLinkDrone(MulticopterItf):
                 mode_id[0], mode_id[1], mode_id[2],
                 0, 0, 0, 0
             )
+            
+            # TODO: Why do we have to do this?
+            # Avoid waiting for mode condition in OFFBOARD to prevent hanging
+            if not self.mode == MAVLinkDrone.FlightMode.OFFBOARD:
+                return True
         
         result = await self._wait_for_condition(
             lambda: self._is_mode_set(mode),
@@ -432,28 +451,26 @@ class MAVLinkDrone(MulticopterItf):
         return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME \
                 and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
 
-    def _is_global_position_reached(self, lat, lon, alt, bearing):
-        if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt) \
-                and self._is_bearing_reached(bearing):
+    def _is_global_position_reached(self, lat, lon, alt):
+        if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):
             return True
         return False
 
     def _is_abs_altitude_reached(self, target_altitude):
-        current_altitude = self._get_altitude_abs()
+        current_altitude = self._get_global_position()["absolute_altitude"]
         return current_altitude >= target_altitude * 0.95
     
     def _is_rel_altitude_reached(self, target_altitude):
-        current_altitude = self._get_altitude_rel()
+        current_altitude = self._get_global_position()["relative_altitude"]
         return current_altitude >= target_altitude * 0.95
    
     def _is_bearing_reached(self, bearing):
         heading = self._get_global_position()["heading"]
         if not heading:
             return False  # Return False if heading data is unavailable
-
-        current_yaw = (heading + 360) % 360
-        target_yaw = (bearing + 360) % 360
-        return abs(current_yaw - target_yaw) <= 1
+        
+        diff = (bearing - heading + 540) % 360 - 180
+        return abs(diff) <= 1
     
     def _is_at_target(self, lat, lon):
         current_location = self._get_global_position()

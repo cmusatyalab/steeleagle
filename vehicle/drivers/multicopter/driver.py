@@ -22,13 +22,6 @@ if os.environ.get("LOG_TO_FILE") == "true":
     file_handler.setFormatter(logging.Formatter(logging_format))
     logger.addHandler(file_handler)
 
-telemetry_logger = logging.getLogger('telemetry')
-formatter = logging.Formatter(logging_format)
-telemetry_handler.setFormatter(formatter)
-telemetry_logger.handlers.clear()
-telemetry_logger.addHandler(telemetry_handler)
-telemetry_logger.propagate = False
-
 driverArgs = json.loads(os.environ.get('DRIVER_ARGS'))
 droneArgs = json.loads(os.environ.get('DRONE_ARGS'))
 
@@ -96,7 +89,6 @@ async def handle(identity, message, resp_sock):
             elif action == control_protocol.VehicleAction.HOVER: 
                 logger.info('****** Hover ******')
                 logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
-                result  = await drone.rth()
                 result = await drone.hover()
                 logger.info(f"Call finished at: {time.time()}")
             elif action == control_protocol.VehicleAction.KILL:
@@ -104,18 +96,33 @@ async def handle(identity, message, resp_sock):
                 logger.info(f"Call started at: {time.time()}, seq id {seq_num}") 
                 result = await drone.kill() 
                 logger.info(f"Call finished at: {time.time()}")
-        elif man_control == "velocity":
-            logger.info('****** Set Velocity ******')
-            logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
-            velocity = message.veh.velocity
-            result = await drone.set_velocity(velocity)
-            logger.info(f"Call finished at: {time.time()}")
         elif man_control == "location":
             logger.info('****** Set Global Position ******')
             logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
             location = message.veh.location
             result = await drone.set_global_position(location)
             logger.info(f"Call finished at: {time.time()}")
+        elif man_control == "velocity_global":
+            logger.info('****** Set Velocity Global ******')
+            logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
+            velocity = message.veh.velocity_enu
+            result = await drone.set_velocity_enu(velocity)
+            logger.info(f"Call finished at: {time.time()}")
+        elif man_control == "velocity_body":
+            logger.info('****** Set Velocity Body ******')
+            logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
+            velocity = message.veh.velocity_body
+            result = await drone.set_velocity_body(velocity)
+            logger.info(f"Call finished at: {time.time()}")
+        elif man_control == "position_global":
+            logger.info('****** Set Position Global ******')
+            # TODO: Not implemented
+        elif man_control == "position_body":
+            logger.info('****** Set Position Body ******')
+            # TODO: Not implemented
+        elif man_control == "gimbal_pose":
+            logger.info('****** Set Gimbal Pose ******')
+            # TODO: Not implemented
     except Exception as e:
         logger.error(f'Failed to handle command, error: {e}')
         result = common_protocol.ResponseStatus.FAILED

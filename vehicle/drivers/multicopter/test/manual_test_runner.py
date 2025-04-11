@@ -87,7 +87,7 @@ class KeyboardCtrl(Listener):
         )
 
     def yaw(self):
-        return 10 * self._axis(
+        return 25 * self._axis(
             self._ctrl_keys[Ctrl.TURN_LEFT],
             self._ctrl_keys[Ctrl.TURN_RIGHT]
         )
@@ -187,10 +187,10 @@ async def send_comm(control):
         driver_command.veh.action = control_protocol.VehicleAction.LAND
     elif control.has_piloting_cmd():
         logger.info(f'Velocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})')
-        driver_command.veh.velocity.forward_vel = control.pitch()
-        driver_command.veh.velocity.right_vel = control.roll()
-        driver_command.veh.velocity.up_vel = control.throttle()
-        driver_command.veh.velocity.angular_vel = control.yaw()
+        driver_command.veh.velocity_body.forward_vel = control.pitch()
+        driver_command.veh.velocity_body.right_vel = control.roll()
+        driver_command.veh.velocity_body.up_vel = control.throttle()
+        driver_command.veh.velocity_body.angular_vel = control.yaw()
     else:
         logger.info('Hover.')
         driver_command.veh.action = control_protocol.VehicleAction.HOVER

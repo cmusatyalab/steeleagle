@@ -7,7 +7,7 @@ syntax = "proto3";
 package protocol.common;
 
 enum ResponseStatus {
-  UNKNOWN_RESPONSE_STATUS = 0;
+  UNKNOWN_RESPONSE = 0;
   OK = 1;
   FAILED = 2;
   NOTSUPPORTED = 3;
@@ -27,7 +27,7 @@ message PoseBody {
 /*
 * Representation of the speed in 4-dimensions in ENU coordinates [m/s]
 */
-message VelocityGlobal {
+message VelocityENU {
   double north_vel = 1; // Pitch
   double east_vel = 2; // Roll
   double up_vel = 3; // Thrust
@@ -47,7 +47,7 @@ message VelocityBody {
 /*
 * Position relative to home location in ENU coordinates
 */
-message PositionGlobal {
+message PositionENU {
   double north = 1;
   double east = 2;
   double up = 3;
@@ -70,7 +70,7 @@ message PositionBody {
 message Location {
   double latitude = 1;
   double longitude = 2;
-  double altitude = 3; // In meters above MSL
+  double absolute_altitude = 3; // In meters above MSL
   double relative_altitude = 4; // In meters above take off
   double heading = 5;
 }
