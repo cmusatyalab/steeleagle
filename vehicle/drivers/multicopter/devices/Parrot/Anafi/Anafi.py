@@ -1,7 +1,7 @@
 # Interface import
 from multicopter.autopilots.parrot_olympe import ParrotOlympeDrone
 
-class AnafiDrone(ParrotOlympeDrone):
+class Anafi(ParrotOlympeDrone):
 
     def __init__(self, drone_id):
         super().__init__(drone_id)

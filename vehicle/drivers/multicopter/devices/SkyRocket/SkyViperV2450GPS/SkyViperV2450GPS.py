@@ -1,14 +1,14 @@
 # General import
 import logging
 # Interface import
-from multicopter.autopilots.ardupilot import ArdupilotDrone
+from multicopter.autopilots.ardupilot import ArduPilotDrone
 # Protocol imports
 from protocol import dataplane_pb2 as data_protocol
 import asyncio
 
 logger = logging.getLogger(__name__)
 
-class SkyViperV2450GPSDrone(ArdupilotDrone):
+class SkyViperV2450GPS(ArduPilotDrone):
     
     ''' Interface Methods '''
     async def get_type(self):

@@ -37,8 +37,12 @@ mission:
     log_file: "<FILENAME>"
 driver:
   id: "<DRONE NAME>"
-  type: "<DONE TYPE>"
-  path: "<PATH TO FILE>"
+  # Type of driver to run - must match a directory in drivers
+  # e.g. "multicopter"
+  type: "<DRONE TYPE>"
+  # Path to device file relative to type directory
+  # e.g. "devices.ModalAI.Starling2Max"
+  module: "<MODULE PATH>"
   connection_string: "0.0.0.0:0"
   # For passing in device-specific flags
   keyword_args: {}

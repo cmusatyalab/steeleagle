@@ -10,8 +10,8 @@ from pymavlink import mavutil
 # Interface import
 from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
-from protocol import dataplane_pb2 as data_protocol
-from protocol import common_pb2 as common_protocol
+import dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
