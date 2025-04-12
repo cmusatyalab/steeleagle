@@ -24,6 +24,7 @@ if os.environ.get("LOG_TO_FILE") == "true":
 
 telemetry_logger = logging.getLogger('telemetry')
 formatter = logging.Formatter(logging_format)
+telemetry_handler = logging.FileHandler('telemetry.log')    
 telemetry_handler.setFormatter(formatter)
 telemetry_logger.handlers.clear()
 telemetry_logger.addHandler(telemetry_handler)
