@@ -1,4 +1,3 @@
-import common
 import time
 import zmq
 import zmq.asyncio
@@ -8,7 +7,7 @@ import logging
 import yaml
 import importlib
 import pkgutil
-from util.utils import setup_socket, SocketOperation, import_config
+from util.utils import setup_socket, import_config, setup_logging, SocketOperation
 from protocol import controlplane_pb2
 from protocol import dataplane_pb2
 import datasinks
@@ -218,7 +217,7 @@ async def main():
         raise Exception("Hub config not available")
 
     logging_config = hub_config.get('logging')
-    common.setup_logging(logger, logging_config)
+    setup_logging(logger, logging_config)
 
     data_service = DataService(hub_config)
 

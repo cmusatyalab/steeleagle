@@ -1,4 +1,3 @@
-import common
 from enum import Enum
 import json
 import sys
@@ -11,7 +10,7 @@ import logging
 import os
 from protocol import controlplane_pb2
 from service import Service
-from util.utils import SocketOperation, import_config
+from util.utils import import_config, setup_logging, SocketOperation
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +194,7 @@ async def main():
         raise Exception("Hub config not available")
 
     logging_config = hub_config.get('logging')
-    common.setup_logging(logger, logging_config)
+    setup_logging(logger, logging_config)
 
     # init CommandService
     cmd_service = CommandService(config)
