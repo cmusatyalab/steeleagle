@@ -3,7 +3,7 @@ import logging
 # Interface import
 from multicopter.autopilots.ardupilot import ArduPilotDrone
 # Protocol imports
-from protocol import dataplane_pb2 as data_protocol
+import dataplane_pb2 as data_protocol
 import asyncio
 
 logger = logging.getLogger(__name__)

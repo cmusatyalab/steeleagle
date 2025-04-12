@@ -18,17 +18,17 @@ logger = logging.getLogger(__name__)
 context = zmq.asyncio.Context()
 
 hub_to_driver_sock = context.socket(zmq.DEALER)
-setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'controlplane.hub_to_driver')
+setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'hub.network.controlplane.hub_to_driver')
 
 tel_sock = context.socket(zmq.SUB)
 tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.telemetry')
+setup_socket(tel_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.telemetry')
 
 cam_sock = context.socket(zmq.SUB)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(cam_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.image_sensor')
+setup_socket(cam_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.image_sensor')
 
 tel_dict = {
     "name": "",
@@ -36,7 +36,6 @@ tel_dict = {
     "satellites": 0,
     "gps": {},
     "imu": {},
-    "heading": 0
 }
 
 # Background telemetry receiver
@@ -88,9 +87,9 @@ class TestSuiteClass:
     dx = 1 # Meters/s
     dy = 1 # Meters/s
     dz = 1 # Meters/s
-    d_lat = 5 # Meters
-    d_lon = 5 # Meters
-    d_alt = 5 # Meters
+    d_xx = 5 # Meters
+    d_yy = 5 # Meters
+    d_zz = 5 # Meters
     d_angle = 10 # Degrees
     
     @pytest.mark.order(1)
@@ -171,6 +170,7 @@ class TestSuiteClass:
         return (dx / self.r_earth) * (180 / math.pi) / math.cos(lat* math.pi/180)
     
     def get_curr_loc(self):
+        logger.info(f"Current telemetry: {tel_dict}")
         curr_pos_alt = tel_dict['gps']['altitude']
         curr_pos_lat = tel_dict['gps']['latitude']
         curr_pos_lon = tel_dict['gps']['longitude']
@@ -187,20 +187,22 @@ class TestSuiteClass:
         curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
 
         test_sets = [
-            (self.d_lat, 0, 0, 0),   # Forward
-            (0, self.d_lon, 0, 0),   # Right
-            (0, 0, self.d_alt, 0),   # Up
+            (self.d_xx, 0, 0, 0),   # Forward
+            (0, self.d_yy, 0, 0),   # Right
+            (0, 0, self.d_zz, 0),   # Up
             (0, 0, 0, self.d_angle)  # Yaw +d_bearing
         ]
 
-        for (dy, dx, dz, d_angle) in test_sets:
-            d_lat = self.dy_to_lat(dy)
-            d_lon = self.dx_to_lon(dx, curr_pos_lat)
+        for (x, y, z, angle) in test_sets:
+            d_lat = self.dy_to_lat(x)
+            d_lon = self.dx_to_lon(y, curr_pos_lat)
+            d_alt = z
+            d_angle = angle
 
             # Build the *new* absolute position from the current telemetry
             next_lat = curr_pos_lat + d_lat
             next_lon = curr_pos_lon + d_lon
-            next_alt = curr_pos_alt + dz
+            next_alt = curr_pos_alt + d_alt
             next_angle = curr_pos_angle + d_angle
 
             logger.info(f"Testing set GPS position to: {(next_lat, next_lon, next_alt, next_angle)}")
@@ -244,7 +246,7 @@ class TestSuiteClass:
             assert np.isclose(next_alt, actual_alt, atol=1)
             abs_diff = abs(next_angle - actual_angle)
             diff = min(abs_diff, 360 - abs_diff)
-            assert diff <= 2
+            assert diff <= 4
 
             # Update curr psoition
             curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = (

@@ -44,7 +44,7 @@ class Driver:
 
             logger.info('Started streaming telemetry and video')
             #asyncio.create_task(self.drone.stream_video(self.cam_sock, 5))
-            #asyncio.create_task(self.drone.stream_telemetry(self.tel_sock, 5))
+            asyncio.create_task(self.drone.stream_telemetry(self.tel_sock, 5))
 
             while await self.drone.is_connected():
                 try:

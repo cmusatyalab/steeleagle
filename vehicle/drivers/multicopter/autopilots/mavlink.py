@@ -49,7 +49,7 @@ class MAVLinkDrone(MulticopterItf):
             await asyncio.sleep(0.1)
         
         # Register telemetry streams
-        await self.register_telemetry_streams()
+        await self._register_telemetry_streams()
         asyncio.create_task(self._message_listener())
         
     async def is_connected(self):
@@ -245,7 +245,7 @@ class MAVLinkDrone(MulticopterItf):
         return common_protocol.ResponseStatus.NOTSUPPORTED
     
     ''' Connect methods '''
-    async def register_telemetry_streams(self, frequency_hz: float = 10.0):
+    async def _register_telemetry_streams(self, frequency_hz: float = 10.0):
         # TODO: Make frequency of commands parameterizable
         # and correlated with stream_telemetry
 
@@ -299,7 +299,7 @@ class MAVLinkDrone(MulticopterItf):
             "longitude": gps_msg.lon / 1e7,
             "absolute_altitude": gps_msg.alt / 1e3,
             "relative_altitude": gps_msg.relative_alt / 1e3,
-            "heading": gps_msg.hdg / 1e3
+            "heading": gps_msg.hdg / 1e2 # convert the centidegree to degrees
         }
 
     def _get_battery_percentage(self):
@@ -458,18 +458,19 @@ class MAVLinkDrone(MulticopterItf):
 
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["absolute_altitude"]
+        logger.info(f"Current altitude: {current_altitude}, Target altitude: {target_altitude}")
         return current_altitude >= target_altitude * 0.95
     
     def _is_rel_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["relative_altitude"]
         return current_altitude >= target_altitude * 0.95
    
-    def _is_bearing_reached(self, bearing):
-        heading = self._get_global_position()["heading"]
+    def _is_heading_reached(self, heading):
+        current_heading = self._get_global_position()["heading"]
         if not heading:
             return False  # Return False if heading data is unavailable
-        
-        diff = (bearing - heading + 540) % 360 - 180
+        logger.info(f"Current heading: {current_heading}, Target heading: {heading}")
+        diff = (heading - current_heading + 540) % 360 - 180
         return abs(diff) <= 1
     
     def _is_at_target(self, lat, lon):
@@ -482,26 +483,26 @@ class MAVLinkDrone(MulticopterItf):
         return distance < 1.0
         
     ''' Helper methods '''
-    def _calculate_bearing(self, lat1, lon1, lat2, lon2):
+    def _calculate_heading(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians
         lat1, lon1, lat2, lon2 = map(math.radians, \
                 [lat1, lon1, lat2, lon2])
         
         delta_lon = lon2 - lon1
 
-        # Bearing calculation
+        # heading calculation
         x = math.sin(delta_lon) * math.cos(lat2)
         y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
         
-        initial_bearing = math.atan2(x, y)
+        initial_heading = math.atan2(x, y)
 
-        # Convert bearing from radians to degrees
-        initial_bearing = math.degrees(initial_bearing)
+        # Convert heading from radians to degrees
+        initial_heading = math.degrees(initial_heading)
 
         # Normalize to 0-360 degrees
-        converted_bearing = (initial_bearing + 360) % 360
+        converted_heading = (initial_heading + 360) % 360
 
-        return converted_bearing
+        return converted_heading
         
     def _to_quaternion(self, roll = 0.0, pitch = 0.0, yaw = 0.0):
         t0 = math.cos(math.radians(yaw * 0.5))

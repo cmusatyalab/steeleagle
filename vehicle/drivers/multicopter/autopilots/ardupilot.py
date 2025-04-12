@@ -10,7 +10,6 @@ from pymavlink import mavutil
 # Interface import
 from multicopter.autopilots.mavlink import MAVLinkDrone
 # Protocol imports
-import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
@@ -30,13 +29,44 @@ class ArduPilotDrone(MAVLinkDrone):
         self.mode = None
         self._mode_mapping = None
         self._listener_task = None
+        self._rel_altitude = 3
 
     '''Interface Methods'''
+    async def take_off(self):
+        if await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED) == False:
+            return common_protocol.ResponseStatus.FAILED
+        
+        if await self._arm() == False:
+            return common_protocol.ResponseStatus.FAILED
+        
+        gps = self._get_global_position()
+        rel_altitude = self._rel_altitude
+        target_altitude = rel_altitude + gps["absolute_altitude"]
+        self.vehicle.mav.command_long_send(
+            self.vehicle.target_system,
+            self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0,
+            0, 0, 0, 0,
+            0, 0, rel_altitude
+        )
+        
+        result = await self._wait_for_condition(
+            lambda: self._is_abs_altitude_reached(target_altitude),
+            timeout=60,
+            interval=1
+        )
+        
+        if result:
+            return common_protocol.ResponseStatus.COMPLETED
+        else:
+            return common_protocol.ResponseStatus.FAILED
+    
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
         alt = location.absolute_altitude
-        rel_alt = location.relative_altitude
+        heading = location.heading
         
         if not await \
                 self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
@@ -48,7 +78,7 @@ class ArduPilotDrone(MAVLinkDrone):
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            0b0000111111111000,
+            0b100111111000,
             int(lat * 1e7),
             int(lon * 1e7),
             alt,
@@ -70,7 +100,7 @@ class ArduPilotDrone(MAVLinkDrone):
         else:  
             return common_protocol.ResponseStatus.FAILED
 
-    async def set_velocity_global(self, velocity):
+    async def set_velocity_global(self, velocity_global):
         north_vel = velocity_global.north_vel
         east_vel = velocity_global.east_vel
         up_vel = velocity_global.up_vel
@@ -94,7 +124,7 @@ class ArduPilotDrone(MAVLinkDrone):
         
         return common_protocol.ResponseStatus.COMPLETED
     
-    async def set_velocity_body(self, velocity):
+    async def set_velocity_body(self, velocity_body):
         forward_vel = velocity_body.forward_vel
         right_vel = velocity_body.right_vel
         up_vel = velocity_body.up_vel
@@ -119,35 +149,38 @@ class ArduPilotDrone(MAVLinkDrone):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_heading(self, location):
+        if not await \
+            self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
+            return common_protocol.ResponseStatus.FAILED
         lat = location.latitude
         lon = location.longitude
-        bearing = location.bearing
-        
-        # Calculate bearing if not provided
+        heading = location.heading
+        logger.info(f"Set heading to {lat=}, {lon=}, {heading=}")
+        # Calculate heading if not provided
         current_location = self._get_global_position()
         current_lat = current_location["latitude"]
-        logger.info(f"current_lat: {current_lat}")
         current_lon = current_location["longitude"]
-        if bearing is None:
-            bearing = self._calculate_bearing(current_lat, current_lon, lat, lon)
+        if heading is None:
+            heading = self._calculate_heading(current_lat, current_lon, lat, lon)
         
-        yaw_speed = 25 # Degrees/s
-        direction = 0
-        
+        yaw_speed=20
+        direction=0
+        relative_flag = 0
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-            0,
-            bearing,
-            yaw_speed,
-            direction,
-            0,
-            0, 0, 0
+            0,  # Confirmation
+            heading,  # param1: Yaw angle
+            yaw_speed,   # param2: Yaw speed in deg/s
+            direction,   # param3: -1=CCW, 1=CW, 0=fastest (only for absolute yaw)
+            relative_flag,  # param4: 0=Absolute, 1=Relative
+            0, 0, 0  # param5, param6, param7 (Unused)
         )
         
         result =  await self._wait_for_condition(
-            lambda: self._is_bearing_reached(bearing),
+            lambda: self._is_heading_reached(heading),
+            timeout=30,
             interval=0.5
         )
         
