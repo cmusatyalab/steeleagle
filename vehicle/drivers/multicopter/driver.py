@@ -34,42 +34,9 @@ class Driver:
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        hub_config = config.get('hub')
-        if hub_config is None:
-            raise Exception("Hub config not specified")
-
-        data_endpoint = hub_config.get("data_endpoint")
-        if data_endpoint is None:
-            raise Exception("Data endpoint not specified")
-
-        command_endpoint = hub_config.get("command_endpoint")
-        if command_endpoint is None:
-            raise Exception("Command endpoint not specified")
-
-        port_config = hub_config.get('ports')
-        data_ports = port_config.get('data_port')
-        if data_ports is None:
-            raise Exception('Data ports not specified')
-
-        driver_to_data_ports = data_ports.get('driver_to_hub')
-        if driver_to_data_ports is None:
-            raise Exception('Driver to data ports not specified')
-
-        hub_to_mission_ports = data_ports.get('hub_to_mission')
-        if hub_to_mission_ports is None:
-            raise Exception('Hub to mission ports not specified')
-
-        command_ports = port_config.get('command_port')
-        if command_ports is None:
-            raise Exception('Command ports not specified')
-
-        tel_port = driver_to_data_ports.get('telemetry')
-        cam_port = driver_to_data_ports.get('image_sensor')
-        cmd_port = command_ports.get('hub_to_driver')
-
-        setup_socket(self.tel_sock, SocketOperation.CONNECT, tel_port, data_endpoint)
-        setup_socket(self.cam_sock, SocketOperation.CONNECT, cam_port, data_endpoint)
-        setup_socket(self.cmd_back_sock, SocketOperation.CONNECT, cmd_port, command_endpoint)
+        setup_socket(self.tel_sock, SocketOperation.CONNECT, 'dataplane.driver_to_hub.telemetry')
+        setup_socket(self.cam_sock, SocketOperation.CONNECT, 'dataplane.driver_to_hub.image_sensor')
+        setup_socket(self.cmd_back_sock, SocketOperation.CONNECT, 'controlplane.hub_to_driver')
 
     async def run(self):
         while True:

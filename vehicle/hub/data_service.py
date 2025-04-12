@@ -36,29 +36,12 @@ class DataService(Service):
         self.cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        ports = config.get('ports')
-        if ports is None:
-            raise Exception('Ports not specified')
-
-        data_ports = ports.get('data_ports')
-        if data_ports is None:
-            raise Exception('Data ports not specified')
-
-        driver_to_data_ports = data_ports.get('driver_to_hub')
-        if driver_to_data_ports is None:
-            raise Exception('Driver to data ports not specified')
-
-        hub_to_mission_ports = data_ports.get('hub_to_mission')
-        if hub_to_mission_ports is None:
-            raise Exception('Hub to mission ports not specified')
-
-        tel_port = driver_to_data_ports.get('telemetry')
-        cam_port = driver_to_data_ports.get('image_sensor')
-        cpt_port = hub_to_mission_ports.get('compute_results')
-
-        self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, tel_port)
-        self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, cam_port)
-        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, cpt_port)
+        self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, \
+                'dataplane.driver_to_hub.telemetry')
+        self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, \
+                'dataplane.driver_to_hub.image_sensor')
+        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, \
+                'dataplane.hub_to_mission.compute_results')
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -68,7 +51,7 @@ class DataService(Service):
         # setting up data store
         self.data_store = DataStore()
         self.compute_dict = {}
-        self.spawn_computes(config)
+        self.spawn_computes(self.config)
 
     ###########################################################################
     #                                USER                                     #

@@ -46,43 +46,14 @@ class CommandService(Service):
         # as downloading, starting, and stopping missions
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
 
-        command_endpoint = config.get('command_endpoint')
-        if command_endpoint is None:
-            raise Exception("Command endpoint not specified in the config")
-
-        ports = config.get('ports')
-        if ports is None:
-            raise Exception('Ports not specified')
-
-        command_ports = ports.get('command_ports')
-        if command_ports is None:
-            raise Exception('Command ports not specified')
-
-        hub_to_driver_port = command_ports.get('hub_to_driver')
-        if hub_to_driver_port is None:
-            raise Exception('Hub to driver port not specified')
-
-        commander_to_hub_port = command_ports.get('commander_to_hub')
-        if commander_to_hub_port is None:
-            raise Exception('Commander to hub port not specified')
-
-        hub_to_mission_port = command_ports.get('hub_to_mission')
-        if hub_to_mission_port is None:
-            raise Exception('Hub to mission port not specified')
-
-        mission_to_hub_port = command_ports.get('mission_to_hub')
-        if mission_to_hub_port is None:
-            raise Exception('Mission to hub port not specified')
-
         self.setup_and_register_socket(
-            self.commander_socket, SocketOperation.CONNECT, commander_to_hub_port,
-            command_endpoint)
+            self.commander_socket, SocketOperation.CONNECT, 'controlplane.commander_to_hub')
         self.setup_and_register_socket(
-            self.mission_cmd_socket, SocketOperation.BIND, mission_to_hub_port)
+            self.mission_cmd_socket, SocketOperation.BIND, 'controlplane.mission_to_hub')
         self.setup_and_register_socket(
-            self.driver_socket, SocketOperation.BIND, hub_to_driver_port)
+            self.driver_socket, SocketOperation.BIND, 'controlplane.hub_to_driver')
         self.setup_and_register_socket(
-            self.mission_ctrl_socket, SocketOperation.BIND, hub_to_mission_port)
+            self.mission_ctrl_socket, SocketOperation.BIND, 'controlplane.hub_to_mission')
 
         self.create_task(self.cmd_proxy())
 

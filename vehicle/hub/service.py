@@ -18,8 +18,8 @@ class Service(ABC):
         self.tasks.append(task)
         return task
 
-    def setup_and_register_socket(self, socket, socket_op, port, host_addr="*"):
-        setup_socket(socket, socket_op, port, host_addr)
+    def setup_and_register_socket(self, socket, socket_op, socket_id=None, port=None, host_addr="*"):
+        setup_socket(socket, socket_op, socket_id, port, host_addr)
         self.socks.append(socket)
 
     async def start(self):
