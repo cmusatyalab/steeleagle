@@ -32,7 +32,7 @@ message Response {
 }
 
 /*
-* MANUAL
+* VEHICLE
 */
 message VehicleControl {
   oneof param {
@@ -58,7 +58,7 @@ enum VehicleAction {
 }
 
 /*
-* AUTO
+* MISSION
 */
 message MissionControl {
   string uuid = 1; // unique mission reference for cataloging

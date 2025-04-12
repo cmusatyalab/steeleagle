@@ -8,9 +8,9 @@ import zmq.asyncio
 import asyncio
 from collections import defaultdict
 from util.utils import setup_socket, SocketOperation
-from protocol import controlplane_pb2 as control_protocol
-from protocol import dataplane_pb2 as data_protocol
-from protocol import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
+import dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
 
 class Ctrl(Enum):
     (
@@ -133,18 +133,18 @@ logger = logging.getLogger(__name__)
 # Setting up conetxt
 context = zmq.asyncio.Context()
 
-cmd_back_sock = context.socket(zmq.DEALER)
-setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+hub_to_driver_sock = context.socket(zmq.DEALER)
+setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'hub.network.controlplane.hub_to_driver')
 
 tel_sock = context.socket(zmq.SUB)
 tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
+setup_socket(tel_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.telemetry')
 
 cam_sock = context.socket(zmq.SUB)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+setup_socket(cam_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.image_sensor')
 
 command_seq = 0
 
@@ -197,9 +197,9 @@ async def send_comm(control):
 
     message = driver_command.SerializeToString()
     identity = b'cmdr'
-    await cmd_back_sock.send_multipart([identity, message])
+    await hub_to_driver_sock.send_multipart([identity, message])
     logger.info('Sent message.')
-    resp = await cmd_back_sock.recv_multipart()
+    resp = await hub_to_driver_sock.recv_multipart()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 

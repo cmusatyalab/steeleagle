@@ -8,27 +8,27 @@ import pytest
 import numpy as np
 import math
 # Import SteelEagle protocol
-from protocol import dataplane_pb2 as data_protocol
-from protocol import controlplane_pb2 as control_protocol
-from protocol import common_pb2 as common_protocol
+import dataplane_pb2 as data_protocol
+import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
 # Setting up conetxt
 context = zmq.asyncio.Context()
 
-cmd_back_sock = context.socket(zmq.DEALER)
-setup_socket(cmd_back_sock, SocketOperation.BIND, 'CMD_BACK_PORT', 'Created command backend socket endpoint')
+hub_to_driver_sock = context.socket(zmq.DEALER)
+setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'controlplane.hub_to_driver')
 
 tel_sock = context.socket(zmq.SUB)
 tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.BIND, 'TEL_PORT', 'Created telemetry socket endpoint')
+setup_socket(tel_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.telemetry')
 
 cam_sock = context.socket(zmq.SUB)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(cam_sock, SocketOperation.BIND, 'CAM_PORT', 'Created camera socket endpoint')
+setup_socket(cam_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.image_sensor')
 
 tel_dict = {
     "name": "",
@@ -103,10 +103,10 @@ class TestSuiteClass:
         driver_cmd.veh.action = control_protocol.VehicleAction.TAKEOFF
         driver_cmd.seq_num = sequence_counter["value"]
         message = driver_cmd.SerializeToString()
-        await cmd_back_sock.send_multipart([self.identity, message])
+        await hub_to_driver_sock.send_multipart([self.identity, message])
  
         logger.info("Waiting for response")       
-        response = await cmd_back_sock.recv_multipart()
+        response = await hub_to_driver_sock.recv_multipart()
         driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
         seq_num = driver_rep.seq_num
@@ -143,10 +143,10 @@ class TestSuiteClass:
             driver_cmd.veh.velocity_body.angular_vel = test_set[3]
             driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
-            await cmd_back_sock.send_multipart([self.identity, message])
+            await hub_to_driver_sock.send_multipart([self.identity, message])
             
             logger.info("Waiting for response")
-            response = await cmd_back_sock.recv_multipart()
+            response = await hub_to_driver_sock.recv_multipart()
             driver_rep = control_protocol.Response()
             driver_rep.ParseFromString(response[1])
             seq_num = driver_rep.seq_num
@@ -213,10 +213,10 @@ class TestSuiteClass:
             logger.info(f"Sending command with seqNum: {seq}")
             driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
-            await cmd_back_sock.send_multipart([self.identity, message])
+            await hub_to_driver_sock.send_multipart([self.identity, message])
 
             logger.info("Waiting for response")
-            response = await cmd_back_sock.recv_multipart()
+            response = await hub_to_driver_sock.recv_multipart()
             driver_rep = control_protocol.Response()
             driver_rep.ParseFromString(response[1])
             seq_num = driver_rep.seq_num
@@ -271,10 +271,10 @@ class TestSuiteClass:
         request.veh.action = control_protocol.VehicleAction.RTH
         request.seq_num = sequence_counter["value"]
         message = request.SerializeToString()
-        await cmd_back_sock.send_multipart([self.identity, message])
+        await hub_to_driver_sock.send_multipart([self.identity, message])
         
         logger.info("Waiting for response")
-        response = await cmd_back_sock.recv_multipart()
+        response = await hub_to_driver_sock.recv_multipart()
         driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
         seq_num = driver_rep.seq_num  
@@ -294,10 +294,10 @@ class TestSuiteClass:
         request.veh.action = control_protocol.VehicleAction.LAND
         request.seq_num = sequence_counter["value"]
         message = request.SerializeToString()
-        await cmd_back_sock.send_multipart([self.identity, message])
+        await hub_to_driver_sock.send_multipart([self.identity, message])
         
         logger.info("Waiting for response")
-        response = await cmd_back_sock.recv_multipart()
+        response = await hub_to_driver_sock.recv_multipart()
         driver_rep = control_protocol.Response()
         driver_rep.ParseFromString(response[1])
         seq_num = driver_rep.seq_num
