@@ -18,17 +18,17 @@ logger = logging.getLogger(__name__)
 context = zmq.asyncio.Context()
 
 hub_to_driver_sock = context.socket(zmq.DEALER)
-setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'controlplane.hub_to_driver')
+setup_socket(hub_to_driver_sock, SocketOperation.BIND, 'hub.network.controlplane.hub_to_driver')
 
 tel_sock = context.socket(zmq.SUB)
 tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
 tel_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(tel_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.telemetry')
+setup_socket(tel_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.telemetry')
 
 cam_sock = context.socket(zmq.SUB)
 cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
 cam_sock.setsockopt(zmq.CONFLATE, 1)
-setup_socket(cam_sock, SocketOperation.BIND, 'dataplane.driver_to_hub.image_sensor')
+setup_socket(cam_sock, SocketOperation.BIND, 'hub.network.dataplane.driver_to_hub.image_sensor')
 
 tel_dict = {
     "name": "",
