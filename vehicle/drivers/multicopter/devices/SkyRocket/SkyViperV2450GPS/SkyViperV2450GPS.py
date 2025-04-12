@@ -8,11 +8,7 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-<<<<<<< HEAD
-class SkyViperV2450GPSDrone(ArduPilotDrone):
-=======
 class SkyViperV2450GPS(ArduPilotDrone):
->>>>>>> origin/main
     
     ''' Interface Methods '''
     async def get_type(self):
