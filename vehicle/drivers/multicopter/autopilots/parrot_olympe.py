@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 class ParrotOlympeDrone(MulticopterItf):
     
     class FlightMode(Enum):
-        LOITER = 1
-        TAKEOFF_LAND = 2
-        VELOCITY = 3
-        GUIDED = 4
+        LOITER = 'LOITER'
+        TAKEOFF_LAND = 'TAKEOFF_LAND'
+        VELOCITY = 'VELOCITY'
+        GUIDED = 'GUIDED'
         
     def __init__(self, drone_id, **kwargs):
         self.drone_id = drone_id
@@ -52,7 +52,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
     ''' Interface methods '''
     async def get_type(self):
-        return "Parrot Drone"
+        return "Parrot Olympe Drone"
 
     async def connect(self, connection_string):
         self.ip = connection_string
@@ -92,7 +92,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def hover(self):
-        return await self.set_velocity(0.0, 0.0, 0.0, 0.0)
+        return await self.set_velocity_body(0.0, 0.0, 0.0, 0.0)
 
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -121,31 +121,6 @@ class ParrotOlympeDrone(MulticopterItf):
         
         return common_protocol.ResponseStatus.COMPLETED
             
-    async def set_velocity(self, velocity):
-        forward_vel = velocity.forward_vel
-        right_vel = velocity.right_vel
-        up_vel = velocity.up_vel
-        angle_vel = velocity.angle_vel
-        
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
-
-        # Check that the speeds is within the drone bounds
-        max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
-        max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
-
-        if abs(angle_vel) > max_rotation:
-            return common_protocol.ResponseStatus.FAILED
-        if abs(up_vel) > max_vertical_speed:
-            return common_protocol.ResponseStatus.FAILED
-
-        self._velocity_setpoint = \
-                (forward_vel, right_vel, up_vel, angle_vel)
-        if self._pid_task is None:
-            self._pid_task = asyncio.create_task(\
-                    self._velocity_pid())
-
-        return common_protocol.ResponseStatus.COMPLETED
-
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
@@ -171,6 +146,40 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
+    
+    async def set_relative_position_enu(self, position):
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+    
+    async def set_relative_position_body(self, position):
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+    
+    async def set_velocity_enu(self, velocity):
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+
+    async def set_velocity_body(self, velocity):
+        forward_vel = velocity.forward_vel
+        right_vel = velocity.right_vel
+        up_vel = velocity.up_vel
+        angle_vel = velocity.angle_vel
+        
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
+
+        # Check that the speeds is within the drone bounds
+        max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
+        max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
+
+        if abs(angle_vel) > max_rotation:
+            return common_protocol.ResponseStatus.FAILED
+        if abs(up_vel) > max_vertical_speed:
+            return common_protocol.ResponseStatus.FAILED
+
+        self._velocity_setpoint = \
+                (forward_vel, right_vel, up_vel, angle_vel)
+        if self._pid_task is None:
+            self._pid_task = asyncio.create_task(\
+                    self._velocity_pid())
+
+        return common_protocol.ResponseStatus.COMPLETED
 
     async def set_heading(self, location):
         lat = location.latitude
@@ -204,25 +213,27 @@ class ParrotOlympeDrone(MulticopterItf):
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
                 tel_message.battery = self._get_battery_percentage()
-                tel_message.drone_attitude.yaw = self._get_attitude()["yaw"]
-                tel_message.drone_attitude.pitch = \
-                        self._get_attitude()["pitch"]
-                tel_message.drone_attitude.roll = \
-                        self._get_attitude()["roll"]
                 tel_message.satellites = self._get_satellites()
-                tel_message.relative_position.up = self._get_altitude_rel()
                 tel_message.global_position.latitude = \
                         self._get_global_position()["latitude"]
                 tel_message.global_position.longitude = \
                         self._get_global_position()["longitude"]
-                tel_message.global_position.altitude = \
+                tel_message.global_position.absolute_altitude = \
                         self._get_global_position()["altitude"]
-                tel_message.global_position.bearing = self._get_heading()
-                tel_message.velocity.forward_vel = \
+                tel_message.global_position.relative_altitude = \
+                        self._get_altitude_rel()
+                tel_message.global_position.heading = self._get_heading()
+                tel_message.velocity_enu.north_vel = \
+                        self._get_velocity_enu()["north"]
+                tel_message.velocity_enu.east_vel = \
+                        self._get_velocity_enu()["east"]
+                tel_message.velocity_enu.up_vel = \
+                        self._get_velocity_enu()["up"]
+                tel_message.velocity_body.forward_vel = \
                         self._get_velocity_body()["forward"]
-                tel_message.velocity.right_vel = \
+                tel_message.velocity_body.right_vel = \
                         self._get_velocity_body()["right"]
-                tel_message.velocity.up_vel = \
+                tel_message.velocity_body.up_vel = \
                         self._get_velocity_body()["up"]
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
@@ -295,13 +306,13 @@ class ParrotOlympeDrone(MulticopterItf):
     def _get_heading(self):
         return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
 
-    def _get_velocity_neu(self):
+    def _get_velocity_enu(self):
         ned = self.drone.get_state(SpeedChanged)
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"] * -1}
         
     def _get_velocity_body(self):
-        neu = self._get_velocity_neu()
-        vec = np.array([neu["north"], neu["east"]], \
+        enu = self._get_velocity_enu()
+        vec = np.array([enu["north"], enu["east"]], \
                 dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
@@ -319,7 +330,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
         res = {"forward": np.dot(vec, vecf) * -1, \
                 "right": np.dot(vec, vecr) * -1, \
-                "up": neu["up"]}
+                "up": enu["up"]}
         return res
 
     def _get_rssi(self):

@@ -54,11 +54,11 @@ async def recv_telemetry():
             tel_dict['satellites'] = telemetry.satellites
             tel_dict['gps']['latitude'] = telemetry.global_position.latitude
             tel_dict['gps']['longitude'] = telemetry.global_position.longitude
-            tel_dict['gps']['altitude'] = telemetry.global_position.altitude
-            tel_dict["gps"]["bearing"] = telemetry.global_position.bearing
-            tel_dict["imu"]["forward"] = telemetry.velocity.forward_vel
-            tel_dict["imu"]["right"] = telemetry.velocity.right_vel
-            tel_dict["imu"]["up"] = telemetry.velocity.up_vel
+            tel_dict['gps']['altitude'] = telemetry.global_position.absolute_altitude
+            tel_dict["gps"]['heading'] = telemetry.global_position.heading
+            tel_dict['imu']['forward'] = telemetry.velocity_body.forward_vel
+            tel_dict['imu']['right'] = telemetry.velocity_body.right_vel
+            tel_dict['imu']['up'] = telemetry.velocity_body.up_vel
             logger.debug(f"Received telemetry message: {telemetry}")
             await asyncio.sleep(0.3)  # Small delay to avoid hogging CPU
         except Exception as e:
@@ -137,10 +137,10 @@ class TestSuiteClass:
             await asyncio.sleep(5)
             logger.info(f"Testing set velocity: {test_set}")
             driver_cmd = control_protocol.Request()
-            driver_cmd.veh.velocity.forward_vel = test_set[0]
-            driver_cmd.veh.velocity.right_vel = test_set[1]
-            driver_cmd.veh.velocity.up_vel = test_set[2]
-            driver_cmd.veh.velocity.angular_vel = test_set[3]
+            driver_cmd.veh.velocity_body.forward_vel = test_set[0]
+            driver_cmd.veh.velocity_body.right_vel = test_set[1]
+            driver_cmd.veh.velocity_body.up_vel = test_set[2]
+            driver_cmd.veh.velocity_body.angular_vel = test_set[3]
             driver_cmd.seq_num = sequence_counter["value"]
             message = driver_cmd.SerializeToString()
             await cmd_back_sock.send_multipart([self.identity, message])
@@ -174,7 +174,7 @@ class TestSuiteClass:
         curr_pos_alt = tel_dict['gps']['altitude']
         curr_pos_lat = tel_dict['gps']['latitude']
         curr_pos_lon = tel_dict['gps']['longitude']
-        curr_pos_angle = tel_dict['gps']['bearing']
+        curr_pos_angle = tel_dict['gps']['heading']
         logger.info(f"Current position: {curr_pos_lat}, {curr_pos_lon}, {curr_pos_alt}, {curr_pos_angle}")
         return (curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle)
     
@@ -207,8 +207,8 @@ class TestSuiteClass:
             driver_cmd = control_protocol.Request()
             driver_cmd.veh.location.latitude  = next_lat
             driver_cmd.veh.location.longitude = next_lon
-            driver_cmd.veh.location.altitude  = next_alt
-            driver_cmd.veh.location.bearing   = next_angle
+            driver_cmd.veh.location.absolute_altitude  = next_alt
+            driver_cmd.veh.location.heading = next_angle
             seq = sequence_counter["value"]
             logger.info(f"Sending command with seqNum: {seq}")
             driver_cmd.seq_num = sequence_counter["value"]
@@ -234,7 +234,7 @@ class TestSuiteClass:
             actual_lat = tel_dict["gps"]["latitude"]
             actual_lon = tel_dict["gps"]["longitude"]
             actual_alt = tel_dict["gps"]["altitude"]
-            actual_angle = tel_dict["gps"]["bearing"]
+            actual_angle = tel_dict["gps"]["heading"]
 
             logger.info(f"Expected: {(next_lat, next_lon, next_alt, next_angle)}")
             logger.info(f"Actual:   {(actual_lat, actual_lon, actual_alt, actual_angle)}")

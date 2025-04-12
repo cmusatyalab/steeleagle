@@ -15,9 +15,8 @@ context = zmq.Context()
 cmd_front_usr_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
 cmd_front_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(cmd_front_usr_sock, SocketOperation.CONNECT, 'CMD_FRONT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("CMD_ENDPOINT"))
+setup_socket(cmd_front_usr_sock, SocketOperation.CONNECT, 'controlplane.mission_to_hub')
 
-######################################################## DriverRespond ############################################################ 
 class DriverRespond:
     def __init__(self):
         self.event = asyncio.Event()
@@ -43,10 +42,8 @@ class DriverRespond:
         await self.event.wait()
 
 
-######################################################## DroneStub ############################################################
 class DroneStub:
 
-    ######################################################## Common ############################################################
     def __init__(self):
         self.seq_num = 1 # set the initial seq_num to 1 caz cnc proto does not support to show 0
         self.request_map = {}
@@ -98,8 +95,6 @@ class DroneStub:
                 break
             await asyncio.sleep(0)
     
-
-    ######################################################## RPC ############################################################
     '''Helper method to send a request and wait for a response'''
     async def send_and_wait(self, request):
         driverRespond = DriverRespond()

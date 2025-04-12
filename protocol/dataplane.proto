@@ -10,7 +10,7 @@
 syntax = "proto3";
 option py_generic_services = true;
 package protocol.dataplane;
-import "protocol/common.proto";
+import "common.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -45,14 +45,18 @@ message TelemetryRequest {
 message Telemetry {
   string drone_name = 1;
   protocol.common.Location global_position = 2;
-  protocol.common.Position relative_position = 3;
-  protocol.common.Velocity velocity = 4;
-  protocol.common.Pose gimbal_pose = 5;
-  protocol.common.Location home = 6; // GPS location that will be used when returning home
-  protocol.common.Cameras cameras = 7; // Information about the drone's camera sensors
-  protocol.common.Alerts alerts = 8; // Enumeration of vehicle warnings
-  string drone_model = 9; // Manufacturer/model of the drone
-  string status = 10; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
+  protocol.common.PositionENU relative_position = 3;
+  protocol.common.VelocityENU velocity_global = 4;
+  protocol.common.VelocityBody velocity_body = 5;
+  protocol.common.PoseBody gimbal_pose = 6;
+  protocol.common.Location home = 7; // GPS location that will be used when returning home
+  protocol.common.Cameras cameras = 8; // Information about the drone's camera sensors
+  protocol.common.Alerts alerts = 9; // Enumeration of vehicle warnings
+  uint32 battery = 10;  // Battery level [0-100]%
+  uint32 satellites = 11; // Number of satellites used in GPS fix
+  google.protobuf.Duration uptime = 12;
+  string drone_model = 13; // Manufacturer/model of the drone
+  string status = 14; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
 }
 
 /*
