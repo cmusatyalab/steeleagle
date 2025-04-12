@@ -85,8 +85,8 @@ class Driver:
             logger.info(f'Established connection to drone, ready to receive commands!')
 
             logger.info('Started streaming telemetry and video')
-            asyncio.create_task(self.drone.stream_video(self.cam_sock, 5))
-            asyncio.create_task(self.drone.stream_telemetry(self.tel_sock, 5))
+            #asyncio.create_task(self.drone.stream_video(self.cam_sock, 5))
+            #asyncio.create_task(self.drone.stream_telemetry(self.tel_sock, 5))
 
             while await self.drone.is_connected():
                 try:
@@ -99,7 +99,7 @@ class Driver:
                     message = control_protocol.Request()
                     message.ParseFromString(data)
                     logger.info(f'Message: {message}')
-                    asyncio.create_task(self.handle(identity, message, cmd_back_sock))
+                    asyncio.create_task(self.handle(identity, message, self.cmd_back_sock))
                 except Exception as e:
                     logger.error(f'Command received error: {e}')
 
@@ -112,12 +112,12 @@ class Driver:
 
         # Create a driver response message
         resp = control_protocol.Response()
-        man_control = message.veh.WhichOneof("param")
+        vehicle_control = message.veh.WhichOneof("param")
         seq_num = message.seq_num
 
         try:
             result = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
-            if man_control == "action":
+            if vehicle_control == "action":
                 action = message.veh.action
                 if action == control_protocol.VehicleAction.TAKEOFF:
                     logger.info('****** Takeoff ******')
@@ -137,7 +137,6 @@ class Driver:
                 elif action == control_protocol.VehicleAction.HOVER:
                     logger.info('****** Hover ******')
                     logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
-                    result  = await self.drone.rth()
                     result = await self.drone.hover()
                     logger.info(f"Call finished at: {time.time()}")
                 elif action == control_protocol.VehicleAction.KILL:
@@ -145,18 +144,34 @@ class Driver:
                     logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
                     result = await self.drone.kill()
                     logger.info(f"Call finished at: {time.time()}")
-            elif man_control == "velocity":
-                logger.info('****** Set Velocity ******')
-                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
-                velocity = message.veh.velocity
-                result = await self.drone.set_velocity(velocity)
-                logger.info(f"Call finished at: {time.time()}")
-            elif man_control == "location":
+            elif vehicle_control == "location":
                 logger.info('****** Set Global Position ******')
                 logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
                 location = message.veh.location
                 result = await self.drone.set_global_position(location)
                 logger.info(f"Call finished at: {time.time()}")
+            elif vehicle_control == "position_enu":
+                logger.info('****** Set Position ENU ******')
+                # TODO: Implement this
+                logger.error('Not implemented yet!')
+            elif vehicle_control == "position_enu":
+                logger.info('****** Set Position ENU ******')
+                # TODO: Implement this
+                logger.error('Not implemented yet!')
+            elif vehicle_control == "velocity_enu":
+                logger.info('****** Set Velocity ENU ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
+                velocity = message.veh.velocity_enu
+                result = await self.drone.set_velocity_enu(velocity)
+                logger.info(f"Call finished at: {time.time()}")
+            elif vehicle_control == "velocity_body":
+                logger.info('****** Set Velocity Body ******')
+                logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
+                velocity = message.veh.velocity_body
+                result = await self.drone.set_velocity_body(velocity)
+                logger.info(f"Call finished at: {time.time()}")
+            else:
+                raise Exception(f"Command type {vehicle_control} is not supported!")
         except Exception as e:
             logger.error(f'Failed to handle command, error: {e}')
             result = common_protocol.ResponseStatus.FAILED
@@ -164,6 +179,7 @@ class Driver:
         # resp.timestamp = Timestamp()
         resp.seq_num = seq_num
         resp.resp = result
+        logger.info("Sending back message")
         resp_sock.send_multipart([identity, resp.SerializeToString()])
 
 def get_drone(drone_id, drone_args, drone_module):
@@ -200,5 +216,4 @@ if __name__ == "__main__":
 
     drone = get_drone(drone_id, drone_args, drone_module)
     driver = Driver(drone, config)
-    
     asyncio.run(driver.run())
