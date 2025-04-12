@@ -1,4 +1,3 @@
-import common
 import time
 import zmq
 import zmq.asyncio
@@ -10,33 +9,25 @@ import logging
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 import dataplane_pb2 as data_protocol
-from util.utils import setup_socket, SocketOperation, import_config
+from util.utils import setup_socket, query_config, setup_logging, SocketOperation
 from google.protobuf.timestamp_pb2 import Timestamp
 
 logger = logging.getLogger(__name__)
 
-# telemetry_logger = logging.getLogger('telemetry')
-# telemetry_handler = logging.FileHandler('telemetry.log')
-# formatter = logging.Formatter(logging_format)
-# telemetry_handler.setFormatter(formatter)
-# telemetry_logger.handlers.clear()
-# telemetry_logger.addHandler(telemetry_handler)
-# telemetry_logger.propagate = False
-
 class Driver:
-    def __init__(self, drone, config):
+    def __init__(self, drone):
         self.drone = drone
         self.context = zmq.asyncio.Context()
-        self.cmd_back_sock = self.context.socket(zmq.DEALER)
+        self.hub_to_driver_sock = self.context.socket(zmq.DEALER)
         self.tel_sock = self.context.socket(zmq.PUB)
         self.cam_sock = self.context.socket(zmq.PUB)
 
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
-        setup_socket(self.tel_sock, SocketOperation.CONNECT, 'dataplane.driver_to_hub.telemetry')
-        setup_socket(self.cam_sock, SocketOperation.CONNECT, 'dataplane.driver_to_hub.image_sensor')
-        setup_socket(self.cmd_back_sock, SocketOperation.CONNECT, 'controlplane.hub_to_driver')
+        setup_socket(self.tel_sock, SocketOperation.CONNECT, 'hub.network.dataplane.driver_to_hub.telemetry')
+        setup_socket(self.cam_sock, SocketOperation.CONNECT, 'hub.network.dataplane.driver_to_hub.image_sensor')
+        setup_socket(self.hub_to_driver_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_driver')
 
     async def run(self):
         while True:
@@ -57,7 +48,7 @@ class Driver:
 
             while await self.drone.is_connected():
                 try:
-                    message_parts = await self.cmd_back_sock.recv_multipart()
+                    message_parts = await self.hub_to_driver_sock.recv_multipart()
                     logger.info(f'Received message!')
                     identity = message_parts[0]
                     logger.info(f'Identity: {identity}')
@@ -66,7 +57,7 @@ class Driver:
                     message = control_protocol.Request()
                     message.ParseFromString(data)
                     logger.info(f'Message: {message}')
-                    asyncio.create_task(self.handle(identity, message, self.cmd_back_sock))
+                    asyncio.create_task(self.handle(identity, message, self.hub_to_driver_sock))
                 except Exception as e:
                     logger.error(f'Command received error: {e}')
 
@@ -160,27 +151,18 @@ def get_drone(drone_id, drone_args, drone_module):
         raise Exception(f"Could not initialize drone, reason: {e}")
 
 if __name__ == "__main__":
-    config_path = os.getenv("CONFIG_PATH")
-    if config_path is None:
-        raise Exception("Expected CONFIG_PATH env variable to be specified")
+    logging_config = query_config('driver.logging')
+    setup_logging(logger, logging_config)
 
-    config = import_config(config_path)
-    driver_config = config.get("driver")
-    if driver_config is None:
-        raise Exception("Driver config not available")
-
-    logging_config = driver_config.get('logging')
-    common.setup_logging(logger, logging_config)
-
-    drone_id = driver_config.get("id")
-    drone_module = driver_config.get("module")
-    drone_args = driver_config.get("keyword_args")
-    connection_string = driver_config.get("connection_string")
+    drone_id = query_config('driver.id') 
+    drone_module = query_config('driver.module')
+    drone_args = query_config('driver.keyword_args')
+    connection_string = query_config('driver.connection_string')
 
     logger.info(f"Drone ID: {drone_id}")
     logger.info(f"Drone type: {drone_module}")
     logger.info(f"Connection string: {connection_string}")
 
     drone = get_drone(drone_id, drone_args, drone_module)
-    driver = Driver(drone, config)
+    driver = Driver(drone)
     asyncio.run(driver.run())

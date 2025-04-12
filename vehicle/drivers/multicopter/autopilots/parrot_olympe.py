@@ -5,6 +5,8 @@ import time
 import asyncio
 import logging
 from enum import Enum
+import numpy as np
+import cv2
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
@@ -26,8 +28,8 @@ import olympe.enums.gimbal as gimbal_mode
 # Interface import
 from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
-from protocol import dataplane_pb2 as data_protocol
-from protocol import common_pb2 as common_protocol
+import dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ class ParrotOlympeDrone(MulticopterItf):
         GUIDED = 'GUIDED'
         
     def __init__(self, drone_id, **kwargs):
-        self.drone_id = drone_id
+        self._drone_id = drone_id
         # Drone flight modes and setpoints
         self._velocity_setpoint = None
         # Set PID values for the drone
@@ -83,8 +85,14 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def land(self):
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
-        result = self._drone(Landing()).wait().success()
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND) 
+        self._drone(Landing()).wait().success()
+        result = await self._wait_for_condition(
+            lambda: self._drone(FlyingStateChanged(\
+                    state="landed", _policy="check")\
+                    ).success(),
+            interval=1
+        )
         
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -92,7 +100,12 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def hover(self):
-        return await self.set_velocity_body(0.0, 0.0, 0.0, 0.0)
+        velocity = common_protocol.VelocityBody()
+        velocity.forward_vel = 0.0
+        velocity.right_vel = 0.0
+        velocity.up_vel = 0.0
+        velocity.angular_vel = 0.0
+        return await self.set_velocity_body(velocity)
 
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -160,7 +173,7 @@ class ParrotOlympeDrone(MulticopterItf):
         forward_vel = velocity.forward_vel
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
-        angle_vel = velocity.angle_vel
+        angular_vel = velocity.angular_vel
         
         await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
 
@@ -168,13 +181,13 @@ class ParrotOlympeDrone(MulticopterItf):
         max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
         max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
 
-        if abs(angle_vel) > max_rotation:
+        if abs(angular_vel) > max_rotation:
             return common_protocol.ResponseStatus.FAILED
         if abs(up_vel) > max_vertical_speed:
             return common_protocol.ResponseStatus.FAILED
 
         self._velocity_setpoint = \
-                (forward_vel, right_vel, up_vel, angle_vel)
+                (forward_vel, right_vel, up_vel, angular_vel)
         if self._pid_task is None:
             self._pid_task = asyncio.create_task(\
                     self._velocity_pid())
@@ -204,11 +217,14 @@ class ParrotOlympeDrone(MulticopterItf):
         else:
             return common_protocol.ResponseStatus.FAILED
 
-    async def stream_telemetry(self, tel_sock):
+    async def set_gimbal_pose(self, pose):
+        return common_protocol.ResponseStatus.NOTSUPPORTED
+
+    async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info('Starting telemetry stream')
         # Wait a second to avoid contention issues
         await asyncio.sleep(1) 
-        while await self.isConnected():
+        while await self.is_connected():
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
@@ -238,9 +254,9 @@ class ParrotOlympeDrone(MulticopterItf):
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f'Failed to get telemetry, error: {e}')
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(1 / rate_hz)
                     
-    async def stream_video(self, cam_sock):
+    async def stream_video(self, cam_sock, rate_hz):
         logger.info('Starting camera stream')
         self._start_streaming()
         frame_id = 0
@@ -262,27 +278,27 @@ class ParrotOlympeDrone(MulticopterItf):
                 frame_id = frame_id + 1
             except Exception as e:
                 logger.error(f'Failed to get video frame, error: {e}')
-            await asyncio.sleep(0.033)
+            await asyncio.sleep(1 / rate_hz)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
 
     ''' Telemetry methods '''
     def _get_name(self):
-        return self.drone_id
+        return self._drone_id
 
     def _get_global_position(self):
         try:
-            return (self.drone.get_state(GpsLocationChanged)["latitude"],
-                self.drone.get_state(GpsLocationChanged)["longitude"],
-                self.drone.get_state(GpsLocationChanged)["altitude"])
+            return (self._drone.get_state(GpsLocationChanged)["latitude"],
+                self._drone.get_state(GpsLocationChanged)["longitude"],
+                self._drone.get_state(GpsLocationChanged)["altitude"])
         except Exception:
             return None
 
     def _get_altitude_rel(self):
-        return self.drone.get_state(AltitudeChanged)["altitude"]
+        return self._drone.get_state(AltitudeChanged)["altitude"]
 
     def _get_attitude(self):
-        att = self.drone.get_state(AttitudeChanged)
+        att = self._drone.get_state(AttitudeChanged)
         rad_to_deg = 180 / math.pi
         return {"roll": att["roll"] * rad_to_deg, \
                 "pitch": att["pitch"] * rad_to_deg, \
@@ -292,22 +308,19 @@ class ParrotOlympeDrone(MulticopterItf):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     def _get_battery_percentage(self):
-        battery_msg = self._get_cached_message("BATTERY_STATUS")
-        if not battery_msg:
-            return None
-        return battery_msg.battery_remaining
+        return self._drone.get_state(BatteryStateChanged)["percent"]
 
     def _get_satellites(self):
         try:
-            return self.drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
+            return self._drone.get_state(NumberOfSatelliteChanged)["numberOfSatellite"]
         except:
             return None
 
     def _get_heading(self):
-        return self.drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
+        return self._drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
 
     def _get_velocity_enu(self):
-        ned = self.drone.get_state(SpeedChanged)
+        ned = self._drone.get_state(SpeedChanged)
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"] * -1}
         
     def _get_velocity_body(self):
@@ -334,7 +347,7 @@ class ParrotOlympeDrone(MulticopterItf):
         return res
 
     def _get_rssi(self):
-        return self.drone.get_state(rssi_changed)["rssi"]
+        return self._drone.get_state(rssi_changed)["rssi"]
 
     ''' Coroutine methods '''
     async def _velocity_pid(self):
@@ -410,26 +423,26 @@ class ParrotOlympeDrone(MulticopterItf):
                     ep = error
                     counter = 0
 
-                previous_forward = 0
+                prev_forward = 0
                 prev_right = 0
                 prev_up = 0
                 if previous_values is not None:
-                    previous_forward = previous_values["forward"]
+                    prev_forward = previous_values["forward"]
                     prev_right = previous_values["right"]
                     prev_up = previous_values["up"]
 
-                forward = int(clamp(forward + previous_forward, -100, 100))
-                right = int(clamp(right + prev_right, -100, 100))
-                up = int(clamp(up + prev_up, -100, 100))
-                ang = int(clamp((angular_setpoint / max_rotation) * 100, -100, 100))
-
-                self._drone(PCMD(1, right, forward, ang, up, timestampAndSeqNum=0))
+                forward_round = round(clamp(forward + prev_forward, -100, 100))
+                right_round = round(clamp(right + prev_right, -100, 100))
+                up_round = round(clamp(up + prev_up, -100, 100))
+                ang_round = round(clamp((angular_setpoint / max_rotation) * 100, -100, 100))
+                
+                self._drone(PCMD(1, right_round, forward_round, ang_round, up_round, timestampAndSeqNum=0))
 
                 if previous_values is None:
                     previous_values = {}
-                previous_values["forward"] = forward
-                previous_values["right"] = right
-                previous_values["up"] = up
+                previous_values["forward"] = forward + prev_forward
+                previous_values["right"] = right + prev_right
+                previous_values["up"] = up + prev_up
 
                 counter += 1
 
@@ -438,6 +451,8 @@ class ParrotOlympeDrone(MulticopterItf):
             self._forward_pid_values["PrevI"] = 0.0
             self._right_pid_values["PrevI"] = 0.0
             self._up_pid_values["PrevI"] = 0.0
+        except Exception as e:
+            logger.error(f"PID iteration failure, reason: {e}")
     
     ''' Actuation methods '''
     async def _switch_mode(self, mode):
@@ -471,28 +486,7 @@ class ParrotOlympeDrone(MulticopterItf):
         converted_bearing = (initial_bearing + 360) % 360
 
         return converted_bearing
-        
-    async def _message_listener(self):
-        logger.info("-- Starting message listener")
-        try:
-            while True:
-                msg = await asyncio.to_thread(self.vehicle.recv_match, blocking=True)
-                if msg:
-                    message_type = msg.get_type()
-                    logger.debug(f"Received message type: {message_type}")
-        except asyncio.CancelledError:
-            logger.info("-- Message listener stopped")
-        except Exception as e:
-            logger.error(f"-- Error in message listener: {e}")
     
-    def _get_cached_message(self, message_type):
-        try:
-            logger.debug(f"Currently connection message types: {list(self.vehicle.messages)}")
-            return self.vehicle.messages[message_type]
-        except KeyError:
-            logger.error(f"Message type {message_type} not found in cache")
-            return None
-        
     async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
         start_time = time.time()
         while True:
@@ -507,7 +501,7 @@ class ParrotOlympeDrone(MulticopterItf):
             await asyncio.sleep(interval)
     
     ''' Streaming methods '''
-    async def _start_streaming(self):
+    def _start_streaming(self):
         self._streaming_thread = PDRAWStreamingThread(self._drone)
         self._streaming_thread.start()
 
@@ -515,7 +509,7 @@ class ParrotOlympeDrone(MulticopterItf):
         if self._streaming_thread:
             return self._streaming_thread.grab_frame().tobytes()
 
-    async def _stop_streaming(self):
+    def _stop_streaming(self):
         self._streaming_thread.stop()
 
 
@@ -531,7 +525,7 @@ class PDRAWStreamingThread(threading.Thread):
         self._frame_queue = queue.Queue()
         self._current_frame = np.zeros((720, 1280, 3), np.uint8)
 
-        self.drone.streaming.set_callbacks(
+        self._drone.streaming.set_callbacks(
             raw_cb=self._yuv_frame_callback,
             h264_cb=self._h264_frame_callback,
             start_cb=self._start_callback,

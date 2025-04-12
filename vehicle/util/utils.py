@@ -18,14 +18,15 @@ def setup_socket(socket, socket_op, access_token=None, port_num=None, host_addr=
     '''
     if access_token:
         indices = access_token.split('.')
-        host = query_config(f'{indices[0]}.{indices[1]}.endpoint') 
+        # Automatically get the associated endpoint
+        host = query_config(f'{indices[0]}.{indices[1]}.{indices[2]}.endpoint') 
         port = query_config(access_token)
         if not isinstance(port, int):
             raise ValueError("Access token did not yield expected type int")
         addr = f'tcp://{host}:{port}'
     elif isinstance(port_num, int):
         addr = f'tcp://{host_addr}:{port_num}'
-    else
+    else:
         raise ValueError("Expected port number to be an int or a provided access token")
 
     if socket_op == SocketOperation.CONNECT:
@@ -74,7 +75,7 @@ async def lazy_pirate_request(socket, payload, ctx, server_endpoint, retries=3,
         logger.info(f"Resending payload to {server_endpoint=}...")
         socket.send(payload)
 
-def query_config(access_token)
+def query_config(access_token):
     '''
     Allows for accessing the config using a plaintext access token.
     An access token indexes a specific socket name in the vehicle config.yaml.
@@ -86,8 +87,8 @@ def query_config(access_token)
     indices = access_token.split('.')
     result = config
     for i in indices:
-        if i not in port.keys():
-            raise ValueError("Malformed access token")
+        if i not in result.keys():
+            raise ValueError(f"Malformed access token: {access_token}")
         result = result[i] # Access the corresponding field
     return result
 
@@ -104,11 +105,11 @@ def setup_logging(logger, logging_config):
     logging_format = "%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) - %(message)s"
     
     if logging_config is not None:
-        logging.basicConfig(level=logging_config.get('log_level', logging.INFO), format=logging_format)
+        logging.basicConfig(level=logging_config['log_level'], format=logging_format)
     else:
         logging.basicConfig(level=logging.INFO, format=logging_format)
 
-    log_file = logging_config.get('log_file')
+    log_file = logging_config['log_file']
     if log_file is not None:
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(logging.Formatter(logging_format))
