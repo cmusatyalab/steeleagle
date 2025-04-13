@@ -1,27 +1,28 @@
 hub:
-  data_endpoint: "0.0.0.0"
-  command_endpoint: "0.0.0.0"
-  ports:
-    data_port:
+  network:
+    dataplane:
+      endpoint: "0.0.0.0"
       driver_to_hub:
-        telemetry: 0
-        image_sensor: 0
+        telemetry: 3001
+        image_sensor: 3002
       hub_to_mission:
-        telemetry_results: 0
-        compute_results: 0
-      hub_to_commander: 0
-    command_port:
-      hub_to_driver: 0
-      hub_to_mission: 0
-      mission_to_hub: 0
-      hub_to_datasink: 0
-      commander_to_hub: 0
+        telemetry_results: 3003
+        compute_results: 3004
+      hub_to_commander: 3005
+    controlplane:
+      endpoint: "0.0.0.0"
+      hub_to_driver: 3006
+      hub_to_mission: 3007
+      mission_to_hub: 3008
+      hub_to_datasink: 3009
+      commander_to_hub: 3010
   computes:
-    - compute_id: 'compute1'
+    - compute_id: 'default_compute'
       compute_class: 'GabrielCompute'
   logging:
     # Log level can be one of {INFO, DEBUG, WARNING, ERROR}
     log_level: "<LOG LEVEL>"
+    # Leave file as "" if you do not want to write the log
     log_file: "<FILENAME>"
 datasinks:
   # Comma-separated file paths for datasinks to register
@@ -29,24 +30,25 @@ datasinks:
   logging:
     # Log level can be one of {INFO, DEBUG, WARNING, ERROR}
     log_level: "<LOG LEVEL>"
+    # Leave file as "" if you do not want to write the log
     log_file: "<FILENAME>"
 mission:
   logging:
     # Log level can be one of {INFO, DEBUG, WARNING, ERROR}
     log_level: "<LOG LEVEL>"
+    # Leave file as "" if you do not want to write the log
     log_file: "<FILENAME>"
 driver:
-  id: "<DRONE NAME>"
+  id: "<DRONE ID>"
   # Type of driver to run - must match a directory in drivers
-  # e.g. "multicopter"
   type: "<DRONE TYPE>"
   # Path to device file relative to type directory
-  # e.g. "devices.ModalAI.Starling2Max"
-  module: "<MODULE PATH>"
+  module: "<DRONE FILE PATH>"
   connection_string: "0.0.0.0:0"
   # For passing in device-specific flags
   keyword_args: {}
   logging:
     # Log level can be one of {INFO, DEBUG, WARNING, ERROR}
     log_level: "<LOG LEVEL>"
+    # Leave file as "" if you do not want to write the log
     log_file: "<FILENAME>"
