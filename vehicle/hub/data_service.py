@@ -7,7 +7,7 @@ import logging
 import yaml
 import importlib
 import pkgutil
-from util.utils import setup_socket, import_config, setup_logging, SocketOperation
+from util.utils import query_config, setup_logging, SocketOperation
 from protocol import controlplane_pb2
 from protocol import dataplane_pb2
 import datasinks
@@ -19,11 +19,11 @@ import sys
 logger = logging.getLogger(__name__)
 
 class DataService(Service):
-    def __init__(self, config):
+    def __init__(self):
         """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
 
-        self.config = config
+        self.config = query_config('hub')
 
         # Setting up sockets
         self.tel_sock = self.context.socket(zmq.SUB)
@@ -36,11 +36,11 @@ class DataService(Service):
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
         self.setup_and_register_socket(self.tel_sock, SocketOperation.BIND, \
-                'dataplane.driver_to_hub.telemetry')
+                'hub.network.dataplane.driver_to_hub.telemetry')
         self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, \
-                'dataplane.driver_to_hub.image_sensor')
+                'hub.network.dataplane.driver_to_hub.image_sensor')
         self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, \
-                'dataplane.hub_to_mission.compute_results')
+                'hub.network.dataplane.hub_to_mission.compute_results')
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -50,7 +50,7 @@ class DataService(Service):
         # setting up data store
         self.data_store = DataStore()
         self.compute_dict = {}
-        self.spawn_computes(self.config)
+        self.spawn_computes()
 
     ###########################################################################
     #                                USER                                     #
@@ -185,14 +185,14 @@ class DataService(Service):
         logger.info(f"Starting compute {compute_class} with id {compute_id}")
         return compute_instance, self.create_task(compute_instance.run())
 
-    def spawn_computes(self, config):
+    def spawn_computes(self):
         """Load configuration and spawn computes."""
         compute_classes = self.discover_compute_classes()
         logger.info(f"Available compute: {', '.join(compute_classes.keys())}")
 
         compute_tasks = []
 
-        for compute_config in config.get("computes", []):
+        for compute_config in self.config.get("computes", []):
             compute_class = compute_config["compute_class"].lower()
             compute_id = compute_config["compute_id"]
             result = self.run_compute(compute_class, compute_id, compute_classes)
@@ -207,22 +207,10 @@ class DataService(Service):
 
 async def main():
     """Main entry point for the DataService."""
-    config_path = os.getenv("CONFIG_PATH")
-    if config_path is None:
-        raise Exception("Expected CONFIG_PATH env variable to be specified")
-
-    config = import_config(config_path)
-    hub_config = config.get("hub")
-    if hub_config is None:
-        raise Exception("Hub config not available")
-
-    logging_config = hub_config.get('logging')
-    setup_logging(logger, logging_config)
-
-    data_service = DataService(hub_config)
+    setup_logging(logger, 'hub.logging')
 
     logger.info("Starting DataService")
-    await data_service.start()
+    await DataService().start()
 
 if __name__ == "__main__":
     asyncio.run(main())

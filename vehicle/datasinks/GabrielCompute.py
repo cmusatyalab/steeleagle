@@ -13,6 +13,8 @@ from hub.data_store import DataStore
 from protocol import dataplane_pb2 as data_protocol
 from protocol import controlplane_pb2 as control_protocol
 from protocol import common_pb2 as common_protocol
+from protocol import gabriel_extras_pb2 as gabriel_extras
+from util.utils import query_config
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +30,8 @@ class GabrielCompute(ComputeInterface):
         }
 
         # Gabriel
-        self.server = config.get('data_endpoint')
-        self.port = config.get('ports').get('data_ports').get('hub_to_commander')
+        self.server = query_config('hub.network.dataplane.endpoint')
+        self.port = query_config('hub.network.dataplane.hub_to_commander')
 
         logger.info(f'Gabriel compute: Gabriel server: {self.server}')
         logger.info(f'Gabriel compute: Gabriel port: {self.port}')
@@ -109,7 +111,6 @@ class GabrielCompute(ComputeInterface):
             self.data_store.get_raw_data(tel_data)
             try:
                 if frame_data is not None and frame_data.data != b'' and tel_data is not None:
-                    logger.debug("Waiting for new frame from driver")
                     logger.info(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
 
                     frame_bytes = frame_data.data
@@ -120,7 +121,8 @@ class GabrielCompute(ComputeInterface):
                     input_frame.payloads.append(frame.tobytes())
 
                     # produce extras
-                    compute_command = control_protocol.Request()
+                    extras = gabriel_extras.Extras()
+                    compute_command = extras.cpt_request
                     compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
@@ -133,8 +135,11 @@ class GabrielCompute(ComputeInterface):
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][0]
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
+
+                    self.data_store.get_raw_data(extras.telemetry)
+
                     if compute_command is not None:
-                        input_frame.extras.Pack(compute_command)
+                        input_frame.extras.Pack(extras)
                 else:
                     logger.info('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT

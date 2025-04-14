@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
 //
 // SPDX-License-Identifier: GPL-2.0-only
+
 /**
- * Messages/Calls related to the Dataplane component of SteelEagle.
+ * Messages/calls related to the data plane component of SteelEagle.
  *
- * The dataplane is responsible for relaying telemetry and frame data
+ * The data plane is responsible for relaying telemetry and frame data
  * from the drone to the rest of the system.
  */
+
 syntax = "proto3";
 option py_generic_services = true;
 package protocol.dataplane;

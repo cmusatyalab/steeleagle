@@ -10,22 +10,17 @@ import logging
 import os
 from protocol import controlplane_pb2
 from service import Service
-from util.utils import import_config, setup_logging, SocketOperation
+from util.utils import query_config, setup_logging, SocketOperation
 
 logger = logging.getLogger(__name__)
 
 class CommandService(Service):
-    def __init__(self, config):
+    def __init__(self):
         super().__init__()
 
-        driver_config = config.get("driver")
-        if driver_config is None:
-            logger.fatal("Driver config not available")
-        config = config.get('hub')
-
         # drone info
-        self.drone_id = driver_config.get("id")
-        self.drone_type = driver_config.get("type")
+        self.drone_id = query_config('driver.id')
+        self.drone_type = query_config('driver.type')
         self.manual = True
 
         # init cmd seq
@@ -46,13 +41,13 @@ class CommandService(Service):
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
 
         self.setup_and_register_socket(
-            self.commander_socket, SocketOperation.CONNECT, 'controlplane.commander_to_hub')
+            self.commander_socket, SocketOperation.CONNECT, 'hub.network.controlplane.commander_to_hub')
         self.setup_and_register_socket(
-            self.mission_cmd_socket, SocketOperation.BIND, 'controlplane.mission_to_hub')
+            self.mission_cmd_socket, SocketOperation.BIND, 'hub.network.controlplane.mission_to_hub')
         self.setup_and_register_socket(
-            self.driver_socket, SocketOperation.BIND, 'controlplane.hub_to_driver')
+            self.driver_socket, SocketOperation.BIND, 'hub.network.controlplane.hub_to_driver')
         self.setup_and_register_socket(
-            self.mission_ctrl_socket, SocketOperation.BIND, 'controlplane.hub_to_mission')
+            self.mission_ctrl_socket, SocketOperation.BIND, 'hub.network.controlplane.hub_to_mission')
 
         self.create_task(self.cmd_proxy())
 
@@ -184,23 +179,8 @@ class CommandService(Service):
                 raise Exception("Expected a request type to be specified")
 
 async def main():
-    config_path = os.getenv("CONFIG_PATH")
-    if config_path is None:
-        raise Exception("Expected CONFIG_PATH env variable to be specified")
-
-    config = import_config(config_path)
-    hub_config = config.get("hub")
-    if hub_config is None:
-        raise Exception("Hub config not available")
-
-    logging_config = hub_config.get('logging')
-    setup_logging(logger, logging_config)
-
-    # init CommandService
-    cmd_service = CommandService(config)
-
-    # run CommandService
-    await cmd_service.start()
+    setup_logging(logger, 'hub.logging')
+    await CommandService().start()
 
 if __name__ == "__main__":
     logger.info("Main: starting CommandService")

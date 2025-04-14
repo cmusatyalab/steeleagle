@@ -101,8 +101,9 @@ def import_config():
         config = yaml.safe_load(file)
         return config
 
-def setup_logging(logger, logging_config):
+def setup_logging(logger, access_token):
     logging_format = "%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) - %(message)s"
+    logging_config = query_config(access_token)
 
     if logging_config is not None:
         logging.basicConfig(level=logging_config['log_level'], format=logging_format)
