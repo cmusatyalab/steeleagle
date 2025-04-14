@@ -19,7 +19,7 @@ def setup_socket(socket, socket_op, access_token=None, port_num=None, host_addr=
     if access_token:
         indices = access_token.split('.')
         # Automatically get the associated endpoint
-        host = query_config(f'{indices[0]}.{indices[1]}.{indices[2]}.endpoint') 
+        host = query_config(f'{indices[0]}.{indices[1]}.{indices[2]}.endpoint')
         port = query_config(access_token)
         if not isinstance(port, int):
             raise ValueError("Access token did not yield expected type int")
@@ -80,7 +80,7 @@ def query_config(access_token):
     Allows for accessing the config using a plaintext access token.
     An access token indexes a specific socket name in the vehicle config.yaml.
     This must be formatted in a Pythonic module import format. For example, for
-    the driver_to_hub telemetry socket under dataplane and hub, it would be 
+    the driver_to_hub telemetry socket under dataplane and hub, it would be
     requested using the id: hub.dataplane.driver_to_hub.telemetry.
     '''
     config = import_config()
@@ -103,14 +103,14 @@ def import_config():
 
 def setup_logging(logger, logging_config):
     logging_format = "%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) - %(message)s"
-    
+
     if logging_config is not None:
         logging.basicConfig(level=logging_config['log_level'], format=logging_format)
     else:
         logging.basicConfig(level=logging.INFO, format=logging_format)
 
     log_file = logging_config['log_file']
-    if log_file is not None:
+    if log_file:
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(logging.Formatter(logging_format))
         logger.addHandler(file_handler)
