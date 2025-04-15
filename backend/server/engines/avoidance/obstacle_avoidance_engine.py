@@ -136,6 +136,7 @@ class AvoidanceEngine(ABC):
     def get_result_wrapper(self, status):
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
+        return result_wrapper
 
     def maybe_load_model(model):
         if model != '' and model != self.model:
@@ -154,7 +155,7 @@ class AvoidanceEngine(ABC):
         result.payload = json.dumps(r).encode(encoding="utf-8")
         return result
 
-    def handle_helper(self):
+    def handle_helper(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             return self.text_payload_reply()
 
@@ -247,7 +248,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         logger.info("Depth Threshold: {}".format(self.threshold))
 
     def handle(self, input_frame):
-        return self.handle_helper()
+        return self.handle_helper(input_frame)
 
     def inference(self, img):
         """Allow timing engine to override this"""
@@ -337,7 +338,7 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         logger.info("Depth Threshold: {}".format(self.threshold))
 
     def handle(self, input_frame):
-        return self.handle_helper()
+        return self.handle_helper(input_frame)
 
     def inference(self, img):
         """Allow timing engine to override this"""

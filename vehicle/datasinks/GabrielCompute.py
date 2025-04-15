@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from gabriel_server import cognitive_engine
 from util.timer import Timer
 from datasinks.ComputeItf import ComputeInterface
 from hub.data_store import DataStore
@@ -72,6 +73,8 @@ class GabrielCompute(ComputeInterface):
         if len(result_wrapper.results) != 1:
             return
 
+        response = cognitive_engine.unpack_extras(control_protocol.Response, result_wrapper)
+
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode('utf-8')
@@ -82,8 +85,10 @@ class GabrielCompute(ComputeInterface):
                         # get timestamp
                         timestamp = time.time()
                         # update
-                        logger.debug(f"Gabriel compute: timestamp = {timestamp}, compute type = {compute_type}, result = {result}")
-                        self.data_store.update_compute_result(self.compute_id, compute_type, payload, timestamp)
+                        logger.debug(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
+                        self.data_store.update_compute_result(
+                            self.compute_id, compute_type, payload,
+                            response.seq_num, timestamp)
                 except Exception as e:
                     logger.error(f"Gabriel compute process_results: error processing result: {e}")
             else:
@@ -169,7 +174,7 @@ class GabrielCompute(ComputeInterface):
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")
                     # Register when we start sending telemetry
                     if not self.drone_registered:
-                        logger.info("Gabriel compute telemetry producer: Sending registeration request to backend")
+                        logger.info("Gabriel compute telemetry producer: Sending registration request to backend")
                         tel_data.uptime = 0
                         self.drone_registered = True
                     logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
