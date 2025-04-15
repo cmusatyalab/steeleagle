@@ -8,20 +8,20 @@ import os
 import zmq
 from util.utils import setup_socket
 from util.utils import SocketOperation
-from enum import Enum
-from protocol import controlplane_pb2 as control_protocol
-from protocol import dataplane_pb2 as data_protocol
-from protocol import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
+import dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
 from google.protobuf.field_mask_pb2 import FieldMask
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 context = zmq.Context()
-cpt_usr_sock = context.socket(zmq.DEALER)
+data_request_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
-cpt_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(cpt_usr_sock, SocketOperation.CONNECT, 'CPT_USR_PORT', 'Created command frontend socket endpoint', os.environ.get("DATA_ENDPOINT"))
+data_request_sock.setsockopt(zmq.IDENTITY, sock_identity)
+setup_socket(data_request_sock, SocketOperation.CONNECT, 'hub.network.dataplane.hub_to_mission')
+
 
 class ComputeRespond:
     
@@ -54,7 +54,7 @@ class ComputeStub():
         self.seq_num += 1
         self.seq_num_res[seq_num] = computeRespond
         serialized_request = request.SerializeToString()
-        cpt_usr_sock.send_multipart([serialized_request])
+        data_request_sock.send_multipart([serialized_request])
     
     def receiver(self, response_parts):
         if not response_parts:
@@ -94,7 +94,7 @@ class ComputeStub():
     async def run(self):
         while True:
             try:
-                response_parts = cpt_usr_sock.recv_multipart(flags=zmq.NOBLOCK)
+                response_parts = data_request_sock.recv_multipart(flags=zmq.NOBLOCK)
                 self.receiver(response_parts)
             except zmq.Again:
                 pass
@@ -137,27 +137,22 @@ class ComputeStub():
         telDict = {
             "name": None,
             "battery": None,
-            "attitude": {"yaw": None, "pitch": None, "roll": None},
             "satellites": None,
             "gps": {"latitude": None, "longitude": None, "altitude": None},
-            "relAlt": None,
-            "imu": {"forward": None, "right": None, "up": None},
+            "velocity_body": {"forward": None, "right": None, "up": None},
         }
         if result:
             logger.debug(f"Got telemetry: {result}\n")
             telDict["name"] = result.drone_name
             telDict["battery"] = result.battery
-            telDict["attitude"]["yaw"] = result.drone_attitude.yaw 
-            telDict["attitude"]["pitch"] = result.drone_attitude.pitch
-            telDict["attitude"]["roll"] = result.drone_attitude.roll
             telDict["satellites"] = result.satellites
             telDict["gps"]["latitude"] = result.global_position.latitude
             telDict["gps"]["longitude"] = result.global_position.longitude
-            telDict["gps"]["altitude"] = result.global_position.altitude
-            telDict["relAlt"] = result.relative_position.up
-            telDict["imu"]["forward"] = result.velocity.forward_vel
-            telDict["imu"]["right"] = result.velocity.right_vel
-            telDict["imu"]["up"] = result.velocity.up_vel
+            telDict["gps"]["altitude"] = result.global_position.absolute_altitude
+            telDict["velocity_body"]["forward"] = result.velocity_body.forward_vel
+            telDict["velocity_body"]["right"] = result.velocity_body.right_vel
+            telDict["velocity_body"]["up"] = result.velocity_body.up_vel
+            telDict["heading"] = result.global_position.heading
             logger.debug(f"finished receiving Telemetry: {telDict}")
             return telDict
         else:

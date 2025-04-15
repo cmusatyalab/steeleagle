@@ -27,7 +27,7 @@ class DataService(Service):
         # Setting up sockets
         self.tel_sock = self.context.socket(zmq.SUB)
         self.cam_sock = self.context.socket(zmq.SUB)
-        self.cpt_usr_sock = self.context.socket(zmq.DEALER)
+        self.data_reply_sock = self.context.socket(zmq.DEALER)
 
         self.tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
@@ -38,8 +38,8 @@ class DataService(Service):
                 'hub.network.dataplane.driver_to_hub.telemetry')
         self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, \
                 'hub.network.dataplane.driver_to_hub.image_sensor')
-        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, \
-                'hub.network.dataplane.hub_to_mission.compute_results')
+        self.setup_and_register_socket(self.data_reply_sock, SocketOperation.BIND, \
+                'hub.network.dataplane.hub_to_mission')
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -85,7 +85,7 @@ class DataService(Service):
         """Handles user commands."""
         logger.info("User handler started")
         while True:
-            msg = await self.cpt_usr_sock.recv()
+            msg = await self.data_reply_sock.recv()
             req = data_protocol.Request()
             req.ParseFromString(msg)
 
@@ -109,7 +109,7 @@ class DataService(Service):
 
         # TODO(Aditya): we could get multiple compute results from different
         # computes, we should extend the proto definition to accomodate this
-        # await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+        # await self.data_reply_sock.send(cpt_command.SerializeToString())
         #
         # Also, a compute request could also involve clearing compute results
 
@@ -118,7 +118,7 @@ class DataService(Service):
         logger.info(f"Received telemetry request: {req}")
 
         tel_data = self.data_store.get_raw_data(req)
-        await self.cpt_usr_sock.send(tel_data.SerializeToString())
+        await self.data_reply_sock.send(tel_data.SerializeToString())
 
     ###########################################################################
     #                                DRIVER                                   #

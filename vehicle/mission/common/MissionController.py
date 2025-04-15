@@ -13,8 +13,8 @@ import logging
 from util.utils import SocketOperation, setup_socket
 from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
-from protocol import controlplane_pb2 as control_protocol
-from protocol import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class MissionController():
         logger.info("Mission Controller created")
         
         context = zmq.Context()
-        self.msn_sock = context.socket(zmq.REP)
-        setup_socket(self.msn_sock, SocketOperation.CONNECT, 'MSN_PORT', 'Connected to user space mission control socket endpoint', os.environ.get("CMD_ENDPOINT"))
+        self.msn_control_sock = context.socket(zmq.REP)
+        setup_socket(self.msn_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_mission')
         
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:
@@ -155,7 +155,7 @@ class MissionController():
             logger.debug("MC")
             try:
                 # Receive a message
-                message = self.msn_sock.recv(flags=zmq.NOBLOCK)
+                message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
                 
                 # Log the raw received message
                 logger.info(f"Received raw message: {message}")
@@ -173,16 +173,16 @@ class MissionController():
                 logger.info(f"man_control: {mission_command}")
                 logger.info(f"Parsed Command: {mission_command}")
                 
-                if mission_command == control_protocol.MissionAction.DOWNLOAD:
+                if mission_command == control_protocol.MissionControl.DOWNLOAD:
                     url  = message.msn.url
                     self.download_mission(url)
                     resp = common_protocol.ResponseStatus.COMPLETED
                 
-                elif mission_command == control_protocol.MissionAction.START:
+                elif mission_command == control_protocol.MissionControl.START:
                     self.start_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
                     
-                elif mission_command == control_protocol.MissionAction.STOP:
+                elif mission_command == control_protocol.MissionControl.STOP:
                     await self.end_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
                     
@@ -195,7 +195,7 @@ class MissionController():
                 rep.timestamp.GetCurrentTime()
                 rep.seq_num = seq_num
                 
-                self.msn_sock.send(rep.SerializeToString())
+                self.msn_control_sock.send(rep.SerializeToString())
                 
             except zmq.Again:
                 pass
