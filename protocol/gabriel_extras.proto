@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
 //
 // SPDX-License-Identifier: GPL-2.0-only
+
 /**
- * Messages/Calls related to the Gabriel component of SteelEagle.
+ * Messages/calls related to the Gabriel component of SteelEagle.
  *
  * The gabriel extras is a speicialized protocol just for intergrating with
  * gabriel compute services.
@@ -10,15 +11,15 @@
 syntax = "proto3";
 
 package protocol.gabriel_extras;
+syntax = "proto3";
 import "dataplane.proto";
 import "controlplane.proto";
-import "google/protobuf/timestamp.proto";
 
 message Extras {
-  uint64 seq_num = 1;  // For correlation
-  google.protobuf.Timestamp timestamp = 2; // Time the request was made
-  protocol.controlplane.ConfigureCompute cpt_config = 3;
-  protocol.dataplane.Telemetry tel = 4;
+  // The drone that this frame corresponds to
+  string drone_id = 1;
+  // The telemetry data for the drone
+  protocol.dataplane.Telemetry telemetry = 2;
+  // Configuration parameters for the compute request
+  protocol.controlplane.Request cpt_request = 3;
 }
-
-

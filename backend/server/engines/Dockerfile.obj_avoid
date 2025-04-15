@@ -34,21 +34,23 @@ RUN python3 -m pip install --no-cache-dir \
     pyzmq \
     'setuptools==41.0.0' \
     'websockets==8.0.0' \
-    zmq 
+    zmq
 
 #RUN git clone https://github.com/ultralytics/yolov5
 #RUN cd yolov5 && python3 -m pip install -r requirements.txt
 
 
-COPY requirements.obj_avoid.txt requirements.txt
+COPY backend/server/engines/requirements.obj_avoid.txt requirements.txt
 RUN python3 -m pip install -r requirements.txt
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
 RUN mkdir steeleagle
-COPY avoidance/*.py steeleagle/
-COPY detection/*.py steeleagle/
-COPY *_pb2.py /steeleagle/protocol/
+COPY backend/server/engines/avoidance/*.py steeleagle/
+COPY backend/server/engines/detection/*.py steeleagle/
+COPY backend/server/engines/watermark.png steeleagle/
+COPY protocol/*_pb2.py /steeleagle/protocol/
+COPY vehicle/util /steeleagle/util
 WORKDIR steeleagle
 
 EXPOSE 5555 9099
-ENTRYPOINT ["./entrypoint.sh"]
+#ENTRYPOINT ["./entrypoint.sh"]
