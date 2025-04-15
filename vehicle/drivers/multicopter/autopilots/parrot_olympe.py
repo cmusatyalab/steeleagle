@@ -34,13 +34,13 @@ import common_pb2 as common_protocol
 logger = logging.getLogger(__name__)
 
 class ParrotOlympeDrone(MulticopterItf):
-    
+
     class FlightMode(Enum):
         LOITER = 'LOITER'
         TAKEOFF_LAND = 'TAKEOFF_LAND'
         VELOCITY = 'VELOCITY'
         GUIDED = 'GUIDED'
-        
+
     def __init__(self, drone_id, **kwargs):
         self._drone_id = drone_id
         # Drone flight modes and setpoints
@@ -62,13 +62,13 @@ class ParrotOlympeDrone(MulticopterItf):
         self._drone = Drone(self.ip)
         # Connect to drone
         return self._drone.connect()
-        
+
     async def is_connected(self):
         return self._drone.connection_state()
 
     async def disconnect(self):
         self._drone.disconnect()
-    
+
     async def take_off(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(TakeOff())
@@ -78,14 +78,14 @@ class ParrotOlympeDrone(MulticopterItf):
                     ).success(),
             interval=1
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
     async def land(self):
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND) 
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(Landing()).wait().success()
         result = await self._wait_for_condition(
             lambda: self._drone(FlyingStateChanged(\
@@ -93,7 +93,7 @@ class ParrotOlympeDrone(MulticopterItf):
                     ).success(),
             interval=1
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
@@ -121,25 +121,25 @@ class ParrotOlympeDrone(MulticopterItf):
             timeout=5,
             interval=0.1
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
+
     async def rth(self):
         await self.hover()
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(return_to_home())
-        
+
         return common_protocol.ResponseStatus.COMPLETED
-            
+
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
         bearing = location.bearing
-       
+
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         if bearing is None:
             self._drone(
@@ -149,23 +149,23 @@ class ParrotOlympeDrone(MulticopterItf):
             self._drone(
                 moveTo(lat, lng, alt, move_mode.orientation_mode.heading_during, bearing)
             )
-        
+
         result = await self._wait_for_condition(
             lambda: self.is_at_target(lat, lon),
             interval=1
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
+
     async def set_relative_position_enu(self, position):
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_relative_position_body(self, position):
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_velocity_enu(self, velocity):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
@@ -174,7 +174,7 @@ class ParrotOlympeDrone(MulticopterItf):
         right_vel = velocity.right_vel
         up_vel = velocity.up_vel
         angular_vel = velocity.angular_vel
-        
+
         await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
 
         # Check that the speeds is within the drone bounds
@@ -223,7 +223,7 @@ class ParrotOlympeDrone(MulticopterItf):
     async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info('Starting telemetry stream')
         # Wait a second to avoid contention issues
-        await asyncio.sleep(1) 
+        await asyncio.sleep(1)
         while await self.is_connected():
             try:
                 tel_message = data_protocol.Telemetry()
@@ -231,31 +231,31 @@ class ParrotOlympeDrone(MulticopterItf):
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = \
-                        self._get_global_position()["latitude"]
+                    self._get_global_position()[0]
                 tel_message.global_position.longitude = \
-                        self._get_global_position()["longitude"]
+                    self._get_global_position()[1]
                 tel_message.global_position.absolute_altitude = \
-                        self._get_global_position()["altitude"]
+                    self._get_global_position()[2]
                 tel_message.global_position.relative_altitude = \
-                        self._get_altitude_rel()
+                    self._get_altitude_rel()
                 tel_message.global_position.heading = self._get_heading()
                 tel_message.velocity_enu.north_vel = \
-                        self._get_velocity_enu()["north"]
+                    self._get_velocity_enu()["north"]
                 tel_message.velocity_enu.east_vel = \
-                        self._get_velocity_enu()["east"]
+                    self._get_velocity_enu()["east"]
                 tel_message.velocity_enu.up_vel = \
-                        self._get_velocity_enu()["up"]
+                    self._get_velocity_enu()["up"]
                 tel_message.velocity_body.forward_vel = \
-                        self._get_velocity_body()["forward"]
+                    self._get_velocity_body()["forward"]
                 tel_message.velocity_body.right_vel = \
-                        self._get_velocity_body()["right"]
+                    self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = \
-                        self._get_velocity_body()["up"]
+                    self._get_velocity_body()["up"]
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f'Failed to get telemetry, error: {e}')
             await asyncio.sleep(1 / rate_hz)
-                    
+
     async def stream_video(self, cam_sock, rate_hz):
         logger.info('Starting camera stream')
         self._start_streaming()
@@ -264,11 +264,11 @@ class ParrotOlympeDrone(MulticopterItf):
             try:
                 cam_message = data_protocol.Frame()
                 frame, frame_shape = await self._get_video_frame()
-                
+
                 if frame is None:
                     logger.error('Failed to get video frame')
                     continue
-                
+
                 cam_message.data = frame
                 cam_message.height = frame_shape[0]
                 cam_message.width = frame_shape[1]
@@ -322,11 +322,10 @@ class ParrotOlympeDrone(MulticopterItf):
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"] * -1}
-        
+
     def _get_velocity_body(self):
         enu = self._get_velocity_enu()
-        vec = np.array([enu["north"], enu["east"]], \
-                dtype=float)
+        vec = np.array([enu["north"], enu["east"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
         hd = (self._get_heading()) + 90
@@ -435,7 +434,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 right_round = round(clamp(right + prev_right, -100, 100))
                 up_round = round(clamp(up + prev_up, -100, 100))
                 ang_round = round(clamp((angular_setpoint / max_rotation) * 100, -100, 100))
-                
+
                 self._drone(PCMD(1, right_round, forward_round, ang_round, up_round, timestampAndSeqNum=0))
 
                 if previous_values is None:
@@ -453,7 +452,7 @@ class ParrotOlympeDrone(MulticopterItf):
             self._up_pid_values["PrevI"] = 0.0
         except Exception as e:
             logger.error(f"PID iteration failure, reason: {e}")
-    
+
     ''' Actuation methods '''
     async def _switch_mode(self, mode):
         if self._mode == mode:
@@ -465,18 +464,18 @@ class ParrotOlympeDrone(MulticopterItf):
                 await self._pid_task
             self._pid_task = None
             self._mode = mode
-        
+
     ''' Helper methods '''
     def _calculate_bearing(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-        
+
         delta_lon = lon2 - lon1
 
         # Bearing calculation
         x = math.sin(delta_lon) * math.cos(lat2)
         y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
-        
+
         initial_bearing = math.atan2(x, y)
 
         # Convert bearing from radians to degrees
@@ -486,7 +485,7 @@ class ParrotOlympeDrone(MulticopterItf):
         converted_bearing = (initial_bearing + 360) % 360
 
         return converted_bearing
-    
+
     async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
         start_time = time.time()
         while True:
@@ -499,7 +498,7 @@ class ParrotOlympeDrone(MulticopterItf):
             if timeout is not None and time.time() - start_time > timeout:
                 return False
             await asyncio.sleep(interval)
-    
+
     ''' Streaming methods '''
     def _start_streaming(self):
         self._streaming_thread = PDRAWStreamingThread(self._drone)
