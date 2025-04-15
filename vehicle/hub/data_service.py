@@ -8,8 +8,7 @@ import yaml
 import importlib
 import pkgutil
 from util.utils import query_config, setup_logging, SocketOperation
-from protocol import controlplane_pb2
-from protocol import dataplane_pb2
+import dataplane_pb2 as data_protocol
 import datasinks
 from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
@@ -65,7 +64,7 @@ class DataService(Service):
                 logger.error(f"Result not found for compute_id: {compute_id}")
                 continue
 
-            result = dataplane_pb2.ComputeResult()
+            result = data_protocol.ComputeResult()
             result.key = key
             result.frame_id = cpt_res.frame_id
             result.timestamp = cpt_res.timestamp
@@ -87,7 +86,7 @@ class DataService(Service):
         logger.info("User handler started")
         while True:
             msg = await self.cpt_usr_sock.recv()
-            req = dataplane_pb2.Request()
+            req = data_protocol.Request()
             req.ParseFromString(msg)
 
             match req.WhichOneof("type"):
@@ -130,7 +129,7 @@ class DataService(Service):
         while True:
             try:
                 msg = await self.tel_sock.recv()
-                telemetry = dataplane_pb2.Telemetry()
+                telemetry = data_protocol.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.data_store.set_raw_data(telemetry)
                 logger.debug(f"Received telemetry message after set: {telemetry}")
@@ -139,7 +138,7 @@ class DataService(Service):
 
     def parse_frame(self, msg):
         """Parses a frame message."""
-        frame = dataplane_pb2.Frame()
+        frame = data_protocol.Frame()
         frame.ParseFromString(msg)
         return frame
 

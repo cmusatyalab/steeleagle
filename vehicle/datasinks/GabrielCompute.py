@@ -10,10 +10,10 @@ from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from util.timer import Timer
 from datasinks.ComputeItf import ComputeInterface
 from hub.data_store import DataStore
-from protocol import dataplane_pb2 as data_protocol
-from protocol import controlplane_pb2 as control_protocol
-from protocol import common_pb2 as common_protocol
-from protocol import gabriel_extras_pb2 as gabriel_extras
+import dataplane_pb2 as data_protocol
+import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
+import gabriel_extras_pb2 as gabriel_extras
 from util.utils import query_config
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ class GabrielCompute(ComputeInterface):
 
                     # produce extras
                     extras = gabriel_extras.Extras()
-                    compute_command = extras.cpt_request
+                    compute_command = extras.cpt_config
                     compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
@@ -136,7 +136,7 @@ class GabrielCompute(ComputeInterface):
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
 
-                    self.data_store.get_raw_data(extras.telemetry)
+                    self.data_store.get_raw_data(extras.tel)
 
                     if compute_command is not None:
                         input_frame.extras.Pack(extras)

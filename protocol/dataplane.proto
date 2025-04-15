@@ -6,7 +6,8 @@
  * Messages/calls related to the data plane component of SteelEagle.
  *
  * The data plane is responsible for relaying telemetry and frame data
- * from the drone to the rest of the system.
+ * from the drone to the rest of the system, and relaying the computed result
+ * from compute modules to the rest of the system.
  */
 
 syntax = "proto3";
