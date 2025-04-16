@@ -253,7 +253,8 @@ class ParrotOlympeDrone(MulticopterItf):
                         self._get_velocity_body()["up"]
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
-                logger.error(f'Failed to get telemetry, error: {e}')
+                #logger.error(f'Failed to get telemetry, error: {e}')
+                pass
             await asyncio.sleep(1 / rate_hz)
                     
     async def stream_video(self, cam_sock, rate_hz):
@@ -317,7 +318,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return None
 
     def _get_heading(self):
-        return self._drone.get_state(AttitudeChanged)["yaw"] * (180 / math.pi)
+        return math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
@@ -362,6 +363,11 @@ class ParrotOlympeDrone(MulticopterItf):
 
             def update_pid(e, ep, tp, ts, pid_dict):
                 P = pid_dict["Kp"] * e
+                # Slow down if we are near the setpoint
+                if e < 0.5:
+                    I = 0.0
+                    # Dampen proportional input
+                    return P / 2.0, 0.0, 0.0
                 I = pid_dict["Ki"] * (ts - tp)
                 if e < 0.0:
                     I *= -1
@@ -385,43 +391,41 @@ class ParrotOlympeDrone(MulticopterItf):
                 right = 0
                 up = 0
 
-                # Adjust to velocity every 5 ticks
-                if counter % 5 == 0:
-                    ts = round(time.time() * 1000)
+                ts = round(time.time() * 1000)
 
-                    error = {}
-                    error["forward"] = forward_setpoint - current["forward"]
-                    if abs(error["forward"]) < 0.01:
-                        error["forward"] = 0
-                    error["right"] = right_setpoint - current["right"]
-                    if abs(error["right"]) < 0.01:
-                        error["right"] = 0
-                    error["up"] = up_setpoint - current["up"]
-                    if abs(error["up"]) < 0.01:
-                        error["up"] = 0
+                error = {}
+                error["forward"] = forward_setpoint - current["forward"]
+                if abs(error["forward"]) < 0.1:
+                    error["forward"] = 0
+                error["right"] = right_setpoint - current["right"]
+                if abs(error["right"]) < 0.1:
+                    error["right"] = 0
+                error["up"] = up_setpoint - current["up"]
+                if abs(error["up"]) < 0.1:
+                    error["up"] = 0
 
-                    # On first loop through, set previous timestamp and error
-                    # to dummy values.
-                    if tp is None or (ts - tp) > 1000:
-                        tp = ts - 1
-                        ep = error
-
-                    P, I, D = update_pid(error["forward"], ep["forward"], tp, ts, self._forward_pid_values)
-                    self._forward_pid_values["PrevI"] += I
-                    forward = P + I + D
-
-                    P, I, D = update_pid(error["right"], ep["right"], tp, ts, self._right_pid_values)
-                    self._right_pid_values["PrevI"] += I
-                    right = P + I + D
-
-                    P, I, D = update_pid(error["up"], ep["up"], tp, ts, self._up_pid_values)
-                    self._up_pid_values["PrevI"] += I
-                    up = P + I + D
-
-                    # Set previous ts and error for next iteration
-                    tp = ts
+                # On first loop through, set previous timestamp and error
+                # to dummy values.
+                if tp is None or (ts - tp) > 1000:
+                    tp = ts - 1
                     ep = error
-                    counter = 0
+
+                P, I, D = update_pid(error["forward"], ep["forward"], tp, ts, self._forward_pid_values)
+                self._forward_pid_values["PrevI"] += I
+                forward = P + I + D
+
+                P, I, D = update_pid(error["right"], ep["right"], tp, ts, self._right_pid_values)
+                self._right_pid_values["PrevI"] += I
+                right = P + I + D
+
+                P, I, D = update_pid(error["up"], ep["up"], tp, ts, self._up_pid_values)
+                self._up_pid_values["PrevI"] += I
+                up = P + I + D
+
+                # Set previous ts and error for next iteration
+                tp = ts
+                ep = error
+                counter = 0
 
                 prev_forward = 0
                 prev_right = 0
@@ -443,8 +447,6 @@ class ParrotOlympeDrone(MulticopterItf):
                 previous_values["forward"] = forward + prev_forward
                 previous_values["right"] = right + prev_right
                 previous_values["up"] = up + prev_up
-
-                counter += 1
 
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
