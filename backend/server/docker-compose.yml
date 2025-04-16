@@ -33,7 +33,7 @@ services:
       - cnc-net
       - redis
     volumes:
-      - ./steeleagle-vol:/cnc/server/images/
+      - ./steeleagle-vol:/images/
     environment:
       - PYTHONPATH=/protocol
 
@@ -131,7 +131,7 @@ services:
               capabilities:
                 - gpu
     volumes:
-      - ./steeleagle-vol:/openscout/server/images/
+      - ./steeleagle-vol:/steeleagle/images/
       - ./models:/root/.cache/torch/hub/
     depends_on:
       - gabriel-server
@@ -164,7 +164,8 @@ services:
         "-a",
         "${REDIS_AUTH}",
         "-hsv",
-        "${HSV_THRESHOLD}"
+        "${HSV_THRESHOLD}",
+        "-s"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose

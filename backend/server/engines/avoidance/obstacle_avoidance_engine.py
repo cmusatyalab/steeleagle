@@ -138,14 +138,14 @@ class AvoidanceEngine(ABC):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
         return result_wrapper
 
-    def maybe_load_model(model):
+    def maybe_load_model(self, model):
         if model != '' and model != self.model:
             if model not in self.valid_models:
                 logger.error(f"Invalid model {model}.")
             else:
                 self.load_model(model)
 
-    def construct_result(vector, drone_id):
+    def construct_result(self, vector, drone_id):
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
         r = []
@@ -176,16 +176,16 @@ class AvoidanceEngine(ABC):
 
         vector, depth_img = self.process_image(input_frame.payloads[0])
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
-        result_wrapper = self.create_result_wrapper(status)
+        result_wrapper = cognitive_engine.create_result_wrapper(status)
 
         result = self.construct_result(vector, extras.drone_id)
         result_wrapper.results.append(result)
 
         response = control_plane.Response()
-        response.seq_num = cpt_config.seq_num
+        response.seq_num = extras.cpt_request.seq_num
         response.timestamp.GetCurrentTime()
         response.resp = common.ResponseStatus.OK
-        result_wrapper.extras = response
+        result_wrapper.extras.Pack(response)
 
         if self.store_detections:
             self.store_detection(depth_img)

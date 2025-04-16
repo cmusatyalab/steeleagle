@@ -39,3 +39,5 @@ vehicle/user/project/
 
 vehicle/config.yaml
 vehicle/config.yml
+
+secrets.toml

@@ -129,7 +129,8 @@ class GabrielCompute(ComputeInterface):
 
                     # produce extras
                     extras = gabriel_extras.Extras()
-                    compute_command = extras.cpt_config
+                    extras.drone_id = self.drone_id
+                    compute_command = extras.cpt_request
                     compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
@@ -143,7 +144,7 @@ class GabrielCompute(ComputeInterface):
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
 
-                    self.data_store.get_raw_data(extras.tel)
+                    self.data_store.get_raw_data(extras.telemetry)
 
                     if compute_command is not None:
                         input_frame.extras.Pack(extras)
