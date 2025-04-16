@@ -153,7 +153,7 @@ def get_drone(drone_id, drone_args, drone_module):
 if __name__ == "__main__":
     setup_logging(logger, 'driver.logging')
 
-    drone_id = query_config('driver.id') 
+    drone_id = query_config('driver.id')
     drone_module = query_config('driver.module')
     drone_args = query_config('driver.keyword_args')
     connection_string = query_config('driver.connection_string')

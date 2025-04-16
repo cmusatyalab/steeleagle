@@ -8,7 +8,7 @@ import zmq.asyncio
 import asyncio
 import logging
 import os
-from protocol import controlplane_pb2
+import controlplane_pb2 as control_protocol
 from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 
@@ -85,11 +85,46 @@ class CommandService(Service):
         reply = await self.mission_ctrl_socket.recv_string()
         logger.info(f"Mission reply: {reply}")
 
-
     async def send_driver_command(self, req):
         identity = b'cmdr'
         await self.driver_socket.send_multipart([identity, req.SerializeToString()])
         logger.info(f"Command send to driver: {req}")
+        
+    async def process_command(self, cmd):
+        req = control_protocol.Request()
+        req.ParseFromString(cmd)
+
+        self.command_seq = self.command_seq + 1
+
+        match req.WhichOneof("type"):
+            case "msn":
+                # Mission command
+                match req.msn.action:
+                    case control_protocol.MissionAction.DOWNLOAD:
+                        await self.send_download_mission(req)
+                    case control_protocol.MissionAction.START:
+                        await self.send_start_mission(req)
+                        self.manual_mode_disabled()
+                    case control_protocol.MissionAction.STOP:
+                        await self.send_stop_mission(req)
+                        asyncio.create_task(self.send_driver_command(req))
+                        self.manual_mode_enabled()
+                    case _:
+                        raise NotImplemented()
+            case "veh":
+                # Vehicle command
+                if req.veh.HasField("action") and req.veh.action == control_protocol.VehicleAction.RTH:
+                    await self.send_stop_mission()
+                    asyncio.create_task(self.send_driver_command(req))
+                    self.manual_mode_disabled()
+                else:
+                    task = asyncio.create_task(await self.send_driver_command(req))
+                    self.manual_mode_enabled()
+            case "cpt":
+                # Configure compute command
+                raise NotImplemented()
+            case None:
+                raise Exception("Expected a request type to be specified")
 
     async def cmd_proxy(self):
         logger.info('cmd_proxy started')
@@ -141,42 +176,6 @@ class CommandService(Service):
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
-
-    async def process_command(self, cmd):
-        req = controlplane_pb2.Request()
-        req.ParseFromString(cmd)
-
-        self.command_seq = self.command_seq + 1
-
-        match req.WhichOneof("type"):
-            case "msn":
-                # Mission command
-                match req.msn.action:
-                    case controlplane_pb2.MissionAction.DOWNLOAD:
-                        await self.send_download_mission(req)
-                    case controlplane_pb2.MissionAction.START:
-                        await self.send_start_mission(req)
-                        self.manual_mode_disabled()
-                    case controlplane_pb2.MissionAction.STOP:
-                        await self.send_stop_mission(req)
-                        asyncio.create_task(self.send_driver_command(req))
-                        self.manual_mode_enabled()
-                    case _:
-                        raise NotImplemented()
-            case "veh":
-                # Vehicle command
-                if req.veh.HasField("action") and req.veh.action == controlplane_pb2.VehicleAction.RTH:
-                    await self.send_stop_mission()
-                    asyncio.create_task(self.send_driver_command(req))
-                    self.manual_mode_disabled()
-                else:
-                    task = asyncio.create_task(await self.send_driver_command(req))
-                    self.manual_mode_enabled()
-            case "cpt":
-                # Configure compute command
-                raise NotImplemented()
-            case None:
-                raise Exception("Expected a request type to be specified")
 
 async def main():
     setup_logging(logger, 'hub.logging')

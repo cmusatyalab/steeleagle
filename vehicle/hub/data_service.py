@@ -8,8 +8,7 @@ import yaml
 import importlib
 import pkgutil
 from util.utils import query_config, setup_logging, SocketOperation
-from protocol import controlplane_pb2
-from protocol import dataplane_pb2
+import dataplane_pb2 as data_protocol
 import datasinks
 from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
@@ -23,12 +22,10 @@ class DataService(Service):
         """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
 
-        self.config = query_config('hub')
-
         # Setting up sockets
         self.tel_sock = self.context.socket(zmq.SUB)
         self.cam_sock = self.context.socket(zmq.SUB)
-        self.cpt_usr_sock = self.context.socket(zmq.DEALER)
+        self.data_reply_sock = self.context.socket(zmq.DEALER)
 
         self.tel_sock.setsockopt(zmq.SUBSCRIBE, b'') # Subscribe to all topics
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
@@ -39,8 +36,8 @@ class DataService(Service):
                 'hub.network.dataplane.driver_to_hub.telemetry')
         self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, \
                 'hub.network.dataplane.driver_to_hub.image_sensor')
-        self.setup_and_register_socket(self.cpt_usr_sock, SocketOperation.BIND, \
-                'hub.network.dataplane.hub_to_mission.compute_results')
+        self.setup_and_register_socket(self.data_reply_sock, SocketOperation.BIND, \
+                'hub.network.dataplane.hub_to_mission')
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -65,7 +62,7 @@ class DataService(Service):
                 logger.error(f"Result not found for compute_id: {compute_id}")
                 continue
 
-            result = dataplane_pb2.ComputeResult()
+            result = data_protocol.ComputeResult()
             result.key = key
             result.frame_id = cpt_res.frame_id
             result.timestamp = cpt_res.timestamp
@@ -86,8 +83,8 @@ class DataService(Service):
         """Handles user commands."""
         logger.info("User handler started")
         while True:
-            msg = await self.cpt_usr_sock.recv()
-            req = dataplane_pb2.Request()
+            msg = await self.data_reply_sock.recv()
+            req = data_protocol.Request()
             req.ParseFromString(msg)
 
             match req.WhichOneof("type"):
@@ -110,7 +107,7 @@ class DataService(Service):
 
         # TODO(Aditya): we could get multiple compute results from different
         # computes, we should extend the proto definition to accomodate this
-        # await self.cpt_usr_sock.send(cpt_command.SerializeToString())
+        # await self.data_reply_sock.send(cpt_command.SerializeToString())
         #
         # Also, a compute request could also involve clearing compute results
 
@@ -119,7 +116,7 @@ class DataService(Service):
         logger.info(f"Received telemetry request: {req}")
 
         tel_data = self.data_store.get_raw_data(req)
-        await self.cpt_usr_sock.send(tel_data.SerializeToString())
+        await self.data_reply_sock.send(tel_data.SerializeToString())
 
     ###########################################################################
     #                                DRIVER                                   #
@@ -130,7 +127,7 @@ class DataService(Service):
         while True:
             try:
                 msg = await self.tel_sock.recv()
-                telemetry = dataplane_pb2.Telemetry()
+                telemetry = data_protocol.Telemetry()
                 telemetry.ParseFromString(msg)
                 self.data_store.set_raw_data(telemetry)
                 logger.debug(f"Received telemetry message after set: {telemetry}")
@@ -139,7 +136,7 @@ class DataService(Service):
 
     def parse_frame(self, msg):
         """Parses a frame message."""
-        frame = dataplane_pb2.Frame()
+        frame = data_protocol.Frame()
         frame.ParseFromString(msg)
         return frame
 
@@ -181,7 +178,7 @@ class DataService(Service):
             return None
 
         Compute = compute_classes[compute_class]
-        compute_instance = Compute(compute_id, self.data_store, self.config)
+        compute_instance = Compute(compute_id, self.data_store)
         logger.info(f"Starting compute {compute_class} with id {compute_id}")
         return compute_instance, self.create_task(compute_instance.run())
 
@@ -192,7 +189,7 @@ class DataService(Service):
 
         compute_tasks = []
 
-        for compute_config in self.config.get("computes", []):
+        for compute_config in query_config('hub.computes'):
             compute_class = compute_config["compute_class"].lower()
             compute_id = compute_config["compute_id"]
             result = self.run_compute(compute_class, compute_id, compute_classes)

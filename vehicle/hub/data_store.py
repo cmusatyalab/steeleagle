@@ -1,8 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from google.protobuf import timestamp_pb2
-from protocol import controlplane_pb2
-from protocol import dataplane_pb2
+import dataplane_pb2 as data_protocol
 from typing import Optional
 import logging
 
@@ -19,17 +18,17 @@ class DataStore:
     def __init__(self):
         # Raw data caches
         self._raw_data_cache = {
-            dataplane_pb2.Frame: None,
-            dataplane_pb2.Telemetry: None,
+            data_protocol.Frame: None,
+            data_protocol.Telemetry: None,
         }
 
         self._raw_data_id = {
-            dataplane_pb2.Frame: -1,
-            dataplane_pb2.Telemetry: -1,
+            data_protocol.Frame: -1,
+            data_protocol.Telemetry: -1,
         }
 
         self._raw_data_event = {
-            dataplane_pb2.Frame: asyncio.Event(),
+            data_protocol.Frame: asyncio.Event(),
         }
 
         # Processed data cache dict

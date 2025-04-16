@@ -25,7 +25,9 @@ import numpy as np
 import logging
 from gabriel_server import cognitive_engine
 from gabriel_protocol import gabriel_pb2
-from cnc_protocol import cnc_pb2
+import protocol.common_pb2 as common
+import protocol.controlplane_pb2 as control_plane
+import protocol.gabriel_extras_pb2 as gabriel_extras
 from PIL import Image, ImageDraw
 import traceback
 import json
@@ -39,7 +41,7 @@ logger.setLevel(logging.DEBUG)
 class PytorchPredictor():
     def __init__(self, model, threshold):
         path_prefix = './model/'
-        model_path = path_prefix+ model +'.pt'
+        model_path = path_prefix + model + '.pt'
         logger.info(f"Loading new model {model} at {model_path}...")
         self.detection_model = self.load_model(model_path)
         self.detection_model.conf = threshold
@@ -48,8 +50,8 @@ class PytorchPredictor():
     def load_model(self, model_path):
         # Load model
         model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
-        return model 
-    
+        return model
+
     def infer(self, image):
         return self.model(image)
 
@@ -156,6 +158,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         logger.debug(f"HSV Filter Result: lower_bound:{hsv_min}, upper_bound:{hsv_max}, mask percentage:{percent}%")
         return (percent >= threshold)
 
+    def load_model(self, model_name):
+        path = './model/'+ model_name + '.pt'
+        if not os.path.exists(path):
+            logger.error(f"Model {path} not found. Sticking with previous model.")
+        else:
+            self.detector = PytorchPredictor(model_name, self.threshold)
+            self.model = cpt_config.model
+
     def handle(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             #if the payload is TEXT, say from a CNC client, we ignore
@@ -168,101 +178,138 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             result_wrapper.results.append(result)
             return result_wrapper
 
-        extras = cognitive_engine.unpack_extras(cnc_pb2.Extras, input_frame)
+        extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
-        if extras.detection_model != '' and extras.detection_model != self.model:
-            path = './model/'+ extras.detection_model + '.pt'
-            if not os.path.exists(path):
-                logger.error(f"Model {path} not found. Sticking with previous model.")
-            else:
-                self.detector = PytorchPredictor(extras.detection_model, self.threshold)
-                self.model = extras.detection_model
+        if not extras.cpt_request.HasField('cpt'):
+            status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
+            result_wrapper = cognitive_engine.create_result_wrapper(status)
+            result_wrapper.result_producer_name.value = self.ENGINE_NAME
+            result = gabriel_pb2.ResultWrapper.Result()
+            result.payload_type = gabriel_pb2.PayloadType.TEXT
+            result.payload = f'Expected compute configuration to be specified'.encode(encoding="utf-8")
+            result_wrapper.results.append(result)
+            return result_wrapper
+
+        cpt_config = extras.cpt_request.cpt
+
+        if cpt_config.model != '' and cpt_config.model != self.model:
+            self.load_model(cpt_config.model)
+
         self.t0 = time.time()
-        results, image_np= self.process_image(input_frame.payloads[0])
-        timestamp_millis = int(time.time() * 1000)
+        results, image_np = self.process_image(input_frame.payloads[0])
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
+        timestamp_millis = int(time.time() * 1000)
         filename = str(timestamp_millis) + ".jpg"
 
         if len(results.pred) > 0:
-            df = results.pandas().xyxy[0] # pandas dataframe
-            #convert dataframe to python lists
-            classes = df['class'].values.tolist()
-            scores = df['confidence'].values.tolist()
-            names = df['name'].values.tolist()
-
-            result = gabriel_pb2.ResultWrapper.Result()
-            result.payload_type = gabriel_pb2.PayloadType.TEXT
-
-            detections_above_threshold = False
-            r = []
-            for i in range(0, len(classes)):
-                if self.exclusions is None or classes[i] not in self.exclusions:
-                    if(scores[i] > self.threshold):
-                        detections_above_threshold = True
-                        logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
-                        #[y_min, x_min, y_max, x_max]
-                        box = [df['ymin'][i], df['xmin'][i], df['ymax'][i], df['xmax'][i]]
-                        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1]) * image_np.shape[1]
-                        target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0]) * image_np.shape[0]
-                        lat, lon = self.estimateGPS(extras.location.latitude, extras.location.longitude, extras.status.gimbal_pitch, extras.status.bearing*(180 /np.pi), extras.location.altitude, target_x_pix, target_y_pix )
-                        hsv_filter = False
-                        if extras.HasField('lower_bound'):
-                            lower_bound = [extras.lower_bound.H, extras.lower_bound.S, extras.lower_bound.V]
-                            upper_bound = [extras.upper_bound.H, extras.upper_bound.S, extras.upper_bound.V]
-                            hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
-                        r.append({"id": i, "class": names[i], "score": scores[i], "lat": lat, "lon": lon, "box": box, "hsv_filter": hsv_filter })
-                        self.storeDetection(extras.drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
-
-            if detections_above_threshold:
-                logger.info(json.dumps(r,sort_keys=True, indent=4))
-                result.payload = json.dumps(r).encode(encoding="utf-8")
+            result = self.process_results(results, cpt_config, extras.telemetry, extras.drone_id)
+            if result is not None:
                 result_wrapper.results.append(result)
 
-                if self.store_detections:
-                    try:
-                        #results._run(save=True, labels=True, save_dir=Path("openscout-vol/"))
-                        results.render()
-                        img = Image.fromarray(results.ims[0])
-                        draw = ImageDraw.Draw(img)
-                        draw.bitmap((0,0), self.watermark, fill=None)
-                        path = self.storage_path + "/detected/" + filename
-                        img.save(path, format="JPEG")
-                        path = self.storage_path + "/detected/latest.jpg"
-                        img.save(path, format="JPEG")
-                        logger.info("Stored image: {}".format(path))
-                        if extras.HasField('lower_bound'):
-                            hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
-                            lower_boundary = np.array([extras.lower_bound.H, extras.lower_bound.S, extras.lower_bound.V])
-                            upper_boundary = np.array([extras.upper_bound.H, extras.upper_bound.S, extras.upper_bound.V])
-                            mask = cv2.inRange(hsv, lower_boundary, upper_boundary)
-                            final = cv2.bitwise_and(hsv, hsv, mask=mask)
-                            final = cv2.cvtColor(final, cv2.COLOR_HSV2RGB)
-                            path = self.storage_path + "/detected/hsv.jpg"
-                            img = Image.fromarray(final)
-                            img.save(path, format="JPEG") 
-                    except IndexError as e:
-                        logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
-                        return result_wrapper
+        response = control_plane.Response()
+        response.seq_num = extras.cpt_request.seq_num
+        response.timestamp.GetCurrentTime()
+        response.resp = common.ResponseStatus.OK
+        result_wrapper.extras = response
 
         self.count += 1
+
         if self.t1 - self.lastprint > 5:
-            logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
-            logger.info("wait {0:.1f} ms, ".format((self.t0 - self.lasttime) * 1000))
-            logger.info("fps {0:.2f}".format(1.0 / (self.t1 - self.lasttime)))
-            logger.info(
-                "avg fps: {0:.2f}".format(
-                    (self.count - self.lastcount) / (self.t1 - self.lastprint)
-                )
-            )
-            self.lastcount = self.count
-            self.lastprint = self.t1
+            self.print_inference_stats()
 
         self.lasttime = self.t1
 
         return result_wrapper
+
+    def process_results(self, results, cpt_config, telemetry, drone_id, result_wrapper):
+        df = results.pandas().xyxy[0] # pandas dataframe
+        #convert dataframe to python lists
+        classes = df['class'].values.tolist()
+        scores = df['confidence'].values.tolist()
+        names = df['name'].values.tolist()
+
+        result = gabriel_pb2.ResultWrapper.Result()
+        result.payload_type = gabriel_pb2.PayloadType.TEXT
+
+        detections_above_threshold = False
+        r = []
+        for i in range(0, len(classes)):
+            if self.exclusions is not None and classes[i] in self.exclusions:
+                continue
+            if scores[i] > self.threshold:
+                detections_above_threshold = True
+                logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
+
+                box = [df['ymin'][i], df['xmin'][i], df['ymax'][i], df['xmax'][i]]
+
+                target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1]) * image_np.shape[1]
+                target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0]) * image_np.shape[0]
+
+                position = telemetry.global_position
+                gimbal_pitch = telemetry.gimbal_pose.pitch
+
+                # TODO(Aditya): check if bearing is sent in radians or degrees
+                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading*(180 /np.pi), position.absolute_altitude, target_x_pix, target_y_pix)
+
+                hsv_filter = False
+                if cpt_config.HasField('lower_bound'):
+                    lower_bound = [cpt_config.lower_bound.H, cpt_config.lower_bound.S, cpt_config.lower_bound.V]
+                    upper_bound = [cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V]
+                    hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
+
+                r.append({
+                    "id": i,
+                    "class": names[i],
+                    "score": scores[i],
+                    "lat": lat, "lon":
+                    lon, "box": box,
+                    "hsv_filter": hsv_filter
+                })
+                self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+
+        if not detections_above_threshold:
+            return None
+
+        logger.info(json.dumps(r,sort_keys=True, indent=4))
+        result.payload = json.dumps(r).encode(encoding="utf-8")
+
+        if not self.store_detections:
+            return result
+
+        try:
+            #results._run(save=True, labels=True, save_dir=Path("openscout-vol/"))
+            results.render()
+            img = Image.fromarray(results.ims[0])
+            draw = ImageDraw.Draw(img)
+            draw.bitmap((0,0), self.watermark, fill=None)
+
+            path = self.storage_path + "/detected/" + filename
+            img.save(path, format="JPEG")
+
+            path = self.storage_path + "/detected/latest.jpg"
+            img.save(path, format="JPEG")
+
+            logger.info("Stored image: {}".format(path))
+            if cpt_config.HasField('lower_bound'):
+                img = self.run_hsv_filter(image_np, cpt_config)
+                path = self.storage_path + "/detected/hsv.jpg"
+                img.save(path, format="JPEG")
+        except IndexError as e:
+            logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
+
+        return result
+
+    def run_hsv_filter(self, image_np, cpt_config):
+        hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
+        lower_boundary = np.array([cpt_config.lower_bound.H, cpt_config.lower_bound.S, cpt_config.lower_bound.V])
+        upper_boundary = np.array([cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V])
+        mask = cv2.inRange(hsv, lower_boundary, upper_boundary)
+        final = cv2.bitwise_and(hsv, hsv, mask=mask)
+        final = cv2.cvtColor(final, cv2.COLOR_HSV2RGB)
+        return Image.fromarray(final)
 
     def process_image(self, image):
         self.t0 = time.time()
@@ -273,6 +320,18 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         output_dict = self.inference(img)
         self.t1 = time.time()
         return output_dict, img
+
+    def print_inference_stats(self):
+        logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
+        logger.info("wait {0:.1f} ms, ".format((self.t0 - self.lasttime) * 1000))
+        logger.info("fps {0:.2f}".format(1.0 / (self.t1 - self.lasttime)))
+        logger.info(
+            "avg fps: {0:.2f}".format(
+                (self.count - self.lastcount) / (self.t1 - self.lastprint)
+            )
+        )
+        self.lastcount = self.count
+        self.lastprint = self.t1
 
     def inference(self, img):
         """Allow timing engine to override this"""

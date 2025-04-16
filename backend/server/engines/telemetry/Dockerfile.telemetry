@@ -37,11 +37,10 @@ RUN python3 -m pip install --no-cache-dir \
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -
-COPY ./server/requirements.txt ./requirements.txt
+COPY backend/server/engines/telemetry/requirements.txt ./requirements.txt
 RUN python3 -m pip install -r requirements.txt
-COPY . cnc
-WORKDIR cnc/server
-
+COPY backend/server/engines/telemetry/telemetry.py telemetry.py
+COPY backend/server/engines/telemetry/telemetry_engine.py telemetry_engine.py
+COPY protocol protocol
 
 EXPOSE 5555 9099
-ENTRYPOINT ["./entrypoint.sh"]

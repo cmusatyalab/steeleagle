@@ -7,20 +7,23 @@ import cv2
 import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from gabriel_server import cognitive_engine
 from util.timer import Timer
 from datasinks.ComputeItf import ComputeInterface
 from hub.data_store import DataStore
-from protocol import dataplane_pb2 as data_protocol
-from protocol import controlplane_pb2 as control_protocol
-from protocol import common_pb2 as common_protocol
-from protocol import gabriel_extras_pb2 as gabriel_extras
+import dataplane_pb2 as data_protocol
+import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
+import gabriel_extras_pb2 as gabriel_extras
 from util.utils import query_config
 
 logger = logging.getLogger(__name__)
 
 class GabrielCompute(ComputeInterface):
-    def __init__(self, compute_id, data_store:DataStore, config):
+    def __init__(self, compute_id, data_store:DataStore):
         super().__init__(compute_id)
+
+        self.drone_id = query_config('driver.id')
 
         # remote computation parameters
         self.set_params = {
@@ -72,6 +75,8 @@ class GabrielCompute(ComputeInterface):
         if len(result_wrapper.results) != 1:
             return
 
+        response = cognitive_engine.unpack_extras(control_protocol.Response, result_wrapper)
+
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode('utf-8')
@@ -82,8 +87,10 @@ class GabrielCompute(ComputeInterface):
                         # get timestamp
                         timestamp = time.time()
                         # update
-                        logger.debug(f"Gabriel compute: timestamp = {timestamp}, compute type = {compute_type}, result = {result}")
-                        self.data_store.update_compute_result(self.compute_id, compute_type, payload, timestamp)
+                        logger.debug(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
+                        self.data_store.update_compute_result(
+                            self.compute_id, compute_type, payload,
+                            response.seq_num, timestamp)
                 except Exception as e:
                     logger.error(f"Gabriel compute process_results: error processing result: {e}")
             else:
@@ -122,7 +129,7 @@ class GabrielCompute(ComputeInterface):
 
                     # produce extras
                     extras = gabriel_extras.Extras()
-                    compute_command = extras.cpt_request
+                    compute_command = extras.cpt_config
                     compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
@@ -136,7 +143,7 @@ class GabrielCompute(ComputeInterface):
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
                         compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
 
-                    self.data_store.get_raw_data(extras.telemetry)
+                    self.data_store.get_raw_data(extras.tel)
 
                     if compute_command is not None:
                         input_frame.extras.Pack(extras)
@@ -163,21 +170,26 @@ class GabrielCompute(ComputeInterface):
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
             tel_data = data_protocol.Telemetry()
-            self.data_store.get_raw_data(tel_data)
+            ret = self.data_store.get_raw_data(tel_data)
+
             try:
-                if tel_data is not None:
+                if ret is not None:
+                    extras = gabriel_extras.Extras()
+                    extras.telemetry.CopyFrom(tel_data)
+                    extras.drone_id = self.drone_id
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")
                     # Register when we start sending telemetry
                     if not self.drone_registered:
-                        logger.info("Gabriel compute telemetry producer: Sending registeration request to backend")
-                        tel_data.uptime = 0
+                        logger.info("Gabriel compute telemetry producer: sending registration request to backend")
+                        extras.registering = True
                         self.drone_registered = True
+                        tel_data.uptime.FromSeconds(0)
                     logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
-                    input_frame.extras.Pack(tel_data)
+                    input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')
             except Exception as e:
-                logger.debug(f'Gabriel compute telemetry producer: {e}')
+                logger.error(f'Gabriel compute telemetry producer: {e}')
             logger.debug(f"tel producer: finished time {time.time()}")
             return input_frame
 

@@ -20,20 +20,20 @@
 #
 from gabriel_server.network_engine import engine_runner
 from openscout_object_engine import OpenScoutObjectEngine
-from timing_engine import TimingObjectEngine
+#from timing_engine import TimingObjectEngine
 import logging
 import time
 import cv2
 import argparse
 import subprocess
+from util.utils import setup_logging
 
 SOURCE = 'openscout'
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 def main():
+    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -47,11 +47,13 @@ def main():
     )
 
     parser.add_argument(
-        "-m", "--model", default="coco", help="(OBJECT DETECTION) Subdirectory under /openscout/server/model/ which contains Tensorflow model to load initially."
+        "-m", "--model", default="coco",
+        help="(OBJECT DETECTION) Subdirectory under /openscout/server/model/ which contains Tensorflow model to load initially."
     )
 
     parser.add_argument(
-        "-r", "--threshold", type=float, default=0.85, help="Confidence threshold"
+        "-r", "--threshold", type=float, default=0.85,
+        help="Confidence threshold"
     )
 
     parser.add_argument(
@@ -67,14 +69,17 @@ def main():
     )
 
     parser.add_argument(
-        "-x", "--exclude", help="Comma separated list of classes (ids) to exclude when peforming detection. Consult model/<model_name>/label_map.pbtxt."
+        "-x", "--exclude",
+        help="Comma separated list of classes (ids) to exclude when peforming detection. Consult model/<model_name>/label_map.pbtxt."
     )
 
     parser.add_argument(
-        "-d", "--drone", default='anafi', help="Drone model ([anafi,usa]).  Used to define HFOV and VFOV for camera."
+        "-d", "--drone", default='anafi',
+        help="Drone model ([anafi,usa]).  Used to define HFOV and VFOV for camera."
     )
     parser.add_argument(
-        "-R", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
+        "-R", "--redis", type=int, default=6379,
+        help="Set port number for redis connection [default: 6379]"
     )
 
     parser.add_argument(
@@ -84,8 +89,6 @@ def main():
     parser.add_argument(
         "-hsv", "--hsv_threshold", type=float, default=5.0, help="HSV filter threshold [0.0-100.0]"
     )
-
-
 
     args, _ = parser.parse_known_args()
 

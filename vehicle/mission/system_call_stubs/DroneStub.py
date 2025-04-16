@@ -5,17 +5,16 @@ import zmq
 from enum import Enum
 from util.utils import setup_socket
 from util.utils import SocketOperation
-from protocol import controlplane_pb2 as control_protocol
-from protocol import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 context = zmq.Context()
-cmd_front_usr_sock = context.socket(zmq.DEALER)
+drone_control_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
-cmd_front_usr_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(cmd_front_usr_sock, SocketOperation.CONNECT, 'controlplane.mission_to_hub')
+drone_control_sock.setsockopt(zmq.IDENTITY, sock_identity)
+setup_socket(drone_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.mission_to_hub')
 
 class DriverRespond:
     def __init__(self):
@@ -55,7 +54,7 @@ class DroneStub:
         self.seq_num += 1
         self.request_map[seq_num] = driverRespond
         serialized_request = request.SerializeToString()
-        cmd_front_usr_sock.send_multipart([serialized_request])
+        drone_control_sock.send_multipart([serialized_request])
 
     def receiver(self, response_parts):
         response = response_parts[0]
@@ -86,7 +85,7 @@ class DroneStub:
     async def run(self):
         while True:
             try:
-                response_parts = cmd_front_usr_sock.recv_multipart(flags=zmq.NOBLOCK)
+                response_parts = drone_control_sock.recv_multipart(flags=zmq.NOBLOCK)
                 self.receiver(response_parts)
             except zmq.Again:
                 pass
@@ -106,38 +105,38 @@ class DroneStub:
     async def takeOff(self):
         logger.info("takeOff")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleAction.TAKEOFF
+        request.veh.action = control_protocol.VehicleControl.TAKEOFF
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
     async def land(self):
         logger.info("land")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleAction.LAND
+        request.veh.action = control_protocol.VehicleControl.LAND
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
     async def rth(self):
         logger.info("rth")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleAction.RTH
+        request.veh.action = control_protocol.VehicleControl.RTH
         result = await self.send_and_wait(request)
         return result.resp if result else False
     
     async def hover(self):
         logger.info("hover")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleAction.HOVER
+        request.veh.action = control_protocol.VehicleControl.HOVER
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
     async def setVelocity(self, forward_vel, right_vel, up_vel, angle_vel):
         logger.info("setVelocity")
         request = control_protocol.Request()
-        request.veh.velocity.forward_vel = forward_vel
-        request.veh.velocity.right_vel = right_vel
-        request.veh.velocity.up_vel = up_vel
-        request.veh.velocity.angle_vel = angle_vel
+        request.veh.velocity_body.forward_vel = forward_vel
+        request.veh.velocity_body.right_vel = right_vel
+        request.veh.velocity_body.up_vel = up_vel
+        request.veh.velocity_body.angle_vel = angle_vel
         result = await self.send_and_wait(request)
         return result.resp if result else False
     
@@ -150,8 +149,8 @@ class DroneStub:
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
-        request.veh.location.altitude = altitude
-        request.veh.location.bearing = bearing
+        request.veh.location.absolute_altitude = altitude
+        request.veh.location.heading = bearing
         result = await self.send_and_wait(request)
         return result.resp if result else False
     
