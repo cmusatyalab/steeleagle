@@ -202,7 +202,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
         if len(results.pred) > 0:
-            result = self.process_results(results, cpt_config, extras.telemetry, extras.drone_id)
+            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.drone_id)
             if result is not None:
                 result_wrapper.results.append(result)
 
@@ -221,7 +221,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         return result_wrapper
 
-    def process_results(self, results, cpt_config, telemetry, drone_id):
+    def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
         df = results.pandas().xyxy[0] # pandas dataframe
         #convert dataframe to python lists
         classes = df['class'].values.tolist()

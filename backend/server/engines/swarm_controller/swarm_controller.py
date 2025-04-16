@@ -19,21 +19,14 @@ import zmq
 import zmq.asyncio
 import redis
 from urllib.parse import urlparse
-
+from util.utils import setup_logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 # Set up the paths and variables for the compiler
 compiler_path = '/compiler'
 output_path = '/compiler/out/flightplan_'
 platform_path  = '/compiler/python/project'
-
 
 def download_script(script_url):
     try:
@@ -161,6 +154,8 @@ def listen_cmdrs(request_sock, router_sock, redis, alt, compiler_file):
         logger.info('Sent ACK to commander')
 
 def main():
+    setup_logging(logger)
+    logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--droneport', type=int, default=5003, help='Specify port to listen for drone requests [default: 5003]')
     parser.add_argument('-c', '--cmdrport', type=int, default=6001, help='Specify port to listen for commander requests [default: 6001]')

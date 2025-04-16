@@ -41,6 +41,7 @@ COPY backend/server/engines/telemetry/requirements.txt ./requirements.txt
 RUN python3 -m pip install -r requirements.txt
 COPY backend/server/engines/telemetry/telemetry.py telemetry.py
 COPY backend/server/engines/telemetry/telemetry_engine.py telemetry_engine.py
+COPY vehicle/util util
 COPY protocol protocol
 
 EXPOSE 5555 9099
