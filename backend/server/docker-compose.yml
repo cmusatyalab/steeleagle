@@ -22,7 +22,7 @@ services:
       - cnc-net
 
   telemetry-engine:
-    image: cmusatyalab/steeleagle-telemetry-engine
+    image: achanana/steeleagle-telemetry-engine
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
@@ -38,7 +38,7 @@ services:
       - PYTHONPATH=/protocol
 
   swarm-controller:
-    image: cmusatyalab/steeleagle-swarm-controller
+    image: achanana/steeleagle-swarm-controller
     container_name: swarm-controller
     restart: unless-stopped
     ports:
@@ -116,7 +116,7 @@ services:
         #    - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
 
   obstacle-engine:
-    image: cmusatyalab/steeleagle-vision-engines
+    image: achanana/steeleagle-vision-engines
     container_name: obstacle-engine
     restart: unless-stopped
     privileged: true
@@ -145,7 +145,7 @@ services:
     #  - CUDA_VISIBLE_DEVICES=1 #set this if you want to force CPU only
 
   object-engine:
-    image: cmusatyalab/steeleagle-vision-engines
+    image: achanana/steeleagle-vision-engines
     container_name: object-engine
     restart: unless-stopped
     privileged: true
