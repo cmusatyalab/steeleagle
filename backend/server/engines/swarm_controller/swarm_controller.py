@@ -104,10 +104,10 @@ def send_to_drone(req, base_url, drone_list, router_sock, redis):
         # Send the command to each drone
         for drone_id in drone_list:
             # check if the cmd is a mission
-            if (base_url):
+            if base_url:
                 # reconstruct the script url with the correct compiler output path
                 req.msn.url = f"{base_url}{output_path}{drone_id}.ms"
-                logger.info(f"Drone-specific script url:  {req.msn.url}")
+                logger.info(f"Drone-specific script url: {req.msn.url}")
 
             # send the command to the drone
             router_sock.send_multipart([drone_id.encode('utf-8'), req.SerializeToString()])
@@ -140,7 +140,7 @@ def listen_cmdrs(request_sock, router_sock, redis, alt, compiler_file):
 
         # Check if the command contains a mission and compile it if true
         base_url = None
-        if (req.msn.action == controlplane.MissionAction.DOWNLOAD):
+        if req.msn.action == controlplane.MissionAction.DOWNLOAD:
             # download the script
             script_url = req.msn.url
             logger.info(f"script url: {script_url}")
@@ -154,7 +154,6 @@ def listen_cmdrs(request_sock, router_sock, redis, alt, compiler_file):
             # get the base url
             parsed_url = urlparse(script_url)
             base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-
 
         # send the command to the drone
         send_to_drone(req, base_url, drone_list, router_sock, redis)
