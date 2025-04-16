@@ -20,8 +20,10 @@ from util.utils import query_config
 logger = logging.getLogger(__name__)
 
 class GabrielCompute(ComputeInterface):
-    def __init__(self, compute_id, data_store:DataStore, config):
+    def __init__(self, compute_id, data_store:DataStore):
         super().__init__(compute_id)
+
+        self.drone_id = query_config('driver.id')
 
         # remote computation parameters
         self.set_params = {
@@ -168,21 +170,26 @@ class GabrielCompute(ComputeInterface):
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
             input_frame.payloads.append('heartbeart'.encode('utf8'))
             tel_data = data_protocol.Telemetry()
-            self.data_store.get_raw_data(tel_data)
+            ret = self.data_store.get_raw_data(tel_data)
+
             try:
-                if tel_data is not None:
+                if ret is not None:
+                    extras = gabriel_extras.Extras()
+                    extras.telemetry.CopyFrom(tel_data)
+                    extras.drone_id = self.drone_id
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")
                     # Register when we start sending telemetry
                     if not self.drone_registered:
-                        logger.info("Gabriel compute telemetry producer: Sending registration request to backend")
-                        tel_data.uptime = 0
+                        logger.info("Gabriel compute telemetry producer: sending registration request to backend")
+                        extras.registering = True
                         self.drone_registered = True
+                        tel_data.uptime.FromSeconds(0)
                     logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
-                    input_frame.extras.Pack(tel_data)
+                    input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')
             except Exception as e:
-                logger.debug(f'Gabriel compute telemetry producer: {e}')
+                logger.error(f'Gabriel compute telemetry producer: {e}')
             logger.debug(f"tel producer: finished time {time.time()}")
             return input_frame
 

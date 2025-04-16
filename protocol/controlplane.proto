@@ -74,7 +74,7 @@ enum MissionAction {
   PAUSE = 3;
   RESUME = 4;
   DOWNLOAD = 5;
-  CLEAR = 6;
+  CLEAR_MISSION = 6;
 }
 
 /*
@@ -91,5 +91,5 @@ message ConfigureCompute {
 
 enum ComputeAction {
   UNKNOWN_COMPUTE_ACTION = 0;
-  CLEAR = 1;
+  CLEAR_COMPUTE = 1;
 }

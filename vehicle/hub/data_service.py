@@ -22,8 +22,6 @@ class DataService(Service):
         """Initialize the DataService with sockets, driver handler and compute tasks."""
         super().__init__()
 
-        self.config = query_config('hub')
-
         # Setting up sockets
         self.tel_sock = self.context.socket(zmq.SUB)
         self.cam_sock = self.context.socket(zmq.SUB)
@@ -180,7 +178,7 @@ class DataService(Service):
             return None
 
         Compute = compute_classes[compute_class]
-        compute_instance = Compute(compute_id, self.data_store, self.config)
+        compute_instance = Compute(compute_id, self.data_store)
         logger.info(f"Starting compute {compute_class} with id {compute_id}")
         return compute_instance, self.create_task(compute_instance.run())
 
@@ -191,7 +189,7 @@ class DataService(Service):
 
         compute_tasks = []
 
-        for compute_config in self.config.get("computes", []):
+        for compute_config in query_config('hub.computes'):
             compute_class = compute_config["compute_class"].lower()
             compute_id = compute_config["compute_id"]
             result = self.run_compute(compute_class, compute_id, compute_classes)

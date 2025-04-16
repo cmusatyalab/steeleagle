@@ -17,8 +17,10 @@ import "controlplane.proto";
 message Extras {
   // The drone that this frame corresponds to
   string drone_id = 1;
+  // Designates an initial request to register a drone
+  bool registering = 2;
   // The telemetry data for the drone
-  protocol.dataplane.Telemetry telemetry = 2;
+  protocol.dataplane.Telemetry telemetry = 3;
   // Configuration parameters for the compute request
-  protocol.controlplane.Request cpt_request = 3;
+  protocol.controlplane.Request cpt_request = 4;
 }

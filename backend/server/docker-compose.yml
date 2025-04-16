@@ -22,7 +22,7 @@ services:
       - cnc-net
 
   telemetry-engine:
-    image: xianglic/steeleagle-os-swrm-ctrl:${TAG}
+    image: telemetry-engine
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
@@ -34,6 +34,8 @@ services:
       - redis
     volumes:
       - ./steeleagle-vol:/cnc/server/images/
+    environment:
+      - PYTHONPATH=/protocol
 
   swarm-controller:
     image: xianglic/steeleagle-os-swrm-ctrl:${TAG}

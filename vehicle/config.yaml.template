@@ -5,17 +5,15 @@ hub:
       driver_to_hub:
         telemetry: 3001
         image_sensor: 3002
-      hub_to_mission:
-        telemetry_results: 3003
-        compute_results: 3004
-      hub_to_commander: 3005
+      hub_to_mission: 3003
+      hub_to_commander: 3004
     controlplane:
       endpoint: "0.0.0.0"
-      hub_to_driver: 3006
-      hub_to_mission: 3007
-      mission_to_hub: 3008
-      hub_to_datasink: 3009
-      commander_to_hub: 3010
+      hub_to_driver: 3005
+      hub_to_mission: 3006
+      mission_to_hub: 3007
+      hub_to_datasink: 3008
+      commander_to_hub: 3009
   computes:
     - compute_id: 'default_compute'
       compute_class: 'GabrielCompute'
