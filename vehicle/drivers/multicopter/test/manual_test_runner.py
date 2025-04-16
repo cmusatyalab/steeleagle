@@ -42,7 +42,8 @@ QWERTY_CTRL_KEYS = {
 }
 
 class KeyboardCtrl(Listener):
-    def __init__(self, ctrl_keys=None):
+    def __init__(self, speeds, ctrl_keys=None):
+        self.speeds = speeds
         self._ctrl_keys = self._get_ctrl_keys(ctrl_keys)
         self._key_pressed = defaultdict(lambda: False)
         self._last_action_ts = defaultdict(lambda: 0.0)
@@ -75,25 +76,25 @@ class KeyboardCtrl(Listener):
         )
 
     def roll(self):
-        return self._axis(
+        return self.speeds["roll"] * self._axis(
             self._ctrl_keys[Ctrl.MOVE_LEFT],
             self._ctrl_keys[Ctrl.MOVE_RIGHT]
         )
 
     def pitch(self):
-        return self._axis(
+        return self.speeds["pitch"] * self._axis(
             self._ctrl_keys[Ctrl.MOVE_BACKWARD],
             self._ctrl_keys[Ctrl.MOVE_FORWARD]
         )
 
     def yaw(self):
-        return 25 * self._axis(
+        return self.speeds["yaw"] * self._axis(
             self._ctrl_keys[Ctrl.TURN_LEFT],
             self._ctrl_keys[Ctrl.TURN_RIGHT]
         )
 
     def throttle(self):
-        return self._axis(
+        return self.speeds["throttle"] * self._axis(
             self._ctrl_keys[Ctrl.MOVE_DOWN],
             self._ctrl_keys[Ctrl.MOVE_UP]
         )
@@ -204,7 +205,13 @@ async def send_comm(control):
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 async def main(): 
-    control = KeyboardCtrl()
+    speeds = {
+        "pitch" : 1,
+        "roll" : 1,
+        "yaw" : 25,
+        "throttle" : 1
+    }
+    control = KeyboardCtrl(speeds)
     #asyncio.create_task(recv_telemetry())
     while not control.quit():
         await send_comm(control) 
