@@ -10,8 +10,7 @@
 version: '2.3'
 services:
   gabriel-server:
-    # image: cmusatyalab/steeleagle:${TAG}
-    image: xianglic/gabriel-server-new:${TAG}
+    image: cmusatyalab/gabriel-server
     container_name: gabriel-server
     ports:
       - "9099:9099"
