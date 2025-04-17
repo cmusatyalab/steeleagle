@@ -15,9 +15,8 @@ DATA_TYPES = {
     "longitude": "float",
     "altitude": "float",
     "bearing": "int",
-    "rssi": "int",
     "battery": "int",
-    "mag": "int",
+    "mag": "string",
     # "sats": int,
 }
 
@@ -65,7 +64,7 @@ def authenticated():
     # Show input for password.
     a,b,c = st.columns(3)
     b.text_input(
-        "Password", type="password", on_change=password_entered, key="password", 
+        "Password", type="password", on_change=password_entered, key="password",
     )
     if "password_correct" in st.session_state:
         b.error("Authentication failed.", icon=":material/block:")

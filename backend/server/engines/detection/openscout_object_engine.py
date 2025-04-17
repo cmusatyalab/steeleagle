@@ -201,11 +201,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
-        timestamp_millis = int(time.time() * 1000)
-        filename = str(timestamp_millis) + ".jpg"
-
         if len(results.pred) > 0:
-            result = self.process_results(results, cpt_config, extras.telemetry, extras.drone_id)
+            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.drone_id)
             if result is not None:
                 result_wrapper.results.append(result)
 
@@ -213,7 +210,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         response.seq_num = extras.cpt_request.seq_num
         response.timestamp.GetCurrentTime()
         response.resp = common.ResponseStatus.OK
-        result_wrapper.extras = response
+        result_wrapper.extras.Pack(response)
 
         self.count += 1
 
@@ -224,7 +221,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         return result_wrapper
 
-    def process_results(self, results, cpt_config, telemetry, drone_id, result_wrapper):
+    def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
         df = results.pandas().xyxy[0] # pandas dataframe
         #convert dataframe to python lists
         classes = df['class'].values.tolist()
@@ -236,6 +233,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         detections_above_threshold = False
         r = []
+        timestamp_millis = int(time.time() * 1000)
+        filename = str(timestamp_millis) + ".jpg"
         for i in range(0, len(classes)):
             if self.exclusions is not None and classes[i] in self.exclusions:
                 continue

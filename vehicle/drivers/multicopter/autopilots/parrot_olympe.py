@@ -551,7 +551,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
     async def _get_video_frame(self):
         if self._streaming_thread:
-            return self._streaming_thread.grab_frame().tobytes()
+            return self._streaming_thread.grab_frame().tobytes(), (720, 1280, 3)
 
     def _stop_streaming(self):
         self._streaming_thread.stop()

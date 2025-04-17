@@ -39,5 +39,6 @@ COPY backend/server/engines/swarm_controller/requirements.txt requirements.txt
 RUN python3 -m pip install -r requirements.txt
 COPY backend/server/engines/swarm_controller/swarm_controller.py swarm_controller.py
 COPY protocol protocol
+COPY vehicle/util util
 
 EXPOSE 5555 9099

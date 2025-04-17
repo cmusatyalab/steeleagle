@@ -9,6 +9,7 @@ from gabriel_server.network_engine import engine_runner
 from telemetry_engine import TelemetryEngine
 import logging
 import argparse
+from util.utils import setup_logging
 
 SOURCE = 'telemetry'
 
@@ -16,6 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
+    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
