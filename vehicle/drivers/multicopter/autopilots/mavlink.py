@@ -223,11 +223,11 @@ class MAVLinkDrone(MulticopterItf):
                         self._get_global_position()["relative_altitude"]
                 tel_message.global_position.heading = \
                         self._get_global_position()["heading"]
-                tel_message.velocity_global.north_vel = \
+                tel_message.velocity_enu.north_vel = \
                         self._get_velocity_enu()["north"]
-                tel_message.velocity_global.east_vel = \
+                tel_message.velocity_enu.east_vel = \
                         self._get_velocity_enu()["east"]
-                tel_message.velocity_global.up_vel = \
+                tel_message.velocity_enu.up_vel = \
                         self._get_velocity_enu()["up"]
                 tel_message.velocity_body.forward_vel = \
                         self._get_velocity_body()["forward"]
