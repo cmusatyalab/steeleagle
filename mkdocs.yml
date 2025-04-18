@@ -7,6 +7,9 @@ nav:
   - Home: index.md
   - Getting Started:
     - Overview: overview.md
+  - Backend: backend.md
+    - Design: backend-design.md
+    - Setup: backend-setup.md
 theme:
   name: material
   logo: assets/logo-color.png
@@ -19,7 +22,7 @@ theme:
       primary: orange
       accent: purple
       toggle:
-        icon: material/brightness-7 
+        icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
       primary: orange
