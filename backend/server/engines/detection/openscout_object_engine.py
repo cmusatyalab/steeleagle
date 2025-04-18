@@ -141,11 +141,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return est_lat, est_lon
 
     def storeDetection(self, drone, lat, lon, cls, conf, link=""):
-        key = self.r.xadd(
-                    f"detections",
-                    {"drone_id": drone, "longitude": lon, "latitude": lat,
-                     "cls": cls, "confidence": conf, "link": link },
-                )
+        self.r.xadd(
+            "detections",
+            {
+                "drone_id": drone,
+                "longitude": lon,
+                "latitude": lat,
+                "cls": cls,
+                "confidence": conf,
+                "link": link
+            },
+        )
 
     def passes_hsv_filter(self, image, bbox, hsv_min=[30,100,100], hsv_max=[50,255,255], threshold=5.0,) -> bool:
         cropped = image[round(bbox[0]):round(bbox[2]), round(bbox[1]):round(bbox[3])]
@@ -153,7 +159,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         lower_boundary = np.array(hsv_min)
         upper_boundary = np.array(hsv_max)
         mask = cv2.inRange(hsv, lower_boundary, upper_boundary)
-        final = cv2.bitwise_and(cropped, cropped, mask=mask)
+        cv2.bitwise_and(cropped, cropped, mask=mask)
         percent = round(np.count_nonzero(mask) / np.size(mask) * 100, 2)
         logger.debug(f"HSV Filter Result: lower_bound:{hsv_min}, upper_bound:{hsv_max}, mask percentage:{percent}%")
         return (percent >= threshold)
@@ -164,7 +170,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.error(f"Model {path} not found. Sticking with previous model.")
         else:
             self.detector = PytorchPredictor(model_name, self.threshold)
-            self.model = cpt_config.model
+            self.model = model_name
 
     def handle(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
@@ -174,7 +180,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = f'Ignoring TEXT payload.'.encode(encoding="utf-8")
+            result.payload = 'Ignoring TEXT payload.'.encode(encoding="utf-8")
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -186,7 +192,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = f'Expected compute configuration to be specified'.encode(encoding="utf-8")
+            result.payload = 'Expected compute configuration to be specified'.encode(encoding="utf-8")
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -296,7 +302,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 img = self.run_hsv_filter(image_np, cpt_config)
                 path = self.storage_path + "/detected/hsv.jpg"
                 img.save(path, format="JPEG")
-        except IndexError as e:
+        except IndexError:
             logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
         return result

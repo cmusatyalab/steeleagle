@@ -71,9 +71,12 @@ class AvoidanceEngine(ABC):
             logger.info("Storing detection images at {}".format(self.storage_path))
 
     def store_vector(self, drone, vec):
-        key = self.r.xadd(
+        self.r.xadd(
             "avoidance",
-            {"drone_id": drone, "vector": vec},
+            {
+                "drone_id": drone,
+                "vector": vec
+            },
         )
 
     def print_inference_stats(self):
@@ -129,7 +132,7 @@ class AvoidanceEngine(ABC):
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = f'Ignoring TEXT payload.'.encode(encoding="utf-8")
+        result.payload = 'Ignoring TEXT payload.'.encode(encoding="utf-8")
         result_wrapper.results.append(result)
         return result_wrapper
 
@@ -166,7 +169,7 @@ class AvoidanceEngine(ABC):
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = f'Expected compute configuration to be specified'.encode(encoding="utf-8")
+            result.payload = 'Expected compute configuration to be specified'.encode(encoding="utf-8")
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -287,18 +290,15 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         # find contours in the binary image
         contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         #full_depth_map = cv2.merge(thresh, full_depth_map)
-        try:
-            c = max(contours, key=cv2.contourArea)
-            # calculate moments for each contour
-            M = cv2.moments(c)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
-            actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / ( full_depth_map.shape[1] / 2 - scrapX )
-            cv2.putText(full_depth_map, "{:.4f}".format(actuation_vector), (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        except:
-            pass
+        c = max(contours, key=cv2.contourArea)
+        # calculate moments for each contour
+        M = cv2.moments(c)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
+        actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / ( full_depth_map.shape[1] / 2 - scrapX )
+        cv2.putText(full_depth_map, "{:.4f}".format(actuation_vector), (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         if self.faux:
             actuation_vector = self.actuations_fd.readline()
@@ -342,4 +342,5 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
     def inference(self, img):
         """Allow timing engine to override this"""
-        return actuation_vector, full_depth_map
+        return
+        #return actuation_vector, full_depth_map

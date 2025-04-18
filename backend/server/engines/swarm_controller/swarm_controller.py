@@ -7,7 +7,6 @@
 
 import os
 import subprocess
-import sys
 import logging
 from zipfile import ZipFile
 from google.protobuf.message import DecodeError
@@ -121,7 +120,7 @@ def listen_cmdrs(request_sock, router_sock, redis, alt, compiler_file):
             logger.info(f'Request received:\n{text_format.MessageToString(req)}')
         except DecodeError:
             request_sock.send(b'Error decoding protobuf. Did you send a controlplane_pb2?')
-            logger.info(f'Error decoding protobuf. Did you send a controlplane_pb2?')
+            logger.info('Error decoding protobuf. Did you send a controlplane_pb2?')
             continue
 
         # get the drone list
