@@ -1,10 +1,7 @@
-import time
 import zmq
 import zmq.asyncio
 import asyncio
-import os
 import logging
-import yaml
 import importlib
 import pkgutil
 from util.utils import query_config, setup_logging, SocketOperation
@@ -13,7 +10,6 @@ import datasinks
 from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
 from service import Service
-import sys
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +87,7 @@ class DataService(Service):
                 case "tel":
                     await self.handle_telemetry_req(req)
                 case "frame":
-                    raise NotImplemented()
+                    raise NotImplementedError()
                 case "cpt":
                     await self.handle_compute_req(req)
                 case None:

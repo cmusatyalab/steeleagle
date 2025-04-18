@@ -1,6 +1,5 @@
 # General imports
 import math
-import os
 import time
 import asyncio
 import logging
@@ -13,23 +12,20 @@ from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.rth import set_custom_location, return_to_home
-from olympe.messages.ardrone3.PilotingState import moveToChanged
 from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.PilotingSettingsState import MaxTiltChanged
 from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.gimbal import set_target, attitude
 from olympe.messages.wifi import rssi_changed
-from olympe.messages.battery import capacity
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 import olympe.enums.move as move_mode
-import olympe.enums.gimbal as gimbal_mode
 # Interface import
 from multicopter.multicopter_interface import MulticopterItf
 # Protocol imports
 import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
+# Streaming imports
+import threading
+import queue
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +113,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
         result = await self._wait_for_condition(
             lambda: self._drone(set_custom_location(\
-                    lat, lng, alt)).wait().success(),
+                    lat, lon, alt)).wait().success(),
             timeout=5,
             interval=0.1
         )
@@ -500,11 +496,11 @@ class ParrotOlympeDrone(MulticopterItf):
         dlon = lon - current_location["longitude"]
         distance =  math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
         return distance < 1.0
-    
+
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["altitude"]
         return current_altitude >= target_altitude * 0.95
-    
+
     def _is_global_position_reached(self, lat, lon, alt):
         if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):
             return True
@@ -556,10 +552,6 @@ class ParrotOlympeDrone(MulticopterItf):
     def _stop_streaming(self):
         self._streaming_thread.stop()
 
-
-# Streaming imports
-import threading
-import queue
 
 class PDRAWStreamingThread(threading.Thread):
 

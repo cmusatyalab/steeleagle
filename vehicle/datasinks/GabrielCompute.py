@@ -1,14 +1,11 @@
 import asyncio
-import json
 import logging
-import os
 import time
 import cv2
 import numpy as np
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from gabriel_server import cognitive_engine
-from util.timer import Timer
 from datasinks.ComputeItf import ComputeInterface
 from hub.data_store import DataStore
 import dataplane_pb2 as data_protocol
@@ -49,7 +46,7 @@ class GabrielCompute(ComputeInterface):
         self.frame_id = -1
 
     async def run(self):
-        logger.info(f"Gabriel compute: launching Gabriel client")
+        logger.info("Gabriel compute: launching Gabriel client")
         await self.gabriel_client.launch_async()
 
 

@@ -1,16 +1,12 @@
 import time
 import zmq
 import zmq.asyncio
-import json
-import os
 import asyncio
 import importlib
 import logging
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
-import dataplane_pb2 as data_protocol
 from util.utils import setup_socket, query_config, setup_logging, SocketOperation
-from google.protobuf.timestamp_pb2 import Timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +31,12 @@ class Driver:
                 logger.info('Attempting to connect to drone...')
                 await self.drone.connect(connection_string)
                 logger.info('Drone connected')
-            except Exception as e:
+            except Exception:
                 logger.error('Failed to connect to drone, retrying...')
                 await asyncio.sleep(3)
                 continue
 
-            logger.info(f'Established connection to drone, ready to receive commands!')
+            logger.info('Established connection to drone, ready to receive commands!')
 
             logger.info('Started streaming telemetry and video')
             asyncio.create_task(self.drone.stream_video(self.cam_sock, 5))
@@ -49,7 +45,7 @@ class Driver:
             while await self.drone.is_connected():
                 try:
                     message_parts = await self.hub_to_driver_sock.recv_multipart()
-                    logger.info(f'Received message!')
+                    logger.info('Received message!')
                     identity = message_parts[0]
                     logger.info(f'Identity: {identity}')
                     data = message_parts[1]

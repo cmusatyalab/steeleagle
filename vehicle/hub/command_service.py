@@ -1,13 +1,8 @@
-from enum import Enum
-import json
-import sys
-import time
 import validators
 import zmq
 import zmq.asyncio
 import asyncio
 import logging
-import os
 import controlplane_pb2 as control_protocol
 from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
@@ -89,7 +84,7 @@ class CommandService(Service):
         identity = b'cmdr'
         await self.driver_socket.send_multipart([identity, req.SerializeToString()])
         logger.info(f"Command send to driver: {req}")
-        
+
     async def process_command(self, cmd):
         req = control_protocol.Request()
         req.ParseFromString(cmd)
@@ -110,7 +105,7 @@ class CommandService(Service):
                         asyncio.create_task(self.send_driver_command(req))
                         self.manual_mode_enabled()
                     case _:
-                        raise NotImplemented()
+                        raise NotImplementedError()
             case "veh":
                 # Vehicle command
                 if req.veh.HasField("action") and req.veh.action == control_protocol.VehicleAction.RTH:
@@ -118,11 +113,11 @@ class CommandService(Service):
                     asyncio.create_task(self.send_driver_command(req))
                     self.manual_mode_disabled()
                 else:
-                    task = asyncio.create_task(await self.send_driver_command(req))
+                    asyncio.create_task(await self.send_driver_command(req))
                     self.manual_mode_enabled()
             case "cpt":
                 # Configure compute command
-                raise NotImplemented()
+                raise NotImplementedError()
             case None:
                 raise Exception("Expected a request type to be specified")
 
@@ -166,13 +161,13 @@ class CommandService(Service):
                     logger.debug(f"proxy : driver_socket Received message from BACKEND: identity: {identity} cmd: {cmd}")
 
                     if identity == b'cmdr':
-                        logger.debug(f"proxy : driver_socket Received message from BACKEND: discard bc of cmdr")
+                        logger.debug("proxy : driver_socket Received message from BACKEND: discard bc of cmdr")
                         pass
                     elif identity == b'usr':
-                        logger.debug(f"proxy : driver_socket Received message from BACKEND: sent back bc of user")
+                        logger.debug("proxy : driver_socket Received message from BACKEND: sent back bc of user")
                         await self.mission_cmd_socket.send_multipart([cmd])
                     else:
-                        logger.error(f"proxy: invalid identity")
+                        logger.error("proxy: invalid identity")
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
