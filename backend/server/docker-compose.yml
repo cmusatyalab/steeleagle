@@ -163,8 +163,7 @@ services:
         "-a",
         "${REDIS_AUTH}",
         "-hsv",
-        "${HSV_THRESHOLD}",
-        "-s"
+        "${HSV_THRESHOLD}"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose

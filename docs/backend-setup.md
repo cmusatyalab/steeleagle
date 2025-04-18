@@ -82,3 +82,20 @@ zmq_port = 6001
 # Choose and enter a password to use for streamlit
 password = "<secure password>"
 ```
+
+## Environment Setup
+Navigate to the server directory:
+```
+cd backend/server
+```
+And create the environment file from the template:
+```
+cp template.env .env
+```
+Within the environment file, add the Redis password you set up in the
+`REDIS_AUTH` variable and also add the externally accessible IP of the host
+to `WEBSERVER_URL`:
+```
+REDIS_AUTH=<shared key from redis.conf>
+WEBSERVER_URL=http://<externally accessible IP of host>
+```
