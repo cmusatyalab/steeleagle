@@ -63,11 +63,11 @@ class ArduPilotDrone(MAVLinkDrone):
             return common_protocol.ResponseStatus.FAILED
     
     async def hover(self):
-        if not await \
-                self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
-            return common_protocol.ResponseStatus.FAILED
-        
-        return common_protocol.ResponseStatus.COMPLETED
+        # TODO: Implement hover:
+            # issues: The hover command in the mavlink by setting velocity body to 0 will
+            # interupt any other flying command like land, takeoff, etc. This is due to
+            # streamlit continuously sending the hover command in a high frequency.
+        return common_protocol.ResponseStatus.NOTSUPPORTED
     
     async def set_global_position(self, location):
         lat = location.latitude
