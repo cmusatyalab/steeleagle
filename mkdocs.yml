@@ -1,0 +1,31 @@
+site_name: SteelEagle
+site_url: https://mydomain.org/steeleagle
+site_description: 'An accessible framework for robot autonomy.'
+site_author: 'mihirbala'
+copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon University and is licensed under GPL-3.0.'
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: overview.md
+theme:
+  name: material
+  logo: assets/logo-color.png
+  favicon: assets/logo-color.png
+  custom_dir: docs/overrides
+  features:
+    - navigation.tabs
+  palette:
+    - scheme: default
+      primary: orange
+      accent: purple
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    - scheme: slate
+      primary: orange
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+extra_css:
+  - stylesheets/extra.css
