@@ -10,11 +10,16 @@ logger = logging.getLogger(__name__)
 
 class SkyViperV2450GPS(ArduPilotDrone):
     
+    def __init__(self, drone_id, **drone_args):
+        super().__init__(drone_id)
+        self._streaming_thread = None
+        self.url = drone_args.get('video_url', None)
+        
     ''' Interface Methods '''
     async def get_type(self):
         return "SkyRocket SkyViper v2450 GPS"
 
-    async def stream_video(self, cam_sock):
+    async def stream_video(self, cam_sock, rate_hz):
         logger.info('Starting camera stream')
         self._start_streaming(self.url)
         frame_id = 0
@@ -36,7 +41,7 @@ class SkyViperV2450GPS(ArduPilotDrone):
                 frame_id = frame_id + 1
             except Exception as e:
                 logger.error(f'Failed to get video frame, error: {e}')
-            await asyncio.sleep(0.033)
+            await asyncio.sleep(1 / rate_hz)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
     
@@ -46,16 +51,16 @@ class SkyViperV2450GPS(ArduPilotDrone):
     
     
     ''' Stream methods '''
-    async def _start_streaming(self):
+    def _start_streaming(self, url):
         if not self._streaming_thread:
-            self._streaming_thread = StreamingThread()
+            self._streaming_thread = StreamingThread(url)
         self._streaming_thread.start()
 
     async def _get_video_frame(self):
         if self._streaming_thread.is_running:
             return [self._streaming_thread.grab_frame().tobytes(), self._streaming_thread.get_frame_shape()]
 
-    async def _stop_streaming(self):
+    def _stop_streaming(self):
         self._streaming_thread.stop()
         
 # Streaming imports

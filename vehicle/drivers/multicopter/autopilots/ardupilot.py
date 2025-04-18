@@ -62,6 +62,13 @@ class ArduPilotDrone(MAVLinkDrone):
         else:
             return common_protocol.ResponseStatus.FAILED
     
+    async def hover(self):
+        if not await \
+                self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
+            return common_protocol.ResponseStatus.FAILED
+        
+        return common_protocol.ResponseStatus.COMPLETED
+    
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude

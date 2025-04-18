@@ -13,7 +13,6 @@ from datasinks.ComputeItf import ComputeInterface
 from hub.data_store import DataStore
 import dataplane_pb2 as data_protocol
 import controlplane_pb2 as control_protocol
-import common_pb2 as common_protocol
 import gabriel_extras_pb2 as gabriel_extras
 from util.utils import query_config
 
@@ -33,8 +32,8 @@ class GabrielCompute(ComputeInterface):
         }
 
         # Gabriel
-        self.server = query_config('hub.network.dataplane.endpoint')
-        self.port = query_config('hub.network.dataplane.hub_to_commander')
+        self.server = query_config('hub.network.cloudlet.endpoint')
+        self.port = query_config('hub.network.cloudlet.hub_to_gabriel')
 
         logger.info(f'Gabriel compute: Gabriel server: {self.server}')
         logger.info(f'Gabriel compute: Gabriel port: {self.port}')

@@ -1,12 +1,14 @@
 hub:
   network:
+    cloudlet:
+      endpoint: "<GABRIEL SERVER ENDPOINT>"
+      hub_to_gabriel: 9099
     dataplane:
       endpoint: "0.0.0.0"
       driver_to_hub:
         telemetry: 3001
         image_sensor: 3002
       hub_to_mission: 3003
-      hub_to_commander: 3004
     controlplane:
       endpoint: "0.0.0.0"
       hub_to_driver: 3005

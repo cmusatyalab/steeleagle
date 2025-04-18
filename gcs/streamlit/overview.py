@@ -379,6 +379,8 @@ with st.sidebar:
             st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
             if gimbal_pitch != 0:
                 req.veh.gimbal_pose.pitch = gimbal_pitch
+            elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
+                req.veh.action = controlplane.VehicleAction.HOVER
             else:
                 req.veh.velocity_body.angular_vel = yaw
                 req.veh.velocity_body.forward_vel = pitch
