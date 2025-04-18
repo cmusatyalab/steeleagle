@@ -2,3 +2,106 @@
   height: 1.8rem;
   width: 1.8rem;
 }
+
+/* Ensure navigation tabs are above splash content */
+.md-tabs {
+    position: relative;
+    z-index: 3;
+}
+
+.md-version * {
+    position: relative;
+    z-index: 5;
+}
+
+.splash-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 98px); /* Subtract header height to prevent overlap */
+    min-height: 600px;
+    overflow: hidden;
+    margin-top: 0; /* Remove negative margin */
+    padding-top: 1rem; /* Add some padding from the navigation */
+}
+
+.splash-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.media-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+.media-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.splash-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mdx-container {
+    padding: 1rem;
+    margin: 0 auto;
+}
+
+.mdx-hero {
+    position: relative;
+    z-index: 3;
+    margin: 0;
+    height: 100%;
+    display: flex;
+    align-items: end;
+    justify-content: left;
+    text-align: start;
+    color: white;
+    padding-top: 22rem; /* Add padding to push content down */
+    padding-left: 1rem
+}
+
+.mdx-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 0;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mdx-hero p {
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #ffffff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    max-width: 35rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.mdx-hero .md-button {
+    background-color: #ffffffAA;
+    font-size: 1rem;
+    padding: 0.625em 2em;
+}
+
+.mdx-hero .md-button--primary {
+    background-color: var(--md-primary-fg-color);
+    border-color: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+}
