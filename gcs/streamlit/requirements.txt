@@ -2,3 +2,4 @@ streamlit
 folium
 streamlit-folium
 redis
+zmq
