@@ -7,8 +7,8 @@ nav:
   - Home: index.md
   - Getting Started:
     - Overview: overview.md
-  - Backend: backend.md
-    - Design: backend-design.md
+  - Backend:
+    - Design: backend-design.md 
     - Setup: backend-setup.md
 theme:
   name: material
