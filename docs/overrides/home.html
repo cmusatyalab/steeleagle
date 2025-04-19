@@ -4,7 +4,7 @@
   {{ super() }}
 
   <!-- Hero section with background media -->
-  <section class="splash-container">
+  <section id="bg" class="splash-container">
     <!-- Background media -->
     <div class="splash-background">
       <div class="media-overlay"></div>
@@ -25,4 +25,63 @@
       </div>
     </div>
   </section>
+{% endblock %}
+
+{% block content %}
+<div class="md-content md-grid" data-md-component="content">
+  <div class="md-content__inner">
+    <!-- What is AirStack section -->
+    <section class="mdx-container">
+      <div class="md-grid md-typeset">
+        <div class="what-is-section hidden">
+          <h2>Welcome to SteelEagle</h2>
+          <p>
+            SteelEagle is an intuitive autonomous robot development framework that is designed from the ground up 
+            to be accessible and platform agnostic. By using edge computing, SteelEagle robots can leverage
+            enormous computational power without much additional payload, enabling all kinds of novel AI in-the-loop applications. 
+            SteelEagle is developed and maintained by the Living Edge Lab at
+            Carnegie Mellon University.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Cards section -->
+    <section class="mdx-container">
+      <div class="md-grid md-typeset hidden">
+        <h1>Modules</h1>
+        <div class="feature-grid">
+          <div class="feature-card hidden">
+            <div class="feature-icon">🤖</div>
+            <h3>Companion</h3>
+            <p>Framework for adding new robots, modifying local compute, and supporting disconnected operation.</p>
+          </div>
+          <div class="feature-card hidden">
+            <div class="feature-icon">🗃️</div>
+            <h3>Backend</h3>
+            <p>Suite for telemetry collection, fully-configurable AI processing pipelines, and remote datasinks.</p>
+          </div>
+          <div class="feature-card hidden">
+            <div class="feature-icon">🧠</div>
+            <h3>Mission</h3>
+            <p>Tools for creating complex autonomous tasks supported by rich visual scripting and a domain-specific language.</p>
+          </div>
+          <div class="feature-card hidden">
+            <div class="feature-icon">💻</div>
+            <h3>Ground Control</h3>
+            <p>Custom ground control application for mission design, monitoring, and execution.</p>
+          </div>
+          <div class="feature-card hidden">
+            <div class="feature-icon">📡</div>
+            <h3>Payload</h3>
+            <p>Guides for mounting edge communication payloads on compatible platforms.</p>
+          </div>
+          <div class="feature-card hidden">
+            <div class="feature-icon">🌐</div>
+            <h3>Simulation</h3>
+            <p>Support for both SITL and HITL testing environments for compatible platforms.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 {% endblock %}

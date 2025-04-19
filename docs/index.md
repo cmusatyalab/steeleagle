@@ -5,5 +5,3 @@ hide:
   - navigation
   - toc
 ---
-
-Welcome to SteelEagle!

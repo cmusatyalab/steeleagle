@@ -17,6 +17,8 @@ theme:
   custom_dir: docs/overrides
   features:
     - navigation.tabs
+    - navigation.path
+    - header.autohide
   palette:
     - scheme: default
       primary: orange
@@ -32,3 +34,5 @@ theme:
         name: Switch to light mode
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/extra.js

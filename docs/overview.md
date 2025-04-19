@@ -38,3 +38,5 @@ Currently, the most popular robotic orchestration software is [ROS](https://www.
 
 SteelEagle can replace ROS, but it is also compatible with ROS. Depending on which functionality a user wants ROS to accomplish, SteelEagle can fill in the other parts of the autonomy stack. For more information, [read here]().
 
+!!! note "UAV Users"
+For users deploying on UAVs who want fine-grain control over the aircraft behavior at low latency, consider using [AirStack](https://docs.theairlab.org/main/docs/) another robotic autonomy framework developed at Carnegie Mellon University by [the AirLab](https://theairlab.org/).
