@@ -108,11 +108,13 @@
 
 .hidden {
     opacity: 0;
+    filter: blur(10px);
     transition: all 1s;
 }
 
 .show {
     opacity: 1;
+    filter: blur(0px);
 }
 
 .what-is-section {
@@ -130,6 +132,34 @@
     font-size: 1.1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
+}
+
+.left-image {
+    padding-left: 5rem;
+}
+
+.flex-section {
+    margin: 4rem 0;
+    display: flex;
+    justify-content: left;
+}
+
+.flex-section h2 {
+    font-size: 2.3rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--md-default-fg-color);
+}
+
+.flex-section p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.feature-header {
+    text-align: center;
+    padding-top: 8.0rem;
 }
 
 .feature-list {
@@ -163,6 +193,7 @@
     padding: 2rem;
     transition: all 0.3s ease;
     text-align: center;
+    cursor: pointer
 }
 
 .feature-card:hover {

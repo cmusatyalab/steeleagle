@@ -1,5 +1,3 @@
-var header = document.getElementById('bg');
-
 function fadeOutOnScroll(element) {
   if (!element) {
     return;
@@ -24,7 +22,8 @@ function fadeOutOnScroll(element) {
 }
 
 function scrollHandler() {
-  fadeOutOnScroll(header);
+  const fadeElements = document.querySelectorAll('.fadeout');
+  fadeElements.forEach((el) => fadeOutOnScroll(el));
 }
 
 window.addEventListener('scroll', scrollHandler);

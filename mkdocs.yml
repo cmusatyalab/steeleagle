@@ -6,10 +6,10 @@ copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon U
 nav:
   - Home: index.md
   - Getting Started:
-    - Overview: overview.md
+    - Overview: getting_started/overview.md
   - Backend:
-    - Design: backend-design.md 
-    - Setup: backend-setup.md
+    - Design: backend/backend-design.md 
+    - Setup: backend/backend-setup.md
 theme:
   name: material
   logo: assets/logo-color.png

@@ -4,7 +4,7 @@
   {{ super() }}
 
   <!-- Hero section with background media -->
-  <section id="bg" class="splash-container">
+  <section class="splash-container fadeout">
     <!-- Background media -->
     <div class="splash-background">
       <div class="media-overlay"></div>
@@ -18,7 +18,7 @@
         <div class="mdx-hero__content">
           <h1>SteelEagle</h1>
           <p>Autonomous robotics made easy.</p>
-          <a href="{{ 'docs/getting_started/' | url }}" class="md-button md-button--primary">
+          <a href="{{ 'getting_started/overview' | url }}" class="md-button md-button--primary">
             Get Started
           </a>
         </div>
@@ -30,26 +30,60 @@
 {% block content %}
 <div class="md-content md-grid" data-md-component="content">
   <div class="md-content__inner">
-    <!-- What is AirStack section -->
-    <section class="mdx-container">
+    <!-- What is SteelEagle section -->
+    <section class="mdx-container hidden">
       <div class="md-grid md-typeset">
         <div class="what-is-section hidden">
           <h2>Welcome to SteelEagle</h2>
           <p>
-            SteelEagle is an intuitive autonomous robot development framework that is designed from the ground up 
-            to be accessible and platform agnostic. By using edge computing, SteelEagle robots can leverage
-            enormous computational power without much additional payload, enabling all kinds of novel AI in-the-loop applications. 
-            SteelEagle is developed and maintained by the Living Edge Lab at
-            Carnegie Mellon University.
+            SteelEagle is an intuitive autonomous robot framework that is designed from the ground up 
+            to be accessible and platform agnostic. In a world where robots are controlled through
+            multiple disparate, non-standard APIs, SteelEagle presents a unified programming ecosystem. 
+            Whether you are an experienced robotics programmer or a novice, SteelEagle is designed to accelerate 
+            your development process and save you the pain of dealing with uncooperative hardware.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- Feature Cards section -->
+    <section class="mdx-container hidden">
+      <div class="md-grid md-typeset">
+        <div class="flex-section hidden">
+          <div style="padding-right: 10%;">
+          <h2>The Power of the Edge</h2>
+          <p>
+          SteelEagle brings the enormous computation power of the edge to mobile robotics
+          in an easy-to-use package. Run heavyweight AI models on edge servers and deliver
+          results to your devices at low latency. SteelEagle is equipped with bandwidth-adaptive
+          transmission in case of network congestion. Use the edge in tandem with onboard resources
+          or go lightweight and offload everything. The choice is yours.
+          </p>
+          </div>
+          <img src="assets/yolo.gif" class="hidden content-wrap" width="1200vw" height="5Q00vw" style="padding-top: 6%;"/>
+        </div>
+      </div>
+    </section>
+    
+    <section class="mdx-container hidden">
+      <div class="md-grid md-typeset">
+        <div class="flex-section hidden">
+          <img src="assets/cots.gif" class="hidden content-wrap" width="500vw" height="auto", style="padding-top: 6%;"/>
+          <div style="padding-left: 10%;">
+          <h2>COTS Support</h2>
+          <p>
+          SteelEagle supports several brands of commercial off-the-shelf (COTS)
+          robots, making it easier than ever to get started. No more needing to 
+          build a drone from scratch to test your code in the wild.
+          </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modules section -->
     <section class="mdx-container">
-      <div class="md-grid md-typeset hidden">
-        <h1>Modules</h1>
+      <div class="md-grid md-typeset">
+        <h1 class="feature-header hidden">Modules</h1>
         <div class="feature-grid">
           <div class="feature-card hidden">
             <div class="feature-icon">🤖</div>
