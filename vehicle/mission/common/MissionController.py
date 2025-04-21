@@ -149,10 +149,7 @@ class MissionController():
         self.compute = ComputeStub()
         asyncio.create_task(self.drone.run())
         asyncio.create_task(self.compute.run())
-        
-        # self.compute = ComputeStub()
         while True:
-            logger.debug("MC")
             try:
                 # Receive a message
                 message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
@@ -169,20 +166,19 @@ class MissionController():
                     logger.info("Received message without mission field, ignoring")
                     return
                 
-                mission_command = req.msn.WhichOneof("param")
-                logger.info(f"man_control: {mission_command}")
-                logger.info(f"Parsed Command: {mission_command}")
+                msn_action = req.msn.action
+                logger.info(f"Received message with action: {msn_action}")
                 
-                if mission_command == control_protocol.MissionControl.DOWNLOAD:
-                    url  = message.msn.url
+                if msn_action == control_protocol.MissionAction.DOWNLOAD:
+                    url  = req.msn.url
                     self.download_mission(url)
                     resp = common_protocol.ResponseStatus.COMPLETED
                 
-                elif mission_command == control_protocol.MissionControl.START:
+                elif msn_action == control_protocol.MissionAction.START:
                     self.start_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
                     
-                elif mission_command == control_protocol.MissionControl.STOP:
+                elif msn_action == control_protocol.MissionAction.STOP:
                     await self.end_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
                     
