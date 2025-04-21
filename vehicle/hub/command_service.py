@@ -53,10 +53,10 @@ class CommandService(Service):
         self.manual = False
 
     async def send_download_mission(self, req):
-        if validators.url(req.auto.url):
-            logger.info(f'Downloading flight script sent by commander: {req.auto.url}')
+        if validators.url(req.msn.url):
+            logger.info(f'Downloading flight script sent by commander: {req.msn.url}')
         else:
-            logger.info(f'Invalid script URL sent by commander: {req.auto.url}')
+            logger.info(f'Invalid script URL sent by commander: {req.msn.url}')
             return
 
         # send the start mission command
@@ -97,6 +97,8 @@ class CommandService(Service):
                 match req.msn.action:
                     case control_protocol.MissionAction.DOWNLOAD:
                         await self.send_download_mission(req)
+                        await self.send_start_mission(req)
+                        self.manual_mode_disabled()
                     case control_protocol.MissionAction.START:
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
@@ -113,7 +115,7 @@ class CommandService(Service):
                     asyncio.create_task(self.send_driver_command(req))
                     self.manual_mode_disabled()
                 else:
-                    asyncio.create_task(await self.send_driver_command(req))
+                    asyncio.create_task(self.send_driver_command(req))
                     self.manual_mode_enabled()
             case "cpt":
                 # Configure compute command
