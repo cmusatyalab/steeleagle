@@ -164,10 +164,10 @@ class ArduPilotDrone(MAVLinkDrone):
         heading = location.heading
         logger.info(f"Set heading to {lat=}, {lon=}, {heading=}")
         # Calculate heading if not provided
-        current_location = self._get_global_position()
-        current_lat = current_location["latitude"]
-        current_lon = current_location["longitude"]
         if heading is None:
+            current_location = self._get_global_position()
+            current_lat = current_location["latitude"]
+            current_lon = current_location["longitude"]
             heading = self._calculate_heading(current_lat, current_lon, lat, lon)
         
         yaw_speed=20
