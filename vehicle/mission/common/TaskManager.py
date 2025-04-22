@@ -56,11 +56,6 @@ class TaskManager():
             self.curr_task_id = start_task.task_id
             logger.info(f"start task, current taskid:{self.curr_task_id}\n")
             
-            
-            # takeoff
-            logger.info("taking off")
-            await self.drone.takeOff()
-            
             # start
             self.start_task(start_task)
     

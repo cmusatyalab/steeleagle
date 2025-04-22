@@ -4,6 +4,7 @@ import zmq.asyncio
 import asyncio
 import logging
 import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
 from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 
@@ -62,23 +63,43 @@ class CommandService(Service):
         # send the start mission command
         logger.info(f'download_mission message: {req}')
         self.mission_ctrl_socket.send(req.SerializeToString())
-        reply = await self.mission_ctrl_socket.recv_string()
-        logger.info(f"Mission reply: {reply}")
+        msg = await self.mission_ctrl_socket.recv_multipart()
+        rep = control_protocol.Response()
+        rep.ParseFromString(msg[0])
+        if rep.resp == common_protocol.ResponseStatus.COMPLETED:
+            logger.info(f"Mission download completed")
+        elif rep.resp == common_protocol.ResponseStatus.FAILED:
+            logger.info(f"Mission download failed")
+        else:
+            logger.info(f"Unknown mission download status: {rep.resp}")
 
-    # Function to send a start mission command
     async def send_start_mission(self, req):
         # send the start mission command
         logger.info(f'start_mission message: {req}')
         self.mission_ctrl_socket.send(req.SerializeToString())
-        reply = await self.mission_ctrl_socket.recv_string()
-        logger.info(f"Mission reply: {reply}")
+        msg = await self.mission_ctrl_socket.recv_multipart()
+        rep = control_protocol.Response()
+        rep.ParseFromString(msg[0])
+        if rep.resp == common_protocol.ResponseStatus.COMPLETED:
+            logger.info(f"Mission start completed")
+        elif rep.resp == common_protocol.ResponseStatus.FAILED:
+            logger.info(f"Mission start failed")
+        else:
+            logger.info(f"Unknown mission start status: {rep.resp}")
 
-    # Function to send a stop mission command
     async def send_stop_mission(self, req):
         logger.info(f'stop_mission message: {req}')
         self.mission_ctrl_socket.send(req.SerializeToString())
-        reply = await self.mission_ctrl_socket.recv_string()
-        logger.info(f"Mission reply: {reply}")
+        msg = await self.mission_ctrl_socket.recv_multipart()
+        rep = control_protocol.Response()
+        rep.ParseFromString(msg[0])
+        if rep.resp == common_protocol.ResponseStatus.COMPLETED:
+            logger.info(f"Mission stop completed")
+        elif rep.resp == common_protocol.ResponseStatus.FAILED:
+            logger.info(f"Mission stop failed")
+        else:
+            logger.info(f"Unknown mission stop status: {rep.resp}")
+
 
     async def send_driver_command(self, req):
         identity = b'cmdr'
@@ -97,6 +118,7 @@ class CommandService(Service):
                 match req.msn.action:
                     case control_protocol.MissionAction.DOWNLOAD:
                         await self.send_download_mission(req)
+                        req.msn.action = control_protocol.MissionAction.START
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
                     case control_protocol.MissionAction.START:

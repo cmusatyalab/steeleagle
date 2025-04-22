@@ -467,7 +467,7 @@ class MAVLinkDrone(MulticopterItf):
    
     def _is_heading_reached(self, heading):
         current_heading = self._get_global_position()["heading"]
-        if not heading:
+        if not current_heading:
             return False  # Return False if heading data is unavailable
         logger.info(f"Current heading: {current_heading}, Target heading: {heading}")
         diff = (heading - current_heading + 540) % 360 - 180

@@ -10,7 +10,7 @@ import zmq
 import asyncio
 import logging
 
-from util.utils import SocketOperation, setup_socket
+from util.utils import SocketOperation, setup_socket, setup_logging
 from system_call_stubs.DroneStub import DroneStub
 from system_call_stubs.ComputeStub import ComputeStub
 import controlplane_pb2 as control_protocol
@@ -33,6 +33,7 @@ class MissionController():
         context = zmq.Context()
         self.msn_control_sock = context.socket(zmq.REP)
         setup_socket(self.msn_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_mission')
+        setup_logging(logger, 'mission.logging')
         
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:

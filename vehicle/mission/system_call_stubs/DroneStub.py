@@ -6,6 +6,7 @@ from enum import Enum
 from util.utils import setup_socket
 from util.utils import SocketOperation
 import controlplane_pb2 as control_protocol
+import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -68,15 +69,15 @@ class DroneStub:
             return
 
         status = driver_rep.resp
-        if status == control_protocol.ResponseStatus.OK:
+        if status == common_protocol.ResponseStatus.OK:
             logger.info("STAGE 1: OK")
-        elif status == control_protocol.ResponseStatus.NOTSUPPORTED:
+        elif status == common_protocol.ResponseStatus.NOTSUPPORTED:
             logger.info("STAGE 1: NOTSUPPORTED")
             driverRespond.set()
-        elif status == control_protocol.ResponseStatus.FAILED:
+        elif status == common_protocol.ResponseStatus.FAILED:
             logger.error("STAGE 2: FAILED")
             driverRespond.set()
-        elif status == control_protocol.ResponseStatus.COMPLETED:
+        elif status == common_protocol.ResponseStatus.COMPLETED:
             logger.info("STAGE 2: COMPLETED")    
             driverRespond.grantPermission()
             driverRespond.putResult(driver_rep)
@@ -105,28 +106,28 @@ class DroneStub:
     async def takeOff(self):
         logger.info("takeOff")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleControl.TAKEOFF
+        request.veh.action = control_protocol.VehicleAction.TAKEOFF
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
     async def land(self):
         logger.info("land")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleControl.LAND
+        request.veh.action = control_protocol.VehicleAction.LAND
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
     async def rth(self):
         logger.info("rth")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleControl.RTH
+        request.veh.action = control_protocol.VehicleAction.RTH
         result = await self.send_and_wait(request)
         return result.resp if result else False
     
     async def hover(self):
         logger.info("hover")
         request = control_protocol.Request()
-        request.veh.action = control_protocol.VehicleControl.HOVER
+        request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
         return result.resp if result else False
 
