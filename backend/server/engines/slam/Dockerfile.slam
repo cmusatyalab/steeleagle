@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+LABEL Satyalab, satya-group@lists.andrew.cmu.edu
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install build and runtime dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libgtk-3-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgl1 \
+    python3 \
+    python3-pip \
+    wget \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Upgrade pip
+RUN python3 -m pip install --upgrade pip
+
+# Install Python dependencies
+RUN python3 -m pip install --no-cache-dir \
+    'opencv-python<5' \
+    numpy \
+    redis \
+    gabriel-server \
+    protobuf>5.26.1 \
+    pymap3d \
+    asyncio \
+    pyzmq \
+    zmq \
+    pyyaml
+
+
+# Copy project files
+RUN mkdir steeleagle
+COPY backend/server/engines/slam/*.py steeleagle/
+COPY backend/server/engines/slam/*.json steeleagle/
+COPY protocol/*_pb2.py /steeleagle/protocol/
+COPY vehicle/util /steeleagle/util
+WORKDIR steeleagle
+
+EXPOSE 5555 9099
+
+# The actual command to run will be specified in docker-compose or at runtime 

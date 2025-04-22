@@ -19,7 +19,7 @@
 #
 #
 from gabriel_server.network_engine import engine_runner
-from terraSLAM import TerraSLAMEngine
+from terraslam import TerraSLAMEngine
 import logging
 import argparse
 from util.utils import setup_logging

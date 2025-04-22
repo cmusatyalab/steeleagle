@@ -181,7 +181,22 @@ services:
       - PYTHONPATH=/steeleagle/protocol
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=-1 #set this if you want to force CPU only
-
+  slam-engine:
+    image: xujingao/steeleagle-slam-engine
+    container_name: slam-engine
+    restart: unless-stopped
+    privileged: true
+    entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555"]
+    depends_on:
+      - gabriel-server
+      - redis
+    networks:
+      - cnc-net
+      - redis
+    environment:
+      - PYTHONPATH=/steeleagle/protocol
+    volumes:
+      - ./steeleagle-vol:/steeleagle/images/
     # OpenFace is the default for face recognition
     #openface-service:
     #  image: cmusatyalab/openface
@@ -239,6 +254,7 @@ services:
     volumes:
       - ./redis:/data
       - ./redis/redis.conf:/redis-stack.conf
+
 networks:
   cnc-net:
     name: cnc-net
