@@ -60,16 +60,20 @@ class TerraSLAMClient:
         self.server_port = server_port
         self.client_socket = None
         self.latest_pose = None
+        self.retry_interval = 5  # Retry interval in seconds
 
     def connect(self):
-        try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((self.server_ip, self.server_port))
-            logger.info(f"Connected to SLAM server at {self.server_ip}:{self.server_port}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to connect to SLAM server: {e}")
-            return False
+        while True:
+            try:
+                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.client_socket.connect((self.server_ip, self.server_port))
+                logger.info(f"Connected to SLAM server at {self.server_ip}:{self.server_port}")
+                return True
+            except Exception as e:
+                logger.error(f"Failed to connect to SLAM server: {e}")
+                logger.info(f"Retrying connection in {self.retry_interval} seconds...")
+                time.sleep(self.retry_interval)
+                continue
 
     def process_image(self, image_data):
         """Process image data and send to SLAM server"""
