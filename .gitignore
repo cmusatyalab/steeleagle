@@ -18,6 +18,7 @@ backend/server/redis/*
 !backend/server/redis/
 !backend/server/redis/redis.conf.template
 backend/streamlit/.streamlit/secrets.toml
+backend/server/engines/slam/images/*
 venv/
 *.jar
 *.dsl
