@@ -141,24 +141,30 @@ class CommandService(Service):
                         req.msn.action = control_protocol.MissionAction.START
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
+                       
                     case control_protocol.MissionAction.START:
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
+                   
                     case control_protocol.MissionAction.STOP:
                         await self.send_stop_mission(req)
-                        asyncio.create_task(self.send_driver_command(req))
+                        
+                        # send the hover command to the driver
+                        hover = control_protocol.Request()
+                        hover.veh.action = control_protocol.VehicleAction.HOVER
+                        asyncio.create_task(self.send_driver_command(hover))
                         self.manual_mode_enabled()
                     case _:
                         raise NotImplementedError()
             case "veh":
-                # Vehicle command
-                if req.veh.HasField("action") and req.veh.action == control_protocol.VehicleAction.RTH:
-                    await self.send_stop_mission()
-                    asyncio.create_task(self.send_driver_command(req))
-                    self.manual_mode_disabled()
+                if self.manual:
+                    # Vehicle command
+                    if req.veh.HasField("action") and req.veh.action == control_protocol.VehicleAction.RTH:
+                        asyncio.create_task(self.send_driver_command(req))
+                    else:
+                        asyncio.create_task(self.send_driver_command(req))
                 else:
-                    asyncio.create_task(self.send_driver_command(req))
-                    self.manual_mode_enabled()
+                    logger.info("Vehicle command ignored because manual mode is disabled")
             case "cpt":
                 # Configure compute command
                 raise NotImplementedError()
