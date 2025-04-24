@@ -106,7 +106,7 @@ class GabrielCompute(ComputeInterface):
             # Wait for a new frame
             while frame_id is None or frame_id <= self.frame_id:
                 await self.data_store.wait_for_new_data(type(frame_data))
-                logger.info("Waiting for new frame from driver")
+                logger.debug("Waiting for new frame from driver")
                 frame_id = self.data_store.get_raw_data(frame_data)
             self.frame_id = frame_id
 
@@ -114,7 +114,7 @@ class GabrielCompute(ComputeInterface):
             self.data_store.get_raw_data(tel_data)
             try:
                 if frame_data is not None and frame_data.data != b'' and tel_data is not None:
-                    logger.info(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
+                    logger.debug(f"New frame frame_id={frame_data.id} available from driver, tel_data={tel_data}")
 
                     frame_bytes = frame_data.data
 
@@ -145,7 +145,7 @@ class GabrielCompute(ComputeInterface):
                     if compute_command is not None:
                         input_frame.extras.Pack(extras)
                 else:
-                    logger.info('Gabriel compute Frame producer: frame is None')
+                    logger.debug('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
             except Exception as e:
@@ -177,7 +177,7 @@ class GabrielCompute(ComputeInterface):
                     logger.debug("Gabriel compute telemetry producer: sending telemetry")
                     # Register when we start sending telemetry
                     if not self.drone_registered:
-                        logger.info("Gabriel compute telemetry producer: sending registration request to backend")
+                        logger.debug("Gabriel compute telemetry producer: sending registration request to backend")
                         extras.registering = True
                         self.drone_registered = True
                         tel_data.uptime.FromSeconds(0)

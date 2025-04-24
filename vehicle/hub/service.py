@@ -30,7 +30,7 @@ class Service(ABC):
             await self.shutdown()
 
     async def shutdown(self):
-        logger.info(f'{self.__class__.__name__}: Shutting down CommandService')
+        logger.info(f'{self.__class__.__name__}: Shutting down Service')
         for sock in self.socks:
             sock.close()
 
@@ -52,7 +52,7 @@ class Service(ABC):
                     logger.error(f"Task raised exception: {err}")
 
 
-        logger.info("Main: CommandService shutdown complete")
+        logger.info("Main: Service shutdown complete")
 
 
 

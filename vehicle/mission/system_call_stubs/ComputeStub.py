@@ -11,16 +11,13 @@ from util.utils import SocketOperation
 import controlplane_pb2 as control_protocol
 import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
-from google.protobuf.field_mask_pb2 import FieldMask
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 context = zmq.Context()
 data_request_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
 data_request_sock.setsockopt(zmq.IDENTITY, sock_identity)
-setup_socket(data_request_sock, SocketOperation.CONNECT, 'hub.network.dataplane.hub_to_mission')
+setup_socket(data_request_sock, SocketOperation.CONNECT, 'hub.network.dataplane.mission_to_hub')
 
 
 class ComputeRespond:
@@ -105,6 +102,7 @@ class ComputeStub():
         
     '''Helper method to send a request and wait for a response'''
     async def send_and_wait(self, request):
+        logger.info("Sending request and waiting for response")
         computeRespond = ComputeRespond()
         self.sender(request, computeRespond)
     
@@ -130,8 +128,8 @@ class ComputeStub():
     ''' Telemetry methods '''
     async def getTelemetry(self):
         logger.info("Getting telemetry")
-        request = data_protocol.Request()
-        request.tel.field_mask = FieldMask()
+        request = data_protocol.Request(tel=data_protocol.TelemetryRequest())
+        logger.info(f"Requesting telemetry: {request}")
         rep = await self.send_and_wait(request)
         result = rep.tel
         telDict = {

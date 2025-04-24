@@ -9,13 +9,12 @@ import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 context = zmq.Context()
 drone_control_sock = context.socket(zmq.DEALER)
 sock_identity = b'usr'
 drone_control_sock.setsockopt(zmq.IDENTITY, sock_identity)
 setup_socket(drone_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.mission_to_hub')
+
 
 class DriverRespond:
     def __init__(self):
