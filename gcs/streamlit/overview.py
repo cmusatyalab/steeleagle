@@ -242,7 +242,7 @@ def draw_map():
     TYPES={"lat": "float",
     "lon": "float",
     }
-    df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 4), types=TYPES)
+    df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 5), types=TYPES)
     coords = []
     for index, row in df.iterrows():
         coords.append([row["lat"], row["lon"]])
