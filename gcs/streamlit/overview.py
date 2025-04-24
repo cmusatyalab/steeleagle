@@ -169,6 +169,8 @@ def draw_map():
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Drone Markers")
     tracks = folium.FeatureGroup(name="Historical Tracks")
+    slam_track = folium.FeatureGroup(name="SLAM Track")
+    landing_spot = folium.FeatureGroup(name="Landing Spot")
     # Draw(export=True).add_to(m)
     lc = folium.LayerControl()
 
@@ -223,11 +225,26 @@ def draw_map():
             ls.add_to(tracks)
             marker_color += 1
 
+
+    df = stream_to_dataframe(red.xrevrange(f"slam", "+", "-", st.session_state.trail_length))
+    coords = []
+    for index, row in df.iterrows():
+        coords.append([row["lat"], row["lon"]])
+    ls = folium.PolyLine(locations=coords, color="darkpurple")
+    ls.add_to(slam_track)
+
+    df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 4))
+    coords = []
+    for index, row in df.iterrows():
+        coords.append([row["lat"], row["lon"]])
+    ls = folium.PolyLine(locations=coords, color="orange")
+    ls.add_to(landing_spot)
+
     st_folium(
         m,
         key="overview_map",
         use_container_width=True,
-        feature_group_to_add=[fg, tracks],
+        feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         layer_control=lc,
         returned_objects=[],
         center=st.session_state.center,
