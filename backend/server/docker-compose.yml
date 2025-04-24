@@ -186,7 +186,7 @@ services:
     container_name: slam-engine
     restart: unless-stopped
     privileged: true
-    entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555", "-src", "openscout"]
+    entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555", "-src", "telemetry"]
     depends_on:
       - gabriel-server
       - redis

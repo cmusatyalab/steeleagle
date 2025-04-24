@@ -142,7 +142,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         self.slam2gps = SLAM2GPS(self.transform_json)
         
         # Initialize Redis connection
-        self.r = redis.Redis(host='localhost', port=self.redis_port, 
+        self.r = redis.Redis(host='redis', port=self.redis_port, 
                            username='steeleagle', password=self.redis_auth,
                            decode_responses=True)
         try:
@@ -176,7 +176,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         success = self.slam_client.process_image(input_frame.payloads[0])
         
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
-        result_wrapper = cognitive_engine.create_result_wrapper(status)
+        result_wrapper = self.get_result_wrapper(status)
 
         # Construct response
         result = gabriel_pb2.ResultWrapper.Result()
@@ -199,7 +199,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
                     "alt": str(alt)
                 }
             )
-            
+            logger.info(f"GPS coordinates: {lat}, {lon}, {alt}")
             response = {
                 "status": "success",
                 "gps": {
