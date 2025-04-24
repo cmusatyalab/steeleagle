@@ -107,11 +107,12 @@ class DataService(Service):
         """Processes a telemetry request."""
         logger.info(f"Received telemetry request: {req}")
         tel_data = data_protocol.Telemetry()
-        tel_data = self.data_store.get_raw_data(tel_data)
+        ret = self.data_store.get_raw_data(tel_data)
+        logger.info(f"Telemetry data: {tel_data}")
         
         resp = data_protocol.Response()
         
-        if tel_data is None:
+        if ret is None:
             resp.resp = common_protocol.ResponseStatus.FAILED
         else: 
             resp.resp = common_protocol.ResponseStatus.COMPLETED
@@ -119,8 +120,9 @@ class DataService(Service):
             
         resp.timestamp.GetCurrentTime()
         resp.seq_num = req.seq_num
+        logger.info(f"Sending telemetry response: {resp}")
                 
-        await self.data_reply_sock.send(tel_data.SerializeToString())
+        await self.data_reply_sock.send(resp.SerializeToString())
 
     ###########################################################################
     #                                DRIVER                                   #
