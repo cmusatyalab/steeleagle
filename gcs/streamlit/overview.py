@@ -233,20 +233,20 @@ def draw_map():
     "alt": "float",
     }
     df = stream_to_dataframe(red.xrevrange(f"slam", "+", "-", st.session_state.trail_length), types=TYPES)
-    coords = []
+    slam_coords = []
     for index, row in df.iterrows():
-        coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=coords, color="darkpurple")
+        slam_coords.append([row["lat"], row["lon"]])
+    ls = folium.PolyLine(locations=slam_coords, color="darkpurple")
     ls.add_to(slam_track)
 
     TYPES={"lat": "float",
     "lon": "float",
     }
     df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 5), types=TYPES)
-    coords = []
+    landing_coords = []
     for index, row in df.iterrows():
-        coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=coords, color="orange")
+        landing_coords.append([row["lat"], row["lon"]])
+    ls = folium.PolyLine(locations=landing_coords, color="orange")
     ls.add_to(landing_spot)
 
     st_folium(
