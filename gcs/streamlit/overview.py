@@ -108,7 +108,7 @@ def enable_manual():
     req.timestamp.GetCurrentTime()
     for d in st.session_state.selected_drones:
         req.msn.drone_ids.append(d)
-    req.msn.action = controlplane.MissionAction.KILL
+    req.msn.action = controlplane.MissionAction.STOP
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
     REQUEST_NUMBER += 1
