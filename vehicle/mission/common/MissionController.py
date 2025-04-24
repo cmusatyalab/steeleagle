@@ -16,7 +16,11 @@ from system_call_stubs.ComputeStub import ComputeStub
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 
+
 logger = logging.getLogger(__name__)
+context = zmq.Context()
+msn_control_sock = context.socket(zmq.REP)
+setup_socket(msn_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_mission')
 
 
 
@@ -28,12 +32,8 @@ class MissionController():
         self.task_arg_map = {}
         self.reload = False
         self.user_path = user_path
-        logger.info("Mission Controller created")
-        
-        context = zmq.Context()
-        self.msn_control_sock = context.socket(zmq.REP)
-        setup_socket(self.msn_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_mission')
-        setup_logging(logger, 'mission.logging')
+        self.msn_control_sock = msn_control_sock
+     
         
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:

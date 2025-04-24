@@ -47,12 +47,18 @@ class CommandService(Service):
 
         self.create_task(self.cmd_proxy())
 
-    def manual_mode_enabled(self):
-        self.manual = True
 
-    def manual_mode_disabled(self):
-        self.manual = False
+    ###########################################################################
+    #                                Driver                                   #
+    ###########################################################################
+    async def send_driver_command(self, req):
+        identity = b'cmdr'
+        await self.driver_socket.send_multipart([identity, req.SerializeToString()])
+        logger.info(f"Command send to driver: {req}")
 
+    ###########################################################################
+    #                                USER                                     #
+    ###########################################################################
     async def send_download_mission(self, req):
         if validators.url(req.msn.url):
             logger.info(f'Downloading flight script sent by commander: {req.msn.url}')
@@ -99,13 +105,27 @@ class CommandService(Service):
             logger.info(f"Mission stop failed")
         else:
             logger.info(f"Unknown mission stop status: {rep.resp}")
+    
+    ###########################################################################
+    #                                Compute                                  #
+    ###########################################################################
+    #TODO(xianglic):clear the datastore result commanded by the mission
+    def clear_compute_result(self):
+        pass
+    
+    #TODO(xianglic):configure the datasink commanded by the mission  
+    def configure_compute(self):
+        pass
+    
+    ###########################################################################
+    #                                Proxy                                    #
+    ###########################################################################
+    def manual_mode_enabled(self):
+        self.manual = True
 
-
-    async def send_driver_command(self, req):
-        identity = b'cmdr'
-        await self.driver_socket.send_multipart([identity, req.SerializeToString()])
-        logger.info(f"Command send to driver: {req}")
-
+    def manual_mode_disabled(self):
+        self.manual = False
+        
     async def process_command(self, cmd):
         req = control_protocol.Request()
         req.ParseFromString(cmd)
@@ -195,7 +215,7 @@ class CommandService(Service):
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
-
+            
 async def main():
     setup_logging(logger, 'hub.logging')
     await CommandService().start()

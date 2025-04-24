@@ -43,7 +43,6 @@ message Response {
 * TELEMETRY
 */
 message TelemetryRequest {
-  google.protobuf.FieldMask field_mask = 1; // Used to specify which fields of TelemetryResponse to return
 }
 message Telemetry {
   string drone_name = 1;

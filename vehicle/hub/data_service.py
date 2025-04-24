@@ -6,6 +6,7 @@ import importlib
 import pkgutil
 from util.utils import query_config, setup_logging, SocketOperation
 import dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
 import datasinks
 from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
@@ -33,7 +34,7 @@ class DataService(Service):
         self.setup_and_register_socket(self.cam_sock, SocketOperation.BIND, \
                 'hub.network.dataplane.driver_to_hub.image_sensor')
         self.setup_and_register_socket(self.data_reply_sock, SocketOperation.BIND, \
-                'hub.network.dataplane.hub_to_mission')
+                'hub.network.dataplane.mission_to_hub')
 
         # setting up tasks
         self.create_task(self.telemetry_handler())
@@ -70,11 +71,6 @@ class DataService(Service):
             logger.info(f"Sending result: {result} with {compute_id=} {result.timestamp=}")
         return getter_list
 
-    def clear_result(self):
-        logger.info("Processing setter")
-        for compute_id in self.compute_dict.keys():
-            self.data_store.clear_compute_result(compute_id)
-
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
@@ -110,8 +106,20 @@ class DataService(Service):
     async def handle_telemetry_req(self, req):
         """Processes a telemetry request."""
         logger.info(f"Received telemetry request: {req}")
-
-        tel_data = self.data_store.get_raw_data(req)
+        tel_data = data_protocol.Telemetry()
+        tel_data = self.data_store.get_raw_data(tel_data)
+        
+        resp = data_protocol.Response()
+        
+        if tel_data is None:
+            resp.resp = common_protocol.ResponseStatus.FAILED
+        else: 
+            resp.resp = common_protocol.ResponseStatus.COMPLETED
+            resp.tel.CopyFrom(tel_data)
+            
+        resp.timestamp.GetCurrentTime()
+        resp.seq_num = req.seq_num
+                
         await self.data_reply_sock.send(tel_data.SerializeToString())
 
     ###########################################################################
@@ -155,6 +163,7 @@ class DataService(Service):
     ###########################################################################
     #                                COMPUTE                                  #
     ###########################################################################
+    #TODO(xianglic) move the spawning logic to the __main__.py file
     def discover_compute_classes(self):
         """Discover all compute  classes."""
         compute_classes = {}
@@ -197,6 +206,12 @@ class DataService(Service):
                 compute_tasks.append(task)
 
         return compute_tasks
+    
+    ###########################################################################
+    #                                Proxy                                    #
+    ###########################################################################
+    #TODO(xianglic) create a proxy socket poller as the commander proxy, 
+    # every socket listenting logic goes into the poller
 
 async def main():
     """Main entry point for the DataService."""
