@@ -67,8 +67,8 @@ class SlamZeroMQClient:
                 # Process results differently based on engine type
                 if "terra-slam" in engine_id.lower():
                     logger.info(f"SLAM result: {payload}")
-                else:
-                    logger.debug(f"Other engine result ({engine_id}): {payload}")
+                # else:
+                #     logger.debug(f"Other engine result ({engine_id}): {payload}")
             else:
                 logger.info(f"Got non-text result type {result.payload_type} from {engine_id}")
     

@@ -60,6 +60,7 @@ class TerraSLAMClient:
         self.server_port = server_port
         self.client_socket = None
         self.latest_pose = None
+        self.previous_pose = None
         self.retry_interval = 5  # Retry interval in seconds
 
     def connect(self):
@@ -97,22 +98,30 @@ class TerraSLAMClient:
             pose_data = self.client_socket.recv(24)
             if len(pose_data) == 24:
                 x, y, z = struct.unpack('3d', pose_data)
+                
+                # Store previous pose before updating
+                self.previous_pose = self.latest_pose
                 self.latest_pose = (x, y, z)
                 
-                # Check if all values are 0 (initializing status)
-                if abs(x) < 1e-10 and abs(y) < 1e-10 and abs(z) < 1e-10:
+                # Check if all values are -1.0 (initializing status)
+                if x == -1.0 and y == -1.0 and z == -1.0:
                     logger.info("SLAM system status: Initializing")
-                    return False
-                else:
-                    logger.info(f"SLAM coordinates: {x}, {y}, {z}")
-                    return True
+                    return "initializing"
+                
+                # Check if tracking is lost (pose barely changes)
+                if x == -3.0 and y == -3.0 and z == -3.0:
+                    logger.info("SLAM system status: Tracking Lost")
+                    return "lost"
+                
+                logger.info(f"SLAM coordinates: {x}, {y}, {z}")
+                return "success"
             else:
                 logger.error("Failed to receive complete pose data")
-                return False
+                return "error"
 
         except Exception as e:
             logger.error(f"Error processing image: {e}")
-            return False
+            return "error"
 
     def close(self):
         if self.client_socket:
@@ -173,7 +182,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             return result_wrapper
 
         # Process the image
-        success = self.slam_client.process_image(input_frame.payloads[0])
+        slam_status = self.slam_client.process_image(input_frame.payloads[0])
         
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = self.get_result_wrapper(status)
@@ -182,7 +191,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
         
-        if success and self.slam_client.latest_pose:
+        if slam_status == "success" and self.slam_client.latest_pose:
             # Convert SLAM coordinates to GPS
             x, y, z = self.slam_client.latest_pose
             lat, lon, alt = self.slam2gps.slam_to_lla([x, y, z])[0]
@@ -206,6 +215,48 @@ class TerraSLAMEngine(cognitive_engine.Engine):
                     "lat": lat,
                     "lon": lon,
                     "alt": alt
+                }
+            }
+        elif slam_status == "initializing":
+            # Store zeros in Redis for initializing status
+            self.r.xadd(
+                "slam",
+                {
+                    "pose_x": "-1.0",
+                    "pose_y": "-1.0",
+                    "pose_z": "-1.0",
+                    "lat": "-1.0",
+                    "lon": "-1.0",
+                    "alt": "-1.0"
+                }
+            )
+            response = {
+                "status": "initializing",
+                "gps": {
+                    "lat": -1.0,
+                    "lon": -1.0,
+                    "alt": -1.0
+                }
+            }
+        elif slam_status == "lost":
+            # Store zeros in Redis for lost tracking
+            self.r.xadd(
+                "slam",
+                {
+                    "pose_x": "-3.0",
+                    "pose_y": "-3.0",
+                    "pose_z": "-3.0",
+                    "lat": "-3.0",
+                    "lon": "-3.0",
+                    "alt": "-3.0"
+                }
+            )
+            response = {
+                "status": "lost",
+                "gps": {
+                    "lat": -3.0,
+                    "lon": -3.0,
+                    "alt": -3.0
                 }
             }
         else:
