@@ -9,10 +9,9 @@ import requests
 import zmq
 import asyncio
 import logging
-
 from util.utils import SocketOperation, setup_socket, setup_logging
-from system_call_stubs.DroneStub import DroneStub
-from system_call_stubs.ComputeStub import ComputeStub
+from vehicle.mission.system_call_stubs.control_stub import ControlStub
+from vehicle.mission.system_call_stubs.data_stub import DataStub
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 
@@ -21,8 +20,6 @@ logger = logging.getLogger(__name__)
 context = zmq.Context()
 msn_control_sock = context.socket(zmq.REP)
 setup_socket(msn_control_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_mission')
-
-
 
 class MissionController():
     def __init__(self, user_path):
@@ -146,10 +143,10 @@ class MissionController():
             
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
-        self.drone = DroneStub()
-        self.compute = ComputeStub()
-        asyncio.create_task(self.drone.run())
-        asyncio.create_task(self.compute.run())
+        self.ctrl = ControlStub()
+        self.data = DataStub()
+        asyncio.create_task(self.ctrl.run())
+        asyncio.create_task(self.data.run())
         while True:
             try:
                 # Receive a message
