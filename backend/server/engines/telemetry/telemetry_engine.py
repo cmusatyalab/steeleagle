@@ -43,23 +43,33 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.current_path = None
         self.publish = args.publish
+        self.ttl = args.ttl
 
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
         global_pos = telemetry.global_position
         key = self.r.xadd(
-            f"telemetry.{extras.drone_id}",
+            f"telemetry:{extras.drone_id}",
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
-                "altitude": global_pos.absolute_altitude,
+                "abs_altitude": global_pos.absolute_altitude,
+                "rel_altitude": global_pos.relative_altitude,
                 "bearing": int(global_pos.heading),
-                #"rssi": extras.status.rssi,
-                "battery": telemetry.battery,
-                "mag": common.MagnetometerWarning.Name(telemetry.alerts.magnetometer_warning)
+                #TODO: add the remainder of the telemetry fields in dataplane.telemetry
             },
         )
         logger.debug(f"Updated status of {extras.drone_id} in redis under stream telemetry at key {key}")
+
+        drone_key = f"drone:{extras.drone_id}"
+        self.r.hset(drone_key, "last_seen", f"{time.time()}")
+        self.r.hset(drone_key, "battery", f"{telemetry.battery}")
+        self.r.hset(drone_key, "mag", f"{telemetry.alerts.magnetometer_warning}")
+        self.r.hset(drone_key, "sats", f"{telemetry.satellites}")
+        self.r.hset(drone_key, "status", f"{telemetry.status}")
+        self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
+        self.r.expire(drone_key, self.ttl)
+        logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
 
     def handle(self, input_frame):
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
@@ -82,6 +92,11 @@ class TelemetryEngine(cognitive_engine.Engine):
                         os.mkdir(self.current_path)
                     except FileExistsError:
                         logger.error(f"Directory {self.current_path} already exists. Moving on...")
+
+                    # Register drone in redis
+                    drone_key = f"drone:{extras.drone_id}"
+                    self.r.hset(drone_key, mapping={"last_seen": f"{time.time()}", "status": f"{extras.telemetry.status}", "battery": f"{extras.telemetry.battery}", "model": f"{extras.telemetry.drone_model}"})
+                    self.r.expire(drone_key, self.DRONE_TTL_SECS)
 
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT

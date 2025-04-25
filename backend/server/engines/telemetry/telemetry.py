@@ -42,6 +42,10 @@ def main():
         "-l", "--publish", action='store_true', help="Publish incoming images via redis"
     )
 
+    parser.add_argument(
+        "-t", "--ttl", type=int, default=7, help="TTL before drones status tables are cleaned up in redis [default: 7]"
+    )
+
     args, _ = parser.parse_known_args()
 
     def engine_setup():

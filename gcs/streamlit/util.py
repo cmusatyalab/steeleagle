@@ -13,10 +13,9 @@ import hmac
 DATA_TYPES = {
     "latitude": "float",
     "longitude": "float",
-    "altitude": "float",
+    "rel_altitude": "float",
+    "abs_altitude": "float",
     "bearing": "int",
-    "battery": "int",
-    "mag": "string",
     # "sats": int,
 }
 
@@ -103,11 +102,36 @@ def connect_zmq():
 def get_drones():
     l = {}
     red = connect_redis()
-    for k in red.keys("telemetry.*"):
-        latest_entry = red.xrevrange(f"{k}", "+", "-", 1)
-        last_update = (int(latest_entry[0][0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            l[f"{k.split('.')[-1]}"] = f"**{k.split('.')[-1]}** " #TODO: add :material/abc:[drone model] once it is sent with telemetry
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(":")[-1]
+            drone_model = red.hget(k, "model")
+            mag = red.hget(k, "mag")
+            if mag == 0:
+                mag_status = ":green-badge[:material/explore: mag]"
+            elif mag == 1:
+                mag_status = ":orange-badge[:material/explore: mag]"
+            else:
+                mag_status = ":red-badge[:material/explore: mag]"
+
+            sats = red.hget(k, "sats")
+            if sats > 16:
+                sat_status = ":green-badge[:material/satellite_alt: sats]"
+            elif sats <= 16 and sats > 11:
+                sat_status = ":orange-badge[:material/satellite_alt: sats]"
+            else:
+                sat_status = ":red-badge[:material/satellite_alt: sats]"
+
+            slam = red.hget(k, "slam_registering")
+            if slam:
+                slam_status = ":green-badge[:material/globe_location_pin: slam]**"
+            else:
+                slam_status = ":red-badge[:material/globe_location_pin: slam]**"
+            # markdown format
+            # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
+
+            l[drone_name] = f"**{drone_name}(_{drone_model}_) {mag_status} {sat_status} {slam_status}** "
 
     return l
 

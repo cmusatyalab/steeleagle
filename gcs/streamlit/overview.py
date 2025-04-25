@@ -67,7 +67,7 @@ def change_center():
     if st.session_state.tracking_selection is not None:
         df = stream_to_dataframe(
             red.xrevrange(
-                f"telemetry.{st.session_state.tracking_selection}", "+", "-", 1
+                f"telemetry:{st.session_state.tracking_selection}", "+", "-", 1
             )
         )
         for index, row in df.iterrows():
@@ -135,10 +135,9 @@ def update_imagery():
     detected_header = "**:sleuth_or_spy: Object Detection**"
     avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
     hsv_header = "**:traffic_light: HSV Filtering**"
-    for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(".")[-1]
             drone_list.append(drone_name)
     drone_list.append(detected_header)
@@ -175,7 +174,7 @@ def draw_map():
     lc = folium.LayerControl()
 
     marker_color = 0
-    for k in red.keys("telemetry.*"):
+    for k in red.keys("telemetry:*"):
         df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
         last_update = (int(df.index[0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
@@ -189,7 +188,7 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["altitude"]:.2f}m]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["rel_altitude"]:.2f}m AGL/{row["abs_altitude"]:.2f}m MSL]',
                         #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
