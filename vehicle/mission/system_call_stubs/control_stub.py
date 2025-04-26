@@ -1,5 +1,5 @@
 import logging
-from stub import Stub
+from system_call_stubs.stub import Stub
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 

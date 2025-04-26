@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import logging
-from stub import Stub
+from system_call_stubs.stub import Stub
 import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
         
-class ComputeStub(Stub):
+class DataStub(Stub):
     def __init__(self):
         super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub')
 

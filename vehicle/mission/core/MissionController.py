@@ -10,8 +10,8 @@ import zmq
 import asyncio
 import logging
 from util.utils import SocketOperation, setup_socket, setup_logging
-from vehicle.mission.system_call_stubs.control_stub import ControlStub
-from vehicle.mission.system_call_stubs.data_stub import DataStub
+from system_call_stubs.control_stub import ControlStub
+from system_call_stubs.data_stub import DataStub
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
 
@@ -107,7 +107,7 @@ class MissionController():
             logger.info(f"mission already running")
             return
         else: # first time mission, create a task manager
-            import common.TaskManager as tm 
+            import core.TaskManager as tm 
         
         logger.info(f"start the mission")
         if self.reload : 
