@@ -72,7 +72,6 @@ class GabrielCompute(ComputeInterface):
             return
 
         response = cognitive_engine.unpack_extras(control_protocol.Response, result_wrapper)
-
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode('utf-8')

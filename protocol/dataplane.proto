@@ -14,7 +14,6 @@ syntax = "proto3";
 option py_generic_services = true;
 package protocol.dataplane;
 import "common.proto";
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -35,7 +34,7 @@ message Response {
   oneof type {
     Telemetry tel = 4;
     Frame frame = 5;
-    ComputeResult cpt = 6;
+    ComputeResponse cpt = 6;
   }
 }
 
@@ -77,17 +76,20 @@ message Frame {
 * COMPUTE
 */
 message GetComputeResult {
-  string key = 1;
+  string type = 1;
+}
+
+message ComputeResponse {
+  string type = 1;
+  uint64 frame_id = 2; // For correlation
+  repeated ComputeResult result = 3;
 }
 
 message ComputeResult {
-  string key = 1;
-  uint64 frame_id = 2; // For correlation
-  google.protobuf.Timestamp timestamp = 3; // Time the response was sent
-  oneof type {
-    string generic = 4; // JSON/YAML/etc.
-    DetectionResult detection = 5;
-    AvoidanceResult avoidance = 6;
+  oneof type{
+    DetectionResult detection_result = 1;
+    AvoidanceResult avoidance_result = 2;
+    string generic_result = 3;
   }
 }
 

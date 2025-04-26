@@ -49,28 +49,6 @@ class DataService(Service):
     ###########################################################################
     #                                USER                                     #
     ###########################################################################
-    def get_result(self, key):
-        logger.info(f"Processing getter for {key=}")
-        getter_list = []
-        for compute_id in self.compute_dict.keys():
-            cpt_res = self.data_store.get_compute_result(compute_id, key)
-
-            if cpt_res is None:
-                logger.error(f"Result not found for compute_id: {compute_id}")
-                continue
-
-            result = data_protocol.ComputeResult()
-            result.key = key
-            result.frame_id = cpt_res.frame_id
-            result.timestamp = cpt_res.timestamp
-            # TODO(Aditya): populate DetectionResult and AvoidanceResult
-            # instead of using 'generic' result
-            result.generic = cpt_res.data
-
-            getter_list.append(result)
-            logger.info(f"Sending result: {result} with {compute_id=} {result.timestamp=}")
-        return getter_list
-
     async def user_handler(self):
         """Handles user commands."""
         logger.info("User handler started")
@@ -90,18 +68,35 @@ class DataService(Service):
                     raise Exception("Expected at least one request type")
 
     async def handle_compute_req(self, req):
-        """Processes a Compute command."""
+        """Processes a Compute request and returns the result."""
         logger.info(f"Received compute request: {req}")
+        compute_type = req.cpt.type
+        response = data_protocol.Response()
+        for compute_id in self.compute_dict.keys():
+            cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
 
-        key = req.cpt.key
+            if cpt_res is None:
+                logger.error(f"Result not found for compute_id: {compute_id}")
+                continue
 
-        cpt_results = self.get_result(key)
+            compute_result = data_protocol.ComputeResult()
+            if compute_type == 'detection':
+                # TODO(xianglic): add detection result
+                raise NotImplementedError()
+            elif compute_type == 'avoidance':
+                # TODO(xianglic): add avoidance result
+                raise NotImplementedError()
+            else:
+                compute_result.generic_result = cpt_res.data
 
-        # TODO(Aditya): we could get multiple compute results from different
-        # computes, we should extend the proto definition to accomodate this
-        # await self.data_reply_sock.send(cpt_command.SerializeToString())
-        #
-        # Also, a compute request could also involve clearing compute results
+            response.cpt.result.append(compute_result)
+            logger.info(f"Sending result for {compute_id=}: {compute_result}")
+
+        response.timestamp.GetCurrentTime()
+        response.seq_num = req.seq_num
+        logger.info(f"Sending compute response: {response}")
+        # Send the response back to the requester
+        await self.data_reply_sock.send_multipart([response.SerializeToString()])
 
     async def handle_telemetry_req(self, req):
         """Processes a telemetry request."""

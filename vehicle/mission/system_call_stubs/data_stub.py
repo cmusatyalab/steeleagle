@@ -22,10 +22,10 @@ class DataStub(Stub):
     
     ''' compute methods '''
     # Get results for a compute engine
-    async def get_compute_result(self, compute_key):
-        logger.info(f"Getting results for compute type: {compute_key}")
+    async def get_compute_result(self, compute_type):
+        logger.info(f"Getting results for compute type: {compute_type}")
         cpt_req = data_protocol.Request()
-        cpt_req.cpt.result_key = compute_key
+        cpt_req.cpt.type = compute_type
         result = await self.send_and_wait(cpt_req)
         return result
 

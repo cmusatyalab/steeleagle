@@ -39,8 +39,8 @@ class DataStore:
         self._result_cache.pop(compute_id, None)
 
     ######################################################## COMPUTE ############################################################
-    def get_compute_result(self, compute_id, key) -> Optional[ComputeResult]:
-        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {key}")
+    def get_compute_result(self, compute_id, type) -> Optional[ComputeResult]:
+        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {type}")
         logger.info(self._result_cache)
         if compute_id not in self._result_cache:
             # Log an error and return None
@@ -53,10 +53,10 @@ class DataStore:
             logger.error(f"get_compute_result: No result found for {compute_id=}")
             return None
 
-        result = cache.get(key)
+        result = cache.get(type)
         if result is None:
             # Log an error and return None
-            logger.error(f"get_compute_result: No result found for {compute_id=} and {key=}")
+            logger.error(f"get_compute_result: No result found for {compute_id=} and {type=}")
             return None
 
         return result
@@ -64,10 +64,10 @@ class DataStore:
     def append_compute(self, compute_id):
         self._result_cache[compute_id] = {}
 
-    def update_compute_result(self, compute_id, key: str, result, frame_id, timestamp):
-        assert isinstance(key, str), f"Argument must be a string, got {type(key).__name__}"
-        self._result_cache[compute_id][key] = ComputeResult(result, frame_id, timestamp)
-        logger.debug(f"update_compute_result: Updated result cache for {compute_id=} and {key=}; result: {result}")
+    def update_compute_result(self, compute_id, type: str, result, frame_id, timestamp):
+        assert isinstance(type, str), f"Argument must be a string, got {type(type).__name__}"
+        self._result_cache[compute_id][type] = ComputeResult(result, frame_id, timestamp)
+        logger.debug(f"update_compute_result: Updated result cache for {compute_id=} and {type=}; result: {result}")
 
     ######################################################## RAW DATA ############################################################
     def get_raw_data(self, data_copy):
