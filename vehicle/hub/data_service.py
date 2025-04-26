@@ -122,7 +122,7 @@ class DataService(Service):
         resp.seq_num = req.seq_num
         logger.info(f"Sending telemetry response: {resp}")
                 
-        await self.data_reply_sock.send(resp.SerializeToString())
+        await self.data_reply_sock.send_multipart([resp.SerializeToString()])
 
     ###########################################################################
     #                                DRIVER                                   #

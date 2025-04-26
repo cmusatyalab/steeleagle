@@ -13,24 +13,11 @@ class DataStub(Stub):
     def __init__(self):
         super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub')
 
-    def parse_response(self, response_parts):
-        response = data_protocol.Response()
-        response.ParseFromString(response_parts[0])
-
-        stub_response = self.request_map.get(response.seq_num)
-        if not stub_response:
-            logger.error(f"Unknown seq_num: {response.seq_num}")
-            return
-
-        if response.resp == common_protocol.ResponseStatus.COMPLETED:
-            stub_response.put_result(response)
-        else:
-            logger.error("Compute response failed")
-
-        stub_response.set()
+    def parse_data_response(self, response_parts):
+        self.parse_response(response_parts, data_protocol.Response)
 
     async def run(self):
-        await self.receiver_loop(self.parse_response)
+        await self.receiver_loop(self.parse_data_response)
     
     
     ''' compute methods '''
@@ -47,7 +34,6 @@ class DataStub(Stub):
     async def get_telemetry(self):
         logger.info("Getting telemetry")
         request = data_protocol.Request(tel=data_protocol.TelemetryRequest())
-        logger.info(f"Requesting telemetry: {request}")
         rep = await self.send_and_wait(request)
         result = rep.tel
         telDict = {
@@ -58,7 +44,6 @@ class DataStub(Stub):
             "velocity_body": {"forward": None, "right": None, "up": None},
         }
         if result:
-            logger.debug(f"Got telemetry: {result}\n")
             telDict["name"] = result.drone_name
             telDict["battery"] = result.battery
             telDict["satellites"] = result.satellites
@@ -69,7 +54,6 @@ class DataStub(Stub):
             telDict["velocity_body"]["right"] = result.velocity_body.right_vel
             telDict["velocity_body"]["up"] = result.velocity_body.up_vel
             telDict["heading"] = result.global_position.heading
-            logger.debug(f"finished receiving Telemetry: {telDict}")
             return telDict
         else:
             logger.error("Failed to get telemetry")    

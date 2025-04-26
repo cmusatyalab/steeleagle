@@ -158,11 +158,7 @@ class CommandService(Service):
                         raise NotImplementedError()
             case "veh":
                 if self.manual:
-                    # Vehicle command
-                    if req.veh.HasField("action") and req.veh.action == control_protocol.VehicleAction.RTH:
-                        asyncio.create_task(self.send_driver_command(req))
-                    else:
-                        asyncio.create_task(self.send_driver_command(req))
+                    asyncio.create_task(self.send_driver_command(req))
                 else:
                     logger.info("Vehicle command ignored because manual mode is disabled")
             case "cpt":

@@ -23,12 +23,6 @@ class StubResponse:
     def set(self):
         self.event.set()
 
-    def grant_permission(self):
-        self.permission = True
-
-    def check_permission(self):
-        return self.permission
-
 
 class Stub:
     def __init__(self, socket_identity, socket_endpoint):
@@ -49,6 +43,18 @@ class Stub:
 
         serialized_request = request.SerializeToString()
         self.sock.send_multipart([serialized_request])
+        
+    def parse_response(self, response_parts, response_cls):
+        response = response_cls()
+        response.ParseFromString(response_parts[0])
+
+        stub_response = self.request_map.get(response.seq_num)
+        if not stub_response:
+            logger.error(f"Unknown seq_num: {response.seq_num}")
+            return
+        
+        stub_response.put_result(response)
+        stub_response.set()
 
     async def receiver_loop(self, parse_response_callback):
         while True:
@@ -66,4 +72,5 @@ class Stub:
         stub_response = StubResponse()
         self.sender(request, stub_response)
         await stub_response.wait()
-        return stub_response
+        reply =  stub_response.get_result()
+        return reply
