@@ -138,7 +138,7 @@ def update_imagery():
     for k in red.keys("drone:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
-            drone_name = k.split(".")[-1]
+            drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
     drone_list.append(detected_header)
     drone_list.append(avoidance_header)
@@ -180,7 +180,7 @@ def draw_map():
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
             i = 0
-            drone_name = k.split(".")[-1]
+            drone_name = k.split(":")[-1]
             for index, row in df.iterrows():
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
