@@ -107,7 +107,7 @@ def get_drones():
         if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
             drone_model = red.hget(k, "model")
-            mag = red.hget(k, "mag")
+            mag = int(red.hget(k, "mag"))
             if mag == 0:
                 mag_status = ":green-badge[:material/explore: mag]"
             elif mag == 1:
