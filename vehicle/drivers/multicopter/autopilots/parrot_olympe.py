@@ -220,7 +220,30 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def set_gimbal_pose(self, pose):
-        return common_protocol.ResponseStatus.NOTSUPPORTED
+        yaw = pose.yaw
+        pitch = pose.pitch
+        roll = pose.roll
+        result = self.drone(set_target(
+            gimbal_id=0,
+            control_mode="position",
+            yaw_frame_of_reference="none",
+            yaw=yaw,
+            pitch_frame_of_reference="absolute",
+            pitch=pitch,
+            roll_frame_of_reference="none",
+            roll=roll)
+            >> attitude(
+            pitch_absolute=pitch,
+            yaw_absolute=yaw,
+            roll_absolute=roll,
+            _policy="wait",
+            _float_tol=(1e-3, 1e-1))
+        ).wait(timeout=20)
+        
+        if result:
+            return common_protocol.ResponseStatus.COMPLETED
+        else:
+            return common_protocol.ResponseStatus.FAILED
 
     async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info('Starting telemetry stream')
