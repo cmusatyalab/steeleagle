@@ -9,6 +9,7 @@ from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class CommandService(Service):
     def __init__(self):
@@ -37,7 +38,7 @@ class CommandService(Service):
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
 
         self.setup_and_register_socket(
-            self.commander_socket, SocketOperation.CONNECT, 'hub.network.cloudlet.commander_to_hub')
+            self.commander_socket, SocketOperation.CONNECT, 'hub.network.controlplane.commander_to_hub')
         self.setup_and_register_socket(
             self.mission_cmd_socket, SocketOperation.BIND, 'hub.network.controlplane.mission_to_hub')
         self.setup_and_register_socket(
@@ -105,18 +106,18 @@ class CommandService(Service):
             logger.info(f"Mission stop failed")
         else:
             logger.info(f"Unknown mission stop status: {rep.resp}")
-    
+
     ###########################################################################
     #                                Compute                                  #
     ###########################################################################
     #TODO(xianglic):clear the datastore result commanded by the mission
     def clear_compute_result(self):
         pass
-    
-    #TODO(xianglic):configure the datasink commanded by the mission  
+
+    #TODO(xianglic):configure the datasink commanded by the mission
     def configure_compute(self):
         pass
-    
+
     ###########################################################################
     #                                Proxy                                    #
     ###########################################################################
@@ -125,7 +126,7 @@ class CommandService(Service):
 
     def manual_mode_disabled(self):
         self.manual = False
-        
+
     async def process_command(self, cmd):
         req = control_protocol.Request()
         req.ParseFromString(cmd)
@@ -141,14 +142,14 @@ class CommandService(Service):
                         req.msn.action = control_protocol.MissionAction.START
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
-                       
+
                     case control_protocol.MissionAction.START:
                         await self.send_start_mission(req)
                         self.manual_mode_disabled()
-                   
+
                     case control_protocol.MissionAction.STOP:
                         await self.send_stop_mission(req)
-                        
+
                         # send the hover command to the driver
                         hover = control_protocol.Request()
                         hover.veh.action = control_protocol.VehicleAction.HOVER
@@ -217,7 +218,7 @@ class CommandService(Service):
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
-            
+
 async def main():
     setup_logging(logger, 'hub.logging')
     await CommandService().start()

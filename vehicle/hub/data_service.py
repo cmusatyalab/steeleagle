@@ -104,19 +104,19 @@ class DataService(Service):
         tel_data = data_protocol.Telemetry()
         ret = self.data_store.get_raw_data(tel_data)
         logger.info(f"Telemetry data: {tel_data}")
-        
+
         resp = data_protocol.Response()
-        
+
         if ret is None:
             resp.resp = common_protocol.ResponseStatus.FAILED
-        else: 
+        else:
             resp.resp = common_protocol.ResponseStatus.COMPLETED
             resp.tel.CopyFrom(tel_data)
-            
+
         resp.timestamp.GetCurrentTime()
         resp.seq_num = req.seq_num
         logger.info(f"Sending telemetry response: {resp}")
-                
+
         await self.data_reply_sock.send_multipart([resp.SerializeToString()])
 
     ###########################################################################
@@ -151,7 +151,7 @@ class DataService(Service):
                 # doing anything CPU-bound in another thread
                 frame = await asyncio.to_thread(self.parse_frame, msg)  # Offload parsing
                 self.data_store.set_raw_data(frame, frame.id)
-                logger.debug(f"Received camera message after set: {frame}")
+                logger.debug(f"Received camera message after set")
 
             except Exception as e:
                 logger.error(f"Camera handler error: {e}")
@@ -203,11 +203,11 @@ class DataService(Service):
                 compute_tasks.append(task)
 
         return compute_tasks
-    
+
     ###########################################################################
     #                                Proxy                                    #
     ###########################################################################
-    #TODO(xianglic) create a proxy socket poller as the commander proxy, 
+    #TODO(xianglic) create a proxy socket poller as the commander proxy,
     # every socket listenting logic goes into the poller
 
 async def main():

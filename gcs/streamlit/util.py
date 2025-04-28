@@ -115,7 +115,7 @@ def get_drones():
             else:
                 mag_status = ":red-badge[:material/explore: mag]"
 
-            sats = red.hget(k, "sats")
+            sats = int(red.hget(k, "sats"))
             if sats > 16:
                 sat_status = ":green-badge[:material/satellite_alt: sats]"
             elif sats <= 16 and sats > 11:
@@ -142,7 +142,10 @@ def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
 
     df = pd.DataFrame.from_dict(_container, orient='index')
     if types is not None:
-        df = df.astype(types)
+        try:
+            df = df.astype(types)
+        except KeyError as e:
+            print(e)
 
     return df
 

@@ -93,7 +93,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
             self.compute_status = self.ComputeStatus.Connected
 
             logger.debug(f"Frame producer: starting converting {time.time()}")
@@ -158,7 +158,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")
@@ -180,7 +180,7 @@ class GabrielCompute(ComputeInterface):
                         extras.registering = True
                         self.drone_registered = True
                         tel_data.uptime.FromSeconds(0)
-                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
+                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemetry! content: {tel_data}')
                     input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')

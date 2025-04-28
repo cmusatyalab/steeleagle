@@ -231,22 +231,28 @@ def draw_map():
     "lon": "float",
     "alt": "float",
     }
-    df = stream_to_dataframe(red.xrevrange(f"slam", "+", "-", st.session_state.trail_length), types=TYPES)
-    slam_coords = []
-    for index, row in df.iterrows():
-        slam_coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=slam_coords, color="black")
-    ls.add_to(slam_track)
+
+    ret = red.xrevrange(f"slam", "+", "-", st.session_state.trail_length)
+    if len(ret) > 0:
+        df = stream_to_dataframe(ret, types=TYPES)
+        slam_coords = []
+        for index, row in df.iterrows():
+            slam_coords.append([row["lat"], row["lon"]])
+        ls = folium.PolyLine(locations=slam_coords, color="black")
+        ls.add_to(slam_track)
 
     TYPES={"lat": "float",
     "lon": "float",
     }
-    df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 5), types=TYPES)
-    landing_coords = []
-    for index, row in df.iterrows():
-        landing_coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=landing_coords, color="orange")
-    ls.add_to(landing_spot)
+
+    ret = red.xrevrange(f"landing_spot", "+", "-", 5)
+    if len(ret) > 0:
+        df = stream_to_dataframe(ret, types=TYPES)
+        landing_coords = []
+        for index, row in df.iterrows():
+            landing_coords.append([row["lat"], row["lon"]])
+        ls = folium.PolyLine(locations=landing_coords, color="orange")
+        ls.add_to(landing_spot)
 
     st_folium(
         m,

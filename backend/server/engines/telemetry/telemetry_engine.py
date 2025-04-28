@@ -19,7 +19,8 @@ import cv2
 import numpy as np
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+logger.setLevel(getattr(logging, log_level, logging.INFO))
 
 class TelemetryEngine(cognitive_engine.Engine):
     ENGINE_NAME = "telemetry"
@@ -43,7 +44,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.current_path = None
         self.publish = args.publish
-        self.ttl = args.ttl
+        self.ttl_secs = args.ttl * 24 * 3600
 
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
@@ -56,6 +57,9 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "abs_altitude": global_pos.absolute_altitude,
                 "rel_altitude": global_pos.relative_altitude,
                 "bearing": int(global_pos.heading),
+                "battery": telemetry.battery,
+                "mag": common.MagnetometerWarning.Name(telemetry.alerts.magnetometer_warning),
+                "sats": telemetry.satellites
                 #TODO: add the remainder of the telemetry fields in dataplane.telemetry
             },
         )
@@ -68,7 +72,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.hset(drone_key, "sats", f"{telemetry.satellites}")
         self.r.hset(drone_key, "status", f"{telemetry.status}")
         self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
-        self.r.expire(drone_key, self.ttl)
+        self.r.expire(drone_key, self.ttl_secs)
         logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
 
     def handle(self, input_frame):
@@ -92,11 +96,6 @@ class TelemetryEngine(cognitive_engine.Engine):
                         os.mkdir(self.current_path)
                     except FileExistsError:
                         logger.error(f"Directory {self.current_path} already exists. Moving on...")
-
-                    # Register drone in redis
-                    drone_key = f"drone:{extras.drone_id}"
-                    self.r.hset(drone_key, mapping={"last_seen": f"{time.time()}", "status": f"{extras.telemetry.status}", "battery": f"{extras.telemetry.battery}", "model": f"{extras.telemetry.drone_model}"})
-                    self.r.expire(drone_key, self.DRONE_TTL_SECS)
 
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT

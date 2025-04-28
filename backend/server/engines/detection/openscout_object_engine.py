@@ -175,7 +175,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def handle(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             #if the payload is TEXT, say from a CNC client, we ignore
-            status = gabriel_pb2.ResultWrapper.Status.SUCCESS
+            status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
             result_wrapper = cognitive_engine.create_result_wrapper(status)
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
