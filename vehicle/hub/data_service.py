@@ -12,6 +12,11 @@ from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
 from service import Service
 
+# Bandaid fix to prevent logs from being polluted by WRONG_INPUT_FORMAT errors.
+class WrongInputFormatFilter(logging.Filter):
+    def filter(self, record):
+        return "WRONG_INPUT_FORMAT" not in record.getMessage()
+
 logger = logging.getLogger(__name__)
 
 class DataService(Service):
@@ -213,6 +218,7 @@ class DataService(Service):
 async def main():
     """Main entry point for the DataService."""
     setup_logging(logger, 'hub.logging')
+    logging.getLogger('gabriel_client.zeromq_client').addFilter(WrongInputFormatFilter())
 
     logger.info("Starting DataService")
     await DataService().start()

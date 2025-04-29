@@ -26,6 +26,7 @@ class Driver:
         setup_socket(self.hub_to_driver_sock, SocketOperation.CONNECT, 'hub.network.controlplane.hub_to_driver')
 
     async def run(self):
+        setup_logging(logger, 'driver.logging')
         while True:
             try:
                 logger.info('Attempting to connect to drone...')

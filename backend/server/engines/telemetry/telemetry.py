@@ -13,7 +13,6 @@ from util.utils import setup_logging
 
 SOURCE = 'telemetry'
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():

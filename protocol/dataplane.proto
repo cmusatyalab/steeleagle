@@ -44,6 +44,7 @@ message Response {
 message TelemetryRequest {
 }
 message Telemetry {
+  // The drone that this telemetry corresponds to
   string drone_name = 1;
   protocol.common.Location global_position = 2;
   protocol.common.PositionENU relative_position = 3;

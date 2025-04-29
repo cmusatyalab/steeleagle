@@ -38,7 +38,7 @@ class CommandService(Service):
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
 
         self.setup_and_register_socket(
-            self.commander_socket, SocketOperation.CONNECT, 'hub.network.controlplane.commander_to_hub')
+            self.commander_socket, SocketOperation.CONNECT, 'hub.network.cloudlet.commander_to_hub')
         self.setup_and_register_socket(
             self.mission_cmd_socket, SocketOperation.BIND, 'hub.network.controlplane.mission_to_hub')
         self.setup_and_register_socket(
