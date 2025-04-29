@@ -13,7 +13,6 @@ from st_keypressed import st_keypressed
 import math
 import uuid
 
-REQUEST_NUMBER = 0
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -75,7 +74,6 @@ def change_center():
 
 
 def run_flightscript():
-    global REQUEST_NUMBER
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
@@ -86,7 +84,7 @@ def run_flightscript():
                 z.writestr(file.name, file.read())
 
         req = controlplane.Request()
-        req.seq_num = REQUEST_NUMBER
+        req.seq_num = int(time.time())
         req.timestamp.GetCurrentTime()
         for d in st.session_state.selected_drones:
             req.msn.drone_ids.append(d)
@@ -95,68 +93,62 @@ def run_flightscript():
         req.msn.action = controlplane.MissionAction.DOWNLOAD
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
-        REQUEST_NUMBER += 1
         st.toast(
             f"Instructed {req.msn.drone_ids} to fly autonomous script.",
             icon="\u2601",
         )
 
 def enable_manual():
-    global REQUEST_NUMBER
     req = controlplane.Request()
-    req.seq_num = REQUEST_NUMBER
+    req.seq_num = int(time.time())
     req.timestamp.GetCurrentTime()
     for d in st.session_state.selected_drones:
         req.msn.drone_ids.append(d)
     req.msn.action = controlplane.MissionAction.STOP
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    REQUEST_NUMBER += 1
     st.toast(
         f"Telling drone {req.veh.drone_ids} to halt! Kill signal sent."
     )
 
 def rth():
-    global REQUEST_NUMBER
     req = controlplane.Request()
-    req.seq_num = REQUEST_NUMBER
+    req.seq_num = int(time.time())
     req.timestamp.GetCurrentTime()
     for d in st.session_state.selected_drones:
         req.veh.drone_ids.append(d)
     req.veh.action = controlplane.VehicleAction.RTH
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    REQUEST_NUMBER += 1
     st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
     drone_list = []
-    detected_header = "**:sleuth_or_spy: Object Detection**"
-    avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
-    hsv_header = "**:traffic_light: HSV Filtering**"
     for k in red.keys("drone:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
-    drone_list.append(detected_header)
-    drone_list.append(avoidance_header)
-    drone_list.append(hsv_header)
-    tabs = st.tabs(drone_list)
 
-    i = 0
-    for d in drone_list:
-        with tabs[i]:
-            if d == detected_header:
-               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == avoidance_header:
-                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == hsv_header:
-                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
-            else:
-                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
-        i += 1
+    st.selectbox(
+        key="imagery_key",
+        label=" **:blue-background[:material/photo_library: Imagery]**",
+        options=drone_list,
+        index=0
+    )
+    st.image(f"http://{st.secrets.webserver}/raw/{st.session_state.imagery_key}/latest.jpg?a={time.time()}", use_container_width=True)
+    col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
+    with col1:
+        st.caption("**:sleuth_or_spy: Object Detection**")
+        st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}")
+    with col2:
+        st.caption("**:checkered_flag: Obstacle Avoidance**")
+        st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")
+    with col3:
+        st.caption("**:traffic_light: HSV Filtering**")
+        st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
+
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -372,7 +364,7 @@ with st.sidebar:
 
         key_pressed = st_keypressed()
         req = controlplane.Request()
-        req.seq_num = REQUEST_NUMBER
+        req.seq_num = int(time.time())
         req.timestamp.GetCurrentTime()
         for d in st.session_state.selected_drones:
             req.veh.drone_ids.append(d)
