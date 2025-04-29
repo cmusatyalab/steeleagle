@@ -133,7 +133,7 @@ class PX4Drone(MAVLinkDrone):
         self._setpoint = (0.0, 0.0, 0.0, direction * yaw_speed) 
         
         result =  await self._wait_for_condition(
-            lambda: self._is_bearing_reached(heading),
+            lambda: self._is_heading_reached(heading),
             interval=0.2
         )
         
