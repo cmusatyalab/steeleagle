@@ -348,6 +348,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 cam_message.channels = frame_shape[2]
                 cam_message.id = frame_id
                 cam_sock.send(cam_message.SerializeToString())
+                logger.info('Sent frame to hub!')
                 frame_id = frame_id + 1
             except Exception as e:
                 logger.error(f'Failed to get video frame, error: {e}')

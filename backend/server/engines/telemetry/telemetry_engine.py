@@ -50,7 +50,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         telemetry = extras.telemetry
         global_pos = telemetry.global_position
         key = self.r.xadd(
-            f"telemetry:{extras.drone_id}",
+            f"telemetry:{telemetry.drone_name}",
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
@@ -63,9 +63,9 @@ class TelemetryEngine(cognitive_engine.Engine):
                 #TODO: add the remainder of the telemetry fields in dataplane.telemetry
             },
         )
-        logger.debug(f"Updated status of {extras.drone_id} in redis under stream telemetry at key {key}")
+        logger.debug(f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}")
 
-        drone_key = f"drone:{extras.drone_id}"
+        drone_key = f"drone:{telemetry.drone_name}"
         self.r.hset(drone_key, "last_seen", f"{time.time()}")
         self.r.hset(drone_key, "battery", f"{telemetry.battery}")
         self.r.hset(drone_key, "mag", f"{telemetry.alerts.magnetometer_warning}")
@@ -85,10 +85,10 @@ class TelemetryEngine(cognitive_engine.Engine):
         result = None
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            if extras.drone_id != "":
+            if extras.telemetry.drone_name != "":
                 if extras.registering:
-                    logger.info(f"Drone [{extras.drone_id}] connected.")
-                    drone_raw_dir = f"{self.storage_path}/raw/{extras.drone_id}"
+                    logger.info(f"Drone [{extras.telemetry.drone_name}] connected.")
+                    drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
                     if not os.path.exists(drone_raw_dir):
                         os.mkdir(drone_raw_dir)
                     self.current_path = f"{drone_raw_dir}/{datetime.datetime.now().strftime('%d-%b-%Y-%H%M')}"
@@ -106,17 +106,20 @@ class TelemetryEngine(cognitive_engine.Engine):
             image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
             #have redis publish the latest image
             if self.publish:
-                logger.info(f"Publishing image to redis under imagery.{extras.drone_id} topic.")
-                self.r.publish(f'imagery.{extras.drone_id}', input_frame.payloads[0])
+                logger.info(f"Publishing image to redis under imagery.{extras.telemetry.drone_name} topic.")
+                self.r.publish(f'imagery.{extras.telemetry.drone_name}', input_frame.payloads[0])
             #store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
-                drone_raw_dir = f"{self.storage_path}/raw/{extras.drone_id}"
+                if self.current_path is None:
+                    logger.error(f'Drone {extras.telemetry.drone_name} never registered!')
+                else:
+                    img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
 
+                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
                 img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
 
