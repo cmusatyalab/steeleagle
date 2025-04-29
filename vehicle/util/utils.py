@@ -108,13 +108,14 @@ def setup_logging(logger, access_token=None):
         logging_config = query_config(access_token)
 
     if logging_config is not None:
-        logging.basicConfig(level=logging_config['log_level'], format=logging_format)
+        logging.basicConfig(level=logging_config['log_level'], format=logging_format, force=True)
     else:
         logging.basicConfig(level=logging.INFO, format=logging_format)
         return
 
     log_file = logging_config['log_file']
     if log_file:
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, mode='w')
         file_handler.setFormatter(logging.Formatter(logging_format))
-        logger.addHandler(file_handler)
+        file_handler.setLevel(logging_config['log_level'])
+        logging.getLogger().addHandler(file_handler)

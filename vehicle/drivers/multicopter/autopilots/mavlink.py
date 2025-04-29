@@ -458,7 +458,6 @@ class MAVLinkDrone(MulticopterItf):
 
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["absolute_altitude"]
-        logger.info(f"Current altitude: {current_altitude}, Target altitude: {target_altitude}")
         return current_altitude >= target_altitude * 0.95
     
     def _is_rel_altitude_reached(self, target_altitude):
@@ -469,7 +468,6 @@ class MAVLinkDrone(MulticopterItf):
         current_heading = self._get_global_position()["heading"]
         if not current_heading:
             return False  # Return False if heading data is unavailable
-        logger.info(f"Current heading: {current_heading}, Target heading: {heading}")
         diff = (heading - current_heading + 540) % 360 - 180
         return abs(diff) <= 1
     

@@ -115,7 +115,7 @@ message Alerts {
   BatteryWarning battery_warning = 1; // Battery warnings
   GPSWarning gps_warning = 2; // GPS warnings
   MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
-  ConnectionWarning connection = 4; // Connection to drone warnings (mostly used for thin client drones)
+  ConnectionWarning connection_warning = 4; // Connection to drone warnings (mostly used for thin client drones)
 }
 
 enum BatteryWarning {

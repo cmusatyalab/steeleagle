@@ -2,7 +2,8 @@ import asyncio
 from dataclasses import dataclass
 from google.protobuf import timestamp_pb2
 import dataplane_pb2 as data_protocol
-from typing import Optional
+from typing import Optional, Union
+import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,17 +15,19 @@ class ComputeResult:
     frame_id: int
     timestamp: timestamp_pb2.Timestamp
 
+@dataclass
+class RawDataEntry:
+    """Class representing raw data entries"""
+    data: Union[data_protocol.Frame, data_protocol.Telemetry, None]
+    data_id: Optional[int]
+    timestamp: float
+
 class DataStore:
     def __init__(self):
         # Raw data caches
         self._raw_data_cache = {
             data_protocol.Frame: None,
             data_protocol.Telemetry: None,
-        }
-
-        self._raw_data_id = {
-            data_protocol.Frame: -1,
-            data_protocol.Telemetry: -1,
         }
 
         self._raw_data_event = {
@@ -38,7 +41,9 @@ class DataStore:
         logger.info(f"clear_compute_result: Clearing result for compute {compute_id}")
         self._result_cache.pop(compute_id, None)
 
-    ######################################################## COMPUTE ############################################################
+    ###########################################################################
+    #                               COMPUTE                                   #
+    ###########################################################################
     def get_compute_result(self, compute_id, type) -> Optional[ComputeResult]:
         logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {type}")
         logger.info(self._result_cache)
@@ -69,7 +74,9 @@ class DataStore:
         self._result_cache[compute_id][type] = ComputeResult(result, frame_id, timestamp)
         logger.debug(f"update_compute_result: Updated result cache for {compute_id=} and {type=}; result: {result}")
 
-    ######################################################## RAW DATA ############################################################
+    ###########################################################################
+    #                                RAW DATA                                 #
+    ###########################################################################
     def get_raw_data(self, data_copy):
         data_copy_type = type(data_copy)
         if data_copy_type not in self._raw_data_cache:
@@ -84,24 +91,27 @@ class DataStore:
             return None
 
         # Create a copy of the protobuf message
-        data_copy.CopyFrom(cache)
+        data_copy.CopyFrom(cache.data)
 
-        return self._raw_data_id.get(data_copy_type)
+        return cache
 
     def set_raw_data(self, data, data_id = None):
         data_type = type(data)
+
         if data_type not in self._raw_data_cache:
             logger.error(f"set_raw_data: No such data: data type {data_type}")
             return None
 
-        self._raw_data_cache[data_type] = data
+        if self._raw_data_cache[data_type] is None:
+            self._raw_data_cache[data_type] = RawDataEntry(data, data_id, time.monotonic())
 
-        # frame data is updated
+        entry = self._raw_data_cache[data_type]
+
+        entry.data = data
+        entry.data_id = data_id
+        entry.timestamp = time.monotonic()
         if data_type in self._raw_data_event:
             self._raw_data_event[data_type].set()
-
-        if data_id and data_type in self._raw_data_id:
-            self._raw_data_id[data_type] = data_id
 
     async def wait_for_new_data(self, data_type):
         if data_type not in self._raw_data_event:
