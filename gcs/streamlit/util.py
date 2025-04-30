@@ -109,7 +109,7 @@ def get_drones():
             drone_model = red.hget(k, "model")
             if drone_model == "":
                 drone_model = "unknown"
-            bat = int(red.hget(k, "bat"))
+            bat = int(red.hget(k, "battery"))
             if bat == 0:
                bat_status = ":green-badge[:material/battery_full:]"
             elif bat == 1:
