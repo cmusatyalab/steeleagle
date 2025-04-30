@@ -175,7 +175,7 @@ class GabrielCompute(ComputeInterface):
                     extras.telemetry.CopyFrom(tel_data)
                     logger.debug(f"Gabriel compute telemetry producer: sending telemetry; drone_name={tel_data.drone_name}")
                     # Register when we start sending telemetry
-                    if not self.drone_registered:
+                    if not self.drone_registered and len(tel_data.drone_name) > 0:
                         logger.info("Gabriel compute telemetry producer: sending registration request to backend")
                         extras.registering = True
                         self.drone_registered = True

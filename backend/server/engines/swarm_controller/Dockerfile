@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM ubuntu:20.04
+FROM python:3.9-bookworm
 LABEL Satyalab, satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -30,7 +30,7 @@ RUN pip3 install --upgrade pip
 # Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir \
     py-cpuinfo \
-    'setuptools==41.0.0' \
+    'setuptools' \
     'websockets==8.0.0'
 
 # You can speed up build slightly by reducing build context with

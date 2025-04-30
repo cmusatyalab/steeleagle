@@ -47,7 +47,7 @@ class CommandService(Service):
             self.mission_ctrl_socket, SocketOperation.BIND, 'hub.network.controlplane.hub_to_mission')
 
         self.create_task(self.cmd_proxy())
-
+        self.create_task(self.send_dummy_msg_to_drone())
 
     ###########################################################################
     #                                Driver                                   #
@@ -218,6 +218,11 @@ class CommandService(Service):
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
+
+    async def send_dummy_msg_to_drone(self):
+        while True:
+            await asyncio.sleep(5)
+            await self.commander_socket.send_string("Hello from command svc!")
 
 async def main():
     setup_logging(logger, 'hub.logging')

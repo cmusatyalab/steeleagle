@@ -354,13 +354,13 @@ with st.sidebar:
 
     if st.session_state.armed and len(st.session_state.selected_drones) > 0:
         c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
-        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
+        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
+        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c3, c4 = st.columns(spec=2, gap="small")
         c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
-        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
+        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=15, format="%d")
 
         key_pressed = st_keypressed()
         req = controlplane.Request()

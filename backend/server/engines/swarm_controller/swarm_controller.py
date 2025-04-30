@@ -19,140 +19,178 @@ import zmq.asyncio
 import redis
 from urllib.parse import urlparse
 from util.utils import setup_logging
+import asyncio
+import aiohttp
+import aiofiles
 
 logger = logging.getLogger(__name__)
 
-# Set up the paths and variables for the compiler
-compiler_path = '/compiler'
-output_path = '/compiler/out/flightplan_'
-platform_path  = '/compiler/python/project'
+class SwarmController:
+    # Set up the paths and variables for the compiler
+    compiler_path = '/compiler'
+    output_path = '/compiler/out/flightplan_'
+    platform_path  = '/compiler/python/project'
 
-def download_script(script_url):
-    try:
-        # Get the ZIP file name from the URL
-        filename = script_url.rsplit(sep='/')[-1]
-        logger.info(f'Writing {filename} to disk...')
+    def __init__(self, alt, compiler_file, red, request_sock, router_sock):
+        self.alt = alt
+        self.compiler_file = compiler_file
+        self.red = red
+        self.request_sock = request_sock
+        self.router_sock = router_sock
+        self.running = True
 
-        # Download the ZIP file
-        r = requests.get(script_url, stream=True)
-        with open(filename, mode='wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+    async def run(self):
+        await asyncio.gather(self.listen_cmdrs(), self.listen_drones())
 
-        # Variables to hold extracted .dsl and .kml files
-        dsl_file = None
-        kml_file = None
+    @staticmethod
+    async def download_file(script_url, filename):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(script_url) as resp:
+                resp.raise_for_status()
+                async with aiofiles.open(filename, mode='wb') as f:
+                    async for chunk in resp.content.iter_chunked(8192):
+                        await f.write(chunk)
 
-        # Extract all contents of the ZIP file and remember .dsl and .kml filenames
-        with ZipFile(filename, 'r') as z:
-            z.extractall(path=compiler_path)
-            for file_name in z.namelist():
-                if file_name.endswith('.dsl'):
-                    dsl_file = file_name
-                elif file_name.endswith('.kml'):
-                    kml_file = file_name
+    @staticmethod
+    async def extract_zip(filename):
+        def _extract():
+            dsl_file = kml_file = None
+            with ZipFile(filename, 'r') as z:
+                z.extractall(path=SwarmController.compiler_path)
+                for file_name in z.namelist():
+                    if file_name.endswith('.dsl'):
+                        dsl_file = file_name
+                    elif file_name.endswith('.kml'):
+                        kml_file = file_name
+            return dsl_file, kml_file
 
-        # Log or return the results
-        logger.info(f"Extracted files: {dsl_file} {kml_file}")
+        return await asyncio.to_thread(_extract)
 
-        return dsl_file, kml_file
+    @staticmethod
+    async def download_script(script_url):
+        try:
+            # Get the ZIP file name from the URL
+            filename = script_url.rsplit(sep='/')[-1]
+            logger.info(f'Writing {filename} to disk...')
 
-    except Exception as e:
-        logger.error(f"Error during download or extraction: {e}")
+            # Download the ZIP file
+            await SwarmController.download_file(script_url, filename)
 
-def compile_mission(dsl_file, kml_file, drone_list, alt, compiler_file):
-    # Construct the full paths for the DSL and KML files
-    dsl_file_path = os.path.join(compiler_path, dsl_file)
-    kml_file_path = os.path.join(compiler_path, kml_file)
-    jar_path = os.path.join(compiler_path, compiler_file)
-    altitude = str(alt)
+            # Extract all contents of the ZIP file and remember .dsl and .kml filenames
+            dsl_file, kml_file = await SwarmController.extract_zip(filename)
 
-    # Define the command and arguments
-    command = [
-        "java",
-        "-jar", jar_path,
-        "-d", drone_list,
-        "-s", dsl_file_path,
-        "-k", kml_file_path,
-        "-o", output_path,
-        "-p", platform_path,
-        "-a", altitude
-    ]
+            # Log or return the results
+            logger.info(f"Extracted files: {dsl_file} {kml_file}")
 
-    # Run the command
-    logger.info(f"Running command: {' '.join(command)}")
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
+            return dsl_file, kml_file
 
-    # Log the output
-    logger.info(f"Compilation output: {result.stdout}")
+        except Exception as e:
+            logger.error(f"Error during download or extraction: {e}")
 
-    # Output the results
-    logger.info("Compilation successful.")
+    async def compile_mission(self, dsl_file, kml_file, drone_list):
+        # Construct the full paths for the DSL and KML files
+        dsl_file_path = os.path.join(self.compiler_path, dsl_file)
+        kml_file_path = os.path.join(self.compiler_path, kml_file)
+        jar_path = os.path.join(self.compiler_path, self.compiler_file)
+        altitude = str(self.alt)
 
+        # Define the command and arguments
+        command = [
+            "java",
+            "-jar", jar_path,
+            "-d", drone_list,
+            "-s", dsl_file_path,
+            "-k", kml_file_path,
+            "-o", self.output_path,
+            "-p", self.platform_path,
+            "-a", altitude
+        ]
 
-def send_to_drone(req, base_url, drone_list, router_sock, redis):
-    try:
-        logger.info(f"Sending request {req.seq_num} to drones...")
-        # Send the command to each drone
-        for drone_id in drone_list:
-            # check if the cmd is a mission
-            if base_url:
-                # reconstruct the script url with the correct compiler output path
-                req.msn.url = f"{base_url}{output_path}{drone_id}.ms"
-                logger.info(f"Drone-specific script url: {req.msn.url}")
+        # Run the command
+        logger.info(f"Running command: {' '.join(command)}")
+
+        proc = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT)
+
+        stdout, _ = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise Exception(f"Mission compilation failed: {stdout.decode()}")
+
+        # Log the output
+        logger.info(f"Compilation output: {stdout.decode()}")
+
+        # Output the results
+        logger.info("Compilation successful.")
+
+    async def send_to_drone(self, req, base_url, drone_list):
+        try:
+            logger.info(f"Sending request {req.seq_num} to drones...")
+            # Send the command to each drone
+            for drone_id in drone_list:
+                # check if the cmd is a mission
+                if base_url:
+                    # reconstruct the script url with the correct compiler output path
+                    req.msn.url = f"{base_url}{self.output_path}{drone_id}.ms"
+                    logger.info(f"Drone-specific script url: {req.msn.url}")
+
+                # send the command to the drone
+                await self.router_sock.send_multipart([drone_id.encode('utf-8'), req.SerializeToString()])
+                logger.info(f'Delivered request to drone {drone_id}.')
+
+        except Exception as e:
+            logger.error(f"Error sending request to drone: {e}")
+
+    async def listen_cmdrs(self):
+        while self.running:
+            # Listen for incoming requests from cmdr
+            msg = await self.request_sock.recv()
+            try:
+                req = controlplane.Request()
+                req.ParseFromString(msg)
+                logger.info(f'Request received:\n{text_format.MessageToString(req)}')
+            except DecodeError:
+                await self.request_sock.send(b'Error decoding protobuf. Did you send a controlplane_pb2?')
+                logger.info('Error decoding protobuf. Did you send a controlplane_pb2?')
+                continue
+
+            # get the drone list
+            if req.HasField("veh"):
+                drone_list = req.veh.drone_ids
+            else:
+                drone_list = req.msn.drone_ids
+            logger.info(f"drone list: {drone_list}")
+
+            # Check if the command contains a mission and compile it if true
+            base_url = None
+            if req.msn.action == controlplane.MissionAction.DOWNLOAD:
+                # download the script
+                script_url = req.msn.url
+                logger.info(f"script url: {script_url}")
+                dsl, kml = await SwarmController.download_script(script_url)
+
+                # compile the mission
+                drone_list_revised = "&".join(drone_list)
+                logger.info(f"drone list revised: {drone_list_revised}")
+                await self.compile_mission(dsl, kml, drone_list_revised)
+
+                # get the base url
+                parsed_url = urlparse(script_url)
+                base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
             # send the command to the drone
-            router_sock.send_multipart([drone_id.encode('utf-8'), req.SerializeToString()])
-            logger.info(f'Delivered request to drone {drone_id}.')
+            await self.send_to_drone(req, base_url, drone_list)
+            await self.request_sock.send(b'ACK')
+            logger.info('Sent ACK to commander')
 
-    except Exception as e:
-        logger.error(f"Error sending request to drone: {e}")
+    async def listen_drones(self):
+        while self.running:
+            identity, msg = await self.router_sock.recv_multipart()
+            logger.info(f'Received message from drone {identity}: {msg}')
 
-
-def listen_cmdrs(request_sock, router_sock, redis, alt, compiler_file):
-    while True:
-
-        # Listen for incoming requests from cmdr
-        msg = request_sock.recv()
-        try:
-            req = controlplane.Request()
-            req.ParseFromString(msg)
-            logger.info(f'Request received:\n{text_format.MessageToString(req)}')
-        except DecodeError:
-            request_sock.send(b'Error decoding protobuf. Did you send a controlplane_pb2?')
-            logger.info('Error decoding protobuf. Did you send a controlplane_pb2?')
-            continue
-
-        # get the drone list
-        if req.HasField("veh"):
-            drone_list = req.veh.drone_ids
-        else:
-            drone_list = req.msn.drone_ids
-        logger.info(f"drone list: {drone_list}")
-
-        # Check if the command contains a mission and compile it if true
-        base_url = None
-        if req.msn.action == controlplane.MissionAction.DOWNLOAD:
-            # download the script
-            script_url = req.msn.url
-            logger.info(f"script url: {script_url}")
-            dsl, kml = download_script(script_url)
-
-            # compile the mission
-            drone_list_revised = "&".join(drone_list)
-            logger.info(f"drone list revised: {drone_list_revised}")
-            compile_mission(dsl, kml, drone_list_revised, alt, compiler_file)
-
-            # get the base url
-            parsed_url = urlparse(script_url)
-            base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-
-        # send the command to the drone
-        send_to_drone(req, base_url, drone_list, router_sock, redis)
-        request_sock.send(b'ACK')
-        logger.info('Sent ACK to commander')
-
-def main():
+async def main():
     setup_logging(logger)
     logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser()
@@ -180,11 +218,11 @@ def main():
     logger.info(f"Using compiler file: {compiler_file}")
 
     # Connect to redis
-    r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+    red = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
     logger.info(f"Connected to redis on port {args.redis}...")
 
     # Set up the commander socket
-    ctx = zmq.Context()
+    ctx = zmq.asyncio.Context()
     request_sock = ctx.socket(zmq.REP)
     request_sock.bind(f'tcp://*:{args.cmdrport}')
     logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
@@ -196,13 +234,11 @@ def main():
     router_sock.bind(f'tcp://*:{args.droneport}')
     logger.info(f'Listening on tcp://*:{args.droneport} for drone connections...')
 
-    # Listen for incoming requests from cmdr
+    controller = SwarmController(alt, compiler_file, red, request_sock, router_sock)
     try:
-        listen_cmdrs(request_sock, router_sock, r, alt, compiler_file)
+        await controller.run()
     except KeyboardInterrupt:
         logger.info('Shutting down...')
-        request_sock.close()
-        router_sock.close()
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
