@@ -230,7 +230,7 @@ def draw_map():
         slam_coords = []
         for index, row in df.iterrows():
             slam_coords.append([row["lat"], row["lon"]])
-        ls = folium.PolyLine(locations=slam_coords, color="black")
+        ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
         ls.add_to(slam_track)
 
     TYPES={"lat": "float",
