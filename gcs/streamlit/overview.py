@@ -287,7 +287,7 @@ with options_expander:
         tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
     tiles = folium.TileLayer(
-        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
+        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
     )
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
