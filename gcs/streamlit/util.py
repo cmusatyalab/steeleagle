@@ -107,41 +107,41 @@ def get_drones():
         if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
             drone_model = red.hget(k, "model")
-            if drone_model is None:
+            if drone_model == "":
                 drone_model = "unknown"
             bat = int(red.hget(k, "mag"))
             if bat == 0:
-               bat_status = ":green-badge[:material/battery_full: bat]"
+               bat_status = ":green-badge[:material/battery_full:]"
             elif bat == 1:
-                bat_status = ":orange-badge[:material/battery_3_bar: bat]"
+                bat_status = ":orange-badge[:material/battery_3_bar:]"
             else:
-                bat_status = ":red-badge[:material/battery_alert: bat]"
+                bat_status = ":red-badge[:material/battery_alert:]"
 
             mag = int(red.hget(k, "mag"))
             if mag == 0:
-                mag_status = ":green-badge[:material/explore: mag]"
+                mag_status = ":green-badge[:material/explore:]"
             elif mag == 1:
-                mag_status = ":orange-badge[:material/explore: mag]"
+                mag_status = ":orange-badge[:material/explore:]"
             else:
-                mag_status = ":red-badge[:material/explore: mag]"
+                mag_status = ":red-badge[:material/explore:]"
 
             sats = int(red.hget(k, "sats"))
             if sats == 0:
-                sat_status = ":green-badge[:material/satellite_alt: gps]"
+                sat_status = ":green-badge[:material/satellite_alt:]"
             elif sats == 1:
-                sat_status = ":orange-badge[:material/satellite_alt: gps]"
+                sat_status = ":orange-badge[:material/satellite_alt:]"
             elif sats == 2:
-                sat_status = ":red-badge[:material/satellite_alt: gps]"
+                sat_status = ":red-badge[:material/satellite_alt:]"
 
             slam = red.hget(k, "slam_registering")
             if slam:
-                slam_status = ":green-badge[:material/globe_location_pin: slam]"
+                slam_status = ":green-badge[:material/globe_location_pin:]"
             else:
-                slam_status = ":red-badge[:material/globe_location_pin: slam]"
+                slam_status = ":red-badge[:material/globe_location_pin:]"
             # markdown format
             # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
 
-            l[drone_name] = f"**{drone_name}(_{drone_model}_) {bat_status}{mag_status} {sat_status} {slam_status}** "
+            l[drone_name] = f"**{drone_name} (_{drone_model}_) {bat_status}{mag_status}{sat_status}{slam_status}** "
 
     return l
 
