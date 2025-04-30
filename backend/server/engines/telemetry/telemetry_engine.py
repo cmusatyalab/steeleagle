@@ -67,9 +67,10 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         drone_key = f"drone:{telemetry.drone_name}"
         self.r.hset(drone_key, "last_seen", f"{time.time()}")
-        self.r.hset(drone_key, "battery", f"{telemetry.battery}")
+        self.r.hset(drone_key, "battery", f"{telemetry.alerts.battery_warning}")
         self.r.hset(drone_key, "mag", f"{telemetry.alerts.magnetometer_warning}")
-        self.r.hset(drone_key, "sats", f"{telemetry.satellites}")
+        self.r.hset(drone_key, "sats", f"{telemetry.alerts.gps_warning}")
+        self.r.hset(drone_key, "connection", f"{telemetry.alerts.connection_warning}")
         self.r.hset(drone_key, "status", f"{telemetry.status}")
         self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
         self.r.expire(drone_key, self.ttl_secs)
