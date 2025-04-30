@@ -187,6 +187,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
         if not extras.cpt_request.HasField('cpt'):
+            logger.error("Compute configuration not found")
             status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
             result_wrapper = cognitive_engine.create_result_wrapper(status)
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
@@ -208,7 +209,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
         if len(results.pred) > 0:
-            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.drone_id)
+            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.telemetry.drone_name)
             if result is not None:
                 result_wrapper.results.append(result)
 
