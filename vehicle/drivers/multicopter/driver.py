@@ -125,6 +125,10 @@ class Driver:
                 velocity = message.veh.velocity_body
                 result = await self.drone.set_velocity_body(velocity)
                 logger.info(f"Call finished at: {time.time()}")
+            elif vehicle_control == "gimbal_pose":
+                logger.info('****** Set Gimbal Pose ******')
+                pose = message.veh.gimbal_pose
+                result = await self.drone.set_gimbal_pose(pose)
             else:
                 raise Exception(f"Command type {vehicle_control} is not supported!")
         except Exception as e:

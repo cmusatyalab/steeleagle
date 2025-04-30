@@ -17,7 +17,8 @@ from olympe.messages.common.CommonState import BatteryStateChanged
 from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.wifi import rssi_changed
+from olympe.messages.gimbal import set_target, attitude
+import olympe.enums.gimbal as gimbal_mode
 import olympe.enums.move as move_mode
 from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 # Interface import
