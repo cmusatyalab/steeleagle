@@ -109,7 +109,7 @@ class ParrotOlympeDrone(MulticopterItf):
         lat = location.latitude
         lon = location.longitude
         alt = location.altitude
-        
+
         try:
             self._drone(set_custom_location(
                 lat, lon, alt)).wait().success()
@@ -129,12 +129,12 @@ class ParrotOlympeDrone(MulticopterItf):
 
     async def rth(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
-        
+
         try:
             self._drone(return_to_home()).success()
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         await asyncio.sleep(1)
 
         result = await self._wait_for_condition(
@@ -246,7 +246,7 @@ class ParrotOlympeDrone(MulticopterItf):
         yaw = pose.yaw
         pitch = pose.pitch
         roll = pose.roll
-        
+
         # Actuate the gimbal
         try:
             self._drone(set_target(
@@ -266,7 +266,7 @@ class ParrotOlympeDrone(MulticopterItf):
             lambda: self._is_gimbal_pose_reached(yaw, pitch, roll),
             interval=0.5
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
@@ -349,7 +349,6 @@ class ParrotOlympeDrone(MulticopterItf):
                 cam_message.channels = frame_shape[2]
                 cam_message.id = frame_id
                 cam_sock.send(cam_message.SerializeToString())
-                logger.info('Sent frame to hub!')
                 frame_id = frame_id + 1
             except Exception as e:
                 logger.error(f'Failed to get video frame, error: {e}')
@@ -600,7 +599,7 @@ class ParrotOlympeDrone(MulticopterItf):
         if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):
             return True
         return False
-    
+
     def _is_heading_reached(self, heading):
         if self._drone(AttitudeChanged(yaw=heading, _policy="check", _float_tol=(1e-3, 1e-1))):
             return True

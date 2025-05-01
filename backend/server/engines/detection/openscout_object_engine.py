@@ -73,6 +73,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.lastcount = 0
         self.lastprint = self.lasttime
         self.hsv_threshold = args.hsv_threshold
+        self.search_radius = args.radius
+        self.ttl_secs = 1200
 
         if args.exclude:
             self.exclusions = list(map(int, args.exclude.split(","))) #split string to int list
@@ -91,6 +93,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             except FileExistsError:
                 logger.info("Images directory already exists.")
             logger.info("Storing detection images at {}".format(self.storage_path))
+
+        logger.info(f"Search radius when considering duplicate detections: {self.search_radius}")
 
     def find_intersection(self, target_dir, target_insct):
         plane_pt = np.array([0, 0, 0])
@@ -141,17 +145,29 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return est_lat, est_lon
 
     def storeDetection(self, drone, lat, lon, cls, conf, link=""):
-        self.r.xadd(
+        object_name = f"{cls}-{time.time()}"
+        # first do a geosearch to see if there is a match within radius
+        objects = self.r.geosearch(
             "detections",
-            {
-                "drone_id": drone,
-                "longitude": lon,
-                "latitude": lat,
-                "cls": cls,
-                "confidence": conf,
-                "link": link
-            },
+            longitude=lon,
+            latitude=lat,
+            radius=self.search_radius,
+            unit="m",
         )
+
+        if len(objects) == 0:
+            self.r.geoadd("detections", [lon, lat, object_name])
+
+            object_key = f"objects:{object_name}"
+            self.r.hset(object_key, "last_seen", f"{time.time()}")
+            self.r.hset(object_key, "drone_id", f"{drone}")
+            self.r.hset(object_key, "cls", f"{cls}")
+            self.r.hset(object_key, "confidence", f"{conf}")
+            self.r.hset(object_key, "link", f"{link}")
+            self.r.hset(object_key, "longitude", f"{lon}")
+            self.r.hset(object_key, "latitude", f"{lat}")
+            self.r.expire(object_key, self.ttl_secs)
+            logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
 
     def passes_hsv_filter(self, image, bbox, hsv_min=[30,100,100], hsv_max=[50,255,255], threshold=5.0,) -> bool:
         cropped = image[round(bbox[0]):round(bbox[2]), round(bbox[1]):round(bbox[3])]
@@ -187,6 +203,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
         if not extras.cpt_request.HasField('cpt'):
+            logger.error("Compute configuration not found")
             status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
             result_wrapper = cognitive_engine.create_result_wrapper(status)
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
@@ -208,7 +225,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
         if len(results.pred) > 0:
-            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.drone_id)
+            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.telemetry.drone_name)
             if result is not None:
                 result_wrapper.results.append(result)
 

@@ -165,6 +165,7 @@ class AvoidanceEngine(ABC):
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
         if not extras.cpt_request.HasField('cpt'):
+            logger.error("Compute configuration not found")
             status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
@@ -181,7 +182,7 @@ class AvoidanceEngine(ABC):
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
 
-        result = self.construct_result(vector, extras.drone_id)
+        result = self.construct_result(vector, extras.telemetry.drone_name)
         result_wrapper.results.append(result)
 
         response = control_plane.Response()

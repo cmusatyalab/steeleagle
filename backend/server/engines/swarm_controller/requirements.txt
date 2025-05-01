@@ -15,3 +15,5 @@ zmq
 protobuf
 requests
 pyyaml
+aiohttp
+aiofiles
