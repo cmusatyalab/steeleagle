@@ -5,7 +5,6 @@
 import logging
 from system_call_stubs.stub import Stub
 import dataplane_pb2 as data_protocol
-import common_pb2 as common_protocol
 
 logger = logging.getLogger(__name__)
         
@@ -39,7 +38,7 @@ class DataStub(Stub):
             "relative_position": {"north": None, "east": None, "up": None},
             "velocity_enu": {"north": None, "east": None, "up": None},
             "velocity_body": {"forward": None, "right": None, "up": None},
-            "gimbal_pose": {"yaw": None, "pitch": None, "roll": None}
+            "gimbal_pose": {"yaw": None, "pitch": None, "roll": None},
             "home": {"latitude": None, "longitude": None, "altitude": None},
             "cameras": {},
             "alerts": {},

@@ -20,12 +20,7 @@ message Extras {
   // The telemetry data for the drone
   protocol.dataplane.Telemetry telemetry = 2;
   // Configuration parameters for the compute request
-<<<<<<< HEAD
-  protocol.controlplane.Request cpt_request = 4;
-  protocol.controlplane.Response cpt_response = 5;
-=======
   protocol.controlplane.Request cpt_request = 3;
   // Used for sending a reply back to the client
   protocol.controlplane.Response cpt_reply = 4;
->>>>>>> origin/main
 }
