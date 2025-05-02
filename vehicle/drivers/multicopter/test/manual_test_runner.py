@@ -17,6 +17,7 @@ class Ctrl(Enum):
         QUIT,
         TAKEOFF,
         LANDING,
+        RTH,
         MOVE_LEFT,
         MOVE_RIGHT,
         MOVE_FORWARD,
@@ -25,12 +26,13 @@ class Ctrl(Enum):
         MOVE_DOWN,
         TURN_LEFT,
         TURN_RIGHT,
-    ) = range(11)
+    ) = range(12)
 
 QWERTY_CTRL_KEYS = {
     Ctrl.QUIT: Key.esc,
     Ctrl.TAKEOFF: "t",
     Ctrl.LANDING: "l",
+    Ctrl.RTH: "r",
     Ctrl.MOVE_LEFT: "a",
     Ctrl.MOVE_RIGHT: "d",
     Ctrl.MOVE_FORWARD: "w",
@@ -122,6 +124,9 @@ class KeyboardCtrl(Listener):
 
     def landing(self):
         return self._rate_limit_cmd(Ctrl.LANDING, 2.0)
+    
+    def rth(self):
+        return self._rate_limit_cmd(Ctrl.RTH, 2.0)
 
     def _get_ctrl_keys(self, ctrl_keys):
         if ctrl_keys is None:
@@ -186,6 +191,9 @@ async def send_comm(control):
     elif control.landing():
         logger.info('Land!')
         driver_command.veh.action = control_protocol.VehicleAction.LAND
+    elif control.rth():
+        logger.info('RTH!')
+        driver_command.veh.action = control_protocol.VehicleAction.RTH
     elif control.has_piloting_cmd():
         logger.info(f'Velocity({control.pitch()}, {control.roll()}, {control.throttle()}, {control.yaw()})')
         driver_command.veh.velocity_body.forward_vel = control.pitch()

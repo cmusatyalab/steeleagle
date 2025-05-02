@@ -43,7 +43,7 @@ class GabrielCompute(ComputeInterface):
 
         # data_store
         self.data_store = data_store
-        self.frame_id = -1
+        self.frame_ts = -1
 
     async def run(self):
         logger.info("Gabriel compute: launching Gabriel client")
@@ -93,21 +93,23 @@ class GabrielCompute(ComputeInterface):
 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
             self.compute_status = self.ComputeStatus.Connected
 
-            logger.debug(f"Frame producer: starting converting {time.time()}")
+            logger.debug(f"Frame producer: starting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             frame_data = data_protocol.Frame()
 
-            frame_id = self.data_store.get_raw_data(frame_data)
-
+            entry = self.data_store.get_raw_data(frame_data)
             # Wait for a new frame
-            while frame_id is None or frame_id <= self.frame_id:
+            while entry is None or entry.timestamp <= self.frame_ts:
+                if entry is None:
+                    logger.debug(f"Waiting for new frame from driver, entry is none!")
+                else:
+                    logger.debug(f"Waiting for new frame from driver, {entry.timestamp} <= {self.frame_ts}")
                 await self.data_store.wait_for_new_data(type(frame_data))
-                logger.debug("Waiting for new frame from driver")
-                frame_id = self.data_store.get_raw_data(frame_data)
-            self.frame_id = frame_id
+                entry = self.data_store.get_raw_data(frame_data)
+            self.frame_ts = entry.timestamp
 
             tel_data = data_protocol.Telemetry()
             self.data_store.get_raw_data(tel_data)
@@ -124,7 +126,6 @@ class GabrielCompute(ComputeInterface):
 
                     # produce extras
                     extras = gabriel_extras.Extras()
-                    extras.drone_id = self.drone_id
                     compute_command = extras.cpt_request
                     compute_command.cpt.key = self.compute_id
 
@@ -172,15 +173,14 @@ class GabrielCompute(ComputeInterface):
                 if ret is not None:
                     extras = gabriel_extras.Extras()
                     extras.telemetry.CopyFrom(tel_data)
-                    extras.drone_id = self.drone_id
-                    logger.debug("Gabriel compute telemetry producer: sending telemetry")
+                    logger.debug(f"Gabriel compute telemetry producer: sending telemetry; drone_name={tel_data.drone_name}")
                     # Register when we start sending telemetry
-                    if not self.drone_registered:
-                        logger.debug("Gabriel compute telemetry producer: sending registration request to backend")
+                    if not self.drone_registered and len(tel_data.drone_name) > 0:
+                        logger.info("Gabriel compute telemetry producer: sending registration request to backend")
                         extras.registering = True
                         self.drone_registered = True
                         tel_data.uptime.FromSeconds(0)
-                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
+                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemetry! content: {tel_data}')
                     input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')

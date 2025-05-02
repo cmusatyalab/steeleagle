@@ -13,7 +13,6 @@ from util.utils import setup_logging
 
 SOURCE = 'telemetry'
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
@@ -43,7 +42,7 @@ def main():
     )
 
     parser.add_argument(
-        "-t", "--ttl", type=int, default=7, help="TTL before drones status tables are cleaned up in redis [default: 7]"
+        "-t", "--ttl", type=int, default=7, help="TTL in days before drones status tables are cleaned up in redis [default: 7]"
     )
 
     args, _ = parser.parse_known_args()

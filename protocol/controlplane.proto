@@ -65,6 +65,7 @@ message MissionControl {
   string url = 2; // the URL that specifies the zip file to download
   MissionAction action = 3; // start/stop/pause/resume/download
   repeated string drone_ids = 4;
+  string notification = 5;
 }
 
 enum MissionAction {

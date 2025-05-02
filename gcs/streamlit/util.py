@@ -107,31 +107,41 @@ def get_drones():
         if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
             drone_model = red.hget(k, "model")
-            mag = red.hget(k, "mag")
-            if mag == 0:
-                mag_status = ":green-badge[:material/explore: mag]"
-            elif mag == 1:
-                mag_status = ":orange-badge[:material/explore: mag]"
+            if drone_model == "":
+                drone_model = "unknown"
+            bat = int(red.hget(k, "battery"))
+            if bat == 0:
+               bat_status = ":green-badge[:material/battery_full:]"
+            elif bat == 1:
+                bat_status = ":orange-badge[:material/battery_3_bar:]"
             else:
-                mag_status = ":red-badge[:material/explore: mag]"
+                bat_status = ":red-badge[:material/battery_alert:]"
 
-            sats = red.hget(k, "sats")
-            if sats > 16:
-                sat_status = ":green-badge[:material/satellite_alt: sats]"
-            elif sats <= 16 and sats > 11:
-                sat_status = ":orange-badge[:material/satellite_alt: sats]"
+            mag = int(red.hget(k, "mag"))
+            if mag == 0:
+                mag_status = ":green-badge[:material/explore:]"
+            elif mag == 1:
+                mag_status = ":orange-badge[:material/explore:]"
             else:
-                sat_status = ":red-badge[:material/satellite_alt: sats]"
+                mag_status = ":red-badge[:material/explore:]"
+
+            sats = int(red.hget(k, "sats"))
+            if sats == 0:
+                sat_status = ":green-badge[:material/satellite_alt:]"
+            elif sats == 1:
+                sat_status = ":orange-badge[:material/satellite_alt:]"
+            elif sats == 2:
+                sat_status = ":red-badge[:material/satellite_alt:]"
 
             slam = red.hget(k, "slam_registering")
             if slam:
-                slam_status = ":green-badge[:material/globe_location_pin: slam]**"
+                slam_status = ":green-badge[:material/globe_location_pin:]"
             else:
-                slam_status = ":red-badge[:material/globe_location_pin: slam]**"
+                slam_status = ":red-badge[:material/globe_location_pin:]"
             # markdown format
             # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
 
-            l[drone_name] = f"**{drone_name}(_{drone_model}_) {mag_status} {sat_status} {slam_status}** "
+            l[drone_name] = f"**{drone_name} (_{drone_model}_) {bat_status}{mag_status}{sat_status}{slam_status}** "
 
     return l
 
@@ -142,7 +152,10 @@ def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
 
     df = pd.DataFrame.from_dict(_container, orient='index')
     if types is not None:
-        df = df.astype(types)
+        try:
+            df = df.astype(types)
+        except KeyError as e:
+            print(e)
 
     return df
 

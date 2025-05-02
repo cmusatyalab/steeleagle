@@ -18,35 +18,30 @@ class ControlStub(Stub):
    
     ''' Vehicle methods '''
     async def take_off(self):
-        logger.info("take_off")
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.TAKEOFF
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def land(self):
-        logger.info("land")
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.LAND
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def rth(self):
-        logger.info("rth")
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.RTH
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
     async def hover(self):
-        logger.info("hover")
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_velocity(self, forward_vel, right_vel, up_vel, angle_vel):
-        logger.info("set_velocity")
         request = control_protocol.Request()
         request.veh.velocity_body.forward_vel = forward_vel
         request.veh.velocity_body.right_vel = right_vel
@@ -59,7 +54,6 @@ class ControlStub(Stub):
         pass
     
     async def set_gps_location(self, latitude, longitude, altitude, bearing):
-        logger.info("set_gps_location")
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
@@ -68,12 +62,8 @@ class ControlStub(Stub):
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
-    async def switchCamera(self, camera_id):
-        pass
-    
     '''Compute methods'''
     async def clear_compute_result(self, compute_key):
-        logger.info("Clearing results")
         cpt_req = control_protocol.Request()
         cpt_req.cpt.key = compute_key
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR
