@@ -44,8 +44,8 @@ def draw_map():
 
     marker_color = 0
     for obj in red.zrange("detections", 0, -1):
-        if len(red.keys(obj)) > 0:
-            fields = red.hgetall(obj)
+        if len(red.keys(f"object:{obj}")) > 0:
+            fields = red.hgetall(f"object:{obj}")
             text = folium.DivIcon(
                 icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                 icon_anchor=(-20, 30),
@@ -102,15 +102,15 @@ with options_expander:
         index=0
     )
 
-    if st.session_state.map_server == "Google Sat":
-        tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
-    elif st.session_state.map_server == "Google Hybrid":
-        tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
+if st.session_state.map_server == "Google Sat":
+    tileset = "https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga"
+elif st.session_state.map_server == "Google Hybrid":
+    tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
-    tiles = folium.TileLayer(
-        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
-    )
+tiles = folium.TileLayer(
+    name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
+)
 
-    st.caption("**:blue-background[:globe_with_meridians: Detected Objects]**")
-    draw_map()
+st.caption("**:blue-background[:globe_with_meridians: Detected Objects]**")
+draw_map()
 
