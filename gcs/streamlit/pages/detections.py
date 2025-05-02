@@ -44,41 +44,40 @@ def draw_map():
 
     marker_color = 0
     for obj in red.zrange("detections", 0, -1):
-        fields = red.hgetall(obj)
-        text = folium.DivIcon(
-            icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
-            icon_anchor=(-20, 30),
-            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{fields["link"]}]',
-            #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
-        )
-        plane = folium.Icon(
-            icon="plane",
-            color=COLORS[marker_color],
-            prefix="glyphicon",
-        )
-
-        fg.add_child(
-            folium.Marker(
-                location=[
-                    fields["latitude"],
-                    fields["longitude"],
-                ],
-                icon=plane,
+        if red.keys(obj) is not None:
+            fields = red.hgetall(obj)
+            text = folium.DivIcon(
+                icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
+                icon_anchor=(-20, 30),
+                html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{fields["link"]}]',
+                #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
             )
-        )
-
-        fg.add_child(
-            folium.Marker(
-                location=[
-                    fields["latitude"],
-                    fields["longitude"],
-                ],
-                icon=text,
+            plane = folium.Icon(
+                icon="plane",
+                color=COLORS[marker_color],
+                prefix="glyphicon",
             )
-        )
 
+            fg.add_child(
+                folium.Marker(
+                    location=[
+                        fields["latitude"],
+                        fields["longitude"],
+                    ],
+                    icon=plane,
+                )
+            )
 
-   
+            fg.add_child(
+                folium.Marker(
+                    location=[
+                        fields["latitude"],
+                        fields["longitude"],
+                    ],
+                    icon=text,
+                )
+            )
+
     st_folium(
         m,
         key="overview_map",
