@@ -44,8 +44,8 @@ def draw_map():
 
     marker_color = 0
     for obj in red.zrange("detections", 0, -1):
-        if len(red.keys(f"object:{obj}")) > 0:
-            fields = red.hgetall(f"object:{obj}")
+        if len(red.keys(f"objects:{obj}")) > 0:
+            fields = red.hgetall(f"objects:{obj}")
             text = folium.DivIcon(
                 icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                 icon_anchor=(-20, 30),
