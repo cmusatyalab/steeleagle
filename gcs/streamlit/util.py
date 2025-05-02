@@ -167,6 +167,7 @@ def control_drone(drone):
 def menu(with_control=True):
     st.sidebar.page_link("overview.py", label=":satellite_antenna: Overview")
     st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
+    st.sidebar.page_link("pages/detections.py", label=":bangbang: Detected Objects")
 
 
 
