@@ -23,4 +23,5 @@ message Extras {
   protocol.dataplane.Telemetry telemetry = 3;
   // Configuration parameters for the compute request
   protocol.controlplane.Request cpt_request = 4;
+  protocol.controlplane.Response cpt_response = 5;
 }
