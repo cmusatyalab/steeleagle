@@ -149,8 +149,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         # first do a geosearch to see if there is a match within radius
         objects = self.r.geosearch(
             "detections",
-            longitude=lon,
-            latitude=lat,
+            longitude=np.clip(lon, -180, 180),
+            latitude=np.clip(lat, -90, 90),
             radius=self.search_radius,
             unit="m",
         )
