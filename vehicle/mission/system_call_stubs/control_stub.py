@@ -1,3 +1,4 @@
+import ast
 import logging
 from system_call_stubs.stub import Stub
 import controlplane_pb2 as control_protocol
@@ -7,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 class ControlStub(Stub):
 
-    def __init__(self):
+    def __init__(self, waypoint_path):
+        self.waypoint_path = waypoint_path
         super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub')
 
     def parse_control_response(self, response_parts):
@@ -69,3 +71,25 @@ class ControlStub(Stub):
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
+    ''' Mission methods '''
+    async def send_notification(self, msg):
+        request = control_protocol.Request()
+        request.veh.action = control_protocol.MissionAction.NOTIFICATION
+        request.msn.notification = msg
+        result = await self.send_and_wait(request)
+        return result.msn_notification
+    
+    async def get_waypoints(self):
+        # read the waypoints from the waypoint path
+        with open(self.waypoint_path, 'r') as f:
+            waypoints = f.read()
+            
+        # parse the waypoints
+        return ast.literal_eval(waypoints)
+    
+    async def set_waypoints(self, waypoints):
+        # write the waypoints to the waypoint path
+        with open(self.waypoint_path, 'w') as f:
+            f.write(str(waypoints))
+    

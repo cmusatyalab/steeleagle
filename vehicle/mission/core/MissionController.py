@@ -141,7 +141,7 @@ class MissionController():
             
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
-        self.ctrl = ControlStub()
+        self.ctrl = ControlStub(project_path=self.user_path)
         self.data = DataStub()
         asyncio.create_task(self.ctrl.run())
         asyncio.create_task(self.data.run())
