@@ -46,16 +46,26 @@ def draw_map():
     for obj in red.zrange("detections", 0, -1):
         if len(red.keys(f"objects:{obj}")) > 0:
             fields = red.hgetall(f"objects:{obj}")
+            img_ref = f'<img src="{fields["link"]}" height="250px" width="250px"/>'
+            div_content = f"""
+                    <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
+                        {obj}
+                        {fields["cls"]}
+                        {fields["confidence"]}
+                        {fields["drone_id"]}
+                        {fields["last_seen"]}
+                    </div>
+                """
+
             text = folium.DivIcon(
                 icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                 icon_anchor=(-20, 30),
-                html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{fields["link"]}]',
-                #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
+                html=div_content,
             )
-            plane = folium.Icon(
-                icon="plane",
+            object_icon = folium.Icon(
+                icon="object-group",
                 color=COLORS[marker_color],
-                prefix="glyphicon",
+                prefix="fa",
             )
 
             fg.add_child(
@@ -64,7 +74,8 @@ def draw_map():
                         fields["latitude"],
                         fields["longitude"],
                     ],
-                    icon=plane,
+                    icon=object_icon,
+                    tooltip=img_ref
                 )
             )
 
@@ -75,6 +86,7 @@ def draw_map():
                         fields["longitude"],
                     ],
                     icon=text,
+                    tooltip=img_ref
                 )
             )
 
@@ -86,7 +98,7 @@ def draw_map():
         layer_control=lc,
         returned_objects=[],
         center=st.session_state.center,
-        height=500
+        height=720
     )
 
 menu()
