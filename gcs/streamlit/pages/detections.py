@@ -48,12 +48,14 @@ def draw_map():
         if len(red.keys(f"objects:{obj}")) > 0:
             fields = red.hgetall(f"objects:{obj}")
             img_ref = f'<img src="{fields["link"]}" height="250px" width="250px"/>'
-            div_content = f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">\
-                        {obj}<br/>\
-                        {fields["confidence"]:.2f}<br/>\
-                        {fields["drone_id"]}<br/>\
-                        {datetime.datetime.fromtimestamp(fields["last_seen"])}\
-                    </div>'
+            div_content = f"""
+                    <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
+                        {obj}<br/>
+                        {float(fields["confidence"]):.2f}<br/>
+                        {fields["drone_id"]}<br/>
+                        {datetime.datetime.fromtimestamp(float(fields["last_seen"]))}
+                    </div>
+                """
 
             text = folium.DivIcon(
                 icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
