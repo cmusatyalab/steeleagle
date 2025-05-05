@@ -22,14 +22,209 @@ from util.utils import setup_logging
 import asyncio
 import aiohttp
 import aiofiles
+from dataclasses import dataclass
+import json
+from typing import List, Set, Optional
+from collections.abc import Iterator
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
+class PatrolArea:
+    '''Represents an area for patrolling.'''
+
+    def __init__(self):
+        # The patrol lines that are part of this patrol area.
+        self.patrol_lines = None
+        # Each iterator in this list contains the patrol lines assigned to
+        # a drone.
+        self.line_partition_iters = None
+
+    def add_patrol_line(self, line):
+        '''Add a patrol line as a part of this patrol area.'''
+        self.patrol_lines.append(line)
+
+    def update_unpatrolled_lines(self):
+        '''
+        Stores the patrol lines that have not yet been patrolled by a drone,
+        discarding the rest.
+        '''
+        self.patrol_lines = []
+        for it in self.line_partition_iters:
+            for line in it:
+                self.patrol_lines.append(line)
+
+    def create_partitioning(self, num_drones):
+        '''
+        Create an assignment from drones to patrol lines.
+        '''
+        # Figure out which patrol lines are still pending
+        self.update_unpatrolled_lines()
+        num_lines = len(self.patrol_lines)
+
+        self.line_partition_iters = []
+
+        if num_drones >= num_lines:
+            logger.info(f"{num_lines=} {num_drones=}. Assigning 1 patrol line per drone")
+            for i in range(num_drones):
+                partition = []
+                if i < num_lines:
+                    partition = [self.patrol_lines[i]]
+                self.line_partition_iters.append(iter(partition))
+            return
+
+        lines_per_drone = num_lines // num_drones
+        logger.info(f"{num_lines=} {num_drones=}. Assigning {lines_per_drone} patrol lines per drone")
+
+        for i in range(num_drones - 1):
+            partition = self.patrol_lines[i * lines_per_drone:(i+1) * lines_per_drone]
+            self.line_partition_iters.append(iter(partition))
+
+        # Assign remaining patrol lines to the last drone
+        partition = self.patrol_lines[(num_drones - 1) * lines_per_drone:]
+		self.line_partition_iters.append(iter(partition))
+
+    def get_patrol_line(self, drone_id):
+        try:
+            return next(self.line_partition_iters[drone_id])
+        except StopIteration:
+            # Steal a patrol line from another drone
+            for i in range(0, len(self.line_partition_iters)):
+                if i == drone_id:
+                    continue
+                try:
+                    return next(self.line_partition_iters[i])
+                except StopIteration:
+                    continue
+        return None
+
+    @staticmethod
+    async def load_from_file(filename):
+        async with aiofiles.open(filename, mode='r') as f:
+            contents = await f.read()
+        data = json.loads(contents)
+
+        patrol_area_list = []
+
+        for _, patrol_lines in data.items():
+            patrol_area = PatrolArea()
+            patrol_area_list.append(patrol_area)
+
+            for patrol_line in patrol_lines:
+                patrol_line = PatrolLine(line)
+                patrol_area.add_patrol_line(patrol_line)
+
+        return patrol_area_list
+
+@dataclass
+class PatrolLine:
+    '''Represents the waypoints for a patrolling line segment.'''
+    line_info: str
+
+@dataclass
+class PatrolMissionState:
+    drone_list: List[str]
+    patrol_area_list: List[PatrolArea]
+    current_patrol_area: PatrolArea
+    patrol_area_iter: Iterator[List[PatrolArea]]
+
+class PatrolMission(Mission):
+    def __init__(self, drone_list, patrol_area_list):
+        state = PatrolMissionState(drone_list, patrol_area_list, [])
+        super().__init__(state)
+        self._create_partitioning()
+
+    def increment_patrol_area(self):
+        self.state.current_patrol_area = next(self.state.patrol_area_iter)
+        self._create_partitioning()
+
+    def state_transition_fn(self, drone_id, msg):
+        drone_idx = self.state.drone_list.index(drone_id)
+        line = self.current_patrol_area.get_patrol_line(drone_idx)
+
+        while line is None:
+            try:
+                self.increment_patrol_area()
+            except StopIteration:
+                # TODO(Aditya): do something when we are done with the mission
+                break
+            line = self.current_patrol_area.get_patrol_line(drone_idx)
+
+        # TODO(Aditya): serialize line
+        return (drone_id, line)
+
+    def update_drone_list(self, drone_list):
+        self.state.drone_list = drone_list
+        self._create_partitioning()
+
+    def _create_partitioning(self):
+        num_drones = len(self.state.drone_list)
+        patrol_area.create_partitioning(num_drones)
+
+class Mission(ABC):
+    def __init__(self, state):
+        self.state = state
+
+    @abstractmethod
+    def start(self):
+        pass
+
+    def get_state(self):
+        return self.state
+
+    @abstractmethod
+    def state_transition_fn(self, drone_id, msg):
+        pass
+
+    @abstractmethod
+    def update_drone_list(self, drone_list):
+        pass
+
+class MissionSupervisor:
+	def __init__(self, swarm_controller, router_sock):
+		self.swarm_controller = swarm_controller
+        self.mission = None
+        self.router_sock = sock
+
+    async def send_drone_msg(self, drone_id, drone_msg):
+        logger.info(f'Sending message {drone_msg} to {drone_id}')
+        await self.router_sock.send_multipart(drone_id, drone_msg)
+
+    async def drone_handler(self):
+        while self.running:
+            # Listen for mission updates from drones
+            drone_id, msg = await self.listen_drones()
+            drone_messages = self.mission.state_transition_fn(drone_id, msg)
+
+            # Send mission updates to drones
+            for drone_id, drone_msg in drone_messages:
+                self.send_drone_msg(drone_id, drone_msg)
+
+	async def supervise_mission(self, mission, drone_list):
+        self.mission = mission
+        self.drone_handler_task = asyncio.create_task(self.drone_handler())
+        self.drone_list = drone_list
+
+    async def stop_mission_supervision(self):
+        self.mission = None
+        self.drone_list = []
+        self.drone_handler_task.cancel()
+
+    async def listen_drones(self):
+        identity, msg = await self.router_sock.recv_multipart()
+        logger.info(f'Received message from drone {identity}: {msg}')
+        return identity, msg
+
 class SwarmController:
     # Set up the paths and variables for the compiler
-    compiler_path = '/compiler'
-    output_path = '/compiler/out/flightplan_'
-    platform_path  = '/compiler/python/project'
+    #compiler_path = '/compiler'
+    #output_path = '/compiler/out/flightplan_'
+    #platform_path  = '/compiler/python/project'
+    #waypoint_file = '/compiler/out/waypoint.json'
+    compiler_path = '../../steeleagle-vol/compiler'
+    output_path = '../../steeleagle-vol/compiler/out/flightplan_'
+    platform_path  = '../../steeleagle-vol/compiler/python/project'
+    waypoint_file = '../../steeleagle-vol/compiler/out/waypoint.json'
 
     def __init__(self, alt, compiler_file, red, request_sock, router_sock):
         self.alt = alt
@@ -38,6 +233,7 @@ class SwarmController:
         self.request_sock = request_sock
         self.router_sock = router_sock
         self.running = True
+        self.patrol_area_list = None
 
     async def run(self):
         await asyncio.gather(self.listen_cmdrs(), self.listen_drones())
@@ -129,6 +325,8 @@ class SwarmController:
         try:
             logger.info(f"Sending request {req.seq_num} to drones...")
             # Send the command to each drone
+
+            patrol_lines = self.get_patrol_lines(len(drone_list))
             for drone_id in drone_list:
                 # check if the cmd is a mission
                 if base_url:
@@ -176,6 +374,8 @@ class SwarmController:
                 logger.info(f"drone list revised: {drone_list_revised}")
                 await self.compile_mission(dsl, kml, drone_list_revised)
 
+                self.patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
+
                 # get the base url
                 parsed_url = urlparse(script_url)
                 base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
@@ -184,11 +384,6 @@ class SwarmController:
             await self.send_to_drone(req, base_url, drone_list)
             await self.request_sock.send(b'ACK')
             logger.info('Sent ACK to commander')
-
-    async def listen_drones(self):
-        while self.running:
-            identity, msg = await self.router_sock.recv_multipart()
-            logger.info(f'Received message from drone {identity}: {msg}')
 
 async def main():
     setup_logging(logger)
