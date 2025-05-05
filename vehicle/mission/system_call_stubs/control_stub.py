@@ -40,18 +40,6 @@ class ControlStub(Stub):
         request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-
-    async def set_velocity(self, forward_vel, right_vel, up_vel, angle_vel):
-        request = control_protocol.Request()
-        request.veh.velocity_body.forward_vel = forward_vel
-        request.veh.velocity_body.right_vel = right_vel
-        request.veh.velocity_body.up_vel = up_vel
-        request.veh.velocity_body.angle_vel = angle_vel
-        result = await self.send_and_wait(request)
-        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
-    async def set_relative_position(self, forward, right, up, angle):
-        pass
     
     async def set_gps_location(self, latitude, longitude, altitude, bearing):
         request = control_protocol.Request()
@@ -61,8 +49,44 @@ class ControlStub(Stub):
         request.veh.location.heading = bearing
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+
+    async def set_relative_position_enu(self, north, east, up, angle):
+        request = control_protocol.Request()
+        request.veh.position_enu.north = north
+        request.veh.position_enu.east = east
+        request.veh.position_enu.up = up
+        request.veh.position_enu.angle = angle
+        result = await self.send_and_wait(request)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
-    '''Compute methods'''
+    async def set_relative_position_body(self, forward, right, up, angle):
+        request = control_protocol.Request()
+        request.veh.position_body.forward = forward
+        request.veh.position_body.right = right
+        request.veh.position_body.up = up
+        request.veh.position_body.angle = angle
+        result = await self.send_and_wait(request)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
+    async def set_velocity_enu(self, north_vel, east_vel, up_vel, angle_vel):
+        request = control_protocol.Request()
+        request.veh.velocity_enu.north_vel = north_vel
+        request.veh.velocity_enu.east_vel = east_vel
+        request.veh.velocity_enu.up_vel = up_vel
+        request.veh.velocity_enu.angle_vel = angle_vel
+        result = await self.send_and_wait(request)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
+    async def set_velocity_body(self, forward_vel, right_vel, up_vel, angle_vel):
+        request = control_protocol.Request()
+        request.veh.velocity_body.forward_vel = forward_vel
+        request.veh.velocity_body.right_vel = right_vel
+        request.veh.velocity_body.up_vel = up_vel
+        request.veh.velocity_body.angle_vel = angle_vel
+        result = await self.send_and_wait(request)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
+    ''' Compute methods '''
     async def clear_compute_result(self, compute_key):
         cpt_req = control_protocol.Request()
         cpt_req.cpt.key = compute_key
