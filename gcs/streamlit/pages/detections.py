@@ -47,7 +47,7 @@ def draw_map():
     for obj in red.zrange("detections", 0, -1):
         if len(red.keys(f"objects:{obj}")) > 0:
             fields = red.hgetall(f"objects:{obj}")
-            img_ref = f'<img src="{fields["link"]}" height="250px" width="250px"/>'
+            img_ref = f'<img src="{fields["link"]}" height="400px" width="400px"/>'
             div_content = f"""
                     <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
                         {obj}<br/>
