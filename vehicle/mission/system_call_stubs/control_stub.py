@@ -105,15 +105,9 @@ class ControlStub(Stub):
         return result.msn_notification
     
     async def get_waypoints(self):
-        # read the waypoints from the waypoint path
+        # Read the waypoints from the waypoint path
         with open(self.waypoint_path, 'r') as f:
             waypoints = f.read()
             
-        # parse the waypoints
+        # Parse the waypoints
         return ast.literal_eval(waypoints)
-    
-    async def set_waypoints(self, waypoints):
-        # write the waypoints to the waypoint path
-        with open(self.waypoint_path, 'w') as f:
-            f.write(str(waypoints))
-    
