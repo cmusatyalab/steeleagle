@@ -47,7 +47,7 @@ class CommandService(Service):
             self.mission_ctrl_socket, SocketOperation.BIND, 'hub.network.controlplane.hub_to_mission')
 
         self.create_task(self.cmd_proxy())
-        self.create_task(self.send_dummy_msg_to_drone())
+      
 
     ###########################################################################
     #                                Driver                                   #
@@ -106,6 +106,11 @@ class CommandService(Service):
             logger.info(f"Mission stop failed")
         else:
             logger.info(f"Unknown mission stop status: {rep.resp}")
+            
+    async def send_notify_mission(self, req):
+        # send the notify mission command
+        logger.info(f'notify_mission message: {req}')
+        self.mission_cmd_socket.send(req.SerializeToString())
 
     ###########################################################################
     #                                Compute                                  #
@@ -155,6 +160,9 @@ class CommandService(Service):
                         hover.veh.action = control_protocol.VehicleAction.HOVER
                         asyncio.create_task(self.send_driver_command(hover))
                         self.manual_mode_enabled()
+                    case control_protocol.MissionAction.NOTIFY:
+                        await self.send_notify_mission(req)
+                        
                     case _:
                         raise NotImplementedError()
             case "veh":
@@ -192,10 +200,18 @@ class CommandService(Service):
                 if self.mission_cmd_socket in socks:
                     msg = await self.mission_cmd_socket.recv_multipart()
                     cmd = msg[0]
-                    logger.debug(f"proxy : mission_cmd_socket Received message from FRONTEND: {cmd}")
-                    identity = b'usr'
-                    await self.driver_socket.send_multipart([identity, cmd])
-
+                    
+                    # Filter the message
+                    req = control_protocol.Request()
+                    req.ParseFromString(cmd)
+                    logger.debug(f"proxy : mission_cmd_socket Received message from FRONTEND: {req}")
+                    if req.WhichOneof("type") == "veh":
+                        logger.debug(f"proxy : mission_cmd_socket Received message from FRONTEND: {cmd}")
+                        identity = b'usr'
+                        await self.driver_socket.send_multipart([identity, cmd])
+                    elif req.WhichOneof("type") == "msn":
+                        # or send to the commander
+                        self.commander_socket.send_multipart([cmd])
 
                 # Check for messages from DRIVER
                 if self.driver_socket in socks:
@@ -218,11 +234,6 @@ class CommandService(Service):
 
             except Exception as e:
                 logger.error(f"proxy: {e}")
-
-    async def send_dummy_msg_to_drone(self):
-        while True:
-            await asyncio.sleep(5)
-            await self.commander_socket.send_string("Hello from command svc!")
 
 async def main():
     setup_logging(logger, 'hub.logging')

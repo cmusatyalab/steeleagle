@@ -123,8 +123,6 @@ class MissionController():
         self.tm = tm.TaskManager(self.ctrl, self.data, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
         
-        
-    
     async def end_mission(self):
         if self.tm and not self.tm_coroutine.cancelled():
             self.tm_coroutine.cancel()
@@ -143,7 +141,7 @@ class MissionController():
             
     ######################################################## MAIN LOOP ############################################################             
     async def run(self):
-        self.ctrl = ControlStub()
+        self.ctrl = ControlStub(project_path=self.user_path)
         self.data = DataStub()
         asyncio.create_task(self.ctrl.run())
         asyncio.create_task(self.data.run())
