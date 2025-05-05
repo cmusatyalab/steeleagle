@@ -6,6 +6,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
 from util import  connect_redis,  menu, COLORS, authenticated
+import datetime
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -49,11 +50,10 @@ def draw_map():
             img_ref = f'<img src="{fields["link"]}" height="250px" width="250px"/>'
             div_content = f"""
                     <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
-                        {obj}
-                        {fields["cls"]}
-                        {fields["confidence"]}
-                        {fields["drone_id"]}
-                        {fields["last_seen"]}
+                        {obj}<br/>
+                        {fields["confidence"]:.2f}<br/>
+                        {fields["drone_id"]}<br/>
+                        {datetime.datetime.fromtimestamp(fields["last_seen"])}
                     </div>
                 """
 

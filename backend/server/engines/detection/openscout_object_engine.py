@@ -145,7 +145,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return est_lat, est_lon
 
     def storeDetection(self, drone, lat, lon, cls, conf, link=""):
-        object_name = f"{cls}-{time.time()}"
+        object_name = f"{cls}-{os.urandom(2).hex()}"
         # first do a geosearch to see if there is a match within radius
         objects = self.r.geosearch(
             "detections",
