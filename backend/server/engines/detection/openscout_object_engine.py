@@ -79,7 +79,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.ttl_secs = args.ttl
         self.geofence = []
 
-        if not os.path.exists(args.geofence):
+        fence_path = os.getcwd()+"/geofence/" + args.geofence
+        if not os.path.exists(fence_path):
             logger.error(f"Geofence KML file not found in shared volume: {args.geofence}")
         else:
             #build geofence from coordinates inside Polygon element of KML file
