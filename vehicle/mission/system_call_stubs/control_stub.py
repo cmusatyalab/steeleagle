@@ -18,7 +18,7 @@ class ControlStub(Stub):
 
     async def run(self):
         await self.receiver_loop(self.parse_control_response)
-   
+
     ''' Vehicle methods '''
     async def take_off(self):
         request = control_protocol.Request()
@@ -37,13 +37,13 @@ class ControlStub(Stub):
         request.veh.action = control_protocol.VehicleAction.RTH
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def hover(self):
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def set_gps_location(self, latitude, longitude, altitude, bearing):
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
@@ -61,7 +61,7 @@ class ControlStub(Stub):
         request.veh.position_enu.angle = angle
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def set_relative_position_body(self, forward, right, up, angle):
         request = control_protocol.Request()
         request.veh.position_body.forward = forward
@@ -70,7 +70,7 @@ class ControlStub(Stub):
         request.veh.position_body.angle = angle
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def set_velocity_enu(self, north_vel, east_vel, up_vel, angle_vel):
         request = control_protocol.Request()
         request.veh.velocity_enu.north_vel = north_vel
@@ -79,7 +79,7 @@ class ControlStub(Stub):
         request.veh.velocity_enu.angle_vel = angle_vel
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def set_velocity_body(self, forward_vel, right_vel, up_vel, angle_vel):
         request = control_protocol.Request()
         request.veh.velocity_body.forward_vel = forward_vel
@@ -88,7 +88,7 @@ class ControlStub(Stub):
         request.veh.velocity_body.angle_vel = angle_vel
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     ''' Compute methods '''
     async def clear_compute_result(self, compute_type):
         cpt_req = control_protocol.Request()
@@ -96,17 +96,26 @@ class ControlStub(Stub):
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
+
     async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
-        cpt_req = control_protocol.Request()
-        cpt_req.cpt.lower_bound = hsv_lower_bound
-        cpt_req.cpt.upper_bound = hsv_upper_bound
-        cpt_req.cpt.model = compute_model
-        cpt_req.cpt.action = control_protocol.ComputeAction.COMPUTE_CONFIGURE
-        result = await self.send_and_wait(cpt_req)
-        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
-    
-    
+        try:
+            logger.info(f"Starting configure_compute: {hsv_lower_bound} {type(hsv_lower_bound)}")
+            cpt_req = control_protocol.Request()
+            cpt_req.cpt.lower_bound.h = hsv_lower_bound[0]
+            cpt_req.cpt.lower_bound.s = hsv_lower_bound[1]
+            cpt_req.cpt.lower_bound.v = hsv_lower_bound[2]
+            cpt_req.cpt.upper_bound.h = hsv_upper_bound[0]
+            cpt_req.cpt.upper_bound.s = hsv_upper_bound[1]
+            cpt_req.cpt.upper_bound.v = hsv_upper_bound[2]
+            cpt_req.cpt.model = compute_model
+            cpt_req.cpt.action = control_protocol.ComputeAction.CONFIGURE_COMPUTE
+            logger.info("Await for send_and_wait")
+            result = await self.send_and_wait(cpt_req)
+            logger.info("Done awaiting for send_and_wait")
+            return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+        except Exception as e:
+            logger.info(f"{e}")
+
     ''' Mission methods '''
     async def send_notification(self, msg):
         request = control_protocol.Request()
@@ -114,12 +123,12 @@ class ControlStub(Stub):
         request.msn.notification = msg
         result = await self.send_and_wait(request)
         return result.msn_notification
-    
+
     async def get_waypoints(self, tag):
         # Read the waypoints from the waypoint path
         with open(self.waypoint_path, 'r') as f:
             waypoints = f.read()
-            
+
         waypoints_map = json.loads(waypoints)
         waypoints_val = waypoints_map.get(tag)
         return waypoints_val

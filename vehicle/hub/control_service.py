@@ -170,14 +170,14 @@ class ControlService(Service):
     ###########################################################################
     #                             PROCESSORS                                  #
     ###########################################################################
-    
+
     async def clear_compute_result(self, req):
         logger.info("Clear compute result")
         compute_type = req.cpt.type
         for compute_id in self.compute_dict.keys():
             self.data_store.clear_compute_result(compute_id, compute_type)
             logger.info(f"Cleared compute result for {compute_id} and type {compute_type}")
-        
+
         reply = control_protocol.Response()
         reply.resp = common_protocol.ResponseStatus.COMPLETED
         reply.timestamp.GetCurrentTime()
@@ -187,20 +187,20 @@ class ControlService(Service):
     async def configure_compute(self, req):
         logger.info("Configure compute")
         model = req.cpt.model
-        hsv_lower = req.cpt.hsv_lower
-        hsv_upper = req.cpt.hsv_upper
+        lower_bound = [req.cpt.lower_bound.h, req.cpt.lower_bound.s, req.cpt.lower_bound.v]
+        upper_bound = [req.cpt.upper_bound.h, req.cpt.upper_bound.s, req.cpt.upper_bound.v]
         for compute_id in self.compute_dict.keys():
             compute = self.compute_dict[compute_id]
-            compute.set(model, hsv_lower, hsv_upper)
-            logger.info(f"Configured compute {compute_id} with model {model}, hsv_lower {hsv_lower}, hsv_upper {hsv_upper}")
-            
+            compute.set(model, lower_bound, upper_bound)
+            logger.info(f"Configured compute {compute_id} with model {model}, lower_bound {lower_bound}, upper_bound {upper_bound}")
+
         reply = control_protocol.Response()
         reply.resp = common_protocol.ResponseStatus.COMPLETED
         reply.timestamp.GetCurrentTime()
         reply.seq_num = req.seq_num
         await self.mission_cmd_socket.send_multipart([reply.SerializeToString()])
- 
-        
+
+
     async def send_driver_command(self, req):
         """Sends a command to the driver."""
         await self.driver_socket.send_multipart([b'cmdr', req.SerializeToString()])

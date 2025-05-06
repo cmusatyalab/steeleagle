@@ -127,18 +127,18 @@ class GabrielCompute(ComputeInterface):
                     # produce extras
                     extras = gabriel_extras.Extras()
                     compute_command = extras.cpt_request
-                    compute_command.cpt.key = self.compute_id
+                    #compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
                         compute_command.cpt.model = self.set_params['model']
                     if self.set_params['hsv_lower'] is not None:
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][0]
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][1]
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][2]
+                        compute_command.cpt.lower_bound.h = self.set_params['hsv_lower'][0]
+                        compute_command.cpt.lower_bound.s = self.set_params['hsv_lower'][1]
+                        compute_command.cpt.lower_bound.v = self.set_params['hsv_lower'][2]
                     if self.set_params['hsv_upper'] is not None:
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][0]
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
+                        compute_command.cpt.upper_bound.h = self.set_params['hsv_upper'][0]
+                        compute_command.cpt.upper_bound.s = self.set_params['hsv_upper'][1]
+                        compute_command.cpt.upper_bound.v = self.set_params['hsv_upper'][2]
 
                     self.data_store.get_raw_data(extras.telemetry)
 

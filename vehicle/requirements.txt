@@ -1,0 +1,7 @@
+validators
+zmq
+parrot-olympe==7.7.4
+gabriel-server
+gabriel-client
+gabriel-protocol
+pyyaml
