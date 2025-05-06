@@ -29,6 +29,6 @@ class ComputeInterface(ABC):
         return self.compute_status
 
     @abstractmethod
-    def set(self):
+    def set(self, model, hsv_lower, hsv_upper):
         """Setting the metadata of the worker."""
         pass

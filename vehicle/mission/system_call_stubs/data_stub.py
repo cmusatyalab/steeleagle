@@ -47,7 +47,7 @@ class DataStub(Stub):
         }
         if result:
             # Name
-            tel_dict["name"] = result.drone_name
+            tel_dict["drone_name"] = result.drone_name
             # Global Position
             tel_dict["global_position"]["latitude"] = result.global_position.latitude
             tel_dict["global_position"]["longitude"] = result.global_position.longitude
