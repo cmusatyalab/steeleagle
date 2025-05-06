@@ -37,9 +37,14 @@ class DataStore:
         # Processed data cache dict
         self._result_cache = {}
 
-    def clear_compute_result(self, compute_id):
-        logger.info(f"clear_compute_result: Clearing result for compute {compute_id}")
-        self._result_cache.pop(compute_id, None)
+    def clear_compute_result(self, compute_id, compute_type):
+        """Clears the compute result for a given compute ID and type."""
+        logger.info(f"clear_compute_result: Clearing result for {compute_id=} and {compute_type=}")
+        if compute_id in self._result_cache:
+            self._result_cache[compute_id].pop(compute_type, None)
+            logger.debug(f"clear_compute_result: Cleared result for {compute_id=} and {compute_type=}")
+        else:
+            logger.error(f"clear_compute_result: No such compute ID: {compute_id=}")
 
     ###########################################################################
     #                               COMPUTE                                   #

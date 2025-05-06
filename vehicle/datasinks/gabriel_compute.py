@@ -50,10 +50,10 @@ class GabrielCompute(ComputeInterface):
         await self.gabriel_client.launch_async()
 
 
-    def set(self):
-        self.set_params["model"] = None
-        self.set_params["hsv_lower"] = None
-        self.set_params["hsv_upper"] = None
+    def set(self, model, hsv_lower, hsv_upper):
+        self.set_params["model"] = model
+        self.set_params["hsv_lower"] = hsv_lower
+        self.set_params["hsv_upper"] = hsv_upper
 
 
     def stop(self):
