@@ -118,7 +118,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             VFOV = 43 # Vertical FOV.
         else:
             raise "Unsupported drone type!"
-        pixel_center = (640/2, 480/2) # Center pixel location of the camera.
+        pixel_center = (1280/2, 720/2) # Center pixel location of the camera.
 
         # Perform rotations.
         logger.info("Pitch: {0}, Yaw: {1}, Elev: {2}".format(camera_pitch, drone_yaw, drone_elev))
@@ -263,8 +263,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 position = telemetry.global_position
                 gimbal_pitch = telemetry.gimbal_pose.pitch
 
-                # TODO(Aditya): check if bearing is sent in radians or degrees
-                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading*(180 /np.pi), position.absolute_altitude, target_x_pix, target_y_pix)
+                # position.heading is sent in degrees
+                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading, position.absolute_altitude, target_x_pix, target_y_pix)
 
                 hsv_filter = False
                 if cpt_config.HasField('lower_bound'):
