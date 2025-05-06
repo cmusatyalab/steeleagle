@@ -34,6 +34,8 @@ import json
 from scipy.spatial.transform import Rotation as R
 import redis
 import torch
+from pygeodesy.sphericalNvector import LatLon
+from pykml import parser
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -74,7 +76,23 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.lastprint = self.lasttime
         self.hsv_threshold = args.hsv_threshold
         self.search_radius = args.radius
-        self.ttl_secs = 1200
+        self.ttl_secs = args.ttl
+        self.geofence = []
+
+        if not os.path.exists(args.geofence):
+            logger.error(f"Geofence KML file not found in shared volume: {args.geofence}")
+        else:
+            #build geofence from coordinates inside Polygon element of KML file
+            with open(f"{args.geofence}", 'r', encoding='utf-8') as f:
+                root = parser.parse(f).getroot()
+                coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
+                for c in coords.split():
+                    lon, lat, alt =  c.split(",")
+                    p = LatLon(lat, lon)
+                    geofence.append(p)
+
+            logger.info(f"GeoFence read: {self.geofence}")
+
 
         if args.exclude:
             self.exclusions = list(map(int, args.exclude.split(","))) #split string to int list
@@ -265,44 +283,48 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
                 # position.heading is sent in degrees
                 lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading, position.absolute_altitude, target_x_pix, target_y_pix)
+                p = LatLon(lat, lon)
 
                 hsv_filter = False
                 if cpt_config.HasField('lower_bound'):
                     lower_bound = [cpt_config.lower_bound.H, cpt_config.lower_bound.S, cpt_config.lower_bound.V]
                     upper_bound = [cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V]
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
-                # first do a geosearch to see if there is a match within radius
-                objects = self.r.geosearch(
-                    "detections",
-                    longitude=np.clip(lon, -180, 180),
-                    latitude=np.clip(lat, -90, 90),
-                    radius=self.search_radius,
-                    unit="m",
-                )
 
-                if len(objects) == 0:
-                    r.append({
-                        "id": i,
-                        "class": names[i],
-                        "score": scores[i],
-                        "lat": lat, "lon":
-                        lon, "box": box,
-                        "hsv_filter": hsv_filter
-                    })
-                    self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
-                else:
-                    for obj in objects:
-                        id = self.r.hget(obj, "drone_id")
-                        if id == drone_id:
-                            r.append({
-                                "id": i,
-                                "class": names[i],
-                                "score": scores[i],
-                                "lat": lat, "lon":
-                                lon, "box": box,
-                                "hsv_filter": hsv_filter
-                            })
-                            self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                # if there is no geofence, or the estimated object locatoin is within the geofence...
+                if len(self.geofence == 0 ) or p.isenclosedBy(self.geofence):
+                    # first do a geosearch to see if there is a match within radius
+                    objects = self.r.geosearch(
+                        "detections",
+                        longitude=np.clip(lon, -180, 180),
+                        latitude=np.clip(lat, -90, 90),
+                        radius=self.search_radius,
+                        unit="m",
+                    )
+
+                    if len(objects) == 0:
+                        r.append({
+                            "id": i,
+                            "class": names[i],
+                            "score": scores[i],
+                            "lat": lat, "lon":
+                            lon, "box": box,
+                            "hsv_filter": hsv_filter
+                        })
+                        self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                    else:
+                        for obj in objects:
+                            id = self.r.hget(obj, "drone_id")
+                            if id == drone_id:
+                                r.append({
+                                    "id": i,
+                                    "class": names[i],
+                                    "score": scores[i],
+                                    "lat": lat, "lon":
+                                    lon, "box": box,
+                                    "hsv_filter": hsv_filter
+                                })
+                                self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
         if not detections_above_threshold:
             return None
