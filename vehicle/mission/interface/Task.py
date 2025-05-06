@@ -7,7 +7,6 @@ import functools
 import logging
 import threading
 from aenum import Enum
-import inspect
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,9 +25,9 @@ class TaskArguments():
         
 class Task(ABC):
 
-    def __init__(self, drone, cloudlet, task_id, trigger_event_queue, task_args):
-        self.cloudlet = cloudlet
-        self.drone = drone
+    def __init__(self, control, data, task_id, trigger_event_queue, task_args):
+        self.data = data
+        self.control = control
         self.task_attributes = task_args.task_attributes
         self.transitions_attributes = task_args.transitions_attributes
         self.task_id = task_id

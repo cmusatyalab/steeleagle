@@ -97,9 +97,8 @@ class ControlStub(Stub):
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
-    async def configure_compute(self, compute_type, compute_model, hsv_lower_bound, hsv_upper_bound):
+    async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
         cpt_req = control_protocol.Request()
-        cpt_req.cpt.type = compute_type
         cpt_req.cpt.lower_bound = hsv_lower_bound
         cpt_req.cpt.upper_bound = hsv_upper_bound
         cpt_req.cpt.model = compute_model
