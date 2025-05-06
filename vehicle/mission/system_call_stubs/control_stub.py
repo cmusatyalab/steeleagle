@@ -93,7 +93,7 @@ class ControlStub(Stub):
     async def clear_compute_result(self, compute_type):
         cpt_req = control_protocol.Request()
         cpt_req.cpt.type = compute_type
-        cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR
+        cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
@@ -102,7 +102,7 @@ class ControlStub(Stub):
         cpt_req.cpt.lower_bound = hsv_lower_bound
         cpt_req.cpt.upper_bound = hsv_upper_bound
         cpt_req.cpt.model = compute_model
-        cpt_req.cpt.action = control_protocol.ComputeAction.CONFIGURE
+        cpt_req.cpt.action = control_protocol.ComputeAction.COMPUTE_CONFIGURE
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
