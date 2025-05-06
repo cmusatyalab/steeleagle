@@ -171,6 +171,7 @@ services:
     volumes:
       - ./models:/steeleagle/model/
       - ./steeleagle-vol:/steeleagle/images/
+      - ./geofence:/steeleagle/geofence/
     depends_on:
       - gabriel-server
     networks:
