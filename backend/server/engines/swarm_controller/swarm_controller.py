@@ -33,26 +33,40 @@ logger = logging.getLogger(__name__)
 class PatrolArea:
     '''Represents an area for patrolling.'''
 
-    def __init__(self):
-        # The patrol lines that are part of this patrol area.
-        self.patrol_lines = None
-        # Each iterator in this list contains the patrol lines assigned to
+    def __init__(self, name):
+        # The name of this patrol area
+        self.name = name
+        # The patrol waypoints that are part of this patrol area. Each item
+        # in this list constitutes a segment of this patrol.
+        self.patrol_waypoints = []
+        # Each iterator in this list contains the waypoints assigned to
         # a drone.
-        self.line_partition_iters = None
+        self.waypoint_iters = None
 
-    def add_patrol_line(self, line):
-        '''Add a patrol line as a part of this patrol area.'''
-        self.patrol_lines.append(line)
+    def get_patrol_waypoints(self):
+        return self.patrol_waypoints
+
+    def get_name(self):
+        return self.name
+
+    def __repr__(self):
+        return str(self.patrol_waypoints)
+
+    def add_patrol_waypoints(self, waypoints):
+        '''Add a waypoint pair as a part of this patrol area.'''
+        self.patrol_waypoints.append(waypoints)
 
     def update_unpatrolled_lines(self):
         '''
         Stores the patrol lines that have not yet been patrolled by a drone,
         discarding the rest.
         '''
-        self.patrol_lines = []
-        for it in self.line_partition_iters:
+        if self.waypoint_iters is None:
+            return
+        self.patrol_waypoints = []
+        for it in self.waypoint_iters:
             for line in it:
-                self.patrol_lines.append(line)
+                self.patrol_waypoints.append(line)
 
     def create_partitioning(self, num_drones):
         '''
@@ -60,40 +74,41 @@ class PatrolArea:
         '''
         # Figure out which patrol lines are still pending
         self.update_unpatrolled_lines()
-        num_lines = len(self.patrol_lines)
+        num_lines = len(self.patrol_waypoints)
 
-        self.line_partition_iters = []
+        self.waypoint_iters = []
+        logger.info('Creating partition iters')
 
         if num_drones >= num_lines:
             logger.info(f"{num_lines=} {num_drones=}. Assigning 1 patrol line per drone")
             for i in range(num_drones):
                 partition = []
                 if i < num_lines:
-                    partition = [self.patrol_lines[i]]
-                self.line_partition_iters.append(iter(partition))
+                    partition = [self.patrol_waypoints[i]]
+                self.waypoint_iters.append(iter(partition))
             return
 
         lines_per_drone = num_lines // num_drones
         logger.info(f"{num_lines=} {num_drones=}. Assigning {lines_per_drone} patrol lines per drone")
 
         for i in range(num_drones - 1):
-            partition = self.patrol_lines[i * lines_per_drone:(i+1) * lines_per_drone]
-            self.line_partition_iters.append(iter(partition))
+            partition = self.patrol_waypoints[i * lines_per_drone:(i+1) * lines_per_drone]
+            self.waypoint_iters.append(iter(partition))
 
         # Assign remaining patrol lines to the last drone
-        partition = self.patrol_lines[(num_drones - 1) * lines_per_drone:]
-		self.line_partition_iters.append(iter(partition))
+        partition = self.patrol_waypoints[(num_drones - 1) * lines_per_drone:]
+        self.waypoint_iters.append(iter(partition))
 
-    def get_patrol_line(self, drone_id):
+    def get_patrol_line(self, drone_idx):
         try:
-            return next(self.line_partition_iters[drone_id])
+            return next(self.waypoint_iters[drone_idx])
         except StopIteration:
             # Steal a patrol line from another drone
-            for i in range(0, len(self.line_partition_iters)):
-                if i == drone_id:
+            for i in range(0, len(self.waypoint_iters)):
+                if i == drone_idx:
                     continue
                 try:
-                    return next(self.line_partition_iters[i])
+                    return next(self.waypoint_iters[i])
                 except StopIteration:
                     continue
         return None
@@ -106,20 +121,22 @@ class PatrolArea:
 
         patrol_area_list = []
 
-        for _, patrol_lines in data.items():
-            patrol_area = PatrolArea()
+        for patrol_name, sub_patrols in data.items():
+            patrol_area = PatrolArea(patrol_name)
             patrol_area_list.append(patrol_area)
-
-            for patrol_line in patrol_lines:
-                patrol_line = PatrolLine(line)
-                patrol_area.add_patrol_line(patrol_line)
+            for sub_patrol_name, sub_patrol_waypoints in sub_patrols.items():
+                waypoints = PatrolWaypoints(patrol_name + '.' + sub_patrol_name)
+                patrol_area.add_patrol_waypoints(waypoints)
 
         return patrol_area_list
 
 @dataclass
-class PatrolLine:
+class PatrolWaypoints:
     '''Represents the waypoints for a patrolling line segment.'''
-    line_info: str
+    waypoints: str
+
+    def __repr__(self):
+        return self.waypoints
 
 @dataclass
 class PatrolMissionState:
@@ -128,30 +145,53 @@ class PatrolMissionState:
     current_patrol_area: PatrolArea
     patrol_area_iter: Iterator[List[PatrolArea]]
 
+class Mission(ABC):
+    def __init__(self, state):
+        self.state = state
+
+    def get_state(self):
+        return self.state
+
+    @abstractmethod
+    def state_transition(self, drone_id, msg):
+        pass
+
+    @abstractmethod
+    def update_drone_list(self, drone_list):
+        pass
+
 class PatrolMission(Mission):
     def __init__(self, drone_list, patrol_area_list):
-        state = PatrolMissionState(drone_list, patrol_area_list, [])
+        state = PatrolMissionState(drone_list, patrol_area_list, None, None)
         super().__init__(state)
-        self._create_partitioning()
-
-    def increment_patrol_area(self):
+        self.state.patrol_area_iter = iter(patrol_area_list)
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
 
-    def state_transition_fn(self, drone_id, msg):
+    def __repr__(self):
+        return str(self.state)
+
+    def advance_patrol_area(self):
+        self.state.current_patrol_area = next(self.state.patrol_area_iter)
+        self._create_partitioning()
+
+    def state_transition(self, drone_id, msg):
         drone_idx = self.state.drone_list.index(drone_id)
-        line = self.current_patrol_area.get_patrol_line(drone_idx)
+        line = self.state.current_patrol_area.get_patrol_line(drone_idx)
 
-        while line is None:
+        msg = line
+
+        if msg is None:
             try:
-                self.increment_patrol_area()
+                self.advance_patrol_area()
+                msg = f"{self.state.current_patrol_area.get_name()} done"
             except StopIteration:
-                # TODO(Aditya): do something when we are done with the mission
-                break
-            line = self.current_patrol_area.get_patrol_line(drone_idx)
+                pass
 
-        # TODO(Aditya): serialize line
-        return (drone_id, line)
+        if msg is None:
+            msg = "finish"
+
+        return (drone_id, msg)
 
     def update_drone_list(self, drone_list):
         self.state.drone_list = drone_list
@@ -159,32 +199,15 @@ class PatrolMission(Mission):
 
     def _create_partitioning(self):
         num_drones = len(self.state.drone_list)
-        patrol_area.create_partitioning(num_drones)
-
-class Mission(ABC):
-    def __init__(self, state):
-        self.state = state
-
-    @abstractmethod
-    def start(self):
-        pass
-
-    def get_state(self):
-        return self.state
-
-    @abstractmethod
-    def state_transition_fn(self, drone_id, msg):
-        pass
-
-    @abstractmethod
-    def update_drone_list(self, drone_list):
-        pass
+        self.state.current_patrol_area.create_partitioning(num_drones)
 
 class MissionSupervisor:
-	def __init__(self, swarm_controller, router_sock):
-		self.swarm_controller = swarm_controller
+    def __init__(self, router_sock):
         self.mission = None
-        self.router_sock = sock
+        self.router_sock = router_sock
+
+    def get_mission(self):
+        return self.mission
 
     async def send_drone_msg(self, drone_id, drone_msg):
         logger.info(f'Sending message {drone_msg} to {drone_id}')
@@ -194,13 +217,13 @@ class MissionSupervisor:
         while self.running:
             # Listen for mission updates from drones
             drone_id, msg = await self.listen_drones()
-            drone_messages = self.mission.state_transition_fn(drone_id, msg)
+            drone_messages = self.mission.state_transition(drone_id, msg)
 
             # Send mission updates to drones
             for drone_id, drone_msg in drone_messages:
                 self.send_drone_msg(drone_id, drone_msg)
 
-	async def supervise_mission(self, mission, drone_list):
+    async def supervise(self, mission, drone_list):
         self.mission = mission
         self.drone_handler_task = asyncio.create_task(self.drone_handler())
         self.drone_list = drone_list
@@ -217,14 +240,14 @@ class MissionSupervisor:
 
 class SwarmController:
     # Set up the paths and variables for the compiler
-    #compiler_path = '/compiler'
-    #output_path = '/compiler/out/flightplan_'
-    #platform_path  = '/compiler/python/project'
-    #waypoint_file = '/compiler/out/waypoint.json'
-    compiler_path = '../../steeleagle-vol/compiler'
-    output_path = '../../steeleagle-vol/compiler/out/flightplan_'
-    platform_path  = '../../steeleagle-vol/compiler/python/project'
-    waypoint_file = '../../steeleagle-vol/compiler/out/waypoint.json'
+    compiler_path = '/compiler'
+    output_path = '/compiler/out/flightplan'
+    platform_path  = '/compiler/python/project'
+    waypoint_file = '/compiler/out/waypoint.json'
+    # compiler_path = '../../steeleagle-vol/compiler'
+    # output_path = '../../steeleagle-vol/compiler/out/flightplan_'
+    # platform_path  = '../../steeleagle-vol/compiler/python/project'
+    # waypoint_file = '../../steeleagle-vol/compiler/out/waypoint.json'
 
     def __init__(self, alt, compiler_file, red, request_sock, router_sock):
         self.alt = alt
@@ -234,9 +257,10 @@ class SwarmController:
         self.router_sock = router_sock
         self.running = True
         self.patrol_area_list = None
+        self.mission_supervisor = MissionSupervisor(self.router_sock)
 
     async def run(self):
-        await asyncio.gather(self.listen_cmdrs(), self.listen_drones())
+        await asyncio.gather(self.listen_cmdrs())
 
     @staticmethod
     async def download_file(script_url, filename):
@@ -283,7 +307,7 @@ class SwarmController:
         except Exception as e:
             logger.error(f"Error during download or extraction: {e}")
 
-    async def compile_mission(self, dsl_file, kml_file, drone_list):
+    async def compile_mission(self, dsl_file, kml_file):
         # Construct the full paths for the DSL and KML files
         dsl_file_path = os.path.join(self.compiler_path, dsl_file)
         kml_file_path = os.path.join(self.compiler_path, kml_file)
@@ -294,12 +318,14 @@ class SwarmController:
         command = [
             "java",
             "-jar", jar_path,
-            "-d", drone_list,
-            "-s", dsl_file_path,
-            "-k", kml_file_path,
             "-o", self.output_path,
-            "-p", self.platform_path,
-            "-a", altitude
+            "-l", self.platform_path,
+            "-k", kml_file_path,
+            "-s", dsl_file_path,
+            "-p", "corridor",
+            "--angle", "90",
+            "--spacing", "1.0",
+            "-w", self.waypoint_file
         ]
 
         # Run the command
@@ -326,12 +352,11 @@ class SwarmController:
             logger.info(f"Sending request {req.seq_num} to drones...")
             # Send the command to each drone
 
-            patrol_lines = self.get_patrol_lines(len(drone_list))
             for drone_id in drone_list:
                 # check if the cmd is a mission
                 if base_url:
                     # reconstruct the script url with the correct compiler output path
-                    req.msn.url = f"{base_url}{self.output_path}{drone_id}.ms"
+                    req.msn.url = f"{base_url}{self.output_path}.ms"
                     logger.info(f"Drone-specific script url: {req.msn.url}")
 
                 # send the command to the drone
@@ -364,17 +389,22 @@ class SwarmController:
             # Check if the command contains a mission and compile it if true
             base_url = None
             if req.msn.action == controlplane.MissionAction.DOWNLOAD:
+                # Cancel the existing mission, if applicable
+                if self.mission_supervisor.get_mission() is not None:
+                    await self.mission_supervisor.stop_mission_supervision()
+
                 # download the script
                 script_url = req.msn.url
                 logger.info(f"script url: {script_url}")
                 dsl, kml = await SwarmController.download_script(script_url)
 
                 # compile the mission
-                drone_list_revised = "&".join(drone_list)
-                logger.info(f"drone list revised: {drone_list_revised}")
-                await self.compile_mission(dsl, kml, drone_list_revised)
+                await self.compile_mission(dsl, kml)
 
-                self.patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
+                patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
+
+                mission = PatrolMission(drone_list, patrol_area_list)
+                await self.mission_supervisor.supervise(mission, drone_list)
 
                 # get the base url
                 parsed_url = urlparse(script_url)
@@ -401,7 +431,7 @@ async def main():
         "--altitude", type=int, default=15, help="base altitude for the drones mission"
     )
     parser.add_argument(
-        "--compiler_file", default='compile-1.5-full.jar', help="compiler file name"
+        "--compiler_file", default='compile-2.0-full.jar', help="compiler file name"
     )
     args = parser.parse_args()
 

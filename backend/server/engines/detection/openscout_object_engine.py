@@ -288,8 +288,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
                 hsv_filter = False
                 if cpt_config.HasField('lower_bound'):
-                    lower_bound = [cpt_config.lower_bound.H, cpt_config.lower_bound.S, cpt_config.lower_bound.V]
-                    upper_bound = [cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V]
+                    lower_bound = [cpt_config.lower_bound.h, cpt_config.lower_bound.s, cpt_config.lower_bound.v]
+                    upper_bound = [cpt_config.upper_bound.h, cpt_config.upper_bound.s, cpt_config.upper_bound.v]
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
 
                 # if there is no geofence, or the estimated object locatoin is within the geofence...
@@ -361,8 +361,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def run_hsv_filter(self, image_np, cpt_config):
         hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
-        lower_boundary = np.array([cpt_config.lower_bound.H, cpt_config.lower_bound.S, cpt_config.lower_bound.V])
-        upper_boundary = np.array([cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V])
+        lower_boundary = np.array([cpt_config.lower_bound.h, cpt_config.lower_bound.s, cpt_config.lower_bound.v])
+        upper_boundary = np.array([cpt_config.upper_bound.h, cpt_config.upper_bound.s, cpt_config.upper_bound.v])
         mask = cv2.inRange(hsv, lower_boundary, upper_boundary)
         final = cv2.bitwise_and(hsv, hsv, mask=mask)
         final = cv2.cvtColor(final, cv2.COLOR_HSV2RGB)

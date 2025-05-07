@@ -30,8 +30,8 @@ class MissionController():
         self.reload = False
         self.user_path = user_path
         self.msn_control_sock = msn_control_sock
-     
-        
+
+
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:
         ret = False
@@ -43,8 +43,8 @@ class MissionController():
         except subprocess.CalledProcessError as e:
             logger.debug(f"Error pip installing requirements.txt: {e}")
         return ret
-    
-    
+
+
     def clean_user_path(self):
         for filename in os.listdir(self.user_path):
             file_path = os.path.join(self.user_path, filename)
@@ -59,11 +59,11 @@ class MissionController():
         try:
             filename = url.rsplit(sep='/')[-1]
             logger.info(f'Writing {filename} to disk...')
-            
+
             # Download the file
             r = requests.get(url, stream=True)
             r.raise_for_status()  # Raise an error for bad responses
-            
+
             with open(filename, mode='wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):  # Use a chunk size
                     f.write(chunk)
@@ -82,10 +82,10 @@ class MissionController():
 
             logger.info(f"Downloaded and extracted {filename} to {self.user_path}")
             self.install_prereqs()
-        
+
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
-            
+
     def download_mission(self, url):
         self.download_script(url)
 
@@ -101,33 +101,33 @@ class MissionController():
                     importlib.reload(module)
                 except Exception as e:
                     logger.error(f"Failed to reload module {module_name}: {e}")
-                    
+
     def start_mission(self):
         if self.tm:
             logger.info(f"mission already running")
             return
         else: # first time mission, create a task manager
-            import core.TaskManager as tm 
-        
+            import core.TaskManager as tm
+
         logger.info(f"start the mission")
-        if self.reload : 
+        if self.reload :
             self.reload_mission()
-        
+
         import project.Mission as msn # import the mission module instead of attribute of the module for the reload to work
-        self.reload = True 
-               
+        self.reload = True
+
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)
-        
+
         # start the tm
         logger.info(f"start the task manager")
         self.tm = tm.TaskManager(self.ctrl, self.data, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
-        
+
     async def end_mission(self):
         if self.tm and not self.tm_coroutine.cancelled():
             self.tm_coroutine.cancel()
             try:
-                await self.tm_coroutine 
+                await self.tm_coroutine
             except asyncio.CancelledError:
                 logger.info("Mission coroutine was cancelled successfully.")
             except Exception as e:
@@ -138,10 +138,10 @@ class MissionController():
                 logger.info("Mission has been ended and cleaned up.")
         else:
             logger.info("Mission not running or already cancelled.")
-            
-    ######################################################## MAIN LOOP ############################################################             
+
+    ######################################################## MAIN LOOP ############################################################
     async def run(self):
-        self.ctrl = ControlStub(project_path=self.user_path)
+        self.ctrl = ControlStub(self.user_path)
         self.data = DataStub()
         asyncio.create_task(self.ctrl.run())
         asyncio.create_task(self.data.run())
@@ -149,10 +149,10 @@ class MissionController():
             try:
                 # Receive a message
                 message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
-                
+
                 # Log the raw received message
                 logger.info(f"Received raw message: {message}")
-                
+
                 # Parse the message
                 req = control_protocol.Request()
                 req.ParseFromString(message)
@@ -161,42 +161,42 @@ class MissionController():
                 if not req.HasField("msn"):
                     logger.info("Received message without mission field, ignoring")
                     return
-                
+
                 msn_action = req.msn.action
                 logger.info(f"Received message with action: {msn_action}")
-                
+
                 if msn_action == control_protocol.MissionAction.DOWNLOAD:
                     url  = req.msn.url
                     self.download_mission(url)
                     resp = common_protocol.ResponseStatus.COMPLETED
-                
+
                 elif msn_action == control_protocol.MissionAction.START:
                     self.start_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
-                    
+
                 elif msn_action == control_protocol.MissionAction.STOP:
                     await self.end_mission()
                     resp = common_protocol.ResponseStatus.COMPLETED
-                    
+
                 else:
                     resp = common_protocol.ResponseStatus.NOTSUPPORTED
-                    
+
                 # Send a reply back to the client
                 rep = control_protocol.Response()
                 rep.resp = resp
                 rep.timestamp.GetCurrentTime()
                 rep.seq_num = seq_num
-                
+
                 self.msn_control_sock.send(rep.SerializeToString())
-                
+
             except zmq.Again:
                 pass
-                
+
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
                 resp = common_protocol.ResponseStatus.FAILED
-                
+
 
             await asyncio.sleep(0)
-            
-            
+
+
