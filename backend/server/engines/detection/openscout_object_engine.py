@@ -284,6 +284,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
                 # position.heading is sent in degrees
                 lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading, position.absolute_altitude, target_x_pix, target_y_pix)
+                lon = np.clip(lon, -180, 180)
+                lat = np.clip(lat, -90, 90)
                 p = LatLon(lat, lon)
 
                 hsv_filter = False
@@ -297,8 +299,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     # first do a geosearch to see if there is a match within radius
                     objects = self.r.geosearch(
                         "detections",
-                        longitude=np.clip(lon, -180, 180),
-                        latitude=np.clip(lat, -90, 90),
+                        longitude=lon,
+                        latitude=lat,
                         radius=self.search_radius,
                         unit="m",
                     )
