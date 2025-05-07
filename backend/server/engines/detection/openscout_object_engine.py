@@ -34,6 +34,8 @@ import json
 from scipy.spatial.transform import Rotation as R
 import redis
 import torch
+from pygeodesy.sphericalNvector import LatLon
+from pykml import parser
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -74,7 +76,24 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.lastprint = self.lasttime
         self.hsv_threshold = args.hsv_threshold
         self.search_radius = args.radius
-        self.ttl_secs = 1200
+        self.ttl_secs = args.ttl
+        self.geofence = []
+
+        fence_path = os.getcwd() + "/geofence/" + args.geofence
+        if not os.path.exists(fence_path) or not os.path.isfile(fence_path):
+            logger.error(f"Geofence KML file not found or is not a file: {fence_path}")
+        else:
+            #build geofence from coordinates inside Polygon element of KML file
+            with open(f"{fence_path}", 'r', encoding='utf-8') as f:
+                root = parser.parse(f).getroot()
+                coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
+                for c in coords.split():
+                    lon, lat, alt =  c.split(",")
+                    p = LatLon(lat, lon)
+                    self.geofence.append(p)
+
+            logger.info(f"GeoFence read: {self.geofence}")
+
 
         if args.exclude:
             self.exclusions = list(map(int, args.exclude.split(","))) #split string to int list
@@ -118,7 +137,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             VFOV = 43 # Vertical FOV.
         else:
             raise "Unsupported drone type!"
-        pixel_center = (640/2, 480/2) # Center pixel location of the camera.
+        pixel_center = (1280/2, 720/2) # Center pixel location of the camera.
 
         # Perform rotations.
         logger.info("Pitch: {0}, Yaw: {1}, Elev: {2}".format(camera_pitch, drone_yaw, drone_elev))
@@ -146,28 +165,18 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def storeDetection(self, drone, lat, lon, cls, conf, link=""):
         object_name = f"{cls}-{os.urandom(2).hex()}"
-        # first do a geosearch to see if there is a match within radius
-        objects = self.r.geosearch(
-            "detections",
-            longitude=np.clip(lon, -180, 180),
-            latitude=np.clip(lat, -90, 90),
-            radius=self.search_radius,
-            unit="m",
-        )
+        self.r.geoadd("detections", [lon, lat, object_name])
 
-        if len(objects) == 0:
-            self.r.geoadd("detections", [lon, lat, object_name])
-
-            object_key = f"objects:{object_name}"
-            self.r.hset(object_key, "last_seen", f"{time.time()}")
-            self.r.hset(object_key, "drone_id", f"{drone}")
-            self.r.hset(object_key, "cls", f"{cls}")
-            self.r.hset(object_key, "confidence", f"{conf}")
-            self.r.hset(object_key, "link", f"{link}")
-            self.r.hset(object_key, "longitude", f"{lon}")
-            self.r.hset(object_key, "latitude", f"{lat}")
-            self.r.expire(object_key, self.ttl_secs)
-            logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
+        object_key = f"objects:{object_name}"
+        self.r.hset(object_key, "last_seen", f"{time.time()}")
+        self.r.hset(object_key, "drone_id", f"{drone}")
+        self.r.hset(object_key, "cls", f"{cls}")
+        self.r.hset(object_key, "confidence", f"{conf}")
+        self.r.hset(object_key, "link", f"{link}")
+        self.r.hset(object_key, "longitude", f"{lon}")
+        self.r.hset(object_key, "latitude", f"{lat}")
+        self.r.expire(object_key, self.ttl_secs)
+        logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
 
     def passes_hsv_filter(self, image, bbox, hsv_min=[30,100,100], hsv_max=[50,255,255], threshold=5.0,) -> bool:
         cropped = image[round(bbox[0]):round(bbox[2]), round(bbox[1]):round(bbox[3])]
@@ -273,8 +282,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 position = telemetry.global_position
                 gimbal_pitch = telemetry.gimbal_pose.pitch
 
-                # TODO(Aditya): check if bearing is sent in radians or degrees
-                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading*(180 /np.pi), position.absolute_altitude, target_x_pix, target_y_pix)
+                # position.heading is sent in degrees
+                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading, position.absolute_altitude, target_x_pix, target_y_pix)
+                p = LatLon(lat, lon)
 
                 hsv_filter = False
                 if cpt_config.HasField('lower_bound'):
@@ -282,15 +292,40 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     upper_bound = [cpt_config.upper_bound.H, cpt_config.upper_bound.S, cpt_config.upper_bound.V]
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
 
-                r.append({
-                    "id": i,
-                    "class": names[i],
-                    "score": scores[i],
-                    "lat": lat, "lon":
-                    lon, "box": box,
-                    "hsv_filter": hsv_filter
-                })
-                self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                # if there is no geofence, or the estimated object locatoin is within the geofence...
+                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
+                    # first do a geosearch to see if there is a match within radius
+                    objects = self.r.geosearch(
+                        "detections",
+                        longitude=np.clip(lon, -180, 180),
+                        latitude=np.clip(lat, -90, 90),
+                        radius=self.search_radius,
+                        unit="m",
+                    )
+
+                    if len(objects) == 0:
+                        r.append({
+                            "id": i,
+                            "class": names[i],
+                            "score": scores[i],
+                            "lat": lat, "lon":
+                            lon, "box": box,
+                            "hsv_filter": hsv_filter
+                        })
+                        self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                    else:
+                        for obj in objects:
+                            id = self.r.hget(obj, "drone_id")
+                            if id == drone_id:
+                                r.append({
+                                    "id": i,
+                                    "class": names[i],
+                                    "score": scores[i],
+                                    "lat": lat, "lon":
+                                    lon, "box": box,
+                                    "hsv_filter": hsv_filter
+                                })
+                                self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
         if not detections_above_threshold:
             return None

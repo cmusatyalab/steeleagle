@@ -95,6 +95,10 @@ def main():
         "--ttl", type=int, default=1200, help="TTL in seconds before objects are cleaned up in redis [default: 1200]"
     )
 
+    parser.add_argument(
+        "--geofence",  default="geofence.kml", help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]"
+    )
+
     args, _ = parser.parse_known_args()
 
     def object_engine_setup():

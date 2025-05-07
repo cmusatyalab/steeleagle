@@ -89,10 +89,11 @@ message ConfigureCompute {
     protocol.common.HSV upper_bound = 3; // upper bound of HSV filter to apply
     float threshold = 4; //change confidence threshold of the DNN
     ComputeAction action = 5;
-    string key = 6;
+    string type = 6;
 }
 
 enum ComputeAction {
   UNKNOWN_COMPUTE_ACTION = 0;
   CLEAR_COMPUTE = 1;
+  CONFIGURE_COMPUTE = 2;
 }

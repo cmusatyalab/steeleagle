@@ -1,4 +1,5 @@
 import ast
+import json
 import logging
 from system_call_stubs.stub import Stub
 import controlplane_pb2 as control_protocol
@@ -89,12 +90,22 @@ class ControlStub(Stub):
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
     
     ''' Compute methods '''
-    async def clear_compute_result(self, compute_key):
+    async def clear_compute_result(self, compute_type):
         cpt_req = control_protocol.Request()
-        cpt_req.cpt.key = compute_key
-        cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR
+        cpt_req.cpt.type = compute_type
+        cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE
         result = await self.send_and_wait(cpt_req)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
+    async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
+        cpt_req = control_protocol.Request()
+        cpt_req.cpt.lower_bound = hsv_lower_bound
+        cpt_req.cpt.upper_bound = hsv_upper_bound
+        cpt_req.cpt.model = compute_model
+        cpt_req.cpt.action = control_protocol.ComputeAction.COMPUTE_CONFIGURE
+        result = await self.send_and_wait(cpt_req)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+    
     
     ''' Mission methods '''
     async def send_notification(self, msg):
@@ -104,10 +115,11 @@ class ControlStub(Stub):
         result = await self.send_and_wait(request)
         return result.msn_notification
     
-    async def get_waypoints(self):
+    async def get_waypoints(self, tag):
         # Read the waypoints from the waypoint path
         with open(self.waypoint_path, 'r') as f:
             waypoints = f.read()
             
-        # Parse the waypoints
-        return ast.literal_eval(waypoints)
+        waypoints_map = json.loads(waypoints)
+        waypoints_val = waypoints_map.get(tag)
+        return waypoints_val
