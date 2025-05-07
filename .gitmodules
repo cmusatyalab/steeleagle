@@ -1,0 +1,3 @@
+[submodule "backend/server/steeleagle-dsl"]
+	path = backend/server/steeleagle-dsl
+	url = git@github.com:cmusatyalab/steeleagle-dsl.git

@@ -48,6 +48,7 @@ services:
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
+      - ./steeleagle-dsl:/dsl
     networks:
       - cnc-net
       - redis
