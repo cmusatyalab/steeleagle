@@ -293,7 +293,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
 
                 # if there is no geofence, or the estimated object locatoin is within the geofence...
-                if len(self.geofence == 0 ) or p.isenclosedBy(self.geofence):
+                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
                     # first do a geosearch to see if there is a match within radius
                     objects = self.r.geosearch(
                         "detections",
