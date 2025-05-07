@@ -85,7 +85,7 @@ class ControlStub(Stub):
         request.veh.velocity_body.forward_vel = forward_vel
         request.veh.velocity_body.right_vel = right_vel
         request.veh.velocity_body.up_vel = up_vel
-        request.veh.velocity_body.angle_vel = angle_vel
+        request.veh.velocity_body.angular_vel = angle_vel
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
@@ -99,7 +99,7 @@ class ControlStub(Stub):
 
     async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
         try:
-            logger.info(f"Starting configure_compute: {hsv_lower_bound} {type(hsv_lower_bound)}")
+            logger.info(f"Starting configure_compute")
             cpt_req = control_protocol.Request()
             cpt_req.cpt.lower_bound.h = hsv_lower_bound[0]
             cpt_req.cpt.lower_bound.s = hsv_lower_bound[1]
