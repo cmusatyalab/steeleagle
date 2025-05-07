@@ -197,12 +197,12 @@ class ParrotOlympeDrone(MulticopterItf):
 
         # Check that the speeds is within the drone bounds
         max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
-        max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
+        #max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
 
-        if abs(angular_vel) > max_rotation:
-            return common_protocol.ResponseStatus.FAILED
-        if abs(up_vel) > max_vertical_speed:
-            return common_protocol.ResponseStatus.FAILED
+        #if abs(angular_vel) > max_rotation:
+        #    return common_protocol.ResponseStatus.FAILED
+        #if abs(up_vel) > max_vertical_speed:
+        #    return common_protocol.ResponseStatus.FAILED
 
         self._velocity_setpoint = \
                 (forward_vel, right_vel, up_vel, angular_vel)
