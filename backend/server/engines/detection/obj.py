@@ -96,7 +96,7 @@ def main():
     )
 
     parser.add_argument(
-        "--geofence",  default="", help="Path to KML file on the shared volume that specified the geofence. [default: '']"
+        "--geofence",  default="geofence.kml", help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]"
     )
 
     args, _ = parser.parse_known_args()
