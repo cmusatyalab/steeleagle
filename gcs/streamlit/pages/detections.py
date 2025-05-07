@@ -50,10 +50,8 @@ def draw_map():
             img_ref = f'<img src="{fields["link"]}" height="400px" width="400px"/>'
             div_content = f"""
                     <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
-                        {obj}<br/>
-                        {float(fields["confidence"]):.2f}<br/>
-                        {fields["drone_id"]}<br/>
-                        {datetime.datetime.fromtimestamp(float(fields["last_seen"]))}
+                        {obj}&nbsp;({float(fields["confidence"]):.2f})nbsp;[{fields["drone_id"]}]<br/>
+                        {datetime.datetime.fromtimestamp(float(fields["last_seen"])).strftime('%Y-%m-%d %H:%M:%S')}
                     </div>
                 """
 
@@ -75,7 +73,6 @@ def draw_map():
                         fields["longitude"],
                     ],
                     icon=object_icon,
-                    tooltip=img_ref
                 )
             )
 
