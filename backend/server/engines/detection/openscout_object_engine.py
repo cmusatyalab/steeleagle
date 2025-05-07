@@ -84,7 +84,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.error(f"Geofence KML file not found or is not a file: {fence_path}")
         else:
             #build geofence from coordinates inside Polygon element of KML file
-            with open(f"{args.geofence}", 'r', encoding='utf-8') as f:
+            with open(f"{fence_path}", 'r', encoding='utf-8') as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():
