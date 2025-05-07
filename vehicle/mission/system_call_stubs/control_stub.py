@@ -89,6 +89,14 @@ class ControlStub(Stub):
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
+    async def set_gimbal_pose(self, pitch, roll, yaw):
+        request = control_protocol.Request()
+        request.veh.gimbal_pose.pitch = pitch
+        request.veh.gimbal_pose.roll = roll
+        request.veh.gimbal_pose.yaw = yaw
+        result = await self.send_and_wait(request)
+        return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
+
     ''' Compute methods '''
     async def clear_compute_result(self, compute_type):
         cpt_req = control_protocol.Request()
