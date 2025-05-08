@@ -145,6 +145,7 @@ class MissionController():
         self.data = DataStub()
         asyncio.create_task(self.ctrl.run())
         asyncio.create_task(self.data.run())
+        resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
         while True:
             try:
                 # Receive a message
@@ -156,7 +157,6 @@ class MissionController():
                 # Parse the message
                 req = control_protocol.Request()
                 req.ParseFromString(message)
-                resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
                 seq_num = req.seq_num
                 if not req.HasField("msn"):
                     logger.info("Received message without mission field, ignoring")
