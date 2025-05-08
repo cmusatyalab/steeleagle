@@ -358,7 +358,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 frame_id = frame_id + 1
             except Exception as e:
                 logger.error(f'Failed to get video frame, error: {e}')
-            await asyncio.sleep(0.03)
+            await asyncio.sleep(0.1)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
 

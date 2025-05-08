@@ -48,6 +48,7 @@ services:
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
+      - ./steeleagle-dsl:/dsl
     networks:
       - cnc-net
       - redis
@@ -163,7 +164,9 @@ services:
         "-a",
         "${REDIS_AUTH}",
         "-hsv",
-        "${HSV_THRESHOLD}"
+        "${HSV_THRESHOLD}",
+        "--geofence",
+        "geofence.kml"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose

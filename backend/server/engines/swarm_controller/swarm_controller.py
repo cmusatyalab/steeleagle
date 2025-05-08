@@ -242,7 +242,7 @@ class SwarmController:
     # Set up the paths and variables for the compiler
     compiler_path = '/compiler'
     output_path = '/compiler/out/flightplan'
-    platform_path  = '/compiler/python/project'
+    platform_path  = '/dsl/python/project'
     waypoint_file = '/compiler/out/waypoint.json'
     # compiler_path = '../../steeleagle-vol/compiler'
     # output_path = '../../steeleagle-vol/compiler/out/flightplan_'
