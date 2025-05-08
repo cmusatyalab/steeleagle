@@ -143,7 +143,6 @@ class ParrotOlympeDrone(MulticopterItf):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
 
         try:
-            await self.hover()
             self._drone(return_to_home()).success()
         except:
             return common_protocol.ResponseStatus.FAILED
