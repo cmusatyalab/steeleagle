@@ -145,7 +145,6 @@ class MissionController():
         self.data = DataStub()
         asyncio.create_task(self.ctrl.run())
         asyncio.create_task(self.data.run())
-        resp = common_protocol.ResponseStatus.UNKNOWN_RESPONSE
         while True:
             try:
                 # Receive a message
@@ -180,19 +179,28 @@ class MissionController():
 
                 else:
                     resp = common_protocol.ResponseStatus.NOTSUPPORTED
+                
+                # Send a reply back to the client
+                rep = control_protocol.Response()
+                rep.resp = resp
+                rep.timestamp.GetCurrentTime()
+                rep.seq_num = seq_num
+
+                self.msn_control_sock.send(rep.SerializeToString())
             except zmq.Again:
                 pass
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
                 resp = common_protocol.ResponseStatus.FAILED
 
-            # Send a reply back to the client
-            rep = control_protocol.Response()
-            rep.resp = resp
-            rep.timestamp.GetCurrentTime()
-            rep.seq_num = seq_num
+                # Send a reply back to the client
+                rep = control_protocol.Response()
+                rep.resp = resp
+                rep.timestamp.GetCurrentTime()
+                rep.seq_num = seq_num
 
-            self.msn_control_sock.send(rep.SerializeToString())
+                self.msn_control_sock.send(rep.SerializeToString())
+
 
             await asyncio.sleep(0)
 
