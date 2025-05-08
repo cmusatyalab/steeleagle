@@ -76,6 +76,8 @@ class ParrotOlympeDrone(MulticopterItf):
             lambda: self._is_hovering(),
             interval=1
         )
+        
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -90,6 +92,8 @@ class ParrotOlympeDrone(MulticopterItf):
             lambda: self._is_landed(),
             interval=1
         )
+        
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -153,6 +157,8 @@ class ParrotOlympeDrone(MulticopterItf):
             lambda: self._is_home_reached(),
             interval=1
         )
+        
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         return common_protocol.ResponseStatus.COMPLETED
 
@@ -553,7 +559,9 @@ class ParrotOlympeDrone(MulticopterItf):
 
     ''' Actuation methods '''
     async def _switch_mode(self, mode):
-        if self._mode == mode:
+        if self._mode == mode or \
+                (self._mode == ParrotOlympeDrone.FlightMode.TAKEOFF_LAND \
+                and mode != ParrotOlympeDrone.FlightMode.LOITER):
             return
         else:
             # Cancel the running PID task
