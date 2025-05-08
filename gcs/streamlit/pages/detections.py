@@ -52,7 +52,7 @@ def draw_map():
             coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
             for c in coords.split():
                 lon, lat, alt =  c.split(",")
-                fence_coords.append([lat, lon])
+                fence_coords.append([float(lat), float(lon)])
 
         ls = folium.PolyLine(locations=fence_coords, color="green")
         ls.add_to(fence_fg)
