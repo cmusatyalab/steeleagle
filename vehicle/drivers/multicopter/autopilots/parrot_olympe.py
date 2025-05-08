@@ -71,6 +71,7 @@ class ParrotOlympeDrone(MulticopterItf):
     async def take_off(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(TakeOff())
+        
         result = await self._wait_for_condition(
             lambda: self._is_hovering(),
             interval=1
@@ -84,6 +85,7 @@ class ParrotOlympeDrone(MulticopterItf):
     async def land(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(Landing()).wait().success()
+        
         result = await self._wait_for_condition(
             lambda: self._is_landed(),
             interval=1
@@ -100,7 +102,17 @@ class ParrotOlympeDrone(MulticopterItf):
         velocity.right_vel = 0.0
         velocity.up_vel = 0.0
         velocity.angular_vel = 0.0
-        return await self.set_velocity_body(velocity)
+        await self.set_velocity_body(velocity)
+
+        result = await self._wait_for_condition(
+            lambda: self._is_hovering(),
+            interval=1
+        )
+
+        if result:
+            return common_protocol.ResponseStatus.COMPLETED
+        else:
+            return common_protocol.ResponseStatus.FAILED
 
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -131,6 +143,7 @@ class ParrotOlympeDrone(MulticopterItf):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
 
         try:
+            await self.hover()
             self._drone(return_to_home()).success()
         except:
             return common_protocol.ResponseStatus.FAILED
@@ -195,15 +208,8 @@ class ParrotOlympeDrone(MulticopterItf):
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY)
 
-        # Check that the speeds is within the drone bounds
+        # Get the max rotation speed for setting velocity
         max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
-        #max_vertical_speed = self._drone.get_state(MaxVerticalSpeedChanged)["max"]
-
-        #if abs(angular_vel) > max_rotation:
-        #    return common_protocol.ResponseStatus.FAILED
-        #if abs(up_vel) > max_vertical_speed:
-        #    return common_protocol.ResponseStatus.FAILED
-
         self._velocity_setpoint = \
                 (forward_vel, right_vel, up_vel, angular_vel)
         if self._pid_task is None:
