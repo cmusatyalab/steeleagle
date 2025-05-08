@@ -180,22 +180,19 @@ class MissionController():
 
                 else:
                     resp = common_protocol.ResponseStatus.NOTSUPPORTED
-
-                # Send a reply back to the client
-                rep = control_protocol.Response()
-                rep.resp = resp
-                rep.timestamp.GetCurrentTime()
-                rep.seq_num = seq_num
-
-                self.msn_control_sock.send(rep.SerializeToString())
-
             except zmq.Again:
                 pass
-
             except Exception as e:
                 logger.info(f"Failed to parse message: {e}")
                 resp = common_protocol.ResponseStatus.FAILED
 
+            # Send a reply back to the client
+            rep = control_protocol.Response()
+            rep.resp = resp
+            rep.timestamp.GetCurrentTime()
+            rep.seq_num = seq_num
+
+            self.msn_control_sock.send(rep.SerializeToString())
 
             await asyncio.sleep(0)
 
