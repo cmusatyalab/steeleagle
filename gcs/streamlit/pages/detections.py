@@ -54,7 +54,7 @@ def draw_map():
                 lon, lat, alt =  c.split(",")
                 fence_coords.append([float(lat), float(lon)])
 
-        ls = folium.PolyLine(locations=fence_coords, color="green")
+        ls = folium.PolyLine(locations=fence_coords, color="yellow")
         ls.add_to(fence_fg)
     except OSError:
         st.toast(f"Error loading geofence from {st.secrets.geofence_path}.")
@@ -63,7 +63,7 @@ def draw_map():
     for obj in red.zrange("detections", 0, -1):
         if len(red.keys(f"objects:{obj}")) > 0:
             fields = red.hgetall(f"objects:{obj}")
-            img_ref = f'<img src="{fields["link"]}" height="640px" width="360px"/>'
+            img_ref = f'<img src="{fields["link"]}" height="360px" width="480px"/>'
             div_content = f"""
                     <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
                         {obj}&nbsp;({float(fields["confidence"]):.2f})&nbsp;[{fields["drone_id"]}]<br/>
