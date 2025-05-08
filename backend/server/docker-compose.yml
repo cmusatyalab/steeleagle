@@ -164,7 +164,9 @@ services:
         "-a",
         "${REDIS_AUTH}",
         "-hsv",
-        "${HSV_THRESHOLD}"
+        "${HSV_THRESHOLD}",
+        "--geofence",
+        "geofence.kml"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose
