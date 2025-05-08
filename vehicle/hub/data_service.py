@@ -8,9 +8,15 @@ import common_pb2 as common_protocol
 from service import Service
 from data_store import DataStore
 
-
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')
+
+# Bandaid fix to prevent logs from being polluted by WRONG_INPUT_FORMAT errors.
+class WrongInputFormatFilter(logging.Filter):
+    def filter(self, record):
+        return "WRONG_INPUT_FORMAT" not in record.getMessage()
+
+logging.getLogger('gabriel_client.zeromq_client').addFilter(WrongInputFormatFilter())
 
 class DataService(Service):
     def __init__(self, data_store: DataStore, compute_dict):
@@ -119,7 +125,7 @@ class DataService(Service):
         frame = data_protocol.Frame()
         frame.ParseFromString(msg)
         return frame
-    
+
     async def process_telemetry_req(self, req):
         """Processes a telemetry request."""
         logger.info(f"Handling telemetry request: {req}")
