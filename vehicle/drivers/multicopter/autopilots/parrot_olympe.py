@@ -144,11 +144,12 @@ class ParrotOlympeDrone(MulticopterItf):
 
         try:
             await self.hover()
+            await asyncio.sleep(1)
             self._drone(return_to_home()).success()
         except:
             return common_protocol.ResponseStatus.FAILED
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
 
         result = await self._wait_for_condition(
             lambda: self._is_home_reached(),
