@@ -7,6 +7,7 @@ from streamlit_folium import st_folium
 from folium.plugins import MiniMap
 from util import  connect_redis,  menu, COLORS, authenticated
 import datetime
+from pykml import parser
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -40,17 +41,32 @@ def draw_map():
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Detected Objects")
+    fence_fg = folium.FeatureGroup(name="Geofence")
     # Draw(export=True).add_to(m)
     lc = folium.LayerControl()
+
+    try:
+        fence_coords = []
+        with open(f"{st.secrets.geofence_path}", 'r', encoding='utf-8') as f:
+            root = parser.parse(f).getroot()
+            coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
+            for c in coords.split():
+                lon, lat, alt =  c.split(",")
+                fence_coords.append([lat, lon])
+
+        ls = folium.PolyLine(locations=fence_coords, color="green")
+        ls.add_to(fence_fg)
+    except OSError:
+        st.toast(f"Error loading geofence from {st.secrets.geofence_path}.")
 
     marker_color = 0
     for obj in red.zrange("detections", 0, -1):
         if len(red.keys(f"objects:{obj}")) > 0:
             fields = red.hgetall(f"objects:{obj}")
-            img_ref = f'<img src="{fields["link"]}" height="400px" width="400px"/>'
+            img_ref = f'<img src="{fields["link"]}" height="640px" width="360px"/>'
             div_content = f"""
                     <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
-                        {obj}&nbsp;({float(fields["confidence"]):.2f})nbsp;[{fields["drone_id"]}]<br/>
+                        {obj}&nbsp;({float(fields["confidence"]):.2f})&nbsp;[{fields["drone_id"]}]<br/>
                         {datetime.datetime.fromtimestamp(float(fields["last_seen"])).strftime('%Y-%m-%d %H:%M:%S')}
                     </div>
                 """
@@ -91,7 +107,7 @@ def draw_map():
         m,
         key="overview_map",
         use_container_width=True,
-        feature_group_to_add=[fg],
+        feature_group_to_add=[fg, fence_fg],
         layer_control=lc,
         returned_objects=[],
         center=st.session_state.center,
