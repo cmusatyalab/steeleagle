@@ -77,7 +77,8 @@ enum MissionAction {
   RESUME = 4;
   DOWNLOAD = 5;
   CLEAR_MISSION = 6;
-  NOTIFICATION = 7;
+  START_PATROL_SEGMENT = 7;
+  FINISH_PATROL_SEGMENT = 8;
 }
 
 /*

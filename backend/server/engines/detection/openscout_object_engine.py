@@ -227,6 +227,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         self.lasttime = self.t1
 
+        logger.info(f"{result_wrapper=}")
         return result_wrapper
 
     def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
@@ -280,8 +281,19 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     upper_bound = [cpt_config.upper_bound.h, cpt_config.upper_bound.s, cpt_config.upper_bound.v]
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
 
-                # if there is no geofence, or the estimated object locatoin is within the geofence...
-                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
+                if len(self.geofence) == 0:
+                    r.append({
+                        "id": i,
+                        "class": names[i],
+                        "score": scores[i],
+                        "lat": lat, "lon":
+                        lon, "box": box,
+                        "hsv_filter": hsv_filter
+                    })
+                    self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+
+                # if there is a geofence and the estimated object locatoin is within the geofence...
+                if len(self.geofence) != 0 and p.isenclosedBy(self.geofence):
                     # first do a geosearch to see if there is a match within radius
                     objects = self.r.geosearch(
                         "detections",

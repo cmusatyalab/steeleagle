@@ -79,9 +79,12 @@ class GabrielCompute(ComputeInterface):
                     if len(payload) != 0:
                         # get engine id
                         compute_type = result_wrapper.result_producer_name.value
+
                         # get timestamp
                         timestamp = time.time()
                         # update
+                        if compute_type == 'openscout_object':
+                            logger.info(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
                         logger.debug(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
                         self.data_store.update_compute_result(
                             self.compute_id, compute_type, payload,

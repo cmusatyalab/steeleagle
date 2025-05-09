@@ -104,7 +104,7 @@ class DataService(Service):
         """Handles compute/telemetry/frame requests from mission layer."""
         req = data_protocol.Request()
         req.ParseFromString(msg)
-        logger.info(f"Received user request: {req}")
+        logger.debug(f"Received user request: {req}")
 
         match req.WhichOneof("type"):
             case "tel":
@@ -128,7 +128,7 @@ class DataService(Service):
 
     async def process_telemetry_req(self, req):
         """Processes a telemetry request."""
-        logger.info(f"Handling telemetry request: {req}")
+        logger.debug(f"Handling telemetry request: {req}")
         tel_data = data_protocol.Telemetry()
         ret = self.data_store.get_raw_data(tel_data)
 
@@ -141,13 +141,13 @@ class DataService(Service):
 
         resp.timestamp.GetCurrentTime()
         resp.seq_num = req.seq_num
-        logger.info(f"Sending telemetry response: {resp}")
+        logger.debug(f"Sending telemetry response: {resp}")
 
         await self.data_reply_sock.send_multipart([resp.SerializeToString()])
 
     async def process_compute_req(self, req):
         """Processes a compute result request and replies with results."""
-        logger.info(f"Handling compute request: {req}")
+        logger.debug(f"Handling compute request: {req}")
         compute_type = req.cpt.type
         response = data_protocol.Response()
 
@@ -160,9 +160,9 @@ class DataService(Service):
             compute_result = data_protocol.ComputeResult()
             compute_result.generic_result = cpt_res.data
             response.cpt.result.append(compute_result)
-            logger.info(f"Appending result for {compute_id}: {compute_result}")
+            logger.debug(f"Appending result for {compute_id}: {compute_result}")
 
         response.timestamp.GetCurrentTime()
         response.seq_num = req.seq_num
-        logger.info(f"Sending compute response: {response}")
+        logger.debug(f"Sending compute response: {response}")
         await self.data_reply_sock.send_multipart([response.SerializeToString()])

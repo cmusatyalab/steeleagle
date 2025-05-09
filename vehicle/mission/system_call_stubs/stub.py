@@ -36,14 +36,14 @@ class Stub:
 
     def sender(self, request, stub_response):
         seq_num = self.seq_num
-        logger.info(f"Sending request with seq_num: {seq_num}")
+        logger.debug(f"Sending request with seq_num: {seq_num}")
         request.seq_num = seq_num
         self.seq_num += 1
         self.request_map[seq_num] = stub_response
 
         serialized_request = request.SerializeToString()
         self.sock.send_multipart([serialized_request])
-        
+
     def parse_response(self, response_parts, response_cls):
         response = response_cls()
         response.ParseFromString(response_parts[0])
@@ -52,7 +52,7 @@ class Stub:
         if not stub_response:
             logger.error(f"Unknown seq_num: {response.seq_num}")
             return
-        
+
         stub_response.put_result(response)
         stub_response.set()
 

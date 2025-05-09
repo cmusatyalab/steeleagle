@@ -39,12 +39,17 @@ class PatrolArea:
         # The patrol waypoints that are part of this patrol area. Each item
         # in this list constitutes a segment of this patrol.
         self.patrol_waypoints = []
+
+        self.partitions = []
         # Each iterator in this list contains the waypoints assigned to
         # a drone.
         self.waypoint_iters = None
 
     def get_patrol_waypoints(self):
         return self.patrol_waypoints
+
+    def get_partition(self, drone_idx):
+        return self.partitions[drone_idx]
 
     def get_name(self):
         return self.name
@@ -86,6 +91,7 @@ class PatrolArea:
                 if i < num_lines:
                     partition = [self.patrol_waypoints[i]]
                 self.waypoint_iters.append(iter(partition))
+                self.partitions.append(partition)
             return
 
         lines_per_drone = num_lines // num_drones
@@ -94,10 +100,12 @@ class PatrolArea:
         for i in range(num_drones - 1):
             partition = self.patrol_waypoints[i * lines_per_drone:(i+1) * lines_per_drone]
             self.waypoint_iters.append(iter(partition))
+            self.partitions.append(partition)
 
         # Assign remaining patrol lines to the last drone
         partition = self.patrol_waypoints[(num_drones - 1) * lines_per_drone:]
         self.waypoint_iters.append(iter(partition))
+        self.partitions.append(partition)
 
     def get_patrol_line(self, drone_idx):
         try:
@@ -160,7 +168,7 @@ class Mission(ABC):
     def update_drone_list(self, drone_list):
         pass
 
-class PatrolMission(Mission):
+class DynamicPatrolMission(Mission):
     def __init__(self, drone_list, patrol_area_list):
         state = PatrolMissionState(drone_list, patrol_area_list, None, None)
         super().__init__(state)
@@ -179,19 +187,58 @@ class PatrolMission(Mission):
         drone_idx = self.state.drone_list.index(drone_id)
         line = self.state.current_patrol_area.get_patrol_line(drone_idx)
 
-        msg = line
+        reply = line
 
-        if msg is None:
+        if reply is None:
             try:
                 self.advance_patrol_area()
-                msg = f"{self.state.current_patrol_area.get_name()} done"
+                reply = f"{self.state.current_patrol_area.get_name()} done"
             except StopIteration:
                 pass
 
-        if msg is None:
-            msg = "finish"
+        if reply is None:
+            reply = "finish"
 
-        return (drone_id, msg)
+        return [(drone_id, reply)]
+
+    def update_drone_list(self, drone_list):
+        self.state.drone_list = drone_list
+        self._create_partitioning()
+
+    def _create_partitioning(self):
+        num_drones = len(self.state.drone_list)
+        self.state.current_patrol_area.create_partitioning(num_drones)
+
+class StaticPatrolMission(Mission):
+    def __init__(self, drone_list, patrol_area_list):
+        state = PatrolMissionState(drone_list, patrol_area_list, None, None)
+        super().__init__(state)
+        self.state.patrol_area_iter = iter(patrol_area_list)
+        self.state.current_patrol_area = next(self.state.patrol_area_iter)
+        self._create_partitioning()
+
+    def __repr__(self):
+        return str(self.state)
+
+    def advance_patrol_area(self):
+        self.state.current_patrol_area = next(self.state.patrol_area_iter)
+        self._create_partitioning()
+
+    def state_transition(self, drone_id, msg):
+        drone_idx = self.state.drone_list.index(drone_id)
+
+        reply = None
+        if msg == controlplane.MissionAction.
+            try:
+                self.advance_patrol_area()
+                reply = str(self.state.current_patrol_area.get_partition(drone_idx))
+            except StopIteration:
+                reply = 'finish'
+                return (drone_id, reply)
+        else if msg == 'start':
+            reply = str(self.state.current_patrol_area.get_partition(drone_idx))
+
+        return [(drone_id, reply)]
 
     def update_drone_list(self, drone_list):
         self.state.drone_list = drone_list
@@ -399,11 +446,15 @@ class SwarmController:
                 dsl, kml = await SwarmController.download_script(script_url)
 
                 # compile the mission
-                await self.compile_mission(dsl, kml)
+                try:
+                    await self.compile_mission(dsl, kml)
+                except Exception as e:
+                    await self.request_sock.send(b'ACK')
+                    continue
 
                 patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
 
-                mission = PatrolMission(drone_list, patrol_area_list)
+                mission = StaticPatrolMission(drone_list, patrol_area_list)
                 await self.mission_supervisor.supervise(mission, drone_list)
 
                 # get the base url

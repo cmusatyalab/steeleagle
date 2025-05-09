@@ -126,10 +126,15 @@ class ControlStub(Stub):
 
     ''' Mission methods '''
     async def send_notification(self, msg):
-        request = control_protocol.Request()
-        request.veh.action = control_protocol.MissionAction.NOTIFICATION
-        request.msn.notification = msg
-        result = await self.send_and_wait(request)
+        try:
+            logger.info(f"Sending notification: {msg=}")
+            request = control_protocol.Request()
+            request.msn.action = control_protocol.MissionAction.START_PATROL_SEGMENT
+            logger.info(f"Send notification: waiting for send_and_wait: {request=}")
+            result = await self.send_and_wait(request)
+            logger.info(f"Sent notification: {msg=} successfully")
+        except Exception as e:
+            logger.error(e)
         return result.msn_notification
 
     async def get_waypoints(self, tag):

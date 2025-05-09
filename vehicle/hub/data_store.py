@@ -50,8 +50,8 @@ class DataStore:
     #                               COMPUTE                                   #
     ###########################################################################
     def get_compute_result(self, compute_id, type) -> Optional[ComputeResult]:
-        logger.info(f"get_compute_result: Getting result for compute {compute_id} with type {type}")
-        logger.info(self._result_cache)
+        logger.debug(f"get_compute_result: Getting result for compute {compute_id} with type {type}")
+        logger.debug(self._result_cache)
         if compute_id not in self._result_cache:
             # Log an error and return None
             logger.error(f"get_compute_result: No such compute: {compute_id=}")
