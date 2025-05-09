@@ -125,41 +125,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
 
-    def estimateGPS(self, drone_lat, drone_lon, camera_pitch, drone_yaw, drone_elev, target_x_pix, target_y_pix):
-        # Establish parameters.
+    def estimate_gps(self, lat, lon, pitch, yaw, alt):
         EARTH_RADIUS = 6378137.0
-        north_vec = np.array([0, 1, 0]) # Create a vector pointing due north.
-        if self.drone_type == 'anafi':
-            HFOV = 69 # Horizontal FOV An.
-            VFOV = 43 # Vertical FOV.
-        elif self.drone_type ==  'usa':
-            HFOV = 69 # Horizontal FOV An.
-            VFOV = 43 # Vertical FOV.
-        else:
-            raise "Unsupported drone type!"
-        pixel_center = (1280/2, 720/2) # Center pixel location of the camera.
+        vf = [0, 1, 0]
+        r = R.from_euler('ZYX', [yaw, 0, pitch], degrees=True)
+        target_dir = r.as_matrix().dot(vf)
+        target_vec = self.find_intersection(target_dir, np.array([0, 0, alt]))
 
-        # Perform rotations.
-        logger.info("Pitch: {0}, Yaw: {1}, Elev: {2}".format(camera_pitch, drone_yaw, drone_elev))
+        logger.info("Intersection with ground plane: ({0}, {1}, {2})".format(target_vec[0], target_vec[1], target_vec[2]))
 
-        r = R.from_euler('ZYX', [drone_yaw, 0, camera_pitch], degrees=True) # Rotate the due north vector to camera center.
-        camera_center = r.as_matrix().dot(north_vec)
-
-        logger.info("Camera centered at: ({0}, {1}, {2})".format(camera_center[0], camera_center[1], camera_center[2]))
-
-        target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (HFOV / 2)
-        target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (VFOV / 2)
-        r = R.from_euler('ZYX', [drone_yaw + target_yaw_angle, 0, camera_pitch + target_pitch_angle], degrees=True) # Rotate the camera center vector to target center.
-        target_dir = r.as_matrix().dot(north_vec)
-        logger.info("Target yaw: {0}, Target pitch: {1}".format(target_yaw_angle, target_pitch_angle))
-        logger.info("Target centered at: ({0}, {1}, {2})".format(target_dir[0], target_dir[1], target_dir[2]))
-
-        # Finding the intersection with the plane.
-        insct = self.find_intersection(target_dir, np.array([0, 0, drone_elev]))
-        logger.info("Intersection with ground plane: ({0}, {1}, {2})".format(insct[0], insct[1], insct[2]))
-
-        est_lat = drone_lat + (180 / np.pi) * (insct[1] / EARTH_RADIUS)
-        est_lon = drone_lon + (180 / np.pi) * (insct[0] / EARTH_RADIUS) / np.cos(drone_lat)
+        est_lat = lat + (180 / np.pi) * (target_vec[1] / EARTH_RADIUS)
+        est_lon = lon + (180 / np.pi) * (target_vec[0] / EARTH_RADIUS) / np.cos(lat)
         logger.info("Estimated GPS location: ({0}, {1})".format(est_lat, est_lon))
         return est_lat, est_lon
 
@@ -275,15 +251,25 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
 
                 box = [df['ymin'][i], df['xmin'][i], df['ymax'][i], df['xmax'][i]]
+                img_width = image_np.shape[1]
+                img_height = image_np.shape[0]
+                pixel_center = (img_width / 2, img_height / 2)
+                logger.info("Image Width: {0}px, Image Height: {1}px, Center {2}".format(img_width, img_height, pixel_center))
+                #eventually these should come from something like a drone .cap file
+                HFOV = 69 # Horizontal FOV An.
+                VFOV = 43 # Vertical FOV.
 
-                target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1]) * image_np.shape[1]
-                target_y_pix = int(((box[2] - box[0]) / 2.0) + box[0]) * image_np.shape[0]
+                target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
+                target_y_pix = img_height - int(((box[2] - box[0]) / 2.0) + box[0])
+                target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (HFOV / 2)
+                target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (VFOV / 2)
+                target_bottom_pitch_angle = (((img_height - box[2]) - pixel_center[1]) \
+                        / pixel_center[1]) * (VFOV / 2)
 
                 position = telemetry.global_position
                 gimbal_pitch = telemetry.gimbal_pose.pitch
 
-                # position.heading is sent in degrees
-                lat, lon = self.estimateGPS(position.latitude, position.longitude, gimbal_pitch, position.heading, position.absolute_altitude, target_x_pix, target_y_pix)
+                lat, lon = self.estimate_gps(position.latitude, position.longitude, gimbal_pitch+target_bottom_pitch_angle, target_yaw_angle, position.relative_altitude)
                 lon = np.clip(lon, -180, 180)
                 lat = np.clip(lat, -90, 90)
                 p = LatLon(lat, lon)
@@ -329,37 +315,32 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                                 })
                                 self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
-        if not detections_above_threshold:
-            return None
-
         logger.info(json.dumps(r,sort_keys=True, indent=4))
         result.payload = json.dumps(r).encode(encoding="utf-8")
 
-        if not self.store_detections:
-            return result
+        if self.store_detections:
+            try:
+                #results._run(save=True, labels=True, save_dir=Path("openscout-vol/"))
+                results.render()
+                img = Image.fromarray(results.ims[0])
+                draw = ImageDraw.Draw(img)
+                draw.bitmap((0,0), self.watermark, fill=None)
 
-        try:
-            #results._run(save=True, labels=True, save_dir=Path("openscout-vol/"))
-            results.render()
-            img = Image.fromarray(results.ims[0])
-            draw = ImageDraw.Draw(img)
-            draw.bitmap((0,0), self.watermark, fill=None)
-
-            path = self.storage_path + "/detected/" + filename
-            img.save(path, format="JPEG")
-
-            path = self.storage_path + "/detected/latest.jpg"
-            img.save(path, format="JPEG")
-
-            logger.info("Stored image: {}".format(path))
-            if cpt_config.HasField('lower_bound'):
-                img = self.run_hsv_filter(image_np, cpt_config)
-                path = self.storage_path + "/detected/hsv.jpg"
+                path = self.storage_path + "/detected/" + filename
                 img.save(path, format="JPEG")
-        except IndexError:
-            logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
-        return result
+                path = self.storage_path + "/detected/latest.jpg"
+                img.save(path, format="JPEG")
+
+                logger.info("Stored image: {}".format(path))
+                if cpt_config.HasField('lower_bound'):
+                    img = self.run_hsv_filter(image_np, cpt_config)
+                    path = self.storage_path + "/detected/hsv.jpg"
+                    img.save(path, format="JPEG")
+            except IndexError:
+                logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
+
+        return result if detections_above_threshold else None
 
     def run_hsv_filter(self, image_np, cpt_config):
         hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
