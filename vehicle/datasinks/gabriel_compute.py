@@ -43,17 +43,17 @@ class GabrielCompute(ComputeInterface):
 
         # data_store
         self.data_store = data_store
-        self.frame_id = -1
+        self.frame_ts = -1
 
     async def run(self):
         logger.info("Gabriel compute: launching Gabriel client")
         await self.gabriel_client.launch_async()
 
 
-    def set(self):
-        self.set_params["model"] = None
-        self.set_params["hsv_lower"] = None
-        self.set_params["hsv_upper"] = None
+    def set(self, model, hsv_lower, hsv_upper):
+        self.set_params["model"] = model
+        self.set_params["hsv_lower"] = hsv_lower
+        self.set_params["hsv_upper"] = hsv_upper
 
 
     def stop(self):
@@ -72,7 +72,6 @@ class GabrielCompute(ComputeInterface):
             return
 
         response = cognitive_engine.unpack_extras(control_protocol.Response, result_wrapper)
-
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode('utf-8')
@@ -80,9 +79,12 @@ class GabrielCompute(ComputeInterface):
                     if len(payload) != 0:
                         # get engine id
                         compute_type = result_wrapper.result_producer_name.value
+
                         # get timestamp
                         timestamp = time.time()
                         # update
+                        if compute_type == 'openscout_object':
+                            logger.info(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
                         logger.debug(f"Gabriel compute: {timestamp=}, {compute_type=}, {result=}")
                         self.data_store.update_compute_result(
                             self.compute_id, compute_type, payload,
@@ -94,21 +96,23 @@ class GabrielCompute(ComputeInterface):
 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
             self.compute_status = self.ComputeStatus.Connected
 
-            logger.debug(f"Frame producer: starting converting {time.time()}")
+            logger.debug(f"Frame producer: starting {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             frame_data = data_protocol.Frame()
 
-            frame_id = self.data_store.get_raw_data(frame_data)
-
+            entry = self.data_store.get_raw_data(frame_data)
             # Wait for a new frame
-            while frame_id is None or frame_id <= self.frame_id:
+            while entry is None or entry.timestamp <= self.frame_ts:
+                if entry is None:
+                    logger.debug(f"Waiting for new frame from driver, entry is none!")
+                else:
+                    logger.debug(f"Waiting for new frame from driver, {entry.timestamp} <= {self.frame_ts}")
                 await self.data_store.wait_for_new_data(type(frame_data))
-                logger.debug("Waiting for new frame from driver")
-                frame_id = self.data_store.get_raw_data(frame_data)
-            self.frame_id = frame_id
+                entry = self.data_store.get_raw_data(frame_data)
+            self.frame_ts = entry.timestamp
 
             tel_data = data_protocol.Telemetry()
             self.data_store.get_raw_data(tel_data)
@@ -125,20 +129,19 @@ class GabrielCompute(ComputeInterface):
 
                     # produce extras
                     extras = gabriel_extras.Extras()
-                    extras.drone_id = self.drone_id
                     compute_command = extras.cpt_request
-                    compute_command.cpt.key = self.compute_id
+                    #compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
                         compute_command.cpt.model = self.set_params['model']
                     if self.set_params['hsv_lower'] is not None:
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][0]
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][1]
-                        compute_command.cpt.lower_bound - self.set_params['hsv_lower'][2]
+                        compute_command.cpt.lower_bound.h = self.set_params['hsv_lower'][0]
+                        compute_command.cpt.lower_bound.s = self.set_params['hsv_lower'][1]
+                        compute_command.cpt.lower_bound.v = self.set_params['hsv_lower'][2]
                     if self.set_params['hsv_upper'] is not None:
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][0]
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][1]
-                        compute_command.cpt.upper_bound - self.set_params['hsv_upper'][2]
+                        compute_command.cpt.upper_bound.h = self.set_params['hsv_upper'][0]
+                        compute_command.cpt.upper_bound.s = self.set_params['hsv_upper'][1]
+                        compute_command.cpt.upper_bound.v = self.set_params['hsv_upper'][2]
 
                     self.data_store.get_raw_data(extras.telemetry)
 
@@ -173,15 +176,14 @@ class GabrielCompute(ComputeInterface):
                 if ret is not None:
                     extras = gabriel_extras.Extras()
                     extras.telemetry.CopyFrom(tel_data)
-                    extras.drone_id = self.drone_id
-                    logger.debug("Gabriel compute telemetry producer: sending telemetry")
+                    logger.debug(f"Gabriel compute telemetry producer: sending telemetry; drone_name={tel_data.drone_name}")
                     # Register when we start sending telemetry
-                    if not self.drone_registered:
-                        logger.debug("Gabriel compute telemetry producer: sending registration request to backend")
+                    if not self.drone_registered and len(tel_data.drone_name) > 0:
+                        logger.info("Gabriel compute telemetry producer: sending registration request to backend")
                         extras.registering = True
                         self.drone_registered = True
                         tel_data.uptime.FromSeconds(0)
-                    logger.debug('Gabriel compute telemetry producer: sending Gabriel telemerty! content: {}'.format(tel_data))
+                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemetry! content: {tel_data}')
                     input_frame.extras.Pack(extras)
                 else:
                     logger.error('Telemetry unavailable')

@@ -13,7 +13,6 @@ from st_keypressed import st_keypressed
 import math
 import uuid
 
-REQUEST_NUMBER = 0
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -67,7 +66,7 @@ def change_center():
     if st.session_state.tracking_selection is not None:
         df = stream_to_dataframe(
             red.xrevrange(
-                f"telemetry.{st.session_state.tracking_selection}", "+", "-", 1
+                f"telemetry:{st.session_state.tracking_selection}", "+", "-", 1
             )
         )
         for index, row in df.iterrows():
@@ -75,7 +74,6 @@ def change_center():
 
 
 def run_flightscript():
-    global REQUEST_NUMBER
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
@@ -86,7 +84,7 @@ def run_flightscript():
                 z.writestr(file.name, file.read())
 
         req = controlplane.Request()
-        req.seq_num = REQUEST_NUMBER
+        req.seq_num = int(time.time())
         req.timestamp.GetCurrentTime()
         for d in st.session_state.selected_drones:
             req.msn.drone_ids.append(d)
@@ -95,69 +93,62 @@ def run_flightscript():
         req.msn.action = controlplane.MissionAction.DOWNLOAD
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
-        REQUEST_NUMBER += 1
         st.toast(
             f"Instructed {req.msn.drone_ids} to fly autonomous script.",
             icon="\u2601",
         )
 
 def enable_manual():
-    global REQUEST_NUMBER
     req = controlplane.Request()
-    req.seq_num = REQUEST_NUMBER
+    req.seq_num = int(time.time())
     req.timestamp.GetCurrentTime()
     for d in st.session_state.selected_drones:
         req.msn.drone_ids.append(d)
     req.msn.action = controlplane.MissionAction.STOP
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    REQUEST_NUMBER += 1
     st.toast(
         f"Telling drone {req.veh.drone_ids} to halt! Kill signal sent."
     )
 
 def rth():
-    global REQUEST_NUMBER
     req = controlplane.Request()
-    req.seq_num = REQUEST_NUMBER
+    req.seq_num = int(time.time())
     req.timestamp.GetCurrentTime()
     for d in st.session_state.selected_drones:
         req.veh.drone_ids.append(d)
     req.veh.action = controlplane.VehicleAction.RTH
     st.session_state.zmq.send(req.SerializeToString())
     rep = st.session_state.zmq.recv()
-    REQUEST_NUMBER += 1
     st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
     drone_list = []
-    detected_header = "**:sleuth_or_spy: Object Detection**"
-    avoidance_header = "**:checkered_flag: Obstacle Avoidance**"
-    hsv_header = "**:traffic_light: HSV Filtering**"
-    for k in red.keys("telemetry.*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            drone_name = k.split(".")[-1]
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
-    drone_list.append(detected_header)
-    drone_list.append(avoidance_header)
-    drone_list.append(hsv_header)
-    tabs = st.tabs(drone_list)
 
-    i = 0
-    for d in drone_list:
-        with tabs[i]:
-            if d == detected_header:
-               st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == avoidance_header:
-                st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}", use_container_width=True)
-            elif d == hsv_header:
-                st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}", use_container_width=True)
-            else:
-                st.image(f"http://{st.secrets.webserver}/raw/{d}/latest.jpg?a={time.time()}", use_container_width=True)
-        i += 1
+    st.selectbox(
+        key="imagery_key",
+        label=" **:blue-background[:material/photo_library: Imagery]**",
+        options=drone_list,
+        index=0
+    )
+    st.image(f"http://{st.secrets.webserver}/raw/{st.session_state.imagery_key}/latest.jpg?a={time.time()}", use_container_width=True)
+    col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
+    with col1:
+        st.caption("**:sleuth_or_spy: Object Detection**")
+        st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}")
+    with col2:
+        st.caption("**:checkered_flag: Obstacle Avoidance**")
+        st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")
+    with col3:
+        st.caption("**:traffic_light: HSV Filtering**")
+        st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
+
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -175,13 +166,13 @@ def draw_map():
     lc = folium.LayerControl()
 
     marker_color = 0
-    for k in red.keys("telemetry.*"):
+    for k in red.keys("telemetry:*"):
         df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
         last_update = (int(df.index[0].split("-")[0])/1000)
         if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
             coords = []
             i = 0
-            drone_name = k.split(".")[-1]
+            drone_name = k.split(":")[-1]
             for index, row in df.iterrows():
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
@@ -189,7 +180,7 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["altitude"]:.2f}m]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["rel_altitude"]:.2f}m AGL/{row["abs_altitude"]:.2f}m MSL]',
                         #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
@@ -232,22 +223,28 @@ def draw_map():
     "lon": "float",
     "alt": "float",
     }
-    df = stream_to_dataframe(red.xrevrange(f"slam", "+", "-", st.session_state.trail_length), types=TYPES)
-    slam_coords = []
-    for index, row in df.iterrows():
-        slam_coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=slam_coords, color="black")
-    ls.add_to(slam_track)
+
+    ret = red.xrevrange(f"slam", "+", "-", st.session_state.trail_length)
+    if len(ret) > 0:
+        df = stream_to_dataframe(ret, types=TYPES)
+        slam_coords = []
+        for index, row in df.iterrows():
+            slam_coords.append([row["lat"], row["lon"]])
+        ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
+        ls.add_to(slam_track)
 
     TYPES={"lat": "float",
     "lon": "float",
     }
-    df = stream_to_dataframe(red.xrevrange(f"landing_spot", "+", "-", 5), types=TYPES)
-    landing_coords = []
-    for index, row in df.iterrows():
-        landing_coords.append([row["lat"], row["lon"]])
-    ls = folium.PolyLine(locations=landing_coords, color="orange")
-    ls.add_to(landing_spot)
+
+    ret = red.xrevrange(f"landing_spot", "+", "-", 5)
+    if len(ret) > 0:
+        df = stream_to_dataframe(ret, types=TYPES)
+        landing_coords = []
+        for index, row in df.iterrows():
+            landing_coords.append([row["lat"], row["lon"]])
+        ls = folium.PolyLine(locations=landing_coords, color="orange")
+        ls.add_to(landing_spot)
 
     st_folium(
         m,
@@ -290,7 +287,7 @@ with options_expander:
         tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
     tiles = folium.TileLayer(
-        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=20
+        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
     )
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
@@ -357,17 +354,17 @@ with st.sidebar:
 
     if st.session_state.armed and len(st.session_state.selected_drones) > 0:
         c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
-        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
+        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
+        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c3, c4 = st.columns(spec=2, gap="small")
         c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
-        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=1.0, step=0.5, format="%f")
+        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=15, format="%d")
 
         key_pressed = st_keypressed()
         req = controlplane.Request()
-        req.seq_num = REQUEST_NUMBER
+        req.seq_num = int(time.time())
         req.timestamp.GetCurrentTime()
         for d in st.session_state.selected_drones:
             req.veh.drone_ids.append(d)

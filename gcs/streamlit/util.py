@@ -13,10 +13,9 @@ import hmac
 DATA_TYPES = {
     "latitude": "float",
     "longitude": "float",
-    "altitude": "float",
+    "rel_altitude": "float",
+    "abs_altitude": "float",
     "bearing": "int",
-    "battery": "int",
-    "mag": "string",
     # "sats": int,
 }
 
@@ -103,11 +102,46 @@ def connect_zmq():
 def get_drones():
     l = {}
     red = connect_redis()
-    for k in red.keys("telemetry.*"):
-        latest_entry = red.xrevrange(f"{k}", "+", "-", 1)
-        last_update = (int(latest_entry[0][0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            l[f"{k.split('.')[-1]}"] = f"**{k.split('.')[-1]}** " #TODO: add :material/abc:[drone model] once it is sent with telemetry
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
+            drone_name = k.split(":")[-1]
+            drone_model = red.hget(k, "model")
+            if drone_model == "":
+                drone_model = "unknown"
+            bat = int(red.hget(k, "battery"))
+            if bat == 0:
+               bat_status = ":green-badge[:material/battery_full:]"
+            elif bat == 1:
+                bat_status = ":orange-badge[:material/battery_3_bar:]"
+            else:
+                bat_status = ":red-badge[:material/battery_alert:]"
+
+            mag = int(red.hget(k, "mag"))
+            if mag == 0:
+                mag_status = ":green-badge[:material/explore:]"
+            elif mag == 1:
+                mag_status = ":orange-badge[:material/explore:]"
+            else:
+                mag_status = ":red-badge[:material/explore:]"
+
+            sats = int(red.hget(k, "sats"))
+            if sats == 0:
+                sat_status = ":green-badge[:material/satellite_alt:]"
+            elif sats == 1:
+                sat_status = ":orange-badge[:material/satellite_alt:]"
+            elif sats == 2:
+                sat_status = ":red-badge[:material/satellite_alt:]"
+
+            slam = red.hget(k, "slam_registering")
+            if slam:
+                slam_status = ":green-badge[:material/globe_location_pin:]"
+            else:
+                slam_status = ":red-badge[:material/globe_location_pin:]"
+            # markdown format
+            # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
+
+            l[drone_name] = f"**{drone_name} (_{drone_model}_) {bat_status}{mag_status}{sat_status}{slam_status}** "
 
     return l
 
@@ -118,7 +152,10 @@ def stream_to_dataframe(results, types=DATA_TYPES ) -> pd.DataFrame:
 
     df = pd.DataFrame.from_dict(_container, orient='index')
     if types is not None:
-        df = df.astype(types)
+        try:
+            df = df.astype(types)
+        except KeyError as e:
+            print(e)
 
     return df
 
@@ -130,6 +167,7 @@ def control_drone(drone):
 def menu(with_control=True):
     st.sidebar.page_link("overview.py", label=":satellite_antenna: Overview")
     st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
+    st.sidebar.page_link("pages/detections.py", label=":bangbang: Detected Objects")
 
 
 

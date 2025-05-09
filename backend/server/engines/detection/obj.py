@@ -87,6 +87,18 @@ def main():
         "-hsv", "--hsv_threshold", type=float, default=5.0, help="HSV filter threshold [0.0-100.0]"
     )
 
+    parser.add_argument(
+        "--radius", type=float, default=5.0, help="Radius in meters to consider when looking for previously found objects."
+    )
+
+    parser.add_argument(
+        "--ttl", type=int, default=1200, help="TTL in seconds before objects are cleaned up in redis [default: 1200]"
+    )
+
+    parser.add_argument(
+        "--geofence",  default="geofence.kml", help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]"
+    )
+
     args, _ = parser.parse_known_args()
 
     def object_engine_setup():

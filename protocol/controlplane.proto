@@ -29,6 +29,7 @@ message Response {
   uint64 seq_num = 1; // For correlation
   google.protobuf.Timestamp timestamp = 2; // Time the response was sent
   protocol.common.ResponseStatus resp = 3;
+  string msn_notification = 4;
 }
 
 /*
@@ -60,6 +61,7 @@ enum VehicleAction {
 /*
 * MISSION
 */
+
 message MissionControl {
   string uuid = 1; // unique mission reference for cataloging
   string url = 2; // the URL that specifies the zip file to download
@@ -75,6 +77,8 @@ enum MissionAction {
   RESUME = 4;
   DOWNLOAD = 5;
   CLEAR_MISSION = 6;
+  START_PATROL_SEGMENT = 7;
+  FINISH_PATROL_SEGMENT = 8;
 }
 
 /*
@@ -86,10 +90,11 @@ message ConfigureCompute {
     protocol.common.HSV upper_bound = 3; // upper bound of HSV filter to apply
     float threshold = 4; //change confidence threshold of the DNN
     ComputeAction action = 5;
-    string key = 6;
+    string type = 6;
 }
 
 enum ComputeAction {
   UNKNOWN_COMPUTE_ACTION = 0;
   CLEAR_COMPUTE = 1;
+  CONFIGURE_COMPUTE = 2;
 }

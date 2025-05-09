@@ -11,11 +11,11 @@ hub:
       mission_to_hub: 3003
     controlplane:
       endpoint: "0.0.0.0"
-      hub_to_driver: 3005
-      hub_to_mission: 3006
-      mission_to_hub: 3007
-      hub_to_datasink: 3008
-      commander_to_hub: 3009
+      hub_to_driver: 3004
+      hub_to_mission: 3005
+      mission_to_hub: 3006
+      hub_to_datasink: 3007
+      commander_to_hub: 5003
   computes:
     - compute_id: 'default_compute'
       compute_class: 'GabrielCompute'
