@@ -152,6 +152,7 @@ class PatrolMissionState:
     patrol_area_list: List[PatrolArea]
     current_patrol_area: PatrolArea
     patrol_area_iter: Iterator[List[PatrolArea]]
+    drone_altitudes: List[int]
 
 class Mission(ABC):
     def __init__(self, state):
@@ -210,12 +211,16 @@ class DynamicPatrolMission(Mission):
         self.state.current_patrol_area.create_partitioning(num_drones)
 
 class StaticPatrolMission(Mission):
-    def __init__(self, drone_list, patrol_area_list):
+    DRONE_ALTITUDE_SEP = 3
+
+    def __init__(self, drone_list, patrol_area_list, alt):
         state = PatrolMissionState(drone_list, patrol_area_list, None, None)
         super().__init__(state)
         self.state.patrol_area_iter = iter(patrol_area_list)
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
+
+        self.state.drone_altitudes = [alt + self.DRONE_ALTITUDE_SEP * i for i in range(len(self.drone_list))]
 
     def __repr__(self):
         return str(self.state)
@@ -228,15 +233,21 @@ class StaticPatrolMission(Mission):
         drone_idx = self.state.drone_list.index(drone_id)
 
         reply = None
-        if msg == controlplane.MissionAction.
+
+        msg = controlplane.MissionAction.ParseFromString(msg)
+
+        if msg == controlplane.MissionAction.FINISH_PATROL_SEGMENT:
             try:
                 self.advance_patrol_area()
-                reply = str(self.state.current_patrol_area.get_partition(drone_idx))
             except StopIteration:
                 reply = 'finish'
-                return (drone_id, reply)
-        else if msg == 'start':
-            reply = str(self.state.current_patrol_area.get_partition(drone_idx))
+
+        waypoints = str(self.state.current_patrol_area.get_partition(drone_idx))
+        data = {
+            "waypoints": waypoints,
+            "altitude": self.state.drone_altitudes[drone_idx]
+        }
+        reply = json.dumps(data)
 
         return [(drone_id, reply)]
 
@@ -454,7 +465,7 @@ class SwarmController:
 
                 patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
 
-                mission = StaticPatrolMission(drone_list, patrol_area_list)
+                mission = StaticPatrolMission(drone_list, patrol_area_list, self.alt)
                 await self.mission_supervisor.supervise(mission, drone_list)
 
                 # get the base url
