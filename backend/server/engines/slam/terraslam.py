@@ -34,7 +34,7 @@ from gabriel_protocol import gabriel_pb2
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-
+from transform_utils import transform_point, read_transform_matrix
 logger = logging.getLogger(__name__)
 
 # ------ Transform SLAM coordinates to LLA ------
@@ -137,6 +137,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         self.transform_json = args.transform
         self.redis_port = args.redis
         self.redis_auth = args.auth
+        self.base_transform_matrix = read_transform_matrix("slam_transform_matrix.txt")
         
         # Initialize SLAM client
         self.slam_client = TerraSLAMClient(
@@ -194,6 +195,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         if slam_status == "success" and self.slam_client.latest_pose:
             # Convert SLAM coordinates to GPS
             x, y, z = self.slam_client.latest_pose
+            x, y, z = transform_point(self.base_transform_matrix, [x, y, z])
             lat, lon, alt = self.slam2gps.slam_to_lla([x, y, z])[0]
             
             # Store in Redis
@@ -219,17 +221,17 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             }
         elif slam_status == "initializing":
             # Store zeros in Redis for initializing status
-            self.r.xadd(
-                "slam",
-                {
-                    "pose_x": "-1.0",
-                    "pose_y": "-1.0",
-                    "pose_z": "-1.0",
-                    "lat": "-1.0",
-                    "lon": "-1.0",
-                    "alt": "-1.0"
-                }
-            )
+            # self.r.xadd(
+            #     "slam",
+            #     {
+            #         "pose_x": "-1.0",
+            #         "pose_y": "-1.0",
+            #         "pose_z": "-1.0",
+            #         "lat": "-1.0",
+            #         "lon": "-1.0",
+            #         "alt": "-1.0"
+            #     }
+            # )
             response = {
                 "status": "initializing",
                 "gps": {
@@ -240,17 +242,17 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             }
         elif slam_status == "lost":
             # Store zeros in Redis for lost tracking
-            self.r.xadd(
-                "slam",
-                {
-                    "pose_x": "-3.0",
-                    "pose_y": "-3.0",
-                    "pose_z": "-3.0",
-                    "lat": "-3.0",
-                    "lon": "-3.0",
-                    "alt": "-3.0"
-                }
-            )
+            # self.r.xadd(
+            #     "slam",
+            #     {
+            #         "pose_x": "-3.0",
+            #         "pose_y": "-3.0",
+            #         "pose_z": "-3.0",
+            #         "lat": "-3.0",
+            #         "lon": "-3.0",
+            #         "alt": "-3.0"
+            #     }
+            # )
             response = {
                 "status": "lost",
                 "gps": {
