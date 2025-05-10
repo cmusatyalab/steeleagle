@@ -94,7 +94,8 @@ class SlamZeroMQClient:
                 
                 # Add extras similar to GabrielCompute.py
                 extras = gabriel_extras.Extras()
-                extras.drone_id = self.client_id
+                # extras.drone_id = self.client_id
+                extras.telemetry.drone_name = self.client_id
                 
                 # Add telemetry data (avoid using fields that don't exist)
                 telemetry = extras.telemetry
@@ -104,7 +105,7 @@ class SlamZeroMQClient:
                 # Set computation request in the same way as GabrielCompute
                 # Note: In GabrielCompute, compute_id is passed as the key, not specifying a specific engine
                 compute_command = extras.cpt_request
-                compute_command.cpt.key = "terra-slam"  # Request terra-slam engine
+                compute_command.cpt.model = "terra-slam"  # Request terra-slam engine
                 
                 # Pack extras into the input frame
                 input_frame.extras.Pack(extras)
