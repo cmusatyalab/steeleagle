@@ -42,9 +42,9 @@ def main():
         "-s", "--server", default="128.2.208.19", help="SLAM container IP address"
     )
 
-    parser.add_argument(
-        "-t", "--transform", default="transform.json", help="Path to transform.json file"
-    )
+    # parser.add_argument(
+    #     "-t", "--transform", default="transform.json", help="Path to transform.json file"
+    # )
 
     parser.add_argument(
         "-R", "--redis", type=int, default=6379, help="Redis port"

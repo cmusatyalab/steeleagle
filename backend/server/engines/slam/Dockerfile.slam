@@ -41,8 +41,8 @@ RUN python3 -m pip install --no-cache-dir \
 # Copy project files
 RUN mkdir steeleagle
 COPY backend/server/engines/slam/*.py steeleagle/
-COPY backend/server/engines/slam/*.json steeleagle/
-COPY backend/server/engines/slam/slam_transform_matrix.txt steeleagle/
+# COPY backend/server/engines/slam/*.json steeleagle/
+# COPY backend/server/engines/slam/slam_transform_matrix.txt steeleagle/
 # COPY backend/server/engines/slam/images steeleagle/slam_test_images
 COPY protocol/*_pb2.py /steeleagle/protocol/
 COPY vehicle/util /steeleagle/util

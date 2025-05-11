@@ -27,32 +27,13 @@ import logging
 import json
 from pathlib import Path
 import numpy as np
-from pymap3d import enu2geodetic
 import redis
 from gabriel_server import cognitive_engine
 from gabriel_protocol import gabriel_pb2
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from transform_utils import transform_point, read_transform_matrix
 logger = logging.getLogger(__name__)
-
-# ------ Transform SLAM coordinates to LLA ------
-class SLAM2GPS:
-    def __init__(self, jpath):
-        cfg = json.loads(Path(jpath).read_text())
-        self.s, cfg_r, cfg_t = cfg["scale"], np.array(cfg["rotation"]), np.array(cfg["translation"])
-        self.R, self.t = cfg_r, cfg_t.reshape(3,1)
-        self.lat0, self.lon0, self.alt0 = cfg["lat0"], cfg["lon0"], cfg["alt0"]
-    
-    def slam_to_lla(self, xyz):
-        xyz = np.asarray(xyz).reshape(3,-1)
-        enu = (self.s*self.R@xyz+self.t).T
-        return self.enu_to_lla(enu[:,0], enu[:,1], enu[:,2])
-    
-    def enu_to_lla(self, E, N, U):
-        lat, lon, alt = enu2geodetic(E, N, U, self.lat0, self.lon0, self.alt0)
-        return np.c_[lat, lon, alt]
 
 class TerraSLAMClient:
     def __init__(self, server_ip='localhost', server_port=43322):
@@ -113,7 +94,7 @@ class TerraSLAMClient:
                     logger.info("SLAM system status: Tracking Lost")
                     return "lost"
                 
-                logger.info(f"SLAM coordinates: {x}, {y}, {z}")
+                logger.info(f"GPS coordinates: {x}, {y}, {z}")
                 return "success"
             else:
                 logger.error("Failed to receive complete pose data")
@@ -134,10 +115,8 @@ class TerraSLAMEngine(cognitive_engine.Engine):
     def __init__(self, args):
         self.server_ip = args.server
         self.server_port = 43322  # Fixed SLAM server port
-        self.transform_json = args.transform
         self.redis_port = args.redis
         self.redis_auth = args.auth
-        self.base_transform_matrix = read_transform_matrix("slam_transform_matrix.txt")
         
         # Initialize SLAM client
         self.slam_client = TerraSLAMClient(
@@ -147,9 +126,6 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         
         if not self.slam_client.connect():
             raise Exception("Failed to connect to SLAM server")
-
-        # Initialize coordinate transformer
-        self.slam2gps = SLAM2GPS(self.transform_json)
         
         # Initialize Redis connection
         self.r = redis.Redis(host='redis', port=self.redis_port, 
@@ -193,24 +169,19 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         result.payload_type = gabriel_pb2.PayloadType.TEXT
         
         if slam_status == "success" and self.slam_client.latest_pose:
-            # Convert SLAM coordinates to GPS
-            x, y, z = self.slam_client.latest_pose
-            x, y, z = transform_point(self.base_transform_matrix, [x, y, z])
-            lat, lon, alt = self.slam2gps.slam_to_lla([x, y, z])[0]
+            # Get GPS coordinates
+            lat, lon, alt = self.slam_client.latest_pose
             
             # Store in Redis
             self.r.xadd(
-                "slam",
+                "gps",
                 {
-                    "pose_x": str(x),
-                    "pose_y": str(y),
-                    "pose_z": str(z),
                     "lat": str(lat),
                     "lon": str(lon),
                     "alt": str(alt)
                 }
             )
-            logger.info(f"GPS coordinates: {lat}, {lon}, {alt}")
+            
             response = {
                 "status": "success",
                 "gps": {
@@ -220,18 +191,6 @@ class TerraSLAMEngine(cognitive_engine.Engine):
                 }
             }
         elif slam_status == "initializing":
-            # Store zeros in Redis for initializing status
-            # self.r.xadd(
-            #     "slam",
-            #     {
-            #         "pose_x": "-1.0",
-            #         "pose_y": "-1.0",
-            #         "pose_z": "-1.0",
-            #         "lat": "-1.0",
-            #         "lon": "-1.0",
-            #         "alt": "-1.0"
-            #     }
-            # )
             response = {
                 "status": "initializing",
                 "gps": {
@@ -241,18 +200,6 @@ class TerraSLAMEngine(cognitive_engine.Engine):
                 }
             }
         elif slam_status == "lost":
-            # Store zeros in Redis for lost tracking
-            # self.r.xadd(
-            #     "slam",
-            #     {
-            #         "pose_x": "-3.0",
-            #         "pose_y": "-3.0",
-            #         "pose_z": "-3.0",
-            #         "lat": "-3.0",
-            #         "lon": "-3.0",
-            #         "alt": "-3.0"
-            #     }
-            # )
             response = {
                 "status": "lost",
                 "gps": {
@@ -264,7 +211,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         else:
             response = {
                 "status": "error",
-                "message": "Failed to process image or get SLAM coordinates"
+                "message": "Failed to process image or get GPS coordinates"
             }
         
         result.payload = json.dumps(response).encode(encoding="utf-8")
