@@ -176,6 +176,9 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             self.r.xadd(
                 "slam",
                 {
+                    "pose_x": 0.0,
+                    "pose_y": 0.0,
+                    "pose_z": 0.0,
                     "lat": str(lat),
                     "lon": str(lon),
                     "alt": str(alt)
