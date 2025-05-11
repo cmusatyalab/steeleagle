@@ -94,7 +94,6 @@ class TerraSLAMClient:
                     logger.info("SLAM system status: Tracking Lost")
                     return "lost"
                 
-                logger.info(f"GPS coordinates: {x}, {y}, {z}")
                 return "success"
             else:
                 logger.error("Failed to receive complete pose data")
@@ -172,6 +171,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             # Get GPS coordinates
             lat, lon, alt = self.slam_client.latest_pose
             
+            logger.info(f"GPS coordinates: {lat}, {lon}, {alt}")
             # Store in Redis
             self.r.xadd(
                 "slam",
