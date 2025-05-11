@@ -23,7 +23,6 @@ class ControlService(Service):
         self.drone_id = query_config('driver.id')
         self.drone_type = query_config('driver.type')
         self.manual = True
-        self.command_seq = 0
 
         # Communication sockets
         self.commander_socket = self.context.socket(zmq.DEALER)
@@ -87,8 +86,7 @@ class ControlService(Service):
         req = control_protocol.Request()
         req.ParseFromString(cmd)
 
-        self.command_seq += 1
-
+        logger.info(f"Received command from commander: {req}")
         match req.WhichOneof("type"):
             case "msn":
                 await self.process_mission_command(req)
@@ -105,6 +103,7 @@ class ControlService(Service):
         req = control_protocol.Request()
         req.ParseFromString(cmd)
 
+        logger.info(f"Received mission request: {req}")
         match req.WhichOneof("type"):
             case "veh":
                 logger.debug(f"Forwarding vehicle command to driver: {req}")
@@ -123,6 +122,9 @@ class ControlService(Service):
 
     async def handle_driver_input(self, msg):
         """Handles message from driver and routes based on identity."""
+        
+        logger.debug(f"Received message from driver: {msg}")
+        
         identity, cmd = msg
         if identity == b'usr':
             logger.debug("Forwarding driver response back to mission")

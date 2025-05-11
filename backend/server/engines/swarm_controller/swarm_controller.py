@@ -171,7 +171,7 @@ class Mission(ABC):
 
 class DynamicPatrolMission(Mission):
     def __init__(self, drone_list, patrol_area_list):
-        state = PatrolMissionState(drone_list, patrol_area_list, None, None)
+        state = PatrolMissionState(drone_list, patrol_area_list, None, None, None)
         super().__init__(state)
         self.state.patrol_area_iter = iter(patrol_area_list)
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
@@ -214,13 +214,13 @@ class StaticPatrolMission(Mission):
     DRONE_ALTITUDE_SEP = 3
 
     def __init__(self, drone_list, patrol_area_list, alt):
-        state = PatrolMissionState(drone_list, patrol_area_list, None, None)
+        state = PatrolMissionState(drone_list, patrol_area_list, None, None, None)
         super().__init__(state)
         self.state.patrol_area_iter = iter(patrol_area_list)
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
 
-        self.state.drone_altitudes = [alt + self.DRONE_ALTITUDE_SEP * i for i in range(len(self.drone_list))]
+        self.state.drone_altitudes = [alt + self.DRONE_ALTITUDE_SEP * i for i in range(len(drone_list))]
 
     def __repr__(self):
         return str(self.state)
@@ -229,14 +229,12 @@ class StaticPatrolMission(Mission):
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
 
-    def state_transition(self, drone_id, msg):
+    def state_transition(self, drone_id, action):
         drone_idx = self.state.drone_list.index(drone_id)
 
         reply = None
 
-        msg = controlplane.MissionAction.ParseFromString(msg)
-
-        if msg == controlplane.MissionAction.FINISH_PATROL_SEGMENT:
+        if action == controlplane.MissionAction.FINISH_PATROL_SEGMENT:
             try:
                 self.advance_patrol_area()
             except StopIteration:
@@ -272,7 +270,7 @@ class MissionSupervisor:
         await self.router_sock.send_multipart(drone_id, drone_msg)
 
     async def drone_handler(self):
-        while self.running:
+        while True:
             # Listen for mission updates from drones
             drone_id, msg = await self.listen_drones()
             drone_messages = self.mission.state_transition(drone_id, msg)
@@ -293,8 +291,19 @@ class MissionSupervisor:
 
     async def listen_drones(self):
         identity, msg = await self.router_sock.recv_multipart()
-        logger.info(f'Received message from drone {identity}: {msg}')
-        return identity, msg
+        req = controlplane.Request()
+        req.ParseFromString(msg)
+
+        action = None
+        if req.HasField("msn"):
+            action = req.msn.action
+            logger.info(f'Received message from drone {identity}: {req}')
+        else:
+            # not a mission control message, ignore it
+            logger.info(f'Ignoring message from drone {identity}: {req}')
+            
+
+        return identity, action
 
 class SwarmController:
     # Set up the paths and variables for the compiler
