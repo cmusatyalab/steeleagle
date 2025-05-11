@@ -272,7 +272,7 @@ class MissionSupervisor:
         await self.router_sock.send_multipart(drone_id, drone_msg)
 
     async def drone_handler(self):
-        while self.running:
+        while True:
             # Listen for mission updates from drones
             drone_id, msg = await self.listen_drones()
             drone_messages = self.mission.state_transition(drone_id, msg)

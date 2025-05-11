@@ -96,7 +96,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_frame_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
             self.compute_status = self.ComputeStatus.Connected
 
             logger.debug(f"Frame producer: starting {time.time()}")
@@ -148,13 +148,13 @@ class GabrielCompute(ComputeInterface):
                     if compute_command is not None:
                         input_frame.extras.Pack(extras)
                 else:
-                    logger.debug('Gabriel compute Frame producer: frame is None')
+                    logger.info('Gabriel compute Frame producer: frame is None')
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append("Streaming not started, no frame to show.".encode('utf-8'))
             except Exception as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append("Unable to produce a frame!".encode('utf-8'))
-                logger.error(f'Gabriel compute Frame producer: unable to produce a frame: {e}')
+                logger.info(f'Gabriel compute Frame producer: unable to produce a frame: {e}')
 
             logger.debug(f"Gabriel compute Frame producer: finished time {time.time()}")
             return input_frame
@@ -162,7 +162,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0)
 
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")
@@ -183,8 +183,12 @@ class GabrielCompute(ComputeInterface):
                         extras.registering = True
                         self.drone_registered = True
                         tel_data.uptime.FromSeconds(0)
-                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemetry! content: {tel_data}')
+                    else:
+                        logger.debug("Gabriel compute telemetry producer: sending telemetry")
+                        # Send telemetry
+                        extras.registering = False
                     input_frame.extras.Pack(extras)
+                    logger.debug(f'Gabriel compute telemetry producer: sending Gabriel telemetry! content: {extras}')
                 else:
                     logger.error('Telemetry unavailable')
             except Exception as e:
