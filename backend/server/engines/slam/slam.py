@@ -24,7 +24,7 @@ import logging
 import argparse
 from util.utils import setup_logging
 
-SOURCE = 'openscout'
+SOURCE = 'telemetry'
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def main():
     )
 
     parser.add_argument(
-        "-s", "--server", default="localhost", help="SLAM container IP address"
+        "-s", "--server", default="128.2.208.19", help="SLAM container IP address"
     )
 
     parser.add_argument(

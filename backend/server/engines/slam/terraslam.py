@@ -286,7 +286,8 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         return result_wrapper
 
     def text_payload_reply(self):
-        status = gabriel_pb2.ResultWrapper.Status.SUCCESS
+        # status = gabriel_pb2.ResultWrapper.Status.SUCCESS
+        status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
         result_wrapper = self.get_result_wrapper(status)
 
         result = gabriel_pb2.ResultWrapper.Result()
