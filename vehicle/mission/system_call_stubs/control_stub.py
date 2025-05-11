@@ -129,7 +129,7 @@ class ControlStub(Stub):
         try:
             logger.info(f"Sending notification: {msg=}")
             request = control_protocol.Request()
-            request.msn.action = control_protocol.MissionAction.START_PATROL_SEGMENT
+            request.msn.action = control_protocol.MissionAction.FINISH_PATROL_SEGMENT
             logger.info(f"Send notification: waiting for send_and_wait: {request=}")
             result = await self.send_and_wait(request)
             logger.info(f"Sent notification: {msg=} successfully")
