@@ -214,6 +214,7 @@ class StaticPatrolMission(Mission):
     DRONE_ALTITUDE_SEP = 3
 
     def __init__(self, drone_list, patrol_area_list, alt):
+        # Set the altitude for each drone
         state = PatrolMissionState(drone_list, patrol_area_list, None, None, None)
         super().__init__(state)
         self.state.patrol_area_iter = iter(patrol_area_list)
@@ -272,8 +273,8 @@ class MissionSupervisor:
     async def drone_handler(self):
         while True:
             # Listen for mission updates from drones
-            drone_id, msg = await self.listen_drones()
-            drone_messages = self.mission.state_transition(drone_id, msg)
+            drone_id, action = await self.listen_drones()
+            drone_messages = self.mission.state_transition(drone_id, action)
 
             # Send mission updates to drones
             for drone_id, drone_msg in drone_messages:
@@ -302,8 +303,8 @@ class MissionSupervisor:
             # not a mission control message, ignore it
             logger.info(f'Ignoring message from drone {identity}: {req}')
             
-
-        return identity, action
+        drone_id = identity.decode('utf-8')
+        return drone_id, action
 
 class SwarmController:
     # Set up the paths and variables for the compiler
@@ -448,9 +449,9 @@ class SwarmController:
 
             # get the drone list
             if req.HasField("veh"):
-                drone_list = req.veh.drone_ids
+                drone_list = list(req.veh.drone_ids) # convert from protobuf list to python list to support index() syntax
             else:
-                drone_list = req.msn.drone_ids
+                drone_list = list(req.msn.drone_ids)
             logger.info(f"drone list: {drone_list}")
 
             # Check if the command contains a mission and compile it if true
