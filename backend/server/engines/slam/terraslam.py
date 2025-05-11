@@ -174,7 +174,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             
             # Store in Redis
             self.r.xadd(
-                "gps",
+                "slam",
                 {
                     "lat": str(lat),
                     "lon": str(lon),
