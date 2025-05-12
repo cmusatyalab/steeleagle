@@ -254,14 +254,25 @@ def draw_map():
         "lon": "float",
         }
 
-        ret = red.xrevrange(f"landing_spot", "+", "-", 5)
+        ret = red.xrevrange(f"landing_spot", "+", "-", 1)
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             landing_coords = []
             for index, row in df.iterrows():
-                landing_coords.append([row["lat"], row["lon"]])
-            ls = folium.PolyLine(locations=landing_coords, color="orange")
-            ls.add_to(landing_spot)
+                landing_coords = [row["lat"], row["lon"]]
+
+            circle = folium.Circle(
+                location=landing_coords,
+                radius=3,
+                color="black",
+                weight=1,
+                fill_opacity=0.6,
+                opacity=1,
+                fill_color="orange",
+                fill=False,  # gets overridden by fill_color
+            )
+
+            circle.add_to(landing_spot)
 
     st_folium(
         m,
