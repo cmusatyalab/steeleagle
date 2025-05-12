@@ -166,12 +166,14 @@ def draw_map():
         tiles=tiles,
     )
 
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
-    col2.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
-    col3.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
-    col4.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
-    col5.number_input(key = "zoom_level", label="Zoom Level", min_value=1, max_value=23, step=1, value=18, format="%d")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
+        st.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
+        st.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
+        st.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
+    with col2:
+        st.number_input(key = "zoom_level", label="Zoom Level", min_value=1, max_value=22, step=1, value=18, format="%d")
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Drone Markers")
@@ -277,16 +279,17 @@ def draw_map():
 
             circle.add_to(landing_spot)
 
-    st_folium(
+    output = st_folium(
         m,
         key="overview_map",
         use_container_width=True,
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         #layer_control=lc,
-        returned_objects=[],
         center=st.session_state.center,
         height=500
     )
+    st.session_state.center = output['center']
+    st.session_state.zoom_level = output['zoom']
 
 menu()
 options_expander = st.expander(" **:gray-background[:wrench: Toolbar]**", expanded=True)
@@ -318,7 +321,7 @@ with options_expander:
         tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
     tiles = folium.TileLayer(
-        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
+        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=22
     )
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
