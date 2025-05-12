@@ -275,17 +275,21 @@ def draw_map():
 
             circle.add_to(landing_spot)
 
+    def update_map_props():
+        st.toast(f"Current zoom: {st.session_state['overview_map']['zoom']}")
+        st.toast(f"Current center: {st.session_state['overview_map']['center']}")
+
     output = st_folium(
         m,
         key="overview_map",
         use_container_width=True,
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         #layer_control=lc,
-        center=st.session_state['overview_map']['center'] if st.session_state['overview_map'] else st.session_state.center,
-        height=500
+        center=st.session_state.center,
+        height=500,
+        on_change=update_map_props
     )
-    st.session_state.center = output['center']
-    st.session_state.zoom_level = output['zoom']
+
 
 menu()
 options_expander = st.expander(" **:gray-background[:wrench: Toolbar]**", expanded=True)
