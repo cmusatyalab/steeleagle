@@ -13,6 +13,7 @@ from google.protobuf.message import DecodeError
 from google.protobuf import text_format
 import requests
 import protocol.controlplane_pb2 as controlplane
+import protocol.common_pb2 as common
 import argparse
 import zmq
 import zmq.asyncio
@@ -169,47 +170,6 @@ class Mission(ABC):
     def update_drone_list(self, drone_list):
         pass
 
-class DynamicPatrolMission(Mission):
-    def __init__(self, drone_list, patrol_area_list):
-        state = PatrolMissionState(drone_list, patrol_area_list, None, None, None)
-        super().__init__(state)
-        self.state.patrol_area_iter = iter(patrol_area_list)
-        self.state.current_patrol_area = next(self.state.patrol_area_iter)
-        self._create_partitioning()
-
-    def __repr__(self):
-        return str(self.state)
-
-    def advance_patrol_area(self):
-        self.state.current_patrol_area = next(self.state.patrol_area_iter)
-        self._create_partitioning()
-
-    def state_transition(self, drone_id, msg):
-        drone_idx = self.state.drone_list.index(drone_id)
-        line = self.state.current_patrol_area.get_patrol_line(drone_idx)
-
-        reply = line
-
-        if reply is None:
-            try:
-                self.advance_patrol_area()
-                reply = f"{self.state.current_patrol_area.get_name()} done"
-            except StopIteration:
-                pass
-
-        if reply is None:
-            reply = "finish"
-
-        return [(drone_id, reply)]
-
-    def update_drone_list(self, drone_list):
-        self.state.drone_list = drone_list
-        self._create_partitioning()
-
-    def _create_partitioning(self):
-        num_drones = len(self.state.drone_list)
-        self.state.current_patrol_area.create_partitioning(num_drones)
-
 class StaticPatrolMission(Mission):
     DRONE_ALTITUDE_SEP = 3
 
@@ -229,26 +189,38 @@ class StaticPatrolMission(Mission):
     def advance_patrol_area(self):
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
+        
 
     def state_transition(self, drone_id, action):
         drone_idx = self.state.drone_list.index(drone_id)
 
-        reply = None
+        req = controlplane.Request()
+        req.msn.action = controlplane.MissionAction.PATROL
 
-        if action == controlplane.MissionAction.FINISH_PATROL_SEGMENT:
+        if action == common.ResponseStatus.COMPLETED:
             try:
                 self.advance_patrol_area()
             except StopIteration:
-                reply = 'finish'
+                logger.info(f"Drone {drone_id}: PatrolArea finished (StopIteration). Sending FINISH status.")
+                logger.info (f"{common.PatrolStatus.FINISH}")
+                req.msn.patrol_area.status = common.PatrolStatus.FINISH
+                return (drone_id, req)
+            except Exception as e:
+                logger.error(f"Unexpected error during advance_patrol_area for drone {drone_id}: {e}", exc_info=True)
+        
 
-        waypoints = str(self.state.current_patrol_area.get_partition(drone_idx))
-        data = {
-            "waypoints": waypoints,
-            "altitude": self.state.drone_altitudes[drone_idx]
-        }
-        reply = json.dumps(data)
 
-        return [(drone_id, reply)]
+        partitioned_areas = self.state.current_patrol_area.get_partition(drone_idx)
+        altitude = self.state.drone_altitudes[drone_idx]
+        logger.info(f"Drone {drone_id} is at altitude {altitude}")
+        logger.info(f"Drone {drone_id} is assigned to patrol area {partitioned_areas}")
+    
+        req.msn.patrol_area.status = common.PatrolStatus.CONTINUE
+        req.msn.patrol_area.areas.extend([p.waypoints for p in partitioned_areas])
+        req.msn.patrol_area.altitude = self.state.drone_altitudes[drone_idx]
+    
+
+        return (drone_id, req)
 
     def update_drone_list(self, drone_list):
         self.state.drone_list = drone_list
@@ -266,19 +238,18 @@ class MissionSupervisor:
     def get_mission(self):
         return self.mission
 
-    async def send_drone_msg(self, drone_id, drone_msg):
-        logger.info(f'Sending message {drone_msg} to {drone_id}')
-        await self.router_sock.send_multipart(drone_id, drone_msg)
+    async def send_drone_msg(self, drone_id, request):
+        logger.info(f'Sending message {request} to {drone_id}')
+        await self.router_sock.send_multipart([drone_id.encode('utf-8'), request.SerializeToString()])
 
     async def drone_handler(self):
         while True:
             # Listen for mission updates from drones
             drone_id, action = await self.listen_drones()
-            drone_messages = self.mission.state_transition(drone_id, action)
+            drone_id, drone_msg = self.mission.state_transition(drone_id, action)
 
             # Send mission updates to drones
-            for drone_id, drone_msg in drone_messages:
-                self.send_drone_msg(drone_id, drone_msg)
+            await self.send_drone_msg(drone_id, drone_msg)
 
     async def supervise(self, mission, drone_list):
         self.mission = mission
@@ -292,19 +263,11 @@ class MissionSupervisor:
 
     async def listen_drones(self):
         identity, msg = await self.router_sock.recv_multipart()
-        req = controlplane.Request()
-        req.ParseFromString(msg)
-
-        action = None
-        if req.HasField("msn"):
-            action = req.msn.action
-            logger.info(f'Received message from drone {identity}: {req}')
-        else:
-            # not a mission control message, ignore it
-            logger.info(f'Ignoring message from drone {identity}: {req}')
-            
+        rep = controlplane.Response()
+        rep.ParseFromString(msg)
         drone_id = identity.decode('utf-8')
-        return drone_id, action
+        rep_status = rep.resp
+        return drone_id, rep_status
 
 class SwarmController:
     # Set up the paths and variables for the compiler
@@ -312,10 +275,6 @@ class SwarmController:
     output_path = '/compiler/out/flightplan'
     platform_path  = '/dsl/python/project'
     waypoint_file = '/compiler/out/waypoint.json'
-    # compiler_path = '../../steeleagle-vol/compiler'
-    # output_path = '../../steeleagle-vol/compiler/out/flightplan_'
-    # platform_path  = '../../steeleagle-vol/compiler/python/project'
-    # waypoint_file = '../../steeleagle-vol/compiler/out/waypoint.json'
 
     def __init__(self, alt, compiler_file, red, request_sock, router_sock):
         self.alt = alt

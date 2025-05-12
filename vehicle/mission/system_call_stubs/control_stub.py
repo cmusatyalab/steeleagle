@@ -128,14 +128,14 @@ class ControlStub(Stub):
     async def send_notification(self, msg):
         try:
             logger.info(f"Sending notification: {msg=}")
-            request = control_protocol.Request()
-            request.msn.action = control_protocol.MissionAction.FINISH_PATROL_SEGMENT
-            logger.info(f"Send notification: waiting for send_and_wait: {request=}")
-            result = await self.send_and_wait(request)
-            logger.info(f"Sent notification: {msg=} successfully")
+            report = control_protocol.Response()
+            report.resp = common_protocol.ResponseStatus.COMPLETED
+            logger.info(f"Send notification: waiting for send_and_wait: {report=}")
+            update = await self.send_and_wait(report)
+            logger.info(f"recv update: {update=}")
         except Exception as e:
             logger.error(e)
-        return result.msn_notification
+        return update.msn.patrol_area
 
     async def get_waypoints(self, tag):
         # Read the waypoints from the waypoint path

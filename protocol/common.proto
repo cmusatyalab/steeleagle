@@ -167,3 +167,15 @@ message HSV {
   uint32 s = 2; // saturation range is [0,255]
   uint32 v = 3; // value range is [0,255]
 }
+
+message PatrolArea {
+    PatrolStatus status = 1;
+    repeated string areas = 2;
+    float altitude = 3;
+}
+
+enum PatrolStatus {
+  UNKNOWN_PATROL_STATUS = 0;
+  FINISH = 1;
+  CONTINUE = 2;
+}

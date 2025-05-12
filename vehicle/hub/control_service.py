@@ -8,6 +8,7 @@ import common_pb2 as common_protocol
 from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 from data_store import DataStore
+from google.protobuf.message import DecodeError
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')
@@ -83,9 +84,9 @@ class ControlService(Service):
     ###########################################################################
     async def handle_commander_input(self, cmd):
         """Handles command input from the commander."""
+        logger.info(f"Received raw command from commander: {cmd}")
         req = control_protocol.Request()
         req.ParseFromString(cmd)
-
         logger.info(f"Received command from commander: {req}")
         match req.WhichOneof("type"):
             case "msn":
@@ -99,32 +100,47 @@ class ControlService(Service):
                 raise Exception("Missing request type in commander command")
 
     async def handle_mission_input(self, cmd):
-        """Handles mission request and forwards to driver."""
-        req = control_protocol.Request()
-        req.ParseFromString(cmd)
-
-        logger.info(f"Received mission request: {req}")
-        match req.WhichOneof("type"):
-            case "veh":
-                logger.debug(f"Forwarding vehicle command to driver: {req}")
-                await self.driver_socket.send_multipart([b'usr', cmd])
-            case "msn":
-                logger.debug(f"Forwarding mission command to commander: {req}")
+        """Handles mission request and forwards to driver/commander."""
+        # Attempt to parse as Response first (e.g., patrol area response)
+        try:
+            resp = control_protocol.Response()
+            resp.ParseFromString(cmd)
+            if resp.HasField("patrol_area"):
+                logger.info(f"Received patrol area response: {resp.patrol_area}")
+                logger.debug(f"Forwarding patrol area response to commander")
                 await self.commander_socket.send_multipart([cmd])
-            case "cpt":
-                logger.debug(f"Processing compute control command: {req}")
-                if req.cpt.action == control_protocol.ComputeAction.CLEAR_COMPUTE:
-                    await self.clear_compute_result(req)
-                elif req.cpt.action == control_protocol.ComputeAction.CONFIGURE_COMPUTE:
-                    await self.configure_compute(req)
-                else:
-                    logger.warning("Unknown compute action from mission input")
+                return
+        except DecodeError:
+            pass  # Fall through to parse as Request
+
+        try:
+            req = control_protocol.Request()
+            req.ParseFromString(cmd)
+            logger.info(f"Received mission request: {req}")
+
+            match req.WhichOneof("type"):
+                case "veh":
+                    logger.debug(f"Forwarding vehicle command to driver: {req}")
+                    await self.driver_socket.send_multipart([b'usr', cmd])
+                case "cpt":
+                    logger.debug(f"Processing compute control command: {req}")
+                    match req.cpt.action:
+                        case control_protocol.ComputeAction.CLEAR_COMPUTE:
+                            await self.clear_compute_result(req)
+                        case control_protocol.ComputeAction.CONFIGURE_COMPUTE:
+                            await self.configure_compute(req)
+                        case _:
+                            logger.warning("Unknown compute action from mission input")
+                case None:
+                    logger.warning("Unknown request type in commander message")
+
+        except DecodeError:
+            logger.error("Failed to parse message as Request or Response")
+
 
     async def handle_driver_input(self, msg):
         """Handles message from driver and routes based on identity."""
-        
         logger.debug(f"Received message from driver: {msg}")
-        
         identity, cmd = msg
         if identity == b'usr':
             logger.debug("Forwarding driver response back to mission")
@@ -157,8 +173,8 @@ class ControlService(Service):
                 hover.veh.action = control_protocol.VehicleAction.HOVER
                 asyncio.create_task(self.send_driver_command(hover))
                 self.manual = True
-            case control_protocol.MissionAction.NOTIFY:
-                await self.send_notify_mission(req)
+            case control_protocol.MissionAction.PATROL:
+                await self.send_patrol_area(req)
             case _:
                 logger.warning("Unknown mission action")
 
@@ -237,8 +253,8 @@ class ControlService(Service):
         rep.ParseFromString(msg[0])
         logger.info(f"Stop result: {rep.resp}")
 
-    async def send_notify_mission(self, req):
-        logger.info("Sending mission notify")
+    async def send_patrol_area(self, req):
+        logger.info("Sending patrol area")
         self.mission_cmd_socket.send(req.SerializeToString())
 
 
