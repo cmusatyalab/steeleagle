@@ -1,4 +1,3 @@
-
 import ast
 import json
 import logging
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ReportStub(Stub):
 
     def __init__(self, user_path):
-        self.waypoint_path = user_path + '/way_points_map.json'
+        self.waypoint_path = user_path + '/waypoint.json'
         logger.info(f"ReportStub: waypoint_path: {self.waypoint_path=}")
         super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub_2')
 
@@ -24,7 +23,7 @@ class ReportStub(Stub):
     ''' Mission methods '''
     async def send_notification(self, msg):
         
-        self.coordinates_res = {
+        update_res = {
             'status': None,
             'patrol_areas': [],
             'altitude': None
@@ -36,27 +35,41 @@ class ReportStub(Stub):
             report.resp = common_protocol.ResponseStatus.OK
         elif (msg == 'finish'):
             report.resp = common_protocol.ResponseStatus.COMPLETED
-        logger.info(f"Send notification: waiting for send_and_wait: {report=}")
+        
         update = await self.send_and_wait(report)
-        logger.info(f"recv update: {update=}")
-        
-        
-        for patrol_area in update.msn.patrol_area.areas:
-            logger.info(f"Patrol area: {patrol_area=}")
-            self.coordinates_res['patrol_areas'].append(patrol_area)
-        
-        self.coordinates_res['status'] = update.msn.patrol_area.status
-        self.coordinates_res['altitude'] = update.msn.patrol_area.altitude
-        
-        return self.coordinates_res
+        if update.msn.patrol_area.status == common_protocol.PatrolStatus.CONTINUE:
+            update_res['status'] = "running"
+            update_res['altitude'] = update.msn.patrol_area.altitude
+            for patrol_area in update.msn.patrol_area.areas:
+                update_res['patrol_areas'].append(patrol_area)
+        else :
+            update_res['status'] = "finished"
 
-    async def get_waypoints(self, area):
-        # Read the waypoints from the waypoint path
-        with open(self.waypoint_path, 'r') as f:
-            waypoints = f.read()
+        return update_res
+    
+    async def get_waypoints(self, area_path):
+        try:
+            logger.info(f"get_waypoints: {self.waypoint_path=}")
+            with open(self.waypoint_path, 'r') as f:
+                waypoints = f.read()
 
-        waypoints_map = json.loads(waypoints)
-        logger.info(f"waypoints_map: {waypoints_map=}")
-        waypoints_val = waypoints_map.get(area)
-        logger.info(f"waypoints_val: {waypoints_val=}")
-        return waypoints_val
+            waypoints_map = json.loads(waypoints)
+            logger.info(f"waypoints_map: {waypoints_map=}")
+
+            # Parse dot-separated path, e.g., 'Hex.Hex_1'
+            keys = area_path.split('.')
+            coords = waypoints_map
+            for key in keys:
+                coords = coords.get(key)
+                if coords is None:
+                    logger.warning(f"Key '{key}' not found in waypoints map.")
+                    return None
+
+            formatted_coords = [{'lng': lng, 'lat': lat} for lng, lat in coords]
+
+            logger.info(f"formatted_coords: {formatted_coords}")
+            return formatted_coords
+
+        except Exception as e:
+            logger.error(f"Error reading waypoints: {e}")
+            return None
