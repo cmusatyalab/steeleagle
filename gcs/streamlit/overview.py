@@ -163,12 +163,12 @@ def draw_map():
         zoom_start=18,
         tiles=tiles,
     )
-    layer_col = st.columns(4)
-    with layer_col:
-        st.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
-        st.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
-        st.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
-        st.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
+    col2.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
+    col3.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
+    col4.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Drone Markers")
