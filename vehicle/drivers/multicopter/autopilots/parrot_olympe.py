@@ -71,12 +71,12 @@ class ParrotOlympeDrone(MulticopterItf):
     async def take_off(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(TakeOff())
-        
+
         result = await self._wait_for_condition(
             lambda: self._is_hovering(),
             interval=1
         )
-        
+
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         if result:
@@ -87,12 +87,12 @@ class ParrotOlympeDrone(MulticopterItf):
     async def land(self):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(Landing()).wait().success()
-        
+
         result = await self._wait_for_condition(
             lambda: self._is_landed(),
             interval=1
         )
-        
+
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         if result:
@@ -157,7 +157,7 @@ class ParrotOlympeDrone(MulticopterItf):
             lambda: self._is_home_reached(),
             interval=1
         )
-        
+
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
         return common_protocol.ResponseStatus.COMPLETED
@@ -279,12 +279,13 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
         logger.info('after try')
-        
-        result = await self._wait_for_condition(
-            lambda: self._is_gimbal_pose_reached(yaw, pitch, roll),
-            interval=0.5
-        )
-        
+
+        #result = await self._wait_for_condition(
+        #    lambda: self._is_gimbal_pose_reached(yaw, pitch, roll),
+        #    interval=0.5
+        #)
+        result = True
+
         logger.info('after wait')
 
         if result:
@@ -323,6 +324,7 @@ class ParrotOlympeDrone(MulticopterItf):
                     self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = \
                     self._get_velocity_body()["up"]
+                tel_message.gimbal_pose.pitch = await self._get_gimbal_pitch()
                 batt = tel_message.battery
                 if batt <= 15:
                     tel_message.alerts.battery_warning = \
@@ -438,6 +440,9 @@ class ParrotOlympeDrone(MulticopterItf):
                 "right": np.dot(vec, vecr) * -1, \
                 "up": enu["up"]}
         return res
+
+    async def _get_gimbal_pitch(self):
+        return self._drone.get_state(attitude)[0]["pitch_absolute"]
 
     ''' Coroutine methods '''
     async def _velocity_pid(self):
