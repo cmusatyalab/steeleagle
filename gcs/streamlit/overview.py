@@ -50,6 +50,8 @@ if "show_slam_track" not in st.session_state:
     st.session_state.show_slam_track = False
 if "show_landing_spot" not in st.session_state:
     st.session_state.show_landing_spot = False
+if "zoom_level" not in st.session_state:
+    st.session_state.zoom_level = 18
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -160,15 +162,16 @@ def update_imagery():
 def draw_map():
     m = folium.Map(
         location=[40.415428612484924, -79.95028831875038],
-        zoom_start=18,
+        zoom_start=st.session_state.zoom_level,
         tiles=tiles,
     )
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
     col2.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
     col3.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
     col4.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
+    col5.number_input(key = "zoom_level", label="Zoom Level", min_value=1, max_value=23, step=1, value=18, format="%d")
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Drone Markers")
@@ -264,12 +267,12 @@ def draw_map():
             circle = folium.Circle(
                 location=landing_coords,
                 radius=3,
-                color="black",
-                weight=1,
-                fill_opacity=0.6,
-                opacity=1,
-                fill_color="orange",
-                fill=False,  # gets overridden by fill_color
+                color="orange",
+                weight=2,
+                #fill_opacity=0.6,
+                #opacity=1,
+                #fill_color="orange",
+                #fill=False,  # gets overridden by fill_color
             )
 
             circle.add_to(landing_spot)
