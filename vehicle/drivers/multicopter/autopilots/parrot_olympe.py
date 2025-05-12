@@ -278,10 +278,14 @@ class ParrotOlympeDrone(MulticopterItf):
         except:
             return common_protocol.ResponseStatus.FAILED
 
+        logger.info('after try')
+        
         result = await self._wait_for_condition(
             lambda: self._is_gimbal_pose_reached(yaw, pitch, roll),
             interval=0.5
         )
+        
+        logger.info('after wait')
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
