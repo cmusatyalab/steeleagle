@@ -162,7 +162,7 @@ class GabrielCompute(ComputeInterface):
 
     def get_telemetry_producer(self):
         async def producer():
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
 
             self.compute_status = self.ComputeStatus.Connected
             logger.debug(f"tel producer: starting time {time.time()}")

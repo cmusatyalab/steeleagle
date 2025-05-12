@@ -99,6 +99,10 @@ def main():
         "--geofence",  default="geofence.kml", help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]"
     )
 
+    parser.add_argument(
+        "--geofence_enabled", action="store_true", default=False, help="Whether to use a geofence to decide whether to store detections"
+    )
+
     args, _ = parser.parse_known_args()
 
     def object_engine_setup():

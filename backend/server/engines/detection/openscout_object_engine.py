@@ -78,6 +78,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.search_radius = args.radius
         self.ttl_secs = args.ttl
         self.geofence = []
+        self.geofence_enabled = args.geofence_enabled
 
         fence_path = os.getcwd() + "/geofence/" + args.geofence
         if not os.path.exists(fence_path) or not os.path.isfile(fence_path):
@@ -139,7 +140,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         logger.info("Estimated GPS location: ({0}, {1})".format(est_lat, est_lon))
         return est_lat, est_lon
 
-    def storeDetection(self, drone, lat, lon, cls, conf, link=""):
+    def store_detection_db(self, drone, lat, lon, cls, conf, link=""):
         object_name = f"{cls}-{os.urandom(2).hex()}"
         self.r.geoadd("detections", [lon, lat, object_name])
 
@@ -260,7 +261,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 VFOV = 43 # Vertical FOV.
 
                 target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
-                target_y_pix = img_height - int(((box[2] - box[0]) / 2.0) + box[0])
+                target_y_pix = img_height - int(box[0]) #int(((box[2] - box[0]) / 2.0) + box[0])
                 target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (HFOV / 2)
                 target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (VFOV / 2)
                 target_bottom_pitch_angle = (((img_height - box[2]) - pixel_center[1]) \
@@ -280,40 +281,59 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     upper_bound = [cpt_config.upper_bound.h, cpt_config.upper_bound.s, cpt_config.upper_bound.v]
                     hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
 
-                # if there is no geofence, or the estimated object locatoin is within the geofence...
-                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                    # first do a geosearch to see if there is a match within radius
-                    objects = self.r.geosearch(
-                        "detections",
-                        longitude=lon,
-                        latitude=lat,
-                        radius=self.search_radius,
-                        unit="m",
-                    )
+                if self.geofence_enabled:
+                    # if there is no geofence, or the estimated object locatoin is within the geofence...
+                    if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
+                        # first do a geosearch to see if there is a match within radius
+                        objects = self.r.geosearch(
+                            "detections",
+                            longitude=lon,
+                            latitude=lat,
+                            radius=self.search_radius,
+                            unit="m",
+                        )
 
-                    if len(objects) == 0:
-                        r.append({
-                            "id": i,
-                            "class": names[i],
-                            "score": scores[i],
-                            "lat": lat, "lon":
-                            lon, "box": box,
-                            "hsv_filter": hsv_filter
-                        })
-                        self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
-                    else:
-                        for obj in objects:
-                            id = self.r.hget(obj, "drone_id")
-                            if id == drone_id:
-                                r.append({
-                                    "id": i,
-                                    "class": names[i],
-                                    "score": scores[i],
-                                    "lat": lat, "lon":
-                                    lon, "box": box,
-                                    "hsv_filter": hsv_filter
-                                })
-                                self.storeDetection(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                        if len(objects) == 0:
+                            logger.info(f"Adding detection for {names[i]} for drone {drone_id} for the first time")
+                            r.append({
+                                "id": drone_id,
+                                "class": names[i],
+                                "score": scores[i],
+                                "lat": lat,
+                                "lon": lon,
+                                "box": box,
+                                "hsv_filter": hsv_filter
+                            })
+                            self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                        else:
+                            logger.info(f"Object already exists within search radius: {objects}")
+                            for obj in objects:
+                                d = self.r.hget(obj, "drone_id")
+                                if d and d == drone_id:
+                                    r.append({
+                                        "id": drone_id,
+                                        "class": names[i],
+                                        "score": scores[i],
+                                        "lat": lat,
+                                        "lon": lon,
+                                        "box": box,
+                                        "hsv_filter": hsv_filter
+                                    })
+                                    self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                                else:
+                                    logger.info(f"Ignoring detection, {obj} already found by drone {d}")
+                else:
+                    logger.info(f"Adding detection for {names[i]} for drone {drone_id} without geosearch")
+                    r.append({
+                        "id": drone_id,
+                        "class": names[i],
+                        "score": scores[i],
+                        "lat": lat,
+                        "lon": lon,
+                        "box": box,
+                        "hsv_filter": hsv_filter
+                    })
+                    self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
         logger.info(json.dumps(r,sort_keys=True, indent=4))
         result.payload = json.dumps(r).encode(encoding="utf-8")
