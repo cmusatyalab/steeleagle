@@ -42,7 +42,14 @@ if "gimbal_speed" not in st.session_state:
     st.session_state.gimbal_speed = 45
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
-
+if "show_drone_markers" not in st.session_state:
+    st.session_state.show_drone_markers = True
+if "show_gps_tracks" not in st.session_state:
+    st.session_state.show_gps_tracks = True
+if "show_slam_track" not in st.session_state:
+    st.session_state.show_slam_track = False
+if "show_landing_spot" not in st.session_state:
+    st.session_state.show_landing_spot = False
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -156,6 +163,12 @@ def draw_map():
         zoom_start=18,
         tiles=tiles,
     )
+    layer_col = st.columns(4)
+    with layer_col:
+        st.checkbox(label="Drone Markers", key="show_drone_markers", value=st.session_state.show_drone_markers)
+        st.checkbox(label="Historical Tracks", key="show_gps_tracks", value=st.session_state.show_gps_tracks)
+        st.checkbox(label="SLAM Track", key="show_slam_track", value=st.session_state.show_slam_track)
+        st.checkbox(label="Landing Spot", key="show_landing_spot", value=st.session_state.show_landing_spot)
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Drone Markers")
@@ -176,7 +189,7 @@ def draw_map():
             for index, row in df.iterrows():
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
-                if i == 0:
+                if st.session_state.show_drone_markers and i == 0:
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
@@ -212,46 +225,50 @@ def draw_map():
 
                 i += 1
 
-            ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
-            ls.add_to(tracks)
-            marker_color += 1
+            if st.session_state.show_gps_tracks:
+                ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
+                ls.add_to(tracks)
+                marker_color += 1
 
-    TYPES={"pose_x": "float",
-    "pose_y": "float",
-    "pose_z": "float",
-    "lat": "float",
-    "lon": "float",
-    "alt": "float",
-    }
 
-    ret = red.xrevrange(f"slam", "+", "-", st.session_state.trail_length)
-    if len(ret) > 0:
-        df = stream_to_dataframe(ret, types=TYPES)
-        slam_coords = []
-        for index, row in df.iterrows():
-            slam_coords.append([row["lat"], row["lon"]])
-        ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
-        ls.add_to(slam_track)
+    if st.session_state.show_slam_track:
+        TYPES={"pose_x": "float",
+        "pose_y": "float",
+        "pose_z": "float",
+        "lat": "float",
+        "lon": "float",
+        "alt": "float",
+        }
 
-    TYPES={"lat": "float",
-    "lon": "float",
-    }
+        ret = red.xrevrange(f"slam", "+", "-", st.session_state.trail_length)
+        if len(ret) > 0:
+            df = stream_to_dataframe(ret, types=TYPES)
+            slam_coords = []
+            for index, row in df.iterrows():
+                slam_coords.append([row["lat"], row["lon"]])
+            ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
+            ls.add_to(slam_track)
 
-    ret = red.xrevrange(f"landing_spot", "+", "-", 5)
-    if len(ret) > 0:
-        df = stream_to_dataframe(ret, types=TYPES)
-        landing_coords = []
-        for index, row in df.iterrows():
-            landing_coords.append([row["lat"], row["lon"]])
-        ls = folium.PolyLine(locations=landing_coords, color="orange")
-        ls.add_to(landing_spot)
+    if st.session_state.show_landing_spot:
+        TYPES={"lat": "float",
+        "lon": "float",
+        }
+
+        ret = red.xrevrange(f"landing_spot", "+", "-", 5)
+        if len(ret) > 0:
+            df = stream_to_dataframe(ret, types=TYPES)
+            landing_coords = []
+            for index, row in df.iterrows():
+                landing_coords.append([row["lat"], row["lon"]])
+            ls = folium.PolyLine(locations=landing_coords, color="orange")
+            ls.add_to(landing_spot)
 
     st_folium(
         m,
         key="overview_map",
         use_container_width=True,
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
-        layer_control=lc,
+        #layer_control=lc,
         returned_objects=[],
         center=st.session_state.center,
         height=500
