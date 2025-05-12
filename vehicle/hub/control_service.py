@@ -30,8 +30,10 @@ class ControlService(Service):
         self.commander_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
 
         self.mission_cmd_socket = self.context.socket(zmq.DEALER)
+        self.mission_report_socket = self.context.socket(zmq.DEALER)
         self.driver_socket = self.context.socket(zmq.DEALER)
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
+        
 
         self.setup_and_register_socket(
             self.commander_socket, SocketOperation.CONNECT,
@@ -39,6 +41,9 @@ class ControlService(Service):
         self.setup_and_register_socket(
             self.mission_cmd_socket, SocketOperation.BIND,
             'hub.network.controlplane.mission_to_hub')
+        self.setup_and_register_socket(
+            self.mission_report_socket, SocketOperation.BIND,
+            'hub.network.controlplane.mission_to_hub_2')
         self.setup_and_register_socket(
             self.driver_socket, SocketOperation.BIND,
             'hub.network.controlplane.hub_to_driver')
@@ -59,6 +64,7 @@ class ControlService(Service):
         poller.register(self.commander_socket, zmq.POLLIN)
         poller.register(self.driver_socket, zmq.POLLIN)
         poller.register(self.mission_cmd_socket, zmq.POLLIN)
+        poller.register(self.mission_report_socket, zmq.POLLIN)
 
         while True:
             try:
@@ -71,6 +77,10 @@ class ControlService(Service):
                 if self.mission_cmd_socket in socks:
                     msg = await self.mission_cmd_socket.recv_multipart()
                     await self.handle_mission_input(msg[0])
+                
+                if self.mission_report_socket in socks:
+                    msg = await self.mission_report_socket.recv_multipart()
+                    await self.handle_mission_report(msg[0])
 
                 if self.driver_socket in socks:
                     msg = await self.driver_socket.recv_multipart()
@@ -84,7 +94,7 @@ class ControlService(Service):
     ###########################################################################
     async def handle_commander_input(self, cmd):
         """Handles command input from the commander."""
-        logger.info(f"Received raw command from commander: {cmd}")
+        logger.debug(f"Received raw command from commander: {cmd}")
         req = control_protocol.Request()
         req.ParseFromString(cmd)
         logger.info(f"Received command from commander: {req}")
@@ -100,48 +110,37 @@ class ControlService(Service):
                 raise Exception("Missing request type in commander command")
 
     async def handle_mission_input(self, cmd):
-        """Handles mission request and forwards to driver/commander."""
-        # Try Request first
-        try:
-            req = control_protocol.Request()
-            req.ParseFromString(cmd)
-
-            if req.WhichOneof("type") is not None:
-                logger.info(f"Received mission request: {req}")
-                match req.WhichOneof("type"):
-                    case "veh":
-                        logger.debug(f"Forwarding vehicle command to driver: {req}")
-                        await self.driver_socket.send_multipart([b'usr', cmd])
-                    case "cpt":
-                        logger.info(f"Processing compute control command: {req}")
-                        match req.cpt.action:
-                            case control_protocol.ComputeAction.CLEAR_COMPUTE:
-                                await self.clear_compute_result(req)
-                            case control_protocol.ComputeAction.CONFIGURE_COMPUTE:
-                                await self.configure_compute(req)
-                            case _:
-                                logger.warning("Unknown compute action from mission input")
-                    case "msn":
-                        logger.debug(f"Forwarding mission command to commander: {req}")
-                        await self.commander_socket.send_multipart([cmd])
+        """Handles mission request and forwards to driver/commander."""    
+        req = control_protocol.Request()
+        req.ParseFromString(cmd)
+        logger.info(f"Received mission request: {req}")
+        match req.WhichOneof("type"):
+            case "veh":
+                logger.debug(f"Forwarding vehicle command to driver: {req}")
+                await self.driver_socket.send_multipart([b'usr', cmd])
+            case "cpt":
+                logger.info(f"Processing compute control command: {req}")
+                match req.cpt.action:
+                    case control_protocol.ComputeAction.CLEAR_COMPUTE:
+                        await self.clear_compute_result(req)
+                    case control_protocol.ComputeAction.CONFIGURE_COMPUTE:
+                        await self.configure_compute(req)
                     case _:
-                        logger.warning("Unknown request type in mission message")
-                return  # Successfully handled Request, done
-            else:
-                logger.info("Parsed Request, but no valid 'type' field set. Trying Response.")
-        except DecodeError:
-            logger.debug("Failed to parse as Request. Trying Response.")
+                        logger.warning("Unknown compute action from mission input")
+            case "msn":
+                logger.debug(f"Forwarding mission command to commander: {req}")
+                await self.commander_socket.send_multipart([cmd])
+            case _:
+                logger.warning("Unknown request type in mission message")
 
-        # Now try Response
-        try:
-            resp = control_protocol.Response()
-            resp.ParseFromString(cmd)
-            logger.info(f"Received patrol report from mission: {resp}")
-            await self.commander_socket.send_multipart([cmd])
-      
-        except DecodeError:
-            logger.error("Failed to parse message as Request or Response")
 
+    async def handle_mission_report(self, report):
+        """Handles mission report and forwards to commander."""
+        resp = control_protocol.Response()
+        resp.ParseFromString(report)
+        logger.info(f"Received patrol report from mission: {resp}")
+        await self.commander_socket.send_multipart([report])
+   
 
     async def handle_driver_input(self, msg):
         """Handles message from driver and routes based on identity."""
@@ -260,7 +259,7 @@ class ControlService(Service):
 
     async def send_patrol_area(self, req):
         logger.info("Sending patrol area")
-        self.mission_cmd_socket.send(req.SerializeToString())
+        self.mission_report_socket.send(req.SerializeToString())
 
 
 

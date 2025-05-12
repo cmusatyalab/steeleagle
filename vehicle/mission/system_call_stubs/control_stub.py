@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 
 class ControlStub(Stub):
 
-    def __init__(self, waypoint_path):
-        self.waypoint_path = waypoint_path
+    def __init__(self):
         super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub')
 
     def parse_control_response(self, response_parts):
@@ -44,12 +43,15 @@ class ControlStub(Stub):
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gps_location(self, latitude, longitude, altitude, bearing):
+    async def set_gps_location(self, latitude, longitude, altitude, bearing=None):
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
         request.veh.location.absolute_altitude = altitude
-        request.veh.location.heading = bearing
+        if bearing is not None:
+            request.veh.location.heading = bearing
+        else:
+            request.veh.location.heading = 0
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
@@ -117,31 +119,9 @@ class ControlStub(Stub):
             cpt_req.cpt.upper_bound.v = hsv_upper_bound[2]
             cpt_req.cpt.model = compute_model
             cpt_req.cpt.action = control_protocol.ComputeAction.CONFIGURE_COMPUTE
-            logger.info(f"{cpt_req}")
+            logger.debug(f"{cpt_req}")
             result = await self.send_and_wait(cpt_req)
             logger.info("Done awaiting for send_and_wait")
             return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
         except Exception as e:
             logger.info(f"{e}")
-
-    ''' Mission methods '''
-    async def send_notification(self, msg):
-        try:
-            logger.info(f"Sending notification: {msg=}")
-            report = control_protocol.Response()
-            report.resp = common_protocol.ResponseStatus.COMPLETED
-            logger.info(f"Send notification: waiting for send_and_wait: {report=}")
-            update = await self.send_and_wait(report)
-            logger.info(f"recv update: {update=}")
-        except Exception as e:
-            logger.error(e)
-        return update.msn.patrol_area
-
-    async def get_waypoints(self, tag):
-        # Read the waypoints from the waypoint path
-        with open(self.waypoint_path, 'r') as f:
-            waypoints = f.read()
-
-        waypoints_map = json.loads(waypoints)
-        waypoints_val = waypoints_map.get(tag)
-        return waypoints_val

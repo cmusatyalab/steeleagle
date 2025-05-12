@@ -12,8 +12,10 @@ import logging
 from util.utils import SocketOperation, setup_socket, setup_logging
 from system_call_stubs.control_stub import ControlStub
 from system_call_stubs.data_stub import DataStub
+from system_call_stubs.report_stub import ReportStub
 import controlplane_pb2 as control_protocol
 import common_pb2 as common_protocol
+
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +32,10 @@ class MissionController():
         self.reload = False
         self.user_path = user_path
         self.msn_control_sock = msn_control_sock
+        self.ctrl = {
+            'drone': None,
+            'report': None
+        }
 
 
     ######################################################## MISSION ############################################################
@@ -141,10 +147,12 @@ class MissionController():
 
     ######################################################## MAIN LOOP ############################################################
     async def run(self):
-        self.ctrl = ControlStub(self.user_path)
+        self.ctrl['ctrl'] = ControlStub()
+        self.ctrl['report'] = ReportStub(self.user_path)
         self.data = DataStub()
-        asyncio.create_task(self.ctrl.run())
+        asyncio.create_task(self.ctrl['ctrl'].run())
         asyncio.create_task(self.data.run())
+        asyncio.create_task(self.ctrl['report'].run())
         while True:
             try:
                 # Receive a message

@@ -175,14 +175,17 @@ class ParrotOlympeDrone(MulticopterItf):
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         try:
-            if bearing is None:
-                self._drone(
-                    moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
-                ).success()
-            else:
-                self._drone(
-                    moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
-                ).success()
+            self._drone(
+                moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
+            ).success()
+            # if bearing is None:
+            #     self._drone(
+            #         moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
+            #     ).success()
+            # else:
+            #     self._drone(
+            #         moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
+            #     ).success()
         except:
             return common_protocol.ResponseStatus.FAILED
 
