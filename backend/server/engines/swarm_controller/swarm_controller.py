@@ -193,15 +193,12 @@ class StaticPatrolMission(Mission):
 
     def state_transition(self, drone_id, rep):
         drone_idx = self.state.drone_list.index(drone_id)
-        
-        parsed_rep = controlplane.Response()
-        parsed_rep.ParseFromString(rep)
 
         req = controlplane.Request()
         req.msn.action = controlplane.MissionAction.PATROL
-        req.seq_num = parsed_rep.seq_num
+        req.seq_num = rep.seq_num
 
-        if parsed_rep.resp == common.ResponseStatus.COMPLETED:
+        if rep.resp == common.ResponseStatus.COMPLETED:
             try:
                 self.advance_patrol_area()
             except StopIteration:
@@ -212,8 +209,6 @@ class StaticPatrolMission(Mission):
             except Exception as e:
                 logger.error(f"Unexpected error during advance_patrol_area for drone {drone_id}: {e}", exc_info=True)
         
-
-
         partitioned_areas = self.state.current_patrol_area.get_partition(drone_idx)
         altitude = self.state.drone_altitudes[drone_idx]
         logger.info(f"Drone {drone_id} is at altitude {altitude}")

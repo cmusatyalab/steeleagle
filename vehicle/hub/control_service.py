@@ -101,38 +101,44 @@ class ControlService(Service):
 
     async def handle_mission_input(self, cmd):
         """Handles mission request and forwards to driver/commander."""
-        # Attempt to parse as Response first (e.g., patrol area response)
+        # Try Request first
+        try:
+            req = control_protocol.Request()
+            req.ParseFromString(cmd)
+
+            if req.WhichOneof("type") is not None:
+                logger.info(f"Received mission request: {req}")
+                match req.WhichOneof("type"):
+                    case "veh":
+                        logger.debug(f"Forwarding vehicle command to driver: {req}")
+                        await self.driver_socket.send_multipart([b'usr', cmd])
+                    case "cpt":
+                        logger.info(f"Processing compute control command: {req}")
+                        match req.cpt.action:
+                            case control_protocol.ComputeAction.CLEAR_COMPUTE:
+                                await self.clear_compute_result(req)
+                            case control_protocol.ComputeAction.CONFIGURE_COMPUTE:
+                                await self.configure_compute(req)
+                            case _:
+                                logger.warning("Unknown compute action from mission input")
+                    case "msn":
+                        logger.debug(f"Forwarding mission command to commander: {req}")
+                        await self.commander_socket.send_multipart([cmd])
+                    case _:
+                        logger.warning("Unknown request type in mission message")
+                return  # Successfully handled Request, done
+            else:
+                logger.info("Parsed Request, but no valid 'type' field set. Trying Response.")
+        except DecodeError:
+            logger.debug("Failed to parse as Request. Trying Response.")
+
+        # Now try Response
         try:
             resp = control_protocol.Response()
             resp.ParseFromString(cmd)
             logger.info(f"Received patrol report from mission: {resp}")
-            logger.debug(f"Forwarding patrol area response to commander")
             await self.commander_socket.send_multipart([cmd])
-            return
-        except DecodeError:
-            pass  # Fall through to parse as Request
-
-        try:
-            req = control_protocol.Request()
-            req.ParseFromString(cmd)
-            logger.info(f"Received mission request: {req}")
-
-            match req.WhichOneof("type"):
-                case "veh":
-                    logger.debug(f"Forwarding vehicle command to driver: {req}")
-                    await self.driver_socket.send_multipart([b'usr', cmd])
-                case "cpt":
-                    logger.debug(f"Processing compute control command: {req}")
-                    match req.cpt.action:
-                        case control_protocol.ComputeAction.CLEAR_COMPUTE:
-                            await self.clear_compute_result(req)
-                        case control_protocol.ComputeAction.CONFIGURE_COMPUTE:
-                            await self.configure_compute(req)
-                        case _:
-                            logger.warning("Unknown compute action from mission input")
-                case None:
-                    logger.warning("Unknown request type in commander message")
-
+      
         except DecodeError:
             logger.error("Failed to parse message as Request or Response")
 

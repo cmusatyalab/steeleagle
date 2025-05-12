@@ -117,7 +117,7 @@ class ControlStub(Stub):
             cpt_req.cpt.upper_bound.v = hsv_upper_bound[2]
             cpt_req.cpt.model = compute_model
             cpt_req.cpt.action = control_protocol.ComputeAction.CONFIGURE_COMPUTE
-            logger.info("Await for send_and_wait")
+            logger.info(f"{cpt_req}")
             result = await self.send_and_wait(cpt_req)
             logger.info("Done awaiting for send_and_wait")
             return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
