@@ -105,11 +105,10 @@ class ControlService(Service):
         try:
             resp = control_protocol.Response()
             resp.ParseFromString(cmd)
-            if resp.HasField("patrol_area"):
-                logger.info(f"Received patrol area response: {resp.patrol_area}")
-                logger.debug(f"Forwarding patrol area response to commander")
-                await self.commander_socket.send_multipart([cmd])
-                return
+            logger.info(f"Received patrol report from mission: {resp}")
+            logger.debug(f"Forwarding patrol area response to commander")
+            await self.commander_socket.send_multipart([cmd])
+            return
         except DecodeError:
             pass  # Fall through to parse as Request
 

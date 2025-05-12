@@ -191,13 +191,17 @@ class StaticPatrolMission(Mission):
         self._create_partitioning()
         
 
-    def state_transition(self, drone_id, action):
+    def state_transition(self, drone_id, rep):
         drone_idx = self.state.drone_list.index(drone_id)
+        
+        parsed_rep = controlplane.Response()
+        parsed_rep.ParseFromString(rep)
 
         req = controlplane.Request()
         req.msn.action = controlplane.MissionAction.PATROL
+        req.seq_num = parsed_rep.seq_num
 
-        if action == common.ResponseStatus.COMPLETED:
+        if parsed_rep.resp == common.ResponseStatus.COMPLETED:
             try:
                 self.advance_patrol_area()
             except StopIteration:
@@ -245,8 +249,8 @@ class MissionSupervisor:
     async def drone_handler(self):
         while True:
             # Listen for mission updates from drones
-            drone_id, action = await self.listen_drones()
-            drone_id, drone_msg = self.mission.state_transition(drone_id, action)
+            drone_id, rep = await self.listen_drones()
+            drone_id, drone_msg = self.mission.state_transition(drone_id, rep)
 
             # Send mission updates to drones
             await self.send_drone_msg(drone_id, drone_msg)
@@ -266,8 +270,7 @@ class MissionSupervisor:
         rep = controlplane.Response()
         rep.ParseFromString(msg)
         drone_id = identity.decode('utf-8')
-        rep_status = rep.resp
-        return drone_id, rep_status
+        return drone_id, rep
 
 class SwarmController:
     # Set up the paths and variables for the compiler
