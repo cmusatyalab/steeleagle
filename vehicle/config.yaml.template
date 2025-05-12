@@ -1,8 +1,9 @@
 hub:
   network:
     cloudlet:
-      endpoint: "<GABRIEL SERVER ENDPOINT>"
+      endpoint: "128.2.213.139"
       hub_to_gabriel: 9099
+      commander_to_hub: 5003
     dataplane:
       endpoint: "0.0.0.0"
       driver_to_hub:
@@ -11,11 +12,14 @@ hub:
       mission_to_hub: 3003
     controlplane:
       endpoint: "0.0.0.0"
-      hub_to_driver: 3004
-      hub_to_mission: 3005
-      mission_to_hub: 3006
-      hub_to_datasink: 3007
-      commander_to_hub: 5003
+      hub_to_driver: 3006
+      hub_to_mission: 3007
+      mission_to_hub: 3008
+      mission_to_hub_2: 3010
+      hub_to_datasink: 3009
+  computes:
+    - compute_id: 'compute1'
+      compute_class: 'GabrielCompute'
   computes:
     - compute_id: 'default_compute'
       compute_class: 'GabrielCompute'
