@@ -161,7 +161,7 @@ def update_imagery():
 def draw_map():
     m = folium.Map(
         location=[40.415428612484924, -79.95028831875038],
-        zoom_start=st.session_state['overview_map']['zoom'] if st.session_state['overview_map'] else 18,
+        zoom_start=18,
         tiles=tiles,
     )
 
