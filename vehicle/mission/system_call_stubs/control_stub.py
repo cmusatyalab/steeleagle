@@ -43,11 +43,11 @@ class ControlStub(Stub):
         result = await self.send_and_wait(request)
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gps_location(self, latitude, longitude, altitude, bearing=None):
+    async def set_gps_location(self, latitude, longitude, rel_altitude, bearing=None):
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
-        request.veh.location.absolute_altitude = altitude
+        request.veh.location.relative_altitude = rel_altitude
         if bearing is not None:
             request.veh.location.heading = bearing
         else:

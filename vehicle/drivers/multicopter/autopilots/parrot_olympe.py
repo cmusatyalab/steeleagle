@@ -171,7 +171,8 @@ class ParrotOlympeDrone(MulticopterItf):
 
         # TODO: Make it so we can select relative or absolute altitude
         # altitude = rel_alt if location.has_relative_alt() else alt - self._get_global_position()["altitude"]
-        altitude = alt - self._get_global_position()["altitude"] + self._get_altitude_rel()
+        # altitude = alt - self._get_global_position()["altitude"] + self._get_altitude_rel()
+        altitude  = rel_alt
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         try:
@@ -261,6 +262,7 @@ class ParrotOlympeDrone(MulticopterItf):
         pitch = pose.pitch
         roll = pose.roll
 
+        logger.info(f"Setting gimbal pose: {yaw}, {pitch}, {roll}")
         # Actuate the gimbal
         try:
             self._drone(set_target(
