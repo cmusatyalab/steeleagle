@@ -50,6 +50,7 @@ if "show_slam_track" not in st.session_state:
     st.session_state.show_slam_track = False
 if "show_landing_spot" not in st.session_state:
     st.session_state.show_landing_spot = False
+
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -264,26 +265,31 @@ def draw_map():
             circle = folium.Circle(
                 location=landing_coords,
                 radius=3,
-                color="black",
-                weight=1,
-                fill_opacity=0.6,
-                opacity=1,
-                fill_color="orange",
-                fill=False,  # gets overridden by fill_color
+                color="orange",
+                weight=2,
+                #fill_opacity=0.6,
+                #opacity=1,
+                #fill_color="orange",
+                #fill=False,  # gets overridden by fill_color
             )
 
             circle.add_to(landing_spot)
 
-    st_folium(
+    def update_map_props():
+        st.toast(f"Current zoom: {st.session_state['overview_map']['zoom']}")
+        st.toast(f"Current center: {st.session_state['overview_map']['center']}")
+
+    output = st_folium(
         m,
         key="overview_map",
         use_container_width=True,
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         #layer_control=lc,
-        returned_objects=[],
         center=st.session_state.center,
-        height=500
+        height=500,
+        on_change=update_map_props
     )
+
 
 menu()
 options_expander = st.expander(" **:gray-background[:wrench: Toolbar]**", expanded=True)
@@ -315,7 +321,7 @@ with options_expander:
         tileset = "https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}&s=Ga"
 
     tiles = folium.TileLayer(
-        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=23
+        name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=22
     )
 
     tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
