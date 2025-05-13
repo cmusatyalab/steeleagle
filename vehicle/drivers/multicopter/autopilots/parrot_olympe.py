@@ -6,6 +6,7 @@ import logging
 from enum import Enum
 import numpy as np
 import cv2
+import os
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
