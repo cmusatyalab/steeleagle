@@ -89,6 +89,7 @@ class ControlStub(Stub):
         request.veh.velocity_body.up_vel = up_vel
         request.veh.velocity_body.angular_vel = angle_vel
         result = await self.send_and_wait(request)
+        # logger.info(f"set_velocity_body: {request=}, {result=}")
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_gimbal_pose(self, pitch, roll, yaw):
