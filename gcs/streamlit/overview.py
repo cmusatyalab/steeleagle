@@ -17,7 +17,7 @@ import uuid
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
 if "center" not in st.session_state:
-    st.session_state.center = [40.413552, -79.949152]
+    st.session_state.center = {'lat':40.413552, 'lng':-79.949152}
 if "tracking_selection" not in st.session_state:
     st.session_state.tracking_selection = None
 if "selected_drones" not in st.session_state:
@@ -50,7 +50,8 @@ if "show_slam_track" not in st.session_state:
     st.session_state.show_slam_track = False
 if "show_landing_spot" not in st.session_state:
     st.session_state.show_landing_spot = False
-
+if "zoom_level" not in st.session_state:
+    st.session_state.zoom_level = 18
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -160,8 +161,8 @@ def update_imagery():
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
-        location=[40.415428612484924, -79.95028831875038],
-        zoom_start=18,
+        location=[st.session_state.center['lat'], st.session_state.center['lng']],
+        zoom_start=st.session_state.zoom_level,
         tiles=tiles,
     )
 
@@ -264,7 +265,7 @@ def draw_map():
 
             circle = folium.Circle(
                 location=landing_coords,
-                radius=3,
+                radius=2,
                 color="orange",
                 weight=2,
                 #fill_opacity=0.6,
@@ -276,8 +277,8 @@ def draw_map():
             circle.add_to(landing_spot)
 
     def update_map_props():
-        st.toast(f"Current zoom: {st.session_state['overview_map']['zoom']}")
-        st.toast(f"Current center: {st.session_state['overview_map']['center']}")
+        st.session_state.center = st.session_state['overview_map']['center']
+        st.session_state.zoom_level = st.session_state['overview_map']['zoom']
 
     output = st_folium(
         m,
