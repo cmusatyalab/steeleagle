@@ -176,8 +176,13 @@ class ParrotOlympeDrone(MulticopterItf):
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         try:
+            # Set heading before moving
+            res = await self.set_heading(location)
+            if res == common_protocol.ResponseStatus.FAILED:
+                return common_protocol.ResponseStatus.FAILED
+
             self._drone(
-                moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
+                moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, 0.0)
             ).success()
             # if bearing is None:
             #     self._drone(
@@ -674,7 +679,8 @@ class ParrotOlympeDrone(MulticopterItf):
 
     ''' Streaming methods '''
     def _start_streaming(self):
-        self._streaming_thread = PDRAWStreamingThread(self._drone)
+        #self._streaming_thread = PDRAWStreamingThread(self._drone)
+        self._streaming_thread = FFMPEGStreamingThread(self._drone, self.ip)
         self._streaming_thread.start()
 
     async def _get_video_frame(self):
@@ -762,3 +768,35 @@ class PDRAWStreamingThread(threading.Thread):
         self.is_running = False
         # Properly stop the video stream and disconnect
         assert self._drone.streaming.stop()
+
+
+class FFMPEGStreamingThread(threading.Thread)
+
+    def __init__(self, drone, ip):
+        threading.Thread.__init__(self)
+        self._current_frame = None
+        self._drone = drone
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
+        self._cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+        self.is_running = True
+
+    def run(self):
+        try:
+            while(self.is_running):
+                ret, self._current_frame = self._cap.read()
+            self._cap.close()
+        except Exception as e:
+            logger.error(f"Frame could not be read, reason: {e}")
+
+    def grab_frame(self):
+        try:
+            frame = self._current_frame.copy()
+            return frame
+        except Exception as e:
+            logger.error(f"Grab frame failed, reason: {e}")
+            # Send a blank frame
+            return np.zeros((720, 1280, 3), np.uint8)
+
+    def stop(self):
+        self.is_running = False
+
