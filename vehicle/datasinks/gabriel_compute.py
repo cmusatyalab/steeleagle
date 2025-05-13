@@ -130,7 +130,6 @@ class GabrielCompute(ComputeInterface):
                     # produce extras
                     extras = gabriel_extras.Extras()
                     compute_command = extras.cpt_request
-                    #compute_command.cpt.key = self.compute_id
 
                     if self.set_params['model'] is not None:
                         compute_command.cpt.model = self.set_params['model']
