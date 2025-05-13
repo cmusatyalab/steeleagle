@@ -774,7 +774,7 @@ class PDRAWStreamingThread(threading.Thread):
         assert self._drone.streaming.stop()
 
 
-class FFMPEGStreamingThread(threading.Thread)
+class FFMPEGStreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
