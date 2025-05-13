@@ -73,17 +73,20 @@ class ControlService(Service):
                 socks = dict(await poller.poll(timeout=0.5))
 
                 # Skip our checks if no messages were delivered
+                # However, if no commands were recieved and we 
+                # are in manual mode, go into failsafe
                 if not len(socks):
+                    if self.manual and \
+                            self.last_manual_message and \
+                            time.time() - self.last_manual_message >= 0.5:
+                        await self.manual_disconnect_failsafe()
+                        self.last_manual_message = None
                     continue
 
                 if self.commander_socket in socks:
                     self.last_manual_message = time.time()
                     msg = await self.commander_socket.recv_multipart()
                     await self.handle_commander_input(msg[0])
-                elif self.manual and \
-                        self.last_manual_message and time.time() - self.last_manual_message >= 0.5:
-                    await self.manual_disconnect_failsafe()
-                    self.last_manual_message = None
 
                 if self.mission_cmd_socket in socks:
                     msg = await self.mission_cmd_socket.recv_multipart()

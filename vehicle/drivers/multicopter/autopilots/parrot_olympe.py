@@ -789,7 +789,7 @@ class FFMPEGStreamingThread(threading.Thread):
         try:
             while(self.is_running):
                 ret, self._current_frame = self._cap.read()
-            self._cap.close()
+            self._cap.release()
         except Exception as e:
             logger.error(f"Frame could not be read, reason: {e}")
 
