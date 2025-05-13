@@ -59,7 +59,7 @@ def draw_map():
                         lat = c[1]
                         partition.append([float(lat), float(lon)])
 
-        ls = folium.PolyLine(locations=partition, color="blue")
+        ls = folium.PolyLine(locations=partition, color="blue", opacity=0.3)
         ls.add_to(partitions)
     except OSError:
         st.toast(f"Error loading waypoint partitions from {st.secrets.waypoints}.")
