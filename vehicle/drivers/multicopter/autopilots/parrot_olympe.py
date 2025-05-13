@@ -42,6 +42,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
     def __init__(self, drone_id, **kwargs):
         self._drone_id = drone_id
+        self._kwargs = kwargs
         # Drone flight modes and setpoints
         self._velocity_setpoint = None
         # Set PID values for the drone
@@ -679,8 +680,11 @@ class ParrotOlympeDrone(MulticopterItf):
 
     ''' Streaming methods '''
     def _start_streaming(self):
-        #self._streaming_thread = PDRAWStreamingThread(self._drone)
-        self._streaming_thread = FFMPEGStreamingThread(self._drone, self.ip)
+        if "stream" in self._kwargs and self._kwargs["stream"] == "ffmpeg":
+            self._streaming_thread = FFMPEGStreamingThread(self._drone, self.ip)
+        else:
+            self._streaming_thread = PDRAWStreamingThread(self._drone)
+
         self._streaming_thread.start()
 
     async def _get_video_frame(self):
