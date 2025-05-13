@@ -23,8 +23,11 @@ class DataStub(Stub):
     async def get_compute_result(self, compute_type):
         cpt_req = data_protocol.Request()
         cpt_req.cpt.type = compute_type
-        result = await self.send_and_wait(cpt_req)
-        return result
+        rep = await self.send_and_wait(cpt_req)
+        result_list = []
+        for result in rep.cpt.result:
+            result_list.append(result.generic_result)
+        return result_list
 
     ''' Telemetry methods '''
     async def get_telemetry(self):
