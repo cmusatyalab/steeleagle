@@ -79,8 +79,7 @@ class ControlService(Service):
                     if self.manual and \
                             self.last_manual_message and \
                             time.time() - self.last_manual_message >= 1.0:
-                        logger.info("FAILSAFE ACTIVATED - Swarm controller is likely disconnected, \
-                                stopping drone...")
+                        logger.info("FAILSAFE ACTIVATED - Swarm controller is likely disconnected...")
                         await self.manual_disconnect_failsafe()
                         self.last_manual_message = None
                     continue
