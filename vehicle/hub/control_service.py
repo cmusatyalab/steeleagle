@@ -72,13 +72,15 @@ class ControlService(Service):
             try:
                 socks = dict(await poller.poll(timeout=0.5))
 
-                # Skip our checks if no messages were delivered
+                # Skip our checks if no messages were delivered.
                 # However, if no commands were recieved and we 
-                # are in manual mode, go into failsafe
+                # are in manual mode, go into failsafe.
                 if not len(socks):
                     if self.manual and \
                             self.last_manual_message and \
-                            time.time() - self.last_manual_message >= 0.5:
+                            time.time() - self.last_manual_message >= 1.0:
+                        logger.info("FAILSAFE ACTIVATED - Swarm controller is likely disconnected, \
+                                stopping drone...")
                         await self.manual_disconnect_failsafe()
                         self.last_manual_message = None
                     continue
