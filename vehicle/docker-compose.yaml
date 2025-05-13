@@ -1,52 +1,15 @@
 services:
-  data-svc:
+  kestrel:
     image: cmusatyalab/steeleagle-vehicle
-    container_name: data-svc
+    container_name: vehicle
     environment:
-      - CONFIG_PATH=/kestrel.config.yaml
-    entrypoint: ["./launch_data_svc.sh"]
+      - CONFIG_PATH=/configs/config.yaml
+    entrypoint: ["./entrypoint.sh"]
     restart: unless-stopped
     networks:
       - cnc-net
     volumes:
-      - ./configs/kestrel.config.yaml:/kestrel.config.yaml
-
-  driver:
-    image: cmusatyalab/steeleagle-vehicle
-    container_name: driver
-    environment:
-      - CONFIG_PATH=/kestrel.config.yaml
-    entrypoint: ["./launch_driver.sh"]
-    restart: unless-stopped
-    networks:
-      cnc-net:
-        ipv4_address: 11.11.0.42
-    volumes:
-      - ./configs/kestrel.config.yaml:/kestrel.config.yaml
-
-  cmd-svc:
-    image: cmusatyalab/steeleagle-vehicle
-    container_name: cmd-svc
-    environment:
-      - CONFIG_PATH=/kestrel.config.yaml
-    entrypoint: ["./launch_cmd_svc.sh"]
-    restart: unless-stopped
-    networks:
-      - cnc-net
-    volumes:
-      - ./configs/kestrel.config.yaml:/kestrel.config.yaml
-
-  mission-svc:
-    image: cmusatyalab/steeleagle-vehicle
-    container_name: mission-svc
-    environment:
-      - CONFIG_PATH=/kestrel.config.yaml
-    entrypoint: ["./launch_mission.sh"]
-    restart: unless-stopped
-    networks:
-      - cnc-net
-    volumes:
-      - ./configs/kestrel.config.yaml:/kestrel.config.yaml
+      - ./configs/kestrel:/configs
 
 networks:
   cnc-net:
