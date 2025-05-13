@@ -6,6 +6,7 @@ import logging
 from enum import Enum
 import numpy as np
 import cv2
+import os
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
@@ -774,7 +775,7 @@ class PDRAWStreamingThread(threading.Thread):
         assert self._drone.streaming.stop()
 
 
-class FFMPEGStreamingThread(threading.Thread)
+class FFMPEGStreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
@@ -788,7 +789,7 @@ class FFMPEGStreamingThread(threading.Thread)
         try:
             while(self.is_running):
                 ret, self._current_frame = self._cap.read()
-            self._cap.close()
+            self._cap.release()
         except Exception as e:
             logger.error(f"Frame could not be read, reason: {e}")
 

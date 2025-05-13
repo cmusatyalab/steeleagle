@@ -8,12 +8,14 @@ from folium.plugins import MiniMap
 from util import  connect_redis,  menu, COLORS, authenticated
 import datetime
 from pykml import parser
+import json
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
 if "center" not in st.session_state:
-    st.session_state.center = [40.413552, -79.949152]
-
+    st.session_state.center = {'lat':40.413552, 'lng':-79.949152}
+if "zoom_level" not in st.session_state:
+    st.session_state.zoom_level = 18
 st.set_page_config(
     page_title="Commander",
     page_icon=":military_helmet:",
@@ -34,16 +36,33 @@ red = connect_redis()
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
-        location=[40.415428612484924, -79.95028831875038],
-        zoom_start=18,
+        location=[st.session_state.center['lat'], st.session_state.center['lng']],
+        zoom_start=st.session_state.zoom_level,
         tiles=tiles,
     )
 
     MiniMap(toggle_display=True, tile_layer=tiles).add_to(m)
     fg = folium.FeatureGroup(name="Detected Objects")
     fence_fg = folium.FeatureGroup(name="Geofence")
+    partitions = folium.FeatureGroup(name="Partitions")
     # Draw(export=True).add_to(m)
     lc = folium.LayerControl()
+
+    try:
+        partition = []
+        with open(f"{st.secrets.waypoints}", 'r', encoding='utf-8') as f:
+            j = json.load(f)
+            for k, v in j.items():
+                for k2, v2 in v.items(): #for each corridor
+                    for c in v2:
+                        lon = c[0]
+                        lat = c[1]
+                        partition.append([float(lat), float(lon)])
+
+        ls = folium.PolyLine(locations=partition, color="blue", opacity=0.3)
+        ls.add_to(partitions)
+    except OSError:
+        st.toast(f"Error loading waypoint partitions from {st.secrets.waypoints}.")
 
     try:
         fence_coords = []
@@ -103,15 +122,19 @@ def draw_map():
                 )
             )
 
+    def update_map_props():
+        st.session_state.center = st.session_state['overview_map']['center']
+        st.session_state.zoom_level = st.session_state['overview_map']['zoom']
+
     st_folium(
         m,
         key="overview_map",
         use_container_width=True,
-        feature_group_to_add=[fg, fence_fg],
+        feature_group_to_add=[fg, fence_fg, partitions],
         layer_control=lc,
-        returned_objects=[],
         center=st.session_state.center,
-        height=720
+        height=720,
+        on_change=update_map_props
     )
 
 menu()
