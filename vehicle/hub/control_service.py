@@ -70,13 +70,18 @@ class ControlService(Service):
 
         while True:
             try:
-                socks = dict(await poller.poll())
+                socks = dict(await poller.poll(timeout=0.5))
+
+                # Skip our checks if no messages were delivered
+                if not len(socks):
+                    continue
 
                 if self.commander_socket in socks:
                     self.last_manual_message = time.time()
                     msg = await self.commander_socket.recv_multipart()
                     await self.handle_commander_input(msg[0])
-                elif self.last_manual_message and time.time() - self.last_manual_message >= 1:
+                elif self.manual and \
+                        self.last_manual_message and time.time() - self.last_manual_message >= 0.5:
                     await self.manual_disconnect_failsafe()
                     self.last_manual_message = None
 
