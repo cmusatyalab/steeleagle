@@ -9,6 +9,7 @@ from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 from data_store import DataStore
 from google.protobuf.message import DecodeError
+import time
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')
@@ -28,6 +29,7 @@ class ControlService(Service):
         # Communication sockets
         self.commander_socket = self.context.socket(zmq.DEALER)
         self.commander_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        self.last_manual_message = None
 
         self.mission_cmd_socket = self.context.socket(zmq.DEALER)
         self.mission_report_socket = self.context.socket(zmq.DEALER)
@@ -71,8 +73,12 @@ class ControlService(Service):
                 socks = dict(await poller.poll())
 
                 if self.commander_socket in socks:
+                    self.last_manual_message = time.time()
                     msg = await self.commander_socket.recv_multipart()
                     await self.handle_commander_input(msg[0])
+                elif self.last_manual_message and time.time() - self.last_manual_message >= 1:
+                    await self.manual_disconnect_failsafe()
+                    self.last_manual_message = None
 
                 if self.mission_cmd_socket in socks:
                     msg = await self.mission_cmd_socket.recv_multipart()
@@ -92,6 +98,13 @@ class ControlService(Service):
     ###########################################################################
     #                              HANDLERS                                   #
     ###########################################################################
+    async def manual_disconnect_failsafe(self):
+        # Stops the drone if the swarm controller disconnects while in manual mode.
+        logger.debug("Executing manual disconnection failsafe, ordering the drone to hover!")
+        req = control_protocol.Request()
+        req.veh.action = control_protocol.VehicleAction.HOVER
+        await self.process_vehicle_command(req)
+
     async def handle_commander_input(self, cmd):
         """Handles command input from the commander."""
         logger.debug(f"Received raw command from commander: {cmd}")
@@ -168,9 +181,11 @@ class ControlService(Service):
                 req.msn.action = control_protocol.MissionAction.START
                 await self.send_start_mission(req)
                 self.manual = False
+                self.last_manual_message = None
             case control_protocol.MissionAction.START:
                 await self.send_start_mission(req)
                 self.manual = False
+                self.last_manual_message = None
             case control_protocol.MissionAction.STOP:
                 await self.send_stop_mission(req)
                 hover = control_protocol.Request()
