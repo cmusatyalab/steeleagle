@@ -259,7 +259,7 @@ class ControlService(Service):
 
     async def send_patrol_area(self, req):
         logger.info("Sending patrol area")
-        self.mission_report_socket.send(req.SerializeToString())
+        await self.mission_report_socket.send(req.SerializeToString())
 
 
 

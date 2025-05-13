@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 from abc import ABC, abstractmethod
+import asyncio
 import functools
 import logging
-import threading
 from aenum import Enum
 
 logger = logging.getLogger(__name__)
@@ -24,15 +24,14 @@ class TaskArguments():
         self.transitions_attributes = transitions_attributes
         
 class Task(ABC):
-
     def __init__(self, control, data, task_id, trigger_event_queue, task_args):
         self.data = data
         self.control = control
+        self.task_id = task_id
         self.task_attributes = task_args.task_attributes
         self.transitions_attributes = task_args.transitions_attributes
-        self.task_id = task_id
-        self.trans_active =  []
-        self.trans_active_lock = threading.Lock()
+        self.trans_active = []
+        self.trans_active_lock = asyncio.Lock()
         self.trigger_event_queue = trigger_event_queue
 
     @abstractmethod
@@ -42,39 +41,23 @@ class Task(ABC):
     def get_task_id(self):
         return self.task_id
 
+    async def _exit(self):
+        logger.info(f"**************Exiting task {self.task_id}**************")
+        await self.stop_trans()
+        await self.trigger_event_queue.put((self.task_id, "done"))
 
-    def _exit(self):
-        # kill all the transitions
-        logger.info(f"**************exit the task**************\n")
-        self.stop_trans()
-        self.trigger_event_queue.put((self.task_id,  "done"))
-        
-    def stop_trans(self):
-        logger.info(f"**************stopping the transitions**************\n")
-        for trans in self.trans_active:
-            if trans.is_alive():
-                trans.stop()
-                trans.join()
-        logger.info(f"**************the transitions stopped**************\n")
-        
-        
+    async def stop_trans(self):
+        logger.info(f"**************Stopping transitions for task {self.task_id}**************")
+        async with self.trans_active_lock:
+            await asyncio.gather(*(t.stop() for t in self.trans_active if t.is_alive()))
+        logger.info(f"**************All transitions stopped for task {self.task_id}**************")
+
     @classmethod
     def call_after_exit(cls, func):
-        """Decorator to call _exit after the decorated function completes."""
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
             try:
-                # Call the decorated function
-                result = await func(self, *args, **kwargs)
-                return result
+                return await func(self, *args, **kwargs)
             finally:
-                # Ensure _exit is called after the function completes
-                self._exit()
-
+                await self._exit()
         return wrapper
-        
-    def pause(self):
-        pass
-    
-    def resume(self):
-        pass

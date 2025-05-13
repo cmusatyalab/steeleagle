@@ -22,13 +22,6 @@ class ReportStub(Stub):
 
     ''' Mission methods '''
     async def send_notification(self, msg):
-        
-        update_res = {
-            'status': None,
-            'patrol_areas': [],
-            'altitude': None
-        }
-        
         logger.info(f"Sending notification: {msg=}")
         report = control_protocol.Response()
         if (msg == 'start'):
@@ -37,6 +30,11 @@ class ReportStub(Stub):
             report.resp = common_protocol.ResponseStatus.COMPLETED
         
         update = await self.send_and_wait(report)
+        update_res = {
+            'status': None,
+            'patrol_areas': [],
+            'altitude': None
+        }
         if update.msn.patrol_area.status == common_protocol.PatrolStatus.CONTINUE:
             update_res['status'] = "running"
             update_res['altitude'] = update.msn.patrol_area.altitude
@@ -54,9 +52,6 @@ class ReportStub(Stub):
                 waypoints = f.read()
 
             waypoints_map = json.loads(waypoints)
-            logger.info(f"waypoints_map: {waypoints_map=}")
-
-            # Parse dot-separated path, e.g., 'Hex.Hex_1'
             keys = area_path.split('.')
             coords = waypoints_map
             for key in keys:
@@ -66,8 +61,6 @@ class ReportStub(Stub):
                     return None
 
             formatted_coords = [{'lng': lng, 'lat': lat} for lng, lat in coords]
-
-            logger.info(f"formatted_coords: {formatted_coords}")
             return formatted_coords
 
         except Exception as e:

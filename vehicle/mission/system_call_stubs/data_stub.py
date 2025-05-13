@@ -27,6 +27,8 @@ class DataStub(Stub):
         result_list = []
         for result in rep.cpt.result:
             result_list.append(result.generic_result)
+            
+        logger.debug(f"get_compute_result: {compute_type=}, {result_list=}")
         return result_list
 
     ''' Telemetry methods '''

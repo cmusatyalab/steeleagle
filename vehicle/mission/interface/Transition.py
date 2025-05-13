@@ -1,37 +1,57 @@
 from abc import ABC, abstractmethod
+import asyncio
 import logging
-import threading
-
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
-class Transition(threading.Thread, ABC):
+
+def auto_register_unregister(run_func):
+    async def wrapper(self, *args, **kwargs):
+        await self._register()
+        try:
+            await run_func(self, *args, **kwargs)
+        finally:
+            await self._unregister()
+    return wrapper
+
+class Transition(ABC):
     def __init__(self, args):
-        super().__init__()
         self.task_id = args['task_id']
         self.trans_active = args['trans_active']
         self.trans_active_lock = args['trans_active_lock']
         self.trigger_event_queue = args['trigger_event_queue']
-        # self.trigger_event_queue_lock = trigger_event_queue_lock
-        
-    @abstractmethod
-    def stop(self):
-        """This is an abstract method that must be implemented in a subclass."""
-        pass
+        self._stop_event = asyncio.Event()
+        self._task = None
     
-    def _trigger_event(self, event):
-        logger.info(f"**************task id {self.task_id}: triggered event! {event}**************\n")
-        # with self.trigger_event_queue_lock:
-        self.trigger_event_queue.put((self.task_id,  event))
-    
-    def _register(self):
-        logger.info(f"**************{self.name} is registering by itself**************\n")
-        with self.trans_active_lock:
+    async def start(self):
+        logger.info(f"Starting transition: {self.__class__.__name__}")
+        self._task = asyncio.create_task(self.run())
+
+    async def stop(self):
+        logger.info(f"Stopping transition: {self.__class__.__name__}")
+        self._stop_event.set()
+        if self._task:
+            await self._task
+
+    def is_alive(self):
+        return self._task is not None and not self._task.done()
+
+    async def _trigger_event(self, event):
+        logger.info(f"Task {self.task_id}: Triggered event: {event}")
+        await self.trigger_event_queue.put((self.task_id, event))
+
+    async def _register(self):
+        logger.info(f"Registering transition: {self.__class__.__name__}")
+        async with self.trans_active_lock:
             self.trans_active.append(self)
-            
-    def _unregister(self):
-        logger.info(f"**************{self.name} is unregistering by itself**************\n")
-        with self.trans_active_lock:
-            self.trans_active.remove(self)
-        
+
+    async def _unregister(self):
+        logger.info(f"Unregistering transition: {self.__class__.__name__}")
+        async with self.trans_active_lock:
+            if self in self.trans_active:
+                self.trans_active.remove(self)
+
+    @abstractmethod
+    async def run(self):
+        """Subclasses implement their loop logic here."""
+        pass
