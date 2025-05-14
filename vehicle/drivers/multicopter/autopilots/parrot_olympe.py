@@ -182,6 +182,7 @@ class ParrotOlympeDrone(MulticopterItf):
             self._drone(
                 moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
             ).success()
+            
             # if bearing is None:
             #     self._drone(
             #         moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
@@ -678,8 +679,10 @@ class ParrotOlympeDrone(MulticopterItf):
     ''' Streaming methods '''
     def _start_streaming(self):
         if "stream" in self._kwargs and self._kwargs["stream"] == "ffmpeg":
+            logger.info("Using FFmpeg for streaming")
             self._streaming_thread = FFMPEGStreamingThread(self._drone, self.ip)
         else:
+            logger.info("Using PDrAW for streaming")
             self._streaming_thread = PDRAWStreamingThread(self._drone)
 
         self._streaming_thread.start()
@@ -696,6 +699,7 @@ class PDRAWStreamingThread(threading.Thread):
 
     def __init__(self, drone):
         threading.Thread.__init__(self)
+
         self._drone = drone
         self._frame_queue = queue.Queue()
         self._current_frame = np.zeros((720, 1280, 3), np.uint8)
@@ -775,6 +779,9 @@ class FFMPEGStreamingThread(threading.Thread):
 
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
+
+        logger.info(f"Using opencv-python version {cv2.__version__}")
+
         self._current_frame = None
         self._drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
