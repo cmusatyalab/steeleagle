@@ -19,7 +19,7 @@ RUN pip install --upgrade pip
 COPY vehicle/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir protobuf==5.29.4
-RUN pip install --no-cache-dir opencv-python==4.10.0.82
+RUN pip install --no-cache-dir opencv-python==4.10.0.84
 RUN pip install --no-cache-dir numpy==1.26.4
 
 COPY protocol /protocol
