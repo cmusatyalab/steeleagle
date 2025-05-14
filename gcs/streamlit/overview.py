@@ -261,9 +261,10 @@ def draw_map():
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             slam_coords = []
+            i = 0
             for index, row in df.iterrows():
                 slam_coords.append([row["lat"], row["lon"]])
-                if index == 0:
+                if i == 0:
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
@@ -295,6 +296,7 @@ def draw_map():
                             icon=text,
                         )
                     )
+                i += 1
             ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
             ls.add_to(slam_track)
 
