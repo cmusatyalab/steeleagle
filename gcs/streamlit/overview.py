@@ -280,8 +280,8 @@ def draw_map():
                     slam_track.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row["lat"],
+                                row["lon"],
                             ],
                             icon=plane,
                         )
@@ -290,8 +290,8 @@ def draw_map():
                     slam_track.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row["lat"],
+                                row["lon"],
                             ],
                             icon=text,
                         )
