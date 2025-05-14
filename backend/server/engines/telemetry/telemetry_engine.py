@@ -49,6 +49,10 @@ class TelemetryEngine(cognitive_engine.Engine):
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
         global_pos = telemetry.global_position
+        rel_pos = telemetry.relative_position
+        body_vel = telemetry.velocity_body
+        enu_vel = telemetry.velocity_enu
+        gimb_pose = telemetry.gimbal_pose
         key = self.r.xadd(
             f"telemetry:{telemetry.drone_name}",
             {
@@ -59,8 +63,28 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "bearing": int(global_pos.heading),
                 "battery": telemetry.battery,
                 "mag": common.MagnetometerWarning.Name(telemetry.alerts.magnetometer_warning),
-                "sats": telemetry.satellites
-                #TODO: add the remainder of the telemetry fields in dataplane.telemetry
+                "sats": telemetry.satellites,
+                # Relative Pos (ENU)
+                "enu_east": rel_pos.east,
+                "enu_north": rel_pos.north,
+                "enu_up": rel_pos.up,
+                "enu_angle": rel_pos.angle,
+                # Velocity Body
+                "v_body_total": np.sqrt(np.sum(np.power([body_vel.forward_vel, body_vel.right_vel, body_vel.up_vel], 2))),
+                "v_body_forward": body_vel.forward_vel,
+                "v_body_lateral": body_vel.right_vel,
+                "v_body_altitude": body_vel.up_vel,
+                "v_body_angular": body_vel.angular_vel,
+                # Velocity ENU
+                "v_enu_total": np.sqrt(np.sum(np.power([enu_vel.north_vel, enu_vel.east_vel, enu_vel.up_vel], 2))),
+                "v_enu_north": enu_vel.north_vel,
+                "v_enu_east": enu_vel.east_vel,
+                "v_enu_up": enu_vel.up_vel,
+                "v_enu_angular": enu_vel.angular_vel,
+                # Gimbal Pose
+                "pitch": gimb_pose.pitch,
+                "roll": gimb_pose.roll,
+                "yaw": gimb_pose.yaw
             },
         )
         logger.debug(f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}")
@@ -73,6 +97,20 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.hset(drone_key, "connection", f"{telemetry.alerts.connection_warning}")
         self.r.hset(drone_key, "status", f"{telemetry.status}")
         self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
+        # Home Location
+        self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
+        self.r.hset(drone_key, "home_long", f"{telemetry.home.longitude}")
+        self.r.hset(drone_key, "home_alt", f"{telemetry.home.absolute_altitude}")
+        # Camera Information
+        self.r.hset(drone_key, "streams_allowed", f"{telemetry.cameras.stream_status.total_streams}")
+        self.r.hset(drone_key, "streams_active", f"{telemetry.cameras.stream_status.num_streams}")
+        self.r.hset(drone_key, "primary_cam_id", f"{telemetry.cameras.stream_status.primary_cam}")
+        for i in range(len(telemetry.cameras.stream_status.secondary_cams)):
+            self.r.hset(drone_key, f"cam_{i}_id", f"{telemetry.cameras.sensors[i].id}")
+            self.r.hset(drone_key, f"cam_{i}_type", f"{common.ImagingSensorType.Name(telemetry.cameras.sensors[i].type)}")
+            self.r.hset(drone_key, f"cam_{i}_active", f"{telemetry.cameras.sensors[i].active}")
+            self.r.hset(drone_key, f"cam_{i}_support_sec", f"{telemetry.cameras.sensors[i].supports_secondary}")
+        
         self.r.expire(drone_key, self.ttl_secs)
         logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
 
