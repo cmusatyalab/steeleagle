@@ -159,6 +159,21 @@ def update_imagery():
         st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
 
 @st.fragment(run_every="1s")
+def update_drones():
+    drone_list = get_drones()
+    if len(drone_list) > 0:
+        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
+            options=drone_list.keys(),
+            default=drone_list.keys(),
+            format_func=lambda option: drone_list[option],
+            selection_mode="multi",
+             key="selected_drones"
+             )
+
+    else:
+        st.caption("No active drones.")
+        
+@st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
         location=[st.session_state.center['lat'], st.session_state.center['lng']],
@@ -370,18 +385,7 @@ with col2:
         draw_map()
 
 with st.sidebar:
-    drone_list = get_drones()
-    if len(drone_list) > 0:
-        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
-            options=drone_list.keys(),
-            default=drone_list.keys(),
-            format_func=lambda option: drone_list[option],
-            selection_mode="multi",
-             key="selected_drones"
-             )
-
-    else:
-        st.caption("No active drones.")
+    update_drones()
 
     st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
     st.caption(mode)
