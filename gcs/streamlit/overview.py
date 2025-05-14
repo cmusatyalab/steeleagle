@@ -79,7 +79,7 @@ def change_center():
             )
         )
         for index, row in df.iterrows():
-            st.session_state.center = [row["latitude"], row["longitude"]]
+            st.session_state.center = {'lat': row["latitude"], 'lng': row["longitude"]}
 
 
 def run_flightscript():
@@ -172,7 +172,7 @@ def update_drones():
 
     else:
         st.caption("No active drones.")
-        
+
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
