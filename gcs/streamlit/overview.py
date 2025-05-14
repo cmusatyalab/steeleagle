@@ -272,7 +272,7 @@ def draw_map():
                     )
                     plane = folium.Icon(
                         icon="plane",
-                        color="#c0c125",
+                        color="beige",
                         prefix="glyphicon",
                         #angle=int(row["bearing"]),
                     )
