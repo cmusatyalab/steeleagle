@@ -346,10 +346,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         if self.store_detections:
             try:
                 path = self.storage_path + "/detected/" + filename
-                results[0].plot(pil=True, save=True, filename=path)
+                im_bgr = results[0].plot()
+                im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
+                im_rgb.save(path)
 
                 path = self.storage_path + "/detected/latest.jpg"
-                results[0].plot(pil=True, save=True, filename=path)
+                im_rgb.save(path)
 
                 logger.info("Stored image: {}".format(path))
                 if cpt_config.HasField('lower_bound'):
