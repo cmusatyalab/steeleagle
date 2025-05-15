@@ -82,9 +82,9 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "v_enu_up": enu_vel.up_vel,
                 "v_enu_angular": enu_vel.angular_vel,
                 # Gimbal Pose
-                "pitch": gimb_pose.pitch,
-                "roll": gimb_pose.roll,
-                "yaw": gimb_pose.yaw
+                "gimbal_pitch": gimb_pose.pitch,
+                "gimbal_roll": gimb_pose.roll,
+                "gimbal_yaw": gimb_pose.yaw
             },
         )
         logger.debug(f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}")
