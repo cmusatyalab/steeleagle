@@ -233,9 +233,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
         df = results[0].to_df() # pandas dataframe
         #convert dataframe to python lists
-        classes = df['class'].values.tolist()
-        scores = df['confidence'].values.tolist()
-        names = df['name'].values.tolist()
+        if df.size > 0:
+            classes = df['class'].values.tolist()
+            scores = df['confidence'].values.tolist()
+            names = df['name'].values.tolist()
+        else:
+            classes = []
+            scores = []
+            names = []
 
         gabriel_result = gabriel_pb2.ResultWrapper.Result()
         gabriel_result.payload_type = gabriel_pb2.PayloadType.TEXT
