@@ -394,5 +394,5 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def inference(self, img):
         """Allow timing engine to override this"""
-        return self.detector.detection_model(img)
+        return self.detector.detection_model.predict(img, conf=self.threshold)
 
