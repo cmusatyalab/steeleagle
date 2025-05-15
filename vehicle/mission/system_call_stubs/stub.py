@@ -80,11 +80,11 @@ class Stub:
             stub_response = StubResponse()
             self.sender(request, stub_response)
 
-            logger.info(f"Waiting for response... Attempt {attempt + 1}/{retry_limit}")
+            logger.debug(f"Waiting for response... Attempt {attempt + 1}/{retry_limit}")
             responded = await stub_response.wait(timeout=timeout)
 
             if responded:
-                logger.info(f"Response received for seq_num: {request.seq_num}")
+                logger.debug(f"Response received for seq_num: {request.seq_num}")
                 return stub_response.get_result()
             else:
                 logger.warning(f"Timeout waiting for seq_num: {request.seq_num}, retrying...")
@@ -93,4 +93,4 @@ class Stub:
                 attempt += 1
 
         logger.error(f"Request failed after {retry_limit} attempts.")
-        return None  # Or raise an Exception if desired
+        return None
