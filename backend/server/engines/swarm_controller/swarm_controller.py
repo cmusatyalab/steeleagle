@@ -189,9 +189,10 @@ class StaticPatrolMission(Mission):
     def advance_patrol_area(self):
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
-        
+
 
     def state_transition(self, drone_id, rep):
+        logger.debug(f"Started state transition for drone {drone_id}, {rep=}")
         drone_idx = self.state.drone_list.index(drone_id)
 
         req = controlplane.Request()
@@ -208,16 +209,17 @@ class StaticPatrolMission(Mission):
                 return (drone_id, req)
             except Exception as e:
                 logger.error(f"Unexpected error during advance_patrol_area for drone {drone_id}: {e}", exc_info=True)
-        
+
         partitioned_areas = self.state.current_patrol_area.get_partition(drone_idx)
+        logger.info(f"{partitioned_areas=}")
         altitude = self.state.drone_altitudes[drone_idx]
         logger.info(f"Drone {drone_id} is at altitude {altitude}")
         logger.info(f"Drone {drone_id} is assigned to patrol area {partitioned_areas}")
-    
+
         req.msn.patrol_area.status = common.PatrolStatus.CONTINUE
         req.msn.patrol_area.areas.extend([p.waypoints for p in partitioned_areas])
         req.msn.patrol_area.altitude = self.state.drone_altitudes[drone_idx]
-    
+
 
         return (drone_id, req)
 
@@ -264,6 +266,7 @@ class MissionSupervisor:
         identity, msg = await self.router_sock.recv_multipart()
         rep = controlplane.Response()
         rep.ParseFromString(msg)
+        logger.info(f"Received msg from {identity=}: {rep=}")
         drone_id = identity.decode('utf-8')
         return drone_id, rep
 
@@ -274,7 +277,7 @@ class SwarmController:
     platform_path  = '/dsl/python/project'
     waypoint_file = '/compiler/out/waypoint.json'
 
-    def __init__(self, alt, compiler_file, red, request_sock, router_sock):
+    def __init__(self, alt, compiler_file, red, request_sock, router_sock, spacing, angle):
         self.alt = alt
         self.compiler_file = compiler_file
         self.red = red
@@ -283,6 +286,8 @@ class SwarmController:
         self.running = True
         self.patrol_area_list = None
         self.mission_supervisor = MissionSupervisor(self.router_sock)
+        self.spacing = spacing
+        self.angle = angle
 
     async def run(self):
         await asyncio.gather(self.listen_cmdrs())
@@ -348,8 +353,8 @@ class SwarmController:
             "-k", kml_file_path,
             "-s", dsl_file_path,
             "-p", "corridor",
-            "--angle", "90",
-            "--spacing", "1.0",
+            "--angle", str(self.angle),
+            "--spacing", str(self.spacing),
             "-w", self.waypoint_file
         ]
 
@@ -427,6 +432,7 @@ class SwarmController:
                 try:
                     await self.compile_mission(dsl, kml)
                 except Exception as e:
+                    logger.error(f"Compiler received error {e}")
                     await self.request_sock.send(b'ACK')
                     continue
 
@@ -462,11 +468,23 @@ async def main():
     parser.add_argument(
         "--compiler_file", default='compile-2.0-full.jar', help="compiler file name"
     )
+    parser.add_argument(
+        "--spacing", type=int, default=18, help="Spacing for corridor scan"
+    )
+    parser.add_argument(
+        "--angle", type=int, default=100, help="Spacing for corridor scan"
+    )
     args = parser.parse_args()
 
     # Set the altitude
     alt = args.altitude
     logger.info(f"Starting control plane with altitude {alt}...")
+
+    spacing = args.spacing
+    logger.info(f"Starting control plane with {spacing=}...")
+
+    angle = args.angle
+    logger.info(f"Starting control plane with {angle=}...")
 
     compiler_file = args.compiler_file
     logger.info(f"Using compiler file: {compiler_file}")
@@ -488,7 +506,7 @@ async def main():
     router_sock.bind(f'tcp://*:{args.droneport}')
     logger.info(f'Listening on tcp://*:{args.droneport} for drone connections...')
 
-    controller = SwarmController(alt, compiler_file, red, request_sock, router_sock)
+    controller = SwarmController(alt, compiler_file, red, request_sock, router_sock, spacing, angle)
     try:
         await controller.run()
     except KeyboardInterrupt:

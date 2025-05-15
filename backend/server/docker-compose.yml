@@ -44,7 +44,7 @@ services:
       - "5003:5003"
       - "6001:6001"
     privileged: true
-    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "10"]
+    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "11"]
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
@@ -166,7 +166,9 @@ services:
         "-hsv",
         "${HSV_THRESHOLD}",
         "--geofence",
-        "geofence.kml"
+        "geofence.kml",
+        "--ttl",
+        "30"
       ]
     # for NVIDIA GPUs
     # gpus: all     # not yet supported by docker-compose
@@ -185,24 +187,25 @@ services:
       - PYTHONPATH=/steeleagle/protocol
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=-1 #set this if you want to force CPU only
-    #slam-engine:
-    #  # image: xujingao/steeleagle-slam-engine
-    #  image: cmusatyalab/steeleagle-slam-engine
-    #  container_name: slam-engine
-    #  restart: unless-stopped
-    #  privileged: true
-    #  # entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555", "-src", "telemetry"]
-    #  entrypoint: ["python3","./slam.py", "-s", "lambda2.elijah.cs.cmu.edu", "-a", "${REDIS_AUTH}",  "--source", "telemetry"]
-    #  depends_on:
-    #    - gabriel-server
-    #    - redis
-    #  networks:
-    #    - cnc-net
-    #    - redis
-    #  environment:
-    #    - PYTHONPATH=/steeleagle/protocol
-    #  volumes:
-    #    - ./steeleagle-vol:/steeleagle/images/
+    slam-engine:
+      # image: xujingao/steeleagle-slam-engine
+      image: cmusatyalab/steeleagle-slam-engine
+      container_name: slam-engine
+      restart: unless-stopped
+      privileged: true
+      # entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555", "-src", "telemetry"]
+      entrypoint: ["python3","./slam.py", "-s", "lambda2.elijah.cs.cmu.edu", "-a", "${REDIS_AUTH}",  "--source", "telemetry"]
+      depends_on:
+        - gabriel-server
+        - redis
+      networks:
+        - cnc-net
+        - redis
+      environment:
+        - PYTHONPATH=/steeleagle/protocol
+      volumes:
+        - ./steeleagle-vol:/steeleagle/images/
+
     # OpenFace is the default for face recognition
     #openface-service:
     #  image: cmusatyalab/openface
