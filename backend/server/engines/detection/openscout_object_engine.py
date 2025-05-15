@@ -346,11 +346,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         if self.store_detections:
             try:
                 path = self.storage_path + "/detected/" + filename
-                img.save(path, format="JPEG")
                 results[0].plot(pil=True, save=True, filename=path)
 
                 path = self.storage_path + "/detected/latest.jpg"
-                img.save(path, format="JPEG")
                 results[0].plot(pil=True, save=True, filename=path)
 
                 logger.info("Stored image: {}".format(path))
