@@ -26,8 +26,10 @@ RUN pip install --no-cache-dir protobuf==5.29.4
 RUN pip install --no-cache-dir opencv-python==4.10.0.84
 RUN pip install --no-cache-dir numpy==1.26.4
 
-COPY backend/server/steeleagle-dsl/python/interface /vehicle/mission/interface
 COPY protocol /protocol
 COPY vehicle /vehicle
+RUN rm /vehicle/mission/interface
+COPY backend/server/steeleagle-dsl/python/interface /vehicle/mission/interface
+
 
 WORKDIR /vehicle/launch
