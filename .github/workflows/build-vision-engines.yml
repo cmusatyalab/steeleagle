@@ -7,6 +7,7 @@ on:
       - 'backend/server/engines/detection/**'
       - 'backend/server/engines/avoidance/**'
       - 'backend/server/engines/Dockerfile.obj_avoid'
+      - 'backend/server/engines/requirements.obj_avoid.txt'
 
 jobs:
 
