@@ -142,7 +142,7 @@ def get_drones():
             # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
             df = stream_to_dataframe(red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1))
             row = df[0]
-            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status} {int(row["battery"])}% {row["rel_altitude"]:.1f}m AGL/{row["abs_altitude"]:.1f}m MSL** "
+            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status} {int(row['battery'])}% {row['rel_altitude']:.1f}m AGL/{row['abs_altitude']:.1f}m MSL**"
 
     return l
 
