@@ -74,7 +74,7 @@ class Stub:
                 break
             await asyncio.sleep(0)
 
-    async def send_and_wait(self, request, timeout=30.0, retry_limit=4):
+    async def send_and_wait(self, request, timeout=10.0, retry_limit=4):
         attempt = 0
         while attempt < retry_limit:
             stub_response = StubResponse()
