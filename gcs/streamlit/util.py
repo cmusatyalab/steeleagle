@@ -145,7 +145,7 @@ def get_drones():
                 battery_percentage = int(row['battery'])
                 rel_alt = row['rel_altitude']
                 abs_alt = row['abs_altitude']
-            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status} {battery_percentage}% {rel_alt:.1f}m AGL/{abs_alt:.1f}m MSL**"
+            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status}{battery_percentage}% {rel_alt:.1f}m/{abs_alt:.1f}m**"
 
     return l
 
