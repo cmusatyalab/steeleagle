@@ -43,4 +43,7 @@ vehicle/mission/project/
 vehicle/config.yaml
 vehicle/config.yml
 
+vehicle/configs
+vehicle/docker-compose.yaml
+
 secrets.toml
