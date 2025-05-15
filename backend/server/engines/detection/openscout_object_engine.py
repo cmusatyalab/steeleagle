@@ -376,7 +376,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.t0 = time.time()
         np_data = np.fromstring(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         results = self.inference(img)
         self.t1 = time.time()
