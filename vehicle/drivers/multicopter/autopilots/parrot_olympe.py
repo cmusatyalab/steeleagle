@@ -178,11 +178,17 @@ class ParrotOlympeDrone(MulticopterItf):
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         try:
+            gp = self._get_global_position()
+            bearing = self._calculate_bearing(
+                gp["latitude"],
+                gp["longitude"],
+                lat,
+                lon)
             # Set heading before moving
             self._drone(
                 moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
             ).success()
-            
+
             # if bearing is None:
             #     self._drone(
             #         moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)

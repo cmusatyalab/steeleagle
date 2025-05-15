@@ -1,0 +1,42 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build the telemetry engine image
+      run: docker build -t cmusatyalab/steeleagle-telemetry-engine -f backend/server/engines/telemetry/Dockerfile.telemetry .
+            
+    - name: Push telemetry engine image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-telemetry-engine
+
+    - name: Build the vision engines image
+      run: docker build -t cmusatyalab/steeleagle-vision-engines -f backend/server/engines/Dockerfile.obj_avoid .
+
+    - name: Push vision engine image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-vision-engines
+
+    - name: Build the swarm controller image
+      run: docker build -t cmusatyalab/steeleagle-swarm-controller -f backend/server/engines/swarm_controller/Dockerfile .
+
+    - name: Push swarm controller image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-swarm-controller
+
+    - name: Build the vehicle image
+      run: docker build -f vehicle/Dockerfile -t cmusatyalab/steeleagle-vehicle .
+
+    - name: Push vehicle image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-vehicle
