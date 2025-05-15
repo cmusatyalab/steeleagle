@@ -5,12 +5,22 @@ on:
     branches: [ "main" ]
 
 jobs:
+
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Download protobuf compiler
+      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protobuf-29.4.zip
+
+    - name: Unzip protobuf compiler
+      run: unzip protobuf-29.4.zip
+
+    - name: Build protobufs
+      run: cd protocol && PROTOC_PATH=../protobuf-29.4/bin/protoc ./build.sh
+    
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
