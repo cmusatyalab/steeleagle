@@ -1,0 +1,37 @@
+name: Build and push telemetry engine
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: 'backend/server/engines/telemetry/**'
+
+jobs:
+
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Download protobuf compiler
+      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
+
+    - name: Unzip protobuf compiler
+      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
+
+    - name: Build protobufs
+      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build the telemetry engine image
+      run: docker build -t cmusatyalab/steeleagle-telemetry-engine -f backend/server/engines/telemetry/Dockerfile.telemetry .
+
+    - name: Push telemetry engine image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-telemetry-engine

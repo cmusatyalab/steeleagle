@@ -1,0 +1,37 @@
+name: Build and push vehicle container
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: 'vehicle/**'
+
+jobs:
+
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Download protobuf compiler
+      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
+
+    - name: Unzip protobuf compiler
+      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
+
+    - name: Build protobufs
+      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build the vehicle image
+      run: docker build -f vehicle/Dockerfile -t cmusatyalab/steeleagle-vehicle .
+
+    - name: Push vehicle image to Docker Hub
+      run: docker push cmusatyalab/steeleagle-vehicle
