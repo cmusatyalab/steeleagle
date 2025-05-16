@@ -340,26 +340,26 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     })
                     self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
+                if self.store_detections:
+                    try:
+                        path = self.storage_path + "/detected/" + filename
+                        im_bgr = results[0].plot()
+                        im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
+                        im_rgb.save(path)
+
+                        path = self.storage_path + "/detected/latest.jpg"
+                        im_rgb.save(path)
+
+                        logger.info("Stored image: {}".format(path))
+                        if cpt_config.HasField('lower_bound'):
+                            img = self.run_hsv_filter(image_np, cpt_config)
+                            path = self.storage_path + "/detected/hsv.jpg"
+                            img.save(path, format="JPEG")
+                    except IndexError:
+                        logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
+
         logger.info(json.dumps(r,sort_keys=True, indent=4))
         gabriel_result.payload = json.dumps(r).encode(encoding="utf-8")
-
-        if self.store_detections:
-            try:
-                path = self.storage_path + "/detected/" + filename
-                im_bgr = results[0].plot()
-                im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
-                im_rgb.save(path)
-
-                path = self.storage_path + "/detected/latest.jpg"
-                im_rgb.save(path)
-
-                logger.info("Stored image: {}".format(path))
-                if cpt_config.HasField('lower_bound'):
-                    img = self.run_hsv_filter(image_np, cpt_config)
-                    path = self.storage_path + "/detected/hsv.jpg"
-                    img.save(path, format="JPEG")
-            except IndexError:
-                logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
         return gabriel_result if detections_above_threshold else None
 
