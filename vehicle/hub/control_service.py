@@ -20,6 +20,8 @@ class ControlService(Service):
         super().__init__()
         self.compute_dict = compute_dict
         self.data_store = data_store
+        
+        self.waypoint_req = None
 
         # Drone info
         self.drone_id = query_config('driver.id')
@@ -161,7 +163,16 @@ class ControlService(Service):
         resp = control_protocol.Response()
         resp.ParseFromString(report)
         logger.info(f"Received patrol report from mission: {resp}")
+        
+        if resp.resp == common_protocol.ResponseStatus.OK and self.waypoint_req is not None:
+            logger.info(f"already have the cached waypoint")
+            logger.info(f"Sending cached waypoint report to mission: {self.waypoint_req}")
+            await self.mission_report_socket.send(self.waypoint_req.SerializeToString())
+            return
+        
+        logger.info(f"Forwarding mission report to commander: {report}")
         await self.commander_socket.send_multipart([report])
+        self.waypoint_req = None
    
 
     async def handle_driver_input(self, msg):
@@ -283,7 +294,12 @@ class ControlService(Service):
 
     async def send_patrol_area(self, req):
         logger.info("Sending patrol area")
+        if self.waypoint_req is None:
+            self.waypoint_req = control_protocol.Request()
+            self.waypoint_req.CopyFrom(req)
+            return
         await self.mission_report_socket.send(req.SerializeToString())
+
 
 
 
