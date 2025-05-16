@@ -3,10 +3,12 @@ name: Build and push vehicle container
 on:
   push:
     branches: [ "main" ]
-    paths: 'vehicle/**'
+    paths:
+      - 'backend/server/steeleagle-dsl/python/interface/**'
+      - 'protocol/**'
+      - 'vehicle/**'
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 
