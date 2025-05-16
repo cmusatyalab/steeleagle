@@ -21,8 +21,8 @@ RUN apt-get update && apt-get install -y \
     wget \
  && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 2
-RUN update-alternatives --install /usr/bin/python3 python /usr/bin/python3.8 2
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 2 \
+ && update-alternatives --install /usr/bin/python3 python /usr/bin/python3.8 2
 
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN python3 -m pip install --upgrade pip
