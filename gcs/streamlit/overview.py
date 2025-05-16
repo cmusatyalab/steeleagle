@@ -160,115 +160,8 @@ def update_imagery():
 
 @st.fragment(run_every="3s")
 def update_drones():
-    drone_list = get_drones()
-    if len(drone_list) > 0:
-        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
-            options=drone_list.keys(),
-            default=drone_list.keys(),
-            format_func=lambda option: drone_list[option],
-            selection_mode="multi",
-             key="selected_drones"
-             )
+    pass
 
-    else:
-        st.caption("No active drones.")
-    st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
-    st.caption(mode)
-
-    st.session_state.script_file = st.file_uploader(
-        key="flight_uploader",
-        label="**:violet[Upload Autonomous Mission Script]**",
-        help="Upload a flight script.",
-        type=["kml", "dsl"],
-        label_visibility='visible',
-        accept_multiple_files=True
-    )
-    st.button(
-        key="autonomous_button",
-        label=":world_map: Fly Script",
-        type="primary",
-        use_container_width=True,
-        on_click=run_flightscript,
-    )
-    st.button(
-        key="manual_button",
-        label=":octagonal_sign: Halt All",
-        help="Immediately tell drones to hover.",
-        type="primary",
-        disabled=False,
-        use_container_width=True,
-        on_click=enable_manual,
-    )
-    st.button(
-        key="rth_button",
-        label=":dart: Return Home",
-        help="Return to last known home.",
-        type="primary",
-        use_container_width=True,
-        on_click=rth,
-    )
-
-    if st.session_state.armed and len(st.session_state.selected_drones) > 0:
-        c1, c2 = st.columns(spec=2, gap="small")
-        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
-        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
-        c3, c4 = st.columns(spec=2, gap="small")
-        c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
-        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
-        c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=15, format="%d")
-
-        key_pressed = st_keypressed()
-        req = controlplane.Request()
-        req.seq_num = int(time.time())
-        req.timestamp.GetCurrentTime()
-        for d in st.session_state.selected_drones:
-            req.veh.drone_ids.append(d)
-
-        #req.cmd.manual = True
-        st.caption(f"keypressed={key_pressed}")
-        if key_pressed == "t":
-            req.veh.action = controlplane.VehicleAction.TAKEOFF
-            st.info(f"Instructed {req.veh.drone_ids} to takeoff.")
-        elif key_pressed == "g":
-            req.veh.action = controlplane.VehicleAction.LAND
-            st.info(f"Instructed {req.veh.drone_ids} to land.")
-        else:
-            pitch = roll = yaw = thrust = gimbal_pitch = 0
-            if key_pressed == "w":
-                pitch = 1 * st.session_state.pitch_speed
-            elif key_pressed == "s":
-                pitch = -1 * st.session_state.pitch_speed
-            elif key_pressed == "d":
-                roll = 1 * st.session_state.roll_speed
-            elif key_pressed == "a":
-                roll = -1 * st.session_state.roll_speed
-            elif key_pressed == "i":
-                thrust = 1 * st.session_state.thrust_speed
-            elif key_pressed == "k":
-                thrust = -1 * st.session_state.thrust_speed
-            elif key_pressed == "l":
-                yaw = 1 * st.session_state.yaw_speed
-            elif key_pressed == "j":
-                yaw = -1 * st.session_state.yaw_speed
-            elif key_pressed == "r":
-                gimbal_pitch = 1 * st.session_state.gimbal_speed
-            elif key_pressed == "f":
-                gimbal_pitch = -1 * st.session_state.gimbal_speed
-            st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
-            if gimbal_pitch != 0:
-                req.veh.gimbal_pose.pitch = gimbal_pitch
-            elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
-                req.veh.action = controlplane.VehicleAction.HOVER
-            else:
-                req.veh.velocity_body.angular_vel = yaw
-                req.veh.velocity_body.forward_vel = pitch
-                req.veh.velocity_body.right_vel = roll
-                req.veh.velocity_body.up_vel = thrust
-
-        key_pressed = None
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -483,6 +376,114 @@ with col2:
         draw_map()
 
 with st.sidebar:
-    update_drones()
+    drone_list = get_drones()
+    if len(drone_list) > 0:
+        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
+            options=drone_list.keys(),
+            default=drone_list.keys(),
+            format_func=lambda option: drone_list[option],
+            selection_mode="multi",
+             key="selected_drones"
+             )
+
+    else:
+        st.caption("No active drones.")
+    st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
+    st.caption(mode)
+
+    st.session_state.script_file = st.file_uploader(
+        key="flight_uploader",
+        label="**:violet[Upload Autonomous Mission Script]**",
+        help="Upload a flight script.",
+        type=["kml", "dsl"],
+        label_visibility='visible',
+        accept_multiple_files=True
+    )
+    st.button(
+        key="autonomous_button",
+        label=":world_map: Fly Script",
+        type="primary",
+        use_container_width=True,
+        on_click=run_flightscript,
+    )
+    st.button(
+        key="manual_button",
+        label=":octagonal_sign: Halt All",
+        help="Immediately tell drones to hover.",
+        type="primary",
+        disabled=False,
+        use_container_width=True,
+        on_click=enable_manual,
+    )
+    st.button(
+        key="rth_button",
+        label=":dart: Return Home",
+        help="Return to last known home.",
+        type="primary",
+        use_container_width=True,
+        on_click=rth,
+    )
+
+    if st.session_state.armed and len(st.session_state.selected_drones) > 0:
+        c1, c2 = st.columns(spec=2, gap="small")
+        c1.number_input(key="pitch_speed", label="Pitch (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
+        c2.number_input(key = "thrust_speed", label="Thrust (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
+        c3, c4 = st.columns(spec=2, gap="small")
+        c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
+        c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
+        c5, c6 = st.columns(spec=2, gap="small")
+        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=15, format="%d")
+
+        key_pressed = st_keypressed()
+        req = controlplane.Request()
+        req.seq_num = int(time.time())
+        req.timestamp.GetCurrentTime()
+        for d in st.session_state.selected_drones:
+            req.veh.drone_ids.append(d)
+
+        #req.cmd.manual = True
+        st.caption(f"keypressed={key_pressed}")
+        if key_pressed == "t":
+            req.veh.action = controlplane.VehicleAction.TAKEOFF
+            st.info(f"Instructed {req.veh.drone_ids} to takeoff.")
+        elif key_pressed == "g":
+            req.veh.action = controlplane.VehicleAction.LAND
+            st.info(f"Instructed {req.veh.drone_ids} to land.")
+        else:
+            pitch = roll = yaw = thrust = gimbal_pitch = 0
+            if key_pressed == "w":
+                pitch = 1 * st.session_state.pitch_speed
+            elif key_pressed == "s":
+                pitch = -1 * st.session_state.pitch_speed
+            elif key_pressed == "d":
+                roll = 1 * st.session_state.roll_speed
+            elif key_pressed == "a":
+                roll = -1 * st.session_state.roll_speed
+            elif key_pressed == "i":
+                thrust = 1 * st.session_state.thrust_speed
+            elif key_pressed == "k":
+                thrust = -1 * st.session_state.thrust_speed
+            elif key_pressed == "l":
+                yaw = 1 * st.session_state.yaw_speed
+            elif key_pressed == "j":
+                yaw = -1 * st.session_state.yaw_speed
+            elif key_pressed == "r":
+                gimbal_pitch = 1 * st.session_state.gimbal_speed
+            elif key_pressed == "f":
+                gimbal_pitch = -1 * st.session_state.gimbal_speed
+            st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
+            if gimbal_pitch != 0:
+                req.veh.gimbal_pose.pitch = gimbal_pitch
+            elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
+                req.veh.action = controlplane.VehicleAction.HOVER
+            else:
+                req.veh.velocity_body.angular_vel = yaw
+                req.veh.velocity_body.forward_vel = pitch
+                req.veh.velocity_body.right_vel = roll
+                req.veh.velocity_body.up_vel = thrust
+
+        key_pressed = None
+        st.session_state.zmq.send(req.SerializeToString())
+        rep = st.session_state.zmq.recv()
 
 
