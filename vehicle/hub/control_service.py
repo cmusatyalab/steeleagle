@@ -297,7 +297,6 @@ class ControlService(Service):
         if self.waypoint_req is None:
             self.waypoint_req = control_protocol.Request()
             self.waypoint_req.CopyFrom(req)
-            return
         await self.mission_report_socket.send(req.SerializeToString())
 
 
