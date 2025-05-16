@@ -42,7 +42,7 @@ RUN python3 -m pip install --no-cache-dir \
 #RUN cd yolov5 && python3 -m pip install -r requirements.txt
 
 COPY backend/server/engines/requirements.obj_avoid.txt requirements.txt
-RUN python3 -m pip install -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
