@@ -46,13 +46,13 @@ RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
-RUN mkdir steeleagle
-COPY backend/server/engines/avoidance/*.py steeleagle/
-COPY backend/server/engines/detection/*.py steeleagle/
-COPY backend/server/engines/watermark.png steeleagle/
+RUN mkdir /steeleagle
+COPY backend/server/engines/avoidance/*.py /steeleagle/
+COPY backend/server/engines/detection/*.py /steeleagle/
+COPY backend/server/engines/watermark.png /steeleagle/
 COPY protocol/*_pb2.py /steeleagle/protocol/
 COPY vehicle/util /steeleagle/util
-WORKDIR steeleagle
+WORKDIR /steeleagle
 
 EXPOSE 5555 9099
 #ENTRYPOINT ["./entrypoint.sh"]

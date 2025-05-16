@@ -15,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Free Disk Space
+      uses: jlumbroso/free-disk-space@v1.3.1
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: false
+        docker-images: false
+        swap-storage: false
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -44,5 +55,5 @@ jobs:
         file: backend/server/engines/Dockerfile.obj_avoid
         push: true
         tags: cmusatyalab/steeleagle-vision-engines:latest
-        #cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:latest
-        #cache-to: type=inline
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:latest
+        cache-to: type=inline
