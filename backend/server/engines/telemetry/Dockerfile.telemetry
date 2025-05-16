@@ -33,7 +33,7 @@ RUN pip3 install --upgrade pip
 RUN python3 -m pip install --no-cache-dir \
     py-cpuinfo \
     'setuptools==41.0.0' \
-    'websockets==8.0.0' \
+    'websockets==8.0.0'
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -
