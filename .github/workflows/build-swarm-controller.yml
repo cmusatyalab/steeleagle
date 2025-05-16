@@ -30,8 +30,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build the swarm controller image
-      run: docker build -t cmusatyalab/steeleagle-swarm-controller -f backend/server/engines/swarm_controller/Dockerfile .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Push swarm controller image to Docker Hub
-      run: docker push cmusatyalab/steeleagle-swarm-controller
+    - name: Build and push vehicle image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: backend/server/engines/swarm_controller/Dockerfile
+        push: true
+        tags: cmusatyalab/steeleagle-swarm-controller:latest
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-swarm-controller:latest
+        cache-to: type=inline

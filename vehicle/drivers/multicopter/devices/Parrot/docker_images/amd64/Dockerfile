@@ -28,12 +28,13 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory
 WORKDIR /steeleagle_os/driver_olympe
 
+# Install required Python packages
+COPY ./os/drivers/olympe/requirements.txt requirements.txt
+RUN pip install --no-cache-dir parrot-olympe \
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir --upgrade protobuf
+
 # Copy necessary files into the container
 COPY ./os/drivers/olympe /steeleagle_os/driver_olympe
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
 COPY ./os/util /steeleagle_os/util
-
-# Install required Python packages
-RUN pip install parrot-olympe
-RUN pip install -r /steeleagle_os/driver_olympe/requirements.txt
-RUN pip install --upgrade  protobuf

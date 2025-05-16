@@ -34,8 +34,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build the vision engines image
-      run: docker build -t cmusatyalab/steeleagle-vision-engines -f backend/server/engines/Dockerfile.obj_avoid .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Push vision engine image to Docker Hub
-      run: docker push cmusatyalab/steeleagle-vision-engines
+    - name: Build and push vision engine image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: backend/server/engines/Dockerfile.obj_avoid
+        push: true
+        tags: cmusatyalab/steeleagle-vision-engines:latest
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:latest
+        cache-to: type=inline

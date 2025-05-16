@@ -30,8 +30,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build the vehicle image
-      run: docker build -f vehicle/Dockerfile -t cmusatyalab/steeleagle-vehicle .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Push vehicle image to Docker Hub
-      run: docker push cmusatyalab/steeleagle-vehicle
+    - name: Build and push vehicle image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: vehicle/Dockerfile
+        push: true
+        tags: cmusatyalab/steeleagle-vehicle:latest
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-vehicle:latest
+        cache-to: type=inline

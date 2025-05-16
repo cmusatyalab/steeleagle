@@ -26,16 +26,17 @@ RUN apt-get update && apt-get install -y \
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN pip3 install --upgrade pip
 
+# You can speed up build slightly by reducing build context with
+#     git archive --format=tgz HEAD | docker build -t cnc -
+COPY backend/server/engines/swarm_controller/requirements.txt requirements.txt
+
 # Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir \
     py-cpuinfo \
     'setuptools' \
-    'websockets==8.0.0'
+    'websockets==8.0.0' \
+ && python3 -m pip install --no-cache-dir -r requirements.txt
 
-# You can speed up build slightly by reducing build context with
-#     git archive --format=tgz HEAD | docker build -t cnc -
-COPY backend/server/engines/swarm_controller/requirements.txt requirements.txt
-RUN python3 -m pip install -r requirements.txt
 COPY backend/server/engines/swarm_controller/swarm_controller.py swarm_controller.py
 COPY protocol protocol
 COPY vehicle/util util

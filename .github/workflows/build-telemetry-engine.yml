@@ -30,8 +30,15 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build the telemetry engine image
-      run: docker build -t cmusatyalab/steeleagle-telemetry-engine -f backend/server/engines/telemetry/Dockerfile.telemetry .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Push telemetry engine image to Docker Hub
-      run: docker push cmusatyalab/steeleagle-telemetry-engine
+    - name: Build and push vehicle image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: backend/server/engines/telemetry/Dockerfile.telemetry
+        push: true
+        tags: cmusatyalab/steeleagle-telemetry-engine:latest
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-telemetry-engine:latest
+        cache-to: type=inline

@@ -10,10 +10,9 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory
 WORKDIR /steeleagle_os/user
 
-COPY ./os/user/requirements.txt requirements.txt
-
 # Install required Python packages
-RUN pip install -r requirements.txt
+COPY ./os/user/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy necessary files into the container
 COPY ./os/user /steeleagle_os/user
