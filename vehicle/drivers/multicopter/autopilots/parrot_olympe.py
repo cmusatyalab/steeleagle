@@ -794,18 +794,25 @@ class FFMPEGStreamingThread(threading.Thread):
         logger.info(f"Using opencv-python version {cv2.__version__}")
 
         self._current_frame = None
+        self.ip = ip
         self._drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self._cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
-        self.is_running = True
+        self.is_running = False
 
     def run(self):
-        try:
-            while(self.is_running):
-                ret, self._current_frame = self._cap.read()
+        while not self.is_running:
+            self._cap = cv2.VideoCapture(f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+            self.is_running = True
+            while self.is_running:
+                try:
+                    ret, self._current_frame = self._cap.read()
+                    if not ret:
+                        logger.error(f"No frame received from cap, restarting")
+                        self.is_running = False
+                except Exception as e:
+                    logger.error(f"Frame could not be read, reason: {e}")
+                    self.is_running = False
             self._cap.release()
-        except Exception as e:
-            logger.error(f"Frame could not be read, reason: {e}")
 
     def grab_frame(self):
         try:
