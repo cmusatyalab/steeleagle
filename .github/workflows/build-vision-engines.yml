@@ -44,5 +44,5 @@ jobs:
         file: backend/server/engines/Dockerfile.obj_avoid
         push: true
         tags: cmusatyalab/steeleagle-vision-engines:latest
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:latest
-        cache-to: type=inline
+        #cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:latest
+        #cache-to: type=inline
