@@ -23,24 +23,36 @@ class ControlStub(Stub):
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.TAKEOFF
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Takeoff failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def land(self):
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.LAND
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Landing failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def rth(self):
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.RTH
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("RTH failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def hover(self):
         request = control_protocol.Request()
         request.veh.action = control_protocol.VehicleAction.HOVER
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Hover failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_gps_location(self, latitude, longitude, rel_altitude, bearing=None):
@@ -53,6 +65,9 @@ class ControlStub(Stub):
         else:
             request.veh.location.heading = 0
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Setting GPS location failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_relative_position_enu(self, north, east, up, angle):
@@ -62,6 +77,9 @@ class ControlStub(Stub):
         request.veh.position_enu.up = up
         request.veh.position_enu.angle = angle
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Setting relative position ENU failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_relative_position_body(self, forward, right, up, angle):
@@ -71,6 +89,9 @@ class ControlStub(Stub):
         request.veh.position_body.up = up
         request.veh.position_body.angle = angle
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Setting relative position body failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_velocity_enu(self, north_vel, east_vel, up_vel, angle_vel):
@@ -80,6 +101,9 @@ class ControlStub(Stub):
         request.veh.velocity_enu.up_vel = up_vel
         request.veh.velocity_enu.angle_vel = angle_vel
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Setting velocity ENU failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_velocity_body(self, forward_vel, right_vel, up_vel, angle_vel):
@@ -89,7 +113,9 @@ class ControlStub(Stub):
         request.veh.velocity_body.up_vel = up_vel
         request.veh.velocity_body.angular_vel = angle_vel
         result = await self.send_and_wait(request)
-        # logger.info(f"set_velocity_body: {request=}, {result=}")
+        if result is None:
+            logger.error("Setting velocity body failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def set_gimbal_pose(self, pitch, roll, yaw):
@@ -98,6 +124,9 @@ class ControlStub(Stub):
         request.veh.gimbal_pose.roll = roll
         request.veh.gimbal_pose.yaw = yaw
         result = await self.send_and_wait(request)
+        if result is None:
+            logger.error("Setting gimbal pose failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     ''' Compute methods '''
@@ -106,6 +135,9 @@ class ControlStub(Stub):
         cpt_req.cpt.type = compute_type
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE
         result = await self.send_and_wait(cpt_req)
+        if result is None:
+            logger.error("Clearing compute result failed: No response received")
+            return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
     async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
@@ -123,6 +155,9 @@ class ControlStub(Stub):
             logger.debug(f"{cpt_req}")
             result = await self.send_and_wait(cpt_req)
             logger.info("Done awaiting for send_and_wait")
+            if result is None:
+                logger.error("Configure compute failed: No response received")
+                return False
             return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
         except Exception as e:
             logger.info(f"{e}")

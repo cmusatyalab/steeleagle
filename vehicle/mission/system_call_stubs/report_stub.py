@@ -30,6 +30,11 @@ class ReportStub(Stub):
             report.resp = common_protocol.ResponseStatus.COMPLETED
         
         update = await self.send_and_wait(report)
+        
+        if update is None:
+            logger.error("Failed to send notification: No response received")
+            return None
+        
         update_res = {
             'status': None,
             'patrol_areas': [],
