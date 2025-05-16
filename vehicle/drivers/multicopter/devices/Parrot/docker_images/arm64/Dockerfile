@@ -29,10 +29,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /steeleagle_os/driver_olympe
 
 # Install required Python packages
-COPY ./os/drivers/olympe/requirements.txt requirements.txt
 COPY ./os/drivers/olympe/arm64/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl
-RUN pip install --no-cache-dir /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl \
- && pip install --no-cache-dir -r requirements.txt \
+RUN pip install --no-cache-dir /steeleagle_os/driver_olympe/parrot_olympe-0.0.0-202410310237-py3-none-manylinux_2_31_aarch64.whl
+
+COPY ./os/drivers/olympe/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
  && pip install --no-cache-dir --upgrade protobuf
 
 # Copy necessary files into the container

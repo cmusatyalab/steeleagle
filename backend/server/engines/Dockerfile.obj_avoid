@@ -1,5 +1,7 @@
 FROM nvidia/cuda:11.5.2-cudnn8-devel-ubuntu18.04
-LABEL Satyalab, satya-group@lists.andrew.cmu.edu
+
+LABEL org.opencontainers.image.vendor="CMU Satyalab" \
+      org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -39,9 +41,9 @@ RUN python3 -m pip install --no-cache-dir \
 #RUN git clone https://github.com/ultralytics/yolov5
 #RUN cd yolov5 && python3 -m pip install -r requirements.txt
 
-
 COPY backend/server/engines/requirements.obj_avoid.txt requirements.txt
 RUN python3 -m pip install -r requirements.txt
+
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
 RUN mkdir steeleagle

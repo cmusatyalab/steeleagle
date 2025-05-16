@@ -12,9 +12,10 @@ RUN apk add --no-cache gcc g++ bash musl-dev linux-headers
 WORKDIR /steeleagle_os/kernel
 
 # Install any required Python packages
+RUN pip install --break-system-packages --no-deps --no-cache-dir gabriel-client==3.0
+
 COPY ./os/kernel/requirements.txt requirements.txt
-RUN pip install --break-system-packages --no-deps --no-cache-dir gabriel-client==3.0 \
- && pip install --break-system-packages --no-cache-dir -r requirements.txt
+RUN pip install --break-system-packages --no-cache-dir -r requirements.txt
 
 COPY ./os/kernel /steeleagle_os/kernel
 COPY ./os/cnc_protocol /steeleagle_os/cnc_protocol
