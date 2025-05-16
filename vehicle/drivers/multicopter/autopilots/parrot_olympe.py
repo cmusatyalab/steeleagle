@@ -778,7 +778,7 @@ class PDRAWStreamingThread(threading.Thread):
     def stop(self):
         self.is_running = False
         # Properly stop the video stream and disconnect
-        assert self._drone.streaming.stop()
+        self._drone.streaming.stop()
 
 
 class FFMPEGStreamingThread(threading.Thread):
