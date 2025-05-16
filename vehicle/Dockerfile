@@ -25,9 +25,9 @@ RUN pip install --no-cache-dir -r requirements-1.txt \
  && pip install --no-cache-dir opencv-python==4.10.0.84 \
  && pip install --no-cache-dir numpy==1.26.4
 
-COPY protocol /protocol
 COPY vehicle /vehicle
 RUN rm /vehicle/mission/interface
 COPY backend/server/steeleagle-dsl/python/interface /vehicle/mission/interface
+COPY protocol /protocol
 
 WORKDIR /vehicle/launch

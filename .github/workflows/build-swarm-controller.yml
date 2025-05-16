@@ -5,12 +5,11 @@ on:
     branches: [ "main" ]
     paths:
       - '.github/workflows/build-swarm-controller.yml'
-      - 'vehicle/util/**'
-      - 'protocol/**'
       - 'backend/server/engines/swarm_controller/**'
+      - 'protocols/**'
+      - 'vehicle/util/**'
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 
