@@ -4,13 +4,15 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'backend/server/engines/detection/**'
       - 'backend/server/engines/avoidance/**'
+      - 'backend/server/engines/detection/**'
       - 'backend/server/engines/Dockerfile.obj_avoid'
       - 'backend/server/engines/requirements.obj_avoid.txt'
+      - 'backend/server/engines/watermark.png'
+      - 'protocol/**'
+      - 'vehicle/util/**'
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 

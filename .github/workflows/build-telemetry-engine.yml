@@ -3,10 +3,12 @@ name: Build and push telemetry engine
 on:
   push:
     branches: [ "main" ]
-    paths: 'backend/server/engines/telemetry/**'
+    paths:
+      - 'backend/server/engines/telemetry/**'
+      - 'protocol/**'
+      - 'vehicle/util/**'
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 
