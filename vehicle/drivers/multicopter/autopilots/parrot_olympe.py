@@ -12,6 +12,7 @@ import olympe
 from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
+from olympe.messages.move import extended_move_to
 from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
@@ -185,8 +186,12 @@ class ParrotOlympeDrone(MulticopterItf):
                 lat,
                 lon)
             # Set heading before moving
+            #self._drone(
+            #    moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
+            #).success()
             self._drone(
-                moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
+                extended_move_to(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing,\
+                    3.0, 3.0, 90.0)
             ).success()
 
             # if bearing is None:
