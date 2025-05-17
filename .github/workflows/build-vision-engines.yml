@@ -4,6 +4,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
+      - 'vehicle/util/**'
+      - 'protocol/**'
       - 'backend/server/engines/detection/**'
       - 'backend/server/engines/avoidance/**'
       - 'backend/server/engines/Dockerfile.obj_avoid'

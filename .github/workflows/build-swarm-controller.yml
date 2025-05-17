@@ -3,7 +3,10 @@ name: Build and push swarm controller
 on:
   push:
     branches: [ "main" ]
-    paths: 'backend/server/engines/swarm_controller/**'
+    paths:
+      - 'vehicle/util/**'
+      - 'protocol/**'
+      - 'backend/server/engines/swarm_controller/**'
 
 jobs:
 

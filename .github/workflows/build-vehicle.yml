@@ -3,7 +3,10 @@ name: Build and push vehicle container
 on:
   push:
     branches: [ "main" ]
-    paths: 'vehicle/**'
+    paths:
+      - 'protocol/**'
+      - 'vehicle/**'
+      - 'backend/server/steeleagle-dsl'
 
 jobs:
 
