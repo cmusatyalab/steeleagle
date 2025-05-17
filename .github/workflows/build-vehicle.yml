@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
+      - '.github/workflows/build-vehicle.yml'
       - 'protocol/**'
       - 'vehicle/**'
       - 'backend/server/steeleagle-dsl'

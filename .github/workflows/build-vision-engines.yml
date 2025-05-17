@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
+      - '.github/workflows/build-vision-engines.yml'
       - 'vehicle/util/**'
       - 'protocol/**'
       - 'backend/server/engines/detection/**'
