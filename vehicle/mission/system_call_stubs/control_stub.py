@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ControlStub(Stub):
 
     def __init__(self):
-        super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub')
+        super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub', 'control')
 
     def parse_control_response(self, response_parts):
         self.parse_response(response_parts, control_protocol.Response)
@@ -131,6 +131,7 @@ class ControlStub(Stub):
 
     ''' Compute methods '''
     async def clear_compute_result(self, compute_type):
+        logger.info(f"clearing compute result")
         cpt_req = control_protocol.Request()
         cpt_req.cpt.type = compute_type
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE
@@ -142,7 +143,7 @@ class ControlStub(Stub):
 
     async def configure_compute(self, compute_model, hsv_lower_bound, hsv_upper_bound):
         try:
-            logger.info(f"Starting configure_compute")
+            logger.info(f"configuring compute model: {compute_model}, lower bound: {hsv_lower_bound}, upper bound: {hsv_upper_bound}")
             cpt_req = control_protocol.Request()
             cpt_req.cpt.lower_bound.h = hsv_lower_bound[0]
             cpt_req.cpt.lower_bound.s = hsv_lower_bound[1]
@@ -152,9 +153,7 @@ class ControlStub(Stub):
             cpt_req.cpt.upper_bound.v = hsv_upper_bound[2]
             cpt_req.cpt.model = compute_model
             cpt_req.cpt.action = control_protocol.ComputeAction.CONFIGURE_COMPUTE
-            logger.debug(f"{cpt_req}")
             result = await self.send_and_wait(cpt_req)
-            logger.info("Done awaiting for send_and_wait")
             if result is None:
                 logger.error("Configure compute failed: No response received")
                 return False

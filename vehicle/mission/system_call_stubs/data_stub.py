@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
         
 class DataStub(Stub):
     def __init__(self):
-        super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub')
+        super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub', 'data')
 
     def parse_data_response(self, response_parts):
         self.parse_response(response_parts, data_protocol.Response)
