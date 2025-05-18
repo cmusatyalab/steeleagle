@@ -5,12 +5,11 @@ on:
     branches: [ "main" ]
     paths:
       - '.github/workflows/build-vehicle.yml'
+      - 'backend/server/steeleagle-dsl/python/interface/**'
       - 'protocol/**'
       - 'vehicle/**'
-      - 'backend/server/steeleagle-dsl'
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 
