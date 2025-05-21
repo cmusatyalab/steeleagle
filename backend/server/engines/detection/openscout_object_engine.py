@@ -413,7 +413,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 if d["drone_id"] == drone_id:
                     return True
                 else:
-                    logger.info(f"Ignoring detection, {obj} already found by drone {drone_id}")
+                    logger.info(f"Ignoring detection, {obj} already found by drone {d['drone_id']}")
                     return False
         return True
 
