@@ -126,6 +126,27 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
 
+    def calculate_target_pitch_yaw(self, df, image_np, telemetry):
+        box = [df['box'][i]['y1'], df['box'][i]['x1'], df['box'][i]['y2'], df['box'][i]['x2']]
+        img_width = image_np.shape[1]
+        img_height = image_np.shape[0]
+        pixel_center = (img_width / 2, img_height / 2)
+        logger.info("Image Width: {0}px, Image Height: {1}px, Center {2}".format(img_width, img_height, pixel_center))
+        #eventually these should come from something like a drone .cap file
+        HFOV = 69 # Horizontal FOV An.
+        VFOV = 43 # Vertical FOV.
+
+        target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
+        target_y_pix = img_height - int(box[0]) #int(((box[2] - box[0]) / 2.0) + box[0])
+        target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (HFOV / 2)
+        target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (VFOV / 2)
+        target_bottom_pitch_angle = (((img_height - box[2]) - pixel_center[1]) \
+                / pixel_center[1]) * (VFOV / 2)
+
+        gimbal_pitch = telemetry.gimbal_pose.pitch
+
+        return gimbal_pitch + target_bottom_pitch_angle, target_yaw_angle
+
     def estimate_gps(self, lat, lon, pitch, yaw, alt):
         EARTH_RADIUS = 6378137.0
         vf = [0, 1, 0]
@@ -211,7 +232,13 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
         if len(results) > 0:
-            gabriel_result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.telemetry.drone_name)
+            gabriel_result = self.process_results(
+                image_np,
+                results,
+                cpt_config,
+                extras.telemetry,
+                extras.telemetry.drone_name)
+
             if gabriel_result is not None:
                 result_wrapper.results.append(gabriel_result)
 
@@ -246,122 +273,102 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         gabriel_result.payload_type = gabriel_pb2.PayloadType.TEXT
 
         detections_above_threshold = False
-        r = []
+        detections = []
         timestamp_millis = int(time.time() * 1000)
         filename = str(timestamp_millis) + ".jpg"
+        if self.store_detections:
+            detection_url = os.path.join(os.environ["WEBSERVER"], "detected", filename)
+        else:
+            detection_url = ""
+
         for i in range(0, len(classes)):
             if self.exclusions is not None and classes[i] in self.exclusions:
                 continue
+
             if scores[i] > self.threshold:
                 detections_above_threshold = True
                 logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
 
-                box = [df['box'][i]['y1'], df['box'][i]['x1'], df['box'][i]['y2'], df['box'][i]['x2']]
-                img_width = image_np.shape[1]
-                img_height = image_np.shape[0]
-                pixel_center = (img_width / 2, img_height / 2)
-                logger.info("Image Width: {0}px, Image Height: {1}px, Center {2}".format(img_width, img_height, pixel_center))
-                #eventually these should come from something like a drone .cap file
-                HFOV = 69 # Horizontal FOV An.
-                VFOV = 43 # Vertical FOV.
+                target_pitch, target_yaw = self.calculate_target_pitch_yaw(df, image_np, telemetry)
 
-                target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
-                target_y_pix = img_height - int(box[0]) #int(((box[2] - box[0]) / 2.0) + box[0])
-                target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (HFOV / 2)
-                target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (VFOV / 2)
-                target_bottom_pitch_angle = (((img_height - box[2]) - pixel_center[1]) \
-                        / pixel_center[1]) * (VFOV / 2)
-
+                # Estimate GPS coordinates of detected object
                 position = telemetry.global_position
-                gimbal_pitch = telemetry.gimbal_pose.pitch
+                lat, lon = self.estimate_gps(
+                    position.latitude,
+                    position.longitude,
+                    target_pitch,
+                    target_yaw,
+                    position.relative_altitude)
 
-                lat, lon = self.estimate_gps(position.latitude, position.longitude, gimbal_pitch+target_bottom_pitch_angle, target_yaw_angle, position.relative_altitude)
                 lon = np.clip(lon, -180, 180)
                 lat = np.clip(lat, -90, 90)
                 p = LatLon(lat, lon)
 
-                hsv_filter = False
-                if cpt_config.HasField('lower_bound'):
-                    lower_bound = [cpt_config.lower_bound.h, cpt_config.lower_bound.s, cpt_config.lower_bound.v]
-                    upper_bound = [cpt_config.upper_bound.h, cpt_config.upper_bound.s, cpt_config.upper_bound.v]
-                    hsv_filter = self.passes_hsv_filter(image_np, box, lower_bound, upper_bound, threshold=self.hsv_threshold)
+                hsv_filter_passed = False
+                run_hsv_filter = cpt_config.HasField('lower_bound')
 
-                if self.geofence_enabled:
-                    # if there is no geofence, or the estimated object locatoin is within the geofence...
-                    if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                        # first do a geosearch to see if there is a match within radius
-                        objects = self.r.geosearch(
-                            "detections",
-                            longitude=lon,
-                            latitude=lat,
-                            radius=self.search_radius,
-                            unit="m",
-                        )
+                if run_hsv_filter:
+                    lower_bound = cpt_config.lower_bound
+                    upper_bound = cpt_config.upper_bound
+                    lower_bound = [lower_bound.h, lower_bound.s, lower_bound.v]
+                    upper_bound = [upper_bound.h, upper_bound.s, upper_bound.v]
+                    hsv_filter_passed = self.passes_hsv_filter(
+                        image_np,
+                        box,
+                        lower_bound,
+                        upper_bound,
+                        threshold=self.hsv_threshold)
 
-                        if len(objects) == 0:
-                            logger.info(f"Adding detection for {names[i]} for drone {drone_id} for the first time")
-                            r.append({
-                                "id": drone_id,
-                                "class": names[i],
-                                "score": scores[i],
-                                "lat": lat,
-                                "lon": lon,
-                                "box": box,
-                                "hsv_filter": hsv_filter
-                            })
-                            self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
-                        else:
-                            logger.info(f"Object already exists within search radius: {objects}")
-                            for obj in objects:
-                                d = self.r.hget(obj, "drone_id")
-                                if d and d == drone_id:
-                                    r.append({
-                                        "id": drone_id,
-                                        "class": names[i],
-                                        "score": scores[i],
-                                        "lat": lat,
-                                        "lon": lon,
-                                        "box": box,
-                                        "hsv_filter": hsv_filter
-                                    })
-                                    self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
-                                else:
-                                    logger.info(f"Ignoring detection, {obj} already found by drone {d}")
-                else:
-                    logger.info(f"Adding detection for {names[i]} for drone {drone_id} without geosearch")
-                    r.append({
-                        "id": drone_id,
-                        "class": names[i],
-                        "score": scores[i],
-                        "lat": lat,
-                        "lon": lon,
-                        "box": box,
-                        "hsv_filter": hsv_filter
-                    })
-                    self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
+                detection = {
+                    "id": drone_id,
+                    "class": names[i],
+                    "score": scores[i],
+                    "lat": lat,
+                    "lon": lon,
+                    "box": box,
+                    "hsv_filter": hsv_filter_passed
+                }
 
                 if self.store_detections:
                     try:
-                        path = self.storage_path + "/detected/" + filename
                         im_bgr = results[0].plot()
-                        im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
-                        im_rgb.save(path)
+                        self.store_detection(img_bgr, filename)
 
-                        path = self.storage_path + "/detected/latest.jpg"
-                        im_rgb.save(path)
-
-                        logger.info("Stored image: {}".format(path))
-                        if cpt_config.HasField('lower_bound'):
-                            img = self.run_hsv_filter(image_np, cpt_config)
-                            path = self.storage_path + "/detected/hsv.jpg"
-                            img.save(path, format="JPEG")
+                        if run_hsv_filter:
+                            self.store_hsv_image(image_np, cpt_config)
                     except IndexError:
                         logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
-        logger.info(json.dumps(r,sort_keys=True, indent=4))
-        gabriel_result.payload = json.dumps(r).encode(encoding="utf-8")
+                if not self.geofence_enabled:
+                    detections.append(detection)
+                    self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
+                    continue
+
+                # if there is no geofence, or the estimated object location is within the geofence...
+                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
+                    if self.geofilter_passed(detection):
+                        detections.append(detection)
+                        self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
+
+        logger.info(json.dumps(detections, sort_keys=True, indent=4))
+        gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
 
         return gabriel_result if detections_above_threshold else None
+
+    def store_detection(self, img_bgr, filename):
+        path = self.storage_path + "/detected/" + filename
+        im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
+        im_rgb.save(path)
+
+        path = self.storage_path + "/detected/latest.jpg"
+        im_rgb.save(path)
+
+        logger.info("Stored image: {}".format(path))
+
+    def store_hsv_image(self, image_np, cpt_config):
+        img = self.run_hsv_filter(image_np, cpt_config)
+        path = self.storage_path + "/detected/hsv.jpg"
+        img.save(path, format="JPEG")
 
     def run_hsv_filter(self, image_np, cpt_config):
         hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
@@ -381,6 +388,34 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         results = self.inference(img)
         self.t1 = time.time()
         return results, img
+
+    def geofilter_passed(self, detection):
+        cls = detection["class"]
+        drone_id = detection["id"]
+
+        # first do a geosearch to see if there is a match within radius
+        objects = self.r.geosearch(
+            "detections",
+            longitude=detection["lon"],
+            latitude=detection["lat"],
+            radius=self.search_radius,
+            unit="m",
+        )
+        if len(objects) == 0:
+            logger.info(f"Adding detection for {cls} for drone {drone_id} for the first time")
+            return True
+
+        logger.info(f"Objects already exist within search radius: {objects}")
+
+        for obj in objects:
+            d = self.r.hgetall(obj)
+            if d and d["cls"] == cls:
+                if d["drone_id"] == drone_id:
+                    return True
+                else:
+                    logger.info(f"Ignoring detection, {obj} already found by drone {drone_id}")
+                    return False
+        return True
 
     def print_inference_stats(self):
         logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
