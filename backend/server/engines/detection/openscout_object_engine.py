@@ -38,7 +38,7 @@ from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class PytorchPredictor():
     def __init__(self, model, threshold):
@@ -134,8 +134,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
         return target_insct + (t * target_dir)
 
-    def calculate_target_pitch_yaw(self, df, image_np, telemetry):
-        box = [df['box'][i]['y1'], df['box'][i]['x1'], df['box'][i]['y2'], df['box'][i]['x2']]
+    def calculate_target_pitch_yaw(self, box, image_np, telemetry):
         img_width = image_np.shape[1]
         img_height = image_np.shape[0]
         pixel_center = (img_width / 2, img_height / 2)
@@ -297,7 +296,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 detections_above_threshold = True
                 logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
 
-                target_pitch, target_yaw = self.calculate_target_pitch_yaw(df, image_np, telemetry)
+                box = df["box"][i]
+                box = [box['y1'], box['x1'], box['y2'], box['x2']]
+                target_pitch, target_yaw = self.calculate_target_pitch_yaw(box, image_np, telemetry)
 
                 # Estimate GPS coordinates of detected object
                 position = telemetry.global_position
@@ -340,7 +341,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 if self.store_detections:
                     try:
                         im_bgr = results[0].plot()
-                        self.store_detection(img_bgr, filename, drone_id, names[i])
+                        self.store_detection(im_bgr, filename, drone_id, names[i])
 
                         if run_hsv_filter:
                             self.store_hsv_image(image_np, cpt_config)
@@ -358,16 +359,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                         detections.append(detection)
                         self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
 
-        logger.info(json.dumps(detections, sort_keys=True, indent=4))
+        if len(detections) > 0:
+            logger.info(json.dumps(detections, sort_keys=True, indent=4))
         gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
 
         return gabriel_result if detections_above_threshold else None
 
-    def store_detection(self, img_bgr, filename, drone_id, cls):
+    def store_detection(self, im_bgr, filename, drone_id, cls):
         drone_dir = os.path.join(self.drone_storage_path, drone_id)
 
         if not os.path.exists(drone_dir):
-            os.mkdirs(drone_dir)
+            os.makedirs(drone_dir)
 
         # Save to drone dir
         drone_dir_path = os.path.join(drone_dir, filename)
@@ -382,7 +384,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         # Save to class dir
         class_dir = os.path.join(self.class_storage_path, cls)
         if not os.path.exists(class_dir):
-            os.mkdirs(class_dir)
+            os.makedirs(class_dir)
         path = os.path.join(class_dir, filename)
         logger.debug(f"Stored image: {path}")
 
@@ -454,5 +456,5 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def inference(self, img):
         """Allow timing engine to override this"""
-        return self.detector.detection_model.predict(img, conf=self.threshold)
+        return self.detector.detection_model.predict(img, conf=self.threshold, verbose=False)
 
