@@ -114,6 +114,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 logger.info("Images directory already exists.")
             logger.info("Storing detection images at {}".format(self.storage_path))
 
+            self.drone_storage_path = os.path.join(self.storage_path, "detected", "drones")
+            self.class_storage_path = os.path.join(self.storage_path, "detected", "classes")
+            try:
+                os.makedirs(self.drone_storage_path)
+                os.makedirs(self.class_storage_path)
+            except FileExistsError:
+                pass
+
         logger.info(f"Search radius when considering duplicate detections: {self.search_radius}")
 
     def find_intersection(self, target_dir, target_insct):
@@ -332,7 +340,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 if self.store_detections:
                     try:
                         im_bgr = results[0].plot()
-                        self.store_detection(img_bgr, filename)
+                        self.store_detection(img_bgr, filename, drone_id, names[i])
 
                         if run_hsv_filter:
                             self.store_hsv_image(image_np, cpt_config)
@@ -355,15 +363,30 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         return gabriel_result if detections_above_threshold else None
 
-    def store_detection(self, img_bgr, filename):
-        path = self.storage_path + "/detected/" + filename
+    def store_detection(self, img_bgr, filename, drone_id, cls):
+        drone_dir = os.path.join(self.drone_storage_path, drone_id)
+
+        if not os.path.exists(drone_dir):
+            os.mkdirs(drone_dir)
+
+        # Save to drone dir
+        drone_dir_path = os.path.join(drone_dir, filename)
         im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
-        im_rgb.save(path)
+        im_rgb.save(drone_dir_path)
+        logger.debug(f"Stored image: {drone_dir_path}")
 
-        path = self.storage_path + "/detected/latest.jpg"
+        path = os.path.join(drone_dir, "latest.jpg")
         im_rgb.save(path)
+        logger.debug(f"Stored image: {path}")
 
-        logger.info("Stored image: {}".format(path))
+        # Save to class dir
+        class_dir = os.path.join(self.class_storage_path, cls)
+        if not os.path.exists(class_dir):
+            os.mkdirs(class_dir)
+        path = os.path.join(class_dir, filename)
+        logger.debug(f"Stored image: {path}")
+
+        os.symlink(drone_dir_path, path)
 
     def store_hsv_image(self, image_np, cpt_config):
         img = self.run_hsv_filter(image_np, cpt_config)
