@@ -26,7 +26,9 @@ RUN pip install --no-cache-dir -r requirements-1.txt \
  && pip install --no-cache-dir numpy==1.26.4
 
 COPY vehicle /vehicle
-RUN rm /vehicle/mission/interface
+RUN rm -f /vehicle/launch/*.log
+RUN rm -rf /vehicle/configs
+RUN rm -f /vehicle/mission/interface
 COPY backend/server/steeleagle-dsl/python/interface /vehicle/mission/interface
 COPY protocol /protocol
 
