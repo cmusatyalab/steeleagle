@@ -38,7 +38,6 @@ from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 class PytorchPredictor():
     def __init__(self, model, threshold):
@@ -353,7 +352,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return None
 
         logger.info(json.dumps(detections, sort_keys=True, indent=4))
-    gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
+        gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
 
         if not self.store_detections:
             return gabriel_result if detections_above_threshold else None
@@ -365,13 +364,13 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         if detections_above_threshold:
             try:
                 im_bgr = results[0].plot()
-                self.store_detections(im_bgr, filename, drone_id, set(names))
+                self.store_detections_disk(im_bgr, filename, drone_id, set(names))
             except IndexError:
                 logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
         return gabriel_result if detections_above_threshold else None
 
-    def store_detections(self, im_bgr, filename, drone_id, uniq_classes):
+    def store_detections_disk(self, im_bgr, filename, drone_id, uniq_classes):
         drone_dir = os.path.join(self.drone_storage_path, drone_id)
 
         if not os.path.exists(drone_dir):

@@ -110,7 +110,8 @@ def setup_logging(logger, access_token=None):
     if logging_config is not None:
         logging.basicConfig(level=logging_config['log_level'], format=logging_format, force=True)
     else:
-        logging.basicConfig(level=logging.INFO, format=logging_format)
+        log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+        logging.basicConfig(level=getattr(logging, log_level, logging.INFO), format=logging_format)
         return
 
     log_file = logging_config['log_file']
