@@ -358,14 +358,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         if not self.store_detections:
             return gabriel_result if detections_above_threshold else None
 
+        if run_hsv_filter:
+            self.store_hsv_image(image_np, cpt_config)
+
         # Store detection image
         if detections_above_threshold:
             try:
                 im_bgr = results[0].plot()
                 self.store_detections(im_bgr, filename, drone_id, set(names))
-
-                if run_hsv_filter:
-                    self.store_hsv_image(image_np, cpt_config)
             except IndexError:
                 logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
