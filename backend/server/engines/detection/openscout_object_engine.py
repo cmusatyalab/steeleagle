@@ -288,6 +288,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         else:
             detection_url = ""
 
+        run_hsv_filter = cpt_config.HasField('lower_bound')
+
         for i in range(0, len(classes)):
             if self.exclusions is not None and classes[i] in self.exclusions:
                 continue
@@ -314,8 +316,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 p = LatLon(lat, lon)
 
                 hsv_filter_passed = False
-                run_hsv_filter = cpt_config.HasField('lower_bound')
-
                 if run_hsv_filter:
                     lower_bound = cpt_config.lower_bound
                     upper_bound = cpt_config.upper_bound
@@ -338,16 +338,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     "hsv_filter": hsv_filter_passed
                 }
 
-                if self.store_detections:
-                    try:
-                        im_bgr = results[0].plot()
-                        self.store_detection(im_bgr, filename, drone_id, names[i])
-
-                        if run_hsv_filter:
-                            self.store_hsv_image(image_np, cpt_config)
-                    except IndexError:
-                        logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
-
                 if not self.geofence_enabled:
                     detections.append(detection)
                     self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
@@ -359,13 +349,29 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                         detections.append(detection)
                         self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
 
-        if len(detections) > 0:
-            logger.info(json.dumps(detections, sort_keys=True, indent=4))
-        gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
+        if len(detections) == 0:
+            return None
+
+        logger.info(json.dumps(detections, sort_keys=True, indent=4))
+    gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
+
+        if not self.store_detections:
+            return gabriel_result if detections_above_threshold else None
+
+        # Store detection image
+        if detections_above_threshold:
+            try:
+                im_bgr = results[0].plot()
+                self.store_detections(im_bgr, filename, drone_id, set(names))
+
+                if run_hsv_filter:
+                    self.store_hsv_image(image_np, cpt_config)
+            except IndexError:
+                logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
 
         return gabriel_result if detections_above_threshold else None
 
-    def store_detection(self, im_bgr, filename, drone_id, cls):
+    def store_detections(self, im_bgr, filename, drone_id, uniq_classes):
         drone_dir = os.path.join(self.drone_storage_path, drone_id)
 
         if not os.path.exists(drone_dir):
@@ -381,14 +387,15 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         im_rgb.save(path)
         logger.debug(f"Stored image: {path}")
 
-        # Save to class dir
-        class_dir = os.path.join(self.class_storage_path, cls)
-        if not os.path.exists(class_dir):
-            os.makedirs(class_dir)
-        path = os.path.join(class_dir, filename)
-        logger.debug(f"Stored image: {path}")
+        for cls in uniq_classes:
+            # Save to class dir
+            class_dir = os.path.join(self.class_storage_path, cls)
+            if not os.path.exists(class_dir):
+                os.makedirs(class_dir)
+            path = os.path.join(class_dir, filename)
+            logger.debug(f"Stored image: {path}")
 
-        os.symlink(drone_dir_path, path)
+            os.symlink(drone_dir_path, path)
 
     def store_hsv_image(self, image_np, cpt_config):
         img = self.run_hsv_filter(image_np, cpt_config)
