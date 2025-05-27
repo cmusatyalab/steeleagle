@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 FROM ubuntu:20.04
-LABEL Satyalab, satya-group@lists.andrew.cmu.edu
+
+LABEL org.opencontainers.image.vendor="CMU Satyalab" \
+      org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
 

@@ -158,20 +158,9 @@ def update_imagery():
         st.caption("**:traffic_light: HSV Filtering**")
         st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
 
-@st.fragment(run_every="1s")
+@st.fragment(run_every="3s")
 def update_drones():
-    drone_list = get_drones()
-    if len(drone_list) > 0:
-        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
-            options=drone_list.keys(),
-            default=drone_list.keys(),
-            format_func=lambda option: drone_list[option],
-            selection_mode="multi",
-             key="selected_drones"
-             )
-
-    else:
-        st.caption("No active drones.")
+    pass
 
 @st.fragment(run_every="1s")
 def draw_map():
@@ -387,8 +376,18 @@ with col2:
         draw_map()
 
 with st.sidebar:
-    update_drones()
+    drone_list = get_drones()
+    if len(drone_list) > 0:
+        st.pills(label=":helicopter: **:orange[Swarm Control]** :helicopter:",
+            options=drone_list.keys(),
+            default=drone_list.keys(),
+            format_func=lambda option: drone_list[option],
+            selection_mode="multi",
+             key="selected_drones"
+             )
 
+    else:
+        st.caption("No active drones.")
     st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
     st.caption(mode)
 
@@ -486,3 +485,5 @@ with st.sidebar:
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
+
+

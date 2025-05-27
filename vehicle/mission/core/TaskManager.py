@@ -102,6 +102,7 @@ class TaskManager:
                     next_task = self.create_task(next_task_id)
                     if next_task:
                         await self.transit_task_to(next_task)
+                await asyncio.sleep(0)
 
         except Exception as e:
             logger.exception(f"Exception in TaskManager loop: {e}")

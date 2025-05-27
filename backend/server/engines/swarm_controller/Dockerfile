@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 FROM python:3.9-bookworm
-LABEL Satyalab, satya-group@lists.andrew.cmu.edu
+
+LABEL org.opencontainers.image.vendor="CMU Satyalab" \
+      org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -26,7 +28,6 @@ RUN apt-get update && apt-get install -y \
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN pip3 install --upgrade pip
 
-# Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir \
     py-cpuinfo \
     'setuptools' \
@@ -35,9 +36,12 @@ RUN python3 -m pip install --no-cache-dir \
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -
 COPY backend/server/engines/swarm_controller/requirements.txt requirements.txt
-RUN python3 -m pip install -r requirements.txt
+
+# Install Tensorflow and Gabriel's external dependencies
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
+
 COPY backend/server/engines/swarm_controller/swarm_controller.py swarm_controller.py
-COPY protocol protocol
 COPY vehicle/util util
+COPY protocol protocol
 
 EXPOSE 5555 9099

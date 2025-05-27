@@ -140,8 +140,12 @@ def get_drones():
                 slam_status = ":red-badge[:material/globe_location_pin:]"
             # markdown format
             # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
-
-            l[drone_name] = f"**{drone_name} (_{drone_model}_) {bat_status}{mag_status}{sat_status}{slam_status}** "
+            df = stream_to_dataframe(red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1))
+            for index, row in df.iterrows():
+                battery_percentage = int(row['battery'])
+                rel_alt = row['rel_altitude']
+                abs_alt = row['abs_altitude']
+            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status}{battery_percentage}% {rel_alt:.1f}m/{abs_alt:.1f}m**"
 
     return l
 

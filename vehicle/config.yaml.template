@@ -18,9 +18,6 @@ hub:
       mission_to_hub_2: 3010
       hub_to_datasink: 3009
   computes:
-    - compute_id: 'compute1'
-      compute_class: 'GabrielCompute'
-  computes:
     - compute_id: 'default_compute'
       compute_class: 'GabrielCompute'
   logging:
