@@ -12,7 +12,7 @@ class ReportStub(Stub):
     def __init__(self, user_path):
         self.waypoint_path = user_path + '/waypoint.json'
         logger.info(f"ReportStub: waypoint_path: {self.waypoint_path=}")
-        super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub_2')
+        super().__init__(b'usr', 'hub.network.controlplane.mission_to_hub_2', 'report')
 
     def parse_control_response(self, response_parts):
         self.parse_response(response_parts, control_protocol.Request)
@@ -30,6 +30,11 @@ class ReportStub(Stub):
             report.resp = common_protocol.ResponseStatus.COMPLETED
         
         update = await self.send_and_wait(report)
+        
+        if update is None:
+            logger.error("Failed to send notification: No response received")
+            return None
+        
         update_res = {
             'status': None,
             'patrol_areas': [],

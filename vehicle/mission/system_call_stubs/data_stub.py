@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
         
 class DataStub(Stub):
     def __init__(self):
-        super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub')
+        super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub', 'data')
 
     def parse_data_response(self, response_parts):
         self.parse_response(response_parts, data_protocol.Response)
@@ -24,6 +24,11 @@ class DataStub(Stub):
         cpt_req = data_protocol.Request()
         cpt_req.cpt.type = compute_type
         rep = await self.send_and_wait(cpt_req)
+        
+        if rep is None:
+            logger.error(f"Failed to get compute result: No response received for {compute_type=}")
+            return None
+        
         result_list = []
         for result in rep.cpt.result:
             result_list.append(result.generic_result)
@@ -35,6 +40,11 @@ class DataStub(Stub):
     async def get_telemetry(self):
         request = data_protocol.Request(tel=data_protocol.TelemetryRequest())
         rep = await self.send_and_wait(request)
+        
+        if rep is None:
+            logger.error("Failed to get telemetry: No response received")
+            return None
+        
         result = rep.tel
         tel_dict = {
             "drone_name": None,

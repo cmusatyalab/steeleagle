@@ -9,3 +9,4 @@ redis
 protobuf>5.26.1
 pygeodesy
 pykml
+dill

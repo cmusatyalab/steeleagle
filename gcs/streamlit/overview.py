@@ -79,7 +79,7 @@ def change_center():
             )
         )
         for index, row in df.iterrows():
-            st.session_state.center = [row["latitude"], row["longitude"]]
+            st.session_state.center = {'lat': row["latitude"], 'lng': row["longitude"]}
 
 
 def run_flightscript():
@@ -158,6 +158,10 @@ def update_imagery():
         st.caption("**:traffic_light: HSV Filtering**")
         st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
 
+@st.fragment(run_every="3s")
+def update_drones():
+    pass
+
 @st.fragment(run_every="1s")
 def draw_map():
     m = folium.Map(
@@ -195,7 +199,7 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}&nbsp;({int(row["battery"])}%) [{row["rel_altitude"]:.2f}m AGL/{row["abs_altitude"]:.2f}m MSL]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}</div>',
                         #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
@@ -246,8 +250,42 @@ def draw_map():
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             slam_coords = []
+            i = 0
             for index, row in df.iterrows():
                 slam_coords.append([row["lat"], row["lon"]])
+                if i == 0:
+                    text = folium.DivIcon(
+                        icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
+                        icon_anchor=(-20, 30),
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:#c0c125;">{row["alt"]:.2f}m MSL</div>',
+                    )
+                    plane = folium.Icon(
+                        icon="plane",
+                        color="beige",
+                        prefix="glyphicon",
+                        #angle=int(row["bearing"]),
+                    )
+
+                    slam_track.add_child(
+                        folium.Marker(
+                            location=[
+                                row["lat"],
+                                row["lon"],
+                            ],
+                            icon=plane,
+                        )
+                    )
+
+                    slam_track.add_child(
+                        folium.Marker(
+                            location=[
+                                row["lat"],
+                                row["lon"],
+                            ],
+                            icon=text,
+                        )
+                    )
+                i += 1
             ls = folium.PolyLine(locations=slam_coords, color="#c0c125")
             ls.add_to(slam_track)
 
@@ -350,7 +388,6 @@ with st.sidebar:
 
     else:
         st.caption("No active drones.")
-
     st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
     st.caption(mode)
 
@@ -448,3 +485,5 @@ with st.sidebar:
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
+
+

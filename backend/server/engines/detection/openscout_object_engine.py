@@ -33,7 +33,7 @@ import traceback
 import json
 from scipy.spatial.transform import Rotation as R
 import redis
-import torch
+from ultralytics import YOLO
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 
@@ -51,7 +51,7 @@ class PytorchPredictor():
 
     def load_model(self, model_path):
         # Load model
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+        model = YOLO(model_path)
         return model
 
     def infer(self, image):
@@ -210,10 +210,10 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
 
-        if len(results.pred) > 0:
-            result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.telemetry.drone_name)
-            if result is not None:
-                result_wrapper.results.append(result)
+        if len(results) > 0:
+            gabriel_result = self.process_results(image_np, results, cpt_config, extras.telemetry, extras.telemetry.drone_name)
+            if gabriel_result is not None:
+                result_wrapper.results.append(gabriel_result)
 
         response = control_plane.Response()
         response.seq_num = extras.cpt_request.seq_num
@@ -231,14 +231,19 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return result_wrapper
 
     def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
-        df = results.pandas().xyxy[0] # pandas dataframe
+        df = results[0].to_df() # pandas dataframe
         #convert dataframe to python lists
-        classes = df['class'].values.tolist()
-        scores = df['confidence'].values.tolist()
-        names = df['name'].values.tolist()
+        if df.size > 0:
+            classes = df['class'].values.tolist()
+            scores = df['confidence'].values.tolist()
+            names = df['name'].values.tolist()
+        else:
+            classes = []
+            scores = []
+            names = []
 
-        result = gabriel_pb2.ResultWrapper.Result()
-        result.payload_type = gabriel_pb2.PayloadType.TEXT
+        gabriel_result = gabriel_pb2.ResultWrapper.Result()
+        gabriel_result.payload_type = gabriel_pb2.PayloadType.TEXT
 
         detections_above_threshold = False
         r = []
@@ -251,7 +256,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 detections_above_threshold = True
                 logger.info("Detected : {} - Score: {:.3f}".format(names[i],scores[i]))
 
-                box = [df['ymin'][i], df['xmin'][i], df['ymax'][i], df['xmax'][i]]
+                box = [df['box'][i]['y1'], df['box'][i]['x1'], df['box'][i]['y2'], df['box'][i]['x2']]
                 img_width = image_np.shape[1]
                 img_height = image_np.shape[0]
                 pixel_center = (img_width / 2, img_height / 2)
@@ -335,32 +340,28 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     })
                     self.store_detection_db(drone_id, lat, lon, names[i],scores[i], os.environ["WEBSERVER"]+"/detected/"+filename if self.store_detections else "" )
 
+                if self.store_detections:
+                    try:
+                        path = self.storage_path + "/detected/" + filename
+                        im_bgr = results[0].plot()
+                        im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
+                        im_rgb.save(path)
+
+                        path = self.storage_path + "/detected/latest.jpg"
+                        im_rgb.save(path)
+
+                        logger.info("Stored image: {}".format(path))
+                        if cpt_config.HasField('lower_bound'):
+                            img = self.run_hsv_filter(image_np, cpt_config)
+                            path = self.storage_path + "/detected/hsv.jpg"
+                            img.save(path, format="JPEG")
+                    except IndexError:
+                        logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
+
         logger.info(json.dumps(r,sort_keys=True, indent=4))
-        result.payload = json.dumps(r).encode(encoding="utf-8")
+        gabriel_result.payload = json.dumps(r).encode(encoding="utf-8")
 
-        if self.store_detections:
-            try:
-                #results._run(save=True, labels=True, save_dir=Path("openscout-vol/"))
-                results.render()
-                img = Image.fromarray(results.ims[0])
-                draw = ImageDraw.Draw(img)
-                draw.bitmap((0,0), self.watermark, fill=None)
-
-                path = self.storage_path + "/detected/" + filename
-                img.save(path, format="JPEG")
-
-                path = self.storage_path + "/detected/latest.jpg"
-                img.save(path, format="JPEG")
-
-                logger.info("Stored image: {}".format(path))
-                if cpt_config.HasField('lower_bound'):
-                    img = self.run_hsv_filter(image_np, cpt_config)
-                    path = self.storage_path + "/detected/hsv.jpg"
-                    img.save(path, format="JPEG")
-            except IndexError:
-                logger.error(f"IndexError while getting bounding boxes [{traceback.format_exc()}]")
-
-        return result if detections_above_threshold else None
+        return gabriel_result if detections_above_threshold else None
 
     def run_hsv_filter(self, image_np, cpt_config):
         hsv = cv2.cvtColor(image_np, cv2.COLOR_RGB2HSV)
@@ -375,11 +376,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.t0 = time.time()
         np_data = np.fromstring(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        output_dict = self.inference(img)
+        results = self.inference(img)
         self.t1 = time.time()
-        return output_dict, img
+        return results, img
 
     def print_inference_stats(self):
         logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
@@ -395,5 +396,5 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def inference(self, img):
         """Allow timing engine to override this"""
-        return self.detector.detection_model(img)
+        return self.detector.detection_model.predict(img, conf=self.threshold)
 

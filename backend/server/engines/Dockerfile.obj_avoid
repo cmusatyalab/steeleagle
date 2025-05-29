@@ -1,5 +1,7 @@
 FROM nvidia/cuda:11.5.2-cudnn8-devel-ubuntu18.04
-LABEL Satyalab, satya-group@lists.andrew.cmu.edu
+
+LABEL org.opencontainers.image.vendor="CMU Satyalab" \
+      org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -19,8 +21,8 @@ RUN apt-get update && apt-get install -y \
     wget \
  && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 2
-RUN update-alternatives --install /usr/bin/python3 python /usr/bin/python3.8 2
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 2 \
+ && update-alternatives --install /usr/bin/python3 python /usr/bin/python3.8 2
 
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
 RUN python3 -m pip install --upgrade pip
@@ -39,18 +41,18 @@ RUN python3 -m pip install --no-cache-dir \
 #RUN git clone https://github.com/ultralytics/yolov5
 #RUN cd yolov5 && python3 -m pip install -r requirements.txt
 
-
 COPY backend/server/engines/requirements.obj_avoid.txt requirements.txt
-RUN python3 -m pip install -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
+
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t openscout -
-RUN mkdir steeleagle
-COPY backend/server/engines/avoidance/*.py steeleagle/
-COPY backend/server/engines/detection/*.py steeleagle/
-COPY backend/server/engines/watermark.png steeleagle/
-COPY protocol/*_pb2.py /steeleagle/protocol/
+WORKDIR /steeleagle
+
+COPY backend/server/engines/avoidance/*.py /steeleagle/
+COPY backend/server/engines/detection/*.py /steeleagle/
+COPY backend/server/engines/watermark.png /steeleagle/
 COPY vehicle/util /steeleagle/util
-WORKDIR steeleagle
+COPY protocol/*_pb2.py /steeleagle/protocol/
 
 EXPOSE 5555 9099
 #ENTRYPOINT ["./entrypoint.sh"]

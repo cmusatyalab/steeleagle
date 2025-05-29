@@ -12,6 +12,7 @@ import olympe
 from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
+from olympe.messages.move import extended_move_to
 from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
@@ -178,11 +179,21 @@ class ParrotOlympeDrone(MulticopterItf):
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
         try:
+            gp = self._get_global_position()
+            bearing = self._calculate_bearing(
+                gp["latitude"],
+                gp["longitude"],
+                lat,
+                lon)
             # Set heading before moving
+            #self._drone(
+            #    moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
+            #).success()
             self._drone(
-                moveTo(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing)
+                extended_move_to(lat, lon, altitude, move_mode.orientation_mode.heading_start, bearing,\
+                    3.0, 3.0, 90.0)
             ).success()
-            
+
             # if bearing is None:
             #     self._drone(
             #         moveTo(lat, lon, altitude, move_mode.orientation_mode.to_target, 0.0)
@@ -772,7 +783,7 @@ class PDRAWStreamingThread(threading.Thread):
     def stop(self):
         self.is_running = False
         # Properly stop the video stream and disconnect
-        assert self._drone.streaming.stop()
+        self._drone.streaming.stop()
 
 
 class FFMPEGStreamingThread(threading.Thread):
@@ -783,18 +794,25 @@ class FFMPEGStreamingThread(threading.Thread):
         logger.info(f"Using opencv-python version {cv2.__version__}")
 
         self._current_frame = None
+        self.ip = ip
         self._drone = drone
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-        self._cap = cv2.VideoCapture(f"rtsp://{ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
-        self.is_running = True
+        self.is_running = False
 
     def run(self):
-        try:
-            while(self.is_running):
-                ret, self._current_frame = self._cap.read()
+        while not self.is_running:
+            self._cap = cv2.VideoCapture(f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+            self.is_running = True
+            while self.is_running:
+                try:
+                    ret, self._current_frame = self._cap.read()
+                    if not ret:
+                        logger.error(f"No frame received from cap, restarting")
+                        self.is_running = False
+                except Exception as e:
+                    logger.error(f"Frame could not be read, reason: {e}")
+                    self.is_running = False
             self._cap.release()
-        except Exception as e:
-            logger.error(f"Frame could not be read, reason: {e}")
 
     def grab_frame(self):
         try:
