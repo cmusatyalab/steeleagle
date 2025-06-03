@@ -96,6 +96,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.hset(drone_key, "sats", f"{telemetry.alerts.gps_warning}")
         self.r.hset(drone_key, "connection", f"{telemetry.alerts.connection_warning}")
         self.r.hset(drone_key, "status", f"{telemetry.status}")
+        self.r.hset(drone_key, "current_task", f"{telemetry.current_task}")
         self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
         # Home Location
         self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
@@ -110,7 +111,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             self.r.hset(drone_key, f"cam_{i}_type", f"{common.ImagingSensorType.Name(telemetry.cameras.sensors[i].type)}")
             self.r.hset(drone_key, f"cam_{i}_active", f"{telemetry.cameras.sensors[i].active}")
             self.r.hset(drone_key, f"cam_{i}_support_sec", f"{telemetry.cameras.sensors[i].supports_secondary}")
-        
+
         self.r.expire(drone_key, self.ttl_secs)
         logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
 

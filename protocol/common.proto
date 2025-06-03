@@ -143,6 +143,17 @@ enum ConnectionWarning {
   WEAK_CONNECTION = 2;
 }
 
+enum FlightStatus {
+  LANDED = 0;
+  TAKING_OFF = 1;
+  HOVERING = 2;
+  MOVING = 3;
+  LANDING = 4;
+  EMERGENCY = 5;
+  GROUNDED = 6; // Equivalent to awaiting take-off command
+  IDLE = 7;
+}
+
 /*
 * Defines the upper left and lower right corners of a detected object
 * in an image frame. Origin (0,0) is the top left corner of the input image.

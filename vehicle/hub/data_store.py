@@ -112,11 +112,23 @@ class DataStore:
 
         entry = self._raw_data_cache[data_type]
 
+        # Prevent overwrite of current task by routine telemetry updates
+        if data_type == data_protocol.Telemetry and data.current_task is None:
+            data.current_task = entry.data.current_task
+
         entry.data = data
         entry.data_id = data_id
         entry.timestamp = time.monotonic()
         if data_type in self._raw_data_event:
             self._raw_data_event[data_type].set()
+    
+    def update_current_task(self, task_type):
+        if data_protocol.Telemetry not in self._raw_data_cache:
+            logger.error(f"update_current_task: Telemetry type not in data cache")
+        else:
+            entry = self._raw_data_cache[data_protocol.Telemetry]
+            entry.data.current_task = task_type
+            entry.timestamp = time.monotonic()
 
     async def wait_for_new_data(self, data_type):
         if data_type not in self._raw_data_event:
