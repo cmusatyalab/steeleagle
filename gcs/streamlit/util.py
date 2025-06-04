@@ -109,43 +109,7 @@ def get_drones():
             drone_model = red.hget(k, "model")
             if drone_model == "":
                 drone_model = "unknown"
-            bat = int(red.hget(k, "battery"))
-            if bat == 0:
-               bat_status = ":green-badge[:material/battery_full:]"
-            elif bat == 1:
-                bat_status = ":orange-badge[:material/battery_3_bar:]"
-            else:
-                bat_status = ":red-badge[:material/battery_alert:]"
-
-            mag = int(red.hget(k, "mag"))
-            if mag == 0:
-                mag_status = ":green-badge[:material/explore:]"
-            elif mag == 1:
-                mag_status = ":orange-badge[:material/explore:]"
-            else:
-                mag_status = ":red-badge[:material/explore:]"
-
-            sats = int(red.hget(k, "sats"))
-            if sats == 0:
-                sat_status = ":green-badge[:material/satellite_alt:]"
-            elif sats == 1:
-                sat_status = ":orange-badge[:material/satellite_alt:]"
-            elif sats == 2:
-                sat_status = ":red-badge[:material/satellite_alt:]"
-
-            slam = red.hget(k, "slam_registering")
-            if slam:
-                slam_status = ":green-badge[:material/globe_location_pin:]"
-            else:
-                slam_status = ":red-badge[:material/globe_location_pin:]"
-            # markdown format
-            # "**golden eagle (_ANAFI USA_) :green-badge[:material/explore: mag] :orange-badge[:material/satellite_alt: sats] :red-badge[:material/globe_location_pin: slam]**"
-            df = stream_to_dataframe(red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1))
-            for index, row in df.iterrows():
-                battery_percentage = int(row['battery'])
-                rel_alt = row['rel_altitude']
-                abs_alt = row['abs_altitude']
-            l[drone_name] = f"**{drone_name} {bat_status}{mag_status}{sat_status}{slam_status}{battery_percentage}% {rel_alt:.1f}m/{abs_alt:.1f}m**"
+            l[drone_name] = f"**{drone_name} ({drone_model})**"
 
     return l
 
@@ -169,9 +133,9 @@ def control_drone(drone):
 
 
 def menu(with_control=True):
-    st.sidebar.page_link("overview.py", label=":satellite_antenna: Overview")
-    st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
-    st.sidebar.page_link("pages/detections.py", label=":bangbang: Detected Objects")
-
+    st.sidebar.page_link("overview.py", label=":world_map: Tactical Overview")
+    st.sidebar.page_link("pages/monitoring.py", label=":tv: Imagery and Telemetry")
+    st.sidebar.page_link("pages/control.py", label=":joystick: Control")
+    #st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
 
 
