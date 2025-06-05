@@ -38,8 +38,12 @@ if "thrust_speed" not in st.session_state:
     st.session_state.thrust_speed = 1.0
 if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 1.0
-if "gimbal_speed" not in st.session_state:
-    st.session_state.gimbal_speed = 45
+if "gimbal_rel" not in st.session_state:
+    st.session_state.gimbal_rel = 15
+if "gimbal_abs" not in st.session_state:
+    st.session_state.gimbal_abs = 45
+if "gimbal_relative_mode" not in st.session_state:
+    st.session_state.gimbal_relative_mode = True
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
 if "show_drone_markers" not in st.session_state:
@@ -428,7 +432,12 @@ with st.sidebar:
         c3.number_input(key = "yaw_speed", label="Yaw (deg/s)", min_value=0, max_value=180, step=15, value=45, format="%d")
         c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.number_input(key = "gimbal_speed", label="Gimbal Pitch (deg/s)", min_value=0, max_value=180, step=15, value=15, format="%d")
+        mode = "**Gimbal Relative**" if st.session_state.gimbal_relative_mode else "**Gimbal Absolute**"
+        on = c5.toggle(key="gimbal_relative_mode", label=mode, value=True)
+        if on:
+            c5.number_input(key = "gimbal_rel", label="Gimbal Pitch (deg/s)", min_value=0, max_value=30, step=5, value=15, format="%d")
+        else:
+            c5.slider(key = "gimbal_abs", label="Gimbal Pitch (deg)", min_value=-90, max_value=90, step=15, value=45, format="%d")
 
         key_pressed = st_keypressed()
         req = controlplane.Request()
@@ -464,12 +473,13 @@ with st.sidebar:
             elif key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
             elif key_pressed == "r":
-                gimbal_pitch = 1 * st.session_state.gimbal_speed
+                gimbal_pitch = 1 * st.session_state.gimbal_rel
             elif key_pressed == "f":
-                gimbal_pitch = -1 * st.session_state.gimbal_speed
-            st.caption(f"(pitch = {pitch}, roll = {roll}, yaw = {yaw}, thrust = {thrust}, gimbal = {gimbal_pitch})")
-            if gimbal_pitch != 0:
+                gimbal_pitch = -1 * st.session_state.gimbal_rel
+
+            if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
                 req.veh.gimbal_pose.pitch = gimbal_pitch
+                #req.veh.gimbal_pose.control_mode = common.posebody.mode
             elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
                 req.veh.action = controlplane.VehicleAction.HOVER
             else:
@@ -477,7 +487,10 @@ with st.sidebar:
                 req.veh.velocity_body.forward_vel = pitch
                 req.veh.velocity_body.right_vel = roll
                 req.veh.velocity_body.up_vel = thrust
-
+            if not st.session_state.gimbal_relative_mode:
+                req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
+                #req.veh.gimbal_pose.control_mode = common.posebody.mode
+            st.caption(req)
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
         rep = st.session_state.zmq.recv()
