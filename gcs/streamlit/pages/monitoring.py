@@ -18,6 +18,8 @@ st.set_page_config(
 
 if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
+if "inactivity_time" not in st.session_state:
+    st.session_state.inactivity_time = 1 #min
 
 if not authenticated():
     st.stop()  # Do not continue if not authenticated
@@ -30,7 +32,7 @@ def plot_data():
    i = 0
    for k in red.keys("drone:*"):
         last_seen = float(red.hget(k, "last_seen"))
-        if time.time() - last_seen <  30: # seconds
+        if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
             drone_model = red.hget(k, "model")
             if drone_model == "":
@@ -109,5 +111,7 @@ def plot_data():
 
 
 menu()
-st.header(":helicopter: **:orange[Active Drones]**")
+with st.sidebar:
+    st.number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, key="inactivity_time", max_value=10)
+st.header(f":helicopter: **:orange[Active Drones]** (last {st.session_state.inactivity_time} mins)")
 plot_data()
