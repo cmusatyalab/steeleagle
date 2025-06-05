@@ -42,7 +42,6 @@ class TelemetryEngine(cognitive_engine.Engine):
             logger.info("Images directory already exists.")
         logger.info("Storing detection images at {}".format(self.storage_path))
 
-        self.current_path = None
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
 
@@ -87,17 +86,6 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             if extras.telemetry.drone_name != "":
-                if extras.registering:
-                    logger.info(f"Drone [{extras.telemetry.drone_name}] connected.")
-                    drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
-                    if not os.path.exists(drone_raw_dir):
-                        os.mkdir(drone_raw_dir)
-                    self.current_path = f"{drone_raw_dir}/{datetime.datetime.now().strftime('%d-%b-%Y-%H%M')}"
-                    try:
-                        os.mkdir(self.current_path)
-                    except FileExistsError:
-                        logger.error(f"Directory {self.current_path} already exists. Moving on...")
-
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = "Telemetry updated.".encode(encoding="utf-8")
@@ -115,16 +103,22 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                if self.current_path is None:
-                    logger.error(f'Drone {extras.telemetry.drone_name} never registered!')
-                else:
-                    img.save(f"{self.current_path}/{str(int(time.time() * 1000))}.jpg", format="JPEG")
+                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
+                if not os.path.exists(drone_raw_dir):
+                    os.mkdir(drone_raw_dir)
+                now = datetime.datetime.now()
+                current_path = f"{drone_raw_dir}/{now.strftime('%d-%b-%Y')}"
+                try:
+                    os.mkdir(current_path)
+                except FileExistsError:
+                    logger.error(f"Directory {current_path} already exists. Moving on...")
+                img.save(f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG")
 
                 drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
                 img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
 
-                logger.info(f"Updated {drone_raw_dir}/latest.jpg")
+                logger.info(f"Updated latest image for {extras.telemetry.drone_name}")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
 
