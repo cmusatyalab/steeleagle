@@ -58,7 +58,8 @@ message Telemetry {
   uint32 satellites = 11; // Number of satellites used in GPS fix
   google.protobuf.Duration uptime = 12;
   string drone_model = 13; // Manufacturer/model of the drone
-  string status = 14; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
+  protocol.common.FlightStatus status = 14; // Details on current drone action i.e. 'HOVER', 'LANDING'
+  string current_task = 15; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
 }
 
 /*

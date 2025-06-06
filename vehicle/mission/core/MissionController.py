@@ -29,6 +29,7 @@ class MissionController():
         self.tm = None
         self.transitMap = {}
         self.task_arg_map = {}
+        self.current_task = None
         self.reload = False
         self.user_path = user_path
         self.msn_control_sock = msn_control_sock
@@ -141,6 +142,7 @@ class MissionController():
             finally:
                 self.tm = None
                 self.tm_coroutine = None
+                self.current_task = None
                 logger.info("Mission has been ended and cleaned up.")
         else:
             logger.info("Mission not running or already cancelled.")
@@ -155,6 +157,9 @@ class MissionController():
         asyncio.create_task(self.ctrl['report'].run())
         while True:
             try:
+                # Mission task, not flight status
+                self.current_task = self.tm.get_current_task_type()
+                
                 # Receive a message
                 message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
 

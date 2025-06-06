@@ -22,6 +22,14 @@ class TaskManager:
 
     def get_current_task(self):
         return self.curr_task_id
+    
+    def get_current_task_type(self):
+        task_id = self.get_current_task()
+        if task_id in self.task_arg_map:
+            return self.task_arg_map[task_id].task_type.name
+        else:
+            logger.error(f"Failed to find current task in arg map. Task ID: {task_id}")
+            return None
 
     def retrieve_next_task(self, current_task_id, triggered_event):
         logger.info(f"next task, current_task_id {current_task_id}, trigger_event {triggered_event}")
@@ -55,6 +63,7 @@ class TaskManager:
         self.currentTask = task
         self.taskCurrentCoroutine = asyncio.create_task(task.run())
         self.curr_task_id = task.task_id
+        self.compute.update_current_task(self.get_current_task_type())
 
     def create_task(self, task_id):
         logger.info(f"Creating task with task_id {task_id}")
@@ -102,6 +111,7 @@ class TaskManager:
                     next_task = self.create_task(next_task_id)
                     if next_task:
                         await self.transit_task_to(next_task)
+                    self.compute.update_current_task(self.get_current_task_type())
                 await asyncio.sleep(0)
 
         except Exception as e:
