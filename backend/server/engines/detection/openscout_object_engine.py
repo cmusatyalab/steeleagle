@@ -345,7 +345,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
                 # if there is no geofence, or the estimated object location is within the geofence...
                 if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                    passed, prev_obj = self.geofilter_passed(detection):
+                    passed, prev_obj = self.geofilter_passed(detection)
                     if passed:
                         detections.append(detection)
                         self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url, prev_obj)
