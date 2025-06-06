@@ -167,8 +167,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         logger.info("Estimated GPS location: ({0}, {1})".format(est_lat, est_lon))
         return est_lat, est_lon
 
-    def store_detection_db(self, drone, lat, lon, cls, conf, link=""):
-        object_name = f"{cls}-{os.urandom(2).hex()}"
+    def store_detection_db(self, drone, lat, lon, cls, conf, link="", object_name=None):
+        if object_name is None:
+            object_name = f"{cls}-{os.urandom(2).hex()}"
         self.r.geoadd("detections", [lon, lat, object_name])
 
         object_key = f"objects:{object_name}"
@@ -311,7 +312,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     position.relative_altitude)
 
                 lon = np.clip(lon, -180, 180)
-                lat = np.clip(lat, -90, 90)
+                lat = np.clip(lat, -85, 85)
                 p = LatLon(lat, lon)
 
                 hsv_filter_passed = False
@@ -344,9 +345,10 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
                 # if there is no geofence, or the estimated object location is within the geofence...
                 if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                    if self.geofilter_passed(detection):
+                    passed, prev_obj = self.geofilter_passed(detection):
+                    if passed:
                         detections.append(detection)
-                        self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url)
+                        self.store_detection_db(drone_id, lat, lon, names[i], scores[i], detection_url, prev_obj)
 
         if len(detections) == 0:
             return None
@@ -434,19 +436,20 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         )
         if len(objects) == 0:
             logger.info(f"Adding detection for {cls} for drone {drone_id} for the first time")
-            return True
+            return (True, None)
 
         logger.info(f"Objects already exist within search radius: {objects}")
 
         for obj in objects:
-            d = self.r.hgetall(obj)
+            d = self.r.hgetall(f"objects:{obj}")
             if d and d["cls"] == cls:
                 if d["drone_id"] == drone_id:
-                    return True
+                    logger.debug(f"Drone {d['drone_id']} detected {obj} in same area, updating obj location")
+                    return (True, obj)
                 else:
                     logger.info(f"Ignoring detection, {obj} already found by drone {d['drone_id']}")
-                    return False
-        return True
+                    return (False, None)
+        return (True, None)
 
     def print_inference_stats(self):
         logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
