@@ -4,6 +4,9 @@ import os
 import logging
 import json
 import argparse
+import folium
+import streamlit as st
+from streamlit_folium import st_folium
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -121,7 +124,9 @@ class PathValidator():
             return
         self.tick_rate = new_speed
 
-''' UTILITY FUNCTIONS '''
+
+# UTILITY FUNCTIONS #
+
 def value_to_coord_list(dict_value: list[Coordinate], alt: float = 0.0):
     coord_list = []
     for points in dict_value:
@@ -135,6 +140,10 @@ def value_to_coord_list(dict_value: list[Coordinate], alt: float = 0.0):
 def calc_vector_to(start_pos: Coordinate, target_pos: Coordinate):
     return target_pos - start_pos
 
+def render_test():
+    st.title("Path Validator")
+    test_map = folium.Map(location=[40.7387, -79.9972], zoom_start=10, control_scale=True)
+    st_data = st_folium(test_map, width=800)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -165,6 +174,8 @@ def main():
                                args.drones, args.lat, args.long, args.alt)
     validator.parse_paths()
     validator.run_path(validator.path_list[0])
+
+    render_test()
     return 0
 
 
