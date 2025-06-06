@@ -12,11 +12,17 @@ logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+DEFAULT_LAT = 40.41368353053923
+DEFAULT_LONG = -79.9489233699767
+
 class Coordinate():
     def __init__(self, x, y, alt):
         self.long = x
         self.lat = y
         self.alt = alt
+
+    def to_tuple(self):
+        return (self.lat, self.long)
     
     def __sub__(self, other):
         return Coordinate(self.long - other.long, self.lat - other.lat, self.alt - other.alt)
@@ -140,10 +146,21 @@ def value_to_coord_list(dict_value: list[Coordinate], alt: float = 0.0):
 def calc_vector_to(start_pos: Coordinate, target_pos: Coordinate):
     return target_pos - start_pos
 
-def render_test():
+def render_test(path: PathStore):
     st.title("Path Validator")
-    test_map = folium.Map(location=[40.7387, -79.9972], zoom_start=10, control_scale=True)
-    st_data = st_folium(test_map, width=800)
+    test_map = folium.Map(location=[40.4125, -79.9475], zoom_start=17, control_scale=True)
+    path.set_current_waypoint(0)
+    line_seg = []
+    while path.is_path_complete() == False:
+        line_seg.append(draw_path(path.get_current_waypoint(), path.get_next_waypoint()))
+        for lines in line_seg:
+            lines.add_to(test_map)
+        st_data = st_folium(test_map, width=800)
+        time.sleep(.25)
+
+def draw_path(curr_point: Coordinate, next_point: Coordinate):
+    coords = [curr_point.to_tuple(), next_point.to_tuple()]
+    return folium.PolyLine(locations=coords, weight=3, color="blue")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -157,10 +174,10 @@ def main():
         '-d', '--drones', help='number of drones to simulate', type=int, default=1
     )
     parser.add_argument(
-        '--lat', help='origin point latitude', type=float, default=-1.0
+        '--lat', help='origin point latitude', type=float, default=DEFAULT_LAT
     )
     parser.add_argument(
-        '--long', help='origin point longitude', type=float, default=-1.0
+        '--long', help='origin point longitude', type=float, default=DEFAULT_LONG
     )
     parser.add_argument(
         '-a', '--alt', help='origin point altitude', type=float, default=0.0
@@ -175,7 +192,7 @@ def main():
     validator.parse_paths()
     validator.run_path(validator.path_list[0])
 
-    render_test()
+    render_test(validator.path_list[0])
     return 0
 
 
