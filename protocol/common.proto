@@ -13,15 +13,24 @@ enum ResponseStatus {
   NOTSUPPORTED = 3;
   COMPLETED = 4;
   DENIED = 5;
+  WARNING = 6;
 }
 
 /*
-* Angular offsets in 3 dimensions in body coordinates [radians]
+* Angular offsets or poses in 3 dimensions in body coordinates [degrees]
 */
+enum PoseControlMode {
+  POSITION_ABSOLUTE = 0;
+  POSITION_RELATIVE = 1;
+  VELOCITY = 2;
+}
+
 message PoseBody {
   double pitch = 1;
   double roll = 2;
   double yaw = 3;
+  PoseControlMode control_mode = 4; 
+  int32 actuator_id = 5;
 }
 
 /*
@@ -52,6 +61,7 @@ message PositionENU {
   double east = 2;
   double up = 3;
   double angle = 4;
+  VelocityENU max_velocity = 5;
 }
 
 /*
@@ -62,17 +72,30 @@ message PositionBody {
   double right = 2;
   double up = 3;
   double angle = 4;
+  VelocityBody max_velocity = 5;
 }
 
 /*
-* GPS location 
+* Location
 */
+enum LocationAltitudeMode {
+  ABSOLUTE = 0;
+  TAKEOFF_RELATIVE = 1;
+}
+
+enum LocationHeadingMode {
+  TO_TARGET = 0;
+  HEADING_START = 1;
+}
+
 message Location {
   double latitude = 1;
   double longitude = 2;
-  double absolute_altitude = 3; // In meters above MSL
-  double relative_altitude = 4; // In meters above take off
-  double heading = 5;
+  double altitude = 3; // In meters above MSL or above takeoff
+  double heading = 4;
+  LocationAltitudeMode altitude_mode = 5;
+  LocationHeadingMode heading_mode = 6;
+  VelocityENU max_velocity = 7;
 }
 
 /*
@@ -169,9 +192,9 @@ message HSV {
 }
 
 message PatrolArea {
-    PatrolStatus status = 1;
-    repeated string areas = 2;
-    float altitude = 3;
+  PatrolStatus status = 1;
+  repeated string areas = 2;
+  float altitude = 3;
 }
 
 enum PatrolStatus {
