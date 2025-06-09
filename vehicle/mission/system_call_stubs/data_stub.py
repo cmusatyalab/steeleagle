@@ -58,7 +58,9 @@ class DataStub(Stub):
             "cameras": {},
             "alerts": {},
             "battery": None,
-            "satellites": None
+            "satellites": None,
+            "status": None,
+            "current_task": None
         }
         if result:
             # Name
@@ -80,7 +82,10 @@ class DataStub(Stub):
             # Battery & Satellites
             tel_dict["battery"] = result.battery
             tel_dict["satellites"] = result.satellites
-            # TODO: Status
+            # Status & Current Mission Task
+            tel_dict["status"] = result.status
+            tel_dict["current_task"] = result.current_task
+            
             return tel_dict
         else:
             logger.error("Failed to get telemetry")    
