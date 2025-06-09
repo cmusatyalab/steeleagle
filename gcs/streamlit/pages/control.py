@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 import protocol.controlplane_pb2 as controlplane
+import protocol.common_pb2 as common
 import time
 from zipfile import ZipFile
 import folium
@@ -479,7 +480,7 @@ with st.sidebar:
 
             if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
                 req.veh.gimbal_pose.pitch = gimbal_pitch
-                #req.veh.gimbal_pose.control_mode = common.posebody.mode
+                req.veh.gimbal_pose.control_mode = common.PoseControlMode.POSITION_RELATIVE
             elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
                 req.veh.action = controlplane.VehicleAction.HOVER
             else:
@@ -489,7 +490,7 @@ with st.sidebar:
                 req.veh.velocity_body.up_vel = thrust
             if not st.session_state.gimbal_relative_mode:
                 req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
-                #req.veh.gimbal_pose.control_mode = common.posebody.mode
+                req.veh.gimbal_pose.control_mode = common.PoseControlMode.POSITION_ABSOLUTE
             st.caption(req)
         key_pressed = None
         st.session_state.zmq.send(req.SerializeToString())
