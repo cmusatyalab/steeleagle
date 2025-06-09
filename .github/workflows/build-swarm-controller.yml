@@ -42,6 +42,6 @@ jobs:
         context: .
         file: backend/server/engines/swarm_controller/Dockerfile
         push: true
-        tags: cmusatyalab/steeleagle-swarm-controller:latest
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-swarm-controller:latest
+        tags: cmusatyalab/steeleagle-swarm-controller:dev
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-swarm-controller:dev
         cache-to: type=inline

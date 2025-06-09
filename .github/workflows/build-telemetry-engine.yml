@@ -42,6 +42,6 @@ jobs:
         context: .
         file: backend/server/engines/telemetry/Dockerfile.telemetry
         push: true
-        tags: cmusatyalab/steeleagle-telemetry-engine:latest
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-telemetry-engine:latest
+        tags: cmusatyalab/steeleagle-telemetry-engine:dev
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-telemetry-engine:dev
         cache-to: type=inline
