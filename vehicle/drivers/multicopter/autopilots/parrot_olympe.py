@@ -458,23 +458,26 @@ class ParrotOlympeDrone(MulticopterItf):
         return res
     
     def _get_current_status(self):
-        match self._drone.get_state(FlyingStateChanged)["state"].name:
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.LANDED:
-                return common_protocol.FlightStatus.LANDED
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.TAKINGOFF:
-                return common_protocol.TAKING_OFF
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.HOVERING:
-                return common_protocol.HOVERING
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.FLYING:
-                return common_protocol.MOVING
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.LANDING:
-                return common_protocol.LANDING
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.EMERGENCY:
-                return common_protocol.EMERGENCY
-            case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.USERTAKEOFF:
-                return common_protocol.GROUNDED
-            case _:
-                return common_protocol.IDLE
+        try:
+            match self._drone.get_state(FlyingStateChanged)["state"].name:
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.landed:
+                    return common_protocol.FlightStatus.LANDED
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.takingoff:
+                    return common_protocol.FlightStatus.TAKING_OFF
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.hovering:
+                    return common_protocol.FlightStatus.HOVERING
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.flying:
+                    return common_protocol.FlightStatus.MOVING
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.landing:
+                    return common_protocol.FlightStatus.LANDING
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.emergency:
+                    return common_protocol.FlightStatus.EMERGENCY
+                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.usertakeoff:
+                    return common_protocol.FlightStatus.GROUNDED
+                case _:
+                    return common_protocol.FlightStatus.IDLE
+        except:
+            return common_protocol.FlightStatus.IDLE
 
     async def _get_gimbal_pitch(self):
         return self._drone.get_state(attitude)[0]["pitch_absolute"]
