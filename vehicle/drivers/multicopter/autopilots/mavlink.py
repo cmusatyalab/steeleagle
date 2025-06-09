@@ -199,8 +199,7 @@ class MAVLinkDrone(MulticopterItf):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
-    async def set_gimbal_pose(self):
-        # TODO: Support gimbal commands by using MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
+    async def set_gimbal_pose(self, pose):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def stream_telemetry(self, tel_sock, rate_hz):

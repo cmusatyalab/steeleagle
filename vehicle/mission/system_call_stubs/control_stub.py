@@ -55,15 +55,27 @@ class ControlStub(Stub):
             return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gps_location(self, latitude, longitude, rel_altitude, bearing=None):
+    async def set_gps_location(self, latitude, longitude, altitude, bearing, altitude_mode='ABSOLUTE', heading_mode='TO_TARGET', velocity=(0, 0, 0)):
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
-        request.veh.location.relative_altitude = rel_altitude
-        if bearing is not None:
-            request.veh.location.heading = bearing
+        request.veh.location.altitude = altitude
+        if altitude_mode == 'ABSOLUTE':
+            request.veh.location.heading_mode = \
+                common_protocol.LocationAltitudeMode.ABSOLUTE
         else:
-            request.veh.location.heading = 0
+            request.veh.location.heading_mode = \
+                common_protocol.LocationAltitudeMode.TAKEOFF_RELATIVE
+        if heading_mode == 'TO_TARGET':
+            request.veh.location.heading_mode = \
+                common_protocol.LocationHeadingMode.TO_TARGET
+        else:
+            request.veh.location.heading_mode = \
+                common_protocol.LocationHeadingMode.HEADING_START
+        request.veh.location.max_velocity.north_vel = velocity[0]
+        request.veh.location.max_velocity.east_vel = velocity[0]
+        request.veh.location.max_velocity.up_vel = velocity[1]
+        request.veh.location.max_velocity.angular_vel = velocity[2]
         result = await self.send_and_wait(request)
         if result is None:
             logger.error("Setting GPS location failed: No response received")
@@ -118,11 +130,21 @@ class ControlStub(Stub):
             return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gimbal_pose(self, pitch, roll, yaw):
+    async def set_gimbal_pose(self, pitch, roll, yaw, mode='POSITION_ABSOLUTE'):
         request = control_protocol.Request()
         request.veh.gimbal_pose.pitch = pitch
         request.veh.gimbal_pose.roll = roll
         request.veh.gimbal_pose.yaw = yaw
+        if mode == 'ABSOLUTE':
+            request.veh.gimbal_pose.control_mode = \
+                common_protocol.PoseControlMode.POSITION_ABSOLUTE
+        elif mode == 'RELATIVE':
+            request.veh.gimbal_pose.control_mode = \
+                common_protocol.PoseControlMode.POSITION_RELATIVE
+        else:
+            request.veh.gimbal_pose.control_mode = \
+                common_protocol.PoseControlMode.VELOCITY
+
         result = await self.send_and_wait(request)
         if result is None:
             logger.error("Setting gimbal pose failed: No response received")

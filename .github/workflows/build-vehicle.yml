@@ -42,6 +42,6 @@ jobs:
         context: .
         file: vehicle/Dockerfile
         push: true
-        tags: cmusatyalab/steeleagle-vehicle:latest
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-vehicle:latest
+        tags: cmusatyalab/steeleagle-vehicle:dev
+        cache-from: type=registry,ref=cmusatyalab/steeleagle-vehicle:dev
         cache-to: type=inline
