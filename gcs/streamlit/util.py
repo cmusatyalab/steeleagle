@@ -44,6 +44,8 @@ if "control_pressed" not in st.session_state:
     st.session_state.control_pressed = False
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
+if "password" not in st.session_state:
+    password = ""
 
 def authenticated():
     """Returns `True` if the user had the correct password."""
