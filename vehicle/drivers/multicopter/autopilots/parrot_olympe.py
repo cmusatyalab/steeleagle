@@ -17,7 +17,8 @@ from olympe.messages.rth import set_custom_location, return_to_home, custom_loca
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
 from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged, FlyingStateChanged_State
+from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged
+from olympe.enums.ardrone3.PilotingState import FlyingStateChanged_State
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
 import olympe.enums.gimbal as gimbal_mode
@@ -180,7 +181,7 @@ class ParrotOlympeDrone(MulticopterItf):
             altitude = alt - self._get_global_position()["altitude"] + self._get_altitude_rel()
         else:
             altitude = alt
-        
+
         heading_mode = move_mode.orientation_mode.to_target
         if hdg_mode == common_protocol.LocationHeadingMode.HEADING_START:
             heading_mode = move_mode.orientation_mode.heading_start
@@ -309,7 +310,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 target_yaw = yaw
                 target_pitch = pitch
                 target_roll = roll
-                
+
                 self._drone(set_target(
                     gimbal_id=0,
                     control_mode="position",
@@ -325,7 +326,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 target_yaw = current_gimbal['yaw'] + yaw
                 target_pitch = current_gimbal['pitch'] + pitch
                 target_roll = current_gimbal['roll'] + roll
-                
+
                 self._drone(set_target(
                     gimbal_id=0,
                     control_mode="position",
@@ -358,7 +359,7 @@ class ParrotOlympeDrone(MulticopterItf):
             result = await self._wait_for_condition(
                 lambda: self._is_gimbal_pose_reached(
                     target_yaw,
-                    target_pitch, 
+                    target_pitch,
                     target_roll
                 ),
                 timeout=10,
@@ -410,7 +411,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 tel_message.gimbal_pose.yaw = gimbal["yaw"]
                 tel_message.status = self._get_current_status()
                 batt = tel_message.battery
-                
+
                 # Warnings
                 if batt <= 15:
                     tel_message.alerts.battery_warning = \
@@ -530,23 +531,23 @@ class ParrotOlympeDrone(MulticopterItf):
             "up": enu["up"],
         }
         return res
-    
+
     def _get_current_status(self):
         try:
             match self._drone.get_state(FlyingStateChanged)["state"].name:
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.landed:
+                case FlyingStateChanged_State.landed:
                     return common_protocol.FlightStatus.LANDED
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.takingoff:
+                case FlyingStateChanged_State.takingoff:
                     return common_protocol.FlightStatus.TAKING_OFF
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.hovering:
+                case FlyingStateChanged_State.hovering:
                     return common_protocol.FlightStatus.HOVERING
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.flying:
+                case FlyingStateChanged_State.flying:
                     return common_protocol.FlightStatus.MOVING
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.landing:
+                case FlyingStateChanged_State.landing:
                     return common_protocol.FlightStatus.LANDING
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.emergency:
+                case FlyingStateChanged_State.emergency:
                     return common_protocol.FlightStatus.EMERGENCY
-                case olympe.enums.ardrone3.PilotingState.FlyingStateChanged_State.usertakeoff:
+                case FlyingStateChanged_State.usertakeoff:
                     return common_protocol.FlightStatus.GROUNDED
                 case _:
                     return common_protocol.FlightStatus.IDLE
@@ -761,9 +762,9 @@ class ParrotOlympeDrone(MulticopterItf):
     def _is_gimbal_pose_reached(self, yaw, pitch, roll):
         if self._drone(attitude(
                 pitch_relative=pitch,
-                yaw_relative=yaw, 
-                roll_relative=roll, 
-                _policy="check", 
+                yaw_relative=yaw,
+                roll_relative=roll,
+                _policy="check",
                 _float_tol=(1e-3, 1e-1)
             )):
             return True
