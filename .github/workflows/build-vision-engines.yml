@@ -5,6 +5,7 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/build-vision-engines.yml'
+      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/engines/avoidance/**'
       - 'backend/server/engines/detection/**'
       - 'backend/server/engines/Dockerfile.obj_avoid'

@@ -5,6 +5,7 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/build-vehicle.yml'
+      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/steeleagle-dsl/python/interface/**'
       - 'protocol/**'
       - 'vehicle/**'

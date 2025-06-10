@@ -5,6 +5,7 @@ on:
     branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/build-swarm-controller.yml'
+      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/engines/swarm_controller/**'
       - 'protocols/**'
       - 'vehicle/util/**'
