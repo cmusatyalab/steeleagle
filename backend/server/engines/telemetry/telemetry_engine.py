@@ -150,7 +150,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 try:
                     os.mkdir(current_path)
                 except FileExistsError:
-                    logger.error(f"Directory {current_path} already exists. Moving on...")
+                    logger.debug(f"Directory {current_path} already exists. Moving on...")
                 img.save(f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG")
 
                 drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"

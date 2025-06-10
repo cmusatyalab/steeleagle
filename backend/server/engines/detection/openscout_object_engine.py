@@ -309,7 +309,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     position.longitude,
                     target_pitch,
                     target_yaw,
-                    position.relative_altitude)
+                    telemetry.relative_position.up)
 
                 lon = np.clip(lon, -180, 180)
                 lat = np.clip(lat, -85, 85)
