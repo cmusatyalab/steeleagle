@@ -100,7 +100,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         # Home Location
         self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
         self.r.hset(drone_key, "home_long", f"{telemetry.home.longitude}")
-        self.r.hset(drone_key, "home_alt", f"{telemetry.home.absolute_altitude}")
+        self.r.hset(drone_key, "home_alt", f"{telemetry.home.altitude}")
         # Camera Information
         self.r.hset(drone_key, "streams_allowed", f"{telemetry.cameras.stream_status.total_streams}")
         self.r.hset(drone_key, "streams_active", f"{telemetry.cameras.stream_status.num_streams}")
