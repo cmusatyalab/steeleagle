@@ -73,5 +73,5 @@ jobs:
         file: ${{ inputs.dockerfile }}
         push: true
         tags: cmusatyalab/${{ inputs.name }}:${{ steps.get_tag.outputs.tag }}
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-swarm-controller:${{ steps.get_tag.outputs.tag }}
+        cache-from: type=registry,ref=cmusatyalab/${{ inputs.name }}:dev
         cache-to: type=inline
