@@ -57,8 +57,8 @@ class TelemetryEngine(cognitive_engine.Engine):
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
-                "abs_altitude": global_pos.absolute_altitude,
-                "rel_altitude": global_pos.relative_altitude,
+                "abs_altitude": global_pos.altitude,
+                "rel_altitude": rel_pos.up,
                 "bearing": int(global_pos.heading),
                 "battery": telemetry.battery,
                 "mag": common.MagnetometerWarning.Name(telemetry.alerts.magnetometer_warning),
