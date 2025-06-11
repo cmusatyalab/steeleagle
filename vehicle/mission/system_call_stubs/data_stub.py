@@ -90,3 +90,10 @@ class DataStub(Stub):
         else:
             logger.error("Failed to get telemetry")    
             return None
+
+    async def send_mission_status(self, current_task):
+        tel = data_protocol.TelemetryRequest()
+        tel.current_task = current_task
+        rep = await self.send_and_wait(tel)
+        if rep is None:
+            logger.error("Failed to send mission status")

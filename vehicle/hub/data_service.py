@@ -7,6 +7,7 @@ import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
 from service import Service
 from data_store import DataStore
+from google.protobuf import any_pb2
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')
@@ -102,20 +103,26 @@ class DataService(Service):
 
     async def handle_user_request(self, msg):
         """Handles compute/telemetry/frame requests from mission layer."""
-        req = data_protocol.Request()
-        req.ParseFromString(msg)
-        logger.debug(f"Received user request: {req}")
+        any = any_pb2.Any()
+        any.ParseFromString(msg)
+        logger.debug(f"Received user request: {any}")
 
-        match req.WhichOneof("type"):
-            case "tel":
-                await self.process_telemetry_req(req)
-            case "frame":
-                raise NotImplementedError()
-            case "cpt":
-                await self.process_compute_req(req)
-            case None:
-                raise Exception("Expected at least one request type")
-
+        if any.Is(data_protocol.Request.DESCRIPTOR):
+            req = data_protocol.Request(any)
+            match req.WhichOneof("type"):
+                case "tel":
+                    await self.process_telemetry_req(req)
+                case "frame":
+                    raise NotImplementedError()
+                case "cpt":
+                    await self.process_compute_req(req)
+                case None:
+                    raise Exception("Expected at least one request type")
+        elif any.Is(data_protocol.Telemetry.DESCRIPTOR):
+            tel = data_protocol.Telemetry(any)
+            await self.update_mission_statusq(tel)
+        else:
+            raise Exception("Unknown protobuf message")
 
     ###########################################################################
     #                              PROCESSORS                                 #
@@ -166,3 +173,11 @@ class DataService(Service):
         response.seq_num = req.seq_num
         logger.debug(f"Sending compute response: {response}")
         await self.data_reply_sock.send_multipart([response.SerializeToString()])
+
+    async def update_mission_status(self, tel):
+        """Updates mission status information."""
+        logger.debug(f"Handling mission status update: {tel}")
+        try:
+            self.data_store.update_current_task(tel.current_task)
+        except Exception as e:
+            logger.error(f"update_mission_status() error: {e}")
