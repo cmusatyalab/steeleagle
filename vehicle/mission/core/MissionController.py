@@ -158,7 +158,10 @@ class MissionController():
         while True:
             try:
                 # Mission task, not flight status
-                self.current_task = self.tm.get_current_task_type()
+                if self.tm:
+                    self.current_task = self.tm.get_current_task_type()
+                else:
+                    self.current_task = "idle"
                 
                 # Receive a message
                 message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
