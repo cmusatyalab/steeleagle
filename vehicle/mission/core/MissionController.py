@@ -162,7 +162,7 @@ class MissionController():
                     self.current_task = self.tm.get_current_task_type()
                 else:
                     self.current_task = "idle"
-                
+
                 # Receive a message
                 message = self.msn_control_sock.recv(flags=zmq.NOBLOCK)
 
@@ -195,7 +195,7 @@ class MissionController():
 
                 else:
                     resp = common_protocol.ResponseStatus.NOTSUPPORTED
-                
+
                 # Send a reply back to the client
                 rep = control_protocol.Response()
                 rep.resp = resp
@@ -206,7 +206,7 @@ class MissionController():
             except zmq.Again:
                 pass
             except Exception as e:
-                logger.info(f"Failed to parse message: {e}")
+                logger.error(f"Failed to parse message: {e}")
                 resp = common_protocol.ResponseStatus.FAILED
 
                 # Send a reply back to the client

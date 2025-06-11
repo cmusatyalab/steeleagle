@@ -360,7 +360,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return gabriel_result if detections_above_threshold else None
 
         if run_hsv_filter:
-            self.store_hsv_image(image_np, cpt_config)
+            self.store_hsv_image(image_np, cpt_config, drone_id)
 
         # Store detection image
         if detections_above_threshold:
@@ -398,9 +398,10 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
             os.symlink(drone_dir_path, path)
 
-    def store_hsv_image(self, image_np, cpt_config):
+    def store_hsv_image(self, image_np, cpt_config, drone_id):
         img = self.run_hsv_filter(image_np, cpt_config)
-        path = self.storage_path + "/detected/hsv.jpg"
+
+        path = os.path.join(self.drone_storage_path, drone_id)
         img.save(path, format="JPEG")
 
     def run_hsv_filter(self, image_np, cpt_config):
