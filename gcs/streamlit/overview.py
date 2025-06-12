@@ -10,6 +10,7 @@ import datetime
 from pykml import parser
 import json
 import time
+import math
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -22,7 +23,7 @@ if "show_drone_markers" not in st.session_state:
 if "show_geofence" not in st.session_state:
     st.session_state.show_geofence = True
 if "show_objects" not in st.session_state:
-    st.session_state.show_objects = True
+    st.session_state.show_objects = False
 if "show_corridors" not in st.session_state:
     st.session_state.show_corridors = False
 
@@ -69,6 +70,9 @@ def draw_map():
                 for index, row in df.iterrows():
                     if i == 0:
                         coords.append([row["latitude"], row["longitude"]])
+                        bearing = int(row["bearing"])
+                        if bearing < 0:
+                            bearing = 360 - math.abs(bearing)
                         text = folium.DivIcon(
                             icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                             icon_anchor=(-20, 30),
@@ -79,7 +83,7 @@ def draw_map():
                             icon="plane",
                             color=COLORS[marker_color],
                             prefix="glyphicon",
-                            angle=int(row["bearing"]),
+                            angle=bearing,
                         )
 
                         drone_positions.add_child(
