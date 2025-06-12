@@ -396,7 +396,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             path = os.path.join(class_dir, filename)
             logger.debug(f"Stored image: {path}")
 
-            os.symlink(drone_dir_path, path)
+            os.symlink(os.path.join("..", "..", "drones", drone_id, filename), path)
 
     def store_hsv_image(self, image_np, cpt_config, drone_id):
         img = self.run_hsv_filter(image_np, cpt_config)
