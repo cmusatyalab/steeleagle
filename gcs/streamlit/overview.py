@@ -59,6 +59,7 @@ def draw_map():
     # Draw(export=True).add_to(m)
     lc = folium.LayerControl()
     if st.session_state.show_drone_markers:
+        marker_color = 0
         for k in red.keys("telemetry:*"):
             df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", 1))
             last_update = (int(df.index[0].split("-")[0])/1000)
@@ -103,6 +104,7 @@ def draw_map():
                                 icon=text,
                             )
                         )
+            marker_color += 1
 
     if st.session_state.show_corridors:
         try:

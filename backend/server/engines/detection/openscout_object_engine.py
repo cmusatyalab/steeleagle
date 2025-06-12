@@ -284,7 +284,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         timestamp_millis = int(time.time() * 1000)
         filename = str(timestamp_millis) + ".jpg"
         if self.store_detections:
-            detection_url = os.path.join(os.environ["WEBSERVER"], "detected", filename)
+            detection_url = os.path.join(os.environ["WEBSERVER"], "detected", "drones", drone_id, filename)
         else:
             detection_url = ""
 
