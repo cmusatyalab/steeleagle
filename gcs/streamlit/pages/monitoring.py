@@ -20,13 +20,15 @@ if "zmq" not in st.session_state:
     st.session_state.zmq = connect_zmq()
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
+if "refresh_rate" not in st.session_state:
+    st.session_state.refresh_rate = 2 #sec
 
 if not authenticated():
     st.stop()  # Do not continue if not authenticated
 
 red = connect_redis()
 
-@st.fragment(run_every="1s")
+@st.fragment(run_every=st.session_state.refresh_rate)
 def plot_data():
    cols = st.columns(2)
    i = 0
@@ -113,5 +115,6 @@ def plot_data():
 menu()
 with st.sidebar:
     st.number_input(":heartbeat: **:red[Active Threshold (min)]**", step=1, min_value=1, key="inactivity_time", max_value=10)
+    st.number_input(":stopwatch: **:green[Refresh Rate (sec)]**", step=1, min_value=1, key="refresh_rate", max_value=5)
 st.header(f":helicopter: **:orange[Active Drones]** (last {st.session_state.inactivity_time} mins)")
 plot_data()
