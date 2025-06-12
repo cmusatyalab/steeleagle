@@ -7,7 +7,6 @@
 # ${FACE_THRESHOLD} and ${API_KEY} should
 # reside in a .env file along side docker-compose.yaml
 
-version: '2.3'
 services:
   gabriel-server:
     image: cmusatyalab/gabriel-server

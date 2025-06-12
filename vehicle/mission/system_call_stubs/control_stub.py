@@ -55,23 +55,30 @@ class ControlStub(Stub):
             return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gps_location(self, latitude, longitude, altitude, bearing, altitude_mode='ABSOLUTE', heading_mode='TO_TARGET', velocity=(0, 0, 0)):
+    async def set_gps_location(self, latitude, longitude, altitude, bearing=0, altitude_mode='RELATIVE', heading_mode='TO_TARGET', velocity=(0, 0, 0)):
         request = control_protocol.Request()
         request.veh.location.latitude = latitude
         request.veh.location.longitude = longitude
         request.veh.location.altitude = altitude
+        request.veh.location.heading = bearing
         if altitude_mode == 'ABSOLUTE':
-            request.veh.location.heading_mode = \
+            request.veh.location.altitude_mode = \
                 common_protocol.LocationAltitudeMode.ABSOLUTE
-        else:
-            request.veh.location.heading_mode = \
+        elif altitude_mode == 'RELATIVE':
+            request.veh.location.altitude_mode = \
                 common_protocol.LocationAltitudeMode.TAKEOFF_RELATIVE
+        else:
+            logger.error("Invalid altitude mode")
+            return False
         if heading_mode == 'TO_TARGET':
             request.veh.location.heading_mode = \
                 common_protocol.LocationHeadingMode.TO_TARGET
-        else:
+        elif heading_mode == 'HEADING_START':
             request.veh.location.heading_mode = \
                 common_protocol.LocationHeadingMode.HEADING_START
+        else:
+            logger.error("Invalid heading mode")
+            return False
         request.veh.location.max_velocity.north_vel = velocity[0]
         request.veh.location.max_velocity.east_vel = velocity[0]
         request.veh.location.max_velocity.up_vel = velocity[1]

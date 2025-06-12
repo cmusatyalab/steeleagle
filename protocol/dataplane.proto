@@ -24,6 +24,7 @@ message Request {
     TelemetryRequest tel = 3;
     FrameRequest frame  = 4;
     GetComputeResult cpt = 5;
+    UpdateCurrentTask task = 6;
   }
 }
 
@@ -79,6 +80,10 @@ message Frame {
 */
 message GetComputeResult {
   string type = 1;
+}
+
+message UpdateCurrentTask {
+    string task_name = 1;
 }
 
 message ComputeResponse {

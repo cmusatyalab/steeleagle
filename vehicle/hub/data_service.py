@@ -7,7 +7,6 @@ import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
 from service import Service
 from data_store import DataStore
-from google.protobuf import any_pb2
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')
@@ -85,7 +84,10 @@ class DataService(Service):
         """Handles incoming telemetry messages from the driver."""
         try:
             telemetry = data_protocol.Telemetry()
+            old_tel = self.data_store.get_raw_data(telemetry)
             telemetry.ParseFromString(msg)
+            if old_tel:
+                telemetry.current_task = old_tel.data.current_task
             self.data_store.set_raw_data(telemetry)
             logger.debug(f"Received telemetry message: {telemetry}")
         except Exception as e:
@@ -103,26 +105,20 @@ class DataService(Service):
 
     async def handle_user_request(self, msg):
         """Handles compute/telemetry/frame requests from mission layer."""
-        any = any_pb2.Any()
-        any.ParseFromString(msg)
-        logger.debug(f"Received user request: {any}")
-
-        if any.Is(data_protocol.Request.DESCRIPTOR):
-            req = data_protocol.Request(any)
-            match req.WhichOneof("type"):
-                case "tel":
-                    await self.process_telemetry_req(req)
-                case "frame":
-                    raise NotImplementedError()
-                case "cpt":
-                    await self.process_compute_req(req)
-                case None:
-                    raise Exception("Expected at least one request type")
-        elif any.Is(data_protocol.Telemetry.DESCRIPTOR):
-            tel = data_protocol.Telemetry(any)
-            await self.update_mission_statusq(tel)
-        else:
-            raise Exception("Unknown protobuf message")
+        req = data_protocol.Request()
+        req.ParseFromString(msg)
+        match req.WhichOneof("type"):
+            case "tel":
+                await self.process_telemetry_req(req)
+            case "frame":
+                raise NotImplementedError()
+            case "cpt":
+                await self.process_compute_req(req)
+            case "task":
+                logger.info(f"Updating mission status in data service")
+                await self.update_mission_status(req)
+            case None:
+                raise Exception("Expected at least one request type")
 
     ###########################################################################
     #                              PROCESSORS                                 #
@@ -161,7 +157,7 @@ class DataService(Service):
         for compute_id in self.compute_dict.keys():
             cpt_res = self.data_store.get_compute_result(compute_id, compute_type)
             if cpt_res is None:
-                logger.warning(f"No result for {compute_id}")
+                logger.debug(f"No result for {compute_id}")
                 continue
 
             compute_result = data_protocol.ComputeResult()
@@ -174,10 +170,15 @@ class DataService(Service):
         logger.debug(f"Sending compute response: {response}")
         await self.data_reply_sock.send_multipart([response.SerializeToString()])
 
-    async def update_mission_status(self, tel):
+    async def update_mission_status(self, req):
         """Updates mission status information."""
-        logger.debug(f"Handling mission status update: {tel}")
+        logger.debug(f"Handling mission status update: {req}")
         try:
-            self.data_store.update_current_task(tel.current_task)
+            self.data_store.update_current_task(req.task.task_name)
         except Exception as e:
             logger.error(f"update_mission_status() error: {e}")
+
+        response = data_protocol.Response()
+        response.timestamp.GetCurrentTime()
+        response.seq_num = req.seq_num
+        await self.data_reply_sock.send_multipart([response.SerializeToString()])

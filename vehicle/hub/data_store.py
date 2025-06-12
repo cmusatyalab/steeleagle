@@ -66,7 +66,7 @@ class DataStore:
         result = cache.get(type)
         if result is None:
             # Log an error and return None
-            logger.error(f"get_compute_result: No result found for {compute_id=} and {type=}")
+            logger.debug(f"get_compute_result: No result found for {compute_id=} and {type=}")
             return None
 
         return result
@@ -121,11 +121,12 @@ class DataStore:
         entry.timestamp = time.monotonic()
         if data_type in self._raw_data_event:
             self._raw_data_event[data_type].set()
-    
+
     def update_current_task(self, task_type):
         if data_protocol.Telemetry not in self._raw_data_cache:
             logger.error(f"update_current_task: Telemetry type not in data cache")
         else:
+            logger.info(f"Setting current task to {task_type}")
             entry = self._raw_data_cache[data_protocol.Telemetry]
             entry.data.current_task = task_type
             entry.timestamp = time.monotonic()
