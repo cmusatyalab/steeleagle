@@ -69,6 +69,8 @@ def plot_data():
             else:
                 slam_status = ":red-badge[:material/globe_location_pin: SLAM Not Localized]"
 
+            current_task = red.hget(k, "current_task")
+            task_status = f":blue-badge[:material/format_list_numbered: {current_task}]"
             df = stream_to_dataframe(red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1))
             column_config={
                     "_index": None,
@@ -106,7 +108,7 @@ def plot_data():
                 }
             cols[i%2].markdown(f"### **{drone_name} ({drone_model})**")
             cols[i%2].image(f"http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg?a={time.time()}", use_container_width=True)
-            cols[i%2].markdown(f"**{bat_status}{mag_status}{sat_status}{slam_status}**")
+            cols[i%2].markdown(f"**{task_status}{bat_status}{mag_status}{sat_status}{slam_status}**")
             cols[i%2].dataframe(df, column_config=column_config)
             #cols[i%2].map(df, latitude="Lat", longitude="Lon", size="5", use_container_width=False, width=100)
             i += 1
