@@ -10,7 +10,6 @@ import datetime
 from pykml import parser
 import json
 import time
-import math
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -67,23 +66,22 @@ def draw_map():
                 coords = []
                 i = 0
                 drone_name = k.split(":")[-1]
+                current_task = red.hget(f"drone:{drone_name}", "current_task")
+                if current_task == "":
+                    current_task = "idle"
                 for index, row in df.iterrows():
                     if i == 0:
                         coords.append([row["latitude"], row["longitude"]])
-                        bearing = int(row["bearing"])
-                        if bearing < 0:
-                            bearing = 360 - math.abs(bearing)
                         text = folium.DivIcon(
                             icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                             icon_anchor=(-20, 30),
-                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}</div>',
-                            #TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
+                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}  [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
                         )
                         plane = folium.Icon(
                             icon="plane",
                             color=COLORS[marker_color],
                             prefix="glyphicon",
-                            angle=bearing,
+                            angle=int(row["bearing"]) % 360,
                         )
 
                         drone_positions.add_child(
