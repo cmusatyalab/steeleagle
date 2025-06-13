@@ -86,6 +86,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "gimbal_yaw": gimb_pose.yaw
             },
         )
+        self.r.expire(f"telemetry:{telemetry.drone_name}", 60 * 60 * 24)
         logger.debug(f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}")
 
         drone_key = f"drone:{telemetry.drone_name}"
