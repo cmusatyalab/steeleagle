@@ -2,9 +2,10 @@ name: Build and push vision engines
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
     paths:
       - '.github/workflows/build-vision-engines.yml'
+      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/engines/avoidance/**'
       - 'backend/server/engines/detection/**'
       - 'backend/server/engines/Dockerfile.obj_avoid'
@@ -15,48 +16,9 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Free Disk Space
-      uses: jlumbroso/free-disk-space@v1.3.1
-      with:
-        tool-cache: false
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: false
-        docker-images: false
-        swap-storage: false
-
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
-    - name: Download protobuf compiler
-      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
-
-    - name: Unzip protobuf compiler
-      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
-
-    - name: Build protobufs
-      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build and push vision engine image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: backend/server/engines/Dockerfile.obj_avoid
-        push: true
-        tags: cmusatyalab/steeleagle-vision-engines:dev
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-vision-engines:dev
-        cache-to: type=inline
+    uses: ./.github/workflows/deploy-docker-img.yml
+    with:
+      name: steeleagle-vision-engines
+      dockerfile: backend/server/engines/Dockerfile.obj_avoid
+      free_disk_space: true
+    secrets: inherit

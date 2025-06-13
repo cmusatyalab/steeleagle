@@ -155,13 +155,13 @@ def update_imagery():
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
         st.caption("**:sleuth_or_spy: Object Detection**")
-        st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}")
+        st.image(f"http://{st.secrets.webserver}/{st.session_state.imagery_key}/detected/latest.jpg?a={time.time()}")
     with col2:
         st.caption("**:checkered_flag: Obstacle Avoidance**")
         st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")
     with col3:
         st.caption("**:traffic_light: HSV Filtering**")
-        st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
+        st.image(f"http://{st.secrets.webserver}/{st.session_state.imagery_key}detected/hsv.jpg?a={time.time()}")
 
 @st.fragment(run_every="1s")
 def draw_map():
