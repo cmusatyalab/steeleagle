@@ -30,7 +30,11 @@ class Driver:
         while True:
             try:
                 logger.info('Attempting to connect to drone...')
-                await self.drone.connect(connection_string)
+                connected = await self.drone.connect(connection_string)
+                if not connected:
+                    logger.error('Failed to connect to drone, retrying...')
+                    await asyncio.sleep(3)
+                    continue
                 logger.info('Drone connected')
             except Exception:
                 logger.error('Failed to connect to drone, retrying...')
