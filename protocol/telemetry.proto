@@ -1,0 +1,241 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package protocol.telemetry;
+
+import "common.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+
+/*
+ * Data related to the active driver telemetry stream
+ */
+message TelemetryStreamInfo {
+  // Current frequency of telemetry messages, in Hz
+  uint32 current_frequency = 1; 
+  // Maximum frequency of telemetry messages, in Hz
+  uint32 max_frequency = 2;
+  // Uptime of the stream
+  google.protobuf.Duration uptime = 3;
+}
+
+/*
+ * Data related to vehicle status
+ */
+enum MotionStatus {
+  IDLE = 0;
+  IN_TRANSIT = 1; 
+}
+
+enum ControlStatus {
+  MANUAL = 0;
+  AUTONOMOUS = 1;
+}
+
+message BatteryInfo {
+  uint32 percentage = 1; // Battery level [0-100]%
+}
+
+message GPSInfo {
+  uint32 satellites = 1; // Number of satellites used in GPS fix
+}
+
+message CommsInfo {} // For future use, will give info on communications
+
+message VehicleInfo {
+  // The vehicle that this telemetry corresponds to
+  string name = 1;
+  // Model of the vehicle
+  string model = 2;
+  // Manufacturer of the vehicle
+  string manufacturer = 3;
+  // Current status of the vehicle
+  MotionStatus motion_status = 4;
+  // Control status of the vehicle
+  ControlStatus control_status = 5;
+  // Battery info for the vehicle
+  BatteryInfo battery_info = 6;
+  // GPS sensor info for the vehicle
+  GPSInfo gps_info = 7;
+  // Communications info for the vehicle
+  CommsInfo comms_info = 8;
+}
+
+/*
+ * Data related to vehicle position
+ */
+message SetpointInfo {
+  // The current setpoint for the vehicle
+  oneof setpoint {
+    // Default to all zeros local position setpoint
+    protocol.common.PositionBody position_body_sp = 1;
+    protocol.common.PositionENU position_enu_sp = 2;
+    protocol.common.Location global_sp = 3;
+    protocol.common.VelocityBody velocity_body_sp = 4;
+    protocol.common.VelocityENU velocity_enu_sp = 5;
+  }
+}
+
+message PositionInfo {
+  // Global position that will be used when returning home
+  protocol.common.Location home = 1; 
+  // Current global position of the vehicle
+  protocol.common.Location global_position = 2;
+  // Current local position of the vehicle in the global ENU
+  // (East, North, Up) coordinate frame, relative to take off
+  // position
+  protocol.common.PositionENU relative_position = 3;
+  // Current velocity of the vehicle in the global ENU
+  // (East, North, Up) coordinate frame
+  protocol.common.VelocityENU velocity_enu = 4;
+  // Current velocity of the vehicle in the body
+  // (forward, right, up) coordinate frame
+  protocol.common.VelocityBody velocity_body = 5;
+  // Info on the current vehicle setpoint
+  SetpointInfo setpoint = 6; 
+}
+
+/*
+ * Data related to gimbals
+ */
+message GimbalStatus {
+  uint32 id; // ID of the gimbal
+  Pose pose_body; // Current pose in the body reference frame
+  Pose pose_enu; // Current pose in the ENU reference frame
+}
+
+message GimbalInfo {
+  uint32 num_gimbals = 1; // Number of connected gimbals
+  repeated GimbalStatus gimbals = 2; // List of connected gimbals
+}
+
+/*
+ * Data related to imaging sensors
+ */
+enum ImagingSensorType {
+  UNKNOWN_IMAGING_SENSOR_TYPE = 0;
+  RGB = 1;
+  STEREO = 2;
+  THERMAL = 3;
+  NIGHT = 4;
+  LIDAR = 5;
+  RGBD = 6;
+  TOF = 7;
+  RADAR = 8;
+}
+
+message ImagingSensorStatus {
+  uint32 id = 1; // ID of the imaging sensor
+  ImagingSensorType type = 2; // Type of the imaging sensor
+  // Indicates whether the imaging sensor is currently streaming
+  bool active = 3;
+  // Indicates whether the imaging sensor supports background streaming
+  bool supports_secondary = 4;
+  uint32 current_fps = 5; // Current streaming frames per second
+  uint32 max_fps = 6; // Maximum streaming frames per second
+  uint32 h_res = 7; // Horizontal resolution
+  uint32 v_res = 8; // Vertical resolution
+  uint32 channels = 9; // Number of image channels
+  uint32 h_fov = 10; // Horizontal FOV
+  uint32 v_fov = 11; // Vertical FOV
+  bool gimbal_mounted = 12; // Indicates if imaging sensor is gimbal mounted
+  // Indicates which gimbal the imaging sensor is mounted on
+  uint32 gimbal_id = 13;
+}
+
+message ImagingSensorStreamStatus {
+  // The total number of allowed simultaneously streaming cameras
+  uint32 stream_capacity = 1; 
+  uint32 num_streams = 2; // The total number of currently streaming cameras
+  uint32 primary_cam = 3; // ID of the primary camera
+  repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
+}
+
+message ImagingSensorInfo {
+  ImagingSensorStreamStatus stream_status = 1; // Status of current streams
+  repeated ImagingSensorStatus sensors = 2; // List of connected sensors
+}
+
+/*
+ * Vehicle warnings and alerts
+ */
+enum BatteryWarning {
+  NONE = 0;
+  LOW = 1;
+  CRITICAL = 2;
+}
+
+enum GPSWarning {
+  NO_GPS_WARNING = 0;
+  WEAK = 1;
+  NO_SIGNAL = 2;
+}
+
+enum MagnetometerWarning {
+  NO_MAGNETOMETER_WARNING = 0;
+  RECOMMENDED = 1; // Calibration recommended
+  REQUIRED = 2; // Calibration required
+  PERTURBATION = 3; // Experiencing magnetic perturbations
+}
+
+enum ConnectionWarning {
+  NO_CONNECTION_WARNING = 0;
+  DISCONNECTED = 1;
+  WEAK_CONNECTION = 2;
+}
+
+message AlertInfo {
+  BatteryWarning battery_warning = 1; // Battery warnings
+  GPSWarning gps_warning = 2; // GPS warnings
+  MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
+  ConnectionWarning connection_warning = 4; // Connection warnings
+}
+
+/*
+ * Telemetry message for the vehicle, originated from the driver module
+ */
+message DriverTelemetry {
+  // Info about current telemetry stream
+  TelemetryStreamInfo telemetry_stream_info = 1;
+  // The vehicle that this telemetry corresponds to
+  VehicleInfo vehicle_info = 2;
+  // Positional info about the vehicle
+  PositionInfo position_info = 3;
+  // Status on attached gimbals and their orientations
+  GimbalInfo gimbal_info = 4;
+  // Information about the vehicle imaging sensors
+  ImagingSensorInfo imaging_sensor_info = 5; 
+  // Enumeration of vehicle warnings
+  AlertInfo alert_info = 6;
+}
+
+/*
+ * Data related to the current mission
+ */
+enum MissionExecState {
+  READY = 0;
+  IN_PROGRESS = 1;
+  CANCELLED = 2;
+}
+
+message MissionInfo {
+  // Name of the current mission
+  string name = 1;
+  // Task state of the mission (plaintext)
+  string task_state = 2;
+  // Execution state of the mission
+  MissionExecState exec_state = 3;
+}
+
+/*
+ * Telemetry message for the mission, originated from the mission module
+ */
+message MissionTelemetry {
+  // Info about the current telemetry stream
+  TelemetryStreamInfo telemetry_stream_info = 1;
+  // Info about the current mission state
+  MissionInfo mission_info = 2;
+}

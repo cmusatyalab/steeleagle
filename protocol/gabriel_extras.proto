@@ -2,23 +2,25 @@
 //
 // SPDX-License-Identifier: GPL-2.0-only
 
+syntax = "proto3";
+package protocol.gabriel_extras;
+
+import "telemetry.proto";
+import "controlplane.proto";
+
 /**
  * Messages/calls related to the Gabriel component of SteelEagle.
  *
  * The gabriel extras is a specialized protocol just for intergrating with
  * gabriel compute services.
  */
-syntax = "proto3";
-
-package protocol.gabriel_extras;
-import "dataplane.proto";
-import "controlplane.proto";
-
 message Extras {
-  // Designates an initial request to register a drone
+  // Designates an initial request to register a vehicle
   bool registering = 1;
-  // The telemetry data for the drone
-  protocol.dataplane.Telemetry telemetry = 2;
+  // The driver telemetry data for the vehicle
+  protocol.telemetry.DriverTelemetry vehicle_telem = 2;
+  // The mission telemetry data for the vehicle
+  protocol.telemetry.MissionTelemetry mission_telem = 3;
   // Configuration parameters for the compute request
   protocol.controlplane.Request cpt_request = 3;
   // Used for sending a reply back to the client

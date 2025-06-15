@@ -1,0 +1,52 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package protocol.datastore_service;
+
+import "common.proto"
+import "google/protobuf/timestamp.proto";
+
+
+/*
+ * Used to write and read from the local datastore
+ */
+service DatastoreService {
+  // Write to the datastore
+  rpc Write (WriteRequest) returns (WriteResponse) {}
+  // Read from the datastore
+  rpc Read (ReadRequest) returns (ReadResponse) {}
+}
+
+message Metadata {
+  string topic = 1; // Topic that data will be stored under
+  string type = 2; // Type of proto message the data contains
+  google.protobuf.Timestamp timestamp = 3; // Time that the data was generated
+}
+
+message Data {
+  bytes data = 1; // Raw data for the object
+}
+
+message WriteRequest {
+  Request request = 1;
+  Metadata metadata = 2;
+  Data data = 3;
+}
+
+message WriteResponse {
+  Response response = 1;
+}
+
+message ReadRequest {
+  Request request = 1;
+  string query_string = 2; // Query string for access into datastore
+}
+
+message ReadResponse {
+  Response response = 1;
+  Metadata metadata = 2;
+  Data data = 3; // Data read from the datastore
+  Response response = 4;
+}

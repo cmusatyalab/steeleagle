@@ -1,0 +1,28 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package protocol.report_service;
+
+import "common.proto"
+
+
+/*
+ * Used to report messages to the swarm controller
+ */
+service ReportService {
+  // Send a report to the swarm controller
+  rpc SendReport (ReportRequest) returns (ReportResponse) {}
+}
+
+message ReportRequest {
+  Request request = 1;
+  int32 report_code = 2; // Integer report code, interpreted by the backend
+  string report_message = 3; // Plaintext explanation message
+}
+
+message ReportResponse {
+  Response response = 1;
+}
+

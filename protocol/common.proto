@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
 //
 // SPDX-License-Identifier: GPL-2.0-only
@@ -6,172 +5,102 @@
 syntax = "proto3";
 package protocol.common;
 
+import "google/protobuf/timestamp.proto";
+
+
+/*
+ * Request object for additional request info
+ */
+message Request {
+  string sender = 1; // Identity of sender
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+/*
+ * Responses for RPC functions
+ */
 enum ResponseStatus {
-  UNKNOWN_RESPONSE = 0;
-  OK = 1;
+  OK = 0; 
+  IN_PROGRESS = 1;
   FAILED = 2;
-  NOTSUPPORTED = 3;
+  NOT_SUPPORTED = 3;
   COMPLETED = 4;
   DENIED = 5;
   WARNING = 6;
 }
 
-/*
-* Angular offsets or poses in 3 dimensions in body coordinates [degrees]
-*/
-enum PoseControlMode {
-  POSITION_ABSOLUTE = 0;
-  POSITION_RELATIVE = 1;
-  VELOCITY = 2;
+message Response {
+  ResponseStatus status = 1;
+  string response_string = 2; // Detailed message on reason for response
+  google.protobuf.Timestamp timestamp = 3;
 }
 
-message PoseBody {
+/*
+ * Angular offsets or poses in 3 dimensions [degrees]
+ */
+message Pose {
   double pitch = 1;
   double roll = 2;
   double yaw = 3;
-  PoseControlMode control_mode = 4; 
-  int32 actuator_id = 5;
 }
 
 /*
-* Representation of the speed in 4-dimensions in ENU coordinates [m/s]
-*/
+ * Representation of the speed in 4-dimensions in ENU coordinates [m/s]
+ */
 message VelocityENU {
-  double north_vel = 1; // Pitch
-  double east_vel = 2; // Roll
-  double up_vel = 3; // Thrust
-  double angular_vel = 4; // Yaw (deg/s)
+  double north_vel = 1;
+  double east_vel = 2;
+  double up_vel = 3;
+  double angular_vel = 4; // [degrees/s]
 }
 
 /*
-* Representation of the speed in 4-dimensions in body coordinates [m/s]
-*/
+ * Representation of the speed in 4-dimensions in body coordinates [m/s]
+ */
 message VelocityBody {
-  double forward_vel = 1; // Pitch
-  double right_vel = 2; // Roll
-  double up_vel = 3; // Thrust
-  double angular_vel = 4; // Yaw (deg/s)
+  double forward_vel = 1;
+  double right_vel = 2;
+  double up_vel = 3;
+  double angular_vel = 4; // [degrees/s]
 }
 
 /*
-* Position relative to home location in ENU coordinates
-*/
+ * Position relative to home location in ENU coordinates [meters]
+ */
 message PositionENU {
   double north = 1;
   double east = 2;
   double up = 3;
-  double angle = 4;
-  VelocityENU max_velocity = 5;
+  double angle = 4; // [degrees]
 }
 
-/*
-* Position relative to current location in body coordinates
-*/
+/**
+ * Position relative to current location in body coordinates [meters]
+ */
 message PositionBody {
   double forward = 1;
   double right = 2;
   double up = 3;
-  double angle = 4;
-  VelocityBody max_velocity = 5;
+  double angle = 4; // [degrees]
 }
 
 /*
-* Location
-*/
-enum LocationAltitudeMode {
-  ABSOLUTE = 0;
-  TAKEOFF_RELATIVE = 1;
-}
-
-enum LocationHeadingMode {
-  TO_TARGET = 0;
-  HEADING_START = 1;
-}
-
+ * Location in global coordinates [latitude, longitude]
+ */
 message Location {
   double latitude = 1;
   double longitude = 2;
-  double altitude = 3; // In meters above MSL or above takeoff
+  double altitude = 3; // Above MSL [meters]
   double heading = 4;
-  LocationAltitudeMode altitude_mode = 5;
-  LocationHeadingMode heading_mode = 6;
-  VelocityENU max_velocity = 7;
 }
+
 
 /*
-* List of camera sensors from the drone
-*/
-message Cameras {
-  StreamStatus stream_status = 1;
-  repeated ImagingSensor sensors = 2;
-}
-
-message ImagingSensor {
-  uint32 id = 1;
-  ImagingSensorType type = 2;
-  bool active = 3; // Specifies whether a camera is currently streaming
-  bool supports_secondary = 4; // Denotes whether a camera supports background streaming
-}
-
-enum ImagingSensorType {
-  UNKNOWN_IMAGING_SENSOR_TYPE = 0;
-  RGB = 1;
-  STEREO = 2;
-  THERMAL = 3;
-  NIGHT = 4;
-  LIDAR = 5;
-  RGBD = 6;
-  TOF = 7;
-}
-
-message StreamStatus {
-  uint32 total_streams = 1; // The total number of allowed simultaneously streaming cameras
-  uint32 num_streams = 2; // The total number of currently streaming cameras
-  uint32 primary_cam = 3; // ID of the primary camera
-  repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
-}
-
-/*
-* Alert states of the drone
-*/
-message Alerts {
-  BatteryWarning battery_warning = 1; // Battery warnings
-  GPSWarning gps_warning = 2; // GPS warnings
-  MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
-  ConnectionWarning connection_warning = 4; // Connection to drone warnings (mostly used for thin client drones)
-}
-
-enum BatteryWarning {
-  NONE = 0;
-  LOW = 1;
-  CRITICAL = 2;
-}
-
-enum GPSWarning {
-  NO_GPS_WARNING = 0;
-  WEAK = 1;
-  NO_SIGNAL = 2;
-}
-
-enum MagnetometerWarning {
-  NO_MAGNETOMETER_WARNING = 0;
-  RECOMMENDED = 1; // Calibration recommended
-  REQUIRED = 2; // Calibration required
-  PERTURBATION = 3; // Experiencing magnetic perturbations
-}
-
-enum ConnectionWarning {
-  NO_CONNECTION_WARNING = 0;
-  DISCONNECTED = 1;
-  WEAK_CONNECTION = 2;
-}
-
-/*
-* Defines the upper left and lower right corners of a detected object
-* in an image frame. Origin (0,0) is the top left corner of the input image.
-* (image_height, image_width) is the bottom right corner.
-* Also the class and confidence threshold associated with the box.
-*/
+ * Defines the upper left and lower right corners of a detected object
+ * in an image frame. Origin (0,0) is the top left corner of the input image.
+ * (image_height, image_width) is the bottom right corner.
+ * Also the class and confidence threshold associated with the box.
+ */
 message BoundingBox {
   double y_min = 1; // wrt to image size
   double x_min = 2; // wrt to image size
@@ -182,9 +111,9 @@ message BoundingBox {
 }
 
 /*
-* Color filter represented by hue, saturation, and value
-* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
-*/
+ * Color filter represented by hue, saturation, and value
+ * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
+ */
 message HSV {
   uint32 h = 1; // hue range is [0,179]
   uint32 s = 2; // saturation range is [0,255]
