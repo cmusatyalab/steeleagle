@@ -5,7 +5,7 @@
 syntax = "proto3";
 package protocol.datastore_service;
 
-import "common.proto"
+import "common.proto";
 import "google/protobuf/timestamp.proto";
 
 
@@ -30,23 +30,22 @@ message Data {
 }
 
 message WriteRequest {
-  Request request = 1;
+  protocol.common.Request request = 1;
   Metadata metadata = 2;
-  Data data = 3;
+  Data data_holder = 3;
 }
 
 message WriteResponse {
-  Response response = 1;
+  protocol.common.Response response = 1;
 }
 
 message ReadRequest {
-  Request request = 1;
+  protocol.common.Request request = 1;
   string query_string = 2; // Query string for access into datastore
 }
 
 message ReadResponse {
-  Response response = 1;
+  protocol.common.Response response = 1;
   Metadata metadata = 2;
-  Data data = 3; // Data read from the datastore
-  Response response = 4;
+  Data data_holder = 3; // Data read from the datastore
 }
