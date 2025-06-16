@@ -102,9 +102,9 @@ message PositionInfo {
  * Data related to gimbals
  */
 message GimbalStatus {
-  uint32 id; // ID of the gimbal
-  Pose pose_body; // Current pose in the body reference frame
-  Pose pose_enu; // Current pose in the ENU reference frame
+  uint32 id = 1; // ID of the gimbal
+  protocol.common.Pose pose_body = 2; // Current pose in the body reference frame
+  protocol.common.Pose pose_enu = 3; // Current pose in the ENU reference frame
 }
 
 message GimbalInfo {
@@ -198,18 +198,32 @@ message AlertInfo {
  * Telemetry message for the vehicle, originated from the driver module
  */
 message DriverTelemetry {
+  // Timestamp of message
+  google.protobuf.Timestamp timestamp = 1;
   // Info about current telemetry stream
-  TelemetryStreamInfo telemetry_stream_info = 1;
+  TelemetryStreamInfo telemetry_stream_info = 2;
   // The vehicle that this telemetry corresponds to
-  VehicleInfo vehicle_info = 2;
+  VehicleInfo vehicle_info = 3;
   // Positional info about the vehicle
-  PositionInfo position_info = 3;
+  PositionInfo position_info = 4;
   // Status on attached gimbals and their orientations
-  GimbalInfo gimbal_info = 4;
+  GimbalInfo gimbal_info = 5;
   // Information about the vehicle imaging sensors
-  ImagingSensorInfo imaging_sensor_info = 5; 
+  ImagingSensorInfo imaging_sensor_info = 6; 
   // Enumeration of vehicle warnings
-  AlertInfo alert_info = 6;
+  AlertInfo alert_info = 7;
+}
+
+/*
+ * Imaging sensor frame data streamed from the driver module
+ */
+message Frame {
+  google.protobuf.Timestamp timestamp = 1; // Frame timestamp
+  bytes data = 2; // Raw bytes
+  uint64 h_res = 3;
+  uint64 v_res = 4;
+  uint64 channels = 5; // Number of channels
+  uint64 id = 6; // Frame ID for future correlation
 }
 
 /*
@@ -234,8 +248,10 @@ message MissionInfo {
  * Telemetry message for the mission, originated from the mission module
  */
 message MissionTelemetry {
+  // Timestamp of message
+  google.protobuf.Timestamp timestamp = 1;
   // Info about the current telemetry stream
-  TelemetryStreamInfo telemetry_stream_info = 1;
+  TelemetryStreamInfo telemetry_stream_info = 2;
   // Info about the current mission state
-  MissionInfo mission_info = 2;
+  MissionInfo mission_info = 3;
 }

@@ -1,7 +1,20 @@
+# Automated script for creating GRPC python bindings
+# TODO: Eventually, we may want to support language/vehicle choice
 
-if [ -z "$PROTOC_PATH" ]; then
-  echo "Error: protoc path not specified."
-  exit 1
-fi
+# Build the datatype files
+python3 -m grpc_tools.protoc -I. \
+	--python_out=./python/ \
+       	common.proto \
+	telemetry.proto \
+	result.proto
 
-$PROTOC_PATH --python_out=. *.proto
+# Build the service protocols
+python3 -m grpc_tools.protoc -I. \
+	--python_out=./python/ \
+	--pyi_out=./python/ \
+	--grpc_python_out=./python/ \
+       	mission_service.proto \
+	datastore_service.proto \
+	datasink_service.proto \
+	report_service.proto \
+	multicopter_control_service.proto

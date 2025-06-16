@@ -1,0 +1,52 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package protocol.datasink_service;
+
+import "common.proto";
+import "telemetry.proto";
+import "google/protobuf/timestamp.proto";
+
+/*
+ * Used to configure datasinks for sensor streams
+ */
+service DatasinkService {
+  // Get all available compute engines, both local and remote
+  rpc GetAvailableDatasinks (GetAvailableDatasinksRequest)
+	returns (GetAvailableDatasinksResponse)
+  // Configure compute preferences
+  rpc ConfigureDatasink (ConfigureDatasinkRequest)
+	returns (ConfigureDatasinkResponse)
+}
+
+message GetAvailableDatasinkRequest {
+  protocol.common.Request request = 1;
+}
+
+message Datasink {
+  // Name of the datasink
+  string name = 1;
+  // Publishing topic on the datastore
+  string topic = 2;
+  // Type of model used
+  string model = 3;
+  // Imaging sensors accepted by this datasink
+  repeated protocol.telemetry.ImagingSensorType 
+	accepted_inputs = 4;
+  // Indicates if the datasink is active
+  bool active = 5;
+}
+
+message GetAvailableDatasinksResponse {
+  protocol.common.Response response = 1;
+  // List of available datasinks
+  repeated Datasink datasinks = 2;
+}
+
+message ConfigureDatasinkRequest {
+  protocol.common.Request request = 1;
+  string name = 2; // Name of target datasink
+  bool activate = 3; // Switch to activate datasink
+}
