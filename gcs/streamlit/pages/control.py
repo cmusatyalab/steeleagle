@@ -28,7 +28,7 @@ if "script_file" not in st.session_state:
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1 #min
 if "trail_length" not in st.session_state:
-    st.session_state.trail_length = 500
+    st.session_state.trail_length = 100
 if "armed" not in st.session_state:
     st.session_state.armed = False
 if "roll_speed" not in st.session_state:
@@ -186,58 +186,61 @@ def draw_map():
     lc = folium.LayerControl()
 
     marker_color = 0
-    for k in red.keys("telemetry:*"):
-        df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length))
-        last_update = (int(df.index[0].split("-")[0])/1000)
-        if time.time() - last_update <  st.session_state.inactivity_time * 60: # minutes -> seconds
-            coords = []
-            i = 0
+    drone_list = []
+    for k in red.keys("drone:*"):
+        last_seen = float(red.hget(k, "last_seen"))
+        if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
-            current_task = red.hget(f"drone:{drone_name}", "current_task")
-            if current_task == "":
-                current_task = "idle"
-            for index, row in df.iterrows():
-                if i % 10 == 0:
-                    coords.append([row["latitude"], row["longitude"]])
-                if st.session_state.show_drone_markers and i == 0:
-                    text = folium.DivIcon(
-                        icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
-                        icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name} [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
-                    )
-                    plane = folium.Icon(
-                        icon="plane",
-                        color=COLORS[marker_color],
-                        prefix="glyphicon",
-                        angle=int(row["bearing"]) % 360,
-                    )
+            drone_list.append(drone_name)
+    for d in drone_list:
+        df = stream_to_dataframe(red.xrevrange(f"telemetry:{d}", "+", "-", st.session_state.trail_length))
+        coords = []
+        i = 0
+        current_task = red.hget(f"drone:{d}", "current_task")
+        if current_task == "":
+            current_task = "idle"
+        for index, row in df.iterrows():
+            if i % 10 == 0:
+                coords.append([row["latitude"], row["longitude"]])
+            if st.session_state.show_drone_markers and i == 0:
+                text = folium.DivIcon(
+                    icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
+                    icon_anchor=(-20, 30),
+                    html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name} [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
+                )
+                plane = folium.Icon(
+                    icon="plane",
+                    color=COLORS[marker_color],
+                    prefix="glyphicon",
+                    angle=int(row["bearing"]) % 360,
+                )
 
-                    fg.add_child(
-                        folium.Marker(
-                            location=[
-                                row["latitude"],
-                                row["longitude"],
-                            ],
-                            icon=plane,
-                        )
+                fg.add_child(
+                    folium.Marker(
+                        location=[
+                            row["latitude"],
+                            row["longitude"],
+                        ],
+                        icon=plane,
                     )
+                )
 
-                    fg.add_child(
-                        folium.Marker(
-                            location=[
-                                row["latitude"],
-                                row["longitude"],
-                            ],
-                            icon=text,
-                        )
+                fg.add_child(
+                    folium.Marker(
+                        location=[
+                            row["latitude"],
+                            row["longitude"],
+                        ],
+                        icon=text,
                     )
+                )
 
-                i += 1
+            i += 1
 
-            if st.session_state.show_gps_tracks:
-                ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
-                ls.add_to(tracks)
-                marker_color += 1
+        if st.session_state.show_gps_tracks:
+            ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
+            ls.add_to(tracks)
+            marker_color += 1
 
 
     if st.session_state.show_slam_track:
@@ -366,7 +369,7 @@ with options_expander:
         name=st.session_state.map_server, tiles=tileset, attr="Google", max_zoom=22
     )
 
-    tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=500, min_value=500, max_value=2500, key="trail_length")
+    tiles_col[3].number_input(":straight_ruler: **:gray[Trail Length]**", step=25, min_value=25, max_value=200, key="trail_length")
     mode = "**:green-background[:joystick: Manual Control Enabled (armed)]**" if st.session_state.armed else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
     tiles_col[4].number_input(key = "imagery_framerate", label=":camera: **:orange[Imagery FPS]**", min_value=1, max_value=10, step=1, value=2, format="%0d")
 
@@ -391,7 +394,7 @@ with st.sidebar:
 
     else:
         st.caption("No active drones.")
-    st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
+    st.toggle(key="armed", label=":safety_vest: Arm Swarm?", value=st.session_state.armed)
     st.caption(mode)
 
     st.session_state.script_file = st.file_uploader(
@@ -436,7 +439,7 @@ with st.sidebar:
         c4.number_input(key = "roll_speed", label="Roll (m/s)", min_value=0.0, max_value=5.0, value=2.0, step=0.5, format="%f")
         c5, c6 = st.columns(spec=2, gap="small")
         mode = "**Gimbal Relative**" if st.session_state.gimbal_relative_mode else "**Gimbal Absolute**"
-        on = c5.toggle(key="gimbal_relative_mode", label=mode, value=True)
+        on = c5.toggle(key="gimbal_relative_mode", label=mode, value=st.session_state.gimbal_relative_mode)
         if on:
             c5.number_input(key = "gimbal_rel", label="Gimbal Pitch (deg/s)", min_value=0, max_value=30, step=5, value=15, format="%d")
         else:
