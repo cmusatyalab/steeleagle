@@ -27,6 +27,11 @@ class Coordinate():
         self.lat *= y_scale
         self.alt *= z_scale
 
+    def set_global_pos(self, x: float, y: float, z: float):
+        self.long = x
+        self.lat = y
+        self.alt = z
+
     def __eq__(self, other):
         if type(self) != type(other):
             return False

@@ -123,7 +123,7 @@ class Viewport():
 
     def get_top_values(self) -> tuple[Coordinate, float]:
         # ASSUMPTION: 0 degrees on gimbal is parallel to horizontal ground plane
-        theta = np.deg2rad(max(self.get_view_orientation() - self.vertical_fov / 2), 0.01)
+        theta = np.deg2rad(min(90.0 - (self.get_vertical_cant() - self.vertical_fov / 2), 89.9))
         rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
         opp_len = np.tan(theta) * self.get_absolute_altitude()
         x_offset = np.cos(rads) * opp_len
@@ -133,7 +133,7 @@ class Viewport():
     
     def get_bottom_values(self) -> tuple[Coordinate, float]:
         # ASSUMPTION: 0 degrees on gimbal is parallel to horizontal ground plane
-        theta = np.deg2rad(max(self.get_view_orientation() + self.vertical_fov / 2), 0.01)
+        theta = np.deg2rad(90.0 - (self.get_vertical_cant() + self.vertical_fov / 2))
         rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
         opp_len = np.tan(theta) * self.get_absolute_altitude()
         x_offset = np.cos(rads) * opp_len
@@ -143,20 +143,27 @@ class Viewport():
     
     def get_lateral_points(self, center_point: Coordinate, base_length: float) -> list[Coordinate]:
         base = center_point.to_vect()
-        theta = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation() + self.horizontal_fov / 2))
-        opp_len = np.tan(theta) * base_length
-        theta_offset = theta + np.deg2rad(90 - self.horizontal_fov / 2)
+        theta = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation() - self.horizontal_fov / 2))
+        theta_offset = theta - np.deg2rad(90.0 + self.horizontal_fov / 2)
+        opp_len = base_length / np.tan(theta)
         x_offset = np.cos(theta_offset) * opp_len
         y_offset = np.sin(theta_offset) * opp_len
-        left_corner = Coordinate(round(base[0] + x_offset, ROUNDING_PRECISION), round(base[1] + y_offset, ROUNDING_PRECISION), 0)
-        right_corner = Coordinate(round(base[0] - x_offset, ROUNDING_PRECISION), round(base[1] - y_offset, ROUNDING_PRECISION), 0)
-        return (left_corner, right_corner)
+        left_corner = Coordinate(round(base[0] - x_offset, ROUNDING_PRECISION), round(base[1] - y_offset, ROUNDING_PRECISION), 0)
+        right_corner = Coordinate(round(base[0] + x_offset, ROUNDING_PRECISION), round(base[1] + y_offset, ROUNDING_PRECISION), 0)
+        if (theta_offset < 0):
+            return (left_corner, right_corner)
+        else:
+            return (right_corner, left_corner)
     
     def find_corners(self) -> list[Coordinate]:
         top_point, top_length = self.get_top_values()
         bottom_point, bottom_length = self.get_bottom_values()
-        corners = self.get_lateral_points(top_point, top_length)
-        corners.extend(self.get_lateral_points(bottom_point, bottom_length))
+        top_corners = self.get_lateral_points(top_point, top_length)
+        bot_corners = self.get_lateral_points(bottom_point, bottom_length)
+        corners = []
+        corners.append(top_corners[0])
+        corners.extend(bot_corners)
+        corners.append(top_corners[1])
         return corners
 
     def update_bounding_box(self):

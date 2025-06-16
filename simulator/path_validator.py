@@ -148,19 +148,19 @@ def calc_vector_to(start_pos: Coordinate, target_pos: Coordinate):
 
 def render_test(path: PathStore):
     st.title("Path Validator")
-    test_map = folium.Map(location=[40.4125, -79.9475], zoom_start=17, control_scale=True)
     path.set_current_waypoint(0)
     line_seg = []
     while path.is_path_complete() == False:
         line_seg.append(draw_path(path.get_current_waypoint(), path.get_next_waypoint()))
-        for lines in line_seg:
-            lines.add_to(test_map)
+        test_map = folium.Map(location=[40.4125, -79.9475], zoom_start=17, control_scale=True)
+        curr_line = folium.PolyLine(locations=line_seg, color='blue', weight=3)
+        curr_line.add_to(test_map)
         st_data = st_folium(test_map, width=800)
-        time.sleep(.25)
+        #time.sleep(.25)
 
 def draw_path(curr_point: Coordinate, next_point: Coordinate):
     coords = [curr_point.to_tuple(), next_point.to_tuple()]
-    return folium.PolyLine(locations=coords, weight=3, color="blue")
+    return coords
 
 def main():
     parser = argparse.ArgumentParser()
