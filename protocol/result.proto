@@ -6,7 +6,6 @@ syntax = "proto3";
 package protocol.result;
 
 import "common.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 
@@ -20,10 +19,11 @@ message FrameResult {
 }
 
 message ComputeResult {
-  oneof type{
-    DetectionResult detection_result = 1;
-    AvoidanceResult avoidance_result = 2;
-    string generic_result = 3;
+  google.protobuf.Timestamp timestamp = 1; // Inference timestamp
+  oneof type {
+    DetectionResult detection_result = 2;
+    AvoidanceResult avoidance_result = 3;
+    string generic_result = 4;
   }
 }
 

@@ -7,7 +7,7 @@ package protocol.datasink_service;
 
 import "common.proto";
 import "telemetry.proto";
-import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 /*
  * Used to configure datasinks for sensor streams
@@ -15,13 +15,13 @@ import "google/protobuf/timestamp.proto";
 service DatasinkService {
   // Get all available compute engines, both local and remote
   rpc GetAvailableDatasinks (GetAvailableDatasinksRequest)
-	returns (GetAvailableDatasinksResponse)
+	returns (GetAvailableDatasinksResponse) {}
   // Configure compute preferences
   rpc ConfigureDatasink (ConfigureDatasinkRequest)
-	returns (ConfigureDatasinkResponse)
+	returns (ConfigureDatasinkResponse) {}
 }
 
-message GetAvailableDatasinkRequest {
+message GetAvailableDatasinksRequest {
   protocol.common.Request request = 1;
 }
 
@@ -37,6 +37,8 @@ message Datasink {
 	accepted_inputs = 4;
   // Indicates if the datasink is active
   bool active = 5;
+  // Uptime duration
+  google.protobuf.Duration uptime = 6;
 }
 
 message GetAvailableDatasinksResponse {
@@ -47,6 +49,10 @@ message GetAvailableDatasinksResponse {
 
 message ConfigureDatasinkRequest {
   protocol.common.Request request = 1;
-  string name = 2; // Name of target datasink
-  bool activate = 3; // Switch to activate datasink
+  repeated string name = 2; // Name of target datasinks
+  repeated bool activate = 3; // Switch to activate/deactivate datasinks
+}
+
+message ConfigureDatasinkResponse {
+  protocol.common.Response response = 1;
 }
