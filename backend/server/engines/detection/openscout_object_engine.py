@@ -78,6 +78,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.ttl_secs = args.ttl
         self.geofence = []
         self.geofence_enabled = args.geofence_enabled
+        self.last_geodb_gc_time = time.time()
 
         fence_path = os.getcwd() + "/geofence/" + args.geofence
         if not os.path.exists(fence_path) or not os.path.isfile(fence_path):
@@ -166,6 +167,20 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         est_lon = lon + (180 / np.pi) * (target_vec[0] / EARTH_RADIUS) / np.cos(lat)
         logger.info("Estimated GPS location: ({0}, {1})".format(est_lat, est_lon))
         return est_lat, est_lon
+
+    def geodb_garbage_collection(self):
+        logger.info("Performing geospatial database garbage collection")
+        objects = {}
+        for item in self.r.zscan_iter("detections"):
+            key = item[0]
+            score = item[1]
+            if self.r.exists(f"objects:{key}"):
+                objects[key] = score
+
+        self.r.delete("detections")
+        if not objects:
+            return
+        self.r.zadd("detections", objects)
 
     def store_detection_db(self, drone, lat, lon, cls, conf, link="", object_name=None):
         if object_name is None:
@@ -426,6 +441,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def geofilter_passed(self, detection):
         cls = detection["class"]
         drone_id = detection["id"]
+
+        now_secs = time.time()
+        if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
+            self.geodb_garbage_collection()
+            self.last_geodb_gc_time = now_secs
 
         # first do a geosearch to see if there is a match within radius
         objects = self.r.geosearch(
