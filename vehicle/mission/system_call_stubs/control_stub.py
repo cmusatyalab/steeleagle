@@ -137,7 +137,7 @@ class ControlStub(Stub):
             return False
         return True if result.resp == common_protocol.ResponseStatus.COMPLETED else False
 
-    async def set_gimbal_pose(self, pitch, roll, yaw, mode='POSITION_ABSOLUTE'):
+    async def set_gimbal_pose(self, pitch, roll, yaw, mode='ABSOLUTE'):
         request = control_protocol.Request()
         request.veh.gimbal_pose.pitch = pitch
         request.veh.gimbal_pose.roll = roll
