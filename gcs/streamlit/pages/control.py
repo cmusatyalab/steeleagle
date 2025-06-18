@@ -193,7 +193,6 @@ def draw_map():
             drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
     for d in drone_list:
-        drone_name = d
         df = stream_to_dataframe(red.xrevrange(f"telemetry:{d}", "+", "-", st.session_state.trail_length))
         coords = []
         i = 0
@@ -207,7 +206,7 @@ def draw_map():
                 text = folium.DivIcon(
                     icon_size="null", #set the size to null so that it expands to the length of the string inside in the div
                     icon_anchor=(-20, 30),
-                    html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name} [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
+                    html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{d} [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
                 )
                 plane = folium.Icon(
                     icon="plane",
