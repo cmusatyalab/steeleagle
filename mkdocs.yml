@@ -10,6 +10,9 @@ nav:
   - Backend:
     - Design: backend/backend-design.md 
     - Setup: backend/backend-setup.md
+  - Supported Platforms:
+    - UAVs: platforms/uavs.md
+    - Companions: platforms/companions.md
 theme:
   name: material
   logo: assets/logo-color.png
