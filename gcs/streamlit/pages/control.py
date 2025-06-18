@@ -193,6 +193,7 @@ def draw_map():
             drone_name = k.split(":")[-1]
             drone_list.append(drone_name)
     for d in drone_list:
+        drone_name = d
         df = stream_to_dataframe(red.xrevrange(f"telemetry:{d}", "+", "-", st.session_state.trail_length))
         coords = []
         i = 0

@@ -416,7 +416,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def store_hsv_image(self, image_np, cpt_config, drone_id):
         img = self.run_hsv_filter(image_np, cpt_config)
 
-        path = os.path.join(self.drone_storage_path, drone_id)
+        path = os.path.join(self.drone_storage_path, drone_id, "hsv.jpg")
         img.save(path, format="JPEG")
 
     def run_hsv_filter(self, image_np, cpt_config):
