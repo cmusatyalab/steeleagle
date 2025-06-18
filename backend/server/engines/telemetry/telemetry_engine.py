@@ -158,7 +158,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
 
-                logger.info(f"Updated latest image for {extras.telemetry.drone_name}")
+                logger.debug(f"Updated latest image for {extras.telemetry.drone_name}")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
 
