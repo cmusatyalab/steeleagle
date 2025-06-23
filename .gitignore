@@ -10,6 +10,7 @@ __pycache__/
 *.class
 *.pyc
 *_pb2.py
+*_pb2.pyi
 .env
 .vscode/
 backend/server/models/

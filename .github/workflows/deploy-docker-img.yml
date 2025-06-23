@@ -39,14 +39,11 @@ jobs:
       with:
         submodules: 'true'
 
-    - name: Download protobuf compiler
-      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
-
-    - name: Unzip protobuf compiler
-      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Build protobufs
-      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
+      run: protocol/build.sh
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
