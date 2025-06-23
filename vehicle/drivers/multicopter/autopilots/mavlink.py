@@ -441,14 +441,14 @@ class MAVLinkDrone(MulticopterItf):
             return False
 
         mode_id = self._mode_mapping[mode_target]
-        if type(mode_id) == int:
+        if isinstance(mode_id, int):
             # ArduPilot has a single ID for each mode
             self.vehicle.mav.set_mode_send(
                 self.vehicle.target_system,
                 mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
                 mode_id,
             )
-        elif type(mode_id) == list or type(mode_id) == tuple:
+        elif isinstance(mode_id, list) or isinstance(mode_id, tuple):
             # PX4 has a three digit ID for each mode
             self.vehicle.mav.command_long_send(
                 self.vehicle.target_system,
