@@ -129,10 +129,6 @@ class Driver:
                 logger.info("****** Set Position ENU ******")
                 # TODO: Implement this
                 logger.error("Not implemented yet!")
-            elif vehicle_control == "position_enu":
-                logger.info("****** Set Position ENU ******")
-                # TODO: Implement this
-                logger.error("Not implemented yet!")
             elif vehicle_control == "velocity_enu":
                 logger.info("****** Set Velocity ENU ******")
                 logger.info(f"Call started at: {time.time()}, seq id {seq_num}")
@@ -170,7 +166,7 @@ def get_drone(drone_id, drone_args, drone_module):
         drone = getattr(drone_obj, drone_name)(drone_id, **drone_args)
         return drone
     except Exception as e:
-        raise Exception(f"Could not initialize drone, reason: {e}")
+        raise Exception(f"Could not initialize drone, reason: {e}") from e
 
 
 if __name__ == "__main__":
