@@ -135,7 +135,8 @@ def main():
 
     def object_engine_setup():
         if args.timing:
-            engine = TimingObjectEngine(args)
+            # engine = TimingObjectEngine(args)
+            raise NotImplementedError
         else:
             engine = OpenScoutObjectEngine(args)
 
