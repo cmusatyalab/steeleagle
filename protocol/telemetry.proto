@@ -230,9 +230,10 @@ message Frame {
  * Data related to the current mission
  */
 enum MissionExecState {
-  READY = 0;
-  IN_PROGRESS = 1;
-  CANCELLED = 2;
+  NO_MISSION = 0;
+  READY = 1;
+  IN_PROGRESS = 2;
+  CANCELLED = 3;
 }
 
 message MissionInfo {

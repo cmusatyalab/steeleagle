@@ -11,7 +11,7 @@ import "common.proto";
 /*
  * Used to report messages to the swarm controller
  */
-service ReportService {
+service Report {
   // Send a report to the swarm controller
   rpc SendReport (ReportRequest) returns (ReportResponse) {}
 }
@@ -19,7 +19,7 @@ service ReportService {
 message ReportRequest {
   protocol.common.Request request = 1;
   int32 report_code = 2; // Integer report code, interpreted by the backend
-  string report_message = 3; // Plaintext explanation message
+  string report_string = 3; // Extra data about report
 }
 
 message ReportResponse {

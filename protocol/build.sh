@@ -15,6 +15,6 @@ python3 -m grpc_tools.protoc -I. \
 	--grpc_python_out=./python/ \
        	mission_service.proto \
 	datastore_service.proto \
-	datasink_service.proto \
+	compute_service.proto \
 	report_service.proto \
-	multicopter_control_service.proto
+	multicopter_service.proto

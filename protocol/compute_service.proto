@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.datasink_service;
+package protocol.compute_service;
 
 import "common.proto";
 import "telemetry.proto";
@@ -12,7 +12,7 @@ import "google/protobuf/duration.proto";
 /*
  * Used to configure datasinks for sensor streams
  */
-service DatasinkService {
+service Compute {
   // Get all available compute engines, both local and remote
   rpc GetAvailableDatasinks (GetAvailableDatasinksRequest)
 	returns (GetAvailableDatasinksResponse) {}

@@ -20,13 +20,14 @@ message Request {
  * Responses for RPC functions
  */
 enum ResponseStatus {
-  OK = 0; 
-  IN_PROGRESS = 1;
-  FAILED = 2;
-  NOT_SUPPORTED = 3;
-  COMPLETED = 4;
-  DENIED = 5;
-  WARNING = 6;
+  OK = 0; // Command received 
+  IN_PROGRESS = 1; // Command in progress
+  COMPLETED = 2; // Command finished successfully
+  NOT_SUPPORTED = 3; // Command not supported
+  FAILED = 4; // Command resulted in an error
+  DENIED = 5; // Command lacks permission
+  WARNING = 6; // Command resulted in a warning
+  CANCELLED = 7; // Command was cancelled
 }
 
 message Response {
@@ -92,42 +93,4 @@ message Location {
   double longitude = 2;
   double altitude = 3; // Above MSL [meters]
   double heading = 4;
-}
-
-
-/*
- * Defines the upper left and lower right corners of a detected object
- * in an image frame. Origin (0,0) is the top left corner of the input image.
- * (image_height, image_width) is the bottom right corner.
- * Also the class and confidence threshold associated with the box.
- */
-message BoundingBox {
-  double y_min = 1; // wrt to image size
-  double x_min = 2; // wrt to image size
-  double y_max = 3; // wrt to image size
-  double x_max = 4; // wrt to image size
-  string class_name = 5;
-  float confidence = 6;
-}
-
-/*
- * Color filter represented by hue, saturation, and value
- * Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
- */
-message HSV {
-  uint32 h = 1; // hue range is [0,179]
-  uint32 s = 2; // saturation range is [0,255]
-  uint32 v = 3; // value range is [0,255]
-}
-
-message PatrolArea {
-  PatrolStatus status = 1;
-  repeated string areas = 2;
-  float altitude = 3;
-}
-
-enum PatrolStatus {
-  UNKNOWN_PATROL_STATUS = 0;
-  FINISH = 1;
-  CONTINUE = 2;
 }

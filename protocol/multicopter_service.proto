@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.multicopter_control_service;
+package protocol.multicopter_service;
 
 import "common.proto";
 
@@ -11,11 +11,11 @@ import "common.proto";
 /*
  * Used for low-level control of a multicopter vehicle
  */
-service MulticopterControlService {
+service Multicopter {
   // Gets the type (model) of the vehicle
   rpc GetType (GetTypeRequest) returns (GetTypeResponse) {}
   // Connects to the vehicle
-  rpc Connect (ConnectRequest) returns (ConnectResponse) {}
+  rpc Connect (ConnectRequest) returns (stream ConnectResponse) {}
   // Checks whether the vehicle is successfully connected
   rpc IsConnected (IsConnectedRequest) returns (IsConnectedResponse) {}
   // Disconnects from the vehicle
@@ -25,7 +25,7 @@ service MulticopterControlService {
   // Land the vehicle at its current position
   rpc Land (LandRequest) returns (stream LandResponse) {}
   // Order the vehicle to hover
-  rpc Hover (HoverRequest) returns (stream HoverResponse) {}
+  rpc Hold (HoldRequest) returns (stream HoldResponse) {}
   // Emergency shutdown of the vehicle motors
   rpc Kill (KillRequest) returns (stream KillResponse) {}
   // Changes the home destination for the vehicle
@@ -123,11 +123,11 @@ message LandResponse {
   protocol.common.Response response = 1;
 }
 
-message HoverRequest {
+message HoldRequest {
   protocol.common.Request request = 1;
 }
 
-message HoverResponse {
+message HoldResponse {
   protocol.common.Response response = 1;
 }
 

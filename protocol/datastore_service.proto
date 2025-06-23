@@ -7,12 +7,13 @@ package protocol.datastore_service;
 
 import "common.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
 
 
 /*
  * Used to write and read from the local datastore
  */
-service DatastoreService {
+service Datastore {
   // Write to the datastore
   rpc Write (WriteRequest) returns (WriteResponse) {}
   // Read from the datastore
@@ -25,14 +26,10 @@ message Metadata {
   google.protobuf.Timestamp timestamp = 3; // Time that the data was generated
 }
 
-message Data {
-  bytes data = 1; // Raw data for the object
-}
-
 message WriteRequest {
   protocol.common.Request request = 1;
   Metadata metadata = 2;
-  Data data_holder = 3;
+  google.protobuf.Any data = 3;
 }
 
 message WriteResponse {
@@ -47,5 +44,5 @@ message ReadRequest {
 message ReadResponse {
   protocol.common.Response response = 1;
   Metadata metadata = 2;
-  Data data_holder = 3; // Data read from the datastore
+  google.protobuf.Any data = 3; // Data read from the datastore
 }
