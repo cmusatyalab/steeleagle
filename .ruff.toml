@@ -9,3 +9,8 @@ select = [
   "F",      # pyflakes
   "I"       # isort
 ]
+ignore = [
+  "E722",   # do not use bare except
+  "E741",   # ambiguous variable name (seems to trigger on l, I, and such)
+  "F841",   # unused local variable
+]
