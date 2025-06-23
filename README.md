@@ -11,9 +11,17 @@ Introduction
 ------------
 SteelEagle is a software suite that transforms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process.
 
-[Democratizing Drone Autonomy Via Edge Computing](https://ieeexplore.ieee.org/document/10419264) published in ACM SEC 2023
+Publications
+------------
 
-[**Quickstart**](https://cmusatyalab.github.io/steeleagle/docs/quickstart)
+[Democratizing Drone Autonomy Via Edge Computing](https://ieeexplore.ieee.org/document/10419264) - ACM SEC 2023
+
+[The OODA Loop of Cloudlet-Based Autonomous Drones](https://ieeexplore.ieee.org/document/10818112) - ACM SEC 2024
+
+Documentation
+--------------
+
+[**Quickstart**](https://cmusatyalab.github.io/steeleagle/getting_started/overview/)
 
 [**Documentation**](https://cmusatyalab.github.io/steeleagle/)
 
