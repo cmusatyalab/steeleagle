@@ -78,13 +78,13 @@ class MulticopterItf(ABC):
 
     @abstractmethod
     async def hover(self) -> common_protocol.ResponseStatus:
-       """
-       Instructs the drone to hover in place.
+        """
+        Instructs the drone to hover in place.
 
-       :return: A response object indicating success or failure
-       :rtype: :class:`protocol.common.ResponseStatus`
-       """
-       pass
+        :return: A response object indicating success or failure
+        :rtype: :class:`protocol.common.ResponseStatus`
+        """
+        pass
 
     @abstractmethod
     async def kill(self) -> common_protocol.ResponseStatus:
@@ -98,7 +98,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_home(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
+    async def set_home(
+        self, loc: common_protocol.Location
+    ) -> common_protocol.ResponseStatus:
         """
         Sets the home global location destination (latitude, longitude, absolute or relative
         altitude in meters) for the drone. If an altitude is provided, the drone will attempt
@@ -124,7 +126,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_global_position(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
+    async def set_global_position(
+        self, loc: common_protocol.Location
+    ) -> common_protocol.ResponseStatus:
         """
         Commands the drone to move to a specific global location (latitude, longitude,
         absolute or relative altitude in meters). If both absolute (MSL) and relative
@@ -145,8 +149,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_relative_position_enu(self, pos: common_protocol.PositionENU) \
-            -> common_protocol.ResponseStatus:
+    async def set_relative_position_enu(
+        self, pos: common_protocol.PositionENU
+    ) -> common_protocol.ResponseStatus:
         """
         Sets a target position for the drone relative to its initial (takeoff) point,
         in meters. The target position is expressed with respect to the ENU (east, north, up)
@@ -160,8 +165,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_relative_position_body(self, pos: common_protocol.PositionBody) \
-            -> common_protocol.ResponseStatus:
+    async def set_relative_position_body(
+        self, pos: common_protocol.PositionBody
+    ) -> common_protocol.ResponseStatus:
         """
         Sets a target position for the drone relative to its current position, in meters.
         The target position is expressed with respect to the FRU (forward, right, up)
@@ -175,7 +181,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_velocity_enu(self, vel: common_protocol.VelocityENU) -> common_protocol.ResponseStatus:
+    async def set_velocity_enu(
+        self, vel: common_protocol.VelocityENU
+    ) -> common_protocol.ResponseStatus:
         """
         Sets the drone's target velocity. The velocity target is expressed with respect to
         the ENU (east, north, up) global reference frame.
@@ -193,7 +201,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_velocity_body(self, vel: common_protocol.VelocityBody) -> common_protocol.ResponseStatus:
+    async def set_velocity_body(
+        self, vel: common_protocol.VelocityBody
+    ) -> common_protocol.ResponseStatus:
         """
         Sets the drone's target velocity. The velocity target is expressed with respect to
         the FRU (forward, right, up) body reference frame.
@@ -211,7 +221,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_heading(self, loc: common_protocol.Location) -> common_protocol.ResponseStatus:
+    async def set_heading(
+        self, loc: common_protocol.Location
+    ) -> common_protocol.ResponseStatus:
         """
         Sets the heading of the drone to face a provided global position (latitude, longitude)
         which is used to calculate a target bearing or an absolute heading (degrees).
@@ -229,7 +241,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def set_gimbal_pose(self, pose: common_protocol.PoseBody) -> common_protocol.ResponseStatus:
+    async def set_gimbal_pose(
+        self, pose: common_protocol.PoseBody
+    ) -> common_protocol.ResponseStatus:
         """
         Sets the gimbal pose of the drone, if it has a gimbal, with respect to the body frame
         of reference.
@@ -242,7 +256,9 @@ class MulticopterItf(ABC):
         pass
 
     @abstractmethod
-    async def stream_telemetry(self, tel_sock: zmq.asyncio.Socket, rate_hz: int) -> None:
+    async def stream_telemetry(
+        self, tel_sock: zmq.asyncio.Socket, rate_hz: int
+    ) -> None:
         """
         Continuously sends telemetry data from the drone to the provided ZeroMQ socket.
 

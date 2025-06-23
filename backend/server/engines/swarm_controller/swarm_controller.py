@@ -31,8 +31,9 @@ import protocol.controlplane_pb2 as controlplane
 
 logger = logging.getLogger(__name__)
 
+
 class PatrolArea:
-    '''Represents an area for patrolling.'''
+    """Represents an area for patrolling."""
 
     def __init__(self, name):
         # The name of this patrol area
@@ -59,14 +60,14 @@ class PatrolArea:
         return str(self.patrol_waypoints)
 
     def add_patrol_waypoints(self, waypoints):
-        '''Add a waypoint pair as a part of this patrol area.'''
+        """Add a waypoint pair as a part of this patrol area."""
         self.patrol_waypoints.append(waypoints)
 
     def update_unpatrolled_lines(self):
-        '''
+        """
         Stores the patrol lines that have not yet been patrolled by a drone,
         discarding the rest.
-        '''
+        """
         if self.waypoint_iters is None:
             return
         self.patrol_waypoints = []
@@ -75,18 +76,20 @@ class PatrolArea:
                 self.patrol_waypoints.append(line)
 
     def create_partitioning(self, num_drones):
-        '''
+        """
         Create an assignment from drones to patrol lines.
-        '''
+        """
         # Figure out which patrol lines are still pending
         self.update_unpatrolled_lines()
         num_lines = len(self.patrol_waypoints)
 
         self.waypoint_iters = []
-        logger.info('Creating partition iters')
+        logger.info("Creating partition iters")
 
         if num_drones >= num_lines:
-            logger.info(f"{num_lines=} {num_drones=}. Assigning 1 patrol line per drone")
+            logger.info(
+                f"{num_lines=} {num_drones=}. Assigning 1 patrol line per drone"
+            )
             for i in range(num_drones):
                 partition = []
                 if i < num_lines:
@@ -96,15 +99,19 @@ class PatrolArea:
             return
 
         lines_per_drone = num_lines // num_drones
-        logger.info(f"{num_lines=} {num_drones=}. Assigning {lines_per_drone} patrol lines per drone")
+        logger.info(
+            f"{num_lines=} {num_drones=}. Assigning {lines_per_drone} patrol lines per drone"
+        )
 
         for i in range(num_drones - 1):
-            partition = self.patrol_waypoints[i * lines_per_drone:(i+1) * lines_per_drone]
+            partition = self.patrol_waypoints[
+                i * lines_per_drone : (i + 1) * lines_per_drone
+            ]
             self.waypoint_iters.append(iter(partition))
             self.partitions.append(partition)
 
         # Assign remaining patrol lines to the last drone
-        partition = self.patrol_waypoints[(num_drones - 1) * lines_per_drone:]
+        partition = self.patrol_waypoints[(num_drones - 1) * lines_per_drone :]
         self.waypoint_iters.append(iter(partition))
         self.partitions.append(partition)
 
@@ -124,7 +131,7 @@ class PatrolArea:
 
     @staticmethod
     async def load_from_file(filename):
-        async with aiofiles.open(filename, mode='r') as f:
+        async with aiofiles.open(filename, mode="r") as f:
             contents = await f.read()
         data = json.loads(contents)
 
@@ -134,18 +141,21 @@ class PatrolArea:
             patrol_area = PatrolArea(patrol_name)
             patrol_area_list.append(patrol_area)
             for sub_patrol_name, sub_patrol_waypoints in sub_patrols.items():
-                waypoints = PatrolWaypoints(patrol_name + '.' + sub_patrol_name)
+                waypoints = PatrolWaypoints(patrol_name + "." + sub_patrol_name)
                 patrol_area.add_patrol_waypoints(waypoints)
 
         return patrol_area_list
 
+
 @dataclass
 class PatrolWaypoints:
-    '''Represents the waypoints for a patrolling line segment.'''
+    """Represents the waypoints for a patrolling line segment."""
+
     waypoints: str
 
     def __repr__(self):
         return self.waypoints
+
 
 @dataclass
 class PatrolMissionState:
@@ -154,6 +164,7 @@ class PatrolMissionState:
     current_patrol_area: PatrolArea
     patrol_area_iter: Iterator[List[PatrolArea]]
     drone_altitudes: List[int]
+
 
 class Mission(ABC):
     def __init__(self, state):
@@ -170,6 +181,7 @@ class Mission(ABC):
     def update_drone_list(self, drone_list):
         pass
 
+
 class StaticPatrolMission(Mission):
     DRONE_ALTITUDE_SEP = 3
 
@@ -181,7 +193,9 @@ class StaticPatrolMission(Mission):
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
 
-        self.state.drone_altitudes = [alt + self.DRONE_ALTITUDE_SEP * i for i in range(len(drone_list))]
+        self.state.drone_altitudes = [
+            alt + self.DRONE_ALTITUDE_SEP * i for i in range(len(drone_list))
+        ]
 
     def __repr__(self):
         return str(self.state)
@@ -189,7 +203,6 @@ class StaticPatrolMission(Mission):
     def advance_patrol_area(self):
         self.state.current_patrol_area = next(self.state.patrol_area_iter)
         self._create_partitioning()
-
 
     def state_transition(self, drone_id, rep):
         logger.debug(f"Started state transition for drone {drone_id}, {rep=}")
@@ -203,12 +216,17 @@ class StaticPatrolMission(Mission):
             try:
                 self.advance_patrol_area()
             except StopIteration:
-                logger.info(f"Drone {drone_id}: PatrolArea finished (StopIteration). Sending FINISH status.")
-                logger.info (f"{common.PatrolStatus.FINISH}")
+                logger.info(
+                    f"Drone {drone_id}: PatrolArea finished (StopIteration). Sending FINISH status."
+                )
+                logger.info(f"{common.PatrolStatus.FINISH}")
                 req.msn.patrol_area.status = common.PatrolStatus.FINISH
                 return (drone_id, req)
             except Exception as e:
-                logger.error(f"Unexpected error during advance_patrol_area for drone {drone_id}: {e}", exc_info=True)
+                logger.error(
+                    f"Unexpected error during advance_patrol_area for drone {drone_id}: {e}",
+                    exc_info=True,
+                )
 
         partitioned_areas = self.state.current_patrol_area.get_partition(drone_idx)
         logger.info(f"{partitioned_areas=}")
@@ -220,7 +238,6 @@ class StaticPatrolMission(Mission):
         req.msn.patrol_area.areas.extend([p.waypoints for p in partitioned_areas])
         req.msn.patrol_area.altitude = self.state.drone_altitudes[drone_idx]
 
-
         return (drone_id, req)
 
     def update_drone_list(self, drone_list):
@@ -231,6 +248,7 @@ class StaticPatrolMission(Mission):
         num_drones = len(self.state.drone_list)
         self.state.current_patrol_area.create_partitioning(num_drones)
 
+
 class MissionSupervisor:
     def __init__(self, router_sock):
         self.mission = None
@@ -240,8 +258,10 @@ class MissionSupervisor:
         return self.mission
 
     async def send_drone_msg(self, drone_id, request):
-        logger.info(f'Sending message {request} to {drone_id}')
-        await self.router_sock.send_multipart([drone_id.encode('utf-8'), request.SerializeToString()])
+        logger.info(f"Sending message {request} to {drone_id}")
+        await self.router_sock.send_multipart(
+            [drone_id.encode("utf-8"), request.SerializeToString()]
+        )
 
     async def drone_handler(self):
         while True:
@@ -267,17 +287,20 @@ class MissionSupervisor:
         rep = controlplane.Response()
         rep.ParseFromString(msg)
         logger.info(f"Received msg from {identity=}: {rep=}")
-        drone_id = identity.decode('utf-8')
+        drone_id = identity.decode("utf-8")
         return drone_id, rep
+
 
 class SwarmController:
     # Set up the paths and variables for the compiler
-    compiler_path = '/compiler'
-    output_path = '/compiler/out/flightplan'
-    platform_path  = '/dsl/python/project'
-    waypoint_file = '/compiler/out/waypoint.json'
+    compiler_path = "/compiler"
+    output_path = "/compiler/out/flightplan"
+    platform_path = "/dsl/python/project"
+    waypoint_file = "/compiler/out/waypoint.json"
 
-    def __init__(self, alt, compiler_file, red, request_sock, router_sock, spacing, angle):
+    def __init__(
+        self, alt, compiler_file, red, request_sock, router_sock, spacing, angle
+    ):
         self.alt = alt
         self.compiler_file = compiler_file
         self.red = red
@@ -289,7 +312,7 @@ class SwarmController:
         self.spacing = spacing
         self.angle = angle
 
-        out_dir = '/compiler/out'
+        out_dir = "/compiler/out"
         if not os.path.exists(out_dir):
             os.makedir(out_dir)
 
@@ -301,7 +324,7 @@ class SwarmController:
         async with aiohttp.ClientSession() as session:
             async with session.get(script_url) as resp:
                 resp.raise_for_status()
-                async with aiofiles.open(filename, mode='wb') as f:
+                async with aiofiles.open(filename, mode="wb") as f:
                     async for chunk in resp.content.iter_chunked(8192):
                         await f.write(chunk)
 
@@ -309,12 +332,12 @@ class SwarmController:
     async def extract_zip(filename):
         def _extract():
             dsl_file = kml_file = None
-            with ZipFile(filename, 'r') as z:
+            with ZipFile(filename, "r") as z:
                 z.extractall(path=SwarmController.compiler_path)
                 for file_name in z.namelist():
-                    if file_name.endswith('.dsl'):
+                    if file_name.endswith(".dsl"):
                         dsl_file = file_name
-                    elif file_name.endswith('.kml'):
+                    elif file_name.endswith(".kml"):
                         kml_file = file_name
             return dsl_file, kml_file
 
@@ -324,8 +347,8 @@ class SwarmController:
     async def download_script(script_url):
         try:
             # Get the ZIP file name from the URL
-            filename = script_url.rsplit(sep='/')[-1]
-            logger.info(f'Writing {filename} to disk...')
+            filename = script_url.rsplit(sep="/")[-1]
+            logger.info(f"Writing {filename} to disk...")
 
             # Download the ZIP file
             await SwarmController.download_file(script_url, filename)
@@ -351,24 +374,32 @@ class SwarmController:
         # Define the command and arguments
         command = [
             "java",
-            "-jar", jar_path,
-            "-o", self.output_path,
-            "-l", self.platform_path,
-            "-k", kml_file_path,
-            "-s", dsl_file_path,
-            "-p", "corridor",
-            "--angle", str(self.angle),
-            "--spacing", str(self.spacing),
-            "-w", self.waypoint_file
+            "-jar",
+            jar_path,
+            "-o",
+            self.output_path,
+            "-l",
+            self.platform_path,
+            "-k",
+            kml_file_path,
+            "-s",
+            dsl_file_path,
+            "-p",
+            "corridor",
+            "--angle",
+            str(self.angle),
+            "--spacing",
+            str(self.spacing),
+            "-w",
+            self.waypoint_file,
         ]
 
         # Run the command
         logger.info(f"Running command: {' '.join(command)}")
 
         proc = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT)
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+        )
 
         stdout, _ = await proc.communicate()
 
@@ -394,8 +425,10 @@ class SwarmController:
                     logger.info(f"Drone-specific script url: {req.msn.url}")
 
                 # send the command to the drone
-                await self.router_sock.send_multipart([drone_id.encode('utf-8'), req.SerializeToString()])
-                logger.info(f'Delivered request to drone {drone_id}.')
+                await self.router_sock.send_multipart(
+                    [drone_id.encode("utf-8"), req.SerializeToString()]
+                )
+                logger.info(f"Delivered request to drone {drone_id}.")
 
         except Exception as e:
             logger.error(f"Error sending request to drone: {e}")
@@ -407,15 +440,19 @@ class SwarmController:
             try:
                 req = controlplane.Request()
                 req.ParseFromString(msg)
-                logger.info(f'Request received:\n{text_format.MessageToString(req)}')
+                logger.info(f"Request received:\n{text_format.MessageToString(req)}")
             except DecodeError:
-                await self.request_sock.send(b'Error decoding protobuf. Did you send a controlplane_pb2?')
-                logger.info('Error decoding protobuf. Did you send a controlplane_pb2?')
+                await self.request_sock.send(
+                    b"Error decoding protobuf. Did you send a controlplane_pb2?"
+                )
+                logger.info("Error decoding protobuf. Did you send a controlplane_pb2?")
                 continue
 
             # get the drone list
             if req.HasField("veh"):
-                drone_list = list(req.veh.drone_ids) # convert from protobuf list to python list to support index() syntax
+                drone_list = list(
+                    req.veh.drone_ids
+                )  # convert from protobuf list to python list to support index() syntax
             else:
                 drone_list = list(req.msn.drone_ids)
             logger.info(f"drone list: {drone_list}")
@@ -437,7 +474,7 @@ class SwarmController:
                     await self.compile_mission(dsl, kml)
                 except Exception as e:
                     logger.error(f"Compiler received error {e}")
-                    await self.request_sock.send(b'ACK')
+                    await self.request_sock.send(b"ACK")
                     continue
 
                 patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
@@ -451,26 +488,41 @@ class SwarmController:
 
             # send the command to the drone
             await self.send_to_drone(req, base_url, drone_list)
-            await self.request_sock.send(b'ACK')
-            logger.info('Sent ACK to commander')
+            await self.request_sock.send(b"ACK")
+            logger.info("Sent ACK to commander")
+
 
 async def main():
     setup_logging(logger)
     logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--droneport', type=int, default=5003, help='Specify port to listen for drone requests [default: 5003]')
-    parser.add_argument('-c', '--cmdrport', type=int, default=6001, help='Specify port to listen for commander requests [default: 6001]')
     parser.add_argument(
-        "-r", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
+        "-d",
+        "--droneport",
+        type=int,
+        default=5003,
+        help="Specify port to listen for drone requests [default: 5003]",
     )
     parser.add_argument(
-        "-a", "--auth", default="", help="Shared key for redis user."
+        "-c",
+        "--cmdrport",
+        type=int,
+        default=6001,
+        help="Specify port to listen for commander requests [default: 6001]",
     )
+    parser.add_argument(
+        "-r",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+    parser.add_argument("-a", "--auth", default="", help="Shared key for redis user.")
     parser.add_argument(
         "--altitude", type=int, default=15, help="base altitude for the drones mission"
     )
     parser.add_argument(
-        "--compiler_file", default='compile-2.0-full.jar', help="compiler file name"
+        "--compiler_file", default="compile-2.0-full.jar", help="compiler file name"
     )
     parser.add_argument(
         "--spacing", type=int, default=18, help="Spacing for corridor scan"
@@ -494,27 +546,36 @@ async def main():
     logger.info(f"Using compiler file: {compiler_file}")
 
     # Connect to redis
-    red = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+    red = redis.Redis(
+        host="redis",
+        port=args.redis,
+        username="steeleagle",
+        password=f"{args.auth}",
+        decode_responses=True,
+    )
     logger.info(f"Connected to redis on port {args.redis}...")
 
     # Set up the commander socket
     ctx = zmq.asyncio.Context()
     request_sock = ctx.socket(zmq.REP)
-    request_sock.bind(f'tcp://*:{args.cmdrport}')
-    logger.info(f'Listening on tcp://*:{args.cmdrport} for commander requests...')
+    request_sock.bind(f"tcp://*:{args.cmdrport}")
+    logger.info(f"Listening on tcp://*:{args.cmdrport} for commander requests...")
 
     # Set up the drone socket
     async_ctx = zmq.asyncio.Context()
     router_sock = async_ctx.socket(zmq.ROUTER)
     router_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-    router_sock.bind(f'tcp://*:{args.droneport}')
-    logger.info(f'Listening on tcp://*:{args.droneport} for drone connections...')
+    router_sock.bind(f"tcp://*:{args.droneport}")
+    logger.info(f"Listening on tcp://*:{args.droneport} for drone connections...")
 
-    controller = SwarmController(alt, compiler_file, red, request_sock, router_sock, spacing, angle)
+    controller = SwarmController(
+        alt, compiler_file, red, request_sock, router_sock, spacing, angle
+    )
     try:
         await controller.run()
     except KeyboardInterrupt:
-        logger.info('Shutting down...')
+        logger.info("Shutting down...")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())

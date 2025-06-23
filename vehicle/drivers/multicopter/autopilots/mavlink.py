@@ -18,19 +18,19 @@ from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 
-class MAVLinkDrone(MulticopterItf):
 
+class MAVLinkDrone(MulticopterItf):
     class FlightMode(Enum):
-        LAND = 'LAND'
-        RTL = 'RTL'
-        LOITER = 'LOITER'
-        TAKEOFF = 'TAKEOFF'
-        ALT_HOLD = 'ALT_HOLD'
+        LAND = "LAND"
+        RTL = "RTL"
+        LOITER = "LOITER"
+        TAKEOFF = "TAKEOFF"
+        ALT_HOLD = "ALT_HOLD"
         # These are the same mode but have different names
         # depending on the autopilot software
-        OFFBOARD = 'OFFBOARD' # PX4
-        GUIDED = 'GUIDED' # ArduPilot
-    
+        OFFBOARD = "OFFBOARD"  # PX4
+        GUIDED = "GUIDED"  # ArduPilot
+
     def __init__(self, drone_id):
         self.drone_id = drone_id
         self.vehicle = None
@@ -38,7 +38,8 @@ class MAVLinkDrone(MulticopterItf):
         self._mode_mapping = None
         self._listener_task = None
 
-    ''' Interface methods '''
+    """ Interface methods """
+
     async def get_type(self):
         return "MAVLink Drone"
 
@@ -50,11 +51,11 @@ class MAVLinkDrone(MulticopterItf):
             self.vehicle.wait_heartbeat()
             self._mode_mapping = self.vehicle.mode_mapping()
             await asyncio.sleep(0.1)
-        
+
         # Register telemetry streams
         await self._register_telemetry_streams()
         asyncio.create_task(self._message_listener())
-        
+
     async def is_connected(self):
         return self.vehicle is not None
 
@@ -65,28 +66,34 @@ class MAVLinkDrone(MulticopterItf):
 
         if self.vehicle:
             self.vehicle.close()
-    
+
     async def take_off(self):
         # TODO: This is arbitrarily chosen for now, in future
         # this could be part of the API
         target_altitude = 3
         await self._arm()
         await self._switch_mode(MAVLinkDrone.FlightMode.TAKEOFF)
-        
+
         # Take off at current position to target altitude
         gps = self._get_global_position()
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, 0, 0, 0, 0,
-            gps['latitude'], gps['longitude'], gps['absolute_altitude'] + target_altitude)
-       
-        result = await self._wait_for_condition(
-            lambda: self._is_mode_set(MAVLinkDrone.FlightMode.LOITER),
-            interval=1
+            0,
+            0,
+            0,
+            0,
+            0,
+            gps["latitude"],
+            gps["longitude"],
+            gps["absolute_altitude"] + target_altitude,
         )
- 
+
+        result = await self._wait_for_condition(
+            lambda: self._is_mode_set(MAVLinkDrone.FlightMode.LOITER), interval=1
+        )
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
@@ -96,15 +103,21 @@ class MAVLinkDrone(MulticopterItf):
         await self._switch_mode(MAVLinkDrone.FlightMode.LAND)
 
         self.vehicle.mav.command_long_send(
-            self.vehicle.target_system, self.vehicle.target_component,
+            self.vehicle.target_system,
+            self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_NAV_LAND,
-            0, 0, 0, 0, 0, 0, 0, 0)
-
-        result = await self._wait_for_condition(
-            lambda: self._is_disarmed(),
-            interval=1
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         )
-        
+
+        result = await self._wait_for_condition(lambda: self._is_disarmed(), interval=1)
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
@@ -123,13 +136,15 @@ class MAVLinkDrone(MulticopterItf):
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
-            0, 0, 0, 0, 0, 0
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         )
-        
-        result = await self._wait_for_condition(
-            lambda: self._is_disarmed(),
-            interval=1
-        )
+
+        result = await self._wait_for_condition(lambda: self._is_disarmed(), interval=1)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -145,39 +160,39 @@ class MAVLinkDrone(MulticopterItf):
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_DO_SET_HOME,
-            1, 0, 0, 0, 0,
-            lat, lon, alt
+            1,
+            0,
+            0,
+            0,
+            0,
+            lat,
+            lon,
+            alt,
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_home_set(),
-            timeout=5,
-            interval=0.1
+            lambda: self._is_home_set(), timeout=5, interval=0.1
         )
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
+
     async def rth(self):
-        if not await \
-                self._switch_mode(MAVLinkDrone.FlightMode.RTL):
+        if not await self._switch_mode(MAVLinkDrone.FlightMode.RTL):
             return common_protocol.ResponseStatus.FAILED
 
         # TODO: This might need to be an await hover, should
         # we mandate that all drones hover after RTL? If not
         # should we block for disarm or for hover?
-        result = await self._wait_for_condition(
-            lambda: self._is_disarmed(),
-            interval=1
-        )
-        
+        result = await self._wait_for_condition(lambda: self._is_disarmed(), interval=1)
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
-            return common_protocol.ResponseStatus.FAILED        
-    
+            return common_protocol.ResponseStatus.FAILED
+
     async def set_global_position(self, location):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -185,19 +200,19 @@ class MAVLinkDrone(MulticopterItf):
     async def set_relative_position_enu(self, position):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_relative_position_body(self, position):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_velocity_enu(self, velocity):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_velocity_body(self, velocity):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_heading(self, location):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -206,47 +221,49 @@ class MAVLinkDrone(MulticopterItf):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def stream_telemetry(self, tel_sock, rate_hz):
-        logger.info('Starting telemetry stream')
+        logger.info("Starting telemetry stream")
         # Wait a second to avoid contention issues
-        await asyncio.sleep(1) 
+        await asyncio.sleep(1)
         while await self.is_connected():
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
-                tel_message.global_position.latitude = \
-                        self._get_global_position()["latitude"]
-                tel_message.global_position.longitude = \
-                        self._get_global_position()["longitude"]
-                tel_message.global_position.absolute_altitude = \
-                        self._get_global_position()["absolute_altitude"]
-                tel_message.global_position.relative_altitude = \
-                        self._get_global_position()["relative_altitude"]
-                tel_message.global_position.heading = \
-                        self._get_global_position()["heading"]
-                tel_message.velocity_enu.north_vel = \
-                        self._get_velocity_enu()["north"]
-                tel_message.velocity_enu.east_vel = \
-                        self._get_velocity_enu()["east"]
-                tel_message.velocity_enu.up_vel = \
-                        self._get_velocity_enu()["up"]
-                tel_message.velocity_body.forward_vel = \
-                        self._get_velocity_body()["forward"]
-                tel_message.velocity_body.right_vel = \
-                        self._get_velocity_body()["right"]
-                tel_message.velocity_body.up_vel = \
-                        self._get_velocity_body()["up"]
+                tel_message.global_position.latitude = self._get_global_position()[
+                    "latitude"
+                ]
+                tel_message.global_position.longitude = self._get_global_position()[
+                    "longitude"
+                ]
+                tel_message.global_position.absolute_altitude = (
+                    self._get_global_position()["absolute_altitude"]
+                )
+                tel_message.global_position.relative_altitude = (
+                    self._get_global_position()["relative_altitude"]
+                )
+                tel_message.global_position.heading = self._get_global_position()[
+                    "heading"
+                ]
+                tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
+                tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
+                tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
+                tel_message.velocity_body.forward_vel = self._get_velocity_body()[
+                    "forward"
+                ]
+                tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
+                tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
-                logger.error(f'Failed to get telemetry, error: {e}')
+                logger.error(f"Failed to get telemetry, error: {e}")
             await asyncio.sleep(1 / rate_hz)
-                    
+
     async def stream_video(self, cam_sock, rate_hz):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
-    ''' Connect methods '''
+
+    """ Connect methods """
+
     async def _register_telemetry_streams(self, frequency_hz: float = 10.0):
         # TODO: Make frequency of commands parameterizable
         # and correlated with stream_telemetry
@@ -267,28 +284,40 @@ class MAVLinkDrone(MulticopterItf):
         logger.info(f"Registering telemetry streams at {frequency_hz} Hz...")
         for message_name in telemetry_message_names:
             try:
-                message_id = getattr(mavutil.mavlink, f"MAVLINK_MSG_ID_{message_name}", None)
+                message_id = getattr(
+                    mavutil.mavlink, f"MAVLINK_MSG_ID_{message_name}", None
+                )
                 if message_id is None:
-                    logger.warning(f"Message name {message_name} is not found in MAVLink definitions.")
+                    logger.warning(
+                        f"Message name {message_name} is not found in MAVLink definitions."
+                    )
                     continue
 
                 self._request_message_interval(message_id, frequency_hz)
-                logger.info(f"Registered telemetry stream: {message_name} (ID: {message_id})")
+                logger.info(
+                    f"Registered telemetry stream: {message_name} (ID: {message_id})"
+                )
 
             except Exception as e:
                 logger.error(f"Failed to register telemetry stream {message_name}: {e}")
 
     def _request_message_interval(self, message_id: int, frequency_hz: float):
         self.vehicle.mav.command_long_send(
-            self.vehicle.target_system, self.vehicle.target_component,
-            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            self.vehicle.target_system,
+            self.vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,
             message_id,
             1e6 / frequency_hz,
-            0, 0, 0, 0,
-            0, 
+            0,
+            0,
+            0,
+            0,
+            0,
         )
 
-    ''' Telemetry methods '''
+    """ Telemetry methods """
+
     def _get_name(self):
         return self.drone_id
 
@@ -301,7 +330,7 @@ class MAVLinkDrone(MulticopterItf):
             "longitude": gps_msg.lon / 1e7,
             "absolute_altitude": gps_msg.alt / 1e3,
             "relative_altitude": gps_msg.relative_alt / 1e3,
-            "heading": gps_msg.hdg / 1e2 # convert the centidegree to degrees
+            "heading": gps_msg.hdg / 1e2,  # convert the centidegree to degrees
         }
 
     def _get_battery_percentage(self):
@@ -323,9 +352,9 @@ class MAVLinkDrone(MulticopterItf):
         return {
             "north": gps_msg.vx / 100,
             "east": gps_msg.vy / 100,
-            "up": gps_msg.vz * -1 / 100
+            "up": gps_msg.vz * -1 / 100,
         }
-        
+
     def _get_velocity_body(self):
         # TODO: This reference frame is incorrect
         velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
@@ -334,7 +363,7 @@ class MAVLinkDrone(MulticopterItf):
         return {
             "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
-            "up": velocity_msg.vz * -1   # Body-frame Z velocity in m/s
+            "up": velocity_msg.vz * -1,  # Body-frame Z velocity in m/s
         }
 
     def _get_rssi(self):
@@ -343,22 +372,28 @@ class MAVLinkDrone(MulticopterItf):
             return None
         return rssi_msg.rssi
 
-    ''' Actuation methods '''
+    """ Actuation methods """
+
     async def _arm(self):
         logger.info("Arming drone...")
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0, 1, 0, 0, 0, 0, 0, 0
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         )
 
-        result =  await self._wait_for_condition(
-            lambda: self._is_armed(),
-            timeout=5,
-            interval=1
+        result = await self._wait_for_condition(
+            lambda: self._is_armed(), timeout=5, interval=1
         )
-        
+
         if result:
             logger.info("Armed successfully")
         else:
@@ -371,87 +406,106 @@ class MAVLinkDrone(MulticopterItf):
             self.vehicle.target_system,
             self.vehicle.target_component,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            0, 0, 0, 0, 0, 0, 0, 0
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         )
 
-        result =  await self._wait_for_condition(
-            lambda: self._is_disarmed(),
-            timeout=5,
-            interval=1
+        result = await self._wait_for_condition(
+            lambda: self._is_disarmed(), timeout=5, interval=1
         )
-        
+
         if result:
             self.mode = None
             logger.info("Disarmed successfully")
         else:
             logger.error("Disarm failed")
-            
-        return result  
+
+        return result
 
     async def _switch_mode(self, mode):
         mode_target = mode.value
         curr_mode = self.mode.value if self.mode else None
-        
+
         if self.mode == mode:
             logger.info(f"Already in mode {mode_target}")
             return True
-        
+
         if mode_target not in self._mode_mapping:
             logger.info(f"Mode {mode_target} not supported!")
             return False
-        
+
         mode_id = self._mode_mapping[mode_target]
         if type(mode_id) == int:
             # ArduPilot has a single ID for each mode
             self.vehicle.mav.set_mode_send(
                 self.vehicle.target_system,
                 mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-                mode_id
+                mode_id,
             )
         elif type(mode_id) == list or type(mode_id) == tuple:
             # PX4 has a three digit ID for each mode
             self.vehicle.mav.command_long_send(
                 self.vehicle.target_system,
                 self.vehicle.target_component,
-                mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0,
-                mode_id[0], mode_id[1], mode_id[2],
-                0, 0, 0, 0
+                mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                0,
+                mode_id[0],
+                mode_id[1],
+                mode_id[2],
+                0,
+                0,
+                0,
+                0,
             )
-            
+
             # TODO: Why do we have to do this?
             # Avoid waiting for mode condition in OFFBOARD to prevent hanging
             if not self.mode == MAVLinkDrone.FlightMode.OFFBOARD:
                 return True
-        
+
         result = await self._wait_for_condition(
-            lambda: self._is_mode_set(mode),
-            timeout=5,
-            interval=1
+            lambda: self._is_mode_set(mode), timeout=5, interval=1
         )
-        
+
         if result:
             self.mode = mode
             logger.info(f"Mode switched to {mode_target}")
 
         return result
-        
-    ''' ACK methods'''    
+
+    """ ACK methods"""
+
     def _is_armed(self):
-        return self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode & \
-                mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
-        
+        return (
+            self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode
+            & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
+        )
+
     def _is_disarmed(self):
-        return not (self.vehicle.recv_match(type='HEARTBEAT', blocking=True).base_mode & \
-                mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
+        return not (
+            self.vehicle.recv_match(type="HEARTBEAT", blocking=True).base_mode
+            & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
+        )
 
     def _is_mode_set(self, mode):
-        current_mode = mavutil.mode_string_v10(self.vehicle.recv_match(type='HEARTBEAT', blocking=True))
+        current_mode = mavutil.mode_string_v10(
+            self.vehicle.recv_match(type="HEARTBEAT", blocking=True)
+        )
         return current_mode == mode.value
-    
+
     def _is_home_set(self):
-        msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True)
-        return msg and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME \
-                and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+        msg = self.vehicle.recv_match(type="COMMAND_ACK", blocking=True)
+        return (
+            msg
+            and msg.command == mavutil.mavlink.MAV_CMD_DO_SET_HOME
+            and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
 
     def _is_global_position_reached(self, lat, lon, alt):
         if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):
@@ -461,39 +515,41 @@ class MAVLinkDrone(MulticopterItf):
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["absolute_altitude"]
         return current_altitude >= target_altitude * 0.95
-    
+
     def _is_rel_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["relative_altitude"]
         return current_altitude >= target_altitude * 0.95
-   
+
     def _is_heading_reached(self, heading):
         current_heading = self._get_global_position()["heading"]
         if not current_heading:
             return False  # Return False if heading data is unavailable
         diff = (heading - current_heading + 540) % 360 - 180
         return abs(diff) <= 1
-    
+
     def _is_at_target(self, lat, lon):
         current_location = self._get_global_position()
         if not current_location:
             return False
         dlat = lat - current_location["latitude"]
         dlon = lon - current_location["longitude"]
-        distance =  math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
+        distance = math.sqrt((dlat**2) + (dlon**2)) * 1.113195e5
         return distance < 1.0
-        
-    ''' Helper methods '''
+
+    """ Helper methods """
+
     def _calculate_heading(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians
-        lat1, lon1, lat2, lon2 = map(math.radians, \
-                [lat1, lon1, lat2, lon2])
-        
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+
         delta_lon = lon2 - lon1
 
         # heading calculation
         x = math.sin(delta_lon) * math.cos(lat2)
-        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
-        
+        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(
+            lat2
+        ) * math.cos(delta_lon)
+
         initial_heading = math.atan2(x, y)
 
         # Convert heading from radians to degrees
@@ -503,8 +559,8 @@ class MAVLinkDrone(MulticopterItf):
         converted_heading = (initial_heading + 360) % 360
 
         return converted_heading
-        
-    def _to_quaternion(self, roll = 0.0, pitch = 0.0, yaw = 0.0):
+
+    def _to_quaternion(self, roll=0.0, pitch=0.0, yaw=0.0):
         t0 = math.cos(math.radians(yaw * 0.5))
         t1 = math.sin(math.radians(yaw * 0.5))
         t2 = math.cos(math.radians(roll * 0.5))
@@ -531,15 +587,17 @@ class MAVLinkDrone(MulticopterItf):
             logger.info("Message listener stopped")
         except Exception as e:
             logger.error(f"Error in message listener: {e}")
-    
+
     def _get_cached_message(self, message_type):
         try:
-            logger.debug(f"Currently connection message types: {list(self.vehicle.messages)}")
+            logger.debug(
+                f"Currently connection message types: {list(self.vehicle.messages)}"
+            )
             return self.vehicle.messages[message_type]
         except KeyError:
             logger.error(f"Message type {message_type} not found in cache")
             return None
-        
+
     async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
         start_time = time.time()
         while True:

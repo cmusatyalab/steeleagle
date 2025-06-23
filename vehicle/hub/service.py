@@ -8,6 +8,7 @@ from util.utils import setup_socket
 
 logger = logging.getLogger(__name__)
 
+
 class Service(ABC):
     def __init__(self):
         self.tasks = []
@@ -19,7 +20,9 @@ class Service(ABC):
         self.tasks.append(task)
         return task
 
-    def setup_and_register_socket(self, socket, socket_op, socket_id=None, port=None, host_addr="*"):
+    def setup_and_register_socket(
+        self, socket, socket_op, socket_id=None, port=None, host_addr="*"
+    ):
         setup_socket(socket, socket_op, socket_id, port, host_addr)
         self.socks.append(socket)
 
@@ -31,7 +34,7 @@ class Service(ABC):
             await self.shutdown()
 
     async def shutdown(self):
-        logger.info(f'{self.__class__.__name__}: Shutting down Service')
+        logger.info(f"{self.__class__.__name__}: Shutting down Service")
         for sock in self.socks:
             sock.close()
 
@@ -52,8 +55,4 @@ class Service(ABC):
                 except Exception as err:
                     logger.error(f"Task raised exception: {err}")
 
-
         logger.info("Main: Service shutdown complete")
-
-
-

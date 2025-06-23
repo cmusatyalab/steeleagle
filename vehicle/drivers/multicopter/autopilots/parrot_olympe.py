@@ -51,13 +51,13 @@ from olympe.messages.rth import (
 
 logger = logging.getLogger(__name__)
 
-class ParrotOlympeDrone(MulticopterItf):
 
+class ParrotOlympeDrone(MulticopterItf):
     class FlightMode(Enum):
-        LOITER = 'LOITER'
-        TAKEOFF_LAND = 'TAKEOFF_LAND'
-        VELOCITY = 'VELOCITY'
-        GUIDED = 'GUIDED'
+        LOITER = "LOITER"
+        TAKEOFF_LAND = "TAKEOFF_LAND"
+        VELOCITY = "VELOCITY"
+        GUIDED = "GUIDED"
 
     def __init__(self, drone_id, **kwargs):
         self._drone_id = drone_id
@@ -71,7 +71,8 @@ class ParrotOlympeDrone(MulticopterItf):
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
 
-    ''' Interface methods '''
+    """ Interface methods """
+
     async def get_type(self):
         return "Parrot Olympe Drone"
 
@@ -92,10 +93,7 @@ class ParrotOlympeDrone(MulticopterItf):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(TakeOff())
 
-        result = await self._wait_for_condition(
-            lambda: self._is_hovering(),
-            interval=1
-        )
+        result = await self._wait_for_condition(lambda: self._is_hovering(), interval=1)
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
@@ -108,10 +106,7 @@ class ParrotOlympeDrone(MulticopterItf):
         await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
         self._drone(Landing()).wait().success()
 
-        result = await self._wait_for_condition(
-            lambda: self._is_landed(),
-            interval=1
-        )
+        result = await self._wait_for_condition(lambda: self._is_landed(), interval=1)
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
@@ -128,10 +123,7 @@ class ParrotOlympeDrone(MulticopterItf):
         velocity.angular_vel = 0.0
         await self.set_velocity_body(velocity)
 
-        result = await self._wait_for_condition(
-            lambda: self._is_hovering(),
-            interval=1
-        )
+        result = await self._wait_for_condition(lambda: self._is_hovering(), interval=1)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -147,15 +139,12 @@ class ParrotOlympeDrone(MulticopterItf):
         alt = location.altitude
 
         try:
-            self._drone(set_custom_location(
-                lat, lon, alt)).wait().success()
+            self._drone(set_custom_location(lat, lon, alt)).wait().success()
         except:
             return common_protocol.ResponseStatus.FAILED
 
         result = await self._wait_for_condition(
-            lambda: self._is_home_set(lat, lon, alt),
-            timeout=5,
-            interval=0.1
+            lambda: self._is_home_set(lat, lon, alt), timeout=5, interval=0.1
         )
 
         if result:
@@ -174,8 +163,7 @@ class ParrotOlympeDrone(MulticopterItf):
         await asyncio.sleep(1)
 
         result = await self._wait_for_condition(
-            lambda: self._is_home_reached(),
-            interval=1
+            lambda: self._is_home_reached(), interval=1
         )
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
@@ -194,7 +182,9 @@ class ParrotOlympeDrone(MulticopterItf):
         # Olympe only accepts relative altitude, so convert absolute to
         # relative altitude in case that is the location mode
         if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
-            altitude = alt - self._get_global_position()["altitude"] + self._get_altitude_rel()
+            altitude = (
+                alt - self._get_global_position()["altitude"] + self._get_altitude_rel()
+            )
         else:
             altitude = alt
 
@@ -206,15 +196,15 @@ class ParrotOlympeDrone(MulticopterItf):
         try:
             global_position = self._get_global_position()
             bearing = self._calculate_bearing(
-                global_position["latitude"],
-                global_position["longitude"],
-                lat,
-                lon)
+                global_position["latitude"], global_position["longitude"], lat, lon
+            )
             # Check if max velocities are provided
-            if max_velocity.north_vel or \
-                    max_velocity.east_vel or \
-                    max_velocity.up_vel or \
-                    max_velocity.angular_vel:
+            if (
+                max_velocity.north_vel
+                or max_velocity.east_vel
+                or max_velocity.up_vel
+                or max_velocity.angular_vel
+            ):
                 self._drone(
                     extended_move_to(
                         lat,
@@ -224,17 +214,11 @@ class ParrotOlympeDrone(MulticopterItf):
                         bearing,
                         max(max_velocity.north_vel, max_velocity.east_vel),
                         max_velocity.up_vel,
-                        max_velocity.angular_vel)
+                        max_velocity.angular_vel,
+                    )
                 ).success()
             else:
-                self._drone(
-                    moveTo(
-                        lat,
-                        lon,
-                        altitude,
-                        heading_mode,
-                        bearing)
-                ).success()
+                self._drone(moveTo(lat, lon, altitude, heading_mode, bearing)).success()
 
         except:
             return common_protocol.ResponseStatus.FAILED
@@ -243,12 +227,10 @@ class ParrotOlympeDrone(MulticopterItf):
         await asyncio.sleep(1)
 
         result = await self._wait_for_condition(
-            lambda: self._is_move_to_done(),
-            interval=1
+            lambda: self._is_move_to_done(), interval=1
         )
 
-        if self._is_global_position_reached(lat, lon, altitude) \
-                and result:
+        if self._is_global_position_reached(lat, lon, altitude) and result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
@@ -272,11 +254,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
         # Get the max rotation speed for setting velocity
         max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
-        self._velocity_setpoint = (
-                forward_vel,
-                right_vel,
-                up_vel,
-                angular_vel)
+        self._velocity_setpoint = (forward_vel, right_vel, up_vel, angular_vel)
         if self._pid_task is None:
             self._pid_task = asyncio.create_task(self._velocity_pid())
 
@@ -293,10 +271,8 @@ class ParrotOlympeDrone(MulticopterItf):
         else:
             global_position = self._get_global_position()
             target = self._calculate_bearing(
-                    global_position["latitude"],
-                    global_position["longitude"],
-                    lat,
-                    lon)
+                global_position["latitude"], global_position["longitude"], lat, lon
+            )
         offset = math.radians(heading - target)
 
         try:
@@ -305,8 +281,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
         result = await self._wait_for_condition(
-            lambda: self._is_heading_reached(target),
-            interval=0.5
+            lambda: self._is_heading_reached(target), interval=0.5
         )
 
         if result:
@@ -327,46 +302,52 @@ class ParrotOlympeDrone(MulticopterItf):
                 target_pitch = pitch
                 target_roll = roll
 
-                self._drone(set_target(
-                    gimbal_id=0,
-                    control_mode="position",
-                    yaw_frame_of_reference="relative",
-                    yaw=yaw,
-                    pitch_frame_of_reference="relative",
-                    pitch=pitch,
-                    roll_frame_of_reference="relative",
-                    roll=roll)
+                self._drone(
+                    set_target(
+                        gimbal_id=0,
+                        control_mode="position",
+                        yaw_frame_of_reference="relative",
+                        yaw=yaw,
+                        pitch_frame_of_reference="relative",
+                        pitch=pitch,
+                        roll_frame_of_reference="relative",
+                        roll=roll,
+                    )
                 ).success()
             elif control_mode == common_protocol.PoseControlMode.POSITION_RELATIVE:
                 current_gimbal = await self._get_gimbal_pose_body(pose.actuator_id)
-                target_yaw = current_gimbal['yaw'] + yaw
-                target_pitch = current_gimbal['pitch'] + pitch
-                target_roll = current_gimbal['roll'] + roll
+                target_yaw = current_gimbal["yaw"] + yaw
+                target_pitch = current_gimbal["pitch"] + pitch
+                target_roll = current_gimbal["roll"] + roll
 
-                self._drone(set_target(
-                    gimbal_id=0,
-                    control_mode="position",
-                    yaw_frame_of_reference="relative",
-                    yaw=target_yaw,
-                    pitch_frame_of_reference="relative",
-                    pitch=target_pitch,
-                    roll_frame_of_reference="relative",
-                    roll=target_roll)
+                self._drone(
+                    set_target(
+                        gimbal_id=0,
+                        control_mode="position",
+                        yaw_frame_of_reference="relative",
+                        yaw=target_yaw,
+                        pitch_frame_of_reference="relative",
+                        pitch=target_pitch,
+                        roll_frame_of_reference="relative",
+                        roll=target_roll,
+                    )
                 ).success()
             else:
                 target_yaw = None
                 target_pitch = None
                 target_roll = None
 
-                self._drone(set_target(
-                    gimbal_id=0,
-                    control_mode="velocity",
-                    yaw_frame_of_reference="relative",
-                    yaw=yaw,
-                    pitch_frame_of_reference="relative",
-                    pitch=pitch,
-                    roll_frame_of_reference="relative",
-                    roll=roll)
+                self._drone(
+                    set_target(
+                        gimbal_id=0,
+                        control_mode="velocity",
+                        yaw_frame_of_reference="relative",
+                        yaw=yaw,
+                        pitch_frame_of_reference="relative",
+                        pitch=pitch,
+                        roll_frame_of_reference="relative",
+                        roll=roll,
+                    )
                 ).success()
         except:
             return common_protocol.ResponseStatus.FAILED
@@ -374,12 +355,10 @@ class ParrotOlympeDrone(MulticopterItf):
         if control_mode != common_protocol.PoseControlMode.VELOCITY:
             result = await self._wait_for_condition(
                 lambda: self._is_gimbal_pose_reached(
-                    target_yaw,
-                    target_pitch,
-                    target_roll
+                    target_yaw, target_pitch, target_roll
                 ),
                 timeout=10,
-                interval=0.5
+                interval=0.5,
             )
         else:
             # We cannot check the velocity of the gimbal from Olympe
@@ -391,7 +370,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return common_protocol.ResponseStatus.FAILED
 
     async def stream_telemetry(self, tel_sock, rate_hz):
-        logger.info('Starting telemetry stream')
+        logger.info("Starting telemetry stream")
         # Wait a second to avoid contention issues
         await asyncio.sleep(1)
         while await self.is_connected():
@@ -400,27 +379,25 @@ class ParrotOlympeDrone(MulticopterItf):
                 tel_message.drone_name = self._get_name()
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
-                tel_message.global_position.latitude = \
-                    self._get_global_position()["latitude"]
-                tel_message.global_position.longitude = \
-                    self._get_global_position()["longitude"]
-                tel_message.global_position.altitude = \
-                    self._get_global_position()["altitude"]
-                tel_message.relative_position.up = \
-                    self._get_altitude_rel()
+                tel_message.global_position.latitude = self._get_global_position()[
+                    "latitude"
+                ]
+                tel_message.global_position.longitude = self._get_global_position()[
+                    "longitude"
+                ]
+                tel_message.global_position.altitude = self._get_global_position()[
+                    "altitude"
+                ]
+                tel_message.relative_position.up = self._get_altitude_rel()
                 tel_message.global_position.heading = self._get_heading()
-                tel_message.velocity_enu.north_vel = \
-                    self._get_velocity_enu()["north"]
-                tel_message.velocity_enu.east_vel = \
-                    self._get_velocity_enu()["east"]
-                tel_message.velocity_enu.up_vel = \
-                    self._get_velocity_enu()["up"]
-                tel_message.velocity_body.forward_vel = \
-                    self._get_velocity_body()["forward"]
-                tel_message.velocity_body.right_vel = \
-                    self._get_velocity_body()["right"]
-                tel_message.velocity_body.up_vel = \
-                    self._get_velocity_body()["up"]
+                tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
+                tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
+                tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
+                tel_message.velocity_body.forward_vel = self._get_velocity_body()[
+                    "forward"
+                ]
+                tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
+                tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
                 gimbal = await self._get_gimbal_pose_body(0)
                 tel_message.gimbal_pose.pitch = gimbal["pitch"]
                 tel_message.gimbal_pose.roll = gimbal["roll"]
@@ -430,33 +407,37 @@ class ParrotOlympeDrone(MulticopterItf):
 
                 # Warnings
                 if batt <= 15:
-                    tel_message.alerts.battery_warning = \
+                    tel_message.alerts.battery_warning = (
                         common_protocol.BatteryWarning.CRITICAL
+                    )
                 elif batt <= 30:
-                    tel_message.alerts.battery_warning = \
+                    tel_message.alerts.battery_warning = (
                         common_protocol.BatteryWarning.LOW
+                    )
                 mag = self._get_magnetometer()
                 if mag == 2:
-                    tel_message.alerts.magnetometer_warning = \
+                    tel_message.alerts.magnetometer_warning = (
                         common_protocol.MagnetometerWarning.RECOMMENDED
+                    )
                 elif mag == 1:
-                    tel_message.alerts.magnetometer_warning = \
+                    tel_message.alerts.magnetometer_warning = (
                         common_protocol.MagnetometerWarning.REQUIRED
+                    )
                 sats = tel_message.satellites
                 if sats == 0:
-                    tel_message.alerts.gps_warning = \
+                    tel_message.alerts.gps_warning = (
                         common_protocol.GPSWarning.NO_SIGNAL
+                    )
                 elif sats <= 10:
-                    tel_message.alerts.gps_warning = \
-                        common_protocol.GPSWarning.WEAK
+                    tel_message.alerts.gps_warning = common_protocol.GPSWarning.WEAK
 
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
-                logger.error(f'Failed to get telemetry, error: {e}')
+                logger.error(f"Failed to get telemetry, error: {e}")
             await asyncio.sleep(0.1)
 
     async def stream_video(self, cam_sock, rate_hz):
-        logger.info('Starting camera stream')
+        logger.info("Starting camera stream")
         self._start_streaming()
         frame_id = 0
         while await self.is_connected():
@@ -465,7 +446,7 @@ class ParrotOlympeDrone(MulticopterItf):
                 frame, frame_shape = await self._get_video_frame()
 
                 if frame is None:
-                    logger.error('Failed to get video frame')
+                    logger.error("Failed to get video frame")
                     continue
 
                 cam_message.data = frame
@@ -476,12 +457,13 @@ class ParrotOlympeDrone(MulticopterItf):
                 cam_sock.send(cam_message.SerializeToString())
                 frame_id = frame_id + 1
             except Exception as e:
-                logger.error(f'Failed to get video frame, error: {e}')
+                logger.error(f"Failed to get video frame, error: {e}")
             await asyncio.sleep(0.1)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
 
-    ''' Telemetry methods '''
+    """ Telemetry methods """
+
     def _get_name(self):
         return self._drone_id
 
@@ -500,7 +482,7 @@ class ParrotOlympeDrone(MulticopterItf):
         return {
             "roll": att["roll"] * rad_to_deg,
             "pitch": att["pitch"] * rad_to_deg,
-            "yaw": att["yaw"] * rad_to_deg
+            "yaw": att["yaw"] * rad_to_deg,
         }
 
     def _get_magnetometer(self):
@@ -538,7 +520,7 @@ class ParrotOlympeDrone(MulticopterItf):
         vecr = np.array([0.0, 1.0], dtype=float)
         rt = np.radians(hd + 90)
         c, s = np.cos(rt), np.sin(rt)
-        R2 = np.array(((c,-s), (s, c)))
+        R2 = np.array(((c, -s), (s, c)))
         vecr = np.dot(R2, vecr)
 
         res = {
@@ -574,24 +556,25 @@ class ParrotOlympeDrone(MulticopterItf):
         return {
             "yaw": self._drone.get_state(attitude)[gimbal_id]["yaw_relative"],
             "pitch": self._drone.get_state(attitude)[gimbal_id]["pitch_relative"],
-            "roll": self._drone.get_state(attitude)[gimbal_id]["roll_relative"]
+            "roll": self._drone.get_state(attitude)[gimbal_id]["roll_relative"],
         }
 
-    ''' Coroutine methods '''
+    """ Coroutine methods """
+
     async def _velocity_pid(self):
-        '''
+        """
         Parrot Olympe does not support set velocity commands like MAVLink
         drones do. Instead, it provides a virtual joystick API that can
         send angular tilt offsets for pitch and roll, along with an
         angular speed and thrust. We can use this joystick API along with
         feedback from the IMU to virtualize set velocity commands for
         Olympe drones.
-        '''
+        """
         try:
-            ep = {"forward": 0.0, "right": 0.0, "up": 0.0} # Previous error
+            ep = {"forward": 0.0, "right": 0.0, "up": 0.0}  # Previous error
             max_rotation = self._drone.get_state(MaxRotationSpeedChanged)["max"]
-            tp = None # Previous timestamp
-            previous_values = None # Previous actuation values
+            tp = None  # Previous timestamp
+            previous_values = None  # Previous actuation values
 
             def clamp(val, mini, maxi):
                 return max(mini, min(val, maxi))
@@ -626,7 +609,9 @@ class ParrotOlympeDrone(MulticopterItf):
 
             while self._mode == ParrotOlympeDrone.FlightMode.VELOCITY:
                 current = self._get_velocity_body()
-                forward_setpoint, right_setpoint, up_setpoint, angular_setpoint = self._velocity_setpoint
+                forward_setpoint, right_setpoint, up_setpoint, angular_setpoint = (
+                    self._velocity_setpoint
+                )
 
                 forward = 0.0
                 right = 0.0
@@ -651,11 +636,15 @@ class ParrotOlympeDrone(MulticopterItf):
                     tp = ts - 1
                     ep = error
 
-                P, I, D = update_pid(error["forward"], ep["forward"], tp, ts, self._forward_pid_values)
+                P, I, D = update_pid(
+                    error["forward"], ep["forward"], tp, ts, self._forward_pid_values
+                )
                 self._forward_pid_values["PrevI"] += I
                 forward = P + I + D
 
-                P, I, D = update_pid(error["right"], ep["right"], tp, ts, self._right_pid_values)
+                P, I, D = update_pid(
+                    error["right"], ep["right"], tp, ts, self._right_pid_values
+                )
                 self._right_pid_values["PrevI"] += I
                 right = P + I + D
 
@@ -678,23 +667,52 @@ class ParrotOlympeDrone(MulticopterItf):
                 # Jumpstart braking if we find we are continuing to move in the wrong direction
                 new_forward = forward + prev_forward
                 forward_round = round(clamp(new_forward, -100, 100))
-                forward_round = 0 if is_opposite_dir(forward_setpoint, new_forward) else forward_round
+                forward_round = (
+                    0
+                    if is_opposite_dir(forward_setpoint, new_forward)
+                    else forward_round
+                )
                 new_right = right + prev_right
                 right_round = round(clamp(new_right, -100, 100))
-                right_round = 0 if is_opposite_dir(right_setpoint, new_right) else right_round
+                right_round = (
+                    0 if is_opposite_dir(right_setpoint, new_right) else right_round
+                )
                 new_up = up + prev_up
                 up_round = round(clamp(new_up, -100, 100))
                 up_round = 0 if is_opposite_dir(up_setpoint, new_up) else up_round
-                ang_round = round(clamp((angular_setpoint / max_rotation) * 100, -100, 100))
+                ang_round = round(
+                    clamp((angular_setpoint / max_rotation) * 100, -100, 100)
+                )
 
-                self._drone(PCMD(1, right_round, forward_round, ang_round, up_round, timestampAndSeqNum=0))
+                self._drone(
+                    PCMD(
+                        1,
+                        right_round,
+                        forward_round,
+                        ang_round,
+                        up_round,
+                        timestampAndSeqNum=0,
+                    )
+                )
 
                 if previous_values is None:
                     previous_values = {}
                 # Set the previous values if we are actuating
-                previous_values["forward"] = 0 if is_opposite_dir(forward_setpoint, new_forward) else clamp(new_forward, -100, 100)
-                previous_values["right"] = 0 if is_opposite_dir(right_setpoint, new_right) else clamp(new_right, -100, 100)
-                previous_values["up"] = 0 if is_opposite_dir(up_setpoint, new_up) else clamp(new_up, -100, 100)
+                previous_values["forward"] = (
+                    0
+                    if is_opposite_dir(forward_setpoint, new_forward)
+                    else clamp(new_forward, -100, 100)
+                )
+                previous_values["right"] = (
+                    0
+                    if is_opposite_dir(right_setpoint, new_right)
+                    else clamp(new_right, -100, 100)
+                )
+                previous_values["up"] = (
+                    0
+                    if is_opposite_dir(up_setpoint, new_up)
+                    else clamp(new_up, -100, 100)
+                )
 
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
@@ -704,11 +722,13 @@ class ParrotOlympeDrone(MulticopterItf):
         except Exception as e:
             logger.error(f"PID iteration failure, reason: {e}")
 
-    ''' Actuation methods '''
+    """ Actuation methods """
+
     async def _switch_mode(self, mode):
-        if self._mode == mode or \
-                (self._mode == ParrotOlympeDrone.FlightMode.TAKEOFF_LAND \
-                and mode != ParrotOlympeDrone.FlightMode.LOITER):
+        if self._mode == mode or (
+            self._mode == ParrotOlympeDrone.FlightMode.TAKEOFF_LAND
+            and mode != ParrotOlympeDrone.FlightMode.LOITER
+        ):
             return
         else:
             # Cancel the running PID task
@@ -718,7 +738,8 @@ class ParrotOlympeDrone(MulticopterItf):
             self._pid_task = None
             self._mode = mode
 
-    ''' ACK methods '''
+    """ ACK methods """
+
     def _is_hovering(self):
         if self._drone(FlyingStateChanged(state="hovering", _policy="check")):
             return True
@@ -730,25 +751,36 @@ class ParrotOlympeDrone(MulticopterItf):
         return False
 
     def _is_home_set(self, lat, lon, alt):
-        if self._drone(custom_location(latitude=lat,
-            longitude=lon, altitude=alt, _policy='check',
-            _float_tol=(1e-07, 1e-09))):
+        if self._drone(
+            custom_location(
+                latitude=lat,
+                longitude=lon,
+                altitude=alt,
+                _policy="check",
+                _float_tol=(1e-07, 1e-09),
+            )
+        ):
             return True
         return False
 
     def _is_home_reached(self):
-        if self._drone(state(state=rth_state.state.available, _policy='check',
-            _float_tol=(1e-07, 1e-09))):
+        if self._drone(
+            state(
+                state=rth_state.state.available,
+                _policy="check",
+                _float_tol=(1e-07, 1e-09),
+            )
+        ):
             return True
         return False
 
     def _is_move_by_done(self):
-        if self._drone(moveByChanged(status='DONE', _policy='check')):
+        if self._drone(moveByChanged(status="DONE", _policy="check")):
             return True
         return False
 
     def _is_move_to_done(self):
-        if self._drone(moveToChanged(status='DONE', _policy='check')):
+        if self._drone(moveToChanged(status="DONE", _policy="check")):
             return True
         return False
 
@@ -758,7 +790,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return False
         dlat = lat - current_location["latitude"]
         dlon = lon - current_location["longitude"]
-        distance =  math.sqrt((dlat ** 2) + (dlon ** 2)) * 1.113195e5
+        distance = math.sqrt((dlat**2) + (dlon**2)) * 1.113195e5
         return distance < 1.0
 
     def _is_abs_altitude_reached(self, target_altitude):
@@ -771,22 +803,27 @@ class ParrotOlympeDrone(MulticopterItf):
         return False
 
     def _is_heading_reached(self, heading):
-        if self._drone(AttitudeChanged(yaw=heading, _policy="check", _float_tol=(1e-3, 1e-1))):
+        if self._drone(
+            AttitudeChanged(yaw=heading, _policy="check", _float_tol=(1e-3, 1e-1))
+        ):
             return True
         return False
 
     def _is_gimbal_pose_reached(self, yaw, pitch, roll):
-        if self._drone(attitude(
+        if self._drone(
+            attitude(
                 pitch_relative=pitch,
                 yaw_relative=yaw,
                 roll_relative=roll,
                 _policy="check",
-                _float_tol=(1e-3, 1e-1)
-            )):
+                _float_tol=(1e-3, 1e-1),
+            )
+        ):
             return True
         return False
 
-    ''' Helper methods '''
+    """ Helper methods """
+
     def _calculate_bearing(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
@@ -795,7 +832,9 @@ class ParrotOlympeDrone(MulticopterItf):
 
         # Bearing calculation
         x = math.sin(delta_lon) * math.cos(lat2)
-        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
+        y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(
+            lat2
+        ) * math.cos(delta_lon)
 
         initial_bearing = math.atan2(x, y)
 
@@ -820,7 +859,8 @@ class ParrotOlympeDrone(MulticopterItf):
                 return False
             await asyncio.sleep(interval)
 
-    ''' Streaming methods '''
+    """ Streaming methods """
+
     def _start_streaming(self):
         if "stream" in self._kwargs and self._kwargs["stream"] == "ffmpeg":
             logger.info("Using FFmpeg for streaming")
@@ -840,7 +880,6 @@ class ParrotOlympeDrone(MulticopterItf):
 
 
 class PDRAWStreamingThread(threading.Thread):
-
     def __init__(self, drone):
         threading.Thread.__init__(self)
 
@@ -892,7 +931,8 @@ class PDRAWStreamingThread(threading.Thread):
 
         self._current_frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
 
-    '''Olympe callbacks'''
+    """Olympe callbacks"""
+
     def _yuv_frame_callback(self, yuv_frame):
         yuv_frame.ref()
         self._frame_queue.put_nowait(yuv_frame)
@@ -920,7 +960,6 @@ class PDRAWStreamingThread(threading.Thread):
 
 
 class FFMPEGStreamingThread(threading.Thread):
-
     def __init__(self, drone, ip):
         threading.Thread.__init__(self)
 
@@ -934,7 +973,9 @@ class FFMPEGStreamingThread(threading.Thread):
 
     def run(self):
         while not self.is_running:
-            self._cap = cv2.VideoCapture(f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
+            self._cap = cv2.VideoCapture(
+                f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1)
+            )
             self.is_running = True
             while self.is_running:
                 try:
@@ -958,4 +999,3 @@ class FFMPEGStreamingThread(threading.Thread):
 
     def stop(self):
         self.is_running = False
-

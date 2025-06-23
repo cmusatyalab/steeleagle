@@ -36,8 +36,9 @@ import protocol.gabriel_extras_pb2 as gabriel_extras
 
 logger = logging.getLogger(__name__)
 
+
 class TerraSLAMClient:
-    def __init__(self, server_ip='localhost', server_port=43322):
+    def __init__(self, server_ip="localhost", server_port=43322):
         self.server_ip = server_ip
         self.server_port = server_port
         self.client_socket = None
@@ -50,7 +51,9 @@ class TerraSLAMClient:
             try:
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.client_socket.connect((self.server_ip, self.server_port))
-                logger.info(f"Connected to SLAM server at {self.server_ip}:{self.server_port}")
+                logger.info(
+                    f"Connected to SLAM server at {self.server_ip}:{self.server_port}"
+                )
                 return True
             except Exception as e:
                 logger.error(f"Failed to connect to SLAM server: {e}")
@@ -64,14 +67,14 @@ class TerraSLAMClient:
             # Convert image data to numpy array
             np_data = np.fromstring(image_data, dtype=np.uint8)
             img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-            
+
             # Encode image for sending
-            _, img_encoded = cv2.imencode('.jpg', img)
+            _, img_encoded = cv2.imencode(".jpg", img)
             img_bytes = img_encoded.tobytes()
 
             # Send image size
             size = len(img_bytes)
-            self.client_socket.sendall(struct.pack('!I', size))
+            self.client_socket.sendall(struct.pack("!I", size))
 
             # Send image data
             self.client_socket.sendall(img_bytes)
@@ -79,22 +82,22 @@ class TerraSLAMClient:
             # Receive pose data (3 doubles = 24 bytes)
             pose_data = self.client_socket.recv(24)
             if len(pose_data) == 24:
-                x, y, z = struct.unpack('3d', pose_data)
-                
+                x, y, z = struct.unpack("3d", pose_data)
+
                 # Store previous pose before updating
                 self.previous_pose = self.latest_pose
                 self.latest_pose = (x, y, z)
-                
+
                 # Check if all values are -1.0 (initializing status)
                 if x == -1.0 and y == -1.0 and z == -1.0:
                     logger.info("SLAM system status: Initializing")
                     return "initializing"
-                
+
                 # Check if tracking is lost (pose barely changes)
                 if x == -3.0 and y == -3.0 and z == -3.0:
                     logger.info("SLAM system status: Tracking Lost")
                     return "lost"
-                
+
                 return "success"
             else:
                 logger.error("Failed to receive complete pose data")
@@ -109,6 +112,7 @@ class TerraSLAMClient:
             self.client_socket.close()
             logger.info("SLAM connection closed")
 
+
 class TerraSLAMEngine(cognitive_engine.Engine):
     ENGINE_NAME = "terra-slam"
 
@@ -117,20 +121,23 @@ class TerraSLAMEngine(cognitive_engine.Engine):
         self.server_port = 43322  # Fixed SLAM server port
         self.redis_port = args.redis
         self.redis_auth = args.auth
-        
+
         # Initialize SLAM client
         self.slam_client = TerraSLAMClient(
-            server_ip=self.server_ip,
-            server_port=self.server_port
+            server_ip=self.server_ip, server_port=self.server_port
         )
-        
+
         if not self.slam_client.connect():
             raise Exception("Failed to connect to SLAM server")
-        
+
         # Initialize Redis connection
-        self.r = redis.Redis(host='redis', port=self.redis_port, 
-                           username='steeleagle', password=self.redis_auth,
-                           decode_responses=True)
+        self.r = redis.Redis(
+            host="redis",
+            port=self.redis_port,
+            username="steeleagle",
+            password=self.redis_auth,
+            decode_responses=True,
+        )
         try:
             self.r.ping()
             logger.info(f"Connected to redis on port {self.redis_port}...")
@@ -149,29 +156,31 @@ class TerraSLAMEngine(cognitive_engine.Engine):
 
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
-        if not extras.cpt_request.HasField('cpt'):
+        if not extras.cpt_request.HasField("cpt"):
             status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = 'Expected compute configuration to be specified'.encode(encoding="utf-8")
+            result.payload = "Expected compute configuration to be specified".encode(
+                encoding="utf-8"
+            )
             result_wrapper.results.append(result)
             return result_wrapper
 
         # Process the image
         slam_status = self.slam_client.process_image(input_frame.payloads[0])
-        
+
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = self.get_result_wrapper(status)
 
         # Construct response
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        
+
         if slam_status == "success" and self.slam_client.latest_pose:
             # Get GPS coordinates
             lat, lon, alt = self.slam_client.latest_pose
-            
+
             logger.info(f"GPS coordinates: {lat}, {lon}, {alt}")
             # Store in Redis
             self.r.xadd(
@@ -182,42 +191,30 @@ class TerraSLAMEngine(cognitive_engine.Engine):
                     "pose_z": 0.0,
                     "lat": str(lat),
                     "lon": str(lon),
-                    "alt": str(alt)
-                }
+                    "alt": str(alt),
+                },
             )
-            
+
             response = {
                 "status": "success",
-                "gps": {
-                    "lat": lat,
-                    "lon": lon,
-                    "alt": alt
-                }
+                "gps": {"lat": lat, "lon": lon, "alt": alt},
             }
         elif slam_status == "initializing":
             response = {
                 "status": "initializing",
-                "gps": {
-                    "lat": -1.0,
-                    "lon": -1.0,
-                    "alt": -1.0
-                }
+                "gps": {"lat": -1.0, "lon": -1.0, "alt": -1.0},
             }
         elif slam_status == "lost":
             response = {
                 "status": "lost",
-                "gps": {
-                    "lat": -3.0,
-                    "lon": -3.0,
-                    "alt": -3.0
-                }
+                "gps": {"lat": -3.0, "lon": -3.0, "alt": -3.0},
             }
         else:
             response = {
                 "status": "error",
-                "message": "Failed to process image or get GPS coordinates"
+                "message": "Failed to process image or get GPS coordinates",
             }
-        
+
         result.payload = json.dumps(response).encode(encoding="utf-8")
         result_wrapper.results.append(result)
 
@@ -243,7 +240,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = 'Ignoring TEXT payload.'.encode(encoding="utf-8")
+        result.payload = "Ignoring TEXT payload.".encode(encoding="utf-8")
         result_wrapper.results.append(result)
         return result_wrapper
 
@@ -254,7 +251,9 @@ class TerraSLAMEngine(cognitive_engine.Engine):
 
     def print_inference_stats(self):
         current_time = time.time()
-        logger.info("inference time {0:.1f} ms, ".format((current_time - self.lasttime) * 1000))
+        logger.info(
+            "inference time {0:.1f} ms, ".format((current_time - self.lasttime) * 1000)
+        )
         logger.info("fps {0:.2f}".format(1.0 / (current_time - self.lasttime)))
         logger.info(
             "avg fps: {0:.2f}".format(
@@ -262,4 +261,4 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             )
         )
         self.lastcount = self.count
-        self.lasttime = current_time 
+        self.lasttime = current_time

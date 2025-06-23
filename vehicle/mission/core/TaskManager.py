@@ -9,6 +9,7 @@ import project.task_defs.TrackTask as track
 
 logger = logging.getLogger(__name__)
 
+
 class TaskManager:
     def __init__(self, drone, compute, transit_map, task_arg_map):
         self.trigger_event_queue = asyncio.Queue()
@@ -33,7 +34,9 @@ class TaskManager:
             return None
 
     def retrieve_next_task(self, current_task_id, triggered_event):
-        logger.info(f"next task, current_task_id {current_task_id}, trigger_event {triggered_event}")
+        logger.info(
+            f"next task, current_task_id {current_task_id}, trigger_event {triggered_event}"
+        )
         try:
             next_task_id = self.transit_map.get(current_task_id)(triggered_event)
         except Exception as e:
@@ -54,7 +57,9 @@ class TaskManager:
                 except asyncio.CancelledError:
                     logger.info(f"Task {self.curr_task_id} cancelled successfully")
 
-            logger.info(f"Clearing currentTask reference for task_id {self.curr_task_id}")
+            logger.info(
+                f"Clearing currentTask reference for task_id {self.curr_task_id}"
+            )
             self.currentTask = None
             self.taskCurrentCoroutine = None
             self.curr_task_id = None
@@ -71,13 +76,37 @@ class TaskManager:
         if task_id in self.task_arg_map:
             task_args = self.task_arg_map[task_id]
             if task_args.task_type == taskitf.TaskType.Detect:
-                return detect.DetectTask(self.drone, self.compute, task_id, self.trigger_event_queue, task_args)
+                return detect.DetectTask(
+                    self.drone,
+                    self.compute,
+                    task_id,
+                    self.trigger_event_queue,
+                    task_args,
+                )
             elif task_args.task_type == taskitf.TaskType.Track:
-                return track.TrackTask(self.drone, self.compute, task_id, self.trigger_event_queue, task_args)
+                return track.TrackTask(
+                    self.drone,
+                    self.compute,
+                    task_id,
+                    self.trigger_event_queue,
+                    task_args,
+                )
             elif task_args.task_type == taskitf.TaskType.Avoid:
-                return avoid.AvoidTask(self.drone, self.compute, task_id, self.trigger_event_queue, task_args)
+                return avoid.AvoidTask(
+                    self.drone,
+                    self.compute,
+                    task_id,
+                    self.trigger_event_queue,
+                    task_args,
+                )
             elif task_args.task_type == taskitf.TaskType.Test:
-                return test.TestTask(self.drone, self.compute, task_id, self.trigger_event_queue, task_args)
+                return test.TestTask(
+                    self.drone,
+                    self.compute,
+                    task_id,
+                    self.trigger_event_queue,
+                    task_args,
+                )
         logger.warning(f"No matching task found for task_id {task_id}")
         return None
 
@@ -90,7 +119,9 @@ class TaskManager:
                 await self.start_task(start_task)
 
     async def transit_task_to(self, task):
-        logger.info(f"Transiting to task with task_id: {task.task_id}, current_task_id: {self.curr_task_id}")
+        logger.info(
+            f"Transiting to task with task_id: {task.task_id}, current_task_id: {self.curr_task_id}"
+        )
         await self.stop_task()
         await self.start_task(task)
 
@@ -101,7 +132,9 @@ class TaskManager:
 
             while True:
                 task_id, trigger_event = await self.trigger_event_queue.get()
-                logger.info(f"Triggered event: task_id {task_id}, event {trigger_event}")
+                logger.info(
+                    f"Triggered event: task_id {task_id}, event {trigger_event}"
+                )
 
                 if task_id == self.get_current_task():
                     next_task_id = self.retrieve_next_task(task_id, trigger_event)

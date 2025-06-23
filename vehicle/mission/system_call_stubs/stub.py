@@ -71,11 +71,11 @@ class Stub:
             await asyncio.sleep(0)
 
     async def send_and_wait(self, request):
-        try: 
+        try:
             stub_response = StubResponse()
             self.sender(request, stub_response)
             await stub_response.wait()
-            reply =  stub_response.get_result()
+            reply = stub_response.get_result()
             return reply
         except Exception:
             return None

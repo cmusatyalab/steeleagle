@@ -10,9 +10,10 @@ from system_call_stubs.stub import Stub
 
 logger = logging.getLogger(__name__)
 
+
 class DataStub(Stub):
     def __init__(self):
-        super().__init__(b'usr', 'hub.network.dataplane.mission_to_hub', 'data')
+        super().__init__(b"usr", "hub.network.dataplane.mission_to_hub", "data")
 
     def parse_data_response(self, response_parts):
         self.parse_response(response_parts, data_protocol.Response)
@@ -20,7 +21,8 @@ class DataStub(Stub):
     async def run(self):
         await self.receiver_loop(self.parse_data_response)
 
-    ''' Compute methods '''
+    """ Compute methods """
+
     # Get results for a compute engine
     async def get_compute_result(self, compute_type):
         cpt_req = data_protocol.Request()
@@ -28,7 +30,9 @@ class DataStub(Stub):
         rep = await self.send_and_wait(cpt_req)
 
         if rep is None:
-            logger.error(f"Failed to get compute result: No response received for {compute_type=}")
+            logger.error(
+                f"Failed to get compute result: No response received for {compute_type=}"
+            )
             return None
 
         result_list = []
@@ -38,7 +42,8 @@ class DataStub(Stub):
         logger.debug(f"get_compute_result: {compute_type=}, {result_list=}")
         return result_list
 
-    ''' Telemetry methods '''
+    """ Telemetry methods """
+
     async def get_telemetry(self):
         try:
             request = data_protocol.Request(tel=data_protocol.TelemetryRequest())
@@ -51,8 +56,13 @@ class DataStub(Stub):
             result = rep.tel
             tel_dict = {
                 "drone_name": None,
-                "global_position": {"latitude": None, "longitude": None, "heading": None, \
-                        "altitude": None, "relative_altitude": None},
+                "global_position": {
+                    "latitude": None,
+                    "longitude": None,
+                    "heading": None,
+                    "altitude": None,
+                    "relative_altitude": None,
+                },
                 "relative_position": {"north": None, "east": None, "up": None},
                 "velocity_enu": {"north": None, "east": None, "up": None},
                 "velocity_body": {"forward": None, "right": None, "up": None},
@@ -68,10 +78,18 @@ class DataStub(Stub):
                 # Name
                 tel_dict["drone_name"] = result.drone_name
                 # Global Position
-                tel_dict["global_position"]["latitude"] = result.global_position.latitude
-                tel_dict["global_position"]["longitude"] = result.global_position.longitude
-                tel_dict["global_position"]["altitude"] = result.global_position.altitude
-                tel_dict["global_position"]["relative_altitude"] = result.relative_position.up
+                tel_dict["global_position"]["latitude"] = (
+                    result.global_position.latitude
+                )
+                tel_dict["global_position"]["longitude"] = (
+                    result.global_position.longitude
+                )
+                tel_dict["global_position"]["altitude"] = (
+                    result.global_position.altitude
+                )
+                tel_dict["global_position"]["relative_altitude"] = (
+                    result.relative_position.up
+                )
                 tel_dict["global_position"]["heading"] = result.global_position.heading
                 # Velocity Body
                 tel_dict["velocity_body"]["forward"] = result.velocity_body.forward_vel
@@ -96,7 +114,9 @@ class DataStub(Stub):
 
     async def update_current_task(self, current_task):
         logger.info("Updating current task")
-        req = data_protocol.Request(task=data_protocol.UpdateCurrentTask(task_name=current_task))
+        req = data_protocol.Request(
+            task=data_protocol.UpdateCurrentTask(task_name=current_task)
+        )
         rep = await self.send_and_wait(req)
         logger.info(f"Got response {rep}")
         if rep is None:
