@@ -127,7 +127,7 @@ class PathValidator:
         self.path_list.append(drone_path)
 
     def run_path(self, path: PathStore):
-        while path.is_path_complete() == False:
+        while not path.is_path_complete():
             path.move_next_waypoint()
 
     def replay_path(self, path: PathStore, start_point=0):
@@ -172,7 +172,7 @@ def render_test(path: PathStore):
     )
     path.set_current_waypoint(0)
     line_seg = []
-    while path.is_path_complete() == False:
+    while not path.is_path_complete():
         line_seg.append(
             draw_path(path.get_current_waypoint(), path.get_next_waypoint())
         )

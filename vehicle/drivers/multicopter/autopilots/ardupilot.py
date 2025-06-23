@@ -33,10 +33,10 @@ class ArduPilotDrone(MAVLinkDrone):
     """Interface Methods"""
 
     async def take_off(self):
-        if await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED) == False:
+        if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
 
-        if await self._arm() == False:
+        if not await self._arm():
             return common_protocol.ResponseStatus.FAILED
 
         gps = self._get_global_position()
