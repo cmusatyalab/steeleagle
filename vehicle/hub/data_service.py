@@ -1,12 +1,13 @@
-import zmq
-import zmq.asyncio
 import asyncio
 import logging
-from util.utils import setup_logging, SocketOperation
-import dataplane_pb2 as data_protocol
+
 import common_pb2 as common_protocol
-from service import Service
+import dataplane_pb2 as data_protocol
+import zmq
+import zmq.asyncio
 from data_store import DataStore
+from service import Service
+from util.utils import SocketOperation, setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')

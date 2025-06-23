@@ -1,10 +1,11 @@
 import asyncio
-from dataclasses import dataclass
-from google.protobuf import timestamp_pb2
-import dataplane_pb2 as data_protocol
-from typing import Optional, Union
-import time
 import logging
+import time
+from dataclasses import dataclass
+from typing import Optional, Union
+
+import dataplane_pb2 as data_protocol
+from google.protobuf import timestamp_pb2
 
 logger = logging.getLogger(__name__)
 

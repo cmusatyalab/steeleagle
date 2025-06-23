@@ -5,10 +5,11 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
+import logging
+
 from gabriel_server.network_engine import engine_runner
 from telemetry_engine import TelemetryEngine
-import logging
-import argparse
 from util.utils import setup_logging
 
 SOURCE = 'telemetry'

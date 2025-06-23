@@ -1,5 +1,6 @@
-from swarm_controller import PatrolArea, PatrolMission
 import pytest
+from swarm_controller import PatrolArea, PatrolMission
+
 
 @pytest.mark.asyncio
 async def test_mission_creation():

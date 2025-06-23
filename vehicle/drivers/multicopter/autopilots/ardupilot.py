@@ -1,12 +1,15 @@
 # General imports
-from enum import Enum
 import logging
-# SDK import (MAVLink)
-from pymavlink import mavutil
-# Interface import
-from multicopter.autopilots.mavlink import MAVLinkDrone
+from enum import Enum
+
 # Protocol imports
 import common_pb2 as common_protocol
+
+# Interface import
+from multicopter.autopilots.mavlink import MAVLinkDrone
+
+# SDK import (MAVLink)
+from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 

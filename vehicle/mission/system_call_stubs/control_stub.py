@@ -1,7 +1,9 @@
 import logging
-from system_call_stubs.stub import Stub
-import controlplane_pb2 as control_protocol
+
 import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
+
+from system_call_stubs.stub import Stub
 
 logger = logging.getLogger(__name__)
 

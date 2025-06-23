@@ -1,7 +1,9 @@
 import asyncio
 import logging
+
 import zmq
-from util.utils import setup_socket, SocketOperation
+from util.utils import SocketOperation, setup_socket
+
 logger = logging.getLogger(__name__)
 
 

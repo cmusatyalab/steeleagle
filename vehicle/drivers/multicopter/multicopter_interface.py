@@ -1,10 +1,13 @@
 # General imports
 from abc import ABC, abstractmethod
+
 # Protocol imports
 import common_pb2 as common_protocol
+
 # ZeroMQ binding imports
 import zmq
 import zmq.asyncio
+
 
 class MulticopterItf(ABC):
     """

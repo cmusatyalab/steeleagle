@@ -1,6 +1,7 @@
-from enum import Enum
 import logging
 import os
+from enum import Enum
+
 import yaml
 import zmq
 import zmq.asyncio

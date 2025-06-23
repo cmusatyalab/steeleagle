@@ -1,16 +1,20 @@
 # General imports
-from enum import Enum
-import math
-import time
 import asyncio
 import logging
-# SDK import (MAVLink)
-from pymavlink import mavutil
-# Interface import
-from multicopter.multicopter_interface import MulticopterItf
+import math
+import time
+from enum import Enum
+
+import common_pb2 as common_protocol
+
 # Protocol imports
 import dataplane_pb2 as data_protocol
-import common_pb2 as common_protocol
+
+# Interface import
+from multicopter.multicopter_interface import MulticopterItf
+
+# SDK import (MAVLink)
+from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 

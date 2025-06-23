@@ -1,22 +1,21 @@
 
+import asyncio
 import importlib
+import logging
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 from zipfile import ZipFile
+
+import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
 import requests
 import zmq
-import asyncio
-import logging
-from util.utils import SocketOperation, setup_socket
 from system_call_stubs.control_stub import ControlStub
 from system_call_stubs.data_stub import DataStub
 from system_call_stubs.report_stub import ReportStub
-import controlplane_pb2 as control_protocol
-import common_pb2 as common_protocol
-
-
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 context = zmq.Context()
@@ -120,7 +119,7 @@ class MissionController():
         if self.reload :
             self.reload_mission()
 
-        import project.Mission as msn # import the mission module instead of attribute of the module for the reload to work
+        import project.Mission as msn  # import the mission module instead of attribute of the module for the reload to work
         self.reload = True
 
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)

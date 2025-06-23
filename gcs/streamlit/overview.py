@@ -1,15 +1,16 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-import folium
-import streamlit as st
-from streamlit_folium import st_folium
-from folium.plugins import MiniMap
-from util import  connect_redis,  menu, COLORS, authenticated, stream_to_dataframe
 import datetime
-from pykml import parser
 import json
 import time
+
+import folium
+import streamlit as st
+from folium.plugins import MiniMap
+from pykml import parser
+from streamlit_folium import st_folium
+from util import COLORS, authenticated, connect_redis, menu, stream_to_dataframe
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"

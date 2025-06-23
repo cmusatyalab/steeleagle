@@ -1,16 +1,18 @@
 import asyncio
 import logging
-import zmq
-import zmq.asyncio
-from util.utils import setup_socket, SocketOperation
-import pytest_asyncio
-import pytest
-import numpy as np
 import math
+
+import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
+
 # Import SteelEagle protocol
 import dataplane_pb2 as data_protocol
-import controlplane_pb2 as control_protocol
-import common_pb2 as common_protocol
+import numpy as np
+import pytest
+import pytest_asyncio
+import zmq
+import zmq.asyncio
+from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 

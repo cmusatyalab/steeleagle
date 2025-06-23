@@ -18,24 +18,26 @@
 #
 #
 
-import time
+import json
+import logging
 import os
+import time
+import traceback
+
 import cv2
 import numpy as np
-import logging
-from gabriel_server import cognitive_engine
+import redis
 from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image
+from pygeodesy.sphericalNvector import LatLon
+from pykml import parser
+from scipy.spatial.transform import Rotation as R
+from ultralytics import YOLO
+
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from PIL import Image
-import traceback
-import json
-from scipy.spatial.transform import Rotation as R
-import redis
-from ultralytics import YOLO
-from pygeodesy.sphericalNvector import LatLon
-from pykml import parser
 
 logger = logging.getLogger(__name__)
 

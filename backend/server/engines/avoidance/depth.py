@@ -18,10 +18,11 @@
 #   limitations under the License.
 #
 #
-from gabriel_server.network_engine import engine_runner
-from obstacle_avoidance_engine import MidasAvoidanceEngine, Metric3DAvoidanceEngine
-import logging
 import argparse
+import logging
+
+from gabriel_server.network_engine import engine_runner
+from obstacle_avoidance_engine import Metric3DAvoidanceEngine, MidasAvoidanceEngine
 from util.utils import setup_logging
 
 SOURCE = 'openscout'

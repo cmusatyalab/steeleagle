@@ -1,12 +1,12 @@
 import asyncio
-import logging
 import importlib
+import logging
 import pkgutil
 
 from control_service import ControlService
 from data_service import DataService
-from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
+from datasinks.ComputeItf import ComputeInterface
 from util.utils import query_config, setup_logging
 
 logger = logging.getLogger(__name__)

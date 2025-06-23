@@ -1,18 +1,27 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-import protocol.controlplane_pb2 as controlplane
-import protocol.common_pb2 as common
 import time
+import uuid
 from zipfile import ZipFile
+
 import folium
 import streamlit as st
-from streamlit_folium import st_folium
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
-import uuid
+from streamlit_folium import st_folium
+from util import (
+    COLORS,
+    authenticated,
+    connect_redis,
+    connect_zmq,
+    get_drones,
+    menu,
+    stream_to_dataframe,
+)
 
+import protocol.common_pb2 as common
+import protocol.controlplane_pb2 as controlplane
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"

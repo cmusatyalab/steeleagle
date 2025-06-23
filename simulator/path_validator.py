@@ -1,8 +1,9 @@
-import time
-import sys
-import logging
-import json
 import argparse
+import json
+import logging
+import sys
+import time
+
 import folium
 import streamlit as st
 from streamlit_folium import st_folium

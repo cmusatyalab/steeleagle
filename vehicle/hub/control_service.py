@@ -1,14 +1,15 @@
+import asyncio
+import logging
+import time
+
+import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
 import validators
 import zmq
 import zmq.asyncio
-import asyncio
-import logging
-import controlplane_pb2 as control_protocol
-import common_pb2 as common_protocol
-from service import Service
-from util.utils import query_config, setup_logging, SocketOperation
 from data_store import DataStore
-import time
+from service import Service
+from util.utils import SocketOperation, query_config, setup_logging
 
 logger = logging.getLogger(__name__)
 setup_logging(logger, 'hub.logging')

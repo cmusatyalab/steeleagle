@@ -1,17 +1,19 @@
 import asyncio
 import logging
 import time
-import cv2
-import numpy as np
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
-from gabriel_server import cognitive_engine
-from datasinks.ComputeItf import ComputeInterface
-from hub.data_store import DataStore
-import dataplane_pb2 as data_protocol
+
 import controlplane_pb2 as control_protocol
+import cv2
+import dataplane_pb2 as data_protocol
 import gabriel_extras_pb2 as gabriel_extras
+import numpy as np
+from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from hub.data_store import DataStore
 from util.utils import query_config
+
+from datasinks.ComputeItf import ComputeInterface
 
 logger = logging.getLogger(__name__)
 

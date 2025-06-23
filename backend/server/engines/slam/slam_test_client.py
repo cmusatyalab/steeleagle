@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import argparse
+import asyncio
 import logging
 import os
-import cv2
-import asyncio
 import time
-from gabriel_protocol import gabriel_pb2
-from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+
+import cv2
 import gabriel_extras_pb2 as gabriel_extras
+from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from gabriel_protocol import gabriel_pb2
 
 logging.basicConfig(level=logging.DEBUG) 
 logger = logging.getLogger(__name__)

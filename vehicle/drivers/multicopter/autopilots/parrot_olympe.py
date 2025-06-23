@@ -1,36 +1,53 @@
 # General imports
-import math
-import time
 import asyncio
 import logging
-from enum import Enum
-import numpy as np
-import cv2
+import math
 import os
-# SDK imports (Olympe)
-import olympe
-from olympe import Drone
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
-from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
-from olympe.messages.move import extended_move_to
-from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state
-import olympe.enums.rth as rth_state
-from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.SpeedSettingsState import MaxRotationSpeedChanged
-from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged
-from olympe.enums.ardrone3.PilotingState import FlyingStateChanged_State
-from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
-from olympe.messages.gimbal import set_target, attitude
-import olympe.enums.move as move_mode
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
-# Interface import
-from multicopter.multicopter_interface import MulticopterItf
-# Protocol imports
-import dataplane_pb2 as data_protocol
-import common_pb2 as common_protocol
+import queue
+
 # Streaming imports
 import threading
-import queue
+import time
+from enum import Enum
+
+import common_pb2 as common_protocol
+import cv2
+
+# Protocol imports
+import dataplane_pb2 as data_protocol
+import numpy as np
+
+# SDK imports (Olympe)
+import olympe
+import olympe.enums.move as move_mode
+import olympe.enums.rth as rth_state
+
+# Interface import
+from multicopter.multicopter_interface import MulticopterItf
+from olympe import Drone
+from olympe.enums.ardrone3.PilotingState import FlyingStateChanged_State
+from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
+from olympe.messages.ardrone3.Piloting import PCMD, Landing, TakeOff, moveBy, moveTo
+from olympe.messages.ardrone3.PilotingState import (
+    AltitudeChanged,
+    AttitudeChanged,
+    FlyingStateChanged,
+    GpsLocationChanged,
+    SpeedChanged,
+    moveByChanged,
+    moveToChanged,
+)
+from olympe.messages.ardrone3.SpeedSettingsState import MaxRotationSpeedChanged
+from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
+from olympe.messages.common.CommonState import BatteryStateChanged
+from olympe.messages.gimbal import attitude, set_target
+from olympe.messages.move import extended_move_to
+from olympe.messages.rth import (
+    custom_location,
+    return_to_home,
+    set_custom_location,
+    state,
+)
 
 logger = logging.getLogger(__name__)
 

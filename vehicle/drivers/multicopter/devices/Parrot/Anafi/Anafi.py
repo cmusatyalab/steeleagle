@@ -1,7 +1,9 @@
 # Interface import
 from multicopter.autopilots.parrot_olympe import ParrotOlympeDrone
+
 # Olympe SDK import
 from olympe.messages.gimbal import attitude
+
 
 class Anafi(ParrotOlympeDrone):
 

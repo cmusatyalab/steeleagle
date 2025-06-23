@@ -18,21 +18,23 @@
 #
 #
 
-from abc import ABC, abstractmethod
-import time
+import json
+import logging
 import os
+import time
+from abc import ABC, abstractmethod
+
 import cv2
 import numpy as np
-import logging
-from gabriel_server import cognitive_engine
+import redis
+import torch
 from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image, ImageDraw
+
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from PIL import Image, ImageDraw
-import json
-import torch
-import redis
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

@@ -5,27 +5,29 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import os
-import logging
-from zipfile import ZipFile
-from google.protobuf.message import DecodeError
-from google.protobuf import text_format
-import protocol.controlplane_pb2 as controlplane
-import protocol.common_pb2 as common
 import argparse
+import asyncio
+import json
+import logging
+import os
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from dataclasses import dataclass
+from typing import List
+from urllib.parse import urlparse
+from zipfile import ZipFile
+
+import aiofiles
+import aiohttp
+import redis
 import zmq
 import zmq.asyncio
-import redis
-from urllib.parse import urlparse
+from google.protobuf import text_format
+from google.protobuf.message import DecodeError
 from util.utils import setup_logging
-import asyncio
-import aiohttp
-import aiofiles
-from dataclasses import dataclass
-import json
-from typing import List
-from collections.abc import Iterator
-from abc import ABC, abstractmethod
+
+import protocol.common_pb2 as common
+import protocol.controlplane_pb2 as controlplane
 
 logger = logging.getLogger(__name__)
 

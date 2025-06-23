@@ -5,18 +5,20 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import time
 import datetime
 import logging
-from gabriel_server import cognitive_engine
-from gabriel_protocol import gabriel_pb2
-import protocol.common_pb2 as common
-import protocol.gabriel_extras_pb2 as gabriel_extras
-import redis
 import os
-from PIL import Image
+import time
+
 import cv2
 import numpy as np
+import redis
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image
+
+import protocol.common_pb2 as common
+import protocol.gabriel_extras_pb2 as gabriel_extras
 
 logger = logging.getLogger(__name__)
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()

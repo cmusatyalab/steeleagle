@@ -1,14 +1,16 @@
-from pynput.keyboard import Listener, Key, KeyCode
-from enum import Enum
+import asyncio
 import logging
 import time
-import zmq
-import zmq.asyncio
-import asyncio
 from collections import defaultdict
-from util.utils import setup_socket, SocketOperation
+from enum import Enum
+
 import controlplane_pb2 as control_protocol
 import dataplane_pb2 as data_protocol
+import zmq
+import zmq.asyncio
+from pynput.keyboard import Key, KeyCode, Listener
+from util.utils import SocketOperation, setup_socket
+
 
 class Ctrl(Enum):
     (

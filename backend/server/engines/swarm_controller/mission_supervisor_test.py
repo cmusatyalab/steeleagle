@@ -1,8 +1,10 @@
 import asyncio
 import logging
-from swarm_controller import PatrolArea, StaticPatrolMission, MissionSupervisor
-import protocol.controlplane_pb2 as controlplane
+
+from swarm_controller import MissionSupervisor, PatrolArea, StaticPatrolMission
+
 import protocol.common_pb2 as common
+import protocol.controlplane_pb2 as controlplane
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

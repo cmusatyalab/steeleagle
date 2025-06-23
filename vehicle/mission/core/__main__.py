@@ -1,8 +1,9 @@
-import  asyncio
+import asyncio
 import logging
 import os
-from util.utils import setup_logging
+
 from MissionController import MissionController
+from util.utils import setup_logging
 
 logger = logging.getLogger()
 setup_logging(logger, 'mission.logging')

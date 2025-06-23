@@ -1,12 +1,12 @@
-import dearpygui.dearpygui as dpg
-
-import yaml
-import redis
-import zmq
+import os
+import random
 import time
 import webbrowser
-import random
-import os
+
+import dearpygui.dearpygui as dpg
+import redis
+import yaml
+import zmq
 
 #TODO: Get these from redis
 TYPES = ["ANAFI", "ANAFI USA", "ANAFI Ai", "ModalAi Seeker", "ModalAi Starling"]

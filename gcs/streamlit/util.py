@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
-import redis
-import pandas as pd
-import json
-import zmq
-import time
 import hmac
+import json
+import time
+
+import pandas as pd
+import redis
+import streamlit as st
+import zmq
 
 DATA_TYPES = {
     "latitude": "float",

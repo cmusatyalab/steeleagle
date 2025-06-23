@@ -1,12 +1,13 @@
-import time
-import zmq
-import zmq.asyncio
 import asyncio
 import importlib
 import logging
-import controlplane_pb2 as control_protocol
+import time
+
 import common_pb2 as common_protocol
-from util.utils import setup_socket, query_config, setup_logging, SocketOperation
+import controlplane_pb2 as control_protocol
+import zmq
+import zmq.asyncio
+from util.utils import SocketOperation, query_config, setup_logging, setup_socket
 
 logger = logging.getLogger(__name__)
 

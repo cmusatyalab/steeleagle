@@ -18,19 +18,22 @@
 #   limitations under the License.
 #
 #
+import json
+import logging
 import socket
 import struct
-import cv2
 import time
-import logging
-import json
+
+import cv2
 import numpy as np
 import redis
-from gabriel_server import cognitive_engine
 from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
+
 logger = logging.getLogger(__name__)
 
 class TerraSLAMClient:

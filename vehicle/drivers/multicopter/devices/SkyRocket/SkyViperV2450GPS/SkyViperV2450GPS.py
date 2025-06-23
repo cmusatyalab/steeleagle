@@ -1,13 +1,16 @@
 # General import
-import logging
-# Interface import
-from multicopter.autopilots.ardupilot import ArduPilotDrone
-# Protocol imports
-import dataplane_pb2 as data_protocol
 import asyncio
+import logging
+import threading
+
 # Streaming imports
 import cv2
-import threading
+
+# Protocol imports
+import dataplane_pb2 as data_protocol
+
+# Interface import
+from multicopter.autopilots.ardupilot import ArduPilotDrone
 
 logger = logging.getLogger(__name__)
 

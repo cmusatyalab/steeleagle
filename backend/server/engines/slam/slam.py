@@ -18,10 +18,11 @@
 #   limitations under the License.
 #
 #
+import argparse
+import logging
+
 from gabriel_server.network_engine import engine_runner
 from terraslam import TerraSLAMEngine
-import logging
-import argparse
 from util.utils import setup_logging
 
 SOURCE = 'telemetry'

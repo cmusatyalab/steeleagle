@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import logging
-from system_call_stubs.stub import Stub
+
 import dataplane_pb2 as data_protocol
+
+from system_call_stubs.stub import Stub
 
 logger = logging.getLogger(__name__)
 
