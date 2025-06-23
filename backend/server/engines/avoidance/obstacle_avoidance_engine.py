@@ -247,7 +247,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
         if self.model == "MiDaS_small":
             self.transform = midas_transforms.small_transform
-        elif self.model == "DPT_SwinV2_L_384" or "DPT_SwinV2_B_384" or "DPT_Swin_L_384":
+        elif self.model in ["DPT_SwinV2_L_384", "DPT_SwinV2_B_384", "DPT_Swin_L_384"]:
             self.transform = midas_transforms.swin384_transform
         elif self.model == "MiDaS":
             self.transform = midas_transforms.default_transform
