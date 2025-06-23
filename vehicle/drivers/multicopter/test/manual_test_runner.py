@@ -6,6 +6,7 @@ from enum import Enum
 
 import controlplane_pb2 as control_protocol
 import dataplane_pb2 as data_protocol
+import gabriel_extras_pb2 as gabriel_extras
 import zmq
 import zmq.asyncio
 from pynput.keyboard import Key, KeyCode, Listener
@@ -173,7 +174,7 @@ async def recv_camera():
     while True:
         try:
             msg = await cam_sock.recv()
-            frame = cnc_pb2.Frame()
+            frame = gabriel_extras.Frame()
             frame.ParseFromString(msg)
             logger.debug(f"Received camera message after set: {frame}")
             await asyncio.sleep(0.3)
