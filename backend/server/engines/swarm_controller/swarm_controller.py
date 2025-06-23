@@ -6,12 +6,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import os
-import subprocess
 import logging
 from zipfile import ZipFile
 from google.protobuf.message import DecodeError
 from google.protobuf import text_format
-import requests
 import protocol.controlplane_pb2 as controlplane
 import protocol.common_pb2 as common
 import argparse
@@ -25,7 +23,7 @@ import aiohttp
 import aiofiles
 from dataclasses import dataclass
 import json
-from typing import List, Set, Optional
+from typing import List
 from collections.abc import Iterator
 from abc import ABC, abstractmethod
 

@@ -9,7 +9,7 @@ import requests
 import zmq
 import asyncio
 import logging
-from util.utils import SocketOperation, setup_socket, setup_logging
+from util.utils import SocketOperation, setup_socket
 from system_call_stubs.control_stub import ControlStub
 from system_call_stubs.data_stub import DataStub
 from system_call_stubs.report_stub import ReportStub
@@ -111,12 +111,12 @@ class MissionController():
 
     def start_mission(self):
         if self.tm:
-            logger.info(f"mission already running")
+            logger.info("mission already running")
             return
         else: # first time mission, create a task manager
             import core.TaskManager as tm
 
-        logger.info(f"start the mission")
+        logger.info("start the mission")
         if self.reload :
             self.reload_mission()
 
@@ -126,7 +126,7 @@ class MissionController():
         msn.Mission.define_mission(self.transitMap, self.task_arg_map)
 
         # start the tm
-        logger.info(f"start the task manager")
+        logger.info("start the task manager")
         self.tm = tm.TaskManager(self.ctrl, self.data, self.transitMap, self.task_arg_map)
         self.tm_coroutine = asyncio.create_task(self.tm.run())
 

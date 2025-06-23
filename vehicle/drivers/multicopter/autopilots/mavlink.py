@@ -1,7 +1,6 @@
 # General imports
 from enum import Enum
 import math
-import os
 import time
 import asyncio
 import logging

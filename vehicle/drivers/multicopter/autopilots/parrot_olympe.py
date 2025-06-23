@@ -16,12 +16,11 @@ from olympe.messages.move import extended_move_to
 from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
+from olympe.messages.ardrone3.SpeedSettingsState import MaxRotationSpeedChanged
 from olympe.messages.ardrone3.PilotingState import AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged
 from olympe.enums.ardrone3.PilotingState import FlyingStateChanged_State
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
-import olympe.enums.gimbal as gimbal_mode
 import olympe.enums.move as move_mode
 from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 # Interface import
@@ -924,7 +923,7 @@ class FFMPEGStreamingThread(threading.Thread):
                 try:
                     ret, self._current_frame = self._cap.read()
                     if not ret:
-                        logger.error(f"No frame received from cap, restarting")
+                        logger.error("No frame received from cap, restarting")
                         self.is_running = False
                 except Exception as e:
                     logger.error(f"Frame could not be read, reason: {e}")

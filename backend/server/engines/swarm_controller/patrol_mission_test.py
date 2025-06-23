@@ -1,5 +1,4 @@
 from swarm_controller import PatrolArea, PatrolMission
-import pytest_asyncio
 import pytest
 
 @pytest.mark.asyncio
@@ -24,19 +23,19 @@ async def test_mission_creation():
 
     drone_id, waypoints = mission.state_transition('d1', None)
     assert drone_id == 'd1'
-    assert waypoints.waypoints == f"Hex.Hex_1"
+    assert waypoints.waypoints == "Hex.Hex_1"
 
     drone_id, waypoints = mission.state_transition('d1', None)
     assert drone_id == 'd1'
-    assert waypoints.waypoints == f"Hex.Hex_2"
+    assert waypoints.waypoints == "Hex.Hex_2"
 
     drone_id, waypoints = mission.state_transition('d2', None)
     assert drone_id == 'd2'
-    assert waypoints.waypoints == f"Hex.Hex_9"
+    assert waypoints.waypoints == "Hex.Hex_9"
 
     drone_id, waypoints = mission.state_transition('d3', None)
     assert drone_id == 'd3'
-    assert waypoints.waypoints == f"Hex.Hex_17"
+    assert waypoints.waypoints == "Hex.Hex_17"
 
     for i in range(8):
         drone_id, waypoints = mission.state_transition('d3', None)
@@ -45,7 +44,7 @@ async def test_mission_creation():
 
     drone_id, waypoints = mission.state_transition('d3', None)
     assert drone_id == 'd3'
-    assert waypoints.waypoints == f"Hex.Hex_3"
+    assert waypoints.waypoints == "Hex.Hex_3"
 
     for i in range(5):
         drone_id, waypoints = mission.state_transition('d3', None)

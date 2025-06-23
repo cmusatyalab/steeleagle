@@ -1,6 +1,5 @@
 # General imports
 from abc import ABC, abstractmethod
-import asyncio
 # Protocol imports
 import common_pb2 as common_protocol
 # ZeroMQ binding imports

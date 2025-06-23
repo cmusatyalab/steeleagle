@@ -107,7 +107,7 @@ class GabrielCompute(ComputeInterface):
             # Wait for a new frame
             while entry is None or entry.timestamp <= self.frame_ts:
                 if entry is None:
-                    logger.debug(f"Waiting for new frame from driver, entry is none!")
+                    logger.debug("Waiting for new frame from driver, entry is none!")
                 else:
                     logger.debug(f"Waiting for new frame from driver, {entry.timestamp} <= {self.frame_ts}")
                 await self.data_store.wait_for_new_data(type(frame_data))

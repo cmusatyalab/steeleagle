@@ -8,7 +8,6 @@ import common_pb2 as common_protocol
 from service import Service
 from util.utils import query_config, setup_logging, SocketOperation
 from data_store import DataStore
-from google.protobuf.message import DecodeError
 import time
 
 logger = logging.getLogger(__name__)
@@ -165,7 +164,7 @@ class ControlService(Service):
         logger.info(f"Received patrol report from mission: {resp}")
         
         if resp.resp == common_protocol.ResponseStatus.OK and self.waypoint_req is not None:
-            logger.info(f"already have the cached waypoint")
+            logger.info("already have the cached waypoint")
             self.waypoint_req.seq_num = resp.seq_num
             logger.info(f"Sending cached waypoint report to mission: {self.waypoint_req}")
             await self.mission_report_socket.send(self.waypoint_req.SerializeToString())

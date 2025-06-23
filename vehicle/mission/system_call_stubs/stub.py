@@ -75,5 +75,5 @@ class Stub:
             await stub_response.wait()
             reply =  stub_response.get_result()
             return reply
-        except Exception as e:
+        except Exception:
             return None

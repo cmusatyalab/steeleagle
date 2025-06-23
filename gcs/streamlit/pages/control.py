@@ -11,7 +11,6 @@ from streamlit_folium import st_folium
 from folium.plugins import MiniMap
 from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
-import math
 import uuid
 
 
@@ -252,7 +251,7 @@ def draw_map():
         "alt": "float",
         }
 
-        ret = red.xrevrange(f"slam", "+", "-", st.session_state.trail_length)
+        ret = red.xrevrange("slam", "+", "-", st.session_state.trail_length)
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             slam_coords = []
@@ -300,7 +299,7 @@ def draw_map():
         "lon": "float",
         }
 
-        ret = red.xrevrange(f"landing_spot", "+", "-", 1)
+        ret = red.xrevrange("landing_spot", "+", "-", 1)
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             landing_coords = []

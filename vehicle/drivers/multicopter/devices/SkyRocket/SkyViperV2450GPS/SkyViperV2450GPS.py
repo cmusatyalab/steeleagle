@@ -5,6 +5,9 @@ from multicopter.autopilots.ardupilot import ArduPilotDrone
 # Protocol imports
 import dataplane_pb2 as data_protocol
 import asyncio
+# Streaming imports
+import cv2
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +66,6 @@ class SkyViperV2450GPS(ArduPilotDrone):
     def _stop_streaming(self):
         self._streaming_thread.stop()
         
-# Streaming imports
-import cv2
-import numpy as np
-import os
-import threading
 
 class StreamingThread(threading.Thread):
 
@@ -95,7 +93,7 @@ class StreamingThread(threading.Thread):
         try:
             frame = self._current_frame.copy()
             return frame
-        except Exception as e:
+        except Exception:
             # Send a blank frame
             return None
 

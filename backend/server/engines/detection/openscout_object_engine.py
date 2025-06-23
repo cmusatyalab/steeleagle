@@ -28,7 +28,7 @@ from gabriel_protocol import gabriel_pb2
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from PIL import Image, ImageDraw
+from PIL import Image
 import traceback
 import json
 from scipy.spatial.transform import Rotation as R

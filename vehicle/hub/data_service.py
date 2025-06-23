@@ -2,7 +2,7 @@ import zmq
 import zmq.asyncio
 import asyncio
 import logging
-from util.utils import query_config, setup_logging, SocketOperation
+from util.utils import setup_logging, SocketOperation
 import dataplane_pb2 as data_protocol
 import common_pb2 as common_protocol
 from service import Service
@@ -115,7 +115,7 @@ class DataService(Service):
             case "cpt":
                 await self.process_compute_req(req)
             case "task":
-                logger.info(f"Updating mission status in data service")
+                logger.info("Updating mission status in data service")
                 await self.update_mission_status(req)
             case None:
                 raise Exception("Expected at least one request type")

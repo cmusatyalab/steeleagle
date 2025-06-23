@@ -1,9 +1,5 @@
 # General imports
 from enum import Enum
-import math
-import os
-import time
-import asyncio
 import logging
 # SDK import (MAVLink)
 from pymavlink import mavutil

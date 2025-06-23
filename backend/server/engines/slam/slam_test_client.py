@@ -8,7 +8,6 @@ import time
 from gabriel_protocol import gabriel_pb2
 from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 import gabriel_extras_pb2 as gabriel_extras
-from gabriel_server import cognitive_engine
 
 logging.basicConfig(level=logging.DEBUG) 
 logger = logging.getLogger(__name__)
@@ -130,7 +129,7 @@ class SlamZeroMQClient:
     
     async def run(self):
         logger.info(f"Starting ZeroMQ client connecting to {self.server}:{self.port}")
-        logger.info(f"Will collect results from all available engines")
+        logger.info("Will collect results from all available engines")
         await self.gabriel_client.launch_async()
 
 def main():

@@ -8,7 +8,6 @@ import numpy as np
 import time
 import zmq
 import argparse
-import sys
 
 HOST=''
 PORT=8485

@@ -124,7 +124,7 @@ class DataStore:
 
     def update_current_task(self, task_type):
         if data_protocol.Telemetry not in self._raw_data_cache:
-            logger.error(f"update_current_task: Telemetry type not in data cache")
+            logger.error("update_current_task: Telemetry type not in data cache")
         else:
             logger.info(f"Setting current task to {task_type}")
             entry = self._raw_data_cache[data_protocol.Telemetry]

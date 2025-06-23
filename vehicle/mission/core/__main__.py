@@ -2,6 +2,7 @@ import  asyncio
 import logging
 import os
 from util.utils import setup_logging
+from MissionController import MissionController
 
 logger = logging.getLogger()
 setup_logging(logger, 'mission.logging')
@@ -13,7 +14,6 @@ parent_dir = os.path.dirname(current_dir)
 project_dir = os.path.join(parent_dir, 'project')
 logger.info("proj_path: %s", project_dir)
 
-from MissionController import MissionController
 mc = MissionController(project_dir)
 asyncio.run(mc.run())
 print("Mission controller is done")

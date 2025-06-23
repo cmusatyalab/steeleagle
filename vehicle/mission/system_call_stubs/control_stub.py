@@ -1,5 +1,3 @@
-import ast
-import json
 import logging
 from system_call_stubs.stub import Stub
 import controlplane_pb2 as control_protocol
@@ -160,7 +158,7 @@ class ControlStub(Stub):
 
     ''' Compute methods '''
     async def clear_compute_result(self, compute_type):
-        logger.info(f"clearing compute result")
+        logger.info("clearing compute result")
         cpt_req = control_protocol.Request()
         cpt_req.cpt.type = compute_type
         cpt_req.cpt.action = control_protocol.ComputeAction.CLEAR_COMPUTE

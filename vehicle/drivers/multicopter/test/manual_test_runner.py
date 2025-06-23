@@ -1,6 +1,5 @@
 from pynput.keyboard import Listener, Key, KeyCode
 from enum import Enum
-import subprocess
 import logging
 import time
 import zmq
@@ -10,7 +9,6 @@ from collections import defaultdict
 from util.utils import setup_socket, SocketOperation
 import controlplane_pb2 as control_protocol
 import dataplane_pb2 as data_protocol
-import common_pb2 as common_protocol
 
 class Ctrl(Enum):
     (

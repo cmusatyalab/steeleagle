@@ -21,11 +21,9 @@
 import socket
 import struct
 import cv2
-import os
 import time
 import logging
 import json
-from pathlib import Path
 import numpy as np
 import redis
 from gabriel_server import cognitive_engine
