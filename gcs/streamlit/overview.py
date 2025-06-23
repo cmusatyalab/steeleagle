@@ -111,7 +111,7 @@ def draw_map():
     if st.session_state.show_corridors:
         try:
             partition = []
-            with open(f"{st.secrets.waypoints}", "r", encoding="utf-8") as f:
+            with open(f"{st.secrets.waypoints}", encoding="utf-8") as f:
                 j = json.load(f)
                 for k, v in j.items():
                     for k2, v2 in v.items():  # for each corridor
@@ -127,7 +127,7 @@ def draw_map():
     if st.session_state.show_geofence:
         try:
             fence_coords = []
-            with open(f"{st.secrets.geofence_path}", "r", encoding="utf-8") as f:
+            with open(f"{st.secrets.geofence_path}", encoding="utf-8") as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():

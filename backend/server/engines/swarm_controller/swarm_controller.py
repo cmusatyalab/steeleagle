@@ -13,7 +13,6 @@ import os
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import List
 from urllib.parse import urlparse
 from zipfile import ZipFile
 
@@ -131,7 +130,7 @@ class PatrolArea:
 
     @staticmethod
     async def load_from_file(filename):
-        async with aiofiles.open(filename, mode="r") as f:
+        async with aiofiles.open(filename) as f:
             contents = await f.read()
         data = json.loads(contents)
 
@@ -159,11 +158,11 @@ class PatrolWaypoints:
 
 @dataclass
 class PatrolMissionState:
-    drone_list: List[str]
-    patrol_area_list: List[PatrolArea]
+    drone_list: list[str]
+    patrol_area_list: list[PatrolArea]
     current_patrol_area: PatrolArea
-    patrol_area_iter: Iterator[List[PatrolArea]]
-    drone_altitudes: List[int]
+    patrol_area_iter: Iterator[list[PatrolArea]]
+    drone_altitudes: list[int]
 
 
 class Mission(ABC):

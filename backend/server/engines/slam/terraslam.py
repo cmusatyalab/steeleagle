@@ -161,9 +161,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = "Expected compute configuration to be specified".encode(
-                encoding="utf-8"
-            )
+            result.payload = b"Expected compute configuration to be specified"
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -240,7 +238,7 @@ class TerraSLAMEngine(cognitive_engine.Engine):
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = "Ignoring TEXT payload.".encode(encoding="utf-8")
+        result.payload = b"Ignoring TEXT payload."
         result_wrapper.results.append(result)
         return result_wrapper
 
@@ -251,14 +249,10 @@ class TerraSLAMEngine(cognitive_engine.Engine):
 
     def print_inference_stats(self):
         current_time = time.time()
+        logger.info(f"inference time {(current_time - self.lasttime) * 1000:.1f} ms, ")
+        logger.info(f"fps {1.0 / (current_time - self.lasttime):.2f}")
         logger.info(
-            "inference time {0:.1f} ms, ".format((current_time - self.lasttime) * 1000)
-        )
-        logger.info("fps {0:.2f}".format(1.0 / (current_time - self.lasttime)))
-        logger.info(
-            "avg fps: {0:.2f}".format(
-                (self.count - self.lastcount) / (current_time - self.lastprint)
-            )
+            f"avg fps: {(self.count - self.lastcount) / (current_time - self.lastprint):.2f}"
         )
         self.lastcount = self.count
         self.lasttime = current_time

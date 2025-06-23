@@ -104,7 +104,7 @@ def import_config():
     Import configuration file from environment variable.
     """
     config_path = os.environ.get("CONFIG_PATH")
-    with open(config_path, "r") as file:
+    with open(config_path) as file:
         config = yaml.safe_load(file)
         return config
 

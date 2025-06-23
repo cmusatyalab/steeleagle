@@ -72,7 +72,7 @@ class AvoidanceEngine(ABC):
                     self.storage_path + "/actuations.txt"
                 )
             )
-            self.actuations_fd = open(self.storage_path + "/actuations.txt", mode="r")
+            self.actuations_fd = open(self.storage_path + "/actuations.txt")
 
         if self.store_detections:
             self.watermark = Image.open(os.getcwd() + "/watermark.png")
@@ -81,7 +81,7 @@ class AvoidanceEngine(ABC):
                 os.makedirs(self.storage_path + "/moa")
             except FileExistsError:
                 logger.info("Images directory already exists.")
-            logger.info("Storing detection images at {}".format(self.storage_path))
+            logger.info(f"Storing detection images at {self.storage_path}")
 
     def store_vector(self, drone, vec):
         self.r.xadd(
@@ -90,13 +90,11 @@ class AvoidanceEngine(ABC):
         )
 
     def print_inference_stats(self):
-        logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
-        logger.info("wait {0:.1f} ms, ".format((self.t0 - self.lasttime) * 1000))
-        logger.info("fps {0:.2f}".format(1.0 / (self.t1 - self.lasttime)))
+        logger.info(f"inference time {(self.t1 - self.t0) * 1000:.1f} ms, ")
+        logger.info(f"wait {(self.t0 - self.lasttime) * 1000:.1f} ms, ")
+        logger.info(f"fps {1.0 / (self.t1 - self.lasttime):.2f}")
         logger.info(
-            "avg fps: {0:.2f}".format(
-                (self.count - self.lastcount) / (self.t1 - self.lastprint)
-            )
+            f"avg fps: {(self.count - self.lastcount) / (self.t1 - self.lastprint):.2f}"
         )
         self.lastcount = self.count
         self.lastprint = self.t1
@@ -133,7 +131,7 @@ class AvoidanceEngine(ABC):
         path = self.storage_path + "/moa/latest.jpg"
         depth_img.save(path, format="JPEG")
 
-        logger.info("Stored image: {}".format(path))
+        logger.info(f"Stored image: {path}")
 
     def text_payload_reply(self):
         # if the payload is TEXT, say from a CNC client, we ignore
@@ -142,7 +140,7 @@ class AvoidanceEngine(ABC):
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = "Ignoring TEXT payload.".encode(encoding="utf-8")
+        result.payload = b"Ignoring TEXT payload."
         result_wrapper.results.append(result)
         return result_wrapper
 
@@ -180,9 +178,7 @@ class AvoidanceEngine(ABC):
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = "Expected compute configuration to be specified".encode(
-                encoding="utf-8"
-            )
+            result.payload = b"Expected compute configuration to be specified"
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -263,10 +259,8 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
             self.transform = midas_transforms.beit512_transform
         else:
             self.transform = midas_transforms.dpt_transform
-        logger.info(
-            "Depth predictor initialized with the following model: {}".format(model)
-        )
-        logger.info("Depth Threshold: {}".format(self.threshold))
+        logger.info(f"Depth predictor initialized with the following model: {model}")
+        logger.info(f"Depth Threshold: {self.threshold}")
 
     def handle(self, input_frame):
         return self.handle_helper(input_frame)
@@ -330,7 +324,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         )
         cv2.putText(
             full_depth_map,
-            "{:.4f}".format(actuation_vector),
+            f"{actuation_vector:.4f}",
             (scrapX + cX, scrapY + cY - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
@@ -375,10 +369,8 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         self.detector.to(self.device)
         self.detector.eval()
 
-        logger.info(
-            "Depth predictor initialized with the following model: {}".format(model)
-        )
-        logger.info("Depth Threshold: {}".format(self.threshold))
+        logger.info(f"Depth predictor initialized with the following model: {model}")
+        logger.info(f"Depth Threshold: {self.threshold}")
 
     def handle(self, input_frame):
         return self.handle_helper(input_frame)

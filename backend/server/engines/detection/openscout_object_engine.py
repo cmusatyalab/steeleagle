@@ -95,7 +95,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.error(f"Geofence KML file not found or is not a file: {fence_path}")
         else:
             # build geofence from coordinates inside Polygon element of KML file
-            with open(f"{fence_path}", "r", encoding="utf-8") as f:
+            with open(f"{fence_path}", encoding="utf-8") as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():
@@ -109,14 +109,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             self.exclusions = list(
                 map(int, args.exclude.split(","))
             )  # split string to int list
-            logger.info("Excluding the following class ids: {}".format(self.exclusions))
+            logger.info(f"Excluding the following class ids: {self.exclusions}")
         else:
             self.exclusions = None
 
         logger.info(
-            "Predictor initialized with the following model path: {}".format(args.model)
+            f"Predictor initialized with the following model path: {args.model}"
         )
-        logger.info("Confidence Threshold: {}".format(self.threshold))
+        logger.info(f"Confidence Threshold: {self.threshold}")
 
         if self.store_detections:
             self.watermark = Image.open(os.getcwd() + "/watermark.png")
@@ -125,7 +125,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 os.makedirs(self.storage_path + "/detected")
             except FileExistsError:
                 logger.info("Images directory already exists.")
-            logger.info("Storing detection images at {}".format(self.storage_path))
+            logger.info(f"Storing detection images at {self.storage_path}")
 
             self.drone_storage_path = os.path.join(
                 self.storage_path, "detected", "drones"
@@ -160,9 +160,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         img_height = image_np.shape[0]
         pixel_center = (img_width / 2, img_height / 2)
         logger.info(
-            "Image Width: {0}px, Image Height: {1}px, Center {2}".format(
-                img_width, img_height, pixel_center
-            )
+            f"Image Width: {img_width}px, Image Height: {img_height}px, Center {pixel_center}"
         )
         # eventually these should come from something like a drone .cap file
         HFOV = 69  # Horizontal FOV An.
@@ -194,14 +192,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         target_vec = self.find_intersection(target_dir, np.array([0, 0, alt]))
 
         logger.info(
-            "Intersection with ground plane: ({0}, {1}, {2})".format(
-                target_vec[0], target_vec[1], target_vec[2]
-            )
+            f"Intersection with ground plane: ({target_vec[0]}, {target_vec[1]}, {target_vec[2]})"
         )
 
         est_lat = lat + (180 / np.pi) * (target_vec[1] / EARTH_RADIUS)
         est_lon = lon + (180 / np.pi) * (target_vec[0] / EARTH_RADIUS) / np.cos(lat)
-        logger.info("Estimated GPS location: ({0}, {1})".format(est_lat, est_lon))
+        logger.info(f"Estimated GPS location: ({est_lat}, {est_lon})")
         return est_lat, est_lon
 
     def geodb_garbage_collection(self):
@@ -272,7 +268,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = "Ignoring TEXT payload.".encode(encoding="utf-8")
+            result.payload = b"Ignoring TEXT payload."
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -285,9 +281,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = "Expected compute configuration to be specified".encode(
-                encoding="utf-8"
-            )
+            result.payload = b"Expected compute configuration to be specified"
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -363,7 +357,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
             if scores[i] > self.threshold:
                 detections_above_threshold = True
-                logger.info("Detected : {} - Score: {:.3f}".format(names[i], scores[i]))
+                logger.info(f"Detected : {names[i]} - Score: {scores[i]:.3f}")
 
                 box = df["box"][i]
                 box = [box["y1"], box["x1"], box["y2"], box["x2"]]
@@ -559,13 +553,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return (True, None)
 
     def print_inference_stats(self):
-        logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
-        logger.info("wait {0:.1f} ms, ".format((self.t0 - self.lasttime) * 1000))
-        logger.info("fps {0:.2f}".format(1.0 / (self.t1 - self.lasttime)))
+        logger.info(f"inference time {(self.t1 - self.t0) * 1000:.1f} ms, ")
+        logger.info(f"wait {(self.t0 - self.lasttime) * 1000:.1f} ms, ")
+        logger.info(f"fps {1.0 / (self.t1 - self.lasttime):.2f}")
         logger.info(
-            "avg fps: {0:.2f}".format(
-                (self.count - self.lastcount) / (self.t1 - self.lastprint)
-            )
+            f"avg fps: {(self.count - self.lastcount) / (self.t1 - self.lastprint):.2f}"
         )
         self.lastcount = self.count
         self.lastprint = self.t1

@@ -1,5 +1,5 @@
 target-version = "py310"
-exclude = ["*_pb2.py"]
+exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [lint]
 select = [
@@ -7,7 +7,8 @@ select = [
   "E7",     # pycodestyle subset
   "E9",     # pycodestyle subset
   "F",      # pyflakes
-  "I"       # isort
+  "I",      # isort
+  "UP",     # pyupgrade
 ]
 ignore = [
   "E722",   # do not use bare except

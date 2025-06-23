@@ -85,7 +85,7 @@ class PathStore:
 
     def load_waypoints(self):
         # NOTE: Key names are 1-indexed in the compiler output waypoint file
-        with open(self.waypoint_file, "r") as file:
+        with open(self.waypoint_file) as file:
             data = json.load(file)
         self.total_legs = len(data[self.table_prefix])
         for i in range(self.total_legs):

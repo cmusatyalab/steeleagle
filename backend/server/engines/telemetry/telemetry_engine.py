@@ -47,7 +47,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             os.makedirs(self.storage_path + "/raw")
         except FileExistsError:
             logger.info("Images directory already exists.")
-        logger.info("Storing detection images at {}".format(self.storage_path))
+        logger.info(f"Storing detection images at {self.storage_path}")
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
@@ -174,7 +174,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             if extras.telemetry.drone_name != "":
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
-                result.payload = "Telemetry updated.".encode(encoding="utf-8")
+                result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:

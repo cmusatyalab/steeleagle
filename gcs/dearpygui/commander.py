@@ -13,7 +13,7 @@ TYPES = ["ANAFI", "ANAFI USA", "ANAFI Ai", "ModalAi Seeker", "ModalAi Starling"]
 STATUSES = ["offline", "idle", "TrackingTask", "PatrolTask"]
 STATUS_COLORS = [(255, 0, 0), (0, 255, 255), (200, 0, 200), (200, 0, 200)]
 
-with open("config.yaml", "r") as conf:
+with open("config.yaml") as conf:
     SECRETS = yaml.safe_load(conf)
 
 

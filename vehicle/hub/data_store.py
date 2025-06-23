@@ -2,7 +2,6 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional, Union
 
 import dataplane_pb2 as data_protocol
 from google.protobuf import timestamp_pb2
@@ -23,8 +22,8 @@ class ComputeResult:
 class RawDataEntry:
     """Class representing raw data entries"""
 
-    data: Union[data_protocol.Frame, data_protocol.Telemetry, None]
-    data_id: Optional[int]
+    data: data_protocol.Frame | data_protocol.Telemetry | None
+    data_id: int | None
     timestamp: float
 
 
@@ -59,7 +58,7 @@ class DataStore:
     ###########################################################################
     #                               COMPUTE                                   #
     ###########################################################################
-    def get_compute_result(self, compute_id, type) -> Optional[ComputeResult]:
+    def get_compute_result(self, compute_id, type) -> ComputeResult | None:
         logger.debug(
             f"get_compute_result: Getting result for compute {compute_id} with type {type}"
         )

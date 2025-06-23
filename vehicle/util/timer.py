@@ -1,7 +1,6 @@
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 class TimerError(Exception):
@@ -11,11 +10,11 @@ class TimerError(Exception):
 @dataclass
 class Timer:
     logger: logging.Logger
-    name: Optional[str] = None
+    name: str | None = None
     text: str = "{} took {:0.4f} seconds"
-    max_frequency: Optional[int] = None
-    _start_time: Optional[float] = field(default=None, init=False, repr=False)
-    _last_log_time: Optional[int] = None
+    max_frequency: int | None = None
+    _start_time: float | None = field(default=None, init=False, repr=False)
+    _last_log_time: int | None = None
 
     def __enter__(self):
         self.start()

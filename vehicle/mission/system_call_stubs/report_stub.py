@@ -51,7 +51,7 @@ class ReportStub(Stub):
     async def get_waypoints(self, area_path):
         try:
             logger.info(f"get_waypoints: {self.waypoint_path=}")
-            with open(self.waypoint_path, "r") as f:
+            with open(self.waypoint_path) as f:
                 waypoints = f.read()
 
             waypoints_map = json.loads(waypoints)
