@@ -263,7 +263,7 @@ class ParrotOlympeDrone(MulticopterItf):
     async def set_heading(self, location):
         lat = location.latitude
         lon = location.longitude
-        bearing = location.bearing
+        bearing = location.heading
         heading_mode = location.heading_mode
 
         if heading_mode == common_protocol.LocationHeadingMode.HEADING_START:
@@ -273,7 +273,7 @@ class ParrotOlympeDrone(MulticopterItf):
             target = self._calculate_bearing(
                 global_position["latitude"], global_position["longitude"], lat, lon
             )
-        offset = math.radians(heading - target)
+        offset = math.radians(bearing - target)
 
         try:
             self._drone(moveBy(0.0, 0.0, 0.0, offset)).success()
