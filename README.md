@@ -4,6 +4,9 @@ SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
 SPDX-License-Identifier: GPL-2.0-only
 -->
 
+<img src="https://drive.google.com/uc?export=view&id=1tzRbJ2_59W1WBhYfzmyWKYHk-DS58mTf" width="50%">
+
+
 SteelEagle: Edge-Enabled Drone Autonomy
 ===========
 
@@ -43,7 +46,6 @@ the licenses listed.
 Project | Modified | License
 ---|---|---|
 [cmusatyalab/openscout](https://github.com/cmusatyalab/openscout) | Yes | Apache 2.0
-
 
 
 ## Why Use SteelEagle?
