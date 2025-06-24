@@ -500,7 +500,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return 0
 
     def _get_heading(self):
-        diff = 90 - math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
+        diff = 270 - math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
         if diff > 180:
             return diff - 360
         elif diff < -180:
