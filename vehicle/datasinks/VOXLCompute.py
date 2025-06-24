@@ -1,5 +1,5 @@
 # import asyncio
-# from cnc_protocol import cnc_pb2
+# import gabriel_extras_pb2 as gabriel_extras
 # import cv2
 # from enum import Enum
 # from kernel.computes.ComputeItf import ComputeInterface
@@ -70,7 +70,7 @@
 #         '''
 #         logger.info("VOXL compute is running")
 #         while self.is_running:
-#             frame_data = cnc_pb2.Frame()
+#             frame_data = gabriel_extras.Frame()
 #             frame_id = self.data_store.get_raw_data(frame_data)
 
 #             # Wait for a new frame

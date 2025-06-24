@@ -1,22 +1,26 @@
-import zmq
-import zmq.asyncio
 import asyncio
 import logging
-from util.utils import query_config, setup_logging, SocketOperation
-import dataplane_pb2 as data_protocol
+
 import common_pb2 as common_protocol
-from service import Service
+import dataplane_pb2 as data_protocol
+import zmq
+import zmq.asyncio
 from data_store import DataStore
+from service import Service
+from util.utils import SocketOperation, setup_logging
 
 logger = logging.getLogger(__name__)
-setup_logging(logger, 'hub.logging')
+setup_logging(logger, "hub.logging")
+
 
 # Bandaid fix to prevent logs from being polluted by WRONG_INPUT_FORMAT errors.
 class WrongInputFormatFilter(logging.Filter):
     def filter(self, record):
         return "WRONG_INPUT_FORMAT" not in record.getMessage()
 
-logging.getLogger('gabriel_client.zeromq_client').addFilter(WrongInputFormatFilter())
+
+logging.getLogger("gabriel_client.zeromq_client").addFilter(WrongInputFormatFilter())
+
 
 class DataService(Service):
     def __init__(self, data_store: DataStore, compute_dict):
@@ -30,20 +34,26 @@ class DataService(Service):
         self.cam_sock = self.context.socket(zmq.SUB)
         self.data_reply_sock = self.context.socket(zmq.DEALER)
 
-        self.tel_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+        self.tel_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
         self.tel_sock.setsockopt(zmq.CONFLATE, 1)
-        self.cam_sock.setsockopt(zmq.SUBSCRIBE, b'')  # Subscribe to all topics
+        self.cam_sock.setsockopt(zmq.SUBSCRIBE, b"")  # Subscribe to all topics
         self.cam_sock.setsockopt(zmq.CONFLATE, 1)
 
         self.setup_and_register_socket(
-            self.tel_sock, SocketOperation.BIND,
-            'hub.network.dataplane.driver_to_hub.telemetry')
+            self.tel_sock,
+            SocketOperation.BIND,
+            "hub.network.dataplane.driver_to_hub.telemetry",
+        )
         self.setup_and_register_socket(
-            self.cam_sock, SocketOperation.BIND,
-            'hub.network.dataplane.driver_to_hub.image_sensor')
+            self.cam_sock,
+            SocketOperation.BIND,
+            "hub.network.dataplane.driver_to_hub.image_sensor",
+        )
         self.setup_and_register_socket(
-            self.data_reply_sock, SocketOperation.BIND,
-            'hub.network.dataplane.mission_to_hub')
+            self.data_reply_sock,
+            SocketOperation.BIND,
+            "hub.network.dataplane.mission_to_hub",
+        )
 
         # Unified poller task
         self.create_task(self.data_proxy())
@@ -115,7 +125,7 @@ class DataService(Service):
             case "cpt":
                 await self.process_compute_req(req)
             case "task":
-                logger.info(f"Updating mission status in data service")
+                logger.info("Updating mission status in data service")
                 await self.update_mission_status(req)
             case None:
                 raise Exception("Expected at least one request type")
