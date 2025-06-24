@@ -524,7 +524,7 @@ with dpg.window(tag="main_window", autosize=True, no_resize=True, on_close=save_
 
                         with dpg.draw_layer(tag="layer2"):
                             dpg.draw_line((10, 60), (100, 160), color=(255, 0, 0, 255), thickness=1)
-                            dpg.draw_arrow((50, 120), (100, 115), color=(0, 200, 255), thickness=1, size=10) 
+                            dpg.draw_arrow((50, 120), (100, 115), color=(0, 200, 255), thickness=1, size=10)
             """
         with dpg.tab(tag="planning_tab", label="Mission Planning"):
             with dpg.group(

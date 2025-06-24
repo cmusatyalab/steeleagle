@@ -25,4 +25,3 @@ We have currently implemented several basic tasks in SteelEagle. Below is a list
 ### [SetHome]({{ site.baseurl }}{% link modules/hermes/tasks/SetHome.html %})
 
 ### [Land]({{ site.baseurl }}{% link modules/hermes/tasks/Land.html %})
-

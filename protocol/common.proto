@@ -29,7 +29,7 @@ message PoseBody {
   double pitch = 1;
   double roll = 2;
   double yaw = 3;
-  PoseControlMode control_mode = 4; 
+  PoseControlMode control_mode = 4;
   int32 actuator_id = 5;
 }
 
