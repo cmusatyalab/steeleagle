@@ -37,34 +37,6 @@ applications that need to quickly iterate and field deploy.
 [quickstart]: https://cmusatyalab.github.io/steeleagle/getting_started/overview/
 [docs]: https://cmusatyalab.github.io/steeleagle/
 
-## Related Publications
-
-- M. Bala, T. Eiszler, X. Chen, J. Harkes, J. Blakley, P. Pillai, and M.
-  Satyanarayanan, "Democratizing Drone Autonomy via Edge Computing," *2023
-  IEEE/ACM Symposium on Edge Computing (SEC)*, Wilmington, DE, USA, 2023, pp.
-  40--52, doi: [10.1145/3583740.3626614](https://doi.org/10.1145/3583740.3626614).
-- M. Bala, A. Chanana, X. Chen, Q. Dong, T. Eiszler, J. Xu, P. Pillai, and M.
-  Satyanarayanan, "The OODA Loop of Cloudlet-based Autonomous Drones," *2024
-  IEEE/ACM Symposium on Edge Computing (SEC)*, Rome, Italy, 2024, pp. 178--190,
-  doi: [10.1109/SEC62691.2024.00022](https://doi.org/10.1109/SEC62691.2024.00022).
-
-## License
-
-Unless otherwise stated in the table below, all source code and documentation
-are under the [GNU Public License, Version 2.0][gpl2]. A copy of this license is
-reproduced in the [LICENSE](LICENSE) file.
-
-Portions from the following third party sources have been modified and are
-included in this repository.  These portions are noted in the source files and
-are copyright their respective authors with the licenses listed.
-
-| Project | Modified | License |
-| ------- | -------- | ------- |
-| [cmusatyalab/openscout][openscout] | Yes | Apache 2.0 |
-
-[gpl2]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
-[openscout]: https://github.com/cmusatyalab/openscout
-
 ## Why Use SteelEagle?
 
 ### :money_with_wings: Low Cost
@@ -116,3 +88,31 @@ network than most mobile robots have onboard, due to their access to edge
 servers. Although edge servers are not as powerful as cloud servers, they are
 far more capable than any mobile computer and can deliver high-quality AI
 results with relatively low latency.
+
+## License
+
+Unless otherwise stated in the table below, all source code and documentation
+are under the [GNU Public License, Version 2.0][gpl2]. A copy of this license is
+reproduced in the [LICENSE](LICENSE) file.
+
+Portions from the following third party sources have been modified and are
+included in this repository.  These portions are noted in the source files and
+are copyright their respective authors with the licenses listed.
+
+| Project | Modified | License |
+| ------- | -------- | ------- |
+| [cmusatyalab/openscout][openscout] | Yes | Apache 2.0 |
+
+[gpl2]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+[openscout]: https://github.com/cmusatyalab/openscout
+
+## Related Publications
+
+- M. Bala, T. Eiszler, X. Chen, J. Harkes, J. Blakley, P. Pillai, and M.
+  Satyanarayanan, "Democratizing Drone Autonomy via Edge Computing," *2023
+  IEEE/ACM Symposium on Edge Computing (SEC)*, Wilmington, DE, USA, 2023, pp.
+  40--52, doi: [10.1145/3583740.3626614](https://doi.org/10.1145/3583740.3626614).
+- M. Bala, A. Chanana, X. Chen, Q. Dong, T. Eiszler, J. Xu, P. Pillai, and M.
+  Satyanarayanan, "The OODA Loop of Cloudlet-based Autonomous Drones," *2024
+  IEEE/ACM Symposium on Edge Computing (SEC)*, Rome, Italy, 2024, pp. 178--190,
+  doi: [10.1109/SEC62691.2024.00022](https://doi.org/10.1109/SEC62691.2024.00022).
