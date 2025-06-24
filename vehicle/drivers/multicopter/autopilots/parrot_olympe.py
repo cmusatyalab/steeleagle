@@ -505,6 +505,8 @@ class ParrotOlympeDrone(MulticopterItf):
             return diff - 360
         elif diff < -180:
             return diff + 360
+        else:
+            return diff
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
