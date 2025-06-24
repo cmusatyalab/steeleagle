@@ -60,8 +60,7 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         self._connection_string = connection_string
         self._kwargs = kwargs
         # Drone flight modes and setpoints
-        self._setpoint_telem_obj = common_proto.PositionBody()
-        self._setpoint = None
+        self._setpoint = common_proto.PositionBody()
         # Set PID values for the drone
         self._forward_pid_values = {}
         self._right_pid_values = {}
@@ -159,10 +158,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
                             str(e)
                             )
                         )
-        if context.cancelled():
-            return multicopter_proto.TakeOffResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
-                    )
         
         try:
             # Halt drone at altitude
@@ -186,10 +181,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         while not self._is_hovering() and not context.cancelled():
             yield multicopter_proto.TakeOffResponse(
                     response=ParrotOlympeDrone.generate_response(1)
-                    )
-        if context.cancelled():
-            return multicopter_proto.TakeOffResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
                     )
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
@@ -221,10 +212,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         while not self._is_landed() and not context.cancelled():
             yield multicopter_proto.LandResponse(
                     response=ParrotOlympeDrone.generate_response(1)
-                    )
-        if context.cancelled():
-            return multicopter_proto.LandResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
                     )
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
@@ -264,10 +251,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             yield multicopter_proto.HoldResponse(
                     response=ParrotOlympeDrone.generate_response(1)
                     )
-        if context.cancelled():
-            return multicopter_proto.HoldResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
-                    )
 
         # Send COMPLETED
         return multicopter_proto.HoldResponse(
@@ -304,14 +287,10 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
                     )
         
         # Send an IN_PROGRESS stream
-        while not self._is_home_set(lat, lon, alt) and \
+        while not self._is_home_set(location) and \
                 not context.cancelled():
             yield multicopter_proto.SetHomeResponse(
                     response=ParrotOlympeDrone.generate_response(1)
-                    )
-        if context.cancelled():
-            return multicopter_proto.SetHomeResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
                     )
 
         # Send COMPLETED
@@ -345,10 +324,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             yield multicopter_proto.ReturnToHomeResponse(
                     response=ParrotOlympeDrone.generate_response(1)
                     )
-        if context.cancelled():
-            return multicopter_proto.ReturnToHomeResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
-                    )
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
@@ -372,10 +347,11 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         alt_mode = request.altitude_mode
         hdg_mode = request.heading_mode
         max_velocity = request.max_velocity
+        self._setpoint = location
 
         # Olympe only accepts relative altitude, so convert absolute to
         # relative altitude in case that is the location mode
-        if alt_mode == multicopter_proto.LocationAltitudeMode.ABSOLUTE:
+        if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE:
             altitude = alt - self._get_global_position()["altitude"] \
                     + self._get_altitude_rel()
         else:
@@ -435,13 +411,9 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             yield multicopter_proto.SetGlobalPositionResponse(
                     response=ParrotOlympeDrone.generate_response(1)
                     )
-        if context.cancelled():
-            return multicopter_proto.SetGlobalPositionResponse(
-                    response=ParrotOlympeDrone.generate_response(7)
-                    )
 
         # Check to see if we actually reached our desired position
-        if self._is_global_position_reached(lat, lon, altitude):
+        if self._is_global_position_reached(location, alt_mode):
             # Send COMPLETED
             return multicopter_proto.SetGlobalPositionResponse(
                     response=ParrotOlympeDrone.generate_response(2)
@@ -462,30 +434,44 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def SetVelocityENU(self, request, context):
-        return common_protocol.ResponseStatus.NOTSUPPORTED
-
-    async def SetVelocityBody(self, request, context):
         # Send OK
-        yield multicopter_proto.SetGlobalPositionResponse(
+        yield multicopter_proto.SetVelocityENUResponse(
                 response=ParrotOlympeDrone.generate_response(0)
                 )
         
         # Extract velocity data
-        velocity = request.velocity
-        forward_vel = velocity.forward_vel
-        right_vel = velocity.right_vel
-        up_vel = velocity.up_vel
-        angular_vel = velocity.angular_vel
+        self._setpoint = request.velocity
+
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
+
+        # Restart PID task if it isn't already running
+        if self._pid_task is None:
+            self._pid_task = asyncio.create_task(self._velocity_pid())
+
+        # Send an IN_PROGRESS stream
+        while not self._velocity_enu_reached(self._setpoint) \
+                and not context.cancelled():
+            yield multicopter_proto.SetVelocityENUResponse(
+                    response=ParrotOlympeDrone.generate_response(1)
+                    )
+
+        # Send COMPLETED
+        return multicopter_proto.SetVelocityENUResponse(
+                response=ParrotOlympeDrone.generate_response(2)
+                )
+
+    async def SetVelocityBody(self, request, context):
+        # Send OK
+        yield multicopter_proto.SetVelocityBodyResponse(
+                response=ParrotOlympeDrone.generate_response(0)
+                )
+        
+        # Extract velocity data
+        self._setpoint = request.velocity
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_BODY)
 
-        # Set a new setpoint
-        self._setpoint = (
-                forward_vel,
-                right_vel,
-                up_vel,
-                angular_vel
-                )
+        # Restart PID task if it isn't already running
         if self._pid_task is None:
             self._pid_task = asyncio.create_task(self._velocity_pid())
 
@@ -730,7 +716,11 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             return 0
 
     def _get_heading(self):
-        return math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
+        diff = 90 - math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
+        if diff > 180:
+            return diff - 360
+        elif diff < -180
+            return diff + 360
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
@@ -822,12 +812,19 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
                     current["forward"] = vel_body["forward"]
                     current["right"] = vel_body["right"]
                     current["up"] = vel_body["up"]
+                    forward_setpoint = self._setpoint.forward_vel
+                    right_setpoint = self._setpoint.right_vel
+                    up_setpoint = self._setpoint.up_vel
+                    angular_setpoint = self._setpoint.angular_vel
                 else:
                     vel_enu = self._get_velocity_enu()
                     current["forward"] = vel_enu["north"]
                     current["right"] = vel_enu["east"]
                     current["up"] = vel_enu["up"]
-                forward_setpoint, right_setpoint, up_setpoint, angular_setpoint = self._setpoint
+                    forward_setpoint = self._setpoint.north_vel
+                    right_setpoint = self._setpoint.east_vel
+                    up_setpoint = self._setpoint.up_vel
+                    angular_setpoint = self._setpoint.angular_vel
 
                 forward = 0.0
                 right = 0.0
@@ -930,7 +927,10 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             return True
         return False
 
-    def _is_home_set(self, lat, lon, alt):
+    def _is_home_set(self, location):
+        lat = location.latitude
+        lon = location.longitude
+        alt = location.altitude
         if self._drone(custom_location(latitude=lat,
             longitude=lon, altitude=alt, _policy='check',
             _float_tol=(1e-07, 1e-09))):
@@ -953,7 +953,9 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
             return True
         return False
 
-    def _is_at_target(self, lat, lon):
+    def _is_at_target(self, location):
+        lat = location.latitude
+        lon = location.longitude
         current_location = self._get_global_position()
         if not current_location:
             return False
@@ -972,10 +974,37 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
         diff = abs(current_altitude - target_altitude)
         return diff <= 0.5
 
-    def _is_global_position_reached(self, lat, lon, alt):
-        if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):
-            return True
+    def _is_global_position_reached(self, location, alt_mode):
+        lat = location.latitude
+        lon = location.longitude
+        alt = location.altitude
+        if self._is_at_target(lat, lon):
+            if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE \
+                    and self._is_abs_altitude_reached(alt):
+                return True
+            elif self._is_rel_altitude_reached(alt):
+                return True
         return False
+
+    def _is_velocity_enu_reached(self, velocity):
+        north_vel = velocity.north_vel
+        east_vel = velocity.east_vel
+        up_vel = velocity.up_vel
+        # Skip angular velocity since we cannot get it
+        vels = self._get_velocity_enu()
+        return abs(north_vel - vels["north"]) <= 0.3 and \
+                abs(east_vel - vels["east"]) <= 0.3 and \
+                abs(up_vel - vels["up"]) <= 0.3
+
+    def _is_velocity_body_reached(self, velocity):
+        forward_vel = velocity.forward_vel
+        right_vel = velocity.right_vel
+        up_vel = velocity.up_vel
+        # Skip angular velocity since we cannot get it
+        vels = self._get_velocity_body()
+        return abs(forward_vel - vels["forward"]) <= 0.3 and \
+                abs(right_vel - vels["right"]) <= 0.3 and \
+                abs(up_vel - vels["up"]) <= 0.3
 
     def _is_heading_reached(self, heading):
         if self._drone(AttitudeChanged(yaw=heading, _policy="check", _float_tol=(1e-3, 1e-1))):

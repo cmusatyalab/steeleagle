@@ -22,12 +22,11 @@ message Request {
 enum ResponseStatus {
   OK = 0; // Command received 
   IN_PROGRESS = 1; // Command in progress
-  COMPLETED = 2; // Command finished successfully
+  COMPLETED = 2; // Command finished without error
   NOT_SUPPORTED = 3; // Command not supported
   FAILED = 4; // Command resulted in an error
   DENIED = 5; // Command lacks permission
   WARNING = 6; // Command resulted in a warning
-  CANCELLED = 7; // Command was cancelled
 }
 
 message Response {

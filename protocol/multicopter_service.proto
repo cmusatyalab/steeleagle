@@ -157,7 +157,7 @@ message ReturnToHomeResponse {
 }
 
 enum AltitudeMode {
-  ABSOLUTE_MSL = 0; // Meters above Mean Sea Level
+  ABSOLUTE = 0; // Meters above Mean Sea Level
   RELATIVE = 1; // Meters above takeoff location
 }
 
