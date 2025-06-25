@@ -99,7 +99,7 @@ class ParrotOlympeDrone(MulticopterItf):
         #perform a moveTo and get the initial absolute heading to use in _get_heading
         global_position = self._get_global_position()
         await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
-        self._drone(moveTo(global_position["latitude"], global_position["longitude"], global_position["altitude"], move_mode.orientation_mode.to_target, 0)
+        self._drone(moveTo(global_position["latitude"], global_position["longitude"], global_position["altitude"], move_mode.orientation_mode.heading_start, 0)
                     >> moveToChanged(status='DONE')).wait().success()
         self._initial_heading = self._drone.get_state(moveToChanged)["heading"]
 
