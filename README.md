@@ -46,7 +46,7 @@ cost-optimized. This makes acquisition easier and cheaper than custom-built or
 niche products. It can also make swarm operations more economically feasible
 for constrained budgets.
 
-### :small_airplane: Accessibile
+### :small_airplane: Accessible
 
 SteelEagle robots are designed to abstract away as much low-level control code
 as possible allowing users to focus on developing high-level tasks.
@@ -67,7 +67,7 @@ significantly smaller and lighter than traditional autonomous UAVs.
 
 ### :minidisc: Portable
 
-SteelEagle is robot agnostic by design, able to accomodate any robot with a
+SteelEagle is robot agnostic by design, able to accommodate any robot with a
 SDK. It supports heterogeneous collaborative robot swarms, and it gives users
 the ability to easily port code from one platform to another. While SteelEagle
 is unlikely to match the performance of purpose-built autonomous systems, its
