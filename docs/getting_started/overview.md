@@ -10,14 +10,14 @@ SteelEagle's edge processing pipelines allow drop-in drop-out configuration of A
 ### Low Cost
 SteelEagle can be used with mass-market consumer robots which are extremely cost-optimized. This makes acquisition easier and cheaper than custom-built or niche products. It can also make swarm operations more economically feasible for constrained budgets.
 
-### Accessibile
+### Accessible
 SteelEagle robots are designed to abstract away as much low-level control code as possible allowing users to focus on developing high-level tasks. Non-programmers can use the visual scripting API to design complex mission behavior without writing a single line of code. Programmers can use the Task Creator SDK to easily build out new functionality, and can use the Backend SDK to rapidly deploy new AI models across a robot fleet.
 
 ### Lightweight
 Because SteelEagle robots rely on the edge for intelligence, they don't need to carry heavy onboard compute resources. This drives down weight, something which is particularly important for UAVs (unmanned aerial vehicles) due to [strict weight regulations](https://www.faa.gov/uas/commercial_operators/operations_over_people). SteelEagle enables autonomy on aircraft significantly smaller and lighter than traditional autonomous UAVs.
 
 ### Portable
-SteelEagle is robot agnostic by design, able to accomodate any robot with a SDK. It supports heterogeneous collaborative robot swarms, and it gives users the ability to easily port code from one platform to another. While SteelEagle is unlikely to match the performance of purpose-built autonomous systems, its design allows for missions that pair such systems with smaller, cheaper helpers which can improve mission outcomes.
+SteelEagle is robot agnostic by design, able to accommodate any robot with a SDK. It supports heterogeneous collaborative robot swarms, and it gives users the ability to easily port code from one platform to another. While SteelEagle is unlikely to match the performance of purpose-built autonomous systems, its design allows for missions that pair such systems with smaller, cheaper helpers which can improve mission outcomes.
 
 ### BVLOS (Beyond Visual Line-of-Sight)
 SteelEagle robots can communicate with an edge backend using any type of underlying radio communication, including LTE, without human supervision (beyond visual line-of-sight, or BVLOS for short). Operations like this are important for remote surveillance, especially in adversarial environments.
