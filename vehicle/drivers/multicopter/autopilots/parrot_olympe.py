@@ -70,6 +70,7 @@ class ParrotOlympeDrone(MulticopterItf):
         self._up_pid_values = {}
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
+        self._initial_heading = 0
 
     """ Interface methods """
 
@@ -94,6 +95,13 @@ class ParrotOlympeDrone(MulticopterItf):
         self._drone(TakeOff())
 
         result = await self._wait_for_condition(lambda: self._is_hovering(), interval=1)
+
+        #perform a moveTo and get the initial absolute heading to use in _get_heading
+        global_position = self._get_global_position()
+        await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
+        self._drone(moveTo(global_position["latitude"], global_position["longitude"], global_position["altitude"], move_mode.orientation_mode.to_target, 0)
+                    >> moveToChanged(status='DONE')).wait().success()
+        self._initial_heading = self._drone.get_state(moveToChanged)["heading"]
 
         await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
 
@@ -500,13 +508,7 @@ class ParrotOlympeDrone(MulticopterItf):
             return 0
 
     def _get_heading(self):
-        diff = 270 - math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
-        if diff > 180:
-            return -1 * (diff - 360)
-        elif diff < -180:
-            return -1 * (diff + 360)
-        else:
-            return -1 * diff
+        return self._initial_heading +  math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
