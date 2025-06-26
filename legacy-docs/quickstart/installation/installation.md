@@ -19,7 +19,3 @@ Clone the SteelEagle [repository](https://github.com/cmusatyalab/steeleagle/tree
 | Battery   | ~40 min        | ~1 hour           |
 | Weight    | 55g            | 39g               |
 | Install   | Moderate       | Easy              |
-
-
- 
-

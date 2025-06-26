@@ -278,5 +278,3 @@ networks:
         - subnet: 12.12.0.0/24
 volumes:
   training-vol:
-
-

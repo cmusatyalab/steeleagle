@@ -27,7 +27,7 @@ Once a line or polygon is created, a text box will be displayed for a descriptio
 
 ![Drawing!](images/mymaps4.png)
 
-Multiple lines/polygons can be added to the map, each with their own task specification. The tasks will be executed in the order they appear in the list (see #1 in the image above). In the above image, that would mean **Area1** is executed first, then **GreenArea**, and finally **Red**. The order can be rearranged by dragging the names of the placemarks in the list at the left.  
+Multiple lines/polygons can be added to the map, each with their own task specification. The tasks will be executed in the order they appear in the list (see #1 in the image above). In the above image, that would mean **Area1** is executed first, then **GreenArea**, and finally **Red**. The order can be rearranged by dragging the names of the placemarks in the list at the left.
 
 ## Exporting to KML
 

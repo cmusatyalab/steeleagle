@@ -23,7 +23,7 @@ module voxl(w, h, d) {
         cube([w+2*tol, h+2*tol, cutout]);
         // mounting holes
         post = 2.6 - tol;
-        
+
         //translate([1.75, h-6, -1]) cylinder(h=post_height, d=post);
         //translate([1.75, 4, -1]) cylinder(h=post_height, d=post);
         //translate([w-1.75, h-6, -1]) cylinder(h=post_height, d=post);
@@ -31,14 +31,14 @@ module voxl(w, h, d) {
         translate([0, h-8, -1]) cube([4,8,pedestal_height]) ;
         translate([0, h-8, -1]) cube([8,8,pedestal_height/3]) ;
         translate([1.75, h-4.75, pedestal_height-1]) cylinder(h=post_height, d=post);
-        
+
         translate([0, 4, -1]) cube([6,6,pedestal_height]);
         translate([1.75, 5.75, pedestal_height-1]) cylinder(h=post_height, d=post);
-        
+
         translate([w-4, h-8, -1]) cube([4,8,pedestal_height]);
         translate([w-8, h-8, -1]) cube([8,8,pedestal_height/3]);
         translate([w-1.75, h-4.75, pedestal_height-1]) cylinder(h=post_height, d=post);
-        
+
         translate([w-6, 4, -1]) cube([6,6,pedestal_height]);
         translate([w-1.75, 5.75, pedestal_height-1]) cylinder(h=post_height, d=post);
         // fillet at top
@@ -70,7 +70,7 @@ module voxl(w, h, d) {
 //    translate([-3, 42, 25]) sphere(r=4);
 //    translate([-3, 42, 15]) sphere(r=4);
 //    translate([-3, 42, 5]) sphere(r=4);
-//    
+//
 //    translate([-3, 32, 35]) sphere(r=4);
 //    translate([-3, 32, 25]) sphere(r=4);
 //    translate([-3, 32, 15]) sphere(r=4);
@@ -83,8 +83,8 @@ module voxl(w, h, d) {
 //    translate([-3, 12, 25]) sphere(r=4);
 //    translate([-3, 12, 15]) sphere(r=4);
 //    translate([-3, 12, 5]) sphere(r=4);
-    
-    
+
+
 //    translate([40, 62, 25]) sphere(r=4);
 //    translate([40, 62, 15]) sphere(r=4);
 //    translate([40, 62, 5]) sphere(r=4);

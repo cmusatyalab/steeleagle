@@ -1,5 +1,5 @@
 # Overview
-SteelEagle is a software suite and edge orchestration system that transforms programmable commercial off-the-shelf (COTS) robotics platforms into fully-autonomous vehicles. By leveraging COTS economies of scale, SteelEagle can emulate the performance of expensive, onboard compute-based platforms on light, inexpensive hardware. 
+SteelEagle is a software suite and edge orchestration system that transforms programmable commercial off-the-shelf (COTS) robotics platforms into fully-autonomous vehicles. By leveraging COTS economies of scale, SteelEagle can emulate the performance of expensive, onboard compute-based platforms on light, inexpensive hardware.
 
 The SteelEagle suite is equipped with a universal API which unifies disparate control SDKs under one programming scheme. This API is robot agnostic and can be used with any kind of programmable robotics hardware, including custom builds. Any drone that is SteelEagle API compatible can plug into the SteelEagle unified autonomy development stack which promotes code sharing and heterogeneous device collaboration. A visual mission scripting tool is also available to give non-programmers an easy way to interact with autonomous robots.
 
@@ -23,7 +23,7 @@ SteelEagle is robot agnostic by design, able to accommodate any robot with a SDK
 SteelEagle robots can communicate with an edge backend using any type of underlying radio communication, including LTE, without human supervision (beyond visual line-of-sight, or BVLOS for short). Operations like this are important for remote surveillance, especially in adversarial environments.
 
 ### Access to Powerful Compute
-SteelEagle robots have access to much more powerful computation over the network than most mobile robots have onboard, due to their access to edge servers. Although edge servers are not as powerful as cloud servers, they are far more capable than any mobile computer and can deliver high-quality AI results with relatively low latency. 
+SteelEagle robots have access to much more powerful computation over the network than most mobile robots have onboard, due to their access to edge servers. Although edge servers are not as powerful as cloud servers, they are far more capable than any mobile computer and can deliver high-quality AI results with relatively low latency.
 
 ## Drawbacks
 

@@ -13,7 +13,7 @@ permalink: docs/cnc
 
 The command and control server (CNC for short), is used to communicate with both drones in the field, and commanders who wish to remotely control those drones. CNC leverages [gabriel](http://github.com/cmusatyalab/gabriel) to manage client connections, send serialized data back and forth, and perform flow control. A gabriel server has one or more cognitive engines that perform paritcular tasks on some sensor data from clients. In the case of CNC, there is one new cognitive engine: telemetry. The telemetry engine is responsible for pushing telemetry data into Redis, relaying the current images to any connected commanders (via Reids pub/sub), and persisting imagery data to the shared steeleagle-vol volume (if started with the --store option which is enabled by default). A separate ZMQ REQ/REP-based control plane is used to communicate control messages from commander(s) to drone(s).
 
-Steel Eagle leverages [OpenScout](https://github.com/cmusatyalab/openscout) and its object detection and face recognition engines. Additionally, the steel-eagle branch of the openscout repository adds an additional obstacle avoidance engine. It also utilizes the ELK containers that are part of OpenScout for later analysis. 
+Steel Eagle leverages [OpenScout](https://github.com/cmusatyalab/openscout) and its object detection and face recognition engines. Additionally, the steel-eagle branch of the openscout repository adds an additional obstacle avoidance engine. It also utilizes the ELK containers that are part of OpenScout for later analysis.
 
 ## Prerequisites
 
@@ -71,7 +71,7 @@ cp template.env .env
   * 'DPT_Hybrid'
   * 'MiDaS'
   * 'MiDaS_small'
-* _DEPTH_THRESHOLD_ - This configures how many layers to ignore when determining whether obstacles are imminient (0-255). We have found that 150 is pretty reasonable for low speeds. 
+* _DEPTH_THRESHOLD_ - This configures how many layers to ignore when determining whether obstacles are imminient (0-255). We have found that 150 is pretty reasonable for low speeds.
 
 ### Explanation of Services
 
@@ -147,7 +147,7 @@ docker-compose up -d
 If you run the containers in the background, you can view the logs with the following command:
 
 ```sh
-docker-compose logs -f 
+docker-compose logs -f
 ```
 If you wish to see a particular log, you can specify a particular service(s):
 

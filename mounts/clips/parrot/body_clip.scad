@@ -147,7 +147,7 @@ module drone_body_mount(
         cube([battery_width+10, battery_height, collar_width], center=true);
         translate([0, -hole_width, hole_width/2])
         cube([battery_width+10, battery_height, collar_width], center=true);
-        
+
     };
 }
 
