@@ -122,4 +122,3 @@
 #         detections = onboard_compute_pb2.ComputeResult()
 #         detections.ParseFromString(reply)
 #         logger.info(f"Received detections: {detections}")
-

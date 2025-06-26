@@ -43,13 +43,13 @@ optional arguments:
   -s, --sim             Connect to simulated drone instead of a real drone [default: False]
 
 ```
-Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone). 
+Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone).
 Once Hermes has successfully run, there should be a flightplan.ms file in the ```steeleagle/hermes/``` directory. This file can then be uploaded from a [commander]({{ site.baseurl }}{% link modules/commander.md %}) and sent to a connected drone.
 
 ## New/Updated Task Specifications
 In order to provide new/updated tasks, we need to do a few things:
 
-1. [task_stubs.py](https://github.com/cmusatyalab/steeleagle/blob/main/hermes/docs/task_stubs.py) should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to Hermes. Create a new class the defines the schema and defaults (see current tasks for examples). One can think of this file as the function definition of the task. 
+1. [task_stubs.py](https://github.com/cmusatyalab/steeleagle/blob/main/hermes/docs/task_stubs.py) should be updated include the validation parameters that jsonschema will use to ensure that the task is defined properly in the description field(s) of the .kml file that is input to Hermes. Create a new class the defines the schema and defaults (see current tasks for examples). One can think of this file as the function definition of the task.
 2. Implement the task for either [Java](https://github.com/cmusatyalab/steeleagle/tree/main/hermes/java/app/src/main/java/edu/cmu/cs/dronebrain/tasks) or [Python](https://github.com/cmusatyalab/steeleagle/tree/main/hermes/python/task_defs) (or both). These contain the actual code that will be run on board the drone. The arguments given in the KML file will be accessible via the kwargs variable.
 
 {: .note }

@@ -65,7 +65,7 @@ The LTE module on the Onion Omega can interfere with the GPS of the ANAFI which 
 
 ![Onion Assembly!](images/onion_assembly2.jpg)
 
-2. The onion base should be oriented so that the end with the 3 cutouts (for 2 antennas and the power connector) is facing in the direction of the harness tongue. 
+2. The onion base should be oriented so that the end with the 3 cutouts (for 2 antennas and the power connector) is facing in the direction of the harness tongue.
 3. Align the harness as shown so that the back bar of the harness clip overlaps with the crossbar on the bottom of the onion base.
 4. Note the two areas of overlap between the harness and the onion base.
 
@@ -74,8 +74,3 @@ The LTE module on the Onion Omega can interfere with the GPS of the ANAFI which 
 5. Appy Gloop to the tongue and back bar of the harness, as well as to the cross bar and front edge of the onion base and press the two pieces together as they were previously aligned.
 6. Continue applying moderate pressure for about 30 seconds.
 8. Allow 1 hour to fuse completely.
-
-
-
-
-  
