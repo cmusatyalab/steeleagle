@@ -1,18 +1,19 @@
+import asyncio
+import logging
+import time
+
+import common_pb2 as common_protocol
+import controlplane_pb2 as control_protocol
 import validators
 import zmq
 import zmq.asyncio
-import asyncio
-import logging
-import controlplane_pb2 as control_protocol
-import common_pb2 as common_protocol
-from service import Service
-from util.utils import query_config, setup_logging, SocketOperation
 from data_store import DataStore
-from google.protobuf.message import DecodeError
-import time
+from service import Service
+from util.utils import SocketOperation, query_config, setup_logging
 
 logger = logging.getLogger(__name__)
-setup_logging(logger, 'hub.logging')
+setup_logging(logger, "hub.logging")
+
 
 class ControlService(Service):
     def __init__(self, data_store: DataStore, compute_dict):
@@ -20,40 +21,49 @@ class ControlService(Service):
         super().__init__()
         self.compute_dict = compute_dict
         self.data_store = data_store
-        
+
         self.waypoint_req = None
 
         # Drone info
-        self.drone_id = query_config('driver.id')
-        self.drone_type = query_config('driver.type')
+        self.drone_id = query_config("driver.id")
+        self.drone_type = query_config("driver.type")
         self.manual = True
 
         # Communication sockets
         self.commander_socket = self.context.socket(zmq.DEALER)
-        self.commander_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode('utf-8'))
+        self.commander_socket.setsockopt(zmq.IDENTITY, self.drone_id.encode("utf-8"))
         self.last_manual_message = None
 
         self.mission_cmd_socket = self.context.socket(zmq.DEALER)
         self.mission_report_socket = self.context.socket(zmq.DEALER)
         self.driver_socket = self.context.socket(zmq.DEALER)
         self.mission_ctrl_socket = self.context.socket(zmq.REQ)
-        
 
         self.setup_and_register_socket(
-            self.commander_socket, SocketOperation.CONNECT,
-            'hub.network.cloudlet.commander_to_hub')
+            self.commander_socket,
+            SocketOperation.CONNECT,
+            "hub.network.cloudlet.commander_to_hub",
+        )
         self.setup_and_register_socket(
-            self.mission_cmd_socket, SocketOperation.BIND,
-            'hub.network.controlplane.mission_to_hub')
+            self.mission_cmd_socket,
+            SocketOperation.BIND,
+            "hub.network.controlplane.mission_to_hub",
+        )
         self.setup_and_register_socket(
-            self.mission_report_socket, SocketOperation.BIND,
-            'hub.network.controlplane.mission_to_hub_2')
+            self.mission_report_socket,
+            SocketOperation.BIND,
+            "hub.network.controlplane.mission_to_hub_2",
+        )
         self.setup_and_register_socket(
-            self.driver_socket, SocketOperation.BIND,
-            'hub.network.controlplane.hub_to_driver')
+            self.driver_socket,
+            SocketOperation.BIND,
+            "hub.network.controlplane.hub_to_driver",
+        )
         self.setup_and_register_socket(
-            self.mission_ctrl_socket, SocketOperation.BIND,
-            'hub.network.controlplane.hub_to_mission')
+            self.mission_ctrl_socket,
+            SocketOperation.BIND,
+            "hub.network.controlplane.hub_to_mission",
+        )
 
         # Start poller loop
         self.create_task(self.cmd_proxy())
@@ -63,7 +73,7 @@ class ControlService(Service):
     ###########################################################################
     async def cmd_proxy(self):
         """Unified socket poller handling messages from commander, mission, and driver."""
-        logger.info('Command proxy started')
+        logger.info("Command proxy started")
         poller = zmq.asyncio.Poller()
         poller.register(self.commander_socket, zmq.POLLIN)
         poller.register(self.driver_socket, zmq.POLLIN)
@@ -75,13 +85,17 @@ class ControlService(Service):
                 socks = dict(await poller.poll(timeout=0.5))
 
                 # Skip our checks if no messages were delivered.
-                # However, if no commands were recieved and we 
+                # However, if no commands were recieved and we
                 # are in manual mode, go into failsafe.
                 if not len(socks):
-                    if self.manual and \
-                            self.last_manual_message and \
-                            time.time() - self.last_manual_message >= 1.0:
-                        logger.info("FAILSAFE ACTIVATED - Swarm controller is likely disconnected...")
+                    if (
+                        self.manual
+                        and self.last_manual_message
+                        and time.time() - self.last_manual_message >= 1.0
+                    ):
+                        logger.info(
+                            "FAILSAFE ACTIVATED - Swarm controller is likely disconnected..."
+                        )
                         await self.manual_disconnect_failsafe()
                         self.last_manual_message = None
                     continue
@@ -94,7 +108,7 @@ class ControlService(Service):
                 if self.mission_cmd_socket in socks:
                     msg = await self.mission_cmd_socket.recv_multipart()
                     await self.handle_mission_input(msg[0])
-                
+
                 if self.mission_report_socket in socks:
                     msg = await self.mission_report_socket.recv_multipart()
                     await self.handle_mission_report(msg[0])
@@ -111,7 +125,9 @@ class ControlService(Service):
     ###########################################################################
     async def manual_disconnect_failsafe(self):
         # Stops the drone if the swarm controller disconnects while in manual mode.
-        logger.debug("Executing manual disconnection failsafe, ordering the drone to hover!")
+        logger.debug(
+            "Executing manual disconnection failsafe, ordering the drone to hover!"
+        )
         req = control_protocol.Request()
         req.veh.action = control_protocol.VehicleAction.HOVER
         await self.process_vehicle_command(req)
@@ -134,14 +150,14 @@ class ControlService(Service):
                 raise Exception("Missing request type in commander command")
 
     async def handle_mission_input(self, cmd):
-        """Handles mission request and forwards to driver/commander."""    
+        """Handles mission request and forwards to driver/commander."""
         req = control_protocol.Request()
         req.ParseFromString(cmd)
         logger.info(f"Received mission request: {req}")
         match req.WhichOneof("type"):
             case "veh":
                 logger.debug(f"Forwarding vehicle command to driver: {req}")
-                await self.driver_socket.send_multipart([b'usr', cmd])
+                await self.driver_socket.send_multipart([b"usr", cmd])
             case "cpt":
                 logger.info(f"Processing compute control command: {req}")
                 match req.cpt.action:
@@ -157,34 +173,39 @@ class ControlService(Service):
             case _:
                 logger.warning("Unknown request type in mission message")
 
-
     async def handle_mission_report(self, report):
         """Handles mission report and forwards to commander."""
         resp = control_protocol.Response()
         resp.ParseFromString(report)
         logger.info(f"Received patrol report from mission: {resp}")
-        
-        if resp.resp == common_protocol.ResponseStatus.OK and self.waypoint_req is not None:
-            logger.info(f"already have the cached waypoint")
+
+        if (
+            resp.resp == common_protocol.ResponseStatus.OK
+            and self.waypoint_req is not None
+        ):
+            logger.info("already have the cached waypoint")
             self.waypoint_req.seq_num = resp.seq_num
-            logger.info(f"Sending cached waypoint report to mission: {self.waypoint_req}")
+            logger.info(
+                f"Sending cached waypoint report to mission: {self.waypoint_req}"
+            )
             await self.mission_report_socket.send(self.waypoint_req.SerializeToString())
             return
-        
+
         logger.info(f"Forwarding mission report to commander: {report}")
         await self.commander_socket.send_multipart([report])
         self.waypoint_req = None
-   
 
     async def handle_driver_input(self, msg):
         """Handles message from driver and routes based on identity."""
         logger.debug(f"Received message from driver: {msg}")
         identity, cmd = msg
-        if identity == b'usr':
+        if identity == b"usr":
             logger.debug("Forwarding driver response back to mission")
             await self.mission_cmd_socket.send_multipart([cmd])
-        elif identity == b'cmdr':
-            logger.debug("proxy : driver_socket Received message from BACKEND: discard bc of cmdr")
+        elif identity == b"cmdr":
+            logger.debug(
+                "proxy : driver_socket Received message from BACKEND: discard bc of cmdr"
+            )
             pass
         else:
             logger.warning(f"Unknown identity received from driver: {identity}")
@@ -235,7 +256,9 @@ class ControlService(Service):
         compute_type = req.cpt.type
         for compute_id in self.compute_dict.keys():
             self.data_store.clear_compute_result(compute_id, compute_type)
-            logger.info(f"Cleared compute result for {compute_id} and type {compute_type}")
+            logger.info(
+                f"Cleared compute result for {compute_id} and type {compute_type}"
+            )
 
         reply = control_protocol.Response()
         reply.resp = common_protocol.ResponseStatus.COMPLETED
@@ -246,12 +269,22 @@ class ControlService(Service):
     async def configure_compute(self, req):
         logger.info("Configure compute")
         model = req.cpt.model
-        lower_bound = [req.cpt.lower_bound.h, req.cpt.lower_bound.s, req.cpt.lower_bound.v]
-        upper_bound = [req.cpt.upper_bound.h, req.cpt.upper_bound.s, req.cpt.upper_bound.v]
+        lower_bound = [
+            req.cpt.lower_bound.h,
+            req.cpt.lower_bound.s,
+            req.cpt.lower_bound.v,
+        ]
+        upper_bound = [
+            req.cpt.upper_bound.h,
+            req.cpt.upper_bound.s,
+            req.cpt.upper_bound.v,
+        ]
         for compute_id in self.compute_dict.keys():
             compute = self.compute_dict[compute_id]
             compute.set(model, lower_bound, upper_bound)
-            logger.info(f"Configured compute {compute_id} with model {model}, lower_bound {lower_bound}, upper_bound {upper_bound}")
+            logger.info(
+                f"Configured compute {compute_id} with model {model}, lower_bound {lower_bound}, upper_bound {upper_bound}"
+            )
 
         reply = control_protocol.Response()
         reply.resp = common_protocol.ResponseStatus.COMPLETED
@@ -259,10 +292,9 @@ class ControlService(Service):
         reply.seq_num = req.seq_num
         await self.mission_cmd_socket.send_multipart([reply.SerializeToString()])
 
-
     async def send_driver_command(self, req):
         """Sends a command to the driver."""
-        await self.driver_socket.send_multipart([b'cmdr', req.SerializeToString()])
+        await self.driver_socket.send_multipart([b"cmdr", req.SerializeToString()])
         logger.info(f"Sent command to driver: {req}")
 
     async def send_download_mission(self, req):
@@ -300,7 +332,3 @@ class ControlService(Service):
             self.waypoint_req = control_protocol.Request()
             self.waypoint_req.CopyFrom(req)
         await self.mission_report_socket.send(req.SerializeToString())
-
-
-
-
