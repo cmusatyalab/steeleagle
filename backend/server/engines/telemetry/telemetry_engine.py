@@ -5,22 +5,25 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import time
 import datetime
 import logging
-from gabriel_server import cognitive_engine
-from gabriel_protocol import gabriel_pb2
-import protocol.common_pb2 as common
-import protocol.gabriel_extras_pb2 as gabriel_extras
-import redis
 import os
-from PIL import Image
+import time
+
 import cv2
 import numpy as np
+import redis
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from PIL import Image
+
+import protocol.common_pb2 as common
+import protocol.gabriel_extras_pb2 as gabriel_extras
 
 logger = logging.getLogger(__name__)
-log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logger.setLevel(getattr(logging, log_level, logging.INFO))
+
 
 class TelemetryEngine(cognitive_engine.Engine):
     ENGINE_NAME = "telemetry"
@@ -30,8 +33,12 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         # Connect to Redis database
         self.r = redis.Redis(
-            host='redis', port=args.redis, username='steeleagle',
-            password=f'{args.auth}', decode_responses=True)
+            host="redis",
+            port=args.redis,
+            username="steeleagle",
+            password=f"{args.auth}",
+            decode_responses=True,
+        )
         self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
 
@@ -40,7 +47,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             os.makedirs(self.storage_path + "/raw")
         except FileExistsError:
             logger.info("Images directory already exists.")
-        logger.info("Storing detection images at {}".format(self.storage_path))
+        logger.info(f"Storing detection images at {self.storage_path}")
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
@@ -57,11 +64,13 @@ class TelemetryEngine(cognitive_engine.Engine):
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
-                "abs_altitude": global_pos.absolute_altitude,
-                "rel_altitude": global_pos.relative_altitude,
+                "abs_altitude": global_pos.altitude,
+                "rel_altitude": rel_pos.up,
                 "bearing": int(global_pos.heading),
                 "battery": telemetry.battery,
-                "mag": common.MagnetometerWarning.Name(telemetry.alerts.magnetometer_warning),
+                "mag": common.MagnetometerWarning.Name(
+                    telemetry.alerts.magnetometer_warning
+                ),
                 "sats": telemetry.satellites,
                 # Relative Pos (ENU)
                 "enu_east": rel_pos.east,
@@ -69,13 +78,26 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "enu_up": rel_pos.up,
                 "enu_angle": rel_pos.angle,
                 # Velocity Body
-                "v_body_total": np.sqrt(np.sum(np.power([body_vel.forward_vel, body_vel.right_vel, body_vel.up_vel], 2))),
+                "v_body_total": np.sqrt(
+                    np.sum(
+                        np.power(
+                            [body_vel.forward_vel, body_vel.right_vel, body_vel.up_vel],
+                            2,
+                        )
+                    )
+                ),
                 "v_body_forward": body_vel.forward_vel,
                 "v_body_lateral": body_vel.right_vel,
                 "v_body_altitude": body_vel.up_vel,
                 "v_body_angular": body_vel.angular_vel,
                 # Velocity ENU
-                "v_enu_total": np.sqrt(np.sum(np.power([enu_vel.north_vel, enu_vel.east_vel, enu_vel.up_vel], 2))),
+                "v_enu_total": np.sqrt(
+                    np.sum(
+                        np.power(
+                            [enu_vel.north_vel, enu_vel.east_vel, enu_vel.up_vel], 2
+                        )
+                    )
+                ),
                 "v_enu_north": enu_vel.north_vel,
                 "v_enu_east": enu_vel.east_vel,
                 "v_enu_up": enu_vel.up_vel,
@@ -83,10 +105,13 @@ class TelemetryEngine(cognitive_engine.Engine):
                 # Gimbal Pose
                 "gimbal_pitch": gimb_pose.pitch,
                 "gimbal_roll": gimb_pose.roll,
-                "gimbal_yaw": gimb_pose.yaw
+                "gimbal_yaw": gimb_pose.yaw,
             },
         )
-        logger.debug(f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}")
+        self.r.expire(f"telemetry:{telemetry.drone_name}", 60 * 60 * 24)
+        logger.debug(
+            f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}"
+        )
 
         drone_key = f"drone:{telemetry.drone_name}"
         self.r.hset(drone_key, "last_seen", f"{time.time()}")
@@ -100,16 +125,38 @@ class TelemetryEngine(cognitive_engine.Engine):
         # Home Location
         self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
         self.r.hset(drone_key, "home_long", f"{telemetry.home.longitude}")
-        self.r.hset(drone_key, "home_alt", f"{telemetry.home.absolute_altitude}")
+        self.r.hset(drone_key, "home_alt", f"{telemetry.home.altitude}")
         # Camera Information
-        self.r.hset(drone_key, "streams_allowed", f"{telemetry.cameras.stream_status.total_streams}")
-        self.r.hset(drone_key, "streams_active", f"{telemetry.cameras.stream_status.num_streams}")
-        self.r.hset(drone_key, "primary_cam_id", f"{telemetry.cameras.stream_status.primary_cam}")
+        self.r.hset(
+            drone_key,
+            "streams_allowed",
+            f"{telemetry.cameras.stream_status.total_streams}",
+        )
+        self.r.hset(
+            drone_key,
+            "streams_active",
+            f"{telemetry.cameras.stream_status.num_streams}",
+        )
+        self.r.hset(
+            drone_key,
+            "primary_cam_id",
+            f"{telemetry.cameras.stream_status.primary_cam}",
+        )
         for i in range(len(telemetry.cameras.stream_status.secondary_cams)):
             self.r.hset(drone_key, f"cam_{i}_id", f"{telemetry.cameras.sensors[i].id}")
-            self.r.hset(drone_key, f"cam_{i}_type", f"{common.ImagingSensorType.Name(telemetry.cameras.sensors[i].type)}")
-            self.r.hset(drone_key, f"cam_{i}_active", f"{telemetry.cameras.sensors[i].active}")
-            self.r.hset(drone_key, f"cam_{i}_support_sec", f"{telemetry.cameras.sensors[i].supports_secondary}")
+            self.r.hset(
+                drone_key,
+                f"cam_{i}_type",
+                f"{common.ImagingSensorType.Name(telemetry.cameras.sensors[i].type)}",
+            )
+            self.r.hset(
+                drone_key, f"cam_{i}_active", f"{telemetry.cameras.sensors[i].active}"
+            )
+            self.r.hset(
+                drone_key,
+                f"cam_{i}_support_sec",
+                f"{telemetry.cameras.sensors[i].supports_secondary}",
+            )
 
         self.r.expire(drone_key, self.ttl_secs)
         logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
@@ -127,16 +174,20 @@ class TelemetryEngine(cognitive_engine.Engine):
             if extras.telemetry.drone_name != "":
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
-                result.payload = "Telemetry updated.".encode(encoding="utf-8")
+                result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
             image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
-            #have redis publish the latest image
+            # have redis publish the latest image
             if self.publish:
-                logger.info(f"Publishing image to redis under imagery.{extras.telemetry.drone_name} topic.")
-                self.r.publish(f'imagery.{extras.telemetry.drone_name}', input_frame.payloads[0])
-            #store images in the shared volume
+                logger.info(
+                    f"Publishing image to redis under imagery.{extras.telemetry.drone_name} topic."
+                )
+                self.r.publish(
+                    f"imagery.{extras.telemetry.drone_name}", input_frame.payloads[0]
+                )
+            # store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -150,14 +201,18 @@ class TelemetryEngine(cognitive_engine.Engine):
                 try:
                     os.mkdir(current_path)
                 except FileExistsError:
-                    logger.error(f"Directory {current_path} already exists. Moving on...")
-                img.save(f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG")
+                    logger.debug(
+                        f"Directory {current_path} already exists. Moving on..."
+                    )
+                img.save(
+                    f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
+                )
 
                 drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
                 img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
 
-                logger.info(f"Updated latest image for {extras.telemetry.drone_name}")
+                logger.debug(f"Updated latest image for {extras.telemetry.drone_name}")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
 
@@ -166,4 +221,3 @@ class TelemetryEngine(cognitive_engine.Engine):
         if result is not None:
             result_wrapper.results.append(result)
         return result_wrapper
-

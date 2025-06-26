@@ -1,28 +1,37 @@
 import asyncio
-import logging
 import importlib
+import logging
 import pkgutil
 
 from control_service import ControlService
 from data_service import DataService
-from datasinks.ComputeItf import ComputeInterface
 from data_store import DataStore
+from datasinks.ComputeItf import ComputeInterface
 from util.utils import query_config, setup_logging
 
 logger = logging.getLogger(__name__)
 
+
 def discover_compute_classes():
     """Discover all compute classes dynamically from datasinks."""
     import datasinks
+
     compute_classes = {}
-    for module_info in pkgutil.iter_modules(datasinks.__path__, datasinks.__name__ + "."):
+    for module_info in pkgutil.iter_modules(
+        datasinks.__path__, datasinks.__name__ + "."
+    ):
         module_name = module_info.name
         module = importlib.import_module(module_name)
         for attr_name in dir(module):
             attr = getattr(module, attr_name)
-            if isinstance(attr, type) and issubclass(attr, ComputeInterface) and attr is not ComputeInterface:
+            if (
+                isinstance(attr, type)
+                and issubclass(attr, ComputeInterface)
+                and attr is not ComputeInterface
+            ):
                 compute_classes[attr_name.lower()] = attr
     return compute_classes
+
 
 def run_compute_tasks(data_store, compute_dict):
     """Instantiate and launch compute modules."""
@@ -31,7 +40,7 @@ def run_compute_tasks(data_store, compute_dict):
 
     tasks = []
 
-    for compute_config in query_config('hub.computes'):
+    for compute_config in query_config("hub.computes"):
         compute_class = compute_config["compute_class"].lower()
         compute_id = compute_config["compute_id"]
 
@@ -50,8 +59,9 @@ def run_compute_tasks(data_store, compute_dict):
 
     return tasks
 
+
 async def main():
-    setup_logging(logger, 'hub.logging')
+    setup_logging(logger, "hub.logging")
     logger.info("Launching unified hub services")
 
     # Shared resources
@@ -65,11 +75,8 @@ async def main():
     data_service = DataService(data_store, compute_dict)
     command_service = ControlService(data_store, compute_dict)
 
-    await asyncio.gather(
-        data_service.start(),
-        command_service.start(),
-        *compute_tasks
-    )
+    await asyncio.gather(data_service.start(), command_service.start(), *compute_tasks)
+
 
 if __name__ == "__main__":
     try:

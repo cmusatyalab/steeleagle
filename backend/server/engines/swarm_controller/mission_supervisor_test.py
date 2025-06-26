@@ -1,11 +1,14 @@
 import asyncio
 import logging
-from swarm_controller import PatrolArea, StaticPatrolMission, MissionSupervisor
-import protocol.controlplane_pb2 as controlplane
+
+from swarm_controller import MissionSupervisor, PatrolArea, StaticPatrolMission
+
 import protocol.common_pb2 as common
+import protocol.controlplane_pb2 as controlplane
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 class FakeSocket:
     def __init__(self):
@@ -31,19 +34,22 @@ class FakeSocket:
             response.resp = common.ResponseStatus.COMPLETED  # Then finish
 
         # Always return drone1 to avoid index errors
-        identity = b'drone1'
+        identity = b"drone1"
         self.recv_count += 1
 
         return [identity, response.SerializeToString()]
 
+
 async def test_mission_supervisor_single_drone():
     logger.info("=== Test: MissionSupervisor Single Drone ===")
 
-    patrol_area_list = await PatrolArea.load_from_file('test')
+    patrol_area_list = await PatrolArea.load_from_file("test")
     print(f"Patrol area list: {patrol_area_list}")
 
     # Setup StaticPatrolMission with one drone
-    mission = StaticPatrolMission(drone_list=["drone1"], patrol_area_list=patrol_area_list, alt=10)
+    mission = StaticPatrolMission(
+        drone_list=["drone1"], patrol_area_list=patrol_area_list, alt=10
+    )
 
     # Use FakeSocket for testing
     fake_socket = FakeSocket()
@@ -60,5 +66,6 @@ async def test_mission_supervisor_single_drone():
     for msg in fake_socket.sent_msgs:
         logger.info(f"Sent: {msg}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(test_mission_supervisor_single_drone())

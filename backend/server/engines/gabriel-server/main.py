@@ -5,9 +5,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-from gabriel_server.network_engine import server_runner
-import logging
 import argparse
+import logging
+
+from gabriel_server.network_engine import server_runner
 from util.utils import setup_logging
 
 DEFAULT_PORT = 9099
@@ -15,6 +16,7 @@ DEFAULT_NUM_TOKENS = 2
 INPUT_QUEUE_MAXSIZE = 60
 
 logger = logging.getLogger(__name__)
+
 
 def main():
     setup_logging(logger)
@@ -30,16 +32,27 @@ def main():
     )
 
     parser.add_argument(
-        "-q", "--queue", type=int, default=INPUT_QUEUE_MAXSIZE, help="Max input queue size"
+        "-q",
+        "--queue",
+        type=int,
+        default=INPUT_QUEUE_MAXSIZE,
+        help="Max input queue size",
     )
 
     parser.add_argument(
-        "-z", "--zmq", action="store_true", help="Use ZeroMQ Gabriel client")
+        "-z", "--zmq", action="store_true", help="Use ZeroMQ Gabriel client"
+    )
 
     args, _ = parser.parse_known_args()
 
-    server_runner.run(websocket_port=args.port, zmq_address='tcp://*:5555', num_tokens=args.tokens,
-                  input_queue_maxsize=args.queue, use_zeromq=args.zmq)
+    server_runner.run(
+        websocket_port=args.port,
+        zmq_address="tcp://*:5555",
+        num_tokens=args.tokens,
+        input_queue_maxsize=args.queue,
+        use_zeromq=args.zmq,
+    )
+
 
 if __name__ == "__main__":
     main()

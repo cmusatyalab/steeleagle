@@ -3,6 +3,7 @@ name: Build and push vision engines
 on:
   push:
     branches: [ "main", "dev" ]
+    tags: [ "v*" ]
     paths:
       - '.github/workflows/build-vision-engines.yml'
       - '.github/workflows/deploy-docker-img.yml'

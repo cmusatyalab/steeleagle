@@ -1,23 +1,59 @@
 site_name: SteelEagle
-site_url: https://mydomain.org/steeleagle
+site_url: https://cmusatyalab.org/steeleagle
 site_description: 'An accessible framework for robot autonomy.'
 site_author: 'mihirbala'
-copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon University and is licensed under GPL-3.0.'
+copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon University and is licensed under GPL-2.0.'
+repo_url: https://github.com/cmusatyalab/steeleagle
 nav:
   - Home: index.md
   - Getting Started:
     - Overview: getting_started/overview.md
+    - Installation: getting_started/installation.md
+    - Simulated Flight: getting_started/simulated-flight.md
+    - Actual Flight: getting_started/actual-flight.md
+  - Vehicle:
+    - Overview: vehicle/overview.md
+    - Setup: vehicle/setup.md
+    - Microservice API:
+      - Driver: vehicle/api/driver.md
+      - Hub: vehicle/api/hub.md
+      - Mission: vehicle/api/mission.md
+      - Compute: vehicle/api/compute.md 
+    - Development: vehicle/development.md
+    - Third-Party Integration: vehicle/third-party.md
   - Backend:
+<<<<<<< HEAD
     - Design: backend/backend-design.md 
     - Setup: backend/backend-setup.md
   - Supported Platforms:
     - UAVs: platforms/uavs.md
     - Companions: platforms/companions.md
+=======
+    - Overview: backend/overview.md
+    - Setup: backend/setup.md
+    - Swarm Controller: backend/swarm-controller.md
+    - Compute Engines: backend/compute-engines.md
+    - Development: backend/development.md
+    - Third-Party Integration: backend/third-party.md
+  - DSL:
+    - Overview: dsl/overview.md
+    - Setup: dsl/setup.md
+    - Plan: dsl/plan.md
+    - Development: dsl/development.md
+  - Ground Control:
+    - Overview: gcs/overview.md
+    - Setup: gcs/setup.md
+    - Third-Party Integration: gcs/third-party.md
+  - Simulation:
+    - Overview: sim/overview.md
+    - Setup: sim/setup.md
+    - Customization: sim/customization.md
+>>>>>>> 252bb7fc155dbd9fc1e2219fb9f4fac50c95a569
 
 theme:
   name: material
-  logo: assets/logo-color.png
-  favicon: assets/logo-color.png
+  logo: assets/logo-color-beige.png
+  favicon: assets/logo-color-beige.png
   custom_dir: docs/overrides
   features:
     - navigation.tabs
