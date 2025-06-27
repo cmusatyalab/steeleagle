@@ -12,7 +12,7 @@ Support for this platform is on our roadmap.
 
 <img src="../assets/platforms/o2lte.png" width="25%">
 
-The [Onion Omega2 LTE](https://onion.io/store/omega2-lte-na/) includes a 4G LTE modem on a single-board computer that runs OpenWRT. It is traditionaly used in IoT environments as a gateway. In SteelEagle we use it onboard the vehicle to act a bridge between the vehicle (WiFi) and the edge node (LTE). It can be powered via USB-C or from a small LiPO battery.
+The [Onion Omega2 LTE](https://onion.io/store/omega2-lte-na/) includes a 4G LTE modem on a single-board computer that runs OpenWRT. It is traditionally used in IoT environments as a gateway. In SteelEagle we use it onboard the vehicle to act a bridge between the vehicle (WiFi) and the edge node (LTE). It can be powered via USB-C or from a small LiPO battery.
 
 ## Android Smartphones
 ![Roadmap](https://img.shields.io/badge/Roadmap-ffffff?style=for-the-badge&color=ff0000)

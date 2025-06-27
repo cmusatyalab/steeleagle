@@ -65,7 +65,7 @@ Integrated LTE. Stereo and RGB cameras.
 <img src="../assets/platforms/anafi_ai.png" width="25%">
 
 ## Modal AI
-[Manufacturer](https://www.modalai.com) of developement drones and autopilot/compute boards.
+[Manufacturer](https://www.modalai.com) of development drones and autopilot/compute boards.
 
 ### Starling 2 MAX
 ![Simulation Tested](https://img.shields.io/badge/Simulation%20Tested-ffffff?style=for-the-badge&color=f5e800) ![Onboard Client](https://img.shields.io/badge/Onboard%20Client-ffffff?style=for-the-badge&color=ffffff) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45)
@@ -88,7 +88,7 @@ Discontinued photography drone with Ardupilot and GPS.
 ### Spirit
 ![Theoretical Support](https://img.shields.io/badge/Theoretical%20Support-ffffff?style=for-the-badge&color=f57000) ![Blue UAS](https://img.shields.io/badge/Blue%20UAS-ffffff?style=for-the-badge&color=005db1) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45) ![Android Client](https://img.shields.io/badge/Android%20Client-ffffff?style=for-the-badge&color=287f85) ![Onboard Client](https://img.shields.io/badge/Onboard%20Client-ffffff?style=for-the-badge&color=ffffff)
 
-Modular coaxial copter capabable of carrying various payloads.
+Modular coaxial copter capable of carrying various payloads.
 
 <img src="../assets/platforms/spirit.webp" width="25%">
 
