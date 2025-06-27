@@ -79,7 +79,7 @@ The docker-compose.yaml file specifies several services that run as part of the 
 
 1. **gabriel-server** - Core gabriel server container. Responsible for managing connections between clients (drones, commanders0 and cognitives engines (telemetry, object detection, obstacle avoidance).
 2. **telemetry-engine** - Used for storing telemetry data from connected drones in redis and persisting imagery (if started with the --store flag).
-3. **http-server** - Exposes the /steeleagle-vol direcetory so that images for the various engines can be viewed for troubleshooting.
+3. **http-server** - Exposes the /steeleagle-vol directory so that images for the various engines can be viewed for troubleshooting.
 4. **openscout-face-engine** - Handles face recognition on the incoming stream by making calls to the openface-service.
 5. **obstacle-engine** - Uses MiDaS to determine where obstacles are within the frame and returns a vector to the drone to navigate away to safe space.
 6. **openscout-object-engine** - Performs object detection using a pytorch model.
@@ -165,7 +165,7 @@ The steeleagle-vol directory will not exist until the containers are launched fo
 
 #### view.html
 
-[view.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/view.html) can be copied into any/all of the following 3 directories: raw/DRONE_NAME/<flight_dir>, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image nubmer and the total number of images in the directory.
+[view.html](https://github.com/cmusatyalab/steeleagle/blob/main/cnc/view.html) can be copied into any/all of the following 3 directories: raw/DRONE_NAME/<flight_dir>, detected, and moa. One can then navigate to http://host:8080/<1 of 3 dirs>/view.html where the directory of images can be iterated through using the left/right arrow keys. Below the current image will be displayed the current image number and the total number of images in the directory.
 
 ![view.html example!](images/viewhtml.png)
 

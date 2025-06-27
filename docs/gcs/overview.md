@@ -1,4 +1,4 @@
-SteelEagle utilizes a custom Ground Control Station which is currently written in [Streamlit](https://streamlit.io) which is a pure python web frontend. The SteelEagle GCS allows a pilot-in-command (PiC) to control one or more vehicles manually, send them on autonomous missions, and view telemetry and image data from connectd vehicles.
+SteelEagle utilizes a custom Ground Control Station which is currently written in [Streamlit](https://streamlit.io) which is a pure python web frontend. The SteelEagle GCS allows a pilot-in-command (PiC) to control one or more vehicles manually, send them on autonomous missions, and view telemetry and image data from connected vehicles.
 
 ## Pages
 
@@ -9,7 +9,7 @@ On the left of the GCS, there is a sidebar which has several pages. The default 
 * __Drone Markers__ - When enabled, markers will be placed at the latitude/longitude of each vehicles current location. The icon will face in the direction of the current heading.
 * __Detected Objects__ - When the object detection engine finds objects that are above the confidence threshold, it will estimate a projection for the location of that object on the ground. A marker will be placed there which will indicate the class, the confidence value, and hovering over the marker will display the image associated with that detected
 * __Detections Geofence__ - If enabled at runtime for the object detection engine, a geofence can be specified. This geofence will limit detections of objects to only those found within the geofence. If this box is checked, the associated geofence will be shown as a polygon on the map.
-* __Mission Corridors__ - When executing a mission, the swarm controller will parition the waypoints associated with the KML file uploaded for the mission. The paritions can be shown on the map.
+* __Mission Corridors__ - When executing a mission, the swarm controller will partition the waypoints associated with the KML file uploaded for the mission. The partitions can be shown on the map.
 
 <img src="../assets/gcs/overview.png">
 
@@ -49,7 +49,7 @@ Vehicles can also be manually piloted (in unison if more than one is selected), 
 * j/l - Yaw left/right at the rate specified by the 'Yaw' slider
 * r/f - Pitch the gimbal up/down at the rate specified by the 'Gimbal Pitch' slider
 
-> __NOTE: The gimbal pitch can also be manipulated in absolute terms by toggling the 'Gimbal Relative' switch and specifiing the absolute angle using the slider.__
+> __NOTE: The gimbal pitch can also be manipulated in absolute terms by toggling the 'Gimbal Relative' switch and specifying the absolute angle using the slider.__
 
 #### Autonomous Mission Control
 
