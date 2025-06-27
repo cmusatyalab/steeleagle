@@ -29,7 +29,7 @@ class TelemetryEngine(cognitive_engine.Engine):
     ENGINE_NAME = "telemetry"
 
     def __init__(self, args):
-        logger.info("Telemetry engine intializing...")
+        logger.info("Telemetry engine initializing...")
 
         # Connect to Redis database
         self.r = redis.Redis(
