@@ -106,9 +106,21 @@ public class MyActivity extends AppCompatActivity {
         Button takeoffButton = findViewById(R.id.takeoff_button);
         takeoffButton.setOnClickListener(v -> startTakeoff());
 
-        // Get velocity enu button behavior
+        // Get landing button behavior
         Button landingButton = findViewById(R.id.landing_button);
         landingButton.setOnClickListener(v -> startLanding());
+
+        // Get velocity body button behavior
+        Button velocityBodyButton = findViewById(R.id.velocity_body_button);
+        velocityBodyButton.setOnClickListener(v -> getVelocityBody());
+
+        // Get gimbal pose body button behavior
+        Button gimbalPoseButton = findViewById(R.id.gimbal_pose_button);
+        gimbalPoseButton.setOnClickListener(v -> gimbalPoseBody());
+
+        // Get status body button behavior
+        Button statusButton = findViewById(R.id.status_button);
+        statusButton.setOnClickListener(v -> getStatus());
     }
 
 
@@ -260,9 +272,78 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    //_get_velocity_body
-    //_get_current_status
-    //_get_gimbal_pose_body
+    private void getVelocityBody() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        Velocity3D velocity = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
+        Double heading = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyCompassHeading));
+        TextView textView = findViewById(R.id.main_text);
+
+        if (velocity != null && heading != null) {
+            // Convert ENU velocity to north, east, up (since DJI uses NED by default)
+            double north = velocity.getX();
+            double east = velocity.getY();
+            double up = -velocity.getZ();  // ENU to NED conversion: flip z-axis
+
+            // 2D velocity vector in the horizontal plane (north, east)
+            double[] vec = { north, east };
+
+            // Calculate rotation for forward vector by heading + 90 degrees
+            double hd = heading + 90.0;
+            double fwRad = Math.toRadians(hd);  // Convert to radians
+            double cosFw = Math.cos(fwRad);
+            double sinFw = Math.sin(fwRad);
+            double[] vecf = { cosFw * 0.0 - sinFw * 1.0, sinFw * 0.0 + cosFw * 1.0 };
+
+            // Calculate rotation for right vector (heading + 90 degrees)
+            double rtRad = Math.toRadians(hd + 90.0);  // Heading + 90 degrees for right vector
+            double cosRt = Math.cos(rtRad);
+            double sinRt = Math.sin(rtRad);
+            double[] vecr = { cosRt * 0.0 - sinRt * 1.0, sinRt * 0.0 + cosRt * 1.0 };
+
+            // Calculate dot products for forward and right velocity components
+            double forward = - (vec[0] * vecf[0] + vec[1] * vecf[1]);
+            double right = - (vec[0] * vecr[0] + vec[1] * vecr[1]);
+
+            // Log the body velocities (forward, right, up)
+            textView.setText(String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forward, right, up));
+            Log.i("VelocityBody", String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forward, right, up));
+        } else {
+            textView.setText("Velocity or Heading not available");
+            Log.w("VelocityBody", "Velocity or Heading not available");
+        }
+    }
+
+    private void getStatus() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        //keyManager.getValue(KeyTools.createKey(FlightControllerKey.Status));
+    }
+    private void gimbalPoseBody() {
+        // Get the Gimbal instance (assuming 0 is the main forward gimbal)
+        IKeyManager keyManager = KeyManager.getInstance();
+        Attitude gimbal = keyManager.getValue(KeyTools.createKey(GimbalKey.KeyGimbalAttitude));
+
+        // Find the TextView to display the gimbal pose
+        TextView textView = findViewById(R.id.main_text);
+
+        if (gimbal != null) {
+            // Retrieve yaw, pitch, and roll relative to the drone's body frame
+            double yaw = gimbal.getYaw();
+            double pitch = gimbal.getPitch();
+            double roll = gimbal.getRoll();
+
+            // Set the values on the TextView
+            String gimbalPoseText = String.format("Yaw: %.2f°\nPitch: %.2f°\nRoll: %.2f°", yaw, pitch, roll);
+            textView.setText(gimbalPoseText);
+
+            // Log for debugging purposes
+            Log.i("GimbalPose", gimbalPoseText);
+        } else {
+            // If the gimbal is unavailable, display a warning message on the TextView
+            textView.setText("Gimbal not available");
+            Log.w("GimbalPose", "Gimbal not found or not available.");
+        }
+    }
+
 
     private void startTakeoff() {
         IKeyManager keyManager = KeyManager.getInstance();
