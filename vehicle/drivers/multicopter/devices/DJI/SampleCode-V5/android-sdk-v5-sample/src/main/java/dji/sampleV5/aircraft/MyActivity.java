@@ -19,6 +19,7 @@ import dji.sdk.keyvalue.key.GimbalKey;
 import dji.sdk.keyvalue.key.ProductKey;
 import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
+import dji.sdk.keyvalue.value.common.EmptyMsg;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
@@ -100,6 +101,14 @@ public class MyActivity extends AppCompatActivity {
         // Get velocity enu button behavior
         Button velocityENUButton = findViewById(R.id.velocity_enu_button);
         velocityENUButton.setOnClickListener(v -> getVelocityENU());
+
+        // Get takeoff button behavior
+        Button takeoffButton = findViewById(R.id.takeoff_button);
+        takeoffButton.setOnClickListener(v -> startTakeoff());
+
+        // Get velocity enu button behavior
+        Button landingButton = findViewById(R.id.landing_button);
+        landingButton.setOnClickListener(v -> startLanding());
     }
 
 
@@ -254,6 +263,18 @@ public class MyActivity extends AppCompatActivity {
     //_get_velocity_body
     //_get_current_status
     //_get_gimbal_pose_body
+
+    private void startTakeoff() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartTakeoff), null);
+        Log.i("MyApp", "Drone takeoff initiated");
+    }
+
+    private void startLanding() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartAutoLanding), null);
+        Log.i("MyApp", "Drone takeoff initiated");
+    }
 
 }
 
