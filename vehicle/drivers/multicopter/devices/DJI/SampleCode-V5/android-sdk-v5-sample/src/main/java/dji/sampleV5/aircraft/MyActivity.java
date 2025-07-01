@@ -121,6 +121,10 @@ public class MyActivity extends AppCompatActivity {
         // Get status body button behavior
         Button statusButton = findViewById(R.id.status_button);
         statusButton.setOnClickListener(v -> getStatus());
+
+        // Type button behavior
+        Button typeButton = findViewById(R.id.type_button);
+        typeButton.setOnClickListener(v -> getType());
     }
 
 
@@ -159,7 +163,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void getName() {
         IKeyManager keyName = KeyManager.getInstance();
-        ProductType nameValue = keyName.getValue(KeyTools.createKey(ProductKey.KeyProductType));
+        String nameValue = keyName.getValue(KeyTools.createKey(ProductKey.KeySerialNumber));
         TextView textView = findViewById(R.id.main_text);
         textView.setText("Name: " + nameValue);
         Log.i("MyApp", "Sent name");
@@ -355,6 +359,14 @@ public class MyActivity extends AppCompatActivity {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartAutoLanding), null);
         Log.i("MyApp", "Drone takeoff initiated");
+    }
+
+    private void getType() {
+        IKeyManager keyType = KeyManager.getInstance();
+        ProductType typeValue = keyType.getValue(KeyTools.createKey(ProductKey.KeyProductType));
+        TextView textView = findViewById(R.id.main_text);
+        textView.setText("Name: " + typeValue);
+        Log.i("MyApp", "Sent name");
     }
 
 }

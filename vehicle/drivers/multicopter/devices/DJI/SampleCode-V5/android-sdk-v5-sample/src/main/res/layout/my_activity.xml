@@ -74,6 +74,16 @@
                 android:layout_height="16dp" />
 
             <Button
+                android:id="@+id/type_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Type" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
                 android:id="@+id/takeoff_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
