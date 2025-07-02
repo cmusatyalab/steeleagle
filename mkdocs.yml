@@ -18,7 +18,7 @@ nav:
       - Driver: vehicle/api/driver.md
       - Hub: vehicle/api/hub.md
       - Mission: vehicle/api/mission.md
-      - Compute: vehicle/api/compute.md 
+      - Compute: vehicle/api/compute.md
     - Development: vehicle/development.md
     - Third-Party Integration: vehicle/third-party.md
   - Backend:

@@ -26,5 +26,3 @@ In the top right, under available drones, you should see your drone name listed.
 The Sphinx environment video stream through the watch is low quality and subject to significant artifacting. In real environments, the camera stream does not experience the same issues.
 
 Congratulations! You have now flown your first flight with SteelEagle.
-
-

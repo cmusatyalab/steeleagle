@@ -7,7 +7,7 @@ permalink: /
 
 # Overview
 
-SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process. 
+SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process.
 
 ## Features
 1. **Low Cost**: SteelEagle uses cheap photography drones like the Parrot Anafi (<$500) which are much less expensive than even the cheapest fully-autonomous COTS drones ($3,000+).
@@ -21,5 +21,3 @@ SteelEagle is a software suite that transofrms commercial-off-the-shelf (COTS) d
 1. **No Disconnected Operation**: By default, SteelEagle drones do not currently support extended disconnected operation.
 2. **High Latency**: Video and telemetry streams are highly latent because of network transmission delays.
 3. **Limited Compatibility with GCS**: Because of the way SteelEagle's architecture, it is difficult to integrate it with existing ground control stations like QGroundControl. We have provided our own ground control software for this purpose.
-
-

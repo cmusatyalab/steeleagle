@@ -3,6 +3,7 @@ name: Build and push swarm controller
 on:
   push:
     branches: [ "main", "dev" ]
+    tags: [ "v*" ]
     paths:
       - '.github/workflows/build-swarm-controller.yml'
       - '.github/workflows/deploy-docker-img.yml'
