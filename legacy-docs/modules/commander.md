@@ -38,7 +38,7 @@ cp template.env .env
 #edit .env file to supply necessary values as shown below
 ```
 
-Below is the contents of template.env. Typically all the services are running on the same host, and so all of the server addresses below will actually be the same machine, but the servcies can in fact be run on different hosts in practice.
+Below is the contents of template.env. Typically all the services are running on the same host, and so all of the server addresses below will actually be the same machine, but the services can in fact be run on different hosts in practice.
 
 ```conf
 CLOUDLET="<server address>"

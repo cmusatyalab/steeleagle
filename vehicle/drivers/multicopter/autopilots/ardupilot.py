@@ -70,7 +70,7 @@ class ArduPilotDrone(MAVLinkDrone):
     async def hover(self):
         # TODO: Implement hover:
         # issues: The hover command in the mavlink by setting velocity body to 0 will
-        # interupt any other flying command like land, takeoff, etc. This is due to
+        # interrupt any other flying command like land, takeoff, etc. This is due to
         # streamlit continuously sending the hover command in a high frequency.
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
