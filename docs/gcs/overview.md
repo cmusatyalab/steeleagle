@@ -51,6 +51,11 @@ Vehicles can also be manually piloted (in unison if more than one is selected), 
 
 > __NOTE: The gimbal pitch can also be manipulated in absolute terms by toggling the 'Gimbal Relative' switch and specifying the absolute angle using the slider.__
 
+
+#### Mission Planning
+
+Mission planning is currently done outside of the Streamlit GCS. For instructions on how to write a mission DSL script and produce a mission KML file in MyMaps, see the [Planning](../dsl/plan.md) page.
+
 #### Autonomous Mission Control
 
 In order to send selected vehicles on an autonomous mission, first the PiC must upload a mission script (.dsl) and an associated set of waypoints (.kml) file. Once these files are uploaded to the GCS, hitting the 'Fly Script' button with send the mission to the selected vehicles. Hitting the 'Halt All' button will stop the mission for all selected vehicles and cause them to hover. Manual controls can then be initiated once again.  Hitting the 'Return Home' button will initiate the return to home feature for all selected vehicles.
