@@ -182,7 +182,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         gimbal_pitch = telemetry.gimbal_pose.pitch
 
-        return gimbal_pitch + target_bottom_pitch_angle, telemetry.global_position.heading + target_yaw_angle
+        object_heading = telemetry.global_position.heading + target_yaw_angle
+        return (
+            gimbal_pitch + target_bottom_pitch_angle,
+            object_heading % -180 if object_heading > 0 else object_heading % 180,
+        )
 
     def estimate_gps(self, lat, lon, pitch, yaw, alt):
         EARTH_RADIUS = 6378137.0
