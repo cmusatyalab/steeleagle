@@ -94,10 +94,7 @@ class DataService(Service):
         """Handles incoming telemetry messages from the driver."""
         try:
             telemetry = data_protocol.Telemetry()
-            old_tel = self.data_store.get_raw_data(telemetry)
             telemetry.ParseFromString(msg)
-            if old_tel:
-                telemetry.current_task = old_tel.data.current_task
             self.data_store.set_raw_data(telemetry)
             logger.debug(f"Received telemetry message: {telemetry}")
         except Exception as e:
