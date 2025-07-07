@@ -147,6 +147,18 @@ public class MyActivity extends AppCompatActivity {
         // Set go home status using current location button behavior
         Button goHomeStatusButton = findViewById(R.id.go_home_status);
         goHomeStatusButton.setOnClickListener(v -> goHomeStatus());
+
+        // Is hovering status using current location button behavior
+        Button isHoveringButton = findViewById(R.id.is_hovering);
+        isHoveringButton.setOnClickListener(v -> isHovering());
+
+        // Is hovering status using current location button behavior
+        Button isHomeSet = findViewById(R.id.is_home_set);
+        isHomeSet.setOnClickListener(v -> isHomeSet());
+
+        // Is heading calibrated status using current location button behavior
+        Button isHeadingCalibrated = findViewById(R.id.is_heading_calibrated);
+        isHeadingCalibrated.setOnClickListener(v -> isHeadingCalibrated());
     }
 
 
@@ -402,7 +414,7 @@ public class MyActivity extends AppCompatActivity {
         LocationCoordinate2D customHomeLocation = new LocationCoordinate2D(latitude, longitude);
 
         keyManager.performAction(
-                KeyTools.createKey(FlightControllerKey.SetH), customHomeLocation, null);
+                KeyTools.createKey(FlightControllerKey.KeySetHome), customHomeLocation, null);
     }*/
 
     /*// New method to set the drone's global position
@@ -433,6 +445,30 @@ public class MyActivity extends AppCompatActivity {
         TextView textView = findViewById(R.id.main_text);
         textView.setText("Status: " + status);
         Log.i("MyApp", "Sent go home status");
+    }
+
+    private void isHovering() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        Boolean hover = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyIsAircraftHovering));
+        textView.setText("isHovering: " + hover);
+        Log.i("MyApp", "isHovering value sent");
+    }
+
+    private void isHomeSet() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        Boolean home = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyIsHomeLocationSet));
+        textView.setText("isHomeSet: " + home);
+        Log.i("MyApp", "isHomeSet value sent");
+    }
+
+    private void isHeadingCalibrated() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        Boolean home = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyIsHeadingCalibrated));
+        textView.setText("isHeadingCalibrated: " + home);
+        Log.i("MyApp", "isHeadingCalibrated value sent");
     }
 }
 
