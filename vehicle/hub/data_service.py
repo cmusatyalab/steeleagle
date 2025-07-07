@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 import common_pb2 as common_protocol
 import dataplane_pb2 as data_protocol
@@ -148,6 +149,7 @@ class DataService(Service):
         else:
             resp.resp = common_protocol.ResponseStatus.COMPLETED
             resp.tel.CopyFrom(tel_data)
+            resp.data_age_ms = int((time.monotonic() - ret.timestamp) * 1000)
 
         resp.timestamp.GetCurrentTime()
         resp.seq_num = req.seq_num

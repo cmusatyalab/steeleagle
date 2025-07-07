@@ -5,6 +5,7 @@
 import logging
 
 import dataplane_pb2 as data_protocol
+import google.protobuf.json_format as json_format
 
 from system_call_stubs.stub import Stub
 
@@ -54,61 +55,21 @@ class DataStub(Stub):
                 return None
 
             result = rep.tel
-            tel_dict = {
-                "drone_name": None,
-                "global_position": {
-                    "latitude": None,
-                    "longitude": None,
-                    "heading": None,
-                    "altitude": None,
-                    "relative_altitude": None,
-                },
-                "relative_position": {"north": None, "east": None, "up": None},
-                "velocity_enu": {"north": None, "east": None, "up": None},
-                "velocity_body": {"forward": None, "right": None, "up": None},
-                "gimbal_pose": {"yaw": None, "pitch": None, "roll": None},
-                "home": {"latitude": None, "longitude": None, "altitude": None},
-                "cameras": {},
-                "alerts": {},
-                "battery": None,
-                "satellites": None,
-                "status": None,
-            }
-            if result:
-                # Name
-                tel_dict["drone_name"] = result.drone_name
-                # Global Position
-                tel_dict["global_position"]["latitude"] = (
-                    result.global_position.latitude
-                )
-                tel_dict["global_position"]["longitude"] = (
-                    result.global_position.longitude
-                )
-                tel_dict["global_position"]["altitude"] = (
-                    result.global_position.altitude
-                )
-                tel_dict["global_position"]["relative_altitude"] = (
-                    result.relative_position.up
-                )
-                tel_dict["global_position"]["heading"] = result.global_position.heading
-                # Velocity Body
-                tel_dict["velocity_body"]["forward"] = result.velocity_body.forward_vel
-                tel_dict["velocity_body"]["right"] = result.velocity_body.right_vel
-                tel_dict["velocity_body"]["up"] = result.velocity_body.up_vel
-                # Gimbal
-                tel_dict["gimbal_pose"]["yaw"] = result.gimbal_pose.yaw
-                tel_dict["gimbal_pose"]["pitch"] = result.gimbal_pose.pitch
-                tel_dict["gimbal_pose"]["roll"] = result.gimbal_pose.roll
-                # Battery & Satellites
-                tel_dict["battery"] = result.battery
-                tel_dict["satellites"] = result.satellites
-                # Status
-                tel_dict["status"] = result.status
 
-                return tel_dict
-            else:
+            if not result:
                 logger.error("Failed to get telemetry")
                 return None
+
+            tel_dict = json_format.MessageToDict(
+                rep.tel,
+                always_print_fields_with_no_presence=True,
+                preserving_proto_field_name=True,
+            )
+
+            tel_dict["data_age_ms"] = rep.data_age_ms
+
+            return tel_dict
+
         except Exception as e:
             logger.error(e)
 

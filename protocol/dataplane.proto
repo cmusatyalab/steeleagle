@@ -30,13 +30,14 @@ message Request {
 
 message Response {
   uint64 seq_num = 1; // For correlation
-  google.protobuf.Timestamp timestamp = 2;// Time the response was sent
+  google.protobuf.Timestamp timestamp = 2; // Time the response was sent
   protocol.common.ResponseStatus resp = 3;
   oneof type {
     Telemetry tel = 4;
     Frame frame = 5;
     ComputeResponse cpt = 6;
   }
+  uint64 data_age_ms = 7; // Indicates the staleness of the data in milliseconds
 }
 
 /*
