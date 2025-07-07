@@ -24,6 +24,7 @@ import dji.sdk.keyvalue.value.common.EmptyMsg;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
+import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
 import dji.sdk.keyvalue.value.product.ProductType;
 import dji.v5.common.callback.CommonCallbacks;
 import dji.v5.common.register.PackageProductCategory;
@@ -135,9 +136,17 @@ public class MyActivity extends AppCompatActivity {
         Button currentLocationHomeButton = findViewById(R.id.set_home_current_location);
         currentLocationHomeButton.setOnClickListener(v -> setHomeCurrentLocation());
 
-        // Set go home using current location button behavior
+        // Set start go home using current location button behavior
         Button startGoHomeButton = findViewById(R.id.start_go_home);
         startGoHomeButton.setOnClickListener(v -> startGoHome());
+
+        // Set stop go home using current location button behavior
+        Button stopGoHomeButton = findViewById(R.id.stop_go_home);
+        stopGoHomeButton.setOnClickListener(v -> stopGoHome());
+
+        // Set go home status using current location button behavior
+        Button goHomeStatusButton = findViewById(R.id.go_home_status);
+        goHomeStatusButton.setOnClickListener(v -> goHomeStatus());
     }
 
 
@@ -302,24 +311,24 @@ public class MyActivity extends AppCompatActivity {
             double up = -velocity.getZ();  // ENU to NED conversion: flip z-axis
 
             // 2D velocity vector in the horizontal plane (north, east)
-            double[] vec = { north, east };
+            double[] vec = {north, east};
 
             // Calculate rotation for forward vector by heading + 90 degrees
             double hd = heading + 90.0;
             double fwRad = Math.toRadians(hd);  // Convert to radians
             double cosFw = Math.cos(fwRad);
             double sinFw = Math.sin(fwRad);
-            double[] vecf = { cosFw * 0.0 - sinFw * 1.0, sinFw * 0.0 + cosFw * 1.0 };
+            double[] vecf = {cosFw * 0.0 - sinFw * 1.0, sinFw * 0.0 + cosFw * 1.0};
 
             // Calculate rotation for right vector (heading + 90 degrees)
             double rtRad = Math.toRadians(hd + 90.0);  // Heading + 90 degrees for right vector
             double cosRt = Math.cos(rtRad);
             double sinRt = Math.sin(rtRad);
-            double[] vecr = { cosRt * 0.0 - sinRt * 1.0, sinRt * 0.0 + cosRt * 1.0 };
+            double[] vecr = {cosRt * 0.0 - sinRt * 1.0, sinRt * 0.0 + cosRt * 1.0};
 
             // Calculate dot products for forward and right velocity components
-            double forward = - (vec[0] * vecf[0] + vec[1] * vecf[1]);
-            double right = - (vec[0] * vecr[0] + vec[1] * vecr[1]);
+            double forward = -(vec[0] * vecf[0] + vec[1] * vecf[1]);
+            double right = -(vec[0] * vecr[0] + vec[1] * vecr[1]);
 
             // Log the body velocities (forward, right, up)
             textView.setText(String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forward, right, up));
@@ -334,6 +343,7 @@ public class MyActivity extends AppCompatActivity {
         IKeyManager keyManager = KeyManager.getInstance();
         //keyManager.getValue(KeyTools.createKey(FlightControllerKey.Status));
     }
+
     private void gimbalPoseBody() {
         // Get the Gimbal instance (assuming 0 is the main forward gimbal)
         IKeyManager keyManager = KeyManager.getInstance();
@@ -381,10 +391,19 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "Sent name");
     }
 
-    private void setHomeCurrentLocation(){
+    private void setHomeCurrentLocation() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeySetHomeLocationUsingAircraftCurrentLocation), null);
     }
+
+    /*private void setHomeLocation(double latitude, double longitude) {
+        IKeyManager keyManager = KeyManager.getInstance();
+
+        LocationCoordinate2D customHomeLocation = new LocationCoordinate2D(latitude, longitude);
+
+        keyManager.performAction(
+                KeyTools.createKey(FlightControllerKey.SetH), customHomeLocation, null);
+    }*/
 
     /*// New method to set the drone's global position
     private void setGlobalPosition(double latitude, double longitude) {
@@ -398,9 +417,22 @@ public class MyActivity extends AppCompatActivity {
         keyManager.setValue(key, targetLocation, null);
     }*/
 
-    private void startGoHome(){
+    private void startGoHome() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
+    }
+
+    private void stopGoHome() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStopGoHome), null);
+    }
+
+    private void goHomeStatus() {
+        IKeyManager keyType = KeyManager.getInstance();
+        GoHomeState status = keyType.getValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeStatus));
+        TextView textView = findViewById(R.id.main_text);
+        textView.setText("Status: " + status);
+        Log.i("MyApp", "Sent go home status");
     }
 }
 
