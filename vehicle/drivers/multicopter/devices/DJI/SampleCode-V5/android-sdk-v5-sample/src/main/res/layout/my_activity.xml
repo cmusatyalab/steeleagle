@@ -102,6 +102,32 @@
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_home_current_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Home Using Current Location" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_home_coordinates"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Home Using Coordinates" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_go_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Go Home" />
         </LinearLayout>
     </ScrollView>
 

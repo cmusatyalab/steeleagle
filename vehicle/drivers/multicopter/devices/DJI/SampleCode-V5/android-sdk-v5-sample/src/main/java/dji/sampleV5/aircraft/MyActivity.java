@@ -16,6 +16,7 @@ import dji.sdk.keyvalue.key.BatteryKey;
 import dji.sdk.keyvalue.key.DJIKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
 import dji.sdk.keyvalue.key.GimbalKey;
+import dji.sdk.keyvalue.key.PayloadKey;
 import dji.sdk.keyvalue.key.ProductKey;
 import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
@@ -118,6 +119,10 @@ public class MyActivity extends AppCompatActivity {
         Button gimbalPoseButton = findViewById(R.id.gimbal_pose_button);
         gimbalPoseButton.setOnClickListener(v -> gimbalPoseBody());
 
+        // Get gimbal pose body button behavior
+        //Button setGimbalButton = findViewById(R.id.set_gimbal_position_button);
+        //setGimbalButton.setOnClickListener(v -> setGimbalPosition());
+
         // Get status body button behavior
         Button statusButton = findViewById(R.id.status_button);
         statusButton.setOnClickListener(v -> getStatus());
@@ -125,6 +130,14 @@ public class MyActivity extends AppCompatActivity {
         // Type button behavior
         Button typeButton = findViewById(R.id.type_button);
         typeButton.setOnClickListener(v -> getType());
+
+        // Set home using current location button behavior
+        Button currentLocationHomeButton = findViewById(R.id.set_home_current_location);
+        currentLocationHomeButton.setOnClickListener(v -> setHomeCurrentLocation());
+
+        // Set go home using current location button behavior
+        Button startGoHomeButton = findViewById(R.id.start_go_home);
+        startGoHomeButton.setOnClickListener(v -> startGoHome());
     }
 
 
@@ -163,7 +176,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void getName() {
         IKeyManager keyName = KeyManager.getInstance();
-        String nameValue = keyName.getValue(KeyTools.createKey(ProductKey.KeySerialNumber));
+        String nameValue = keyName.getValue(KeyTools.createKey(FlightControllerKey.KeySerialNumber));
         TextView textView = findViewById(R.id.main_text);
         textView.setText("Name: " + nameValue);
         Log.i("MyApp", "Sent name");
@@ -348,7 +361,6 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-
     private void startTakeoff() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartTakeoff), null);
@@ -369,6 +381,27 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "Sent name");
     }
 
+    private void setHomeCurrentLocation(){
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeySetHomeLocationUsingAircraftCurrentLocation), null);
+    }
+
+    /*// New method to set the drone's global position
+    private void setGlobalPosition(double latitude, double longitude) {
+        // Use DJI SDK to set the global position (waypoint movement)
+        IKeyManager keyManager = KeyManager.getInstance();
+
+        LocationCoordinate2D targetLocation = new LocationCoordinate2D(latitude, longitude);
+        // Assuming you want to set the global position with a waypoint
+        DJIKey key = KeyTools.createKey(FlightControllerKey.KeyWaypoints);
+
+        keyManager.setValue(key, targetLocation, null);
+    }*/
+
+    private void startGoHome(){
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
+    }
 }
 
 
