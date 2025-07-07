@@ -1,5 +1,7 @@
 import logging
 import os
+import shutil
+from datetime import datetime
 from enum import Enum
 
 import yaml
@@ -130,7 +132,15 @@ def setup_logging(logger, access_token=None):
 
     log_file = logging_config["log_file"]
     if log_file:
+        backup_logs(log_file)
         file_handler = logging.FileHandler(log_file, mode="w")
         file_handler.setFormatter(logging.Formatter(logging_format))
         file_handler.setLevel(logging_config["log_level"])
         logging.getLogger().addHandler(file_handler)
+
+
+def backup_logs(log_file):
+    if os.path.exists(log_file):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = f"{log_file}.{timestamp}.bak"
+        shutil.move(log_file, backup_file)
