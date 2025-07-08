@@ -77,7 +77,7 @@ def main():
         "--faux",
         action="store_true",
         default=False,
-        help="Generate faux vectors using the file specfied instead of results from MiDaS.",
+        help="Generate faux vectors using the file specified instead of results from MiDaS.",
     )
 
     parser.add_argument(

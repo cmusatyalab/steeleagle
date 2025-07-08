@@ -208,7 +208,7 @@ class GabrielCompute(ComputeInterface):
             logger.debug(f"tel producer: starting time {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append(b"heartbeart")
+            input_frame.payloads.append(b"heartbeat")
             tel_data = data_protocol.Telemetry()
             ret = self.data_store.get_raw_data(tel_data)
 
