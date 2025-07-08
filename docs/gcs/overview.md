@@ -11,13 +11,13 @@ On the left of the GCS, there is a sidebar which has several pages. The default 
 * __Detections Geofence__ - If enabled at runtime for the object detection engine, a geofence can be specified. This geofence will limit detections of objects to only those found within the geofence. If this box is checked, the associated geofence will be shown as a polygon on the map.
 * __Mission Corridors__ - When executing a mission, the swarm controller will partition the waypoints associated with the KML file uploaded for the mission. The partitions can be shown on the map.
 
-<img src="../assets/gcs/overview.png">
+<img src="../assets/gcs/overview.png" width='80%'>
 
 ### Imagery and Telemetry
 
 The __Imagery and Telemetry__ page displays: the video stream from each vehicle, a set of status icons (current mission task, warnings for sensors, etc), and a table of the most recent telemetry data; in a two-column layout. Controls are added to the sidebar to set the refresh rate and also the threshold for active vehicles.
 
-<img src="../assets/gcs/imagery.png">
+<img src="../assets/gcs/imagery.png" width='80%'>
 
 
 ### Control
@@ -27,7 +27,7 @@ Unlike the other two pages which are effectively passive, view-only pages, the _
 * a map which will display some key vehicle telemetry for all connected vehicles
 * a toolbar to control various options
 
-<img src="../assets/gcs/control.png">
+<img src="../assets/gcs/control.png" width='80%'>
 
 
 Many controls will also be added to the sidebar when viewing this page:
@@ -47,9 +47,8 @@ Vehicles can also be manually piloted (in unison if more than one is selected), 
 * a/d - Roll left/right at the rate specified by the 'Roll' slider
 * i/k - Thrust up/down at the rate specified by the 'Thrust' slider
 * j/l - Yaw left/right at the rate specified by the 'Yaw' slider
-* r/f - Pitch the gimbal up/down at the rate specified by the 'Gimbal Pitch' slider
 
-> __NOTE: The gimbal pitch can also be manipulated in absolute terms by toggling the 'Gimbal Relative' switch and specifying the absolute angle using the slider.__
+> __NOTE: The gimbal pitch can be manipulated in absolute terms by specifying the absolute angle using the slider.__
 
 
 #### Mission Planning
