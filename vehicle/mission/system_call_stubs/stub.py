@@ -58,6 +58,8 @@ class Stub:
         stub_response.put_result(response)
         stub_response.set()
 
+        del self.request_map[response.seq_num]
+
     async def receiver_loop(self, parse_response_callback):
         while True:
             try:
@@ -74,8 +76,13 @@ class Stub:
         try:
             stub_response = StubResponse()
             self.sender(request, stub_response)
-            await stub_response.wait()
+            try:
+                await asyncio.wait_for(stub_response.wait(), 10)
+            except (TimeoutError, asyncio.TimeoutError):
+                del self.request_map[request.seq_num]
+                return None
             reply = stub_response.get_result()
             return reply
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             return None
