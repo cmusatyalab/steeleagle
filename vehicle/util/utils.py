@@ -3,6 +3,7 @@ import os
 import shutil
 from datetime import datetime
 from enum import Enum
+from zoneinfo import ZoneInfo
 
 import yaml
 import zmq
@@ -141,6 +142,6 @@ def setup_logging(logger, access_token=None):
 
 def backup_logs(log_file):
     if os.path.exists(log_file):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(ZoneInfo("America/New_York")).strftime("%Y%m%d_%H%M%S")
         backup_file = f"{log_file}.{timestamp}.bak"
         shutil.move(log_file, backup_file)
