@@ -25,6 +25,7 @@ import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
+import dji.sdk.keyvalue.value.mission.Waypoint;
 import dji.sdk.keyvalue.value.product.ProductType;
 import dji.v5.common.callback.CommonCallbacks;
 import dji.v5.common.register.PackageProductCategory;
@@ -159,6 +160,14 @@ public class MyActivity extends AppCompatActivity {
         // Is heading calibrated status using current location button behavior
         Button isHeadingCalibrated = findViewById(R.id.is_heading_calibrated);
         isHeadingCalibrated.setOnClickListener(v -> isHeadingCalibrated());
+
+        // Start video button behavior
+        Button startVideo = findViewById(R.id.start_video);
+        startVideo.setOnClickListener(v -> startVideoRecording());
+
+        // Stop video button behavior
+        Button stopVideo = findViewById(R.id.stop_video);
+        stopVideo.setOnClickListener(v -> stopVideoRecording());
     }
 
 
@@ -353,7 +362,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void getStatus() {
         IKeyManager keyManager = KeyManager.getInstance();
-        //keyManager.getValue(KeyTools.createKey(FlightControllerKey.Status));
+        //keyManager.getValue(KeyTools.createKey(PayloadKey.KeyActivateStateInfo));
     }
 
     private void gimbalPoseBody() {
@@ -470,6 +479,25 @@ public class MyActivity extends AppCompatActivity {
         textView.setText("isHeadingCalibrated: " + home);
         Log.i("MyApp", "isHeadingCalibrated value sent");
     }
+
+    private void startVideoRecording() {
+        IKeyManager keyManager = KeyManager.getInstance();
+
+        // Set camera mode to video
+        keyManager.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.VIDEO_NORMAL, null);
+        keyManager.performAction(KeyTools.createKey(CameraKey.KeyStartRecord), null);
+        Log.i("MyApp", "Starting video");
+    }
+
+    private void stopVideoRecording() {
+        IKeyManager keyManager = KeyManager.getInstance();
+
+        // Set camera mode to video
+        keyManager.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.VIDEO_NORMAL, null);
+        keyManager.performAction(KeyTools.createKey(CameraKey.KeyStopRecord), null);
+        Log.i("MyApp", "Stopped Video");
+    }
+
 }
 
 
