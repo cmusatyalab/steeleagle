@@ -121,14 +121,6 @@ public class MyActivity extends AppCompatActivity {
         Button gimbalPoseButton = findViewById(R.id.gimbal_pose_button);
         gimbalPoseButton.setOnClickListener(v -> gimbalPoseBody());
 
-        // Get gimbal pose body button behavior
-        //Button setGimbalButton = findViewById(R.id.set_gimbal_position_button);
-        //setGimbalButton.setOnClickListener(v -> setGimbalPosition());
-
-        // Get status body button behavior
-        Button statusButton = findViewById(R.id.status_button);
-        statusButton.setOnClickListener(v -> getStatus());
-
         // Type button behavior
         Button typeButton = findViewById(R.id.type_button);
         typeButton.setOnClickListener(v -> getType());
@@ -170,12 +162,6 @@ public class MyActivity extends AppCompatActivity {
         stopVideo.setOnClickListener(v -> stopVideoRecording());
     }
 
-
-    /*private void takePhoto() {
-        RxUtil.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL).andThen
-                (RxUtil.performActionWithOutResult(KeyTools.createKey(CameraKey.KeyStartShootPhoto))).subscribe();
-        Log.i("MyApp", "Took photo");
-    }*/
     private void takePhoto() {
         IKeyManager keyPhoto = KeyManager.getInstance();
         keyPhoto.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.PHOTO_NORMAL, null);
@@ -321,48 +307,54 @@ public class MyActivity extends AppCompatActivity {
 
     private void getVelocityBody() {
         IKeyManager keyManager = KeyManager.getInstance();
-        Velocity3D velocity = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
-        Double heading = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyCompassHeading));
-        TextView textView = findViewById(R.id.main_text);
 
-        if (velocity != null && heading != null) {
-            // Convert ENU velocity to north, east, up (since DJI uses NED by default)
-            double north = velocity.getX();
-            double east = velocity.getY();
-            double up = -velocity.getZ();  // ENU to NED conversion: flip z-axis
+        // Retrieve velocity in ENU coordinates
+        Velocity3D enuVelocity = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
 
-            // 2D velocity vector in the horizontal plane (north, east)
-            double[] vec = {north, east};
+        // Retrieve compass heading
+        Double compassHeadingDegrees = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyCompassHeading));
 
-            // Calculate rotation for forward vector by heading + 90 degrees
-            double hd = heading + 90.0;
-            double fwRad = Math.toRadians(hd);  // Convert to radians
-            double cosFw = Math.cos(fwRad);
-            double sinFw = Math.sin(fwRad);
-            double[] vecf = {cosFw * 0.0 - sinFw * 1.0, sinFw * 0.0 + cosFw * 1.0};
+        TextView statusTextView = findViewById(R.id.main_text);
 
-            // Calculate rotation for right vector (heading + 90 degrees)
-            double rtRad = Math.toRadians(hd + 90.0);  // Heading + 90 degrees for right vector
-            double cosRt = Math.cos(rtRad);
-            double sinRt = Math.sin(rtRad);
-            double[] vecr = {cosRt * 0.0 - sinRt * 1.0, sinRt * 0.0 + cosRt * 1.0};
+        if (enuVelocity != null && compassHeadingDegrees != null) {
+            // Extract components from ENU and convert to NED
+            double velocityNorth = enuVelocity.getX();            // X -> North
+            double velocityEast = enuVelocity.getY();             // Y -> East
+            double velocityUp = -enuVelocity.getZ();              // Flip Z for ENU to NED
 
-            // Calculate dot products for forward and right velocity components
-            double forward = -(vec[0] * vecf[0] + vec[1] * vecf[1]);
-            double right = -(vec[0] * vecr[0] + vec[1] * vecr[1]);
+            // Horizontal velocity vector (North, East)
+            double[] horizontalVelocityVector = {velocityNorth, velocityEast};
 
-            // Log the body velocities (forward, right, up)
-            textView.setText(String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forward, right, up));
-            Log.i("VelocityBody", String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forward, right, up));
+            // Calculate heading + 90 degrees (to align with aircraft's forward direction)
+            double forwardHeadingDegrees = compassHeadingDegrees + 90.0;
+            double forwardHeadingRadians = Math.toRadians(forwardHeadingDegrees);
+
+            // Unit vector pointing forward in horizontal plane
+            double forwardUnitX = Math.cos(forwardHeadingRadians);
+            double forwardUnitY = Math.sin(forwardHeadingRadians);
+            double[] forwardUnitVector = {forwardUnitX, forwardUnitY};
+
+            // Calculate rightward heading (forward + 90 degrees)
+            double rightHeadingRadians = Math.toRadians(forwardHeadingDegrees + 90.0);
+            double rightUnitX = Math.cos(rightHeadingRadians);
+            double rightUnitY = Math.sin(rightHeadingRadians);
+            double[] rightUnitVector = {rightUnitX, rightUnitY};
+
+            // Project velocity onto forward and right vectors (dot product)
+            double forwardVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0]
+                    + horizontalVelocityVector[1] * forwardUnitVector[1]);
+
+            double rightVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0]
+                    + horizontalVelocityVector[1] * rightUnitVector[1]);
+
+            // Display results
+            String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forwardVelocity, rightVelocity, velocityUp);
+            statusTextView.setText(velocityText);
+            Log.i("VelocityBody", velocityText);
         } else {
-            textView.setText("Velocity or Heading not available");
+            statusTextView.setText("Velocity or Heading not available");
             Log.w("VelocityBody", "Velocity or Heading not available");
         }
-    }
-
-    private void getStatus() {
-        IKeyManager keyManager = KeyManager.getInstance();
-        //keyManager.getValue(KeyTools.createKey(PayloadKey.KeyActivateStateInfo));
     }
 
     private void gimbalPoseBody() {
@@ -416,27 +408,6 @@ public class MyActivity extends AppCompatActivity {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeySetHomeLocationUsingAircraftCurrentLocation), null);
     }
-
-    /*private void setHomeLocation(double latitude, double longitude) {
-        IKeyManager keyManager = KeyManager.getInstance();
-
-        LocationCoordinate2D customHomeLocation = new LocationCoordinate2D(latitude, longitude);
-
-        keyManager.performAction(
-                KeyTools.createKey(FlightControllerKey.KeySetHome), customHomeLocation, null);
-    }*/
-
-    /*// New method to set the drone's global position
-    private void setGlobalPosition(double latitude, double longitude) {
-        // Use DJI SDK to set the global position (waypoint movement)
-        IKeyManager keyManager = KeyManager.getInstance();
-
-        LocationCoordinate2D targetLocation = new LocationCoordinate2D(latitude, longitude);
-        // Assuming you want to set the global position with a waypoint
-        DJIKey key = KeyTools.createKey(FlightControllerKey.KeyWaypoints);
-
-        keyManager.setValue(key, targetLocation, null);
-    }*/
 
     private void startGoHome() {
         IKeyManager keyManager = KeyManager.getInstance();

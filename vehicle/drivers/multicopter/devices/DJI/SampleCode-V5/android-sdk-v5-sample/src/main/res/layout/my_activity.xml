@@ -337,16 +337,6 @@
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/status_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Current Status" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
-
-            <Button
                 android:id="@+id/gimbal_pose_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
