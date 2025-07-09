@@ -5,11 +5,14 @@ import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import dji.sdk.keyvalue.key.BatteryKey;
@@ -22,8 +25,10 @@ import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
 import dji.sdk.keyvalue.value.common.EmptyMsg;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
+import dji.sdk.keyvalue.value.common.LocationCoordinate3D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
+import dji.sdk.keyvalue.value.flightcontroller.FlyToMode;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
 import dji.sdk.keyvalue.value.mission.Waypoint;
 import dji.sdk.keyvalue.value.product.ProductType;
@@ -35,6 +40,11 @@ import dji.v5.manager.KeyManager;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.KeyTools;
 import dji.v5.manager.SDKManager;
+import dji.v5.manager.intelligent.IntelligentFlightManager;
+import dji.v5.manager.intelligent.flyto.FlyToParam;
+import dji.v5.manager.intelligent.flyto.FlyToTarget;
+import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
+import dji.v5.manager.interfaces.IIntelligentFlightManager;
 import dji.v5.manager.interfaces.IKeyManager;
 import io.reactivex.rxjava3.core.Completable;
 
@@ -160,6 +170,10 @@ public class MyActivity extends AppCompatActivity {
         // Stop video button behavior
         Button stopVideo = findViewById(R.id.stop_video);
         stopVideo.setOnClickListener(v -> stopVideoRecording());
+
+        // Set global position button behavior
+        Button setGlobalPositionButton = findViewById(R.id.set_global_position);
+        setGlobalPositionButton.setOnClickListener(v -> setGlobalPositionDialog());
     }
 
     private void takePhoto() {
@@ -468,6 +482,83 @@ public class MyActivity extends AppCompatActivity {
         keyManager.performAction(KeyTools.createKey(CameraKey.KeyStopRecord), null);
         Log.i("MyApp", "Stopped Video");
     }
+
+    private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight){
+        //creating the target
+        FlyToTarget flyToTarget = new FlyToTarget();
+        flyToTarget.setTargetLocation(new LocationCoordinate3D(latitude, longitude, altitude));
+        flyToTarget.setMaxSpeed(1);
+        //creating the parameters
+        FlyToParam flyParam = new FlyToParam();
+        flyParam.setHeight(flyingHeight);
+        flyParam.setFlyToMode(FlyToMode.SET_HEIGHT);
+        //creating and executing the mission command to make the drone actually move to the coordinate
+        IFlyToMissionManager flyToMissionManager = IntelligentFlightManager.getInstance().getFlyToMissionManager();
+        flyToMissionManager.startMission(flyToTarget, flyParam, null);
+    }
+
+    private void setGlobalPositionDialog() {
+        Log.i("MyApp", "Start of the global set position dialog");
+        final EditText inputLatitude = new EditText(this);
+        inputLatitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        new AlertDialog.Builder(this)
+                .setTitle("Enter Latitude")
+                .setView(inputLatitude)
+                .setPositiveButton("Next", (dialog, which) -> {
+                    String latStr = inputLatitude.getText().toString();
+                    if (latStr.isEmpty()) return;
+                    double latitude = Double.parseDouble(latStr);
+
+                    final EditText inputLongitude = new EditText(this);
+                    inputLongitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                    new AlertDialog.Builder(this)
+                            .setTitle("Enter Longitude")
+                            .setView(inputLongitude)
+                            .setPositiveButton("Next", (d2, w2) -> {
+                                String lonStr = inputLongitude.getText().toString();
+                                if (lonStr.isEmpty()) return;
+                                double longitude = Double.parseDouble(lonStr);
+
+                                final EditText inputAltitude = new EditText(this);
+                                inputAltitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                                new AlertDialog.Builder(this)
+                                        .setTitle("Enter Altitude")
+                                        .setView(inputAltitude)
+                                        .setPositiveButton("Next", (d3, w3) -> {
+                                            String altStr = inputAltitude.getText().toString();
+                                            if (altStr.isEmpty()) return;
+                                            double altitude = Double.parseDouble(altStr);
+
+                                            final EditText inputHeight = new EditText(this);
+                                            inputHeight.setInputType(InputType.TYPE_CLASS_NUMBER);
+                                            new AlertDialog.Builder(this)
+                                                    .setTitle("Enter Flying Height")
+                                                    .setView(inputHeight)
+                                                    .setPositiveButton("Start", (d4, w4) -> {
+                                                        String heightStr = inputHeight.getText().toString();
+                                                        if (heightStr.isEmpty()) return;
+                                                        int flyingHeight = Integer.parseInt(heightStr);
+
+                                                        // Now call your method with all inputs
+                                                        setGlobalPosition(latitude, longitude, altitude, flyingHeight);
+                                                    })
+                                                    .setNegativeButton("Cancel", null)
+                                                    .show();
+
+                                        })
+                                        .setNegativeButton("Cancel", null)
+                                        .show();
+
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+        Log.i("MyApp", "End of the global set position dialog");
+    }
+
 
 }
 

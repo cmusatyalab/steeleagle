@@ -135,16 +135,6 @@
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/set_home_coordinates"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Set Home Using Coordinates" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
-
-            <Button
                 android:id="@+id/start_go_home"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -169,6 +159,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Go Home Status" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Global Position" />
         </LinearLayout>
     </ScrollView>
 
