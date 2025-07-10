@@ -26,13 +26,10 @@ message TelemetryStreamInfo {
  * Data related to vehicle status
  */
 enum MotionStatus {
-  IDLE = 0;
-  IN_TRANSIT = 1; 
-}
-
-enum ControlStatus {
-  MANUAL = 0;
-  AUTONOMOUS = 1;
+  MOTORS_OFF = 0;
+  RAMPING = 1;
+  IDLE = 2;
+  IN_TRANSIT = 3; 
 }
 
 message BatteryInfo {
@@ -54,14 +51,12 @@ message VehicleInfo {
   string manufacturer = 3;
   // Current status of the vehicle
   MotionStatus motion_status = 4;
-  // Control status of the vehicle
-  ControlStatus control_status = 5;
   // Battery info for the vehicle
-  BatteryInfo battery_info = 6;
+  BatteryInfo battery_info = 5;
   // GPS sensor info for the vehicle
-  GPSInfo gps_info = 7;
+  GPSInfo gps_info = 6;
   // Communications info for the vehicle
-  CommsInfo comms_info = 8;
+  CommsInfo comms_info = 7;
 }
 
 /*
@@ -95,7 +90,7 @@ message PositionInfo {
   // (forward, right, up) coordinate frame
   protocol.common.VelocityBody velocity_body = 5;
   // Info on the current vehicle setpoint
-  SetpointInfo setpoint = 6; 
+  SetpointInfo setpoint_info = 6; 
 }
 
 /*
@@ -170,15 +165,13 @@ enum BatteryWarning {
 
 enum GPSWarning {
   NO_GPS_WARNING = 0;
-  WEAK = 1;
-  NO_SIGNAL = 2;
+  WEAK_SIGNAL = 1;
+  NO_FIX = 2;
 }
 
 enum MagnetometerWarning {
   NO_MAGNETOMETER_WARNING = 0;
-  RECOMMENDED = 1; // Calibration recommended
-  REQUIRED = 2; // Calibration required
-  PERTURBATION = 3; // Experiencing magnetic perturbations
+  PERTURBATION = 1; // Experiencing magnetic perturbations
 }
 
 enum ConnectionWarning {
@@ -187,11 +180,18 @@ enum ConnectionWarning {
   WEAK_CONNECTION = 2;
 }
 
+enum CompassWarning {
+  NO_COMPASS_WARNING = 0;
+  WEAK_HEADING_LOCK = 1;
+  NO_HEADING_LOCK = 2;
+}
+
 message AlertInfo {
   BatteryWarning battery_warning = 1; // Battery warnings
   GPSWarning gps_warning = 2; // GPS warnings
   MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
   ConnectionWarning connection_warning = 4; // Connection warnings
+  CompassWarning compass_warning = 5; // Compass warnings
 }
 
 /*
@@ -255,4 +255,10 @@ message MissionTelemetry {
   TelemetryStreamInfo telemetry_stream_info = 2;
   // Info about the current mission state
   MissionInfo mission_info = 3;
+}
+
+// Reports whether the drone is in manual or autonomous mode
+enum ControlStatus {
+  MANUAL = 0;
+  AUTONOMOUS = 1;
 }

@@ -15,7 +15,7 @@ service Multicopter {
   // Gets the type (model) of the vehicle
   rpc GetType (GetTypeRequest) returns (GetTypeResponse) {}
   // Connects to the vehicle
-  rpc Connect (ConnectRequest) returns (stream ConnectResponse) {}
+  rpc Connect (ConnectRequest) returns (ConnectResponse) {}
   // Checks whether the vehicle is successfully connected
   rpc IsConnected (IsConnectedRequest) returns (IsConnectedResponse) {}
   // Disconnects from the vehicle
@@ -38,23 +38,26 @@ service Multicopter {
   rpc SetGlobalPosition (SetGlobalPositionRequest)
     returns (stream SetGlobalPositionResponse) {}
   // Transit the vehicle to a target position relative to
-  // the vehicle frame of reference, in meters
-  rpc SetRelativePositionBody (SetRelativePositionBodyRequest) 
-    returns (stream SetRelativePositionBodyResponse) {}
-  // Transit the vehicle to a target position relative to
   // the global ENU (East, North, Up) frame of reference, 
   // in meters
   rpc SetRelativePositionENU (SetRelativePositionENURequest)
     returns (stream SetRelativePositionENUResponse) {}
-  // Transit the vehicle at a target velocity in
-  // the vehicle frame of reference, in meters per second
-  rpc SetVelocityBody (SetVelocityBodyRequest)
-    returns (stream SetVelocityBodyResponse) {}
+  // Transit the vehicle to a target position relative to
+  // the vehicle frame of reference, in meters
+  rpc SetRelativePositionBody (SetRelativePositionBodyRequest) 
+    returns (stream SetRelativePositionBodyResponse) {}
   // Transit the vehicle at a target velocity in
   // the global ENU (East, North, Up) frame of reference,
   // in meters per second
   rpc SetVelocityENU (SetVelocityENURequest)
     returns (stream SetVelocityENUResponse) {}
+  // Transit the vehicle at a target velocity in
+  // the vehicle frame of reference, in meters per second
+  rpc SetVelocityBody (SetVelocityBodyRequest)
+    returns (stream SetVelocityBodyResponse) {}
+  // Turns the vehicle to face a heading or global position
+  rpc SetHeading (SetHeadingRequest)
+    returns (stream SetHeadingResponse) {}
   // Set the pose of the target gimbal in the vehicle
   // frame of reference
   rpc SetGimbalPoseBody (SetGimbalPoseBodyRequest)
@@ -184,20 +187,6 @@ message SetGlobalPositionResponse {
   protocol.common.Response response = 1;
 }
 
-message SetRelativePositionBodyRequest {
-  protocol.common.Request request = 1;
-  // Target position in the body coordinate frame
-  protocol.common.PositionBody position = 2;
-  // Maximum velocity during transit, forward_vel determines horizontal
-  // velocity, up_vel determines vertical velocity, and angular_vel
-  // determines angular velocity
-  protocol.common.VelocityBody max_velocity = 3;
-}
-
-message SetRelativePositionBodyResponse {
-  protocol.common.Response response = 1;
-}
-
 message SetRelativePositionENURequest {
   protocol.common.Request request = 1;
   // Target position in the ENU coordinate frame
@@ -212,13 +201,17 @@ message SetRelativePositionENUResponse {
   protocol.common.Response response = 1;
 }
 
-message SetVelocityBodyRequest {
+message SetRelativePositionBodyRequest {
   protocol.common.Request request = 1;
-  // Velocity in the body coordinate frame
-  protocol.common.VelocityBody velocity = 2;
+  // Target position in the body coordinate frame
+  protocol.common.PositionBody position = 2;
+  // Maximum velocity during transit, forward_vel determines horizontal
+  // velocity, up_vel determines vertical velocity, and angular_vel
+  // determines angular velocity
+  protocol.common.VelocityBody max_velocity = 3;
 }
 
-message SetVelocityBodyResponse {
+message SetRelativePositionBodyResponse {
   protocol.common.Response response = 1;
 }
 
@@ -229,6 +222,28 @@ message SetVelocityENURequest {
 }
 
 message SetVelocityENUResponse {
+  protocol.common.Response response = 1;
+}
+
+message SetVelocityBodyRequest {
+  protocol.common.Request request = 1;
+  // Velocity in the body coordinate frame
+  protocol.common.VelocityBody velocity = 2;
+}
+
+message SetVelocityBodyResponse {
+  protocol.common.Response response = 1;
+}
+
+message SetHeadingRequest {
+  protocol.common.Request request = 1;
+  protocol.common.Location location = 2;
+  // Determines whether to use provided heading (HEADING_START)
+  // or to look at target GPS (TO_TARGET)
+  HeadingMode heading_mode = 5;
+}
+
+message SetHeadingResponse {
   protocol.common.Response response = 1;
 }
 
@@ -265,15 +280,16 @@ message SetGimbalPoseENUResponse {
 
 message ImagingSensorConfiguration {
   uint32 id = 1; // Target imaging sensor ID
-  bool activate = 2; // Switch to activate or deactivate the sensor stream
-  bool set_primary = 3; // Set this sensor as the primary stream
-  uint32 set_fps = 4; // Target FPS for stream
+  bool set_primary = 2; // Set this sensor as the primary stream
+  uint32 set_fps = 3; // Target FPS for stream
 } 
 
 message ConfigureImagingSensorStreamRequest {
   protocol.common.Request request = 1;
+  // Channel to send frames on
+  string channel = 2;
   // List of configurations to be updated
-  repeated ImagingSensorConfiguration configurations = 2;
+  repeated ImagingSensorConfiguration configurations = 3;
 }
 
 message ConfigureImagingSensorStreamResponse {
@@ -282,8 +298,10 @@ message ConfigureImagingSensorStreamResponse {
 
 message ConfigureTelemetryStreamRequest {
   protocol.common.Request request = 1;
+  // Channel to send telemetry on
+  string channel = 2;
   // Target frequency of telemetry generation, in Hz
-  uint32 frequency = 2;
+  uint32 frequency = 3;
 }
 
 message ConfigureTelemetryStreamResponse {
