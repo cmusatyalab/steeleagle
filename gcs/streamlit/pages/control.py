@@ -48,7 +48,7 @@ if "thrust_speed" not in st.session_state:
 if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 1.0
 if "gimbal_abs" not in st.session_state:
-    st.session_state.gimbal_abs = 45
+    st.session_state.gimbal_abs = 0
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
 if "show_drone_markers" not in st.session_state:
@@ -539,7 +539,7 @@ with st.sidebar:
             min_value=-90,
             max_value=90,
             step=15,
-            value=45,
+            value=0,
             format="%d",
         )
 
