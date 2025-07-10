@@ -76,11 +76,7 @@ class Stub:
         try:
             stub_response = StubResponse()
             self.sender(request, stub_response)
-            try:
-                await asyncio.wait_for(stub_response.wait(), 10)
-            except (TimeoutError, asyncio.TimeoutError):
-                del self.request_map[request.seq_num]
-                return None
+            await stub_response.wait()
             reply = stub_response.get_result()
             return reply
         except Exception as e:
