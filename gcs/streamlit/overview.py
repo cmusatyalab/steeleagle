@@ -84,7 +84,7 @@ def draw_map():
                             icon="plane",
                             color=COLORS[marker_color],
                             prefix="glyphicon",
-                            angle=int(row["bearing"]) % 360,
+                            angle=int(row["bearing"]),
                         )
 
                         drone_positions.add_child(
