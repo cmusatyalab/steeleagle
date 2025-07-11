@@ -517,7 +517,7 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "End of mission itself");
     }
 
-    //following are all android studio prompting this point forward (not necessary for future implementation, just for current testing purposes)
+    //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
         void onValue(T value);
 
