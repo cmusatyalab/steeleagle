@@ -74,9 +74,11 @@ class ParrotOlympeDrone(MulticopterItf):
 
     """ Interface methods """
 
-    def get_type(self):
+    async def get_type(self):
         try:
-            return od.string_cast(od.arsdk_device_type_str(self._drone._device_type))
+            return await od.string_cast(
+                od.arsdk_device_type_str(self._drone._device_type)
+            )
         except:
             return "Anafi"
 
@@ -381,7 +383,7 @@ class ParrotOlympeDrone(MulticopterItf):
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
-                tel_message.drone_model = self.get_type()
+                tel_message.drone_model = await self.get_type()
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = self._get_global_position()[
