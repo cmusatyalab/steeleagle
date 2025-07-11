@@ -377,6 +377,7 @@ class ParrotOlympeDrone(MulticopterItf):
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
+                tel_message.drone_model = 'Anafi'
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = self._get_global_position()[
