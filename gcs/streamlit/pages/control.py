@@ -373,6 +373,22 @@ def draw_map():
     )
 
 
+def send_manual_command(req: controlplane.Request):
+    st.session_state.zmq.send(req.SerializeToString())
+    rep = st.session_state.zmq.recv()
+
+
+def adjust_gimbal():
+    req = controlplane.Request()
+    req.seq_num = int(time.time())
+    req.timestamp.GetCurrentTime()
+    for d in st.session_state.selected_drones:
+        req.veh.drone_ids.append(d)
+    req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
+    req.veh.gimbal_pose.control_mode = common.PoseControlMode.POSITION_ABSOLUTE
+    send_manual_command(req)
+
+
 menu()
 options_expander = st.expander(" **:gray-background[:wrench: Toolbar]**", expanded=True)
 
@@ -541,6 +557,7 @@ with st.sidebar:
             step=15,
             value=0,
             format="%d",
+            onchange=adjust_gimbal,
         )
 
         key_pressed = st_keypressed()
@@ -584,9 +601,6 @@ with st.sidebar:
                 req.veh.velocity_body.forward_vel = pitch
                 req.veh.velocity_body.right_vel = roll
                 req.veh.velocity_body.up_vel = thrust
-            req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
-            req.veh.gimbal_pose.control_mode = common.PoseControlMode.POSITION_ABSOLUTE
+
             st.caption(req)
-        key_pressed = None
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
+        send_manual_command(req)
