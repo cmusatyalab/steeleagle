@@ -21,6 +21,7 @@ import numpy as np
 import olympe
 import olympe.enums.move as move_mode
 import olympe.enums.rth as rth_state
+import olympe_deps as od
 
 # Interface import
 from multicopter.multicopter_interface import MulticopterItf
@@ -73,8 +74,11 @@ class ParrotOlympeDrone(MulticopterItf):
 
     """ Interface methods """
 
-    async def get_type(self):
-        return "Parrot Olympe Drone"
+    def get_type(self):
+        try:
+            return od.string_cast(od.arsdk_device_type_str(self._drone._device_type))
+        except:
+            return "Anafi"
 
     async def connect(self, connection_string):
         self.ip = connection_string
@@ -377,7 +381,7 @@ class ParrotOlympeDrone(MulticopterItf):
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
-                tel_message.drone_model = 'Anafi'
+                tel_message.drone_model = self.get_type()
                 tel_message.battery = self._get_battery_percentage()
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = self._get_global_position()[
