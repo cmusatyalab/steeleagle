@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 import common_pb2 as common_protocol
 import dataplane_pb2 as data_protocol
@@ -94,10 +95,7 @@ class DataService(Service):
         """Handles incoming telemetry messages from the driver."""
         try:
             telemetry = data_protocol.Telemetry()
-            old_tel = self.data_store.get_raw_data(telemetry)
             telemetry.ParseFromString(msg)
-            if old_tel:
-                telemetry.current_task = old_tel.data.current_task
             self.data_store.set_raw_data(telemetry)
             logger.debug(f"Received telemetry message: {telemetry}")
         except Exception as e:
@@ -151,6 +149,7 @@ class DataService(Service):
         else:
             resp.resp = common_protocol.ResponseStatus.COMPLETED
             resp.tel.CopyFrom(tel_data)
+            resp.data_age_ms = int((time.monotonic() - ret.timestamp) * 1000)
 
         resp.timestamp.GetCurrentTime()
         resp.seq_num = req.seq_num

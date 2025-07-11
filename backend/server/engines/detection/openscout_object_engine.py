@@ -182,9 +182,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         gimbal_pitch = telemetry.gimbal_pose.pitch
 
+        object_heading = telemetry.global_position.heading + target_yaw_angle
         return (
             gimbal_pitch + target_bottom_pitch_angle,
-            telemetry.global_position.heading + target_yaw_angle,
+            object_heading
+            % 360,  # % 360 to adjust for the cases when we wrap around 0 degrees due to the target_yaw_angle
         )
 
     def estimate_gps(self, lat, lon, pitch, yaw, alt):
