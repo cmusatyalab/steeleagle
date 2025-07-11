@@ -10,43 +10,34 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import dji.sdk.keyvalue.key.BatteryKey;
-import dji.sdk.keyvalue.key.DJIKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
 import dji.sdk.keyvalue.key.GimbalKey;
-import dji.sdk.keyvalue.key.PayloadKey;
 import dji.sdk.keyvalue.key.ProductKey;
 import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
-import dji.sdk.keyvalue.value.common.EmptyMsg;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.LocationCoordinate3D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
 import dji.sdk.keyvalue.value.flightcontroller.FlyToMode;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
-import dji.sdk.keyvalue.value.mission.Waypoint;
 import dji.sdk.keyvalue.value.product.ProductType;
 import dji.v5.common.callback.CommonCallbacks;
-import dji.v5.common.register.PackageProductCategory;
-import dji.v5.common.utils.CallbackUtils;
-import dji.v5.common.utils.RxUtil;
+import dji.v5.common.error.IDJIError;
 import dji.v5.manager.KeyManager;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.KeyTools;
-import dji.v5.manager.SDKManager;
 import dji.v5.manager.intelligent.IntelligentFlightManager;
 import dji.v5.manager.intelligent.flyto.FlyToParam;
 import dji.v5.manager.intelligent.flyto.FlyToTarget;
 import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
-import dji.v5.manager.interfaces.IIntelligentFlightManager;
 import dji.v5.manager.interfaces.IKeyManager;
-import io.reactivex.rxjava3.core.Completable;
 
 public class MyActivity extends AppCompatActivity {
 
@@ -138,6 +129,14 @@ public class MyActivity extends AppCompatActivity {
         // Set home using current location button behavior
         Button currentLocationHomeButton = findViewById(R.id.set_home_current_location);
         currentLocationHomeButton.setOnClickListener(v -> setHomeCurrentLocation());
+
+        // Set home using coordinates button behavior
+        Button coordinatesHomeButton = findViewById(R.id.set_home_coordinates);
+        coordinatesHomeButton.setOnClickListener(v -> setHomeUsingCoordinatesDialog());
+
+        // Set home using coordinates button behavior
+        Button setHomeHeightButton = findViewById(R.id.go_home_height);
+        setHomeHeightButton.setOnClickListener(v -> setGoHomeHeightDialog());
 
         // Set start go home using current location button behavior
         Button startGoHomeButton = findViewById(R.id.start_go_home);
@@ -423,6 +422,16 @@ public class MyActivity extends AppCompatActivity {
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeySetHomeLocationUsingAircraftCurrentLocation), null);
     }
 
+    private void setHomeUsingCoordinates(double lat, double lon) {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.setValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation), new LocationCoordinate2D(lat, lon), null);
+    }
+
+    private void setGoHomeHeight(int alt) {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.setValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight), alt, null);
+    }
+
     private void startGoHome() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
@@ -467,7 +476,6 @@ public class MyActivity extends AppCompatActivity {
 
     private void startVideoRecording() {
         IKeyManager keyManager = KeyManager.getInstance();
-
         // Set camera mode to video
         keyManager.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.VIDEO_NORMAL, null);
         keyManager.performAction(KeyTools.createKey(CameraKey.KeyStartRecord), null);
@@ -476,14 +484,14 @@ public class MyActivity extends AppCompatActivity {
 
     private void stopVideoRecording() {
         IKeyManager keyManager = KeyManager.getInstance();
-
         // Set camera mode to video
         keyManager.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.VIDEO_NORMAL, null);
         keyManager.performAction(KeyTools.createKey(CameraKey.KeyStopRecord), null);
         Log.i("MyApp", "Stopped Video");
     }
 
-    private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight){
+    private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight) {
+        Log.i("MyApp", "Start of the set global position function");
         //creating the target
         FlyToTarget flyToTarget = new FlyToTarget();
         flyToTarget.setTargetLocation(new LocationCoordinate3D(latitude, longitude, altitude));
@@ -494,73 +502,168 @@ public class MyActivity extends AppCompatActivity {
         flyParam.setFlyToMode(FlyToMode.SET_HEIGHT);
         //creating and executing the mission command to make the drone actually move to the coordinate
         IFlyToMissionManager flyToMissionManager = IntelligentFlightManager.getInstance().getFlyToMissionManager();
-        flyToMissionManager.startMission(flyToTarget, flyParam, null);
+        Log.i("MyApp", "Start of mission itself");
+        flyToMissionManager.startMission(flyToTarget, flyParam, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "FlyTo mission started successfully.");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError idjiError) {
+                Log.e("MyApp", "FlyTo mission failed: " + idjiError.description());
+            }
+        });
+        Log.i("MyApp", "End of mission itself");
+    }
+
+    //following are all android studio prompting this point forward (not necessary for future implementation, just for current testing purposes)
+    interface ValueCallback<T> {
+        void onValue(T value);
+
+        void onCancel();
     }
 
     private void setGlobalPositionDialog() {
-        Log.i("MyApp", "Start of the global set position dialog");
-        final EditText inputLatitude = new EditText(this);
-        inputLatitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        new AlertDialog.Builder(this)
-                .setTitle("Enter Latitude")
-                .setView(inputLatitude)
-                .setPositiveButton("Next", (dialog, which) -> {
-                    String latStr = inputLatitude.getText().toString();
-                    if (latStr.isEmpty()) return;
-                    double latitude = Double.parseDouble(latStr);
+        doublePrompt("Enter Latitude", new ValueCallback<Double>() {
+            @Override
+            public void onValue(Double latitude) {
+                Log.i("MyApp", "Latitude: " + latitude);
 
-                    final EditText inputLongitude = new EditText(this);
-                    inputLongitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-                    new AlertDialog.Builder(this)
-                            .setTitle("Enter Longitude")
-                            .setView(inputLongitude)
-                            .setPositiveButton("Next", (d2, w2) -> {
-                                String lonStr = inputLongitude.getText().toString();
-                                if (lonStr.isEmpty()) return;
-                                double longitude = Double.parseDouble(lonStr);
+                doublePrompt("Enter Longitude", new ValueCallback<Double>() {
+                    @Override
+                    public void onValue(Double longitude) {
+                        Log.i("MyApp", "Longitude: " + longitude);
 
-                                final EditText inputAltitude = new EditText(this);
-                                inputAltitude.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-                                new AlertDialog.Builder(this)
-                                        .setTitle("Enter Altitude")
-                                        .setView(inputAltitude)
-                                        .setPositiveButton("Next", (d3, w3) -> {
-                                            String altStr = inputAltitude.getText().toString();
-                                            if (altStr.isEmpty()) return;
-                                            double altitude = Double.parseDouble(altStr);
+                        doublePrompt("Enter Altitude", new ValueCallback<Double>() {
+                            @Override
+                            public void onValue(Double altitude) {
+                                Log.i("MyApp", "Altitude: " + altitude);
 
-                                            final EditText inputHeight = new EditText(this);
-                                            inputHeight.setInputType(InputType.TYPE_CLASS_NUMBER);
-                                            new AlertDialog.Builder(this)
-                                                    .setTitle("Enter Flying Height")
-                                                    .setView(inputHeight)
-                                                    .setPositiveButton("Start", (d4, w4) -> {
-                                                        String heightStr = inputHeight.getText().toString();
-                                                        if (heightStr.isEmpty()) return;
-                                                        int flyingHeight = Integer.parseInt(heightStr);
+                                intPrompt("Enter Flying height", new ValueCallback<Integer>() {
+                                    @Override
+                                    public void onValue(Integer flyingHeight) {
+                                        Log.i("MyApp", "Flying Height: " + flyingHeight);
 
-                                                        // Now call your method with all inputs
-                                                        setGlobalPosition(latitude, longitude, altitude, flyingHeight);
-                                                    })
-                                                    .setNegativeButton("Cancel", null)
-                                                    .show();
+                                        // All inputs collected — call your function here
+                                        setGlobalPosition(latitude, longitude, altitude, flyingHeight);
+                                    }
 
-                                        })
-                                        .setNegativeButton("Cancel", null)
-                                        .show();
+                                    @Override
+                                    public void onCancel() {
+                                        Log.i("MyApp", "Flying height input cancelled");
+                                    }
+                                });
+                            }
 
-                            })
-                            .setNegativeButton("Cancel", null)
-                            .show();
+                            @Override
+                            public void onCancel() {
+                                Log.i("MyApp", "Altitude input cancelled");
+                            }
+                        });
+                    }
 
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-        Log.i("MyApp", "End of the global set position dialog");
+                    @Override
+                    public void onCancel() {
+                        Log.i("MyApp", "Longitude input cancelled");
+                    }
+                });
+            }
+
+            @Override
+            public void onCancel() {
+                Log.i("MyApp", "Latitude input cancelled");
+            }
+        });
     }
 
+    private void setHomeUsingCoordinatesDialog() {
+        doublePrompt("Enter Latitude", new ValueCallback<Double>() {
+            @Override
+            public void onValue(Double latitude) {
+                Log.i("MyApp", "Latitude: " + latitude);
 
+                doublePrompt("Enter Longitude", new ValueCallback<Double>() {
+                    @Override
+                    public void onValue(Double longitude) {
+                        Log.i("MyApp", "Longitude: " + longitude);
+
+                        // ✅ Final call now that you have both values
+                        setHomeUsingCoordinates(latitude, longitude);
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.i("MyApp", "Longitude input cancelled");
+                    }
+                });
+            }
+
+            @Override
+            public void onCancel() {
+                Log.i("MyApp", "Latitude input cancelled");
+            }
+        });
+    }
+
+    private void setGoHomeHeightDialog() {
+        intPrompt("Enter Altitude", new ValueCallback<Integer>() {
+            @Override
+            public void onValue(Integer altitude) {
+                Log.i("MyApp", "Altitude: " + altitude);
+                // ✅ Final call now that you have both values
+                setGoHomeHeight(altitude);
+            }
+
+            @Override
+            public void onCancel() {
+                Log.i("MyApp", "Latitude input cancelled");
+            }
+        });
+    }
+private void intPrompt(String message, ValueCallback<Integer> callback) {
+    final EditText input = new EditText(this);
+    input.setInputType(InputType.TYPE_CLASS_NUMBER);
+    new AlertDialog.Builder(this)
+            .setTitle(message)
+            .setView(input)
+            .setPositiveButton("Ok", (dialog, which) -> {
+                String text = input.getText().toString();
+                if (text.isEmpty()) {
+                    callback.onCancel();
+                    return;
+                }
+                try {
+                    int height = Integer.parseInt(text);
+                    callback.onValue(height);
+                } catch (NumberFormatException e) {
+                    callback.onCancel();
+                }
+            })
+            .setNegativeButton("Cancel", (dialog, which) -> callback.onCancel())
+            .show();
 }
 
-
-
+    private void doublePrompt(String message, ValueCallback<Double> callback) {
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        new AlertDialog.Builder(this)
+                .setTitle(message)
+                .setView(input)
+                .setPositiveButton("Ok", (dialog, which) -> {
+                    String text = input.getText().toString();
+                    if (text.isEmpty()) {
+                        callback.onCancel();
+                        return;
+                    }
+                    try {
+                        double altitude = Double.parseDouble(text);
+                        callback.onValue(altitude);
+                    } catch (NumberFormatException e) {
+                        callback.onCancel();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> callback.onCancel())
+                .show();
+    }
+}
