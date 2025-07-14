@@ -166,19 +166,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         HFOV = 69  # Horizontal FOV An.
         VFOV = 43  # Vertical FOV.
 
-        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1])
-        target_y_pix = img_height - int(
-            box[0]
-        )  # int(((box[2] - box[0]) / 2.0) + box[0])
-        target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (
-            HFOV / 2
-        )
-        target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (
-            VFOV / 2
-        )
-        target_bottom_pitch_angle = (
-            ((img_height - box[2]) - pixel_center[1]) / pixel_center[1]
-        ) * (VFOV / 2)
+        # Change frame of reference from top-left of image to center of image
+        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1]) - (img_width / 2)
+        target_y_pix = (img_height / 2) - int((box[2] - box[0]) + box[0])
+
+        target_yaw_angle = (target_x_pix / img_width) * HFOV
+        target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
 
         gimbal_pitch = telemetry.gimbal_pose.pitch
         object_heading = telemetry.global_position.heading + target_yaw_angle
