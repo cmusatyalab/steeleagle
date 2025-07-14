@@ -185,7 +185,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             f"Gimbal Pitch: {gimbal_pitch} + Bottom Angle {target_bottom_pitch_angle})"
         )
         object_heading = telemetry.global_position.heading + target_yaw_angle
-        logger.info(f"Heading: {gimbal_pitch} + Target Yaw Offset {target_yaw_angle})")
+        logger.info(
+            f"Heading: {telemetry.global_position.heading} + Target Yaw Offset {target_yaw_angle})"
+        )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
             object_heading
