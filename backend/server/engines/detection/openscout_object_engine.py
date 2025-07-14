@@ -368,7 +368,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if scores[i] > self.threshold:
                 detections_above_threshold = True
                 logger.info(f"Detected : {names[i]} - Score: {scores[i]:.3f}")
-
+                logger.info(f"Telemetry:[{telemetry}]")
                 box = df["box"][i]
                 box = [box["y1"], box["x1"], box["y2"], box["x2"]]
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
