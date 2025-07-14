@@ -183,10 +183,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         gimbal_pitch = telemetry.gimbal_pose.pitch
         object_heading = telemetry.global_position.heading + target_yaw_angle
         logger.info(
-            f"TargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\n\
-              Gimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\n\
-              Heading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n\
-              "
+            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\n Gimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\n Heading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
         )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
