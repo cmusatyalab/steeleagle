@@ -167,8 +167,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         VFOV = 43  # Vertical FOV.
 
         # Change frame of reference from top-left of image to center of image
-        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1]) - (img_width / 2)
-        target_y_pix = (img_height / 2) - int((box[2] - box[0]) + box[0])
+        target_x_pix = int(((box[3] - box[1]) / 2) + box[1]) - (img_width / 2)
+        target_y_pix = (img_height / 2) - int(box[2])
 
         target_yaw_angle = (target_x_pix / img_width) * HFOV
         target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
