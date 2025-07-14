@@ -181,12 +181,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         ) * (VFOV / 2)
 
         gimbal_pitch = telemetry.gimbal_pose.pitch
-        logger.info(
-            f"Gimbal Pitch: {gimbal_pitch} + Bottom Angle {target_bottom_pitch_angle})"
-        )
         object_heading = telemetry.global_position.heading + target_yaw_angle
         logger.info(
-            f"Heading: {telemetry.global_position.heading} + Target Yaw Offset {target_yaw_angle})"
+            f"TargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\n\
+              Gimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\n\
+              Heading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n\
+              "
         )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
@@ -368,7 +368,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if scores[i] > self.threshold:
                 detections_above_threshold = True
                 logger.info(f"Detected : {names[i]} - Score: {scores[i]:.3f}")
-                logger.info(f"Telemetry:[{telemetry}]")
                 box = df["box"][i]
                 box = [box["y1"], box["x1"], box["y2"], box["x2"]]
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
