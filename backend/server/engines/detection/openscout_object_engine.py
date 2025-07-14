@@ -166,7 +166,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         HFOV = 69  # Horizontal FOV An.
         VFOV = 43  # Vertical FOV.
 
-        target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
+        target_x_pix = int(((box[3] - box[1]) / 2.0) + box[1])
         target_y_pix = img_height - int(
             box[0]
         )  # int(((box[2] - box[0]) / 2.0) + box[0])
@@ -183,7 +183,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         gimbal_pitch = telemetry.gimbal_pose.pitch
         object_heading = telemetry.global_position.heading + target_yaw_angle
         logger.info(
-            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\n Gimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\n Heading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
+            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
         )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
