@@ -1,17 +1,23 @@
 import logging
 import numpy as np
-from utilities import Coordinate
-import utilities
+from st_utilities import Coordinate
+import st_utilities as st_utilities
 from BoundingBox import BoundingBox
+from DetectionObject import DetectionObject
+from PIL import Image
+import ultralytics
 
 ROUNDING_PRECISION = 5
+BASE_IMAGE_PATH = "testfiles/testobj.png"
+DETECTION_CLASSES = { 0: "Car", 1: "Person"}
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class Viewport():
-    def __init__(self, g_position: Coordinate, orientation: int, vertical_rotation: int):
-        self.position = g_position
+    def __init__(self, global_position: Coordinate, orientation: int, vertical_rotation: int, origin: Coordinate):
+        self.position = global_position
+        self.cartesian = None
         self.orientation = orientation % 360
         self.vertical_rotation = min(max(0, vertical_rotation), 90)
         self.horizontal_fov = None
@@ -19,6 +25,9 @@ class Viewport():
         self.diagonal_fov = None
         self.aspect_ratio = None
         self.bounding_box = BoundingBox()
+        self.trans_matrix = np.identity(4)
+        self.update_cartesian(origin)
+        self.update_camera_transform_matrix()
     
     def get_vertical_cant(self) -> float:
         '''
@@ -88,19 +97,19 @@ class Viewport():
         if self.vertical_fov == None or self.diagonal_fov == None:
             logger.error("Attempted to calculate horizontal FOV without setting diagonal & vertical FOV")
         else:
-            self.horizontal_fov = round(utilities.calc_adjacent(self.diagonal_fov, self.vertical_fov), ROUNDING_PRECISION)
+            self.horizontal_fov = round(st_utilities.calc_adjacent(self.diagonal_fov, self.vertical_fov), ROUNDING_PRECISION)
     
     def derive_vfov(self):
         if self.horizontal_fov == None or self.diagonal_fov == None:
             logger.error("Attempted to calculate vertical FOV without setting diagonal & horizontal FOV")
         else:
-            self.vertical_fov = round(utilities.calc_adjacent(self.diagonal_fov, self.horizontal_fov), ROUNDING_PRECISION)
+            self.vertical_fov = round(st_utilities.calc_adjacent(self.diagonal_fov, self.horizontal_fov), ROUNDING_PRECISION)
     
     def derive_dfov(self):
         if self.horizontal_fov == None or self.vertical_fov == None:
             logger.error("Attempted to calculate diagonal FOV without setting horizontal & vertical FOV")
         else:
-            self.diagonal_fov = round(utilities.calc_hypot(self.vertical_fov, self.horizontal_fov), ROUNDING_PRECISION)
+            self.diagonal_fov = round(st_utilities.calc_hypot(self.vertical_fov, self.horizontal_fov), ROUNDING_PRECISION)
     
     def derive_aspect_ratio(self):
         if self.horizontal_fov == None or self.vertical_fov == None:
@@ -114,8 +123,8 @@ class Viewport():
 
     def get_center_point(self) -> Coordinate:
         magnitude = self.magnitude_to_ground(self.get_vertical_cant())
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
-        opp_len = utilities.calc_opposite(magnitude, self.get_absolute_altitude())
+        rads = np.deg2rad(st_utilities.convert_degree_reference(self.get_view_orientation()))
+        opp_len = st_utilities.calc_opposite(magnitude, self.get_absolute_altitude())
         x_offset = np.cos(rads) * opp_len
         y_offset = np.sin(rads) * opp_len
         base = self.get_global_position().to_vect()
@@ -124,7 +133,7 @@ class Viewport():
     def get_top_values(self) -> tuple[Coordinate, float]:
         # ASSUMPTION: 0 degrees on gimbal is parallel to horizontal ground plane
         theta = np.deg2rad(min(90.0 - (self.get_vertical_cant() - self.vertical_fov / 2), 89.9))
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
+        rads = np.deg2rad(st_utilities.convert_degree_reference(self.get_view_orientation()))
         opp_len = np.tan(theta) * self.get_absolute_altitude()
         x_offset = np.cos(rads) * opp_len
         y_offset = np.sin(rads) * opp_len
@@ -134,7 +143,7 @@ class Viewport():
     def get_bottom_values(self) -> tuple[Coordinate, float]:
         # ASSUMPTION: 0 degrees on gimbal is parallel to horizontal ground plane
         theta = np.deg2rad(90.0 - (self.get_vertical_cant() + self.vertical_fov / 2))
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
+        rads = np.deg2rad(st_utilities.convert_degree_reference(self.get_view_orientation()))
         opp_len = np.tan(theta) * self.get_absolute_altitude()
         x_offset = np.cos(rads) * opp_len
         y_offset = np.sin(rads) * opp_len
@@ -143,7 +152,7 @@ class Viewport():
     
     def get_lateral_points(self, center_point: Coordinate, base_length: float) -> list[Coordinate]:
         base = center_point.to_vect()
-        theta = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation() - self.horizontal_fov / 2))
+        theta = np.deg2rad(st_utilities.convert_degree_reference(self.get_view_orientation() - self.horizontal_fov / 2))
         theta_offset = theta - np.deg2rad(90.0 + self.horizontal_fov / 2)
         opp_len = base_length / np.tan(theta)
         x_offset = np.cos(theta_offset) * opp_len
@@ -170,38 +179,22 @@ class Viewport():
         self.bounding_box.update_orientation(self.get_view_orientation())
         self.bounding_box.update_shape_corners(self.find_corners())
 
-    '''
-    DEPRECATED
-
-    def get_top_intercept(self):
-        magnitude = self.magnitude_to_ground(self.get_vertical_cant() - self.vertical_fov / 2)
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
-        opp_len = utilities.calc_opposite(magnitude, self.get_absolute_altitude())
-        x_offset = np.cos(rads) * opp_len
-        y_offset = np.sin(rads) * opp_len
-        base = self.get_global_position().to_vect()
-        return Coordinate(round(base[0] + x_offset, ROUNDING_PRECISION), round(base[1] + y_offset, ROUNDING_PRECISION), 0)
-
-    def get_bottom_intercept(self):
-        magnitude = self.magnitude_to_ground(self.get_vertical_cant() + self.vertical_fov / 2)
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()))
-        opp_len = utilities.calc_opposite(magnitude, self.get_absolute_altitude())
-        x_offset = np.cos(rads) * opp_len
-        y_offset = np.sin(rads) * opp_len
-        base = self.get_global_position().to_vect()
-        return Coordinate(round(base[0] + x_offset, ROUNDING_PRECISION), round(base[1] + y_offset, ROUNDING_PRECISION), 0)
+    def check_object(self, detection_object: DetectionObject) -> bool:
+        return self.bounding_box.contains(detection_object.get_global_pos())
     
-    def get_left_intercept(self, centerpoint_mag: float, centerpoint: Coordinate):
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()) - self.horizontal_fov / 2)
-        opp_len = centerpoint_mag * np.tan(rads)
-        x_offset = np.cos(rads) * opp_len
-        y_offset = np.cos(rads) * opp_len
-        return Coordinate(round(centerpoint.long + x_offset, ROUNDING_PRECISION), round(centerpoint.lat + y_offset, ROUNDING_PRECISION), 0)
+    def update_cartesian(self, origin):
+        self.cartesian = st_utilities.wgs_to_cartesian(origin, self.get_global_position())
 
-    def get_right_intercept(self, centerpoint_mag: float, centerpoint: Coordinate):
-        rads = np.deg2rad(utilities.convert_degree_reference(self.get_view_orientation()) - self.horizontal_fov / 2)
-        opp_len = centerpoint_mag * np.tan(rads)
-        x_offset = np.cos(rads) * opp_len
-        y_offset = np.cos(rads) * opp_len
-        return Coordinate(round(centerpoint.long + x_offset, ROUNDING_PRECISION), round(centerpoint.lat + y_offset, ROUNDING_PRECISION), 0)
-'''
+    def update_camera_transform_matrix(self):
+        if self.cartesian == None:
+            logger.error("Attempted transformation matrix update without setting local cartesian coordinate system")
+            return
+        # TODO check order of transformations - may need to be scale, rotate, translate not t, r, s
+        # Translation TODO verify if these values need to be negative
+        self.trans_matrix[0][3] = -self.cartesian[0][0]
+        self.trans_matrix[1][3] = -self.cartesian[0][1]
+        self.trans_matrix[2][3] = -self.cartesian[0][2]
+        # Rotation
+        st_utilities.rotate_around_z(self.trans_matrix, st_utilities.convert_degree_reference(self.get_view_orientation()))
+        st_utilities.rotate_around_x(self.trans_matrix, self.get_vertical_cant())
+        # TODO decide on orientation rotation only or orientation + camera cant rotation

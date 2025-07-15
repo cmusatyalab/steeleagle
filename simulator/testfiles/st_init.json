@@ -1,0 +1,71 @@
+{
+    "origin": {
+        "lat": 40.41368353053923,
+        "lon": -79.9489233699767
+    },
+    "drones": [
+        {
+            "id": "drone_1",
+            "drone_type": "anafi-simulated",
+            "x_offset": 0,
+            "y_offset": 0,
+            "z_offset": 0,
+            "orientation": 0,
+            "gimbal_rotation": 0,
+            "hfov": 69,
+            "vfov": 43
+        },
+        {
+            "id": "drone_2",
+            "drone_type": "anafi-simulated",
+            "x_offset": 10,
+            "y_offset": 0,
+            "z_offset": 0,
+            "orientation": 0,
+            "gimbal_rotation": 0,
+            "hfov": 69,
+            "vfov": 43
+        }
+    ],
+    "objects": [
+        {
+            "id": "object_1",
+            "class_label": "Person",
+            "base_confidence": 95.0,
+            "falloff_start_distance": 5.0,
+            "falloff_rate": 10.0,
+            "object_length": 1.0,
+            "object_width": 0.5,
+            "object_height": 2.0,
+            "x_offset": 100,
+            "y_offset": 100,
+            "z_offset": 0
+        },
+        {
+            "id": "object_2",
+            "class_label": "Person",
+            "base_confidence": 95.0,
+            "falloff_start_distance": 5.0,
+            "falloff_rate": 10.0,
+            "object_length": 1.0,
+            "object_width": 0.5,
+            "object_height": 2.0,
+            "x_offset": 150,
+            "y_offset": 150,
+            "z_offset": 0
+        },
+        {
+            "id": "object_3",
+            "class_label": "Person",
+            "base_confidence": 95.0,
+            "falloff_start_distance": 5.0,
+            "falloff_rate": 10.0,
+            "object_length": 1.0,
+            "object_width": 0.5,
+            "object_height": 2.0,
+            "x_offset": 200,
+            "y_offset": 150,
+            "z_offset": 0
+        }
+    ]
+}

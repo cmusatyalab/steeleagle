@@ -1,5 +1,5 @@
-from utilities import Coordinate
-import utilities
+from st_utilities import Coordinate
+import st_utilities as st_utilities
 
 CORNER_COUNT = 4
 
@@ -27,6 +27,6 @@ class BoundingBox():
 
     def contains(self, point: Coordinate):
         for i in range(CORNER_COUNT):
-            if utilities.line_side_test(self.corners[i], self.corners[i % CORNER_COUNT], point) == False:
+            if st_utilities.line_side_test(self.corners[i], self.corners[i % CORNER_COUNT], point) == False:
                 return False
         return True

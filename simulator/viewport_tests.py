@@ -1,5 +1,5 @@
 from Viewport import Viewport
-from utilities import Coordinate
+from st_utilities import Coordinate
 import numpy as np
 
 tc = Coordinate(0, 0, 0)
