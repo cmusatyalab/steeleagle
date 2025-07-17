@@ -5,7 +5,7 @@
 /**
  * Messages/calls related to the Gabriel component of SteelEagle.
  *
- * The gabriel extras is a specialized protocol just for intergrating with
+ * The gabriel extras is a specialized protocol just for integrating with
  * gabriel compute services.
  */
 syntax = "proto3";

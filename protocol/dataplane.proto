@@ -61,7 +61,7 @@ message Telemetry {
   google.protobuf.Duration uptime = 12;
   string drone_model = 13; // Manufacturer/model of the drone
   protocol.common.FlightStatus status = 14; // Details on current drone action i.e. 'HOVER', 'LANDING'
-  string current_task = 15; // Details on the current autonomous task i.e. 'idle', 'patroling', 'tracking'
+  string current_task = 15; // Details on the current autonomous task i.e. 'idle', 'patrolling', 'tracking'
 }
 
 /*

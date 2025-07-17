@@ -85,7 +85,7 @@ class ControlService(Service):
                 socks = dict(await poller.poll(timeout=0.5))
 
                 # Skip our checks if no messages were delivered.
-                # However, if no commands were recieved and we
+                # However, if no commands were received and we
                 # are in manual mode, go into failsafe.
                 if not len(socks):
                     if (

@@ -133,7 +133,7 @@ class KeyboardCtrl(Listener):
 
 logger = logging.getLogger(__name__)
 
-# Setting up conetxt
+# Setting up context
 context = zmq.asyncio.Context()
 
 hub_to_driver_sock = context.socket(zmq.DEALER)

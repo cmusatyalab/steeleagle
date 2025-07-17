@@ -898,7 +898,7 @@ acllog-max-len 128
 # AUTH <password> as usually, or more explicitly with AUTH default <password>
 # if they follow the new protocol: both will work.
 #
-# The requirepass is not compatable with aclfile option and the ACL LOAD
+# The requirepass is not compatible with aclfile option and the ACL LOAD
 # command, these will cause requirepass to be ignored.
 #
 # requirepass foobared
@@ -1180,7 +1180,7 @@ lazyfree-lazy-user-flush no
 # Usually threading reads doesn't help much.
 #
 # NOTE 1: This configuration directive cannot be changed at runtime via
-# CONFIG SET. Aso this feature currently does not work when SSL is
+# CONFIG SET. Also this feature currently does not work when SSL is
 # enabled.
 #
 # NOTE 2: If you want to test the Redis speedup using redis-benchmark, make

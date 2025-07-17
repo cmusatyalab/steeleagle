@@ -82,7 +82,7 @@ def _selection(sender, app_data, user_data):
     else:
         selections.remove(sender)
         dpg.set_value(sender, False)
-    print(f"Sender: {sender}  Currrent Selection:{selections}")
+    print(f"Sender: {sender}  Current Selection:{selections}")
     _log_interaction(sender, app_data, selections)
 
 
@@ -489,7 +489,7 @@ with dpg.window(tag="main_window", autosize=True, no_resize=True, on_close=save_
                 for d in get_drones():
                     with dpg.tab(tag=f"{d}_tab", label=f"{d}"):
                         dpg.add_image(tag=f"latest_{d}", texture_tag=f"texture_{d}")
-                with dpg.tab(tag="detection_tab", label="Object Dection"):
+                with dpg.tab(tag="detection_tab", label="Object Detection"):
                     dpg.add_image(
                         tag="latest_detection",
                         texture_tag="texture_detection",

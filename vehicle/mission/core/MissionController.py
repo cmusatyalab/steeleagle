@@ -39,7 +39,7 @@ class MissionController:
     ######################################################## MISSION ############################################################
     def install_prereqs(self) -> bool:
         ret = False
-        # Pip install prerequsites for flight script
+        # Pip install prerequisites for flight script
         requirements_path = os.path.join(self.user_path, "requirements.txt")
         try:
             subprocess.check_call(

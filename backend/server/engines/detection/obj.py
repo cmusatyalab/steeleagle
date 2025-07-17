@@ -77,7 +77,7 @@ def main():
     parser.add_argument(
         "-x",
         "--exclude",
-        help="Comma separated list of classes (ids) to exclude when peforming detection. Consult model/<model_name>/label_map.pbtxt.",
+        help="Comma separated list of classes (ids) to exclude when performing detection. Consult model/<model_name>/label_map.pbtxt.",
     )
 
     parser.add_argument(
