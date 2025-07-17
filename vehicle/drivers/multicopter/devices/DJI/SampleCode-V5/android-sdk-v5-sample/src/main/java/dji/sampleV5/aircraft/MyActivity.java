@@ -2,13 +2,17 @@ package dji.sampleV5.aircraft;
 
 import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
+import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_8888;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,6 +25,7 @@ import dji.sdk.keyvalue.key.GimbalKey;
 import dji.sdk.keyvalue.key.ProductKey;
 import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
+import dji.sdk.keyvalue.value.common.ComponentIndexType;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.LocationCoordinate3D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
@@ -33,10 +38,12 @@ import dji.v5.common.error.IDJIError;
 import dji.v5.manager.KeyManager;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.KeyTools;
+import dji.v5.manager.datacenter.camera.CameraStreamManager;
 import dji.v5.manager.intelligent.IntelligentFlightManager;
 import dji.v5.manager.intelligent.flyto.FlyToParam;
 import dji.v5.manager.intelligent.flyto.FlyToTarget;
 import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
+import dji.v5.manager.interfaces.ICameraStreamManager;
 import dji.v5.manager.interfaces.IKeyManager;
 
 public class MyActivity extends AppCompatActivity {
@@ -173,7 +180,16 @@ public class MyActivity extends AppCompatActivity {
         // Set global position button behavior
         Button setGlobalPositionButton = findViewById(R.id.set_global_position);
         setGlobalPositionButton.setOnClickListener(v -> setGlobalPositionDialog());
+
+        // Start image preview button behavior
+        Button startImagePreviewButton = findViewById(R.id.start_image_preview);
+        startImagePreviewButton.setOnClickListener(v -> startCameraFramePreview());
+
+        // Stop image preview button behavior
+        Button stopImagePreviewButton = findViewById(R.id.stop_image_preview);
+        stopImagePreviewButton.setOnClickListener(v -> stopCameraFramePreview());
     }
+    //try to get home not to land, switch to waypoints api, get the set velocity functions, and get frames off camera, gimbal movement
 
     private void takePhoto() {
         IKeyManager keyPhoto = KeyManager.getInstance();
@@ -516,6 +532,54 @@ public class MyActivity extends AppCompatActivity {
         });
         Log.i("MyApp", "End of mission itself");
     }
+    //code for camera image on screen
+    class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
+
+        Bitmap bitmap = null;
+        long lastTime = 0;
+
+        public void onFrame(@NonNull byte[] frameData, int offset, int length, int width, int height, @NonNull ICameraStreamManager.FrameFormat format) {
+            Log.i("MyApp", "Got onFrame");
+            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            int[] colors = new int[width * height];
+            Log.i("MyApp", "before for loop");
+            for (int i = 0; i < width * height; i++) {
+                colors[i] = Color.rgb(frameData[i * 4]&0xFF, frameData[i * 4 + 1]&0xFF, frameData[i * 4 + 2]&0xFF);
+            }
+            Log.i("MyApp", "after for loop");
+            bitmap.setPixels(colors, 0, width, 0, 0, width, height);
+            runOnUiThread(this::run);
+            Log.i("MyApp", "after display");
+        }
+
+        @Override
+        public void run() {
+            long millis = System.currentTimeMillis();
+            float fps = 1000/(millis-lastTime);
+            lastTime=millis;
+            TextView textView = findViewById(R.id.main_text);
+            textView.setText("fps is: " + fps);
+            ImageView imageView = findViewById(R.id.my_image_view);
+            imageView.setImageBitmap(bitmap);
+        }
+    }
+
+    myFrameHandler_t myFrameHandler = new myFrameHandler_t();
+
+    private void startCameraFramePreview() {
+        ICameraStreamManager cameraStreamManager = CameraStreamManager.getInstance();
+        cameraStreamManager.addFrameListener(
+                ComponentIndexType.LEFT_OR_MAIN,
+                RGBA_8888,
+                myFrameHandler
+        );
+    }
+
+    private void stopCameraFramePreview() {
+        ICameraStreamManager cameraStreamManager = CameraStreamManager.getInstance();
+        cameraStreamManager.removeFrameListener(myFrameHandler);
+    }
+    //end code for camera on screen
 
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
@@ -587,8 +651,6 @@ public class MyActivity extends AppCompatActivity {
                     @Override
                     public void onValue(Double longitude) {
                         Log.i("MyApp", "Longitude: " + longitude);
-
-                        // ✅ Final call now that you have both values
                         setHomeUsingCoordinates(latitude, longitude);
                     }
 
@@ -611,7 +673,6 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onValue(Integer altitude) {
                 Log.i("MyApp", "Altitude: " + altitude);
-                // ✅ Final call now that you have both values
                 setGoHomeHeight(altitude);
             }
 
@@ -621,32 +682,33 @@ public class MyActivity extends AppCompatActivity {
             }
         });
     }
-private void intPrompt(String message, ValueCallback<Integer> callback) {
-    final EditText input = new EditText(this);
-    input.setInputType(InputType.TYPE_CLASS_NUMBER);
-    new AlertDialog.Builder(this)
-            .setTitle(message)
-            .setView(input)
-            .setPositiveButton("Ok", (dialog, which) -> {
-                String text = input.getText().toString();
-                if (text.isEmpty()) {
-                    callback.onCancel();
-                    return;
-                }
-                try {
-                    int height = Integer.parseInt(text);
-                    callback.onValue(height);
-                } catch (NumberFormatException e) {
-                    callback.onCancel();
-                }
-            })
-            .setNegativeButton("Cancel", (dialog, which) -> callback.onCancel())
-            .show();
-}
+
+    private void intPrompt(String message, ValueCallback<Integer> callback) {
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        new AlertDialog.Builder(this)
+                .setTitle(message)
+                .setView(input)
+                .setPositiveButton("Ok", (dialog, which) -> {
+                    String text = input.getText().toString();
+                    if (text.isEmpty()) {
+                        callback.onCancel();
+                        return;
+                    }
+                    try {
+                        int height = Integer.parseInt(text);
+                        callback.onValue(height);
+                    } catch (NumberFormatException e) {
+                        callback.onCancel();
+                    }
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> callback.onCancel())
+                .show();
+    }
 
     private void doublePrompt(String message, ValueCallback<Double> callback) {
         final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
         new AlertDialog.Builder(this)
                 .setTitle(message)
                 .setView(input)
