@@ -189,7 +189,7 @@ public class MyActivity extends AppCompatActivity {
         Button stopImagePreviewButton = findViewById(R.id.stop_image_preview);
         stopImagePreviewButton.setOnClickListener(v -> stopCameraFramePreview());
     }
-    //try to get home not to land, switch to waypoints api, get the set velocity functions, and get frames off camera, gimbal movement
+    //try to get home not to land, switch to waypoints api, get the set velocity functions, gimbal movement
 
     private void takePhoto() {
         IKeyManager keyPhoto = KeyManager.getInstance();
@@ -444,6 +444,10 @@ public class MyActivity extends AppCompatActivity {
     }
 
     private void setGoHomeHeight(int alt) {
+        //unit meter, related to the altitude when taking off
+        //If the drone is more than 50 meters away, it climbs or descends to the set KeyGoHomeHeight before flying home and landing.
+        //If it’s within 50 meters, it returns home at its current altitude and lands without changing height.
+        //f the forward vision system isn’t working, the drone always moves to KeyGoHomeHeight first, then flies home and lands.
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.setValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight), alt, null);
     }
