@@ -242,7 +242,9 @@ class ControlService(Service):
 
     async def process_vehicle_command(self, req):
         """Processes a vehicle action in manual mode."""
-        if self.manual:
+        if (
+            self.manual or req.veh.action == control_protocol.VehicleAction.RTH
+        ):  # Allow return to home to go through during a mission
             asyncio.create_task(self.send_driver_command(req))
         else:
             logger.info("Vehicle command ignored (manual mode is disabled)")
