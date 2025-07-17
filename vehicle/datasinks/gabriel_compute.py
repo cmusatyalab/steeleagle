@@ -25,7 +25,7 @@ class GabrielCompute(ComputeInterface):
         self.drone_id = query_config("driver.id")
 
         # remote computation parameters
-        self.set_params = {"model": "coco", "hsv_lower": None, "hsv_upper": None}
+        self.set_params = {"model": "", "hsv_lower": None, "hsv_upper": None}
 
         # Gabriel
         self.server = query_config("hub.network.cloudlet.endpoint")

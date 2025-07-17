@@ -58,6 +58,8 @@ class Stub:
         stub_response.put_result(response)
         stub_response.set()
 
+        del self.request_map[response.seq_num]
+
     async def receiver_loop(self, parse_response_callback):
         while True:
             try:
@@ -77,5 +79,6 @@ class Stub:
             await stub_response.wait()
             reply = stub_response.get_result()
             return reply
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             return None

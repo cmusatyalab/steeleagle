@@ -134,7 +134,7 @@ class DataStore:
         entry = self._raw_data_cache[data_type]
 
         # Prevent overwrite of current task by routine telemetry updates
-        if data_type == data_protocol.Telemetry and data.current_task is None:
+        if data_type == data_protocol.Telemetry and not data.current_task:
             data.current_task = entry.data.current_task
 
         entry.data = data

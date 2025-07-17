@@ -12,6 +12,7 @@ import time
 
 import cv2
 import numpy as np
+import pytz
 import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
@@ -196,7 +197,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
                 if not os.path.exists(drone_raw_dir):
                     os.mkdir(drone_raw_dir)
-                now = datetime.datetime.now()
+                now = datetime.datetime.now(pytz.timezone("America/New_York"))
                 current_path = f"{drone_raw_dir}/{now.strftime('%d-%b-%Y')}"
                 try:
                     os.mkdir(current_path)

@@ -166,25 +166,22 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         HFOV = 69  # Horizontal FOV An.
         VFOV = 43  # Vertical FOV.
 
-        target_x_pix = img_width - int(((box[3] - box[1]) / 2.0) + box[1])
-        target_y_pix = img_height - int(
-            box[0]
-        )  # int(((box[2] - box[0]) / 2.0) + box[0])
-        target_yaw_angle = ((target_x_pix - pixel_center[0]) / pixel_center[0]) * (
-            HFOV / 2
-        )
-        target_pitch_angle = ((target_y_pix - pixel_center[1]) / pixel_center[1]) * (
-            VFOV / 2
-        )
-        target_bottom_pitch_angle = (
-            ((img_height - box[2]) - pixel_center[1]) / pixel_center[1]
-        ) * (VFOV / 2)
+        # Change frame of reference from top-left of image to center of image
+        target_x_pix = int(((box[3] - box[1]) / 2) + box[1]) - (img_width / 2)
+        target_y_pix = (img_height / 2) - int(box[2])
+
+        target_yaw_angle = (target_x_pix / img_width) * HFOV
+        target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
 
         gimbal_pitch = telemetry.gimbal_pose.pitch
-
+        object_heading = telemetry.global_position.heading + target_yaw_angle
+        logger.info(
+            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
+        )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
-            telemetry.global_position.heading + target_yaw_angle,
+            object_heading
+            % 360,  # % 360 to adjust for the cases when we wrap around 0 degrees due to the target_yaw_angle
         )
 
     def estimate_gps(self, lat, lon, pitch, yaw, alt):
@@ -361,7 +358,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if scores[i] > self.threshold:
                 detections_above_threshold = True
                 logger.info(f"Detected : {names[i]} - Score: {scores[i]:.3f}")
-
                 box = df["box"][i]
                 box = [box["y1"], box["x1"], box["y2"], box["x2"]]
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
