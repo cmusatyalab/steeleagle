@@ -586,51 +586,6 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    // Enhanced version with more precise distance calculation (optional)
-    private boolean checkIfAtHomeLocationPrecise() {
-        try {
-            IKeyManager keyManager = KeyManager.getInstance();
-
-            LocationCoordinate2D currentLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
-            LocationCoordinate2D homeLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
-
-            if (currentLocation == null || homeLocation == null) {
-                return false;
-            }
-
-            double distance = calculateDistance(
-                    currentLocation.getLatitude(), currentLocation.getLongitude(),
-                    homeLocation.getLatitude(), homeLocation.getLongitude()
-            );
-
-            boolean isAtHome = distance < 2.0; // 2 meters threshold
-
-            Log.d("MyApp", String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
-
-            return isAtHome;
-
-        } catch (Exception e) {
-            Log.e("MyApp", "Error checking home location: " + e.getMessage());
-            return false;
-        }
-    }
-
-    // Haversine formula for precise distance calculation
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final double R = 6371000; // Earth's radius in meters
-
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c;
-    }
-
     // Don't forget to clean up when the activity is destroyed
     @Override
     protected void onDestroy() {
