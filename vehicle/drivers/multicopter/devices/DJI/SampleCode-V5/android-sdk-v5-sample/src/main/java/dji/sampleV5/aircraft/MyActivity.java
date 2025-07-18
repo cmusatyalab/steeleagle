@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
@@ -146,8 +148,12 @@ public class MyActivity extends AppCompatActivity {
         setHomeHeightButton.setOnClickListener(v -> setGoHomeHeightDialog());
 
         // Set start go home using current location button behavior
-        Button startGoHomeButton = findViewById(R.id.start_go_home);
-        startGoHomeButton.setOnClickListener(v -> startGoHome());
+        Button startGoHomeAndLandButton = findViewById(R.id.start_go_home_and_land);
+        startGoHomeAndLandButton.setOnClickListener(v -> startGoHomeAndLand());
+
+        // Set start go home using current location button behavior
+        Button startGoHomeAndHoverButton = findViewById(R.id.start_go_home_and_hover);
+        startGoHomeAndHoverButton.setOnClickListener(v -> startGoHomeAndHover());
 
         // Set stop go home using current location button behavior
         Button stopGoHomeButton = findViewById(R.id.stop_go_home);
@@ -452,7 +458,7 @@ public class MyActivity extends AppCompatActivity {
         keyManager.setValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight), alt, null);
     }
 
-    private void startGoHome() {
+    private void startGoHomeAndLand() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
     }
@@ -460,6 +466,175 @@ public class MyActivity extends AppCompatActivity {
     private void stopGoHome() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStopGoHome), null);
+
+        // Also stop monitoring if in progress
+        if (isGoingHomeAndHover) {
+            isGoingHomeAndHover = false;
+            if (homeCheckHandler != null && homeCheckRunnable != null) {
+                homeCheckHandler.removeCallbacks(homeCheckRunnable);
+            }
+            Log.i("MyApp", "Stopped go home and monitoring");
+        }
+    }
+
+    private static final double LOCATION_THRESHOLD = 0.00001; // ~1 meter accuracy in degrees
+    private Handler homeCheckHandler;
+    private Runnable homeCheckRunnable;
+    private boolean isGoingHomeAndHover = false;
+
+    private void startGoHomeAndHover() {
+        if (isGoingHomeAndHover) {
+            Log.w("MyApp", "Go home and hover already in progress");
+            return;
+        }
+
+        isGoingHomeAndHover = true;
+
+        // Start the go home action
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
+
+        // Start monitoring location
+        startLocationMonitoring();
+
+        Log.i("MyApp", "Started go home and hover");
+    }
+
+    private void startLocationMonitoring() {
+        if (homeCheckHandler == null) {
+            homeCheckHandler = new Handler(Looper.getMainLooper());
+        }
+
+        homeCheckRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isGoingHomeAndHover) {
+                    return; // Stop if process was cancelled
+                }
+
+                if (checkIfAtHomeLocation()) {
+                    // We've reached home location, stop go home to prevent landing
+                    stopGoHome();
+                    isGoingHomeAndHover = false;
+                    Log.i("MyApp", "Reached home location - stopping go home to hover");
+
+                    // Optional: You can add additional actions here like switching to hover mode
+                    // or setting a specific flight mode if needed
+
+                } else {
+                    // Continue monitoring - check again in 500ms
+                    homeCheckHandler.postDelayed(this, 500);
+                }
+            }
+        };
+
+        // Start the monitoring loop
+        homeCheckHandler.post(homeCheckRunnable);
+    }
+
+    private boolean checkIfAtHomeLocation() {
+        try {
+            IKeyManager keyManager = KeyManager.getInstance();
+
+            // Get current aircraft location
+            LocationCoordinate2D currentLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
+
+            // Get home location
+            LocationCoordinate2D homeLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
+
+            if (currentLocation == null || homeLocation == null) {
+                Log.w("MyApp", "Location data not available");
+                return false;
+            }
+
+            double currentLat = currentLocation.getLatitude();
+            double currentLon = currentLocation.getLongitude();
+            double homeLat = homeLocation.getLatitude();
+            double homeLon = homeLocation.getLongitude();
+
+            // Calculate distance using simple coordinate difference
+            double latDiff = Math.abs(currentLat - homeLat);
+            double lonDiff = Math.abs(currentLon - homeLon);
+
+            boolean isAtHome = (latDiff < LOCATION_THRESHOLD && lonDiff < LOCATION_THRESHOLD);
+
+            Log.d("MyApp", String.format("Current: %.6f, %.6f | Home: %.6f, %.6f | Distance: %.6f, %.6f | At home: %b",
+                    currentLat, currentLon, homeLat, homeLon, latDiff, lonDiff, isAtHome));
+
+            return isAtHome;
+
+        } catch (Exception e) {
+            Log.e("MyApp", "Error checking home location: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void cancelGoHomeAndHover() {
+        if (isGoingHomeAndHover) {
+            isGoingHomeAndHover = false;
+
+            // Stop the monitoring
+            if (homeCheckHandler != null && homeCheckRunnable != null) {
+                homeCheckHandler.removeCallbacks(homeCheckRunnable);
+            }
+
+            // Stop the go home action
+            stopGoHome();
+
+            Log.i("MyApp", "Cancelled go home and hover");
+        }
+    }
+
+    // Enhanced version with more precise distance calculation (optional)
+    private boolean checkIfAtHomeLocationPrecise() {
+        try {
+            IKeyManager keyManager = KeyManager.getInstance();
+
+            LocationCoordinate2D currentLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
+            LocationCoordinate2D homeLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
+
+            if (currentLocation == null || homeLocation == null) {
+                return false;
+            }
+
+            double distance = calculateDistance(
+                    currentLocation.getLatitude(), currentLocation.getLongitude(),
+                    homeLocation.getLatitude(), homeLocation.getLongitude()
+            );
+
+            boolean isAtHome = distance < 2.0; // 2 meters threshold
+
+            Log.d("MyApp", String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
+
+            return isAtHome;
+
+        } catch (Exception e) {
+            Log.e("MyApp", "Error checking home location: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Haversine formula for precise distance calculation
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371000; // Earth's radius in meters
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
+    // Don't forget to clean up when the activity is destroyed
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        cancelGoHomeAndHover();
     }
 
     private void goHomeStatus() {

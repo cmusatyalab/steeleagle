@@ -164,10 +164,20 @@
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/start_go_home"
+                android:id="@+id/start_go_home_and_land"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start Go Home" />
+                android:text="Start Go Home And Land" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_go_home_and_hover"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Go Home And Hover" />
 
             <Space
                 android:layout_width="wrap_content"
