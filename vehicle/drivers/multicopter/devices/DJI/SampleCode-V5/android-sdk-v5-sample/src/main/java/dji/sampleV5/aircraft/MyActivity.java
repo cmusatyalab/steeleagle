@@ -439,6 +439,7 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "Sent name");
     }
 
+    //start of of the set and go home functions
     private void setHomeCurrentLocation() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeySetHomeLocationUsingAircraftCurrentLocation), null);
@@ -644,6 +645,7 @@ public class MyActivity extends AppCompatActivity {
         textView.setText("Status: " + status);
         Log.i("MyApp", "Sent go home status");
     }
+    //end of of the set and go home functions
 
     private void isHovering() {
         IKeyManager keyManager = KeyManager.getInstance();
