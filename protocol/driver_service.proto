@@ -3,27 +3,26 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.multicopter_service;
+package protocol.driver_service;
 
 import "common.proto";
 
-
 /*
- * Used for low-level control of a multicopter vehicle
+ * Used for low-level control of a vehicle
  */
-service Multicopter {
-  // Gets the type (model) of the vehicle
-  rpc GetType (GetTypeRequest) returns (GetTypeResponse) {}
+service Driver {
   // Connects to the vehicle
   rpc Connect (ConnectRequest) returns (ConnectResponse) {}
   // Checks whether the vehicle is successfully connected
   rpc IsConnected (IsConnectedRequest) returns (IsConnectedResponse) {}
   // Disconnects from the vehicle
   rpc Disconnect (DisconnectRequest) returns (DisconnectResponse) {}
-  // Order the vehicle to take off
-  rpc TakeOff (TakeOffRequest) returns (stream TakeOffResponse) {}
-  // Land the vehicle at its current position
-  rpc Land (LandRequest) returns (stream LandResponse) {}
+  // Order the vehicle to arm
+  rpc Arm (ArmRequest) returns (ArmResponse) {}
+  // Order the vehicle to spin up
+  rpc SpinUp (SpinUpRequest) returns (stream SpinUpResponse) {}
+  // Spin down the vehicle at its current position
+  rpc SpinDown (SpinDownRequest) returns (stream SpinDownResponse) {}
   // Order the vehicle to hover
   rpc Hold (HoldRequest) returns (stream HoldResponse) {}
   // Emergency shutdown of the vehicle motors
@@ -58,29 +57,20 @@ service Multicopter {
   // Turns the vehicle to face a heading or global position
   rpc SetHeading (SetHeadingRequest)
     returns (stream SetHeadingResponse) {}
-  // Set the pose of the target gimbal in the vehicle
-  // frame of reference
-  rpc SetGimbalPoseBody (SetGimbalPoseBodyRequest)
-    returns (stream SetGimbalPoseBodyResponse) {}
   // Set the pose of the target gimbal in the global
   // ENU (East, North, Up) frame of reference
   rpc SetGimbalPoseENU (SetGimbalPoseENURequest)
     returns (stream SetGimbalPoseENUResponse) {}
+  // Set the pose of the target gimbal in the vehicle
+  // frame of reference
+  rpc SetGimbalPoseBody (SetGimbalPoseBodyRequest)
+    returns (stream SetGimbalPoseBodyResponse) {}
   // Set the vehicle video stream parameters
   rpc ConfigureImagingSensorStream (ConfigureImagingSensorStreamRequest)
     returns (ConfigureImagingSensorStreamResponse) {}
   // Set the vehicle telemetry stream parameters
   rpc ConfigureTelemetryStream (ConfigureTelemetryStreamRequest)
     returns (ConfigureTelemetryStreamResponse) {}   
-}
-
-message GetTypeRequest {
-  protocol.common.Request request = 1;
-}
-
-message GetTypeResponse {
-  protocol.common.Response response = 1;
-  string type = 2; // Type or model of the drone
 }
 
 message ConnectRequest {
@@ -108,21 +98,29 @@ message DisconnectResponse {
   protocol.common.Response response = 1;
 }
 
-message TakeOffRequest {
+message ArmRequest {
+  protocol.common.Request request = 1;
+}
+
+message ArmResponse {
+  protocol.common.Response response = 1;
+}
+
+message SpinUpRequest {
   protocol.common.Request request = 1;
   // Take off height in relative altitude [meters]
   int32 take_off_altitude = 2;
 }
 
-message TakeOffResponse {
+message SpinUpResponse {
   protocol.common.Response response = 1;
 }
 
-message LandRequest {
+message SpinDownRequest {
   protocol.common.Request request = 1;
 }
 
-message LandResponse {
+message SpinDownResponse {
   protocol.common.Response response = 1;
 }
 

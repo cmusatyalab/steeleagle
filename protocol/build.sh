@@ -2,14 +2,15 @@
 # TODO: Eventually, we may want to support language/vehicle choice
 
 # Build the datatype files
-python3 -m grpc_tools.protoc -I. \
+$PROTOC_PATH -I. \
 	--python_out=./python_bindings/ \
        	common.proto \
+       	control.proto \
 	telemetry.proto \
 	result.proto
 
 # Build the service protocols
-python3 -m grpc_tools.protoc -I. \
+$PROTOC_PATH -I. \
 	--python_out=./python_bindings/ \
 	--pyi_out=./python_bindings/ \
 	--grpc_python_out=./python_bindings/ \
@@ -17,4 +18,4 @@ python3 -m grpc_tools.protoc -I. \
 	datastore_service.proto \
 	compute_service.proto \
 	report_service.proto \
-	multicopter_service.proto
+	driver_service.proto

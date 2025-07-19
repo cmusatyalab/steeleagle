@@ -230,19 +230,22 @@ message Frame {
  * Data related to the current mission
  */
 enum MissionExecState {
-  NO_MISSION = 0;
-  READY = 1;
-  IN_PROGRESS = 2;
-  CANCELLED = 3;
+  READY = 0;
+  IN_PROGRESS = 1;
+  PAUSED = 3;
+  COMPLETED = 4;
+  CANCELED = 5;
 }
 
 message MissionInfo {
-  // Name of the current mission
-  string name = 1;
-  // Task state of the mission (plaintext)
-  string task_state = 2;
+  // Unique mission reference ID
+  string uuid = 1;
+  // Timestamp of download
+  google.protobuf.Timestamp age = 2;
   // Execution state of the mission
   MissionExecState exec_state = 3;
+  // Task state of the mission (plaintext), if active
+  string task_state = 4;
 }
 
 /*
@@ -253,12 +256,6 @@ message MissionTelemetry {
   google.protobuf.Timestamp timestamp = 1;
   // Info about the current telemetry stream
   TelemetryStreamInfo telemetry_stream_info = 2;
-  // Info about the current mission state
-  MissionInfo mission_info = 3;
-}
-
-// Reports whether the drone is in manual or autonomous mode
-enum ControlStatus {
-  MANUAL = 0;
-  AUTONOMOUS = 1;
+  // Info about the current mission states
+  repeated MissionInfo mission_info = 3;
 }

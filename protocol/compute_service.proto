@@ -17,8 +17,8 @@ service Compute {
   rpc GetAvailableDatasinks (GetAvailableDatasinksRequest)
 	returns (GetAvailableDatasinksResponse) {}
   // Configure compute preferences
-  rpc ConfigureDatasink (ConfigureDatasinkRequest)
-	returns (ConfigureDatasinkResponse) {}
+  rpc ConfigureDatasinks (ConfigureDatasinksRequest)
+	returns (ConfigureDatasinksResponse) {}
 }
 
 message GetAvailableDatasinksRequest {
@@ -47,12 +47,12 @@ message GetAvailableDatasinksResponse {
   repeated Datasink datasinks = 2;
 }
 
-message ConfigureDatasinkRequest {
+message ConfigureDatasinksRequest {
   protocol.common.Request request = 1;
   repeated string name = 2; // Name of target datasinks
   repeated bool activate = 3; // Switch to activate/deactivate datasinks
 }
 
-message ConfigureDatasinkResponse {
+message ConfigureDatasinksResponse {
   protocol.common.Response response = 1;
 }

@@ -1,0 +1,47 @@
+kernel:
+  control_proxy_service:
+    endpoint: 'localhost:3000'
+  report_service:
+    endpoint: 'localhost:3001'
+  compute_service:
+    endpoint: 'localhost:3002'
+driver:
+  # TODO: Type, manufacturer, and model must match the names of the
+  # associated directories within /driver/ and the base name of
+  # the gRPC service, e.g. to use multicopter_service.proto,
+  # the type should be 'multicopter'
+  type: 'multicopter'
+  manufacturer: 'Parrot'
+  model: 'Anafi'
+  # TODO: This is the name that will be associated with this
+  # vehicle on the backend and GCS
+  name: ''
+  # TODO: Check whether the chosen drone model requires kwargs;
+  # some may require a connection address to be passed in
+  kwargs: {}
+  control_service:
+    endpoint: 'localhost:3010'
+  telemetry_stream:
+    endpoint: 'localhost:3011'
+  imaging_sensor_stream:
+    endpoint: 'localhost:3012'
+mission:
+  mission_service:
+    endpoint: 'localhost:3020'
+cloudlet:
+  # TODO: Change the following endpoints in accordance with the 
+  # network address of the backend
+  swarm_controller:
+    endpoint: ''
+  remote_compute_service:
+    endpoint: '' 
+logging:
+  # Whether or not to log to mcap for mission replay
+  log_to_mcap: true
+  # Whether or not to log to console
+  log_to_console: true
+  # Log to a custom filename; otherwise will autogenerate
+  # a name based on name, date, and time
+  custom_filename: ''
+  # Controls whether all services log to the same file
+  merged_log: true

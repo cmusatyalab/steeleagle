@@ -35,6 +35,12 @@ message Response {
   google.protobuf.Timestamp timestamp = 3;
 }
 
+// Wrapper over response object, so that it can be sent back as an
+// RPC response in case of errors
+message GenericResponse {
+  Response response = 1;
+}
+
 /*
  * Angular offsets or poses in 3 dimensions [degrees]
  */
