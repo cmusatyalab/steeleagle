@@ -35,12 +35,6 @@ message Response {
   google.protobuf.Timestamp timestamp = 3;
 }
 
-// Wrapper over response object, so that it can be sent back as an
-// RPC response in case of errors
-message GenericResponse {
-  Response response = 1;
-}
-
 /*
  * Angular offsets or poses in 3 dimensions [degrees]
  */
@@ -51,43 +45,23 @@ message Pose {
 }
 
 /*
- * Representation of the speed in 4-dimensions in ENU coordinates [m/s]
+ * Representation of the speed in 3-dimensions [meters/s]
  */
-message VelocityENU {
-  double north_vel = 1;
-  double east_vel = 2;
-  double up_vel = 3;
-  double angular_vel = 4; // [degrees/s]
+message Velocity {
+  double x_vel = 1; // Forward/north velocity
+  double y_vel = 2; // Right/east velocity
+  double z_vel = 3; // Up velocity
+  double angular_vel = 4; // Angular velocity [degrees/s]
 }
 
 /*
- * Representation of the speed in 4-dimensions in body coordinates [m/s]
+ * Position offset relative to home or current location [meters]
  */
-message VelocityBody {
-  double forward_vel = 1;
-  double right_vel = 2;
-  double up_vel = 3;
-  double angular_vel = 4; // [degrees/s]
-}
-
-/*
- * Position relative to home location in ENU coordinates [meters]
- */
-message PositionENU {
-  double north = 1;
-  double east = 2;
-  double up = 3;
-  double angle = 4; // [degrees]
-}
-
-/**
- * Position relative to current location in body coordinates [meters]
- */
-message PositionBody {
-  double forward = 1;
-  double right = 2;
-  double up = 3;
-  double angle = 4; // [degrees]
+message Position {
+  double x = 1; // Forward/north offset
+  double y = 2; // Right/east offset
+  double z = 3; // Up offset
+  double angle = 4; // Angular offset [degrees]
 }
 
 /*

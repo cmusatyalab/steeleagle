@@ -21,38 +21,38 @@ class ControlProxyService(driver_proto.DriverServicer):
                  self._logger
                  )
 
-   async def IsConnected(self, request, context):
-         return unary_unary_request(
-                 self._stub.Connect,
-                 request,
-                 self._logger
-                 )
+    async def IsConnected(self, request, context):
+        return unary_unary_request(
+            self._stub.Connect,
+            request,
+            self._logger
+            )
 
-   async def Disconnect(self, request, context):
-         return unary_unary_request(
-                 self._stub.Disconnect,
-                 request,
-                 self._logger
-                 )
+    async def Disconnect(self, request, context):
+        return unary_unary_request(
+            self._stub.Disconnect,
+            request,
+            self._logger
+            )
 
-   async def Arm(self, request, context):
-         return unary_unary_request(
-                 self._stub.Arm,
-                 request,
-                 self._logger
-                 )
+    async def Arm(self, request, context):
+        return unary_unary_request(
+            self._stub.Arm,
+            request,
+            self._logger
+            )
     
-    async def SpinUp(self, request, context):
+    async def TakeOff(self, request, context):
         async for response in unary_stream_request(
-                self._stub.SpinUp,
+                self._stub.TakeOff,
                 request,
                 self._logger
                 ):
             yield response
         
-    async def SpinDown(self, request, context):
+    async def Land(self, request, context):
         async for response in unary_stream_request(
-                self._stub.SpinDown,
+                self._stub.Land,
                 request,
                 self._logger
                 ):
@@ -96,33 +96,17 @@ class ControlProxyService(driver_proto.DriverServicer):
                 ):
             yield response
     
-    async def SetRelativePositionENU(self, request, context):
+    async def SetRelativePosition(self, request, context):
         async for response in unary_stream_request(
-                self._stub.SetRelativePositionENU,
+                self._stub.SetRelativePosition,
                 request,
                 self._logger
                 ):
             yield response
     
-    async def SetRelativePositionBody(self, request, context):
+    async def SetVelocity(self, request, context):
         async for response in unary_stream_request(
-                self._stub.SetRelativePositionBody,
-                request,
-                self._logger
-                ):
-            yield response
-    
-    async def SetVelocityENU(self, request, context):
-        async for response in unary_stream_request(
-                self._stub.SetVelocityENU,
-                request,
-                self._logger
-                ):
-            yield response
-    
-    async def SetVelocityBody(self, request, context):
-        async for response in unary_stream_request(
-                self._stub.SetVelocityBody,
+                self._stub.SetVelocity,
                 request,
                 self._logger
                 ):
@@ -136,17 +120,9 @@ class ControlProxyService(driver_proto.DriverServicer):
                 ):
             yield response
     
-    async def SetGimbalPoseENU(self, request, context):
+    async def SetGimbalPose(self, request, context):
         async for response in unary_stream_request(
-                self._stub.SetGimbalPoseENU,
-                request,
-                self._logger
-                ):
-            yield response
-    
-    async def SetGimbalPoseBody(self, request, context):
-        async for response in unary_stream_request(
-                self._stub.SetGimbalPoseBody,
+                self._stub.SetGimbalPose,
                 request,
                 self._logger
                 ):

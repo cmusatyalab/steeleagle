@@ -2,7 +2,15 @@ import logging
 import os
 import yaml
 
-logger = logging.getLogger(__name__)
+def import_config():
+    '''
+    Import configuration file from environment variable.
+    '''
+    config_path = os.environ.get('CONFIGPATH')
+    with open(config_path, 'r') as file:
+        cfg = yaml.safe_load(file)
+        return cfg
+
 config = import_config()
 
 def query_config(access_token):
@@ -20,15 +28,6 @@ def query_config(access_token):
             raise ValueError(f"Malformed access token: {access_token}")
         result = result[i] # Access the corresponding field
     return result
-
-def import_config():
-    '''
-    Import configuration file from environment variable.
-    '''
-    config_path = os.environ.get('CONFIG_PATH')
-    with open(config_path, 'r') as file:
-        cfg = yaml.safe_load(file)
-        return cfg
 
 def setup_logging(logger, access_token=None):
     '''

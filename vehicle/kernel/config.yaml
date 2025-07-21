@@ -1,10 +1,10 @@
 kernel:
   control_proxy_service:
-    endpoint: 'localhost:3000'
+    endpoint: 'localhost:9000'
   report_service:
-    endpoint: 'localhost:3001'
+    endpoint: 'localhost:9001'
   compute_service:
-    endpoint: 'localhost:3002'
+    endpoint: 'localhost:9002'
 driver:
   # TODO: Type, manufacturer, and model must match the names of the
   # associated directories within /driver/ and the base name of
@@ -15,26 +15,26 @@ driver:
   model: 'Anafi'
   # TODO: This is the name that will be associated with this
   # vehicle on the backend and GCS
-  name: ''
+  name: 'test'
   # TODO: Check whether the chosen drone model requires kwargs;
   # some may require a connection address to be passed in
   kwargs: {}
   control_service:
-    endpoint: 'localhost:3010'
+    endpoint: 'localhost:9010'
   telemetry_stream:
-    endpoint: 'localhost:3011'
+    endpoint: 'localhost:9011'
   imaging_sensor_stream:
-    endpoint: 'localhost:3012'
+    endpoint: 'localhost:9012'
 mission:
   mission_service:
-    endpoint: 'localhost:3020'
+    endpoint: 'localhost:9020'
 cloudlet:
   # TODO: Change the following endpoints in accordance with the 
   # network address of the backend
   swarm_controller:
-    endpoint: ''
+    endpoint: 'cloudlet033.elijah.cs.cmu.edu:8000'
   remote_compute_service:
-    endpoint: '' 
+    endpoint: 'cloudlet033.elijah.cs.cmu.edu:9000' 
 logging:
   # Whether or not to log to mcap for mission replay
   log_to_mcap: true
@@ -43,5 +43,7 @@ logging:
   # Log to a custom filename; otherwise will autogenerate
   # a name based on name, date, and time
   custom_filename: ''
-  # Controls whether all services log to the same file
-  merged_log: true
+  # Path to log file
+  file_path: 'logs/'
+  # Log level
+  log_level: 'INFO'

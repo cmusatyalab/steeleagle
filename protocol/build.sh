@@ -7,7 +7,8 @@ $PROTOC_PATH -I. \
        	common.proto \
        	control.proto \
 	telemetry.proto \
-	result.proto
+	result.proto \
+	log.proto
 
 # Build the service protocols
 $PROTOC_PATH -I. \

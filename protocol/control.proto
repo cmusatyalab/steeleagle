@@ -6,155 +6,29 @@ syntax = "proto3";
 package protocol.control;
 
 import "common.proto";
-import "driver_service.proto";
-import "mission_service.proto";
-import "compute_service.proto";
-
-/*
- * Vehicle related control messages
- */
-message VehicleControlRequest {
-  repeated string vehicle_ids = 1;
-  oneof param {
-    protocol.driver_service.ArmRequest arm = 2;
-    protocol.driver_service.SpinUpRequest spin_up = 3;
-    protocol.driver_service.SpinDownRequest spin_down = 4;
-    protocol.driver_service.HoldRequest hold = 5;
-    protocol.driver_service.KillRequest kill = 6;
-    protocol.driver_service.SetHomeRequest set_home = 7;
-    protocol.driver_service.ReturnToHomeRequest return_to_home = 8;
-    protocol.driver_service.SetGlobalPositionRequest 
-	set_global_position = 9;
-    protocol.driver_service.SetRelativePositionENURequest
-	set_relative_position_enu = 10;
-    protocol.driver_service.SetRelativePositionBodyRequest
-	set_relative_position_body = 11;
-    protocol.driver_service.SetVelocityENURequest
-	set_velocity_enu = 12;
-    protocol.driver_service.SetVelocityBodyRequest
-	set_velocity_body = 13;
-    protocol.driver_service.SetHeadingRequest
-	set_heading = 14;
-    protocol.driver_service.SetGimbalPoseENURequest
-	set_gimbal_pose_enu = 15;
-    protocol.driver_service.SetGimbalPoseBodyRequest
-	set_gimbal_pose_body = 16;
-    protocol.driver_service.ConfigureImagingSensorStreamRequest
-	configure_imaging_sensor_stream = 17;
-    protocol.driver_service.ConfigureTelemetryStreamRequest
-	configure_telemetry_stream = 18;
-  }
-}
-
-message VehicleControlResponse {
-  oneof param {
-    protocol.driver_service.ArmResponse arm = 1;
-    protocol.driver_service.SpinUpResponse spin_up = 2;
-    protocol.driver_service.SpinDownResponse spin_down = 3;
-    protocol.driver_service.HoldResponse hold = 4;
-    protocol.driver_service.KillResponse kill = 5;
-    protocol.driver_service.SetHomeResponse set_home = 6;
-    protocol.driver_service.ReturnToHomeResponse return_to_home = 7;
-    protocol.driver_service.SetGlobalPositionResponse 
-	set_global_position = 8;
-    protocol.driver_service.SetRelativePositionENUResponse
-	set_relative_position_enu = 9;
-    protocol.driver_service.SetRelativePositionBodyResponse
-	set_relative_position_body = 10;
-    protocol.driver_service.SetVelocityENUResponse
-	set_velocity_enu = 11;
-    protocol.driver_service.SetVelocityBodyResponse
-	set_velocity_body = 12;
-    protocol.driver_service.SetHeadingResponse
-	set_heading = 13;
-    protocol.driver_service.SetGimbalPoseENUResponse
-	set_gimbal_pose_enu = 14;
-    protocol.driver_service.SetGimbalPoseBodyResponse
-	set_gimbal_pose_body = 15;
-    protocol.driver_service.ConfigureImagingSensorStreamResponse
-	configure_imaging_sensor_stream = 16;
-    protocol.driver_service.ConfigureTelemetryStreamResponse
-	configure_telemetry_stream = 17;
-  }
-}
-
-/*
- * Mission related control messages
- */
-message MissionControlRequest {
-  repeated string vehicle_ids = 1;
-  oneof param {
-    protocol.mission_service.UploadRequest upload = 2;
-    protocol.mission_service.StartRequest start = 3;
-    protocol.mission_service.StopRequest stop = 4;
-    protocol.mission_service.NotifyRequest notify = 5;
-    protocol.mission_service.ConfigureTelemetryStreamRequest
-	configure_telemetry_stream = 6;
-  }
-}
-
-message MissionControlResponse {
-  oneof param {
-    protocol.mission_service.UploadResponse upload = 1;
-    protocol.mission_service.StartResponse start = 2;
-    protocol.mission_service.StopResponse stop = 3;
-    protocol.mission_service.NotifyResponse notify = 4;
-    protocol.mission_service.ConfigureTelemetryStreamResponse
-	configure_telemetry_stream = 5;
-  }
-}
-
-/*
- * Compute related control messages
- */
-message ComputeControlRequest {
-  repeated string vehicle_ids = 1;
-  oneof param {
-    protocol.compute_service.GetAvailableDatasinksRequest
-	get_available_datasinks = 2;
-    protocol.compute_service.ConfigureDatasinksRequest
-	configure_datasinks = 3;
-  }
-} 
-
-message ComputeControlResponse {
-  oneof param {
-    protocol.compute_service.GetAvailableDatasinksResponse
-	get_available_datasinks = 1;
-    protocol.compute_service.ConfigureDatasinksResponse
-	configure_datasinks = 2;
-  }
-} 
+import "google/protobuf/any.proto";
 
 /*
  * Directive for remote control from the Swarm Controller
  */
 message ControlRequest {
   protocol.common.Request request = 1;
-  oneof param {
-    VehicleControlRequest vehicle_control = 2;
-    MissionControlRequest mission_control = 3;
-    ComputeControlRequest compute_control = 4;    
-  }
+  google.protobuf.Any control_message = 2;
 }
 
 message ControlResponse {
   protocol.common.Response response = 1;
-  oneof param {
-    VehicleControlResponse vehicle_control = 2;
-    MissionControlResponse mission_control = 3;
-    ComputeControlResponse compute_control = 4;    
-  }
+  google.protobuf.Any control_result = 2;
 }
 
 /*
  * Mode switch for control over the vehicle
  * REMOTE -> Swarm Controller
- * AUTONOMOUS -> Mission
- * MANUAL -> Local joystick
+ * LOCAL -> Mission
+ * RC -> Remote control joystick
  */
-enum ControlStatus {
+enum ControlMode {
   REMOTE = 0;
-  AUTONOMOUS = 1;
-  MANUAL = 2;
+  LOCAL = 1;
+  RC = 2;
 }

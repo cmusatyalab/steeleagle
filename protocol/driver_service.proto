@@ -19,11 +19,13 @@ service Driver {
   rpc Disconnect (DisconnectRequest) returns (DisconnectResponse) {}
   // Order the vehicle to arm
   rpc Arm (ArmRequest) returns (ArmResponse) {}
-  // Order the vehicle to spin up
-  rpc SpinUp (SpinUpRequest) returns (stream SpinUpResponse) {}
-  // Spin down the vehicle at its current position
-  rpc SpinDown (SpinDownRequest) returns (stream SpinDownResponse) {}
-  // Order the vehicle to hover
+  // Order the vehicle to disarm
+  rpc Disarm (DisarmRequest) returns (DisarmResponse) {}
+  // Order the vehicle to take off
+  rpc TakeOff (TakeOffRequest) returns (stream TakeOffResponse) {}
+  // Land the vehicle at its current position
+  rpc Land (LandRequest) returns (stream LandResponse) {}
+  // Order the vehicle to hold/loiter
   rpc Hold (HoldRequest) returns (stream HoldResponse) {}
   // Emergency shutdown of the vehicle motors
   rpc Kill (KillRequest) returns (stream KillResponse) {}
@@ -37,34 +39,21 @@ service Driver {
   rpc SetGlobalPosition (SetGlobalPositionRequest)
     returns (stream SetGlobalPositionResponse) {}
   // Transit the vehicle to a target position relative to
-  // the global ENU (East, North, Up) frame of reference, 
-  // in meters
-  rpc SetRelativePositionENU (SetRelativePositionENURequest)
-    returns (stream SetRelativePositionENUResponse) {}
-  // Transit the vehicle to a target position relative to
-  // the vehicle frame of reference, in meters
-  rpc SetRelativePositionBody (SetRelativePositionBodyRequest) 
-    returns (stream SetRelativePositionBodyResponse) {}
-  // Transit the vehicle at a target velocity in
-  // the global ENU (East, North, Up) frame of reference,
+  // the global ENU (East, North, Up) or vehicle frame of 
+  // reference, in meters
+  rpc SetRelativePosition (SetRelativePositionRequest)
+    returns (stream SetRelativePositionResponse) {}
+  // Transit the vehicle at a target velocity in the global
+  // ENU (East, North, Up) or vehicle frame of reference, 
   // in meters per second
-  rpc SetVelocityENU (SetVelocityENURequest)
-    returns (stream SetVelocityENUResponse) {}
-  // Transit the vehicle at a target velocity in
-  // the vehicle frame of reference, in meters per second
-  rpc SetVelocityBody (SetVelocityBodyRequest)
-    returns (stream SetVelocityBodyResponse) {}
-  // Turns the vehicle to face a heading or global position
+  rpc SetVelocity (SetVelocityRequest)
+    returns (stream SetVelocityResponse) {}
+  // Sets the heading of the vehicle
   rpc SetHeading (SetHeadingRequest)
     returns (stream SetHeadingResponse) {}
-  // Set the pose of the target gimbal in the global
-  // ENU (East, North, Up) frame of reference
-  rpc SetGimbalPoseENU (SetGimbalPoseENURequest)
-    returns (stream SetGimbalPoseENUResponse) {}
-  // Set the pose of the target gimbal in the vehicle
-  // frame of reference
-  rpc SetGimbalPoseBody (SetGimbalPoseBodyRequest)
-    returns (stream SetGimbalPoseBodyResponse) {}
+  // Set the pose of the target gimbal
+  rpc SetGimbalPose (SetGimbalPoseRequest)
+    returns (stream SetGimbalPoseResponse) {}
   // Set the vehicle video stream parameters
   rpc ConfigureImagingSensorStream (ConfigureImagingSensorStreamRequest)
     returns (ConfigureImagingSensorStreamResponse) {}
@@ -106,21 +95,29 @@ message ArmResponse {
   protocol.common.Response response = 1;
 }
 
-message SpinUpRequest {
+message DisarmRequest {
+  protocol.common.Request request = 1;
+}
+
+message DisarmResponse {
+  protocol.common.Response response = 1;
+}
+
+message TakeOffRequest {
   protocol.common.Request request = 1;
   // Take off height in relative altitude [meters]
   int32 take_off_altitude = 2;
 }
 
-message SpinUpResponse {
+message TakeOffResponse {
   protocol.common.Response response = 1;
 }
 
-message SpinDownRequest {
+message LandRequest {
   protocol.common.Request request = 1;
 }
 
-message SpinDownResponse {
+message LandResponse {
   protocol.common.Response response = 1;
 }
 
@@ -163,8 +160,8 @@ enum AltitudeMode {
 }
 
 enum HeadingMode {
-  TO_TARGET = 0; // Orient towards the target location during transit
-  HEADING_START = 1; // Orient towards the given heading, then transit
+  TO_TARGET = 0; // Orient towards the target location
+  HEADING_START = 1; // Orient towards the given heading
 }
 
 message SetGlobalPositionRequest {
@@ -178,66 +175,51 @@ message SetGlobalPositionRequest {
   // Maximum velocity during transit, north_vel determines horizontal
   // velocity, up_vel determines vertical velocity, and angular_vel
   // determines angular velocity
-  protocol.common.VelocityENU max_velocity = 6;
+  protocol.common.Velocity max_velocity = 6;
 }
 
 message SetGlobalPositionResponse {
   protocol.common.Response response = 1;
 }
 
-message SetRelativePositionENURequest {
+enum ReferenceFrame {
+  BODY = 0; // Vehicle reference frame
+  ENU = 1;  // Global (East, North, Up) reference frame
+}
+
+message SetRelativePositionRequest {
   protocol.common.Request request = 1;
-  // Target position in the ENU coordinate frame
-  protocol.common.PositionENU position = 2;
-  // Maximum velocity during transit, north_vel determines horizontal
+  // Target position
+  protocol.common.Position position = 2;
+  // Maximum velocity during transit, x_vel determines horizontal
   // velocity, up_vel determines vertical velocity, and angular_vel
   // determines angular velocity
-  protocol.common.VelocityENU max_velocity = 3;
+  protocol.common.Velocity max_velocity = 3;
+  // Frame of reference
+  ReferenceFrame frame = 4;
 }
 
-message SetRelativePositionENUResponse {
+message SetRelativePositionResponse {
   protocol.common.Response response = 1;
 }
 
-message SetRelativePositionBodyRequest {
+message SetVelocityRequest {
   protocol.common.Request request = 1;
-  // Target position in the body coordinate frame
-  protocol.common.PositionBody position = 2;
-  // Maximum velocity during transit, forward_vel determines horizontal
-  // velocity, up_vel determines vertical velocity, and angular_vel
-  // determines angular velocity
-  protocol.common.VelocityBody max_velocity = 3;
+  // Target velocity
+  protocol.common.Velocity velocity = 2;
+  // Frame of reference
+  ReferenceFrame frame = 3;
 }
 
-message SetRelativePositionBodyResponse {
-  protocol.common.Response response = 1;
-}
-
-message SetVelocityENURequest {
-  protocol.common.Request request = 1;
-  // Velocity in the ENU coordinate frame
-  protocol.common.VelocityENU velocity = 2;
-}
-
-message SetVelocityENUResponse {
-  protocol.common.Response response = 1;
-}
-
-message SetVelocityBodyRequest {
-  protocol.common.Request request = 1;
-  // Velocity in the body coordinate frame
-  protocol.common.VelocityBody velocity = 2;
-}
-
-message SetVelocityBodyResponse {
+message SetVelocityResponse {
   protocol.common.Response response = 1;
 }
 
 message SetHeadingRequest {
   protocol.common.Request request = 1;
+  // Target heading or global location to look at
   protocol.common.Location location = 2;
-  // Determines whether to use provided heading (HEADING_START)
-  // or to look at target GPS (TO_TARGET)
+  // Determines how the drone will orient
   HeadingMode heading_mode = 5;
 }
 
@@ -245,34 +227,20 @@ message SetHeadingResponse {
   protocol.common.Response response = 1;
 }
 
-enum GimbalMode {
-  // Provided pose is absolute
-  ABSOLUTE_ANGLE = 0;
-  // Provided pose is relative to current pose
-  RELATIVE_ANGLE = 1;
-  // Provided values are angular velocities
-  ANGULAR_VELOCITY = 2;
+enum PoseMode {
+  ANGLE = 0; // Absolute angle
+  OFFSET = 1; // Offset from current
+  VELOCITY = 2; // Rotational velocities
 }
 
-message SetGimbalPoseBodyRequest {
+message SetGimbalPoseRequest {
   protocol.common.Request request = 1;
   uint32 gimbal_id = 2; // ID of the target gimbal
-  protocol.common.Pose pose = 3; // Target pose in the body coordinate frame
-  GimbalMode mode = 4; // Specifies how to interpret the target pose
+  protocol.common.Pose pose = 3; // Target pose
+  PoseMode mode = 4; // Specifies how to interpret the target pose
 }
 
-message SetGimbalPoseBodyResponse {
-  protocol.common.Response response = 1;
-}
-
-message SetGimbalPoseENURequest {
-  protocol.common.Request request = 1;
-  uint32 gimbal_id = 2; // ID of the target gimbal
-  protocol.common.Pose pose = 3; // Target pose in the ENU coordinate frame
-  GimbalMode mode = 4; // Specifies how to interpret the target pose
-}
-
-message SetGimbalPoseENUResponse {
+message SetGimbalPoseResponse {
   protocol.common.Response response = 1;
 }
 

@@ -66,11 +66,11 @@ message SetpointInfo {
   // The current setpoint for the vehicle
   oneof setpoint {
     // Default to all zeros local position setpoint
-    protocol.common.PositionBody position_body_sp = 1;
-    protocol.common.PositionENU position_enu_sp = 2;
+    protocol.common.Position position_body_sp = 1;
+    protocol.common.Position position_enu_sp = 2;
     protocol.common.Location global_sp = 3;
-    protocol.common.VelocityBody velocity_body_sp = 4;
-    protocol.common.VelocityENU velocity_enu_sp = 5;
+    protocol.common.Velocity velocity_body_sp = 4;
+    protocol.common.Velocity velocity_enu_sp = 5;
   }
 }
 
@@ -82,13 +82,13 @@ message PositionInfo {
   // Current local position of the vehicle in the global ENU
   // (East, North, Up) coordinate frame, relative to take off
   // position
-  protocol.common.PositionENU relative_position = 3;
+  protocol.common.Position relative_position = 3;
   // Current velocity of the vehicle in the global ENU
   // (East, North, Up) coordinate frame
-  protocol.common.VelocityENU velocity_enu = 4;
+  protocol.common.Velocity velocity_enu = 4;
   // Current velocity of the vehicle in the body
   // (forward, right, up) coordinate frame
-  protocol.common.VelocityBody velocity_body = 5;
+  protocol.common.Velocity velocity_body = 5;
   // Info on the current vehicle setpoint
   SetpointInfo setpoint_info = 6; 
 }
