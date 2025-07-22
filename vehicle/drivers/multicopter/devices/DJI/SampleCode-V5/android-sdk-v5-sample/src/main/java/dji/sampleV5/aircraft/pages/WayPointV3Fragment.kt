@@ -17,6 +17,7 @@ import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.provider.DocumentsContract
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -119,13 +120,14 @@ class WayPointV3Fragment : DJIFragment() {
     private val OPEN_FILE_CHOOSER = 0
     private val OPEN_DOCUMENT_TREE = 1
     private val OPEN_MANAGE_EXTERNAL_STORAGE = 2
-    private val missionGlobalModel= MissionGlobalModel()
+    private val missionGlobalModel = MissionGlobalModel()
 
     private val showWaypoints: ArrayList<WaypointInfoModel> = ArrayList()
-    private val interestPoint : WaylineLocationCoordinate3D = WaylineLocationCoordinate3D()
+    private val interestPoint: WaylineLocationCoordinate3D = WaylineLocationCoordinate3D()
     private val pointMarkers: ArrayList<DJIMarker?> = ArrayList()
-    var curMissionPath = ""
-    val rootDir = DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), WAYPOINT_SAMPLE_FILE_DIR)
+    var curMissionPath = "foo"
+    val rootDir =
+        DiskUtil.getExternalCacheDirPath(ContextUtil.getContext(), WAYPOINT_SAMPLE_FILE_DIR)
     var validLenth: Int = 2
     var curMissionExecuteState: WaypointMissionExecuteState? = null
     var selectWaylines: ArrayList<Int> = ArrayList()
@@ -193,7 +195,8 @@ class WayPointV3Fragment : DJIFragment() {
             it?.let {
                 when {
                     it.error != null -> {
-                        binding?.missionUploadStateTv?.text = "Upload State: error:${getErroMsg(it.error)} "
+                        binding?.missionUploadStateTv?.text =
+                            "Upload State: error:${getErroMsg(it.error)} "
                     }
 
                     it.tips.isNotEmpty() -> {
@@ -201,7 +204,8 @@ class WayPointV3Fragment : DJIFragment() {
                     }
 
                     else -> {
-                        binding?.missionUploadStateTv?.text = "Upload State: progress:${it.updateProgress} "
+                        binding?.missionUploadStateTv?.text =
+                            "Upload State: progress:${it.updateProgress} "
                     }
                 }
 
@@ -216,7 +220,7 @@ class WayPointV3Fragment : DJIFragment() {
             }
 
             var curFlightMode = wayPointV3VM.getFlightMode()
-            if (curFlightMode == FlightMode.GO_HOME || curFlightMode ==FlightMode.AUTO_LANDING) {
+            if (curFlightMode == FlightMode.GO_HOME || curFlightMode == FlightMode.AUTO_LANDING) {
                 ToastUtils.showToast("Please exit ${curFlightMode.name} mode")
                 return@setOnClickListener
             }
@@ -309,19 +313,20 @@ class WayPointV3Fragment : DJIFragment() {
 
         binding?.btnBreakpointResume?.setOnClickListener {
             var missionName = FileUtils.getFileName(curMissionPath, WAYPOINT_FILE_TAG);
-            WaypointMissionManager.getInstance().queryBreakPointInfoFromAircraft(missionName, object :
-                CommonCallbacks.CompletionCallbackWithParam<BreakPointInfo> {
-                override fun onSuccess(breakPointInfo: BreakPointInfo?) {
-                    breakPointInfo?.let {
-                        resumeFromBreakPoint(missionName, it)
+            WaypointMissionManager.getInstance()
+                .queryBreakPointInfoFromAircraft(missionName, object :
+                    CommonCallbacks.CompletionCallbackWithParam<BreakPointInfo> {
+                    override fun onSuccess(breakPointInfo: BreakPointInfo?) {
+                        breakPointInfo?.let {
+                            resumeFromBreakPoint(missionName, it)
+                        }
                     }
-                }
 
-                override fun onFailure(error: IDJIError) {
-                    ToastUtils.showToast("queryBreakPointInfo error $error")
-                }
+                    override fun onFailure(error: IDJIError) {
+                        ToastUtils.showToast("queryBreakPointInfo error $error")
+                    }
 
-            })
+                })
         }
 
         addMapListener()
@@ -333,7 +338,8 @@ class WayPointV3Fragment : DJIFragment() {
     private fun saveKmz(showToast: Boolean) {
         val kmzOutPath = rootDir + "generate_test.kmz"
         val waylineMission: WaylineMission = createWaylineMission()
-        val missionConfig: WaylineMissionConfig = KMZTestUtil.createMissionConfig(missionGlobalModel)
+        val missionConfig: WaylineMissionConfig =
+            KMZTestUtil.createMissionConfig(missionGlobalModel)
         val template: Template = KMZTestUtil.createTemplate(showWaypoints)
         WPMZManager.getInstance()
             .generateKMZFile(kmzOutPath, waylineMission, missionConfig, template)
@@ -347,7 +353,10 @@ class WayPointV3Fragment : DJIFragment() {
 
     private fun observeAircraftLocation() {
         val location = KeyManager.getInstance()
-            .getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation), LocationCoordinate2D(0.0, 0.0))
+            .getValue(
+                KeyTools.createKey(FlightControllerKey.KeyAircraftLocation),
+                LocationCoordinate2D(0.0, 0.0)
+            )
         val isEnable = SimulatorManager.getInstance().isSimulatorEnabled
         if (!GpsUtils.isLocationValid(location) && !isEnable) {
             ToastUtils.showToast("please open simulator")
@@ -357,22 +366,23 @@ class WayPointV3Fragment : DJIFragment() {
     private fun observeBtnResume() {
         binding?.btnMissionQuery?.setOnClickListener {
             var missionName = FileUtils.getFileName(curMissionPath, WAYPOINT_FILE_TAG);
-            WaypointMissionManager.getInstance().queryBreakPointInfoFromAircraft(missionName, object :
-                CommonCallbacks.CompletionCallbackWithParam<BreakPointInfo> {
-                override fun onSuccess(breakPointInfo: BreakPointInfo?) {
-                    breakPointInfo?.let {
-                        ToastUtils.showLongToast(
-                            "BreakPointInfo : waypointID-${breakPointInfo.waypointID} " +
-                                    "progress:${breakPointInfo.segmentProgress}  location:${breakPointInfo.location}"
-                        )
+            WaypointMissionManager.getInstance()
+                .queryBreakPointInfoFromAircraft(missionName, object :
+                    CommonCallbacks.CompletionCallbackWithParam<BreakPointInfo> {
+                    override fun onSuccess(breakPointInfo: BreakPointInfo?) {
+                        breakPointInfo?.let {
+                            ToastUtils.showLongToast(
+                                "BreakPointInfo : waypointID-${breakPointInfo.waypointID} " +
+                                        "progress:${breakPointInfo.segmentProgress}  location:${breakPointInfo.location}"
+                            )
+                        }
                     }
-                }
 
-                override fun onFailure(error: IDJIError) {
-                    ToastUtils.showToast("queryBreakPointInfo error $error")
-                }
+                    override fun onFailure(error: IDJIError) {
+                        ToastUtils.showToast("queryBreakPointInfo error $error")
+                    }
 
-            })
+                })
         }
         binding?.btnMissionResume?.setOnClickListener {
             wayPointV3VM.resumeMission(object : CommonCallbacks.CompletionCallback {
@@ -391,7 +401,13 @@ class WayPointV3Fragment : DJIFragment() {
             val wp_breakinfo_progress = binding?.wpBreakProgress?.text.toString()
             val resume_type = getResumeType()
             if (!TextUtils.isEmpty(wp_breakinfo_index) && !TextUtils.isEmpty(wp_breakinfo_progress)) {
-                val breakPointInfo = BreakPointInfo(0, wp_breakinfo_index.toInt(), wp_breakinfo_progress.toDouble(), null, resume_type)
+                val breakPointInfo = BreakPointInfo(
+                    0,
+                    wp_breakinfo_index.toInt(),
+                    wp_breakinfo_progress.toDouble(),
+                    null,
+                    resume_type
+                )
                 wayPointV3VM.resumeMission(breakPointInfo, object :
                     CommonCallbacks.CompletionCallback {
                     override fun onSuccess() {
@@ -399,7 +415,11 @@ class WayPointV3Fragment : DJIFragment() {
                     }
 
                     override fun onFailure(error: IDJIError) {
-                        ToastUtils.showToast("resumeMission with BreakInfo Failed " + getErroMsg(error))
+                        ToastUtils.showToast(
+                            "resumeMission with BreakInfo Failed " + getErroMsg(
+                                error
+                            )
+                        )
                     }
                 })
             } else {
@@ -480,15 +500,17 @@ class WayPointV3Fragment : DJIFragment() {
         }
         wayPointV3VM.addWaylineExecutingInfoListener(object : WaylineExecutingInfoListener {
             override fun onWaylineExecutingInfoUpdate(it: WaylineExecutingInfo) {
-                binding?.waylineExecuteStateTv?.text = "Wayline Execute Info WaylineID:${it.waylineID} \n" +
-                        "WaypointIndex:${it.currentWaypointIndex} \n" +
-                        "MissionName : ${it.missionFileName}"
+                binding?.waylineExecuteStateTv?.text =
+                    "Wayline Execute Info WaylineID:${it.waylineID} \n" +
+                            "WaypointIndex:${it.currentWaypointIndex} \n" +
+                            "MissionName : ${it.missionFileName}"
             }
 
             override fun onWaylineExecutingInterruptReasonUpdate(error: IDJIError?) {
                 if (error != null) {
                     val originStr = binding?.missionExecuteStateTv?.text.toString()
-                    binding?.waylineExecuteStateTv?.text = "$originStr\n InterruptReason:${error.errorCode()}"
+                    binding?.waylineExecuteStateTv?.text =
+                        "$originStr\n InterruptReason:${error.errorCode()}"
                     LogUtils.e(LogPath.SAMPLE, "interrupt error:${error.errorCode()}")
                 }
             }
@@ -502,7 +524,8 @@ class WayPointV3Fragment : DJIFragment() {
             }
 
             override fun onExecutionStart(actionGroup: Int, actionId: Int) {
-                binding?.waypintActionStateTv?.text = "onExecutionStart:${actionGroup}: ${actionId} "
+                binding?.waypintActionStateTv?.text =
+                    "onExecutionStart:${actionGroup}: ${actionId} "
             }
 
             @Deprecated("Deprecated in Java")
@@ -511,7 +534,8 @@ class WayPointV3Fragment : DJIFragment() {
             }
 
             override fun onExecutionFinish(actionGroup: Int, actionId: Int, error: IDJIError?) {
-                binding?.waypintActionStateTv?.text = "onExecutionFinish:${actionGroup}: ${actionId} "
+                binding?.waypintActionStateTv?.text =
+                    "onExecutionFinish:${actionGroup}: ${actionId} "
             }
 
         })
@@ -535,25 +559,39 @@ class WayPointV3Fragment : DJIFragment() {
 
         mDisposable = Single.fromCallable {
             //在cache 目录创建一个wmpz文件夹，并将template.kml 与 waylines.wpml 拷贝进wpmz ，然后压缩wpmz文件夹
-            WPMZParserManager.unZipFolder(ContextUtil.getContext(), curMissionPath, unzipFolder.path, false)
+            WPMZParserManager.unZipFolder(
+                ContextUtil.getContext(),
+                curMissionPath,
+                unzipFolder.path,
+                false
+            )
             FileUtils.readFile(waylineFile.path, null)
         }.subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { wpmlContent: String? ->
-                    DialogUtil.showInputDialog(requireActivity(), "", wpmlContent, "", false, object :
-                        CommonCallbacks.CompletionCallbackWithParam<String> {
-                        override fun onSuccess(newContent: String?) {
-                            newContent?.let {
-                                updateWPML(it)
+                    DialogUtil.showInputDialog(
+                        requireActivity(),
+                        "",
+                        wpmlContent,
+                        "",
+                        false,
+                        object :
+                            CommonCallbacks.CompletionCallbackWithParam<String> {
+                            override fun onSuccess(newContent: String?) {
+                                newContent?.let {
+                                    updateWPML(it)
+                                }
                             }
-                        }
 
-                        override fun onFailure(error: IDJIError) {
-                            LogUtils.e(LogPath.SAMPLE, "show input Dialog Failed ${error.description()} ")
-                        }
+                            override fun onFailure(error: IDJIError) {
+                                LogUtils.e(
+                                    LogPath.SAMPLE,
+                                    "show input Dialog Failed ${error.description()} "
+                                )
+                            }
 
-                    })
+                        })
                 }
             ) { throwable: Throwable ->
                 LogUtils.e(LogPath.SAMPLE, "show input Dialog Failed ${throwable.message} ")
@@ -590,15 +628,16 @@ class WayPointV3Fragment : DJIFragment() {
 
 
         if (requestCode == OPEN_MANAGE_EXTERNAL_STORAGE
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
+        ) {
             showFileChooser()
         }
     }
 
     fun checkPath() {
-        LogUtils.i(LogPath.SAMPLE, "curPath is $curMissionPath")
+        Log.i("MyApp", "curPath is $curMissionPath")
         if (!curMissionPath.contains(".kmz") && !curMissionPath.contains(".kml")) {
-            ToastUtils.showToast("Please choose KMZ/KML file")
+            ToastUtils.showToast("Please choose KMZ/KML file REALly")
         } else {
 
             // Choose a directory using the system's file picker.
@@ -607,7 +646,9 @@ class WayPointV3Fragment : DJIFragment() {
             if (curMissionPath.contains(".kml")) {
                 if (WPMZManager.getInstance().transKMLtoKMZ(curMissionPath, "", getHeightMode())) {
                     curMissionPath = Environment.getExternalStorageDirectory()
-                        .toString() + "/DJI/" + requireContext().packageName + "/KMZ/OutPath/" + getName(curMissionPath) + ".kmz"
+                        .toString() + "/DJI/" + requireContext().packageName + "/KMZ/OutPath/" + getName(
+                        curMissionPath
+                    ) + ".kmz"
                     ToastUtils.showToast("Trans kml success " + curMissionPath)
                 } else {
                     ToastUtils.showToast("Trans kml failed!")
@@ -645,13 +686,16 @@ class WayPointV3Fragment : DJIFragment() {
         }
     }
 
-    var lancher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        result?.apply {
-            val uri = data?.data
-            curMissionPath = DocumentUtil.getPath(requireContext(), uri)
-            checkPath()
+    var lancher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            result?.apply {
+                val uri = data?.data
+                Log.i("MyApp", "Data: " + data + " URI: " + uri)
+                curMissionPath = DocumentUtil.getPath(requireContext(), uri)
+                Log.i("MyApp", "curMissionPath: " + curMissionPath);
+                checkPath()
+            }
         }
-    }
 
     private fun showFileChooser() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
@@ -720,9 +764,12 @@ class WayPointV3Fragment : DJIFragment() {
 
         wayPointV3VM.flightControlState.observe(viewLifecycleOwner) {
             it?.let {
-                binding?.waylineAircraftHeight?.text = String.format("Aircraft Height: %.2f", it.height)
-                binding?.waylineAircraftDistance?.text = String.format("Aircraft Distance: %.2f", it.distance)
-                binding?.waylineAircraftSpeed?.text = String.format("Aircraft Speed: %.2f", it.speed)
+                binding?.waylineAircraftHeight?.text =
+                    String.format("Aircraft Height: %.2f", it.height)
+                binding?.waylineAircraftDistance?.text =
+                    String.format("Aircraft Distance: %.2f", it.distance)
+                binding?.waylineAircraftSpeed?.text =
+                    String.format("Aircraft Speed: %.2f", it.speed)
             }
         }
     }
@@ -802,7 +849,8 @@ class WayPointV3Fragment : DJIFragment() {
     fun markWaypoints() {
         // version参数实际未用到
         var waypoints: ArrayList<WaylineExecuteWaypoint> = ArrayList<WaylineExecuteWaypoint>()
-        val parseInfo  = WPMZManager.getInstance().getKMZInfo(curMissionPath).waylineWaylinesParseInfo
+        val parseInfo =
+            WPMZManager.getInstance().getKMZInfo(curMissionPath).waylineWaylinesParseInfo
         var waylines = parseInfo.waylines
         waylines.forEach() {
             waypoints.addAll(it.waypoints)
@@ -814,11 +862,11 @@ class WayPointV3Fragment : DJIFragment() {
         }
     }
 
-    private fun checkSpecialActionType(it: Wayline) : Boolean {
-        it.actionGroups.forEach(){
-            it.actions.forEach(){
-                if (it.actionType == WaylineActionType.MEGAPHONE || it.actionType == WaylineActionType.SEARCHLIGHT){
-                    LogUtils.i(LogPath.WAYPOINT , "kmz contains metaphone or light ${it.actionType}")
+    private fun checkSpecialActionType(it: Wayline): Boolean {
+        it.actionGroups.forEach() {
+            it.actions.forEach() {
+                if (it.actionType == WaylineActionType.MEGAPHONE || it.actionType == WaylineActionType.SEARCHLIGHT) {
+                    LogUtils.i(LogPath.WAYPOINT, "kmz contains metaphone or light ${it.actionType}")
                     return true
                 }
 
@@ -827,7 +875,7 @@ class WayPointV3Fragment : DJIFragment() {
         return false
     }
 
-    fun markWaypoint(latlong: DJILatLng, waypointIndex: Int) : DJIMarker?{
+    fun markWaypoint(latlong: DJILatLng, waypointIndex: Int): DJIMarker? {
         var markOptions = DJIMarkerOptions()
         markOptions.position(latlong)
         markOptions.icon(getMarkerRes(waypointIndex.toString(), 0f))
@@ -916,7 +964,10 @@ class WayPointV3Fragment : DJIFragment() {
         return showWaypoints.size
     }
 
-    private fun showWaypointDlg(djiLatLng: DJILatLng, callbacks: CommonCallbacks.CompletionCallbackWithParam<WaypointInfoModel>) {
+    private fun showWaypointDlg(
+        djiLatLng: DJILatLng,
+        callbacks: CommonCallbacks.CompletionCallbackWithParam<WaypointInfoModel>
+    ) {
         val builder = AlertDialog.Builder(requireActivity())
         val dialog = builder.create()
         val dialogView = View.inflate(requireActivity(), R.layout.dialog_add_waypoint, null)
@@ -930,10 +981,10 @@ class WayPointV3Fragment : DJIFragment() {
 
         val viewActionType1 = dialogView.findViewById<View>(R.id.action_type1) as DescSpinnerCell
         val actionValueView1 = dialogView.findViewById<EditText>(R.id.action_value1)
-        viewActionType.addOnItemSelectedListener(object : DescSpinnerCell.OnItemSelectedListener{
+        viewActionType.addOnItemSelectedListener(object : DescSpinnerCell.OnItemSelectedListener {
             override fun onItemSelected(position: Int) {
-               val curAction =  getCurActionType(position)
-                if ( curAction== WaypointActionType.CAMERA_ZOOM || curAction ==  WaypointActionType.STAY){
+                val curAction = getCurActionType(position)
+                if (curAction == WaypointActionType.CAMERA_ZOOM || curAction == WaypointActionType.STAY) {
                     actionValueView.visibility = View.VISIBLE
                 } else {
                     actionValueView.visibility = View.GONE
@@ -942,10 +993,10 @@ class WayPointV3Fragment : DJIFragment() {
 
         })
 
-        viewActionType1.addOnItemSelectedListener(object : DescSpinnerCell.OnItemSelectedListener{
+        viewActionType1.addOnItemSelectedListener(object : DescSpinnerCell.OnItemSelectedListener {
             override fun onItemSelected(position: Int) {
-                val curAction =  getCurActionType(position)
-                if ( curAction== WaypointActionType.CAMERA_ZOOM || curAction ==  WaypointActionType.STAY){
+                val curAction = getCurActionType(position)
+                if (curAction == WaypointActionType.CAMERA_ZOOM || curAction == WaypointActionType.STAY) {
                     actionValueView1.visibility = View.VISIBLE
                 } else {
                     actionValueView1.visibility = View.GONE
@@ -954,7 +1005,7 @@ class WayPointV3Fragment : DJIFragment() {
 
         })
 
-        showMultiAction.setOnClickListener{
+        showMultiAction.setOnClickListener {
             if (viewActionType1.visibility == View.VISIBLE) {
                 viewActionType1.visibility = View.GONE
             } else {
@@ -967,19 +1018,22 @@ class WayPointV3Fragment : DJIFragment() {
         val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel) as Button
         val cbUseGlobalSpeed = dialogView.findViewById<View>(R.id.cb_use_global_speed) as CheckBox
 
-        val etGlobalSpeed =  dialogView.findViewById<View>(R.id.global_speed) as EditText
-        val missionFinishType = dialogView.findViewById<View>(R.id.mission_finish_type) as DescSpinnerCell
+        val etGlobalSpeed = dialogView.findViewById<View>(R.id.global_speed) as EditText
+        val missionFinishType =
+            dialogView.findViewById<View>(R.id.mission_finish_type) as DescSpinnerCell
         val missionLostAction = dialogView.findViewById<View>(R.id.lost_action) as DescSpinnerCell
 
         //机头朝向
-        val aircraftHeadingModeView = dialogView.findViewById<View>(R.id.aircraft_heading_mode) as DescSpinnerCell
+        val aircraftHeadingModeView =
+            dialogView.findViewById<View>(R.id.aircraft_heading_mode) as DescSpinnerCell
         val headingAngleView = dialogView.findViewById<EditText>(R.id.aircraft_heading_angle)
         val poiLongitudeView = dialogView.findViewById<EditText>(R.id.poi_longitude)
         val poiLatitudeView = dialogView.findViewById<EditText>(R.id.poi_latitude)
         val poiHeightView = dialogView.findViewById<EditText>(R.id.poi_height)
 
         //航点间云台俯仰
-        val gimbalHeadingView = dialogView.findViewById<View>(R.id.gimbal_heading_mode) as DescSpinnerCell
+        val gimbalHeadingView =
+            dialogView.findViewById<View>(R.id.gimbal_heading_mode) as DescSpinnerCell
         val gimbalHeadingGimbalView = dialogView.findViewById<EditText>(R.id.gimbal_heading_angle)
 
 
@@ -1000,7 +1054,7 @@ class WayPointV3Fragment : DJIFragment() {
             waypoint.height = etHeight.text.toString().toDouble()
             // 根据坐标类型，如果为egm96 需要加上高程差
             waypoint.ellipsoidHeight = etHeight.text.toString().toDouble()
-            if (cbUseGlobalSpeed.isChecked){
+            if (cbUseGlobalSpeed.isChecked) {
                 waypoint.speed = etGlobalSpeed.text.toString().toDouble()
             } else {
                 waypoint.speed = etSpd.text.toString().toDouble()
@@ -1009,10 +1063,12 @@ class WayPointV3Fragment : DJIFragment() {
             waypoint.gimbalPitchAngle = gimbalHeadingGimbalView.text.toString().toDouble()
 
             //
-            val aircraftHeadingMode = WaylineWaypointYawMode.find(aircraftHeadingModeView.getSelectPosition())
+            val aircraftHeadingMode =
+                WaylineWaypointYawMode.find(aircraftHeadingModeView.getSelectPosition())
             val yawParam = WaylineWaypointYawParam()
 
-            yawParam.enableYawAngle = (aircraftHeadingMode == WaylineWaypointYawMode.SMOOTH_TRANSITION)
+            yawParam.enableYawAngle =
+                (aircraftHeadingMode == WaylineWaypointYawMode.SMOOTH_TRANSITION)
             yawParam.yawAngle = headingAngleView.text.toString().toDouble()
             yawParam.yawMode = aircraftHeadingMode
             yawParam.yawPathMode = WaylineWaypointYawPathMode.FOLLOW_BAD_ARC
@@ -1027,10 +1083,11 @@ class WayPointV3Fragment : DJIFragment() {
             //
 
             //
-            val gimbalYawMode = WaylineWaypointGimbalHeadingMode.find(gimbalHeadingView.getSelectPosition())
+            val gimbalYawMode =
+                WaylineWaypointGimbalHeadingMode.find(gimbalHeadingView.getSelectPosition())
             val gimbalYawParam = WaylineWaypointGimbalHeadingParam()
             gimbalYawParam.headingMode = gimbalYawMode
-            gimbalYawParam.pitchAngle =  gimbalHeadingGimbalView.text.toString().toDouble()
+            gimbalYawParam.pitchAngle = gimbalHeadingGimbalView.text.toString().toDouble()
             waypoint.gimbalHeadingParam = gimbalYawParam
             waypoint.isWaylineWaypointGimbalHeadingParamSet = true
 
@@ -1040,17 +1097,29 @@ class WayPointV3Fragment : DJIFragment() {
             val actionInfos: MutableList<WaylineActionInfo> = ArrayList()
             val curSelectAction = getCurActionType(viewActionType.getSelectPosition())
             val curSelectAction1 = getCurActionType(viewActionType1.getSelectPosition())
-            actionInfos.add(KMZTestUtil.createActionInfo(curSelectAction, actionValueView.text.toString().toInt()))
-            if (viewActionType1.visibility == View.VISIBLE){
-                actionInfos.add(KMZTestUtil.createActionInfo(curSelectAction1, actionValueView1.text.toString().toInt()))
+            actionInfos.add(
+                KMZTestUtil.createActionInfo(
+                    curSelectAction,
+                    actionValueView.text.toString().toInt()
+                )
+            )
+            if (viewActionType1.visibility == View.VISIBLE) {
+                actionInfos.add(
+                    KMZTestUtil.createActionInfo(
+                        curSelectAction1,
+                        actionValueView1.text.toString().toInt()
+                    )
+                )
             }
 
             waypointInfoModel.waylineWaypoint = waypoint
             waypointInfoModel.actionInfos = actionInfos
 
             missionGlobalModel.globalSpeed = etGlobalSpeed.text.toString().toDouble()
-            missionGlobalModel.finishAction = WaylineFinishedAction.find(missionFinishType.getSelectPosition())
-            missionGlobalModel.lostAction = WaylineExitOnRCLostAction.find(missionLostAction.getSelectPosition())
+            missionGlobalModel.finishAction =
+                WaylineFinishedAction.find(missionFinishType.getSelectPosition())
+            missionGlobalModel.lostAction =
+                WaylineExitOnRCLostAction.find(missionLostAction.getSelectPosition())
             callbacks.onSuccess(waypointInfoModel)
             dialog.dismiss()
         }
