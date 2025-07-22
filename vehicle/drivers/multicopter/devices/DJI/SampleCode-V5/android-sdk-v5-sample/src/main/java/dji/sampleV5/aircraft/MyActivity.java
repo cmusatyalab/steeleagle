@@ -6,6 +6,7 @@ import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_88
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,6 +21,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 
 import dji.sdk.keyvalue.key.BatteryKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
@@ -40,6 +44,7 @@ import dji.v5.common.error.IDJIError;
 import dji.v5.manager.KeyManager;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.KeyTools;
+import dji.v5.manager.aircraft.waypoint3.WaypointMissionManager;
 import dji.v5.manager.datacenter.camera.CameraStreamManager;
 import dji.v5.manager.intelligent.IntelligentFlightManager;
 import dji.v5.manager.intelligent.flyto.FlyToParam;
@@ -47,6 +52,7 @@ import dji.v5.manager.intelligent.flyto.FlyToTarget;
 import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
 import dji.v5.manager.interfaces.ICameraStreamManager;
 import dji.v5.manager.interfaces.IKeyManager;
+import dji.v5.manager.interfaces.IWaypointMissionManager;
 
 public class MyActivity extends AppCompatActivity {
 
@@ -665,6 +671,16 @@ public class MyActivity extends AppCompatActivity {
     }
     //end of of the set and go home functions
 
+    private void waypoint(File kmzFile) {
+        TextView textView = findViewById(R.id.main_text);
+        if (kmzFile == null || !kmzFile.exists()) {
+            //error case for the file being incorrect
+            textView.setText("KMZ file not found.");
+            Log.e("MyApp", "KMZ file is null or does not exist.");
+        }
+        IWaypointMissionManager waypointMissionManager = WaypointMissionManager.getInstance();
+    }
+
     private void isHovering() {
         IKeyManager keyManager = KeyManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
@@ -738,6 +754,8 @@ public class MyActivity extends AppCompatActivity {
         Bitmap bitmap = null;
         long lastTime = 0;
 
+        byte[] byteArray;
+
         public void onFrame(@NonNull byte[] frameData, int offset, int length, int width, int height, @NonNull ICameraStreamManager.FrameFormat format) {
             Log.i("MyApp", "Got onFrame");
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -748,6 +766,11 @@ public class MyActivity extends AppCompatActivity {
             }
             Log.i("MyApp", "after for loop");
             bitmap.setPixels(colors, 0, width, 0, 0, width, height);
+
+            //conversion to jpeg
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream);
+            byteArray = stream.toByteArray();
             runOnUiThread(this::run);
             Log.i("MyApp", "after display");
         }
@@ -760,6 +783,8 @@ public class MyActivity extends AppCompatActivity {
             TextView textView = findViewById(R.id.main_text);
             textView.setText("fps is: " + fps);
             ImageView imageView = findViewById(R.id.my_image_view);
+            //imageView.setImageBitmap(bitmap);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
             imageView.setImageBitmap(bitmap);
         }
     }
