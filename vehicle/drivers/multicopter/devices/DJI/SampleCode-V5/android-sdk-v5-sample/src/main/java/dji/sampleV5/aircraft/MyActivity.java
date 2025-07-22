@@ -195,7 +195,7 @@ public class MyActivity extends AppCompatActivity {
         Button stopImagePreviewButton = findViewById(R.id.stop_image_preview);
         stopImagePreviewButton.setOnClickListener(v -> stopCameraFramePreview());
     }
-    //try to get home not to land, switch to waypoints api, get the set velocity functions, gimbal movement
+    //try to get home not to land, switch to haversine, also check for altitude, switch to waypoints api, get the set velocity functions, gimbal movement
 
     private void takePhoto() {
         IKeyManager keyPhoto = KeyManager.getInstance();
@@ -478,7 +478,6 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
-    private static final double LOCATION_THRESHOLD = 0.00001; // ~1 meter accuracy in degrees
     private Handler homeCheckHandler;
     private Runnable homeCheckRunnable;
     private boolean isGoingHomeAndHover = false;
@@ -514,17 +513,94 @@ public class MyActivity extends AppCompatActivity {
                 }
 
                 if (checkIfAtHomeLocation()) {
-                    // We've reached home location, stop go home to prevent landing
-                    stopGoHome();
-                    isGoingHomeAndHover = false;
-                    Log.i("MyApp", "Reached home location - stopping go home to hover");
+                    IKeyManager keyManager = KeyManager.getInstance();
+                    // We've reached home location
+                    // add the altitude check stuff here before calling stopgohome
+                    Double currentAltitude = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
+                    Integer goHomeHeight = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight));
+                    if (Math.abs(currentAltitude - goHomeHeight) <= 1.0f) {
+                        // Case 1: already at the correct altitude
+                        stopGoHome();
+                        isGoingHomeAndHover = false;
+                        Log.i("MyApp", "Reached home location - stopping go home to hover");
 
-                    // Optional: You can add additional actions here like switching to hover mode
-                    // or setting a specific flight mode if needed
+                    } else if (currentAltitude < goHomeHeight) {
+                        // Case 2: below go home height
+                        // add code here
+                            // Move 60 meters north (bearing 0 degrees)
+                            double bearing = 0.0;
+                            float distance = 60f; // meters
 
+                            LocationCoordinate2D fakeHome = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
+
+                            double radiusEarth = 6371000.0; // meters
+                            double angularDistance = distance / radiusEarth;
+
+                            double lat1 = Math.toRadians(fakeHome.getLatitude());
+                            double lon1 = Math.toRadians(fakeHome.getLongitude());
+
+                            double lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
+                                    Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(Math.toRadians(bearing)));
+
+                            double lon2 = lon1 + Math.atan2(Math.sin(Math.toRadians(bearing)) * Math.sin(angularDistance) * Math.cos(lat1),
+                                    Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2));
+
+                            lat2 = Math.toDegrees(lat2);
+                            lon2 = Math.toDegrees(lon2);
+
+                            fakeHome = new LocationCoordinate2D(lat2, lon2);
+
+                            keyManager.setValue(
+                                    KeyTools.createKey(FlightControllerKey.KeyHomeLocation),
+                                    fakeHome,
+                                    null
+                            );
+
+                            Log.i("MyApp", "Set fake home point ~60m away to force climb");
+
+                            // Begin monitoring climb
+                            Handler climbHandler = new Handler(Looper.getMainLooper());
+                            Runnable climbMonitor = new Runnable() {
+                                @Override
+                                public void run() {
+                                    Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
+                                    if (alt != null && alt >= goHomeHeight - 0.5f) {
+                                        stopGoHome();
+                                        isGoingHomeAndHover = false;
+                                        Log.i("MyApp", "Reached goHomeHeight on climb - stopping go home");
+                                    } else {
+                                        climbHandler.postDelayed(this, 200);
+                                    }
+                                }
+                            };
+                            climbHandler.post(climbMonitor);
+
+
+                        Log.i("MyApp", "Below go home height - forcing climb with fake home");
+
+                    } else {
+                        // Case 3: above go home height
+                        Log.i("MyApp", "Above go home height - waiting for descent");
+
+                        // Begin monitoring descent
+                        Handler descentHandler = new Handler(Looper.getMainLooper());
+                        Runnable descentMonitor = new Runnable() {
+                            @Override
+                            public void run() {
+                                Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
+                                if (alt != null && alt <= goHomeHeight + 0.5f) {
+                                    stopGoHome();
+                                    Log.i("MyApp", "Descending to goHomeHeight - stopping go home");
+                                } else {
+                                    descentHandler.postDelayed(this, 200);
+                                }
+                            }
+                        };
+                        descentHandler.post(descentMonitor);
+                    }
                 } else {
                     // Continue monitoring - check again in 500ms
-                    homeCheckHandler.postDelayed(this, 500);
+                    homeCheckHandler.postDelayed(this, 200);
                 }
             }
         };
@@ -548,49 +624,36 @@ public class MyActivity extends AppCompatActivity {
                 return false;
             }
 
-            double currentLat = currentLocation.getLatitude();
-            double currentLon = currentLocation.getLongitude();
-            double homeLat = homeLocation.getLatitude();
-            double homeLon = homeLocation.getLongitude();
+            double currentLat = Math.toRadians(currentLocation.getLatitude());
+            double currentLon = Math.toRadians(currentLocation.getLongitude());
+            double homeLat = Math.toRadians(homeLocation.getLatitude());
+            double homeLon = Math.toRadians(homeLocation.getLongitude());
 
-            // Calculate distance using simple coordinate difference
-            double latDiff = Math.abs(currentLat - homeLat);
-            double lonDiff = Math.abs(currentLon - homeLon);
+            // Haversine formula
+            double dLat = homeLat - currentLat;
+            double dLon = homeLon - currentLon;
+            double a = Math.pow(Math.sin(dLat / 2), 2) +
+                    Math.cos(currentLat) * Math.cos(homeLat) * Math.pow(Math.sin(dLon / 2), 2);
+            double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            // Earth's radius in meters
+            double distance = 6371000 * c;
+            // Threshold
+            boolean isAtHome = distance < 3;
 
-            boolean isAtHome = (latDiff < LOCATION_THRESHOLD && lonDiff < LOCATION_THRESHOLD);
-
-            Log.d("MyApp", String.format("Current: %.6f, %.6f | Home: %.6f, %.6f | Distance: %.6f, %.6f | At home: %b",
-                    currentLat, currentLon, homeLat, homeLon, latDiff, lonDiff, isAtHome));
+            Log.d("MyApp", String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
 
             return isAtHome;
 
         } catch (Exception e) {
-            Log.e("MyApp", "Error checking home location: " + e.getMessage());
+            Log.e("MyApp", "Error checking home location with Haversine: " + e.getMessage());
             return false;
         }
     }
 
-    private void cancelGoHomeAndHover() {
-        if (isGoingHomeAndHover) {
-            isGoingHomeAndHover = false;
-
-            // Stop the monitoring
-            if (homeCheckHandler != null && homeCheckRunnable != null) {
-                homeCheckHandler.removeCallbacks(homeCheckRunnable);
-            }
-
-            // Stop the go home action
-            stopGoHome();
-
-            Log.i("MyApp", "Cancelled go home and hover");
-        }
-    }
-
-    // Don't forget to clean up when the activity is destroyed
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        cancelGoHomeAndHover();
+        stopGoHome();
     }
 
     private void goHomeStatus() {
@@ -668,6 +731,7 @@ public class MyActivity extends AppCompatActivity {
         });
         Log.i("MyApp", "End of mission itself");
     }
+
     //code for camera image on screen
     class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
 
@@ -680,7 +744,7 @@ public class MyActivity extends AppCompatActivity {
             int[] colors = new int[width * height];
             Log.i("MyApp", "before for loop");
             for (int i = 0; i < width * height; i++) {
-                colors[i] = Color.rgb(frameData[i * 4]&0xFF, frameData[i * 4 + 1]&0xFF, frameData[i * 4 + 2]&0xFF);
+                colors[i] = Color.rgb(frameData[i * 4] & 0xFF, frameData[i * 4 + 1] & 0xFF, frameData[i * 4 + 2] & 0xFF);
             }
             Log.i("MyApp", "after for loop");
             bitmap.setPixels(colors, 0, width, 0, 0, width, height);
@@ -691,8 +755,8 @@ public class MyActivity extends AppCompatActivity {
         @Override
         public void run() {
             long millis = System.currentTimeMillis();
-            float fps = 1000/(millis-lastTime);
-            lastTime=millis;
+            float fps = 1000 / (millis - lastTime);
+            lastTime = millis;
             TextView textView = findViewById(R.id.main_text);
             textView.setText("fps is: " + fps);
             ImageView imageView = findViewById(R.id.my_image_view);
