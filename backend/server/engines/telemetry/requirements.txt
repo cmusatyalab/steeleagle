@@ -16,3 +16,4 @@ protobuf
 requests
 pyyaml
 pytz
+mcap
