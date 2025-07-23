@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.vendor="CMU Satyalab" \
       org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender1 \
-    python3.10 \
+    python3 \
     python3-opencv \
     python3-pip \
     wget \
