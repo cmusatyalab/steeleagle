@@ -35,12 +35,12 @@ RUN python3 -m pip install --no-cache-dir \
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -
-COPY backend/server/engines/swarm_controller/requirements.txt requirements.txt
+COPY backend/server/swarm_controller/requirements.txt requirements.txt
 
 # Install Tensorflow and Gabriel's external dependencies
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
-COPY backend/server/engines/swarm_controller/swarm_controller.py swarm_controller.py
+COPY backend/server/swarm_controller/swarm_controller.py swarm_controller.py
 COPY vehicle/util util
 COPY protocol protocol
 
