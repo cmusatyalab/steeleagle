@@ -489,8 +489,10 @@ public class MyActivity extends AppCompatActivity {
     private boolean isGoingHomeAndHover = false;
 
     private void startGoHomeAndHover() {
+        TextView textView = findViewById(R.id.main_text);
         if (isGoingHomeAndHover) {
             Log.w("MyApp", "Go home and hover already in progress");
+            textView.setText("Go home and hover already in progress");
             return;
         }
 
@@ -504,9 +506,11 @@ public class MyActivity extends AppCompatActivity {
         startLocationMonitoring();
 
         Log.i("MyApp", "Started go home and hover");
+        textView.setText("Started go home and hover");
     }
 
     private void startLocationMonitoring() {
+        TextView textView = findViewById(R.id.main_text);
         if (homeCheckHandler == null) {
             homeCheckHandler = new Handler(Looper.getMainLooper());
         }
@@ -528,66 +532,67 @@ public class MyActivity extends AppCompatActivity {
                         // Case 1: already at the correct altitude
                         stopGoHome();
                         isGoingHomeAndHover = false;
-                        Log.i("MyApp", "Reached home location - stopping go home to hover");
+                        Log.i("MyApp", "Reached home location -- stopping go home to hover - altitude already correct");
+                        textView.setText("Reached home location -- stopping go home to hover - altitude already correct");
 
                     } else if (currentAltitude < goHomeHeight) {
                         // Case 2: below go home height
                         // add code here
-                            // Move 60 meters north (bearing 0 degrees)
-                            double bearing = 0.0;
-                            float distance = 60f; // meters
+                        // Move 60 meters north (bearing 0 degrees)
+                        Log.i("MyApp", "Below go home height -- forcing climb with fake home");
+                        textView.setText("Below go home height -- forcing climb with fake home");
+                        double bearing = 0.0;
+                        float distance = 60f; // meters
 
-                            LocationCoordinate2D fakeHome = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
+                        LocationCoordinate2D fakeHome = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
 
-                            double radiusEarth = 6371000.0; // meters
-                            double angularDistance = distance / radiusEarth;
+                        double radiusEarth = 6371000.0; // meters
+                        double angularDistance = distance / radiusEarth;
 
-                            double lat1 = Math.toRadians(fakeHome.getLatitude());
-                            double lon1 = Math.toRadians(fakeHome.getLongitude());
+                        double lat1 = Math.toRadians(fakeHome.getLatitude());
+                        double lon1 = Math.toRadians(fakeHome.getLongitude());
 
-                            double lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
-                                    Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(Math.toRadians(bearing)));
+                        double lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
+                                Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(Math.toRadians(bearing)));
 
-                            double lon2 = lon1 + Math.atan2(Math.sin(Math.toRadians(bearing)) * Math.sin(angularDistance) * Math.cos(lat1),
-                                    Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2));
+                        double lon2 = lon1 + Math.atan2(Math.sin(Math.toRadians(bearing)) * Math.sin(angularDistance) * Math.cos(lat1),
+                                Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2));
 
-                            lat2 = Math.toDegrees(lat2);
-                            lon2 = Math.toDegrees(lon2);
+                        lat2 = Math.toDegrees(lat2);
+                        lon2 = Math.toDegrees(lon2);
 
-                            fakeHome = new LocationCoordinate2D(lat2, lon2);
+                        fakeHome = new LocationCoordinate2D(lat2, lon2);
 
-                            keyManager.setValue(
-                                    KeyTools.createKey(FlightControllerKey.KeyHomeLocation),
-                                    fakeHome,
-                                    null
-                            );
+                        keyManager.setValue(
+                                KeyTools.createKey(FlightControllerKey.KeyHomeLocation),
+                                fakeHome,
+                                null
+                        );
 
-                            Log.i("MyApp", "Set fake home point ~60m away to force climb");
+                        Log.i("MyApp", "Set fake home point ~60m away to force climb -- need to get to higher altitude");
+                        textView.setText("Set fake home point ~60m away to force climb -- need to get to higher altitude");
 
-                            // Begin monitoring climb
-                            Handler climbHandler = new Handler(Looper.getMainLooper());
-                            Runnable climbMonitor = new Runnable() {
-                                @Override
-                                public void run() {
-                                    Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
-                                    if (alt != null && alt >= goHomeHeight - 0.5f) {
-                                        stopGoHome();
-                                        isGoingHomeAndHover = false;
-                                        Log.i("MyApp", "Reached goHomeHeight on climb - stopping go home");
-                                    } else {
-                                        climbHandler.postDelayed(this, 200);
-                                    }
+                        // Begin monitoring climb
+                        Handler climbHandler = new Handler(Looper.getMainLooper());
+                        Runnable climbMonitor = new Runnable() {
+                            @Override
+                            public void run() {
+                                Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
+                                if (alt != null && alt >= goHomeHeight - 0.5f) {
+                                    stopGoHome();
+                                    isGoingHomeAndHover = false;
+                                    Log.i("MyApp", "Reached goHomeHeight on climb -- stopping go home");
+                                    textView.setText("Reached goHomeHeight on climb -- stopping go home");
+                                } else {
+                                    climbHandler.postDelayed(this, 200);
                                 }
-                            };
-                            climbHandler.post(climbMonitor);
-
-
-                        Log.i("MyApp", "Below go home height - forcing climb with fake home");
-
+                            }
+                        };
+                        climbHandler.post(climbMonitor);
                     } else {
                         // Case 3: above go home height
-                        Log.i("MyApp", "Above go home height - waiting for descent");
-
+                        Log.i("MyApp", "Above go home height -- waiting for descent");
+                        textView.setText("Above go home height -- waiting for descent");
                         // Begin monitoring descent
                         Handler descentHandler = new Handler(Looper.getMainLooper());
                         Runnable descentMonitor = new Runnable() {
@@ -596,7 +601,8 @@ public class MyActivity extends AppCompatActivity {
                                 Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
                                 if (alt != null && alt <= goHomeHeight + 0.5f) {
                                     stopGoHome();
-                                    Log.i("MyApp", "Descending to goHomeHeight - stopping go home");
+                                    Log.i("MyApp", "Reached goHomeHeight on descent -- stopping go home");
+                                    textView.setText("Reached goHomeHeight on descent -- stopping go home");
                                 } else {
                                     descentHandler.postDelayed(this, 200);
                                 }
@@ -610,12 +616,12 @@ public class MyActivity extends AppCompatActivity {
                 }
             }
         };
-
         // Start the monitoring loop
         homeCheckHandler.post(homeCheckRunnable);
     }
 
     private boolean checkIfAtHomeLocation() {
+        TextView textView = findViewById(R.id.main_text);
         try {
             IKeyManager keyManager = KeyManager.getInstance();
 
@@ -647,11 +653,13 @@ public class MyActivity extends AppCompatActivity {
             boolean isAtHome = distance < 3;
 
             Log.d("MyApp", String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
+            textView.setText(String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
 
             return isAtHome;
 
         } catch (Exception e) {
             Log.e("MyApp", "Error checking home location with Haversine: " + e.getMessage());
+            textView.setText("Error checking home location with Haversine: " + e.getMessage());
             return false;
         }
     }
