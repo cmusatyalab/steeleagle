@@ -17,3 +17,4 @@ requests
 pyyaml
 pytz
 mcap
+mcap-protobuf-support
