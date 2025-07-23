@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 import pytz
 import redis
+from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from mcap_protobuf.writer import Writer
@@ -189,7 +190,12 @@ class TelemetryEngine(cognitive_engine.Engine):
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
                 self.writeMCAPMessage(
-                    f"/{extras.telemetry.drone_name}/telemetry", extras.telemetry
+                    f"/{extras.telemetry.drone_name}/location",
+                    LocationFix(
+                        latitude=extras.telemetry.global_position.latitude,
+                        longitude=extras.telemetry.global_position.longitude,
+                        altitude=extras.telemetry.global_position.altitude,
+                    ),
                 )
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
@@ -205,7 +211,8 @@ class TelemetryEngine(cognitive_engine.Engine):
             # store images in the shared volume
             try:
                 self.writeMCAPMessage(
-                    f"/{extras.telemetry.drone_name}/imagery", input_frame
+                    f"/{extras.telemetry.drone_name}/imagery",
+                    CompressedImage(data=input_frame[0].payload, format="jpeg"),
                 )
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
