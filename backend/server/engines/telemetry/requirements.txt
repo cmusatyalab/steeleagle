@@ -18,3 +18,4 @@ pyyaml
 pytz
 mcap
 mcap-protobuf-support
+foxglove-sdk
