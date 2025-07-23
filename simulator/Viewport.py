@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class Viewport():
-    def __init__(self, global_position: Coordinate, orientation: int, vertical_rotation: int, origin: Coordinate):
+    def __init__(self, drone_name: str, drone_type:str, global_position: Coordinate, orientation: int, vertical_rotation: int, origin: Coordinate):
+        self.drone_name = drone_name
+        self.drone_type = drone_type
         self.position = global_position
         self.cartesian = None
         self.orientation = orientation % 360

@@ -2,10 +2,11 @@ from st_utilities import Coordinate
 import st_utilities as st_utilities
 
 class DetectionObject():
-    def __init__(self, x: float, y: float, alt: float, label: str, base_conf: float, falloff_rate: float, falloff_dist: float, length: float, width: float, height: float):
+    def __init__(self, object_name: str, x: float, y: float, alt: float, label: str, base_conf: float, falloff_rate: float, falloff_dist: float, length: float, width: float, height: float):
         assert base_conf >= 0.0, "Attempted to set negative base confidence value"
         assert falloff_rate >= 0.0, "Attempted to set negative confidence falloff rate"
         assert falloff_dist >= 0.0, "Attempted to set negative falloff distance threshold"
+        self.object_name = object_name
         self.position = Coordinate(x, y, alt)
         self.length = length
         self.width = width

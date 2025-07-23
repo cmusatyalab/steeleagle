@@ -14,6 +14,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    # Not currently used
     parser.add_argument(
         "-p", "--port", type=int, default=9099, help="Set port number"
     )
@@ -38,11 +39,6 @@ def main():
         "-x", "--exclude", help="Comma separated list of classes (ids) to exclude when peforming detection. Consult model/<model_name>/label_map.pbtxt"
     )
 
-    # TODO verify need for this - might instead simply prefer path to initialization file
-    parser.add_argument(
-        "-d", "--drone", default="anafi", help="Drone model ([anafi, usa]). Used to define HFOV and VFOV for camera"
-    )
-
     parser.add_argument(
         "-R", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
     )
@@ -64,7 +60,11 @@ def main():
     )
 
     parser.add_argument(
-        "--geofence_enabled", action="store_true", default=False, help="Wheter to use a geofence to decide whether to store detections"
+        "--geofence_enabled", action="store_true", default=False, help="Whether to use a geofence to decide whether to store detections"
+    )
+
+    parser.add_argument(
+        "--init_file", default="st_init.json", help="Path to sensorTwin init file containing drone and detection object characteristics"
     )
 
     args, _ = parser.parse_known_args()
