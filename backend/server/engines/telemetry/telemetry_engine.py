@@ -15,7 +15,7 @@ import foxglove
 import numpy as np
 import pytz
 import redis
-from foxglove.schemas import CompressedImage, LocationFix
+from foxglove.schemas import Channel, CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from PIL import Image
@@ -54,16 +54,9 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        self.mcap = foxglove.open_mcap("backend.mcap", allow_overwrite=True)
+        self.mcap = foxglove.open_mcap("backend.mcap")
+        tel_channel = Channel("/telemetry", message_encoding="protobuf")
         foxglove.start_server(name="SteelEagle", host="0.0.0.0")
-
-    def writeMCAPMessage(self, topic: str, message):
-        self.mcap_writer.write_message(
-            topic=topic,
-            message=message,
-            log_time=time.time_ns(),
-            publish_time=time.time_ns(),
-        )
 
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
@@ -198,7 +191,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                     ),
                     log_time=time.time_ns(),
                 )
-                foxglove.log(
+                self.tel_channel.log(
                     f"/telemetry/{extras.telemetry.drone_name}",
                     extras.telemetry,
                     log_time=time.time_ns(),
