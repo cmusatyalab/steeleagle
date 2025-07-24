@@ -54,11 +54,8 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        foxglove.start_server(name="SteelEagle", host="0.0.0.0")
-
-        # Keep a reference to the mcap. It will automatically close the file when the program exits, but
-        # we could also close it manually with `mcap.close()`.
         self.mcap = foxglove.open_mcap("backend.mcap", allow_overwrite=True)
+        foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
     def writeMCAPMessage(self, topic: str, message):
         self.mcap_writer.write_message(
@@ -199,6 +196,11 @@ class TelemetryEngine(cognitive_engine.Engine):
                         longitude=extras.telemetry.global_position.longitude,
                         altitude=extras.telemetry.global_position.altitude,
                     ),
+                    log_time=time.time_ns(),
+                )
+                foxglove.log(
+                    f"/telemetry/{extras.telemetry.drone_name}",
+                    extras.telemetry,
                     log_time=time.time_ns(),
                 )
 
