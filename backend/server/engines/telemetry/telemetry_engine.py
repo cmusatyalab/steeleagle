@@ -54,7 +54,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        foxglove.start_server()
+        foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
         # Keep a reference to the mcap. It will automatically close the file when the program exits, but
         # we could also close it manually with `mcap.close()`.
