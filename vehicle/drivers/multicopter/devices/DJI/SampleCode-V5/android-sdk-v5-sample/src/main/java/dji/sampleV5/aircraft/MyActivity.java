@@ -1,5 +1,6 @@
 package dji.sampleV5.aircraft;
 
+import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.pushKMZFileToAircraft;
 import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
 import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_8888;
@@ -24,6 +25,15 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import dji.sdk.keyvalue.key.BatteryKey;
 import dji.sdk.keyvalue.key.FlightControllerKey;
@@ -191,7 +201,7 @@ public class MyActivity extends AppCompatActivity {
 
         // Set global position button behavior
         Button setGlobalPositionButton = findViewById(R.id.set_global_position);
-        setGlobalPositionButton.setOnClickListener(v -> setGlobalPositionDialog());
+        setGlobalPositionButton.setOnClickListener(v -> waypoint(45.9094394, -80.2345678));
 
         // Start image preview button behavior
         Button startImagePreviewButton = findViewById(R.id.start_image_preview);
@@ -679,16 +689,115 @@ public class MyActivity extends AppCompatActivity {
     }
     //end of of the set and go home functions
 
-    private void waypoint(File kmzFile) {
+    private void waypoint(double lat, double lon) {
         TextView textView = findViewById(R.id.main_text);
-        if (kmzFile == null || !kmzFile.exists()) {
-            //error case for the file being incorrect
+        File originalKmz = new File("/storage/emulated/0/DJI/single_point.kmz");
+
+        if (!originalKmz.exists()) {
             textView.setText("KMZ file not found.");
-            Log.e("MyApp", "KMZ file is null or does not exist.");
+            Log.e("MyApp", "KMZ file not found.");
+            return;
         }
-        IWaypointMissionManager waypointMissionManager = WaypointMissionManager.getInstance();
+        
+        try {
+
+        }
+
+
+
+        /*IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);*/
+
+        /*try {
+            // Step 1: Unzip the KMZ
+            File tempDir = new File(getCacheDir(), "kmz_edit");
+            if (tempDir.exists()) deleteRecursive(tempDir);
+            tempDir.mkdirs();
+
+            ZipFile zipFile = new ZipFile(originalKmz);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+            File waylinesFile = null;
+
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                File entryDestination = new File(tempDir, entry.getName());
+                if (entry.isDirectory()) {
+                    entryDestination.mkdirs();
+                } else {
+                    InputStream in = zipFile.getInputStream(entry);
+                    FileOutputStream out = new FileOutputStream(entryDestination);
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = in.read(buffer)) > 0) {
+                        out.write(buffer, 0, len);
+                    }
+                    in.close();
+                    out.close();
+
+                    // Look for waylines.wpml
+                    if (entry.getName().equalsIgnoreCase("waylines.wpml")) {
+                        waylinesFile = entryDestination;
+                    }
+                }
+            }
+            zipFile.close();
+
+            if (waylinesFile == null) {
+                textView.setText("waylines.wpml not found.");
+                Log.e("MyApp", "waylines.wpml not found in KMZ.");
+                return;
+            }
+
+            // Step 2: Read and modify coordinates
+            String wpmlContent = new String(Files.readAllBytes(waylinesFile.toPath()), StandardCharsets.UTF_8);
+            wpmlContent = wpmlContent.replaceAll(
+                    "<coordinates>\\s*[-\\d.]+,[-\\d.]+\\s*</coordinates>",
+                    "<coordinates>" + lon + "," + lat + "</coordinates>"
+            );
+            Files.write(waylinesFile.toPath(), wpmlContent.getBytes(StandardCharsets.UTF_8));
+
+            // Step 3: Repack KMZ with modified file
+            File updatedKmz = new File("/storage/emulated/0/DJI/single_point_updated.kmz");
+            FileOutputStream fos = new FileOutputStream(updatedKmz);
+            ZipOutputStream zos = new ZipOutputStream(fos);
+
+            for (File file : tempDir.listFiles()) {
+                ZipEntry zipEntry = new ZipEntry(file.getName());
+                zos.putNextEntry(zipEntry);
+
+                FileInputStream fis = new FileInputStream(file);
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = fis.read(buffer)) >= 0) {
+                    zos.write(buffer, 0, length);
+                }
+
+                fis.close();
+                zos.closeEntry();
+            }
+
+            zos.close();
+            fos.close();
+
+            textView.setText("KMZ updated successfully.");
+            Log.i("MyApp", "KMZ updated: " + updatedKmz.getAbsolutePath());
+
+        } catch (Exception e) {
+            textView.setText("Error editing KMZ.");
+            Log.e("MyApp", "Exception during KMZ edit", e);
+        }*/
     }
 
+    // Helper method to delete temp folder
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory()) {
+            for (File child : fileOrDirectory.listFiles()) {
+                deleteRecursive(child);
+            }
+        }
+        fileOrDirectory.delete();
+    }
     private void isHovering() {
         IKeyManager keyManager = KeyManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
@@ -729,7 +838,7 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "Stopped Video");
     }
 
-    private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight) {
+    /*private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight) {
         Log.i("MyApp", "Start of the set global position function");
         //creating the target
         FlyToTarget flyToTarget = new FlyToTarget();
@@ -754,7 +863,7 @@ public class MyActivity extends AppCompatActivity {
             }
         });
         Log.i("MyApp", "End of mission itself");
-    }
+    }*/
 
     //code for camera image on screen
     class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
@@ -821,7 +930,7 @@ public class MyActivity extends AppCompatActivity {
         void onCancel();
     }
 
-    private void setGlobalPositionDialog() {
+    /*private void setGlobalPositionDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
             @Override
             public void onValue(Double latitude) {
@@ -872,7 +981,7 @@ public class MyActivity extends AppCompatActivity {
                 Log.i("MyApp", "Latitude input cancelled");
             }
         });
-    }
+    }*/
 
     private void setHomeUsingCoordinatesDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
