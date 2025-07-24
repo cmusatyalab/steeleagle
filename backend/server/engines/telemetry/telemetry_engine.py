@@ -55,8 +55,12 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
         self.mcap = foxglove.open_mcap("backend.mcap")
-        tel_channel = Channel("/telemetry", message_encoding="protobuf")
+        self.tel_channel = Channel("/telemetry", message_encoding="protobuf")
         foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+
+    def __del__(self):
+        logger.info("Flushing MCAP file...")
+        self.mcap.close()
 
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
