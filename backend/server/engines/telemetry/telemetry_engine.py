@@ -11,13 +11,13 @@ import os
 import time
 
 import cv2
+import foxglove
 import numpy as np
 import pytz
 import redis
 from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
-from mcap_protobuf.writer import Writer
 from PIL import Image
 
 import protocol.common_pb2 as common
@@ -54,8 +54,11 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        self.mcap_file = self.storage_path + "backend.mcap"
-        self.mcap_writer = Writer(open(self.mcap_file, "wb"))
+        foxglove.start_server()
+
+        # Keep a reference to the mcap. It will automatically close the file when the program exits, but
+        # we could also close it manually with `mcap.close()`.
+        self.mcap = foxglove.open_mcap("backend.mcap", allow_overwrite=True)
 
     def writeMCAPMessage(self, topic: str, message):
         self.mcap_writer.write_message(
@@ -189,13 +192,14 @@ class TelemetryEngine(cognitive_engine.Engine):
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
-                self.writeMCAPMessage(
-                    f"/{extras.telemetry.drone_name}/location",
+                foxglove.log(
+                    f"/location/{extras.telemetry.drone_name}",
                     LocationFix(
                         latitude=extras.telemetry.global_position.latitude,
                         longitude=extras.telemetry.global_position.longitude,
                         altitude=extras.telemetry.global_position.altitude,
                     ),
+                    log_time=time.time_ns(),
                 )
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
@@ -210,9 +214,10 @@ class TelemetryEngine(cognitive_engine.Engine):
                 )
             # store images in the shared volume
             try:
-                self.writeMCAPMessage(
-                    f"/{extras.telemetry.drone_name}/imagery",
-                    CompressedImage(data=input_frame[0].payload, format="jpeg"),
+                foxglove.log(
+                    f"/imagery/{extras.telemetry.drone_name}",
+                    CompressedImage(data=input_frame.payloads[0], format="jpeg"),
+                    log_time=time.time_ns(),
                 )
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
