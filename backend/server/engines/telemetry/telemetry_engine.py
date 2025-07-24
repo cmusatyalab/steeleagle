@@ -54,7 +54,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        self.mcap = foxglove.open_mcap("backend.mcap")
+        self.mcap = foxglove.open_mcap(f"{self.storage_path}/backend.mcap")
         self.tel_channel = Channel("/telemetry", message_encoding="protobuf")
         foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
@@ -196,7 +196,6 @@ class TelemetryEngine(cognitive_engine.Engine):
                     log_time=time.time_ns(),
                 )
                 self.tel_channel.log(
-                    f"/telemetry/{extras.telemetry.drone_name}",
                     extras.telemetry,
                     log_time=time.time_ns(),
                 )
