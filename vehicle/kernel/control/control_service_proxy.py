@@ -3,7 +3,7 @@ from util.rpc import unary_unary_request, unary_stream_request
 # Protocol import
 import python_bindings.driver_service_pb2_grpc as driver_proto
 
-class ControlProxyService(driver_proto.DriverServicer):
+class ControlServiceProxy(driver_proto.DriverServicer):
     '''
     Proxy service to handle mission actuation requests and
     redirect them to the drone server, while performing
@@ -15,11 +15,11 @@ class ControlProxyService(driver_proto.DriverServicer):
         self._logger = logger
     
     async def Connect(self, request, context):
-         return unary_unary_request(
-                 self._stub.Connect,
-                 request,
-                 self._logger
-                 )
+        return unary_unary_request(
+                self._stub.Connect,
+                request,
+                self._logger
+                )
 
     async def IsConnected(self, request, context):
         return unary_unary_request(

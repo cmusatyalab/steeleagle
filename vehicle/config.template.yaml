@@ -1,40 +1,34 @@
-kernel:
-  control_proxy_service:
+vehicle:
+  # TODO: Type, manufacturer, and model must match the names of the
+  # associated directories within /driver/ and the base name of
+  # the gRPC service, e.g. to use multicopter_service.proto,
+  # the type should be 'multicopter'
+  type: ''
+  manufacturer: ''
+  model: ''
+  # TODO: This is the name that will be associated with this
+  # vehicle on the backend and GCS
+  name: ''
+  # TODO: Check whether the chosen drone model requires kwargs;
+  # some may require a connection address to be passed in
+  kwargs: {}
+cloudlet:
+  # TODO: Change the following endpoints in accordance with the 
+  # network address of the backend
+  swarm_controller:
+    endpoint: ''
+  remote_compute_service:
+    endpoint: '' 
+services:
+  # Public services
+  # NOTE: 8990-8999 are reserved by default, check .internal.yaml
+  # to see all reserved addresses
+  control_service:
     endpoint: 'localhost:9000'
   report_service:
     endpoint: 'localhost:9001'
   compute_service:
     endpoint: 'localhost:9002'
-driver:
-  # TODO: Type, manufacturer, and model must match the names of the
-  # associated directories within /driver/ and the base name of
-  # the gRPC service, e.g. to use multicopter_service.proto,
-  # the type should be 'multicopter'
-  type: 'multicopter'
-  manufacturer: 'Parrot'
-  model: 'Anafi'
-  # TODO: This is the name that will be associated with this
-  # vehicle on the backend and GCS
-  name: 'test'
-  # TODO: Check whether the chosen drone model requires kwargs;
-  # some may require a connection address to be passed in
-  kwargs: {}
-  control_service:
-    endpoint: 'localhost:9010'
-  telemetry_stream:
-    endpoint: 'localhost:9011'
-  imaging_sensor_stream:
-    endpoint: 'localhost:9012'
-mission:
-  mission_service:
-    endpoint: 'localhost:9020'
-cloudlet:
-  # TODO: Change the following endpoints in accordance with the 
-  # network address of the backend
-  swarm_controller:
-    endpoint: 'cloudlet033.elijah.cs.cmu.edu:8000'
-  remote_compute_service:
-    endpoint: 'cloudlet033.elijah.cs.cmu.edu:9000' 
 logging:
   # Whether or not to log to mcap for mission replay
   log_to_mcap: true

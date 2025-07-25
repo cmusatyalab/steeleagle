@@ -1,0 +1,15 @@
+internal:
+  control_service:
+    endpoint: 'localhost:8993'
+  telemetry:
+    endpoint: 'localhost:8994'
+  imaging:
+    endpoint: 'localhost:8995'
+  mission_service:
+    endpoint: 'localhost:8996'
+  compute_service:
+    endpoint: 'localhost:8997'
+  local_compute:
+    endpoint: 'localhost:8998'
+  results:
+    endpoint: 'localhost:8999'
