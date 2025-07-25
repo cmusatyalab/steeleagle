@@ -12,14 +12,13 @@ import time
 
 import cv2
 import foxglove
+import google.protobuf.json_format as json_format
 import numpy as np
 import pytz
 import redis
-from foxglove import Channel, Schema
 from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
-from google.protobuf import descriptor_pb2
 from PIL import Image
 
 import protocol.common_pb2 as common
@@ -59,20 +58,6 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.mcap = foxglove.open_mcap(
             f"{self.storage_path}/backend.mcap", allow_overwrite=True
         )
-        # Set up a channel for our protobuf messages
-        proto_fds = descriptor_pb2.FileDescriptorSet()
-        gabriel_extras.DESCRIPTOR.CopyToProto(proto_fds.file.add())
-        tel_descriptor = gabriel_extras.DESCRIPTOR
-        self.tel_channel = Channel(
-            topic="/telemetry",
-            message_encoding="protobuf",
-            schema=Schema(
-                name=f"{tel_descriptor.file.package}.{tel_descriptor.name}",
-                encoding="protobuf",
-                data=proto_fds.SerializeToString(),
-            ),
-        )
-
         foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
     def __del__(self):
@@ -212,8 +197,9 @@ class TelemetryEngine(cognitive_engine.Engine):
                     ),
                     log_time=time.time_ns(),
                 )
-                self.tel_channel.log(
-                    extras,
+                foxglove.log(
+                    f"/telemetry/{extras.telemetry.drone_name}",
+                    json_format.MessageToJson(extras.telemetry),
                     log_time=time.time_ns(),
                 )
 
