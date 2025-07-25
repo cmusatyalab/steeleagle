@@ -15,14 +15,14 @@ import foxglove
 import numpy as np
 import pytz
 import redis
-from foxglove.schemas import Channel, CompressedImage, LocationFix, Schema
+from foxglove import Channel, Schema
+from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from google.protobuf import descriptor_pb2
 from PIL import Image
 
 import protocol.common_pb2 as common
-import protocol.dataplane_pb2 as dataplane
 import protocol.gabriel_extras_pb2 as gabriel_extras
 
 logger = logging.getLogger(__name__)
@@ -56,11 +56,13 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        self.mcap = foxglove.open_mcap(f"{self.storage_path}/backend.mcap")
+        self.mcap = foxglove.open_mcap(
+            f"{self.storage_path}/backend.mcap", allow_overwrite=True
+        )
         # Set up a channel for our protobuf messages
         proto_fds = descriptor_pb2.FileDescriptorSet()
-        dataplane.DESCRIPTOR.CopyToProto(proto_fds.file.add())
-        tel_descriptor = dataplane.Telemetry.DESCRIPTOR
+        gabriel_extras.DESCRIPTOR.CopyToProto(proto_fds.file.add())
+        tel_descriptor = gabriel_extras.DESCRIPTOR
         self.tel_channel = Channel(
             topic="/telemetry",
             message_encoding="protobuf",
@@ -211,7 +213,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                     log_time=time.time_ns(),
                 )
                 self.tel_channel.log(
-                    extras.telemetry,
+                    extras,
                     log_time=time.time_ns(),
                 )
 
