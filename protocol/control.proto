@@ -5,20 +5,23 @@
 syntax = "proto3";
 package protocol.control;
 
-import "common.proto";
 import "google/protobuf/any.proto";
 
 /*
  * Directive for remote control from the Swarm Controller
  */
 message ControlRequest {
-  protocol.common.Request request = 1;
-  google.protobuf.Any control_message = 2;
+  // Since command sequencing is not built-in to ZeroMQ,
+  // it must be done manually
+  uint32 sequence_number = 1;
+  google.protobuf.Any control_request = 2;
 }
 
 message ControlResponse {
-  protocol.common.Response response = 1;
-  google.protobuf.Any control_result = 2;
+  // Since command sequencing is not built-in to ZeroMQ,
+  // it must be done manually
+  uint32 sequence_number = 1;
+  google.protobuf.Any control_response = 2;
 }
 
 /*

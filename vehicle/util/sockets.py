@@ -7,20 +7,24 @@ class SocketOperation(Enum):
     BIND = 0
     CONNECT = 1
 
-def setup_zmq_socket(socket, access_token, sock_opt):
+def setup_zmq_socket(socket, access_token, sock_opt, is_url=False):
     '''
     Socket setup helper function. Sets up a socket using a 
     provided access token.
     '''
-    indices = access_token.split('.')
-    # Automatically get the associated endpoint
-    host = query_config(access_token)
+    if not is_url:
+        # Automatically get the associated endpoint
+        host = query_config(access_token)
+    else:
+        host = access_token
     if not isinstance(host, str):
         raise ValueError("Access token did not yield expected type string")
-    addr = f'tcp://{host}'
     if sock_opt == SocketOperation.CONNECT:
+        addr = f'tcp://{host}'
         socket.connect(addr)
     elif sock_opt == SocketOperation.BIND:
+        port = host.split(':')[-1]
+        addr = f'tcp://0.0.0.0:{port}' 
         socket.bind(addr)
     else:
         raise ValueError("Invalid socket operation")

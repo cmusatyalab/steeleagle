@@ -12,8 +12,7 @@ import "google/protobuf/timestamp.proto";
  * Request object for additional request info
  */
 message Request {
-  string sender = 1; // Identity of sender
-  google.protobuf.Timestamp timestamp = 2;
+  google.protobuf.Timestamp timestamp = 1;
 }
 
 /*

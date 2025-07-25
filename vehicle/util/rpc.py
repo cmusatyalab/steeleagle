@@ -34,6 +34,15 @@ async def unary_stream_request(rpc, context, request, logger):
         context.set_details(f"Encountered internal error, {e}")
         context.abort()
 
+def generate_request():
+    '''
+    Generates a protobuf request object for an RPC given a
+    sender ID.
+    '''
+    return common_proto.Request(
+            timestamp=Timestamp().GetCurrentTime()
+            )
+
 def generate_response(resp_type, resp_string=""):
     '''
     Generates a protobuf response object for an RPC given a
