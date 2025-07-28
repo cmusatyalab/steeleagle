@@ -5,13 +5,19 @@ import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
 import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_8888;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
@@ -20,13 +26,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -67,6 +80,9 @@ import dji.v5.manager.interfaces.IWaypointMissionManager;
 public class MyActivity extends AppCompatActivity {
 
     private static final String TAG = "MyActivity";
+    private static final int REQUEST_CODE_STORAGE_PERMISSION = 101;
+    private double pendingLat = 0.0;
+    private double pendingLon = 0.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -201,7 +217,20 @@ public class MyActivity extends AppCompatActivity {
 
         // Set global position button behavior
         Button setGlobalPositionButton = findViewById(R.id.set_global_position);
-        setGlobalPositionButton.setOnClickListener(v -> waypoint(45.9094394, -80.2345678));
+        setGlobalPositionButton.setOnClickListener(v -> {
+            double lat = 45.9094394;
+            double lon = -80.2345678;
+
+            // Store pending coordinates in case we need to request permission first
+            pendingLat = lat;
+            pendingLon = lon;
+
+            if (hasStoragePermission()) {
+                waypoint(lat, lon);
+            } else {
+                requestStoragePermission();
+            }
+        });
 
         // Start image preview button behavior
         Button startImagePreviewButton = findViewById(R.id.start_image_preview);
@@ -212,6 +241,39 @@ public class MyActivity extends AppCompatActivity {
         stopImagePreviewButton.setOnClickListener(v -> stopCameraFramePreview());
     }
     //try to get home not to land, switch to haversine, also check for altitude, switch to waypoints api, get the set velocity functions, gimbal movement
+
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            if (hasStoragePermission()) {
+                waypoint(pendingLat, pendingLon);
+            } else {
+                TextView textView = findViewById(R.id.main_text);
+                textView.setText("Permission denied. Cannot edit KMZ.");
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                waypoint(pendingLat, pendingLon);
+            } else {
+                TextView textView = findViewById(R.id.main_text);
+                textView.setText("Permission denied. Cannot edit KMZ.");
+            }
+        }
+    }
 
     private void takePhoto() {
         IKeyManager keyPhoto = KeyManager.getInstance();
@@ -698,84 +760,86 @@ public class MyActivity extends AppCompatActivity {
             Log.e("MyApp", "KMZ file not found.");
             return;
         }
-        
+
+        File tempDir = new File(getCacheDir(), "kmz_edit");
+        File waylinesFile = new File(tempDir, "wpmz/waylines.wpml");
+        File templateFile = new File(tempDir, "wpmz/template.kml");
+
         try {
-
-        }
-
-
-
-        /*IWaypointMissionManager manager = WaypointMissionManager.getInstance();
-        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);*/
-
-        /*try {
-            // Step 1: Unzip the KMZ
-            File tempDir = new File(getCacheDir(), "kmz_edit");
+            // Step 1: Extract waylines.wpml and template.kml
             if (tempDir.exists()) deleteRecursive(tempDir);
             tempDir.mkdirs();
 
             ZipFile zipFile = new ZipFile(originalKmz);
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-            File waylinesFile = null;
+            boolean foundWaylines = false;
+            boolean foundTemplate = false;
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                File entryDestination = new File(tempDir, entry.getName());
-                if (entry.isDirectory()) {
-                    entryDestination.mkdirs();
-                } else {
+                String entryName = entry.getName();
+
+                if (entryName.equalsIgnoreCase("wpmz/waylines.wpml") || entryName.equalsIgnoreCase("wpmz/template.kml")) {
+                    File outFile = new File(tempDir, entryName);
+                    outFile.getParentFile().mkdirs();
+
                     InputStream in = zipFile.getInputStream(entry);
-                    FileOutputStream out = new FileOutputStream(entryDestination);
+                    FileOutputStream out = new FileOutputStream(outFile);
+
                     byte[] buffer = new byte[1024];
                     int len;
                     while ((len = in.read(buffer)) > 0) {
                         out.write(buffer, 0, len);
                     }
+
                     in.close();
                     out.close();
 
-                    // Look for waylines.wpml
-                    if (entry.getName().equalsIgnoreCase("waylines.wpml")) {
-                        waylinesFile = entryDestination;
-                    }
+                    if (entryName.equalsIgnoreCase("wpmz/waylines.wpml")) foundWaylines = true;
+                    if (entryName.equalsIgnoreCase("wpmz/template.kml")) foundTemplate = true;
                 }
             }
+
             zipFile.close();
 
-            if (waylinesFile == null) {
-                textView.setText("waylines.wpml not found.");
-                Log.e("MyApp", "waylines.wpml not found in KMZ.");
+            if (!foundWaylines) {
+                textView.setText("waylines.wpml not found in KMZ.");
+                Log.e("MyApp", "waylines.wpml missing.");
                 return;
             }
 
-            // Step 2: Read and modify coordinates
-            String wpmlContent = new String(Files.readAllBytes(waylinesFile.toPath()), StandardCharsets.UTF_8);
+            if (!foundTemplate) {
+                textView.setText("template.kml not found in KMZ.");
+                Log.e("MyApp", "template.kml missing.");
+                return;
+            }
+
+            // Step 2: Modify waylines.wpml
+            StringBuilder contentBuilder = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new FileReader(waylinesFile));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                contentBuilder.append(line).append("\n");
+            }
+            reader.close();
+
+            String wpmlContent = contentBuilder.toString();
             wpmlContent = wpmlContent.replaceAll(
                     "<coordinates>\\s*[-\\d.]+,[-\\d.]+\\s*</coordinates>",
-                    "<coordinates>" + lon + "," + lat + "</coordinates>"
+                    "<coordinates>\n            " + lon + "," + lat + "\n          </coordinates>"
             );
-            Files.write(waylinesFile.toPath(), wpmlContent.getBytes(StandardCharsets.UTF_8));
 
-            // Step 3: Repack KMZ with modified file
+            BufferedWriter writer = new BufferedWriter(new FileWriter(waylinesFile));
+            writer.write(wpmlContent);
+            writer.close();
+
+            // Step 3: Repack only waylines.wpml and template.kml into a new KMZ
             File updatedKmz = new File("/storage/emulated/0/DJI/single_point_updated.kmz");
             FileOutputStream fos = new FileOutputStream(updatedKmz);
             ZipOutputStream zos = new ZipOutputStream(fos);
 
-            for (File file : tempDir.listFiles()) {
-                ZipEntry zipEntry = new ZipEntry(file.getName());
-                zos.putNextEntry(zipEntry);
-
-                FileInputStream fis = new FileInputStream(file);
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = fis.read(buffer)) >= 0) {
-                    zos.write(buffer, 0, length);
-                }
-
-                fis.close();
-                zos.closeEntry();
-            }
+            addToZip(tempDir, tempDir, zos);
 
             zos.close();
             fos.close();
@@ -784,12 +848,35 @@ public class MyActivity extends AppCompatActivity {
             Log.i("MyApp", "KMZ updated: " + updatedKmz.getAbsolutePath());
 
         } catch (Exception e) {
-            textView.setText("Error editing KMZ.");
+            textView.setText("Error updating KMZ.");
             Log.e("MyApp", "Exception during KMZ edit", e);
-        }*/
+        }
     }
 
-    // Helper method to delete temp folder
+    // Recursively add files to ZipOutputStream
+    private void addToZip(File rootDir, File sourceFile, ZipOutputStream zos) throws Exception {
+        if (sourceFile.isDirectory()) {
+            for (File file : sourceFile.listFiles()) {
+                addToZip(rootDir, file, zos);
+            }
+        } else {
+            String zipEntryName = rootDir.toURI().relativize(sourceFile.toURI()).getPath();
+            ZipEntry zipEntry = new ZipEntry(zipEntryName);
+            zos.putNextEntry(zipEntry);
+
+            FileInputStream fis = new FileInputStream(sourceFile);
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = fis.read(buffer)) > 0) {
+                zos.write(buffer, 0, len);
+            }
+
+            zos.closeEntry();
+            fis.close();
+        }
+    }
+
+    // Helper to recursively delete folders
     private void deleteRecursive(File fileOrDirectory) {
         if (fileOrDirectory.isDirectory()) {
             for (File child : fileOrDirectory.listFiles()) {
@@ -798,6 +885,38 @@ public class MyActivity extends AppCompatActivity {
         }
         fileOrDirectory.delete();
     }
+        /*IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);*/
+
+    private boolean hasStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
+        } else {
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    private void requestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, REQUEST_CODE_STORAGE_PERMISSION);
+            } catch (Exception e) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent, REQUEST_CODE_STORAGE_PERMISSION);
+            }
+        } else {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_CODE_STORAGE_PERMISSION
+            );
+        }
+    }
+
+
     private void isHovering() {
         IKeyManager keyManager = KeyManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
