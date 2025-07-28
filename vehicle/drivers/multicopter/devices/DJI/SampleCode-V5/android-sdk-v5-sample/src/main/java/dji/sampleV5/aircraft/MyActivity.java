@@ -957,33 +957,6 @@ public class MyActivity extends AppCompatActivity {
         Log.i("MyApp", "Stopped Video");
     }
 
-    /*private void setGlobalPosition(double latitude, double longitude, double altitude, int flyingHeight) {
-        Log.i("MyApp", "Start of the set global position function");
-        //creating the target
-        FlyToTarget flyToTarget = new FlyToTarget();
-        flyToTarget.setTargetLocation(new LocationCoordinate3D(latitude, longitude, altitude));
-        flyToTarget.setMaxSpeed(1);
-        //creating the parameters
-        FlyToParam flyParam = new FlyToParam();
-        flyParam.setHeight(flyingHeight);
-        flyParam.setFlyToMode(FlyToMode.SET_HEIGHT);
-        //creating and executing the mission command to make the drone actually move to the coordinate
-        IFlyToMissionManager flyToMissionManager = IntelligentFlightManager.getInstance().getFlyToMissionManager();
-        Log.i("MyApp", "Start of mission itself");
-        flyToMissionManager.startMission(flyToTarget, flyParam, new CommonCallbacks.CompletionCallback() {
-            @Override
-            public void onSuccess() {
-                Log.i("MyApp", "FlyTo mission started successfully.");
-            }
-
-            @Override
-            public void onFailure(@NonNull IDJIError idjiError) {
-                Log.e("MyApp", "FlyTo mission failed: " + idjiError.description());
-            }
-        });
-        Log.i("MyApp", "End of mission itself");
-    }*/
-
     //code for camera image on screen
     class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
 
