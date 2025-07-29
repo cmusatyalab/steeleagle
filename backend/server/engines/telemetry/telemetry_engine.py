@@ -8,6 +8,7 @@
 import datetime
 import logging
 import os
+import signal
 import time
 
 import cv2
@@ -34,7 +35,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
     def __init__(self, args):
         logger.info("Telemetry engine intializing...")
-
+        signal.signal(signal.SIGTERM, self.cleanup)
         # Connect to Redis database
         self.r = redis.Redis(
             host="redis",
@@ -59,10 +60,11 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.mcap = foxglove.open_mcap(
             f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
         )
-        foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+        self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
-    def __del__(self):
-        logger.info("Flushing MCAP file...")
+    def cleanup(self):
+        logger.info("Stopping WS server and flushing MCAP file...")
+        self.fg_server.stop()
         self.mcap.close()
 
     def updateDroneStatus(self, extras):
