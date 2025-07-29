@@ -207,7 +207,47 @@
                 android:id="@+id/set_global_position"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Set Global Position" />
+                android:text="Set Waypoint/Global Position" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/pause_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pause Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/resume_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resume Waypoint Mission" />
 
             <Space
                 android:layout_width="wrap_content"

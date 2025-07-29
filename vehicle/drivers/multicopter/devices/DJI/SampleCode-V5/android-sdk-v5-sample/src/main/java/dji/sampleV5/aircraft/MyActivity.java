@@ -1,6 +1,7 @@
 package dji.sampleV5.aircraft;
 
 import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.pushKMZFileToAircraft;
+import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.startMission;
 import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
 import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_8888;
@@ -217,20 +218,23 @@ public class MyActivity extends AppCompatActivity {
 
         // Set global position button behavior
         Button setGlobalPositionButton = findViewById(R.id.set_global_position);
-        setGlobalPositionButton.setOnClickListener(v -> {
-            double lat = 45.9094394;
-            double lon = -80.2345678;
+        setGlobalPositionButton.setOnClickListener(v -> setGlobalPositionDialog());
 
-            // Store pending coordinates in case we need to request permission first
-            pendingLat = lat;
-            pendingLon = lon;
+        // Start go to global position button behavior
+        Button startGoToGlobalPositionButton = findViewById(R.id.start_go_to_global_position);
+        startGoToGlobalPositionButton.setOnClickListener(v -> startWaypointMission());
 
-            if (hasStoragePermission()) {
-                waypoint(lat, lon);
-            } else {
-                requestStoragePermission();
-            }
-        });
+        // Stop go to global position button behavior
+        Button stopGoToGlobalPositionButton = findViewById(R.id.stop_go_to_global_position);
+        stopGoToGlobalPositionButton.setOnClickListener(v -> stopWaypointMission());
+
+        // Pause go to global position button behavior
+        Button pauseGoToGlobalPositionButton = findViewById(R.id.pause_go_to_global_position);
+        pauseGoToGlobalPositionButton.setOnClickListener(v -> pauseWaypointMission());
+
+        // Resume go to global position button behavior
+        Button resumeGoToGlobalPositionButton = findViewById(R.id.resume_go_to_global_position);
+        resumeGoToGlobalPositionButton.setOnClickListener(v -> resumeWaypointMission());
 
         // Start image preview button behavior
         Button startImagePreviewButton = findViewById(R.id.start_image_preview);
@@ -425,7 +429,7 @@ public class MyActivity extends AppCompatActivity {
         Velocity3D enuVelocity = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
 
         // Retrieve compass heading
-        Double compassHeadingDegrees = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyCompassHeading));
+        Double compassHeadingDegrees = keyManager.getValue(KeyTools.createKey(KeyCompassHeading));
 
         TextView statusTextView = findViewById(R.id.main_text);
 
@@ -751,8 +755,10 @@ public class MyActivity extends AppCompatActivity {
     }
     //end of of the set and go home functions
 
+    //start of waypoint code
     private void waypoint(double lat, double lon) {
         TextView textView = findViewById(R.id.main_text);
+        Log.i("MyApp", "Lon: " + lon + " Lat: " + lat);
         File originalKmz = new File("/storage/emulated/0/DJI/single_point.kmz");
 
         if (!originalKmz.exists()) {
@@ -763,7 +769,6 @@ public class MyActivity extends AppCompatActivity {
 
         File tempDir = new File(getCacheDir(), "kmz_edit");
         File waylinesFile = new File(tempDir, "wpmz/waylines.wpml");
-        File templateFile = new File(tempDir, "wpmz/template.kml");
 
         try {
             // Step 1: Extract waylines.wpml and template.kml
@@ -851,6 +856,9 @@ public class MyActivity extends AppCompatActivity {
             textView.setText("Error updating KMZ.");
             Log.e("MyApp", "Exception during KMZ edit", e);
         }
+        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);
+        Log.i("MyApp", "doneeeeeee");
     }
 
     // Recursively add files to ZipOutputStream
@@ -885,8 +893,6 @@ public class MyActivity extends AppCompatActivity {
         }
         fileOrDirectory.delete();
     }
-        /*IWaypointMissionManager manager = WaypointMissionManager.getInstance();
-        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);*/
 
     private boolean hasStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -916,6 +922,78 @@ public class MyActivity extends AppCompatActivity {
         }
     }
 
+    private void startWaypointMission() {
+        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        manager.startMission("single_point_updated.kmz", new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "Waypoint mission started successfully.");
+                textView.setText("Mission started");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError idjiError) {
+                Log.i("MyApp", "Waypoint mission start failed.");
+                textView.setText("Mission failed: " + idjiError.description());
+            }
+        });
+    }
+
+    private void stopWaypointMission() {
+        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        manager.stopMission("single_point_updated.kmz", new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "Waypoint mission stopped successfully.");
+                textView.setText("Mission stopped");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError idjiError) {
+                Log.i("MyApp", "Failed to stop mission: " + idjiError.description());
+                textView.setText("Failed to stop mission: " + idjiError.description());
+            }
+        });
+    }
+
+    private void pauseWaypointMission() {
+        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        manager.pauseMission(new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "Waypoint mission paused successfully.");
+                textView.setText("Mission paused");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError idjiError) {
+                Log.i("MyApp", "Failed to pause mission: " + idjiError.description());
+                textView.setText("Failed to pause mission: " + idjiError.description());
+            }
+        });
+    }
+
+    private void resumeWaypointMission() {
+        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
+        TextView textView = findViewById(R.id.main_text);
+        manager.resumeMission(new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "Waypoint mission resumed successfully.");
+                textView.setText("Mission resumed");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError idjiError) {
+                Log.i("MyApp", "Failed to resume mission: " + idjiError.description());
+                textView.setText("Failed to resume mission: " + idjiError.description());
+            }
+        });
+    }
+    //end of waypoint code
 
     private void isHovering() {
         IKeyManager keyManager = KeyManager.getInstance();
@@ -966,14 +1044,14 @@ public class MyActivity extends AppCompatActivity {
         byte[] byteArray;
 
         public void onFrame(@NonNull byte[] frameData, int offset, int length, int width, int height, @NonNull ICameraStreamManager.FrameFormat format) {
-            Log.i("MyApp", "Got onFrame");
+            //  Log.i("MyApp", "Got onFrame");
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             int[] colors = new int[width * height];
-            Log.i("MyApp", "before for loop");
+            //Log.i("MyApp", "before for loop");
             for (int i = 0; i < width * height; i++) {
                 colors[i] = Color.rgb(frameData[i * 4] & 0xFF, frameData[i * 4 + 1] & 0xFF, frameData[i * 4 + 2] & 0xFF);
             }
-            Log.i("MyApp", "after for loop");
+            //Log.i("MyApp", "after for loop");
             bitmap.setPixels(colors, 0, width, 0, 0, width, height);
 
             //conversion to jpeg
@@ -981,7 +1059,7 @@ public class MyActivity extends AppCompatActivity {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 50, stream);
             byteArray = stream.toByteArray();
             runOnUiThread(this::run);
-            Log.i("MyApp", "after display");
+            //Log.i("MyApp", "after display");
         }
 
         @Override
@@ -990,7 +1068,7 @@ public class MyActivity extends AppCompatActivity {
             float fps = 1000 / (millis - lastTime);
             lastTime = millis;
             TextView textView = findViewById(R.id.main_text);
-            textView.setText("fps is: " + fps);
+            //textView.setText("fps is: " + fps);
             ImageView imageView = findViewById(R.id.my_image_view);
             //imageView.setImageBitmap(bitmap);
             Bitmap bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
@@ -1022,7 +1100,7 @@ public class MyActivity extends AppCompatActivity {
         void onCancel();
     }
 
-    /*private void setGlobalPositionDialog() {
+    private void setGlobalPositionDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
             @Override
             public void onValue(Double latitude) {
@@ -1033,32 +1111,23 @@ public class MyActivity extends AppCompatActivity {
                     public void onValue(Double longitude) {
                         Log.i("MyApp", "Longitude: " + longitude);
 
-                        doublePrompt("Enter Altitude", new ValueCallback<Double>() {
-                            @Override
-                            public void onValue(Double altitude) {
-                                Log.i("MyApp", "Altitude: " + altitude);
-
-                                intPrompt("Enter Flying height", new ValueCallback<Integer>() {
-                                    @Override
-                                    public void onValue(Integer flyingHeight) {
-                                        Log.i("MyApp", "Flying Height: " + flyingHeight);
-
-                                        // All inputs collected — call your function here
-                                        setGlobalPosition(latitude, longitude, altitude, flyingHeight);
+                        //call waypoint function
+                        if (hasStoragePermission()) {
+                            waypoint(latitude, longitude);
+                        } else {
+                            requestStoragePermission();
+                            Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (hasStoragePermission()) {
+                                        waypoint(latitude, longitude);
+                                    } else {
+                                        Log.i("MyApp", "Still no permission after delay.");
                                     }
-
-                                    @Override
-                                    public void onCancel() {
-                                        Log.i("MyApp", "Flying height input cancelled");
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onCancel() {
-                                Log.i("MyApp", "Altitude input cancelled");
-                            }
-                        });
+                                }
+                            }, 5000); // 5-second delay
+                        }
                     }
 
                     @Override
@@ -1073,7 +1142,7 @@ public class MyActivity extends AppCompatActivity {
                 Log.i("MyApp", "Latitude input cancelled");
             }
         });
-    }*/
+    }
 
     private void setHomeUsingCoordinatesDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
