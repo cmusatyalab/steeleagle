@@ -64,7 +64,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         )
         self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
-    def cleanup(self):
+    def cleanup(self, signum, frame):
         logger.info("Stopping WS server and flushing MCAP file...")
         self.fg_server.stop()
         self.mcap.close()
