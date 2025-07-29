@@ -55,8 +55,9 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
+        now = datetime.datetime.now(pytz.timezone("America/New_York"))
         self.mcap = foxglove.open_mcap(
-            f"{self.storage_path}/backend_{time.time_ns()}.mcap"
+            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
         )
         foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
@@ -202,7 +203,6 @@ class TelemetryEngine(cognitive_engine.Engine):
                     json_format.MessageToJson(
                         extras.telemetry,
                         always_print_fields_with_no_presence=True,
-                        preserving_proto_field_name=True,
                     ),
                     log_time=time.time_ns(),
                 )
