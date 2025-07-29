@@ -560,10 +560,10 @@ class DigitalPerfectDrone(MulticopterItf):
         )
     
     def _is_hovering(self) -> bool:
-        return self._drone.check_flight_state("hovering")
+        return self._drone.check_flight_state(common_protocol.FlightState.HOVERING)
 
     def _is_landed(self) -> bool:
-        return self._drone.check_flight_state("landed")
+        return self._drone.check_flight_state(common_protocol.FlightState.LANDED)
 
     def _is_move_to_done(self) -> bool:
         return self._drone.get_state("active_move")
