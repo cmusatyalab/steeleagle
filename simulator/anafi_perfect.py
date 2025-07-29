@@ -13,8 +13,8 @@ from enum import Enum
 from PIL import Image
 
 # Protocol Imports
-import protocol.common_pb2 as common_protocol
-import protocol.dataplane_pb2 as data_protocol
+import common_pb2 as common_protocol
+import dataplane_pb2 as data_protocol
 
 # Interface Imports
 from simulated_drone import SimulatedDrone
@@ -52,9 +52,9 @@ class DigitalPerfectDrone(MulticopterItf):
 
         """ Interface methods """
 
-    async def get_type(self) -> str:
+    def get_type(self) -> str:
         try:
-            return await self._drone._device_type
+            return self._drone._device_type
         except:
             return "Digital Simulated"
 

@@ -182,16 +182,16 @@ class SimulatedDrone():
             return True
         return False
     
-    def get_current_position(self) -> list[Optional[float]]:
+    def get_current_position(self) -> tuple[Optional[float], Optional[float], Optional[float]]:
         try:
-            return [
+            return (
                 self.current_position["lat"],
                 self.current_position["lon"],
                 self.current_position["alt"]
-            ]
+            )
         except:
             logger.error("Unable to retrieve current position")
-            return [None, None, None]
+            return (None, None, None)
 
     def get_home_location(self):
         try:
@@ -423,6 +423,7 @@ class SimulatedDrone():
             logger.error(f"Velocity speedZ: {self._velocity_target["speedZ"]}")
             return
 
+        # TODO fix this to work when slowing from max speed thresholds
         if abs(vel_x - self._velocity_target["speedX"]) <= MATCH_TOLERANCE or abs(vel_x) >= MAX_SPEED:
             acceleration["accX"] = 0
         if abs(vel_y - self._velocity_target["speedY"]) <= MATCH_TOLERANCE or abs(vel_y) >= MAX_SPEED:
