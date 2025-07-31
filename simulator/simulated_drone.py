@@ -26,17 +26,20 @@ TICK_RATE = 1 / TICK_COUNT
 DEFAULT_LAT = 40.41368353053923
 DEFAULT_LON = -79.9489233699767
 DEFAULT_ALT = 0
+DEFAULT_SAT_COUNT = 16
 TASK_TIMEOUT = 10 # value in seconds
 
 class SimulatedDrone():
-    def __init__(self, ip, lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT, takeoff_alt=10):
+    def __init__(self, ip, drone_id="Simulated Drone", lat=DEFAULT_LAT, lon=DEFAULT_LON, alt=DEFAULT_ALT, takeoff_alt=10, mag_interference=0):
         self._device_type = "Digital Drone"
         self.connection_ip = ip
         self._active_connection = False
         self._takeoff_alt = takeoff_alt
         self._state = {}
+        self.set_name(drone_id)
         self._initialize_internal_dicts()
         self.set_current_position(lat, lon, alt)
+        self.set_magnetometer(mag_interference)
 
     def _initialize_internal_dicts(self) -> None:
         self.current_position: dict[str, Optional[float]] = {
@@ -67,6 +70,14 @@ class SimulatedDrone():
         self._pending_action = False
         self._active_action = False
         self._position_flag = False
+        self.set_velocity(0, 0, 0)
+        self.set_attitude(0, 0, 0)
+        self.set_gimbal_pose(0, 0, 0)
+        self._set_acceleration(0, 0, 0)
+        self._set_drone_rotation(0, 0, 0)
+        self._set_gimbal_rotation(0, 0, 0)
+        self.set_battery_percent(100)
+        self.set_satellites(DEFAULT_SAT_COUNT)
 
     async def state_loop(self):
         while self._active_connection:
@@ -75,8 +86,12 @@ class SimulatedDrone():
                     self._cancel_current_action()
                 else:
                     # Start accelerating in proper direction only after previous task canceled
-                    if self._check_target_active("position") or self._check_target_active("gimbal"):
+                    if self._check_target_active("position"):
                         self._calculate_acceleration_direction()
+                        self._active_action = True
+                        self._pending_action = False
+                    # Update flags when no position target is set as part of gimbal rotation
+                    if self._check_target_active("gimbal"):
                         self._active_action = True
                         self._pending_action = False
             if self._check_target_active("velocity"):
@@ -92,6 +107,7 @@ class SimulatedDrone():
             self._update_kinematics()
             time_elapsed = self.t_current - self.t_last
             self.t_last = self.t_current
+            logger.info(f"{time_elapsed} since last loop iteration")
             await asyncio.sleep(TICK_RATE - time_elapsed)
         logger.info("Connection terminated, shutting down...")
 
@@ -116,12 +132,12 @@ class SimulatedDrone():
         if self._check_target_active("pose"):
             self._set_drone_rotation(0, 0, 0)
             self._set_pose_target(None, None, None)
-        if not self._check_target_active("velocity"):
-            if self.get_current_position()[2] is not None and self.get_current_position()[2] > 0:
-                self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            else:
-                self.set_flight_state(common_protocol.FlightStatus.IDLE)
-            self._active_action = None
+        
+        if self.get_current_position()[2] is not None and self.get_current_position()[2] > 0:
+            self.set_flight_state(common_protocol.FlightStatus.HOVERING)
+        else:
+            self.set_flight_state(common_protocol.FlightStatus.IDLE)
+        self._active_action = None
 
     async def _register_pending_task(self):
         if self._pending_action:
@@ -137,7 +153,10 @@ class SimulatedDrone():
             self._active_connection = True
             logger.info("Connection established with simulated digital drone...")
             logger.info("Starting internal state loop...")
-            asyncio.run(self.state_loop())
+            self.t_current = time.time()
+            self.t_last = self.t_current
+            self._loop = asyncio.new_event_loop()
+            self._loop.create_task(self.state_loop())
             logger.info("Internal state loop active...")
             return True
         logger.warning("Attempted multiple connections on simulated drone object...")
@@ -149,6 +168,7 @@ class SimulatedDrone():
     def disconnect(self) -> bool:
         if self._active_connection:
             self._active_connection = False
+            self._loop.close()
             logger.info("Disconnected from simulated digital drone...")
             return True
         logger.warning("Attempted to disconnect without active connection to simulated drone...")
@@ -378,6 +398,10 @@ class SimulatedDrone():
         return (self._check_position_reached()
                 and self.is_stopped()
                 and self.check_flight_state(common_protocol.FlightStatus.TAKING_OFF))
+
+    def is_task_lock_open(self):
+        # Checks if the main event loop has moved the registered task from pending to active
+        return not self._pending_action
 
     """ Internal State Methods """
 
@@ -812,7 +836,7 @@ class SimulatedDrone():
             logger.error(f"Previous alt: {prev_position[2]}")
             return
         
-        new_pos = get_new_latlon(prev_position[0], prev_position[1], dt * vel["speedX"], dt * vel["speedY"])
+        new_pos = self.get_new_latlon(prev_position[0], prev_position[1], dt * vel["speedX"], dt * vel["speedY"])
         self.set_current_position(
             new_pos[0],
             new_pos[1],
@@ -1004,8 +1028,8 @@ class SimulatedDrone():
         acc_z = self._calculate_deceleration(current_velocity["speedZ"], 0)
         self._set_acceleration(acc_x, acc_y, acc_z)
 
-def get_new_latlon(ref_lat: float, ref_lon: float, dist_x: float, dist_y: float) -> tuple[float, float]:
-    new_lat = ref_lat + (dist_x / M_PER_LAT_DEG)
-    m_per_deg_lon = np.cos(np.deg2rad(new_lat)) * M_PER_LAT_DEG
-    new_lon = ref_lon + (dist_y / m_per_deg_lon)
-    return (new_lat, new_lon)
+    def get_new_latlon(self, ref_lat: float, ref_lon: float, dist_x: float, dist_y: float) -> tuple[float, float]:
+        new_lat = ref_lat + (dist_x / M_PER_LAT_DEG)
+        m_per_deg_lon = np.cos(np.deg2rad(new_lat)) * M_PER_LAT_DEG
+        new_lon = ref_lon + (dist_y / m_per_deg_lon)
+        return (new_lat, new_lon)
