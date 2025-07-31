@@ -934,7 +934,7 @@ public class MyActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull IDJIError idjiError) {
-                Log.i("MyApp", "Waypoint mission start failed.");
+                Log.i("MyApp", "Mission failed: " + idjiError.description());
                 textView.setText("Mission failed: " + idjiError.description());
             }
         });
@@ -1037,14 +1037,12 @@ public class MyActivity extends AppCompatActivity {
 
     //code for camera image on screen
     class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
-
         Bitmap bitmap = null;
         long lastTime = 0;
-
         byte[] byteArray;
 
         public void onFrame(@NonNull byte[] frameData, int offset, int length, int width, int height, @NonNull ICameraStreamManager.FrameFormat format) {
-            //  Log.i("MyApp", "Got onFrame");
+            //Log.i("MyApp", "Got onFrame");
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             int[] colors = new int[width * height];
             //Log.i("MyApp", "before for loop");
@@ -1077,7 +1075,6 @@ public class MyActivity extends AppCompatActivity {
     }
 
     myFrameHandler_t myFrameHandler = new myFrameHandler_t();
-
     private void startCameraFramePreview() {
         ICameraStreamManager cameraStreamManager = CameraStreamManager.getInstance();
         cameraStreamManager.addFrameListener(
@@ -1096,7 +1093,6 @@ public class MyActivity extends AppCompatActivity {
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
         void onValue(T value);
-
         void onCancel();
     }
 
@@ -1105,7 +1101,6 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onValue(Double latitude) {
                 Log.i("MyApp", "Latitude: " + latitude);
-
                 doublePrompt("Enter Longitude", new ValueCallback<Double>() {
                     @Override
                     public void onValue(Double longitude) {
@@ -1129,7 +1124,6 @@ public class MyActivity extends AppCompatActivity {
                             }, 5000); // 5-second delay
                         }
                     }
-
                     @Override
                     public void onCancel() {
                         Log.i("MyApp", "Longitude input cancelled");

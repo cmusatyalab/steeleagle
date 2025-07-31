@@ -234,7 +234,7 @@ class WayPointV3Fragment : DJIFragment() {
                     }
 
                     override fun onFailure(error: IDJIError) {
-                        ToastUtils.showToast("startMission Failed " + getErroMsg(error))
+                        ToastUtils.showToast(getErroMsg(error))
                     }
                 })
 
