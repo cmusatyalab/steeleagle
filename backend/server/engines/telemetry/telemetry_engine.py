@@ -194,7 +194,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
                 foxglove.log(
-                    f"/location/{extras.telemetry.drone_name}",
+                    f"/{extras.telemetry.drone_name}/location/",
                     LocationFix(
                         latitude=extras.telemetry.global_position.latitude,
                         longitude=extras.telemetry.global_position.longitude,
@@ -203,7 +203,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                     log_time=time.time_ns(),
                 )
                 foxglove.log(
-                    f"/telemetry/{extras.telemetry.drone_name}",
+                    f"/{extras.telemetry.drone_name}/telemetry",
                     json_format.MessageToJson(
                         extras.telemetry,
                         always_print_fields_with_no_presence=True,
@@ -224,7 +224,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             # store images in the shared volume
             try:
                 foxglove.log(
-                    f"/imagery/{extras.telemetry.drone_name}",
+                    f"/{extras.telemetry.drone_name}/imagery",
                     CompressedImage(data=input_frame.payloads[0], format="jpeg"),
                     log_time=time.time_ns(),
                 )
