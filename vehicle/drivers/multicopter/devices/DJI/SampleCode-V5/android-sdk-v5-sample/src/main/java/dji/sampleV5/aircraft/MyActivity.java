@@ -1109,6 +1109,7 @@ public class MyActivity extends AppCompatActivity {
     }
 
     myFrameHandler_t myFrameHandler = new myFrameHandler_t();
+
     private void startCameraFramePreview() {
         ICameraStreamManager cameraStreamManager = CameraStreamManager.getInstance();
         cameraStreamManager.addFrameListener(
@@ -1127,6 +1128,7 @@ public class MyActivity extends AppCompatActivity {
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
         void onValue(T value);
+
         void onCancel();
     }
 
@@ -1158,6 +1160,7 @@ public class MyActivity extends AppCompatActivity {
                             }, 5000); // 5-second delay
                         }
                     }
+
                     @Override
                     public void onCancel() {
                         Log.i("MyApp", "Longitude input cancelled");
