@@ -194,7 +194,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
                 foxglove.log(
-                    f"/{extras.telemetry.drone_name}/location/",
+                    f"/{extras.telemetry.drone_name}/location",
                     LocationFix(
                         latitude=extras.telemetry.global_position.latitude,
                         longitude=extras.telemetry.global_position.longitude,
