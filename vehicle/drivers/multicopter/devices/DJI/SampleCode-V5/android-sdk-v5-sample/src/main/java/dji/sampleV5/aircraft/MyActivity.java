@@ -45,6 +45,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -759,7 +761,7 @@ public class MyActivity extends AppCompatActivity {
     private void waypoint(double lat, double lon) {
         TextView textView = findViewById(R.id.main_text);
         Log.i("MyApp", "Lon: " + lon + " Lat: " + lat);
-        File originalKmz = new File("/storage/emulated/0/DJI/single_point.kmz");
+        File originalKmz = new File("/storage/emulated/0/DJI/mission.kmz");
 
         if (!originalKmz.exists()) {
             textView.setText("KMZ file not found.");
@@ -830,17 +832,48 @@ public class MyActivity extends AppCompatActivity {
             reader.close();
 
             String wpmlContent = contentBuilder.toString();
-            wpmlContent = wpmlContent.replaceAll(
-                    "<coordinates>\\s*[-\\d.]+,[-\\d.]+\\s*</coordinates>",
-                    "<coordinates>\n            " + lon + "," + lat + "\n          </coordinates>"
-            );
 
+            // Replace first and second <coordinates> blocks
+            Pattern pattern = Pattern.compile("<coordinates>\\s*([-\\d.]+),([-\\d.]+)\\s*</coordinates>");
+            Matcher matcher = pattern.matcher(wpmlContent);
+
+            StringBuffer sb = new StringBuffer();
+            int coordIndex = 0;
+
+            // Getting the current location for the first coordinate in the mission
+            IKeyManager keyManager = KeyManager.getInstance();
+            LocationCoordinate2D gpsLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
+            double currentLat = 40;
+            double currentLon = -80;
+            if (gpsLocation != null) {
+                currentLat = gpsLocation.getLatitude();
+                currentLon = gpsLocation.getLongitude();
+            } else {
+                textView.setText("GPS data not available");
+                Log.w("MyApp", "GPS location is null");
+            }
+
+            while (matcher.find()) {
+                String replacement;
+                if (coordIndex == 0) {
+                    replacement = "<coordinates>\n            " + currentLon + "," + currentLat + "\n          </coordinates>";
+                } else if (coordIndex == 1) {
+                    replacement = "<coordinates>\n            " + lon + "," + lat + "\n          </coordinates>";
+                } else {
+                    continue;
+                }
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+                coordIndex++;
+            }
+            matcher.appendTail(sb);
+
+            // Write back the updated XML
             BufferedWriter writer = new BufferedWriter(new FileWriter(waylinesFile));
-            writer.write(wpmlContent);
+            writer.write(sb.toString());
             writer.close();
 
             // Step 3: Repack only waylines.wpml and template.kml into a new KMZ
-            File updatedKmz = new File("/storage/emulated/0/DJI/single_point_updated.kmz");
+            File updatedKmz = new File("/storage/emulated/0/DJI/mission_updated.kmz");
             FileOutputStream fos = new FileOutputStream(updatedKmz);
             ZipOutputStream zos = new ZipOutputStream(fos);
 
@@ -856,6 +889,7 @@ public class MyActivity extends AppCompatActivity {
             textView.setText("Error updating KMZ.");
             Log.e("MyApp", "Exception during KMZ edit", e);
         }
+
         IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         manager.pushKMZFileToAircraft(originalKmz.getPath(), null);
         Log.i("MyApp", "doneeeeeee");
@@ -925,7 +959,7 @@ public class MyActivity extends AppCompatActivity {
     private void startWaypointMission() {
         IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.startMission("single_point_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        manager.startMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission started successfully.");
@@ -943,7 +977,7 @@ public class MyActivity extends AppCompatActivity {
     private void stopWaypointMission() {
         IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.stopMission("single_point_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        manager.stopMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission stopped successfully.");
