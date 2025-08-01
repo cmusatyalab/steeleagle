@@ -82,12 +82,17 @@ class SimulatedDrone():
 
     async def state_loop(self):
         while self._active_connection:
+            logger.warning("Starting new state loop iteration")
             if self._pending_action:
                 if self._active_action:
+                    logger.warning("Entered action cancel block")
                     self._cancel_current_action()
+
+                # Start accelerating in proper direction only after previous task canceled
                 else:
-                    # Start accelerating in proper direction only after previous task canceled
+                    logger.warning("Entered active action off block")
                     if self._check_target_active("position"):
+                        logger.warning("position target set without vel target")
                         self._calculate_acceleration_direction()
                         self._active_action = True
                         self._pending_action = False
@@ -96,10 +101,13 @@ class SimulatedDrone():
                         self._active_action = True
                         self._pending_action = False
             if self._check_target_active("velocity"):
+                logger.error("Checking velocity reached")
                 self._check_velocity_reached()
                 if not self._check_target_active("position"):
+                    logger.error("Setting velocity to zero")
                     self._zero_velocity()
             if self._check_target_active("position"):
+                logger.error("Checking brake thresholds")
                 self._check_braking_thresholds()
             if self._check_target_active("pose"):
                 self._check_drone_pose_reached()
@@ -108,7 +116,7 @@ class SimulatedDrone():
             self._update_kinematics()
             time_elapsed = self.t_current - self.t_last
             self.t_last = self.t_current
-            logger.info(f"{time_elapsed} since last loop iteration")
+            logger.warning(f"{time_elapsed} since last loop iteration")
             await asyncio.sleep(TICK_RATE - time_elapsed)
         logger.info("Connection terminated, shutting down...")
 
@@ -125,8 +133,8 @@ class SimulatedDrone():
                 return False
             await asyncio.sleep(interval)
 
-    def _cancel_current_action(self):
-        self._zero_velocity()
+    async def _cancel_current_action(self):
+        await self._zero_velocity()
         if self._check_target_active("gimbal"):
             self._set_gimbal_rotation(0, 0, 0)
             self._set_gimbal_target(None, None, None)
@@ -138,7 +146,7 @@ class SimulatedDrone():
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
         else:
             self.set_flight_state(common_protocol.FlightStatus.IDLE)
-        self._active_action = None
+        self._active_action = False
 
     async def _register_pending_task(self):
         if self._pending_action:
@@ -156,8 +164,8 @@ class SimulatedDrone():
             logger.info("Starting internal state loop...")
             self.t_current = time.time()
             self.t_last = self.t_current
-            self._loop = asyncio.new_event_loop()
-            self._loop.create_task(self.state_loop())
+            #self._loop = asyncio.new_event_loop()
+            self._loop = asyncio.create_task(self.state_loop())
             logger.info("Internal state loop active...")
             return True
         logger.warning("Attempted multiple connections on simulated drone object...")
@@ -193,7 +201,7 @@ class SimulatedDrone():
         current_position = self.get_current_position()
         self._set_position_target(current_position[0], current_position[1], self._takeoff_alt)
 
-        result = await self._wait_for_condition(lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT)
+        result = await self._wait_for_condition(lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT, interval=1)
         if result:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
@@ -431,7 +439,7 @@ class SimulatedDrone():
             "yaw": yaw
         }
         self._update_state("attitude", attitude)
-        logger.debug(f"Drone attitude set to pitch: {pitch}, roll: {roll}, yaw: {yaw}")
+        logger.info(f"Drone attitude set to pitch: {pitch}, roll: {roll}, yaw: {yaw}")
     
     def set_battery_percent(self, starting_charge: float):
         self._update_state("battery_percent", starting_charge)
@@ -442,12 +450,12 @@ class SimulatedDrone():
             lon=new_lon,
             alt=new_alt
         )
-        logger.debug(f"Current position set to ({new_lat}, {new_lon}, {new_alt})")
+        logger.info(f"Current position set to ({new_lat}, {new_lon}, {new_alt})")
 
     # flight_state expected to be common_protocol.FlightStatus member
     def set_flight_state(self, flight_state):
         self._update_state("flight_state", flight_state)
-        logger.debug(f"Current flight state set to: {flight_state}")
+        logger.info(f"Current flight state set to: {flight_state}")
 
     def set_gimbal_pose(self, pitch: float, roll: float, yaw: float):
         gimbal_pose = {
@@ -456,16 +464,16 @@ class SimulatedDrone():
             "g_yaw": yaw
         }
         self._update_state("gimbal_pose", gimbal_pose)
-        logger.debug(f"Gimbal pose set to g_pitch: {pitch}, g_roll: {roll}, g_yaw: {yaw}")
+        logger.info(f"Gimbal pose set to g_pitch: {pitch}, g_roll: {roll}, g_yaw: {yaw}")
 
     def set_magnetometer(self, condition_code: int):
         # 0 for good, 1 for calibration, 2 for perturbation
         self._update_state("magnetometer", condition_code)
-        logger.debug(f"Magnetometer reading updated to {condition_code}")
+        logger.info(f"Magnetometer reading updated to {condition_code}")
 
     def set_name(self, drone_id: str):
         self._update_state("drone_id", drone_id)
-        logger.debug(f"Drone name set as: {drone_id}")
+        logger.info(f"Drone name set as: {drone_id}")
 
     def set_velocity(self, vel_x: float, vel_y: float, vel_z: float):
         velocity = {
@@ -474,15 +482,16 @@ class SimulatedDrone():
             "speedZ": max(min(vel_z, MAX_CLIMB), -MAX_CLIMB)
         }
         self._update_state("velocity", velocity)
-        logger.debug(f"Drone velocity set to ({vel_x}, {vel_y}, {vel_z})")
+        logger.info(f"Drone velocity set to ({vel_x}, {vel_y}, {vel_z})")
     
     def set_satellites(self, satellite_count: int):
         self._update_state("satellite_count", satellite_count)
-        logger.debug(f"GPS satellite count set to: {satellite_count}")
+        logger.info(f"GPS satellite count set to: {satellite_count}")
     
     """ Kinematics """
 
     def _calculate_acceleration_direction(self):
+        logger.warning("Entering acceleration calculation")
         current_position = self.get_current_position()
         if (self._position_target["lat"] == None
             or self._position_target["lon"] == None
@@ -515,7 +524,7 @@ class SimulatedDrone():
                 acc_z = -MAX_CLIMB
 
             self._set_acceleration(acc_x, acc_y, acc_z)
-            logger.debug(f"_calculate_acceleration_direction: Acceleration set to "
+            logger.info(f"_calculate_acceleration_direction: Acceleration set to "
                          f"({acc_x}, {acc_y}, {acc_z})")
 
     def calculate_bearing(self, lat: float, lon: float) -> Optional[float]:
@@ -559,7 +568,7 @@ class SimulatedDrone():
             logger.error(f"Velocity: {velocity}")
             logger.error(f"Acceleration: {acceleration}")
             return
-        logger.debug(f"_check_braking_thresholds: Starting acceleration: "
+        logger.info(f"_check_braking_thresholds: Starting acceleration: "
                      f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
         if (self._position_target["lat"] == None
             or self._position_target["lon"] == None
@@ -588,7 +597,7 @@ class SimulatedDrone():
         if abs(dist_z) <= VERTICAL_BRAKE_THRESHOLD:
             acceleration["accZ"] = self._calculate_deceleration(velocity["speedZ"], dist_z)
         self._set_acceleration(acceleration["accX"], acceleration["accY"], acceleration["accZ"])
-        logger.debug(f"_check_braking_thresholds: Acceleration after braking checks: "
+        logger.info(f"_check_braking_thresholds: Acceleration after braking checks: "
                      f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
 
     def _check_drone_pose_reached(self):
@@ -895,8 +904,11 @@ class SimulatedDrone():
         )
 
     def _update_drone_pose(self, dt):
-        dp = self.get_state("drone_rotation")
+        dp = self.get_state("drone_rotation_rates")
         prev_pose = self.get_state("attitude")
+
+        if not self._check_target_active("pose"):
+            return
 
         if dp == None or prev_pose == None:
             logger.error("_update_drone_pose: Failed to retrieve prior drone pose and and rotation rates...")
@@ -918,14 +930,6 @@ class SimulatedDrone():
             logger.error(f"Pitch rate: {dp["pitch_rate"]}")
             logger.error(f"Roll rate: {dp["roll_rate"]}")
             logger.error(f"Yaw rate: {dp["yaw_rate"]}")
-            return
-        if (self._pose_target["pitch"] == None
-            or self._pose_target["roll"] == None
-            or self._pose_target["yaw"] == None):
-            logger.error("_update_drone_pose: Component of drone pose target improperly set...")
-            logger.error(f"Pitch target: {self._pose_target["pitch"]}")
-            logger.error(f"Roll target: {self._pose_target["roll"]}")
-            logger.error(f"Yaw target: {self._pose_target["yaw"]}")
             return
 
         update_rate_flag = False
@@ -956,8 +960,11 @@ class SimulatedDrone():
             self._set_drone_rotation(dp["pitch_rate"], dp["roll_rate"], dp["yaw_rate"])
 
     def _update_gimbal_pose(self, dt):
-        dp = self.get_state("gimbal_rotation")
+        dp = self.get_state("gimbal_rotation_rates")
         prev_pose = self.get_state("gimbal_pose")
+
+        if not self._check_target_active("gimbal"):
+            return 
 
         if dp == None or prev_pose == None:
             logger.error("_update_gimbal_pose: Failed to retrieve previous gimbal pose and rotation rates...")
@@ -979,15 +986,7 @@ class SimulatedDrone():
             logger.error(f"Gimbal pitch rate: {dp["g_pitch_rate"]}")
             logger.error(f"Gimbal roll rate: {dp["g_roll_rate"]}")
             logger.error(f"Gimbal yaw rate: {dp["g_yaw_rate"]}")
-            return
-        if (self._gimbal_target["g_pitch"] == None
-            or self._gimbal_target["g_roll"] == None
-            or self._gimbal_target["g_yaw"] == None):
-            logger.error("_update_gimbal_pose: Component of gimbal target improperly set...")
-            logger.error(f"Gimbal target pitch: {self._gimbal_target["g_pitch"]}")
-            logger.error(f"Gimbal target roll: {self._gimbal_target["g_roll"]}")
-            logger.error(f"Gimbal target yaw: {self._gimbal_target["g_yaw"]}")
-            return
+            return      
 
         update_rate_flag = False
         # Check for overshoot and constrain to gimbal target for each characteristic
@@ -1024,7 +1023,7 @@ class SimulatedDrone():
             new_charge = current_charge - dt * ACTIVE_DRAIN_RATE
         self.set_battery_percent(new_charge)
 
-    def _zero_velocity(self):
+    async def _zero_velocity(self):
         self._set_velocity_target(0, 0, 0)
         self._set_position_target(None, None, None)
         current_velocity = self.get_state("velocity")
