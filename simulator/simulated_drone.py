@@ -78,6 +78,7 @@ class SimulatedDrone():
         self._set_gimbal_rotation(0, 0, 0)
         self.set_battery_percent(100)
         self.set_satellites(DEFAULT_SAT_COUNT)
+        self.set_flight_state(common_protocol.FlightStatus.LANDED)
 
     async def state_loop(self):
         while self._active_connection:
@@ -144,11 +145,11 @@ class SimulatedDrone():
             return False
         self._pending_action = True
         
-        return await self._wait_for_condition(lambda: self._is_task_lock_open(), timeout=TASK_TIMEOUT, interval=.5)
+        return await self._wait_for_condition(lambda: self.is_task_lock_open(), timeout=TASK_TIMEOUT, interval=.5)
 
     """ Connectivity Methods """
 
-    def connect(self) -> bool:
+    async def connect(self) -> bool:
         if self._active_connection == False:
             self._active_connection = True
             logger.info("Connection established with simulated digital drone...")
@@ -165,7 +166,7 @@ class SimulatedDrone():
     def connection_state(self) -> bool:
         return self._active_connection
     
-    def disconnect(self) -> bool:
+    async def disconnect(self) -> bool:
         if self._active_connection:
             self._active_connection = False
             self._loop.close()
@@ -181,11 +182,12 @@ class SimulatedDrone():
             and not self.check_flight_state(common_protocol.FlightStatus.IDLE)):
             logger.error(f"take_off: {self.get_state("drone_id")} unable to execute take off command when not landed...")
             logger.error(f"Current flight state: {self.get_state("flight_state")}")
+            return False
         
         result = await self._register_pending_task()
         if not result:
             logger.warning("Pending task already queued, unable to register take off command")
-            return
+            return False
         
         self.set_flight_state(common_protocol.FlightStatus.TAKING_OFF)
         current_position = self.get_current_position()
@@ -201,12 +203,17 @@ class SimulatedDrone():
             self.set_flight_state(common_protocol.FlightStatus.IDLE)
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to take off...")
+            current_position = self.get_current_position()
+            logger.warning(f"Stopped in position: ({current_position[0]}, {current_position[1]}, "
+                           f"{current_position[2]})")
+        return result
 
     async def land(self):
         if (self.check_flight_state(common_protocol.FlightStatus.LANDED)
             or self.check_flight_state(common_protocol.FlightStatus.LANDING)
             or self.check_flight_state(common_protocol.FlightStatus.IDLE)):
             logger.warning(f"land: {self.get_state("drone_id")} already landed. Ignoring command...")
+            return False
 
         await self._register_pending_task()
         self.set_flight_state(common_protocol.FlightState.LANDING)
@@ -227,6 +234,7 @@ class SimulatedDrone():
             logger.warning(f"{self.get_state("drone_id")} failed to land...")
             logger.warning(f"Current position after failed attempt: ({current_position[0]}, "
                            f"{current_position[1]}, {current_position[2]})")
+        return result
 
     async def move_to(self, lat, lon, altitude, heading_mode, bearing):
         if (self.check_flight_state(common_protocol.FlightStatus.LANDED)
@@ -234,6 +242,7 @@ class SimulatedDrone():
             or self.check_flight_state(common_protocol.FlightStatus.IDLE)):
             logger.warning(f"move_to: {self.get_state("drone_id")} unable to execute move command"
                            "from ground. Take off first...")
+            return False
         
         await self._register_pending_task()
         self._zero_velocity()
@@ -261,6 +270,7 @@ class SimulatedDrone():
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to move to target position ({lat}, {lon}, {altitude})...")
             logger.warning(f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})")
+        return result
 
     async def extended_move_to(self, lat, lon, altitude, heading_mode, bearing, lateral_vel, up_vel, angular_vel):
         if (self.check_flight_state(common_protocol.FlightStatus.LANDED)
@@ -268,6 +278,7 @@ class SimulatedDrone():
             or self.check_flight_state(common_protocol.FlightStatus.IDLE)):
             logger.warning(f"move_to: {self.get_state("drone_id")} unable to execute move command"
                            "from ground. Take off first...")
+            return False
         
         await self._register_pending_task()
         self._zero_velocity()
@@ -298,12 +309,13 @@ class SimulatedDrone():
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed extended move to target position ({lat}, {lon}, {altitude})...")
             logger.warning(f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})")
+        return result
 
     async def set_target(self, gimbal_id, control_mode, pitch, roll, yaw):
         # position, velocity
         if control_mode == "velocity":
             logger.info("Gimbal rotation without target not implemented")
-            return
+            return False
         
         await self._register_pending_task()
         if control_mode == "position":
@@ -319,6 +331,7 @@ class SimulatedDrone():
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to align gimbal {gimbal_id} to target. "
                            f"Pitch: {current_g_pose["g_pitch"]}, Roll: {current_g_pose["g_roll"]}, Yaw: {current_g_pose["yaw"]}")
+        return result
 
     def set_home_location(self, lat, lon, alt):
         self.home_location = {
@@ -395,13 +408,19 @@ class SimulatedDrone():
 
 
     def is_takeoff_complete(self):
+        current_vel = self.get_state("velocity")
+        logger.warning(f"Current Velocity: {current_vel["speedX"]}, {current_vel["speedY"]}, {current_vel["speedZ"]}")
+        vel_target = self._velocity_target
+        logger.warning(f"Target Velocity: {vel_target["speedX"]}, {vel_target["speedY"]}, {vel_target["speedZ"]}")
+        pos_target = self._position_target
+        logger.warning(f"Target Position: {pos_target["lat"]}, {pos_target["lon"]}, {pos_target["alt"]}")
         return (self._check_position_reached()
                 and self.is_stopped()
                 and self.check_flight_state(common_protocol.FlightStatus.TAKING_OFF))
 
     def is_task_lock_open(self):
         # Checks if the main event loop has moved the registered task from pending to active
-        return not self._pending_action
+        return not self._active_action
 
     """ Internal State Methods """
 

@@ -52,17 +52,23 @@ def test_starting_characteristics(drone_manager: SimulatedDrone):
     assert drone_manager.get_state("satellite_count") == simulated_drone.DEFAULT_SAT_COUNT
     assert drone_manager.get_state("magnetometer") == 0
 
-def test_connection_logic(drone_manager: SimulatedDrone):
+@pytest.mark.asyncio
+async def test_connection_logic(drone_manager: SimulatedDrone):
     assert drone_manager.connection_state() == False
-    assert drone_manager.connect() == True
+    result = await drone_manager.connect()
+    assert result == True
     assert drone_manager.connection_state() == True
     assert drone_manager._active_action == False
     assert drone_manager._pending_action == False
-    assert drone_manager.disconnect() == True
+    result = await drone_manager.disconnect()
+    assert result == True
     assert drone_manager.connection_state() == False
 
-def test_check_targets(drone_manager: SimulatedDrone):
-    drone_manager.connect()
+@pytest.mark.asyncio
+async def test_check_targets(drone_manager: SimulatedDrone):
+    result = await drone_manager.connect()
+    assert result == True
+
     assert drone_manager._check_target_active("position") == False
     assert drone_manager._check_target_active("velocity") == False
     assert drone_manager._check_target_active("pose") == False
@@ -77,4 +83,46 @@ def test_check_targets(drone_manager: SimulatedDrone):
     assert drone_manager._check_target_active("velocity") == True
     assert drone_manager._check_target_active("pose") == True
     assert drone_manager._check_target_active("gimbal") == True
-    drone_manager.disconnect()
+    
+    result = await drone_manager.disconnect()
+    assert result == True
+
+@pytest.mark.asyncio
+async def test_take_off(drone_manager: SimulatedDrone):
+    result = await drone_manager.connect()
+    assert result == True
+    result = await drone_manager.take_off()
+    assert result == True
+    assert np.allclose(
+        drone_manager.get_current_position(),
+        [simulated_drone.DEFAULT_LAT,
+         simulated_drone.DEFAULT_LON,
+         simulated_drone.DEFAULT_ALT],
+        rtol=1e-7,
+        atol=1e-9
+    )
+    attitude = drone_manager.get_state("attitude")
+    assert attitude != None
+    assert np.allclose(
+        [attitude["pitch"], attitude["roll"], attitude["yaw"]],
+        [0, 0, 0],
+        rtol=1e-7,
+        atol=1e-9
+    )
+    gimbal_pose = drone_manager.get_state("gimbal_pose")
+    assert gimbal_pose != None
+    assert np.allclose(
+        [gimbal_pose["g_pitch"], gimbal_pose["g_roll"], gimbal_pose["g_yaw"]],
+        [0, 0, 0],
+        rtol=1e-7,
+        atol=1e-9
+    )
+    assert drone_manager._active_action == False
+    assert drone_manager._pending_action == False
+    assert drone_manager._check_target_active("position") == False
+    assert drone_manager._check_target_active("velocity") == False
+    assert drone_manager._check_target_active("pose") == False
+    assert drone_manager._check_target_active("gimbal") == False
+
+    result = await drone_manager.disconnect()
+    assert result == True
