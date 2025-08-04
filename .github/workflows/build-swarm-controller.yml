@@ -7,7 +7,7 @@ on:
     paths:
       - '.github/workflows/build-swarm-controller.yml'
       - '.github/workflows/deploy-docker-img.yml'
-      - 'backend/server/engines/swarm_controller/**'
+      - 'backend/server/swarm_controller/**'
       - 'protocols/**'
       - 'vehicle/util/**'
 
@@ -16,5 +16,5 @@ jobs:
     uses: ./.github/workflows/deploy-docker-img.yml
     with:
       name: steeleagle-swarm-controller
-      dockerfile: backend/server/engines/swarm_controller/Dockerfile
+      dockerfile: backend/server/swarm_controller/Dockerfile
     secrets: inherit
