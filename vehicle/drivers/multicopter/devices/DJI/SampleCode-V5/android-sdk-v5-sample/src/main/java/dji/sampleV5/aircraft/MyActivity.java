@@ -965,7 +965,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void startWaypointMission() {
         TextView textView = findViewById(R.id.main_text);
-        waypointManager.startMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.startMission("/storage/emulated/0/DJI/mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission started successfully.");
@@ -982,7 +982,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void stopWaypointMission() {
         TextView textView = findViewById(R.id.main_text);
-        waypointManager.stopMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.stopMission("/storage/emulated/0/DJI/mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission stopped successfully.");
@@ -1171,7 +1171,7 @@ public class MyActivity extends AppCompatActivity {
                 double rollSpeed = 0;
 
                 if (differenceYaw > 1) {
-                    yawSpeed = (currentYaw > targetYaw) ? -10 : 10;
+                    yawSpeed = (currentYaw > targetYaw) ? -20 : 20;
                 }
                 if (differencePitch > 1) {
                     pitchSpeed = (currentPitch > targetPitch) ? -10 : 10;
@@ -1180,7 +1180,7 @@ public class MyActivity extends AppCompatActivity {
                     rollSpeed = (currentRoll > targetRoll) ? -5 : 5;
                 }
 
-                if (differenceYaw > 10 || differencePitch > 5 || differenceRoll > 0.5) {
+                if (differenceYaw > 3 || differencePitch > 3 || differenceRoll > 0.5) {
                     GimbalSpeedRotation rotation = new GimbalSpeedRotation(
                             pitchSpeed,
                             yawSpeed,
