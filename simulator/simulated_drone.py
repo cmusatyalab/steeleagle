@@ -81,8 +81,10 @@ class SimulatedDrone():
         self.set_flight_state(common_protocol.FlightStatus.LANDED)
 
     async def state_loop(self):
+        self.t_baseline = time.time()
         while self._active_connection:
-            logger.warning("Starting new state loop iteration")
+            self.t_cycle_start = time.time()
+            logger.warning(f"-----Current Time: {self.t_cycle_start - self.t_baseline} -----")
             if self._pending_action:
                 if self._active_action:
                     logger.warning("Entered action cancel block")
@@ -101,22 +103,17 @@ class SimulatedDrone():
                         self._active_action = True
                         self._pending_action = False
             if self._check_target_active("velocity"):
-                logger.error("Checking velocity reached")
                 self._check_velocity_reached()
-                if not self._check_target_active("position"):
-                    logger.error("Setting velocity to zero")
-                    self._zero_velocity()
             if self._check_target_active("position"):
-                logger.error("Checking brake thresholds")
                 self._check_braking_thresholds()
             if self._check_target_active("pose"):
                 self._check_drone_pose_reached()
             if self._check_target_active("gimbal"):
                 self._check_gimbal_pose_reached()
             self._update_kinematics()
-            time_elapsed = self.t_current - self.t_last
+            self.t_cycle_finish = time.time()
+            time_elapsed = self.t_cycle_finish - self.t_cycle_start
             self.t_last = self.t_current
-            logger.warning(f"{time_elapsed} since last loop iteration")
             await asyncio.sleep(TICK_RATE - time_elapsed)
         logger.info("Connection terminated, shutting down...")
 
@@ -134,6 +131,7 @@ class SimulatedDrone():
             await asyncio.sleep(interval)
 
     async def _cancel_current_action(self):
+        logger.warning("cancel action called...")
         await self._zero_velocity()
         if self._check_target_active("gimbal"):
             self._set_gimbal_rotation(0, 0, 0)
@@ -164,7 +162,6 @@ class SimulatedDrone():
             logger.info("Starting internal state loop...")
             self.t_current = time.time()
             self.t_last = self.t_current
-            #self._loop = asyncio.new_event_loop()
             self._loop = asyncio.create_task(self.state_loop())
             logger.info("Internal state loop active...")
             return True
@@ -177,7 +174,7 @@ class SimulatedDrone():
     async def disconnect(self) -> bool:
         if self._active_connection:
             self._active_connection = False
-            self._loop.close()
+            self._loop.cancel()
             logger.info("Disconnected from simulated digital drone...")
             return True
         logger.warning("Attempted to disconnect without active connection to simulated drone...")
@@ -202,12 +199,12 @@ class SimulatedDrone():
         self._set_position_target(current_position[0], current_position[1], self._takeoff_alt)
 
         result = await self._wait_for_condition(lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT, interval=1)
+        await self._zero_velocity()
         if result:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
-            logger.info(f"{self.get_state("drone_id")} completed takeoff...")
+            logger.warning(f"{self.get_state("drone_id")} completed takeoff...")
         else:
-            self._zero_velocity()
             self.set_flight_state(common_protocol.FlightStatus.IDLE)
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to take off...")
@@ -225,7 +222,7 @@ class SimulatedDrone():
 
         await self._register_pending_task()
         self.set_flight_state(common_protocol.FlightState.LANDING)
-        self._zero_velocity()
+        await self._zero_velocity()
         current_position = self.get_current_position()
         self._set_position_target(current_position[0], current_position[1], 0)
 
@@ -235,7 +232,7 @@ class SimulatedDrone():
             self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed landing...")
         else:
-            self._zero_velocity()
+            await self._zero_velocity()
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
             current_position = self.get_current_position()
@@ -253,7 +250,7 @@ class SimulatedDrone():
             return False
         
         await self._register_pending_task()
-        self._zero_velocity()
+        await self._zero_velocity()
         
         if heading_mode == common_protocol.LocationHeadingMode.TO_TARGET:
             # Orients drone to fixed target bearing
@@ -273,7 +270,7 @@ class SimulatedDrone():
             logger.info(f"{self.get_state("drone_id")} completed movement to position "
                         f"({current_position[0]}, {current_position[1]}, {current_position[2]})")
         else:
-            self._zero_velocity()
+            await self._zero_velocity()
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to move to target position ({lat}, {lon}, {altitude})...")
@@ -289,7 +286,7 @@ class SimulatedDrone():
             return False
         
         await self._register_pending_task()
-        self._zero_velocity()
+        await self._zero_velocity()
         path_heading = self.calculate_bearing(lat, lon)
 
         if heading_mode == common_protocol.LocationHeadingMode.TO_TARGET:
@@ -312,7 +309,7 @@ class SimulatedDrone():
             logger.info(f"{self.get_state("drone_id")} completed movement to position "
                         f"({current_position[0]}, {current_position[1]}, {current_position[2]})")
         else:
-            self._zero_velocity()
+            await self._zero_velocity()
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed extended move to target position ({lat}, {lon}, {altitude})...")
@@ -407,9 +404,9 @@ class SimulatedDrone():
     def is_stopped(self):
         current_velocity = self.get_state("velocity")
         if (current_velocity == None 
-            or current_velocity["speedX"] != 0
-            or current_velocity["speedY"] != 0
-            or current_velocity["speedZ"] != 0
+            or abs(current_velocity["speedX"]) > MATCH_TOLERANCE
+            or abs(current_velocity["speedY"]) > MATCH_TOLERANCE
+            or abs(current_velocity["speedZ"]) > MATCH_TOLERANCE
         ):
             return False
         return True
@@ -417,6 +414,8 @@ class SimulatedDrone():
 
     def is_takeoff_complete(self):
         current_vel = self.get_state("velocity")
+        current_pos = self.get_current_position()
+        logger.warning(f"Current Position: {current_pos[0]}, {current_pos[1]}, {current_pos[2]}")
         logger.warning(f"Current Velocity: {current_vel["speedX"]}, {current_vel["speedY"]}, {current_vel["speedZ"]}")
         vel_target = self._velocity_target
         logger.warning(f"Target Velocity: {vel_target["speedX"]}, {vel_target["speedY"]}, {vel_target["speedZ"]}")
@@ -508,7 +507,7 @@ class SimulatedDrone():
             logger.error(f"Current lat: {current_position[0]}")
             logger.error(f"Current lon: {current_position[1]}")
             logger.error(f"Current alt: {current_position[2]}")
-            return 
+            return
         else:
             if self._position_target["lat"] - current_position[0] > 0:
                 acc_x = MAX_ACCELERATION
@@ -689,8 +688,9 @@ class SimulatedDrone():
                 self._position_target["lon"],
                 self._position_target["alt"]
             )
-            self._zero_velocity()
+            self._set_position_target(None, None, None)
             self._position_flag = True
+            logger.error("Clearing position target")
             return True
         return False
 
@@ -1041,10 +1041,15 @@ class SimulatedDrone():
             logger.error(f"Velocity speedZ: {current_velocity["speedZ"]}")
             return
 
-        acc_x = self._calculate_deceleration(current_velocity["speedX"], 0)
-        acc_y = self._calculate_deceleration(current_velocity["speedY"], 0)
-        acc_z = self._calculate_deceleration(current_velocity["speedZ"], 0)
-        self._set_acceleration(acc_x, acc_y, acc_z)
+        while not self.is_stopped():
+            acc_x = self._calculate_deceleration(current_velocity["speedX"], 0)
+            acc_y = self._calculate_deceleration(current_velocity["speedY"], 0)
+            acc_z = self._calculate_deceleration(current_velocity["speedZ"], 0)
+            self._set_acceleration(acc_x, acc_y, acc_z)
+        
+        self._set_velocity_target(None, None, None)
+        self.set_velocity(0, 0, 0)
+        logger.warning(f"{self.get_state("drone_id")} successfully stopped...")
 
     def get_new_latlon(self, ref_lat: float, ref_lon: float, dist_x: float, dist_y: float) -> tuple[float, float]:
         new_lat = ref_lat + (dist_x / M_PER_LAT_DEG)

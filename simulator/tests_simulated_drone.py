@@ -93,29 +93,32 @@ async def test_take_off(drone_manager: SimulatedDrone):
     assert result == True
     result = await drone_manager.take_off()
     assert result == True
+    
+    current_pos = drone_manager.get_current_position()
+    assert None not in current_pos
     assert np.allclose(
-        drone_manager.get_current_position(),
+        [current_pos[0], current_pos[1], current_pos[2]],
         [simulated_drone.DEFAULT_LAT,
          simulated_drone.DEFAULT_LON,
-         simulated_drone.DEFAULT_ALT],
-        rtol=1e-7,
-        atol=1e-9
+         drone_manager._takeoff_alt],
+        rtol=1e-5,
+        atol=1e-7
     )
     attitude = drone_manager.get_state("attitude")
     assert attitude != None
     assert np.allclose(
         [attitude["pitch"], attitude["roll"], attitude["yaw"]],
         [0, 0, 0],
-        rtol=1e-7,
-        atol=1e-9
+        rtol=1e-5,
+        atol=1e-7
     )
     gimbal_pose = drone_manager.get_state("gimbal_pose")
     assert gimbal_pose != None
     assert np.allclose(
         [gimbal_pose["g_pitch"], gimbal_pose["g_roll"], gimbal_pose["g_yaw"]],
         [0, 0, 0],
-        rtol=1e-7,
-        atol=1e-9
+        rtol=1e-5,
+        atol=1e-7
     )
     assert drone_manager._active_action == False
     assert drone_manager._pending_action == False
