@@ -2,6 +2,7 @@ package dji.sampleV5.aircraft;
 
 import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.pushKMZFileToAircraft;
 import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.startMission;
+import static java.lang.Math.abs;
 import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
 import static dji.v5.manager.interfaces.ICameraStreamManager.FrameFormat.RGBA_8888;
@@ -64,6 +65,8 @@ import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
 import dji.sdk.keyvalue.value.flightcontroller.FlyToMode;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
+import dji.sdk.keyvalue.value.gimbal.CtrlInfo;
+import dji.sdk.keyvalue.value.gimbal.GimbalSpeedRotation;
 import dji.sdk.keyvalue.value.product.ProductType;
 import dji.v5.common.callback.CommonCallbacks;
 import dji.v5.common.error.IDJIError;
@@ -79,6 +82,7 @@ import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
 import dji.v5.manager.interfaces.ICameraStreamManager;
 import dji.v5.manager.interfaces.IKeyManager;
 import dji.v5.manager.interfaces.IWaypointMissionManager;
+import io.reactivex.rxjava3.core.Completable;
 
 public class MyActivity extends AppCompatActivity {
 
@@ -245,6 +249,10 @@ public class MyActivity extends AppCompatActivity {
         // Stop image preview button behavior
         Button stopImagePreviewButton = findViewById(R.id.stop_image_preview);
         stopImagePreviewButton.setOnClickListener(v -> stopCameraFramePreview());
+
+        // Set gimbal position
+        Button setGimbalPoseButton = findViewById(R.id.set_gimbal_pose);
+        setGimbalPoseButton.setOnClickListener(v -> setGimbalPoseDialog());
     }
     //try to get home not to land, switch to haversine, also check for altitude, switch to waypoints api, get the set velocity functions, gimbal movement
 
@@ -606,7 +614,7 @@ public class MyActivity extends AppCompatActivity {
                     // add the altitude check stuff here before calling stopgohome
                     Double currentAltitude = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
                     Integer goHomeHeight = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight));
-                    if (Math.abs(currentAltitude - goHomeHeight) <= 1.0f) {
+                    if (abs(currentAltitude - goHomeHeight) <= 1.0f) {
                         // Case 1: already at the correct altitude
                         stopGoHome();
                         isGoingHomeAndHover = false;
@@ -758,6 +766,7 @@ public class MyActivity extends AppCompatActivity {
     //end of of the set and go home functions
 
     //start of waypoint code
+    IWaypointMissionManager waypointManager = WaypointMissionManager.getInstance();
     private void waypoint(double lat, double lon) {
         TextView textView = findViewById(R.id.main_text);
         Log.i("MyApp", "Lon: " + lon + " Lat: " + lat);
@@ -889,9 +898,7 @@ public class MyActivity extends AppCompatActivity {
             textView.setText("Error updating KMZ.");
             Log.e("MyApp", "Exception during KMZ edit", e);
         }
-
-        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
-        manager.pushKMZFileToAircraft(originalKmz.getPath(), null);
+        waypointManager.pushKMZFileToAircraft(originalKmz.getPath(), null);
         Log.i("MyApp", "doneeeeeee");
     }
 
@@ -957,9 +964,8 @@ public class MyActivity extends AppCompatActivity {
     }
 
     private void startWaypointMission() {
-        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.startMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.startMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission started successfully.");
@@ -975,9 +981,8 @@ public class MyActivity extends AppCompatActivity {
     }
 
     private void stopWaypointMission() {
-        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.stopMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.stopMission("mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission stopped successfully.");
@@ -993,9 +998,8 @@ public class MyActivity extends AppCompatActivity {
     }
 
     private void pauseWaypointMission() {
-        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.pauseMission(new CommonCallbacks.CompletionCallback() {
+        waypointManager.pauseMission(new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission paused successfully.");
@@ -1011,9 +1015,8 @@ public class MyActivity extends AppCompatActivity {
     }
 
     private void resumeWaypointMission() {
-        IWaypointMissionManager manager = WaypointMissionManager.getInstance();
         TextView textView = findViewById(R.id.main_text);
-        manager.resumeMission(new CommonCallbacks.CompletionCallback() {
+        waypointManager.resumeMission(new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission resumed successfully.");
@@ -1125,11 +1128,137 @@ public class MyActivity extends AppCompatActivity {
     }
     //end code for camera on screen
 
+    //start of gimbal related code
+    private Handler gimbalHandler = new Handler(Looper.getMainLooper());
+    private boolean isAdjustingGimbal = false;
+    private final int gimbalIntervalMs = 10; // How often to update
+    private final long maxGimbalDurationMs = 60_000; // Max adjustment duration = 30 seconds
+    private long gimbalStartTimeMs;
+    private void setGimbalPose(double targetYaw, double targetPitch, double targetRoll) {
+        isAdjustingGimbal = true;
+        gimbalStartTimeMs = System.currentTimeMillis(); // Mark start time
+
+        Runnable gimbalRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isAdjustingGimbal) return;
+
+                long elapsedTime = System.currentTimeMillis() - gimbalStartTimeMs;
+                if (elapsedTime > maxGimbalDurationMs) {
+                    Log.w("Gimbal", "Gimbal adjustment timed out after 30 seconds.");
+                    stopGimbalAdjustment(); // Stop loop
+                    return;
+                }
+
+                IKeyManager keyManager = KeyManager.getInstance();
+                Attitude gimbalTelemetry = keyManager.getValue(KeyTools.createKey(GimbalKey.KeyGimbalAttitude, 0));
+
+                if (gimbalTelemetry == null) {
+                    Log.e("Gimbal", "Failed to retrieve gimbal attitude");
+                    return;
+                }
+
+                double currentYaw = gimbalTelemetry.getYaw();
+                double currentPitch = gimbalTelemetry.getPitch();
+                double currentRoll = gimbalTelemetry.getRoll();
+
+                double differenceYaw = Math.abs(targetYaw - currentYaw);
+                double differencePitch = Math.abs(targetPitch - currentPitch);
+                double differenceRoll = Math.abs(targetRoll - currentRoll);
+
+                double yawSpeed = 0;
+                double pitchSpeed = 0;
+                double rollSpeed = 0;
+
+                if (differenceYaw > 1) {
+                    yawSpeed = (currentYaw > targetYaw) ? -10 : 10;
+                }
+                if (differencePitch > 1) {
+                    pitchSpeed = (currentPitch > targetPitch) ? -10 : 10;
+                }
+                if (differenceRoll > 0.1) {
+                    rollSpeed = (currentRoll > targetRoll) ? -5 : 5;
+                }
+
+                if (differenceYaw > 10 || differencePitch > 5 || differenceRoll > 0.5) {
+                    GimbalSpeedRotation rotation = new GimbalSpeedRotation(
+                            pitchSpeed,
+                            yawSpeed,
+                            rollSpeed,
+                            new CtrlInfo()
+                    );
+                    keyManager.performAction(
+                            KeyTools.createKey(GimbalKey.KeyRotateBySpeed, 0),
+                            rotation,
+                            null
+                    );
+
+                    gimbalHandler.postDelayed(this, gimbalIntervalMs); // Loop again
+                } else {
+                    // Target reached — stop all movement
+                    GimbalSpeedRotation stop = new GimbalSpeedRotation(0.0, 0.0, 0.0, new CtrlInfo());
+                    keyManager.performAction(
+                            KeyTools.createKey(GimbalKey.KeyRotateBySpeed, 0),
+                            stop,
+                            null
+                    );
+                    Log.i("Gimbal", "Target reached.");
+                    stopGimbalAdjustment();
+                }
+            }
+        };
+
+        gimbalHandler.post(gimbalRunnable); // Start loop
+    }
+
+    public void stopGimbalAdjustment() {
+        isAdjustingGimbal = false;
+        gimbalHandler.removeCallbacksAndMessages(null);
+    }
+
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
         void onValue(T value);
 
         void onCancel();
+    }
+
+    private void setGimbalPoseDialog() {
+        doublePrompt("Enter Yaw", new ValueCallback<Double>() {
+            @Override
+            public void onValue(Double yaw) {
+                Log.i("MyApp", "Yaw: " + yaw);
+                doublePrompt("Enter Pitch", new ValueCallback<Double>() {
+                    @Override
+                    public void onValue(Double pitch) {
+                        Log.i("MyApp", "Pitch: " + pitch);
+                        doublePrompt("Enter Roll", new ValueCallback<Double>() {
+                            @Override
+                            public void onValue(Double roll) {
+                                Log.i("MyApp", "Roll: " + roll);
+
+                                setGimbalPose(yaw, pitch, roll);
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                Log.i("MyApp", "Longitude input cancelled");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.i("MyApp", "Longitude input cancelled");
+                    }
+                });
+            }
+
+            @Override
+            public void onCancel() {
+                Log.i("MyApp", "Latitude input cancelled");
+            }
+        });
     }
 
     private void setGlobalPositionDialog() {
