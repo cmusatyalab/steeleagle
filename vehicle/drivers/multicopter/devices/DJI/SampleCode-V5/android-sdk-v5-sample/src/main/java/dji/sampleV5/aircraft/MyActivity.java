@@ -83,6 +83,8 @@ import dji.v5.manager.interfaces.ICameraStreamManager;
 import dji.v5.manager.interfaces.IKeyManager;
 import dji.v5.manager.interfaces.IWaypointMissionManager;
 import io.reactivex.rxjava3.core.Completable;
+import dji.v5.utils.common.FileUtils;
+
 
 public class MyActivity extends AppCompatActivity {
 
@@ -189,10 +191,6 @@ public class MyActivity extends AppCompatActivity {
         // Set start go home using current location button behavior
         Button startGoHomeAndLandButton = findViewById(R.id.start_go_home_and_land);
         startGoHomeAndLandButton.setOnClickListener(v -> startGoHomeAndLand());
-
-        // Set start go home using current location button behavior
-        Button startGoHomeAndHoverButton = findViewById(R.id.start_go_home_and_hover);
-        startGoHomeAndHoverButton.setOnClickListener(v -> startGoHomeAndHover());
 
         // Set stop go home using current location button behavior
         Button stopGoHomeButton = findViewById(R.id.stop_go_home);
@@ -766,7 +764,7 @@ public class MyActivity extends AppCompatActivity {
     //end of of the set and go home functions
 
     //start of waypoint code
-    IWaypointMissionManager waypointManager = WaypointMissionManager.getInstance();
+    WaypointMissionManager waypointManager = WaypointMissionManager.getInstance();
     private void waypoint(double lat, double lon) {
         TextView textView = findViewById(R.id.main_text);
         Log.i("MyApp", "Lon: " + lon + " Lat: " + lat);
@@ -965,7 +963,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void startWaypointMission() {
         TextView textView = findViewById(R.id.main_text);
-        waypointManager.startMission("/storage/emulated/0/DJI/mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.startMission("mission_updated", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission started successfully.");
@@ -982,7 +980,7 @@ public class MyActivity extends AppCompatActivity {
 
     private void stopWaypointMission() {
         TextView textView = findViewById(R.id.main_text);
-        waypointManager.stopMission("/storage/emulated/0/DJI/mission_updated.kmz", new CommonCallbacks.CompletionCallback() {
+        waypointManager.stopMission("mission_updated", new CommonCallbacks.CompletionCallback() {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission stopped successfully.");
@@ -1128,7 +1126,7 @@ public class MyActivity extends AppCompatActivity {
     }
     //end code for camera on screen
 
-    //start of gimbal related code
+    //start of set gimbal related code
     private Handler gimbalHandler = new Handler(Looper.getMainLooper());
     private boolean isAdjustingGimbal = false;
     private final int gimbalIntervalMs = 10; // How often to update

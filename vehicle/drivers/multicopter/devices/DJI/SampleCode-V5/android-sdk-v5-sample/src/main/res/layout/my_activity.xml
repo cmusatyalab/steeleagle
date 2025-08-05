@@ -52,35 +52,34 @@
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/photo_button"
+                android:id="@+id/takeoff_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Take Photo" />
+                android:text="Takeoff" />
 
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/start_video"
+                android:id="@+id/landing_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start Video" />
+                android:text="Landing" />
 
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/stop_video"
+                android:id="@+id/set_gimbal_pose"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Stop Video" />
+                android:text="Set Gimbal Pose" />
 
             <Space
                 android:layout_width="wrap_content"
                 android:layout_height="16dp" />
-
 
             <Button
                 android:id="@+id/gimbal_v_button"
@@ -103,35 +102,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="16dp" />
 
-            <Button
-                android:id="@+id/type_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Type" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
-
-            <Button
-                android:id="@+id/takeoff_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Takeoff" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
-
-            <Button
-                android:id="@+id/landing_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Landing" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
 
             <Button
                 android:id="@+id/set_home_current_location"
@@ -168,16 +138,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Start Go Home And Land" />
-
-            <Space
-                android:layout_width="wrap_content"
-                android:layout_height="16dp" />
-
-            <Button
-                android:id="@+id/start_go_home_and_hover"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Start Go Home And Hover" />
 
             <Space
                 android:layout_width="wrap_content"
@@ -254,6 +214,36 @@
                 android:layout_height="16dp" />
 
             <Button
+                android:id="@+id/photo_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Take Photo" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Video" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Video" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
                 android:id="@+id/start_image_preview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -273,10 +263,14 @@
                 android:layout_height="16dp" />
 
             <Button
-                android:id="@+id/set_gimbal_pose"
+                android:id="@+id/type_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Set Gimbal Pose" />
+                android:text="Type" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
         </LinearLayout>
     </ScrollView>
 
