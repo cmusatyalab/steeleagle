@@ -221,18 +221,18 @@ class SimulatedDrone():
             return False
 
         await self._register_pending_task()
-        self.set_flight_state(common_protocol.FlightState.LANDING)
+        self.set_flight_state(common_protocol.FlightStatus.LANDING)
         await self._zero_velocity()
         current_position = self.get_current_position()
         self._set_position_target(current_position[0], current_position[1], 0)
 
         result = await self._wait_for_condition(lambda: self.is_landed(), timeout=TASK_TIMEOUT)
+        await self._zero_velocity()
         if result:
             self.set_flight_state(common_protocol.FlightStatus.LANDED)
             self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed landing...")
         else:
-            await self._zero_velocity()
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             self._active_action = False
             current_position = self.get_current_position()
@@ -401,6 +401,10 @@ class SimulatedDrone():
             return None
         return self._state[characteristic]
     
+    def is_landed(self):
+        current_pos = self.get_current_position()
+        return self.is_stopped() and abs(current_pos[2]) <= ALT_MATCH_TOLERANCE
+
     def is_stopped(self):
         current_velocity = self.get_state("velocity")
         if (current_velocity == None 
@@ -411,16 +415,15 @@ class SimulatedDrone():
             return False
         return True
 
-
     def is_takeoff_complete(self):
         current_vel = self.get_state("velocity")
         current_pos = self.get_current_position()
-        logger.warning(f"Current Position: {current_pos[0]}, {current_pos[1]}, {current_pos[2]}")
-        logger.warning(f"Current Velocity: {current_vel["speedX"]}, {current_vel["speedY"]}, {current_vel["speedZ"]}")
         vel_target = self._velocity_target
-        logger.warning(f"Target Velocity: {vel_target["speedX"]}, {vel_target["speedY"]}, {vel_target["speedZ"]}")
         pos_target = self._position_target
-        logger.warning(f"Target Position: {pos_target["lat"]}, {pos_target["lon"]}, {pos_target["alt"]}")
+        logger.debug(f"Current Position: {current_pos[0]}, {current_pos[1]}, {current_pos[2]}")
+        logger.debug(f"Current Velocity: {current_vel["speedX"]}, {current_vel["speedY"]}, {current_vel["speedZ"]}")
+        logger.debug(f"Target Velocity: {vel_target["speedX"]}, {vel_target["speedY"]}, {vel_target["speedZ"]}")
+        logger.debug(f"Target Position: {pos_target["lat"]}, {pos_target["lon"]}, {pos_target["alt"]}")
         return (self._check_position_reached()
                 and self.is_stopped()
                 and self.check_flight_state(common_protocol.FlightStatus.TAKING_OFF))
@@ -438,7 +441,7 @@ class SimulatedDrone():
             "yaw": yaw
         }
         self._update_state("attitude", attitude)
-        logger.info(f"Drone attitude set to pitch: {pitch}, roll: {roll}, yaw: {yaw}")
+        logger.debug(f"Drone attitude set to pitch: {pitch}, roll: {roll}, yaw: {yaw}")
     
     def set_battery_percent(self, starting_charge: float):
         self._update_state("battery_percent", starting_charge)
@@ -449,7 +452,7 @@ class SimulatedDrone():
             lon=new_lon,
             alt=new_alt
         )
-        logger.info(f"Current position set to ({new_lat}, {new_lon}, {new_alt})")
+        logger.debug(f"Current position set to ({new_lat}, {new_lon}, {new_alt})")
 
     # flight_state expected to be common_protocol.FlightStatus member
     def set_flight_state(self, flight_state):
@@ -463,7 +466,7 @@ class SimulatedDrone():
             "g_yaw": yaw
         }
         self._update_state("gimbal_pose", gimbal_pose)
-        logger.info(f"Gimbal pose set to g_pitch: {pitch}, g_roll: {roll}, g_yaw: {yaw}")
+        logger.debug(f"Gimbal pose set to g_pitch: {pitch}, g_roll: {roll}, g_yaw: {yaw}")
 
     def set_magnetometer(self, condition_code: int):
         # 0 for good, 1 for calibration, 2 for perturbation
@@ -481,7 +484,8 @@ class SimulatedDrone():
             "speedZ": max(min(vel_z, MAX_CLIMB), -MAX_CLIMB)
         }
         self._update_state("velocity", velocity)
-        logger.info(f"Drone velocity set to ({vel_x}, {vel_y}, {vel_z})")
+        logger.debug(f"Drone velocity set to ("
+                     f"{velocity["speedX"]}, {velocity["speedY"]}, {velocity["speedZ"]})")
     
     def set_satellites(self, satellite_count: int):
         self._update_state("satellite_count", satellite_count)
@@ -509,22 +513,29 @@ class SimulatedDrone():
             logger.error(f"Current alt: {current_position[2]}")
             return
         else:
-            if self._position_target["lat"] - current_position[0] > 0:
+            d_lat = self._position_target["lat"] - current_position[0]
+            d_lon = self._position_target["lon"] - current_position[1]
+            d_alt = self._position_target["alt"] - current_position[2]
+            if d_lat > 0:
                 acc_x = MAX_ACCELERATION
-            else:
+            elif d_lat < 0:
                 acc_x = -MAX_ACCELERATION
-            if self._position_target["lon"] - current_position[1] > 0:
+            else:
+                acc_x = 0
+            if d_lon > 0:
                 acc_y = MAX_ACCELERATION
-            else:
+            elif d_lon < 0:
                 acc_y = -MAX_ACCELERATION
-            if self._position_target["alt"] - current_position[2] > 0:
-                acc_z = MAX_CLIMB
             else:
+                acc_y = 0
+            if d_alt > 0:
+                acc_z = MAX_CLIMB
+            elif d_alt < 0:
                 acc_z = -MAX_CLIMB
+            else:
+                acc_z = 0
 
             self._set_acceleration(acc_x, acc_y, acc_z)
-            logger.info(f"_calculate_acceleration_direction: Acceleration set to "
-                         f"({acc_x}, {acc_y}, {acc_z})")
 
     def calculate_bearing(self, lat: float, lon: float) -> Optional[float]:
         current_position = self.get_current_position()
@@ -549,11 +560,12 @@ class SimulatedDrone():
 
 
     def _calculate_deceleration(self, vel_val: float, dist_remaining: float):
-        # Used for immediate stops that do not include a position target
+        # 0 dist is used for immediate stops that do not include a position target
         if dist_remaining == 0:
             return -vel_val
-        elif vel_val < 0:
-            return (vel_val**2) / (2 * dist_remaining)
+        #elif vel_val < 0:
+        #    logger.debug(f"returned decel value: {(vel_val**2) / (2 * dist_remaining)}")
+        #    return (vel_val**2) / (2 * dist_remaining)
         else:
             return -(vel_val**2) / (2 * dist_remaining)
         
@@ -567,7 +579,7 @@ class SimulatedDrone():
             logger.error(f"Velocity: {velocity}")
             logger.error(f"Acceleration: {acceleration}")
             return
-        logger.info(f"_check_braking_thresholds: Starting acceleration: "
+        logger.debug(f"_check_braking_thresholds: Starting acceleration: "
                      f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
         if (self._position_target["lat"] == None
             or self._position_target["lon"] == None
@@ -596,8 +608,6 @@ class SimulatedDrone():
         if abs(dist_z) <= VERTICAL_BRAKE_THRESHOLD:
             acceleration["accZ"] = self._calculate_deceleration(velocity["speedZ"], dist_z)
         self._set_acceleration(acceleration["accX"], acceleration["accY"], acceleration["accZ"])
-        logger.info(f"_check_braking_thresholds: Acceleration after braking checks: "
-                     f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
 
     def _check_drone_pose_reached(self):
         pose = self.get_state("attitude")
@@ -740,6 +750,8 @@ class SimulatedDrone():
             "accZ": max(min(accZ, MAX_ACCELERATION), -MAX_ACCELERATION)
         }
         self._update_state("acceleration", acceleration)
+        logger.debug(f"_calculate_acceleration_direction: Acceleration set to "
+                         f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
 
     def _set_drone_rotation(self, pitch_rate: float, roll_rate: float, yaw_rate: float):
         rotation = {
