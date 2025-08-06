@@ -28,6 +28,7 @@ venv/
 .venv
 *~
 *.log
+*.mcap
 
 
 vehicle/env.sh
