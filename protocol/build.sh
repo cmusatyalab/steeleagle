@@ -5,10 +5,10 @@
 $PROTOCPATH -I. \
 	--python_out=./python_bindings/ \
        	common.proto \
-       	control.proto \
+       	swarm_control.proto \
 	telemetry.proto \
 	result.proto \
-	log.proto
+	testing.proto
 
 # Build the service protocols
 $PROTOCPATH -I. \
@@ -19,4 +19,5 @@ $PROTOCPATH -I. \
 	datastore_service.proto \
 	compute_service.proto \
 	report_service.proto \
-	driver_service.proto
+	control_service.proto \
+	flight_log_service.proto

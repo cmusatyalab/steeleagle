@@ -1,112 +1,93 @@
 import inspect
+import importlib
+import asyncio
+import grpc
 # Utility import
-from util.rpc import generate_request
+from util.rpc import generate_request, async_unary_unary_request, async_unary_stream_request 
+from util.proto import read_any
 # Protocol imports
 from google.protobuf import any_pb2
-from python_bindings import driver_service_pb2
-from python_bindings import mission_service_pb2
-from python_bindings import control_pb2 as control_proto
+from python_bindings import swarm_control_pb2 as swarm_control_proto
 
 class CommandMultiplexer:
     '''
     Reads messages from the Swarm Controller and relays
     them to the corresponding stubs.
     '''
-    def __init__(self, driver_stub, mission_stub, mode, logger):
-        self._driver_stub = driver_stub
-        self._mission_stub = mission_stub
-        # Control mode must be modified when the Swarm
-        # Controller starts a mission or resumes remote
-        # operation; this reference will affect other
-        # background services reading the same object
-        self._control_mode = mode
+    def __init__(self, auth, socket, call_table, failsafe, logger):
+        self._socket = socket
+        self._call_table = call_table
+        # Failsafe triggered when the swarm controller disconnects
+        self._failsafe = failsafe
         self._logger = logger
-        self._call_table = self._gen_call_table()
 
-    def _gen_call_table(self):
-        '''
-        Creates an association between descriptors and their associated
-        stub call for clean multiplexing of commands.
-        '''
-        call_table = {}
-        
-        driver_symbols = inspect.getmembers(driver_service_pb2)
-        for name, obj in driver_symbols:
-            if inspect.isclass(obj) and "Request" in name:
-                f_name = name.replace("Request", "")
-                call_table[name] = (
-                        "driver_service_pb2",
-                        eval(f"self._driver_stub.{f_name}") 
-                        )
-        mission_symbols = inspect.getmembers(mission_service_pb2)
-        for name, obj in mission_symbols:
-            if inspect.isclass(obj) and "Request" in name:
-                f_name = name.replace("Request", "")
-                call_table[name] = (
-                        "mission_service_pb2",
-                        eval(f"self._mission_stub.{f_name}")
-                        )
-        return call_table
+    async def _next_control_state(self, method):
+        pass
 
-    def _switch_mode(self, package, name):
-        '''
-        Handles switching the control mode when a mission start/stop
-        or a driver command is received.
-        '''
-        if package == "mission_service_pb2":
-            # Handle mission stop and start
-            if "Start" in name:
-                self._logger.info("Switching mode to LOCAL control")
-                self._control_mode.switch_mode(control_proto.ControlMode.LOCAL)
-            elif "Stop" in name:
-                self._logger.info("Switching mode to REMOTE control")
-                self._control_mode.switch_mode(control_proto.ControlMode.REMOTE)
-        elif package == "driver_service_pb2" and \
-                self._control_mode.get_mode() != control_proto.ControlMode.REMOTE:
-            # If we ever get a direct driver control, override the mission
-            self._logger.info("Switching mode to REMOTE control")
-            self._control_mode.switch_mode(control_proto.ControlMode.REMOTE)
+    async def _handle_stream_request(self, func, request, seq_num):
+        async for resp in async_unary_stream_request(func, request, self._logger):
+            response = swarm_control_proto.SwarmControlResponse()
+            response.sequence_number = seq_num
+            response.control_response.Pack(resp)
+            asyncio.create_task(self._socket.send(response.SerializeToString()))
+    
+    async def _handle_unary_request(self, func, request, seq_num):
+        resp = await async_unary_unary_request(func, request, self._logger)
+        response = swarm_control_proto.SwarmControlResponse()
+        response.sequence_number = seq_num
+        response.control_response.Pack(resp)
+        await self._socket.send(response.SerializeToString())
 
-    async def __call__(self, message):
+    async def _send_request(self, method, request, seq_num):
         '''
-        Multiplexes a ControlRequest message between the driver
-        and mission stubs.
+        Multiplexes a SwarmControlRequest message between allowed stubs.
         '''
-        # Message is expected to be a ControlRequest 
-        control_request = control_proto.ControlRequest()
-        control_request.ParseFromString(message)
-        self._logger.log_proto(control_request)
-        control_message = request.control_message
-        # Get the message name from the type URL
-        name = control_message.getTypeUrl().split('.')[-1]     
-        if name in self._call_table:
-            pkg, func = self._call_table[name]
-            # Unpack the Any request into the right message
-            request = getattr(pkg, name)()
-            control_message.Unpack(request)
-            # Call the corresponding function and switch mode
-            self._switch_mode(pkg, name)
-            if inspect.isasyncgenfunction(func):
-                async for resp in func(request):
-                    self._logger.log_proto(resp)
-                    response = control_proto.ControlResponse()
-                    response.control_response.Pack(resp)
-                    yield response
+        try:
+            func = self._call_table[method]
+            # Switch mode based on internal state machine
+            await self._next_control_state(method)
+            # Only accepts Unary->Unary and Unary->Stream methods
+            if isinstance(func, grpc.aio._channel.UnaryStreamMultiCallable):
+                asyncio.create_task(self._handle_stream_request(func, request, seq_num))
             else:
-                resp = await func(request)
-                self._logger.log_proto(resp)
-                response = control_proto.ControlResponse()
-                response.control_response.Pack(resp)
-                yield response
-        else:
-            self._logger.error("Could not parse object!")
+                asyncio.create_task(self._handle_unary_request(func, request, seq_num))
+        except KeyError:
+            self._logger.error("Request not in call table!")
             raise TypeError("Command has unknown type!")
 
     async def failsafe(self): 
         '''
-        Orders the vehicle to hold in case of remote disconnection.
+        Orders the vehicle to execute a failsafe in case of remote disconnection.
         '''
-        request = driver_service_pb2.HoldRequest(
-                request=generate_request()
-                )
-        self._driver_stub.Hold(request)
+        try:
+            request, method = self._failsafe
+            asyncio.create_task(self._send_request(method, request))
+        except:
+            raise ValueError("Invalid failsafe!")
+        
+    async def __call__(self, message):
+        '''
+        Easy interface to send requests and receive responses.
+        '''
+        # Message is expected to be a SwarmControlRequest 
+        try:
+            control = swarm_control_proto.SwarmControlRequest()
+            control.ParseFromString(message)
+            self._logger.info_proto(control)
+        except:
+            self._logger.error('Could not read request!')
+            # TODO: Make sure we return a blank SCR object
+            return
+        # Get the message name from the type URL
+        _, service, name = control.control_request.type_url.rsplit('.', 2)
+        name = name.replace('Request', '')
+        method = f'{service}.{name}'
+        request = read_any(control.control_request)
+        try:
+            await self._send_request(method, request, control.sequence_number)
+            return
+        except Exception as e:
+            self._logger.error(f'Could not make request, reason: {e}')
+            # TODO: Make sure we return a blank SCR object
+            return
+

@@ -3,35 +3,23 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.control;
+package protocol.swarm_control;
 
 import "google/protobuf/any.proto";
 
 /*
  * Directive for remote control from the Swarm Controller
  */
-message ControlRequest {
+message SwarmControlRequest {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
   google.protobuf.Any control_request = 2;
 }
 
-message ControlResponse {
+message SwarmControlResponse {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
   google.protobuf.Any control_response = 2;
-}
-
-/*
- * Mode switch for control over the vehicle
- * REMOTE -> Swarm Controller
- * LOCAL -> Mission
- * RC -> Remote control joystick
- */
-enum ControlMode {
-  REMOTE = 0;
-  LOCAL = 1;
-  RC = 2;
 }

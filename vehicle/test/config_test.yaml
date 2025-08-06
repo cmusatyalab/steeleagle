@@ -1,0 +1,30 @@
+vehicle:
+  type: multicopter
+  manufacturer: Parrot
+  model: Anafi
+  name: test
+  kwargs: {}
+cloudlet:
+  swarm_controller:
+    endpoint: localhost:9004
+  remote_compute_service:
+    endpoint: loaclhost:9005 
+services:
+  control_service:
+    endpoint: localhost:9000
+  report_service:
+    endpoint: localhost:9001
+  compute_service:
+    endpoint: localhost:9002
+logging:
+  # Whether or not to create an MCAP flight log for mission replay
+  generate_flight_log: true
+  # Whether or not to log to console
+  log_to_console: true
+  # Log to a custom filename; otherwise will autogenerate
+  # a name based on name, date, and time
+  custom_filename: 
+  # Path to log file
+  file_path: ../logger/logs/
+  # Log level
+  log_level: DEBUG

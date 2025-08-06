@@ -13,7 +13,7 @@ class ReportService(report_proto.ReportServicer):
 
     async def SendReport(self, request, context):
         self._logger.info("Sent report to Swarm Controller!")
-        self._logger.log_proto(request)
+        self._logger.info_proto(request)
         self._socket.send(request.report_string)
         return report_proto.ReportResponse(
                 response=generate_response(2)

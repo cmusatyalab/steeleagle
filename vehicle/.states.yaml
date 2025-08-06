@@ -1,0 +1,14 @@
+# Starting state of the system
+start: REMOTE
+# Defines transitions between system states based on Swarm Controller
+# commands
+states:
+  REMOTE:
+    mode: ControlMode.REMOTE
+    transit:
+      mission_service.Start: LOCAL
+  LOCAL:
+    mode: ControlMode.LOCAL
+    transit:
+      control_service.*: REMOTE
+      mission_service.Stop: REMOTE

@@ -1,9 +1,12 @@
 from enum import Enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Topic(Enum):
     SWARM_CONTROLLER = 1
     MISSION_SERVICE = 2
-    DRIVER_SERVICE = 3
+    DRIVER_CONTROL_SERVICE = 3
     COMPUTE_SERVICE = 4
     REPORT_SERVICE = 5
 
@@ -29,7 +32,7 @@ def sequence_params(func):
         try:
             args[0].sequencer.write(args[1])
         except Exception as e:
-            print(e) 
+            logger.error(e) 
             raise ValueError("No self.sequencer object set!")
-        await func(*args)
+        return await func(*args)
     return wrapper

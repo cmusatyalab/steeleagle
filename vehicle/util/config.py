@@ -41,25 +41,25 @@ def query_config(access_token):
         result = result[i] # Access the corresponding field
     return result
 
-def check_config() -> bool:
+def check_config():
     '''
     Ensures that there are no address conflicts between services.
     '''
     try:
-        ctrl = query_config('internal.control_service.endpoint')
-        telem = query_config('internal.telemetry.endpoint')
-        img = query_config('internal.imaging.endpoint')
-        msn = query_config('internal.mission_service.endpoint')
-        cmp = query_config('internal.compute_service.endpoint')
-        lcmp = query_config('internal.local_compute.endpoint')
-        res = query_config('internal.results.endpoint')
-        ctrl_srv = query_config('services.control_service.endpoint')
-        rep_srv = query_config('services.report_service.endpoint')
-        cmp_srv = query_config('services.compute_service.endpoint')
-        if len(set([ctrl_srv, rep_srv, cmp_srv, ctrl, telem, img, msn, cmp, lcmp, res])) != 10:
+        srv_cfg = query_config('services')
+        srv_cfg.update(query_config('internal'))
+        srv_cfg.update(query_config('cloudlet'))
+        addrs = set([])
+        seen = 0
+        
+        for key in srv_cfg:
+            try:
+                addrs.add(srv_cfg[key]['endpoint'])
+                seen += 1
+            except:
+                pass
+        if len(addrs) != seen:
             raise ValueError(f"Services have conflicting addresses! \
-                    Check your config.yaml to ensure you are not using reserved addresses {ctrl, telem, img}")
-        return True
+                    Check your config.yaml to ensure you are not using reserved addresses (8990-8999)")
     except Exception as e:
-        print(f"Configuration check failed, reason: {e}")
-        return False
+        raise

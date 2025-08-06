@@ -1,0 +1,171 @@
+import os
+import time
+import asyncio
+import logging
+from datetime import datetime
+import grpc
+from concurrent import futures
+import signal
+# MCAP import
+from mcap_protobuf.writer import Writer
+# Utility import
+from util.config import query_config
+from util.rpc import generate_response
+from util.cleanup import register_cleanup_handler
+# Protocol import
+from python_bindings.flight_log_service_pb2_grpc import FlightLogServicer, add_FlightLogServicer_to_server
+from python_bindings import flight_log_service_pb2 as log_proto
+
+class ColorFormatter(logging.Formatter):
+    '''
+    Logging Formatter to add colors to log output.
+    '''
+    gray = "\x1b[90m"
+    green = "\x1b[92m"
+    yellow = "\x1b[93m"
+    red = "\x1b[91m"
+    reset = "\x1b[0m"
+    time = "%(asctime)s ["
+    level  = "%(levelname)s"
+    message = "] %(message)s"
+
+    # Format logs so that they are colored by level
+    FORMATS = {
+        logging.DEBUG: time + reset + gray + level + reset + message,
+        logging.INFO: time + reset + green + level + reset + message,
+        logging.WARNING: time + reset + yellow + level + reset + message,
+        logging.ERROR: time + reset + red + level + reset + message,
+        logging.CRITICAL: time + reset + red + level + reset + message
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+class FlightLogService(FlightLogServicer):
+    '''
+    Handles all logging for the system, and writes log files
+    to a specified log directory.
+    '''
+    def __init__(self):
+        self._mcap_logger = None
+        self._console_logger = None
+        log_config = query_config('logging')
+        if log_config['generate_flight_log']:
+            # Create an mcap file with the current datetime
+            fname = log_config['custom_filename']
+            if not fname:
+                date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+                name = query_config('vehicle.name')
+                fname = name + '_' + date_time + '.mcap'
+            try:
+                fpath = log_config['file_path']
+                self._file = open(fpath + fname, 'wb')
+            except:
+                raise ValueError(
+                        f'Could not open log file {fpath + fname}! Make sure your log path is set correctly.'
+                        )
+            self._mcap_logger = Writer(self._file)
+        if log_config['log_to_console']:
+            self._console_logger = logging.getLogger(__name__)
+            self._setup_console_logging(log_config['log_level'])
+    
+    def _setup_console_logging(self, level):
+        '''
+        Build a console logger from provided level.
+        '''
+        # Set the log level
+        if level != '':
+            logging.basicConfig(level=level)
+        else:
+            # If no logging config exists, default to INFO
+            logging.basicConfig(level='INFO')
+        handler = logging.getLogger().handlers[0]
+        handler.setFormatter(ColorFormatter())
+    
+    def _get_publish_ts(self, proto):
+        '''
+        Gets a timestamp from the request object to get an 
+        accurate publish timestamp.
+        '''
+        ts = proto.request.timestamp
+        return round((ts.seconds + ts.nanos / 1e9) * 1000)
+
+    def _log_to_mcap(self, request):
+        ts = round(time.time() * 1000)
+        self._mcap_logger.write_message(
+            topic=request.topic,
+            message=request.log,
+            log_time=ts,
+            publish_time=self._get_publish_ts(request)
+        )
+
+    async def Log(self, request, context):
+        if self._console_logger:
+            match request.log.type:
+                case log_proto.LogType.INFO:
+                    self._console_logger.info(
+                            f"{request.topic} - {request.log.msg}"
+                            )
+                case log_proto.LogType.DEBUG:
+                    self._console_logger.debug(
+                            f"{request.topic} - {request.log.msg}"
+                            )
+                case log_proto.LogType.WARNING:
+                    self._console_logger.warning(
+                            f"{request.topic} - {request.log.msg}"
+                            )
+                case log_proto.LogType.ERROR:
+                    self._console_logger.error(
+                            f"{request.topic} - {request.log.msg}"
+                            )
+        if self._mcap_logger:
+            self._log_to_mcap(request)
+        return log_proto.LogResponse(
+                response=generate_response(2)
+                )
+
+    def __del__(self):
+        # Make sure we clean up the MCAP log so it is written to disk
+        if self._mcap_logger:
+            self._console_logger.info(f"Flight log written: {self._file.name}")
+            self._mcap_logger.finish()
+            self._file.close()
+
+async def serve_log_server():
+    '''
+    Deploys and runs the flight log server.
+    '''
+    server = grpc.aio.server(
+            futures.ThreadPoolExecutor(max_workers=10),
+            )
+    add_FlightLogServicer_to_server(FlightLogService(), server)
+    server.add_insecure_port(
+            query_config('internal.flight_log_service.endpoint')
+            )
+
+    logger = logging.getLogger(__name__)
+    logger.info("Log server running!")
+    try:
+        await server.start()
+    except Exception as e:
+        logger.error('Report server failed to start, reason: {e}')
+    try:
+        await server.wait_for_termination()
+    except asyncio.exceptions.CancelledError:
+        logger.info('Log server shut down.')
+
+async def main():
+    # Allows graceful shutdown on SIGTERM
+    register_cleanup_handler()
+    
+    server = asyncio.create_task(serve_log_server())
+    try:
+        await server
+    except:
+        server.cancel()
+        await server
+
+if __name__ == "__main__":
+    asyncio.run(main())

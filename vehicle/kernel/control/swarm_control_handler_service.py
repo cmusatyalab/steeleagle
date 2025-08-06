@@ -1,8 +1,11 @@
 import asyncio
 import zmq
 import zmq.asyncio
-# Protocol import
-from python_bindings import control_pb2 as control_proto
+import inspect
+import time
+# Utility Import
+from util.proto import read_any
+from util.auth import ControlMode
 # Multiplexer import
 from command_multiplexer import CommandMultiplexer
 
@@ -10,27 +13,27 @@ class SwarmControlHandlerService:
     '''
     Service that handles input from the Swarm Controller for remote 
     operation, mission start/stop, and mission notification. Replicates
-    the mission and driver services over ZeroMQ.
+    the mission and control services over ZeroMQ.
     '''
     def __init__(
             self,
-            driver_stub,
-            mission_stub,
-            mode,
+            auth,
             comm_sock,
-            logger
+            call_table,
+            logger,
+            failsafe=None
             ):
-        self._driver_stub = driver_stub
-        self._mission_stub = mission_stub
-        self._mode = mode # Control mode
-
         # Create a command multiplexer that will send Swarm Controller
-        # messages to the correct stub
-        self._mpx = CommandMultiplexer(driver_stub, mission_stub, mode, logger)
+        # messages to the correct stub and return responses over the socket
+        self._mpx = CommandMultiplexer(auth, comm_sock, call_table, failsafe, logger)
 
+        # Set the auth object which will define access rights
+        self._auth = auth
         self._comm_sock = comm_sock # Socket to Swarm Controller
         self._logger = logger
-        self._exec_task = None
+        self._timeout = None
+        if failsafe:
+            _, _, self._timeout = failsafe
 
     async def _handle(self):
         # Build the ZeroMQ poller which will poll for new messages
@@ -39,11 +42,6 @@ class SwarmControlHandlerService:
 
         # Track the last time we heard from the Swarm Controller
         last_manual_command_ts = None
-
-        # Define asynchronous response handler
-        async def handle_response(sck, mpx, msg):
-            async for rsp in mpx(msg):
-                await sck.send(rsp)
 
         # Main handle loop
         while True:
@@ -61,9 +59,10 @@ class SwarmControlHandlerService:
             # failsafe
             if not len(poll):
                 if (
-                    self._mode.get_mode() == control_proto.ControlMode.REMOTE \
+                    self._timeout != None \
                     and last_manual_command_ts \
-                    and time.time() - last_manual_command_ts >= 1.0
+                    and time.time() - last_manual_command_ts >= self._timeout \
+                    and self._auth.get_mode == ControlMode.REMOTE
                     ):
                     logger.warning(
                         "FAILSAFE ACTIVATED: Swarm controller is likely disconnected..."
@@ -74,19 +73,14 @@ class SwarmControlHandlerService:
                     last_manual_command_ts = None
                 continue
 
-            print("Got command!")
             last_manual_command_ts = time.time()
             message = await self._comm_sock.recv()
             asyncio.create_task(
-                    handle_response(
-                        self._comm_sock,
-                        self._mpx,
-                        message
-                        )
+                    self._mpx(message)
                     )
 
     async def start(self):
-        self._exec_task = asyncio.create_task(self._handle())
+        self._server = asyncio.create_task(self._handle())
         
     async def wait_for_termination(self):
-        await self._exec_task
+        await self._server

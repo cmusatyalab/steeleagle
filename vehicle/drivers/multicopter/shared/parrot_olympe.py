@@ -25,7 +25,7 @@ import olympe.enums.gimbal as gimbal_mode
 import olympe.enums.move as move_mode
 from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 # Interface import
-import python_bindings.multicopter_service_pb2_grpc as multicopter_proto
+import python_bindings.driver_service_pb2_grpc as driver_proto
 # Protocol imports
 import python_bindings.telemetry_pb2 as telemetry_proto
 import python_bindings.common_pb2 as common_proto
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # Remove streaming from SetHome
 # Get streaming threads for telem/imagery to work
 
-class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
+class ParrotOlympeDrone(driver_proto.DriverServicer):
 
     class FlightMode(Enum):
         LOITER = 'LOITER'
@@ -259,11 +259,6 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
                 )
 
     async def SetHome(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetHomeResponse(
-                response=generate_response(0)
-                )
-        
         # Extract home data
         location = request.location
         lat = location.latitude
@@ -272,25 +267,17 @@ class ParrotOlympeDrone(multicopter_proto.MulticopterServicer):
 
         # Send the command
         try:
-            self._drone(set_custom_location(lat, lon, alt)).success()
+            self._drone(set_custom_location(lat, lon, alt)).wait()success()
         except Exception as e:
-            yield multicopter_proto.SetHomeResponse(
+            return multicopter_proto.SetHomeResponse(
                     response=generate_response(
                         4,
                         str(e)
                         )
                     )
-            return
         
-        # Send an IN_PROGRESS stream
-        while not self._is_home_set(location) and \
-                not context.cancelled():
-            yield multicopter_proto.SetHomeResponse(
-                    response=generate_response(1)
-                    )
-
         # Send COMPLETED
-        yield multicopter_proto.SetHomeResponse(
+        return  multicopter_proto.SetHomeResponse(
                 response=generate_response(2)
                 )
 
