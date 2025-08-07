@@ -92,6 +92,7 @@ public class MyActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_STORAGE_PERMISSION = 101;
     private double pendingLat = 0.0;
     private double pendingLon = 0.0;
+    private double pendingAlt = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -258,7 +259,7 @@ public class MyActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_STORAGE_PERMISSION) {
             if (hasStoragePermission()) {
-                waypoint(pendingLat, pendingLon);
+                waypoint(pendingLat, pendingLon, pendingAlt);
             } else {
                 TextView textView = findViewById(R.id.main_text);
                 textView.setText("Permission denied. Cannot edit KMZ.");
@@ -279,7 +280,7 @@ public class MyActivity extends AppCompatActivity {
             }
 
             if (allGranted) {
-                waypoint(pendingLat, pendingLon);
+                waypoint(pendingLat, pendingLon, pendingAlt);
             } else {
                 TextView textView = findViewById(R.id.main_text);
                 textView.setText("Permission denied. Cannot edit KMZ.");
@@ -765,9 +766,10 @@ public class MyActivity extends AppCompatActivity {
 
     //start of waypoint code
     WaypointMissionManager waypointManager = WaypointMissionManager.getInstance();
-    private void waypoint(double lat, double lon) {
+
+    private void waypoint(double lat, double lon, double alt) {
         TextView textView = findViewById(R.id.main_text);
-        Log.i("MyApp", "Lon: " + lon + " Lat: " + lat);
+        Log.i("MyApp", "Lon: " + lon + " Lat: " + lat + " Alt: " + alt);
         File originalKmz = new File("/storage/emulated/0/DJI/mission.kmz");
 
         if (!originalKmz.exists()) {
@@ -874,9 +876,28 @@ public class MyActivity extends AppCompatActivity {
             }
             matcher.appendTail(sb);
 
+            Pattern altitudePattern = Pattern.compile("<wpml:executeHeight>([^<]*)</wpml:executeHeight>");
+            Matcher altitudeMatcher = altitudePattern.matcher(sb.toString());
+            StringBuffer sb2 = new StringBuffer();
+            int altitudeIndex = 0;
+
+            while (altitudeMatcher.find()) {
+                String replacement;
+                if (altitudeIndex == 0) {
+                    replacement = "<wpml:executeHeight>" + alt + "</wpml:executeHeight>";
+                } else if (altitudeIndex == 1) {
+                    replacement = "<wpml:executeHeight>" + alt + "</wpml:executeHeight>";
+                } else {
+                    continue;
+                }
+                altitudeMatcher.appendReplacement(sb2, Matcher.quoteReplacement(replacement));
+                altitudeIndex++;
+            }
+            altitudeMatcher.appendTail(sb2);
+
             // Write back the updated XML
             BufferedWriter writer = new BufferedWriter(new FileWriter(waylinesFile));
-            writer.write(sb.toString());
+            writer.write(sb2.toString());
             writer.close();
 
             // Step 3: Repack only waylines.wpml and template.kml into a new KMZ
@@ -1132,6 +1153,7 @@ public class MyActivity extends AppCompatActivity {
     private final int gimbalIntervalMs = 10; // How often to update
     private final long maxGimbalDurationMs = 60_000; // Max adjustment duration = 30 seconds
     private long gimbalStartTimeMs;
+
     private void setGimbalPose(double targetYaw, double targetPitch, double targetRoll) {
         isAdjustingGimbal = true;
         gimbalStartTimeMs = System.currentTimeMillis(); // Mark start time
@@ -1213,6 +1235,7 @@ public class MyActivity extends AppCompatActivity {
         isAdjustingGimbal = false;
         gimbalHandler.removeCallbacksAndMessages(null);
     }
+    //end of set gimbal pose code
 
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
@@ -1264,28 +1287,41 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onValue(Double latitude) {
                 Log.i("MyApp", "Latitude: " + latitude);
+
                 doublePrompt("Enter Longitude", new ValueCallback<Double>() {
                     @Override
                     public void onValue(Double longitude) {
                         Log.i("MyApp", "Longitude: " + longitude);
 
-                        //call waypoint function
-                        if (hasStoragePermission()) {
-                            waypoint(latitude, longitude);
-                        } else {
-                            requestStoragePermission();
-                            Handler handler = new Handler();
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (hasStoragePermission()) {
-                                        waypoint(latitude, longitude);
-                                    } else {
-                                        Log.i("MyApp", "Still no permission after delay.");
-                                    }
+                        doublePrompt("Enter Altitude", new ValueCallback<Double>() {
+                            @Override
+                            public void onValue(Double altitude) {
+                                Log.i("MyApp", "Altitude: " + altitude);
+
+                                // Call waypoint function
+                                if (hasStoragePermission()) {
+                                    waypoint(latitude, longitude, altitude);
+                                } else {
+                                    requestStoragePermission();
+                                    Handler handler = new Handler();
+                                    handler.postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (hasStoragePermission()) {
+                                                waypoint(latitude, longitude, altitude);
+                                            } else {
+                                                Log.i("MyApp", "Still no permission after delay.");
+                                            }
+                                        }
+                                    }, 5000); // 5-second delay
                                 }
-                            }, 5000); // 5-second delay
-                        }
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                Log.i("MyApp", "Altitude input cancelled");
+                            }
+                        });
                     }
 
                     @Override
@@ -1301,6 +1337,7 @@ public class MyActivity extends AppCompatActivity {
             }
         });
     }
+
 
     private void setHomeUsingCoordinatesDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
