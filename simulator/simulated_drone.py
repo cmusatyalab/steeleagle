@@ -350,14 +350,21 @@ class SimulatedDrone():
         else:
             logger.info(f"extended_move_to: {self.get_state("drone_id")} successfully stopped prior to orienting drone...")
 
-        path_heading = self.calculate_bearing(lat, lon)
-
         if heading_mode == common_protocol.LocationHeadingMode.TO_TARGET:
             # Orients drone to fixed target bearing
-            self._set_pose_target(None, None, bearing)
+            target_bearing = bearing
         else:
             # Orients drone along the flight path heading (face 'forward')
-            self._set_pose_target(None, None, path_heading)
+            target_bearing = path_heading = self.calculate_bearing(lat, lon)
+
+        self._set_pose_target(None, None, target_bearing)
+        result = await self._wait_for_condition(lambda: self.is_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
+        if not result:
+            logger.warning(f"{self.get_state("drone_id")} failed to orient to target bearing {target_bearing} prior to executing move...")
+            logger.warning(f"Current orientation bearing {self.get_state("attitude")["yaw"]}")
+            return False
+        else:
+            logger.info(f"Completed orientation to bearing {target_bearing}")
 
         self._set_position_target(lat, lon, altitude)
         result = self.partition_lateral_velocities(lateral_vel)
@@ -1243,6 +1250,12 @@ class SimulatedDrone():
                                 self._position_target["lat"], self._position_target["lon"])
         logger.info(f"x: {x_dist}, y: {y_dist}")
         total_dist = x_dist + y_dist
-        x_prop = x_dist / total_dist
-        y_prop = y_dist / total_dist
+        if x_dist == 0:
+            x_prop = 0
+        else:
+            x_prop = x_dist / total_dist
+        if y_dist == 0:
+            y_prop = 0
+        else:
+            y_prop = y_dist / total_dist
         return (lateral_vel * x_prop, lateral_vel * y_prop)
