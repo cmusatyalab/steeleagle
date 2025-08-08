@@ -94,7 +94,6 @@ class SimulatedDrone():
                 # Start accelerating in proper direction only after previous task canceled
                 else:
                     self._pending_action = False
-                    # self._active_action = True
                     logger.debug(f"state_loop: Pending action changed to: {self._pending_action}")
             if self._check_target_active("position"):
                 self._calculate_acceleration_direction()
@@ -213,17 +212,16 @@ class SimulatedDrone():
 
         if result:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed takeoff...")
         else:
             self._zero_velocity()
             await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1)
             self.set_flight_state(common_protocol.FlightStatus.IDLE)
-            self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to take off...")
             current_position = self.get_current_position()
             logger.warning(f"Stopped in position: ({current_position[0]}, {current_position[1]}, "
                            f"{current_position[2]})")
+        self._active_action = False
         return result
 
     async def land(self):
@@ -246,6 +244,8 @@ class SimulatedDrone():
         stop_result = await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1)
         if not stop_result:
             logger.warning("land: Failed to stop prior to beginning descent procedure...")
+            self._active_action = False
+            return False
         else:
             logger.info(f"{self.get_state("drone_id")} successfully stopped prior to executing descent procedure...")
 
@@ -258,15 +258,14 @@ class SimulatedDrone():
 
         if result and stop_result:
             self.set_flight_state(common_protocol.FlightStatus.LANDED)
-            self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed landing...")
         else:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             current_position = self.get_current_position()
             logger.warning(f"{self.get_state("drone_id")} failed to land...")
             logger.warning(f"Current position after failed attempt: ({current_position[0]}, "
                            f"{current_position[1]}, {current_position[2]})")
+        self._active_action = False
         return result
 
     async def move_to(self, lat, lon, altitude, heading_mode, bearing):
@@ -289,6 +288,8 @@ class SimulatedDrone():
         stop_result = await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1)
         if not stop_result:
             logger.warning("move_to: Failed to stop prior to orienting drone...")
+            self._active_action = False
+            return False
         else:
             logger.info(f"{self.get_state("drone_id")} successfully stopped prior to orienting drone...")
 
@@ -301,10 +302,11 @@ class SimulatedDrone():
         self._set_pose_target(None, None, target_bearing)
 
         self.set_flight_state(common_protocol.FlightStatus.MOVING)
-        result = await self._wait_for_condition(lambda: self.is_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
+        result = await self._wait_for_condition(lambda: self.is_drone_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
         if not result:
             logger.warning(f"{self.get_state("drone_id")} failed to orient to target bearing {target_bearing} prior to executing move...")
             logger.warning(f"Current orientation bearing {self.get_state("attitude")["yaw"]}")
+            self._active_action = False
             return False
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
@@ -315,16 +317,15 @@ class SimulatedDrone():
 
         if result:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed movement to position "
                         f"({current_position[0]}, {current_position[1]}, {current_position[2]})")
         else:
             self._zero_velocity()
             await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=.1)
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to move to target position ({lat}, {lon}, {altitude})...")
             logger.warning(f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})")
+        self._active_action = False
         return result
 
     async def extended_move_to(self, lat, lon, altitude, heading_mode, bearing, lateral_vel, up_vel, angular_vel):
@@ -347,6 +348,8 @@ class SimulatedDrone():
         stop_result = await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1)
         if not stop_result:
             logger.warning("extended_move_to: Failed to stop prior to orienting drone...")
+            self._active_action = False
+            return False
         else:
             logger.info(f"extended_move_to: {self.get_state("drone_id")} successfully stopped prior to orienting drone...")
 
@@ -358,10 +361,11 @@ class SimulatedDrone():
             target_bearing = path_heading = self.calculate_bearing(lat, lon)
 
         self._set_pose_target(None, None, target_bearing)
-        result = await self._wait_for_condition(lambda: self.is_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
+        result = await self._wait_for_condition(lambda: self.is_drone_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
         if not result:
             logger.warning(f"{self.get_state("drone_id")} failed to orient to target bearing {target_bearing} prior to executing move...")
             logger.warning(f"Current orientation bearing {self.get_state("attitude")["yaw"]}")
+            self._active_action = False
             return False
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
@@ -372,7 +376,7 @@ class SimulatedDrone():
             logger.error("extended_move_to: Unable to partition lateral velocity value...")
             self._active_action = False
             self._set_position_target(None, None, None)
-            return
+            return False
         x_vel = result[0]
         y_vel = result[1]
         self._set_velocity_target(x_vel, y_vel, up_vel)
@@ -383,16 +387,15 @@ class SimulatedDrone():
 
         if result:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed movement to position "
                         f"({current_position[0]}, {current_position[1]}, {current_position[2]})")
         else:
             self._zero_velocity()
             await self._wait_for_condition(lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1)
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
-            self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed extended move to target position ({lat}, {lon}, {altitude})...")
             logger.warning(f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})")
+        self._active_action = False
         return result
 
     async def set_target(self, gimbal_id, control_mode, pitch, roll, yaw):
@@ -401,20 +404,39 @@ class SimulatedDrone():
             logger.info("set_target: Gimbal rotation without target not implemented")
             return False
         
-        await self._register_pending_task()
-        if control_mode == "position":
-            self._set_gimbal_target(pitch, roll, yaw)
+        result = await self._register_pending_task()
+        if not result:
+            logger.warning("set_target: Pending task already queued, unable to register take off command")
+            return False
+        else:
+            logger.info("set_target: Successfully registered task, beginning procedure")
 
-        result = await self._wait_for_condition(lambda: self._check_gimbal_pose_reached(), timeout=TASK_TIMEOUT, interval=0.1)
+        attitude = self.get_state("attitude")
+        if yaw != attitude["yaw"]:
+            self._set_pose_target(attitude["pitch"], attitude["roll"], yaw)
+            logger.info(f"set_target: Turning drone to {yaw} degrees before rotating gimbal...")
+            result = await self._wait_for_condition(lambda: self.is_drone_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
+            if result:
+                logger.info(f"set_target: Successfully turned drone to {yaw} degrees")
+            else:
+                attitude = self.get_state("attitude")
+                logger.warning(f"{self.get_state("drone_id")} failed to rotate to target orientation of {yaw}...")
+                logger.warning(f"Current orientation: {attitude["yaw"]}")
+                self._active_action = False
+                return False
+        
+        if control_mode == "position":
+            self._set_gimbal_target(pitch, roll, 0)
+
+        result = await self._wait_for_condition(lambda: self.is_gimbal_oriented(), timeout=TASK_TIMEOUT, interval=0.1)
         current_g_pose = self.get_state("gimbal_pose")
         if result:
-            self._active_action = False
             logger.info(f"{self.get_state("drone_id")} completed aligning gimbal {gimbal_id} to target. "
-                        f"Pitch: {current_g_pose["g_pitch"]}, Roll: {current_g_pose["g_roll"]}, Yaw: {current_g_pose["yaw"]}")
+                        f"Pitch: {current_g_pose["g_pitch"]}, Roll: {current_g_pose["g_roll"]}, Yaw: {current_g_pose["g_yaw"]}")
         else:
-            self._active_action = False
             logger.warning(f"{self.get_state("drone_id")} failed to align gimbal {gimbal_id} to target. "
-                           f"Pitch: {current_g_pose["g_pitch"]}, Roll: {current_g_pose["g_roll"]}, Yaw: {current_g_pose["yaw"]}")
+                           f"Pitch: {current_g_pose["g_pitch"]}, Roll: {current_g_pose["g_roll"]}, Yaw: {current_g_pose["g_yaw"]}")
+        self._active_action = False
         return result
 
     def set_home_location(self, lat, lon, alt):
@@ -488,7 +510,7 @@ class SimulatedDrone():
             return True
         return False
 
-    def is_oriented(self):
+    def is_drone_oriented(self):
         attitude = self.get_state("attitude")
         if (abs(attitude["pitch"] - self._pose_target["pitch"]) > POSE_TOLERANCE
             or abs(attitude["roll"] - self._pose_target["roll"]) > POSE_TOLERANCE
@@ -497,6 +519,18 @@ class SimulatedDrone():
         self.set_attitude(self._pose_target["pitch"], self._pose_target["roll"], self._pose_target["yaw"])
         self._set_drone_rotation(0, 0, 0)
         self._set_pose_target(None, None, None)
+        return True
+    
+    def is_gimbal_oriented(self):
+        gimbal_pose = self.get_state("gimbal_pose")
+        if (abs(gimbal_pose["g_pitch"] - self._gimbal_target["g_pitch"]) > POSE_TOLERANCE
+        or abs(gimbal_pose["g_roll"] - self._gimbal_target["g_roll"]) > POSE_TOLERANCE
+        or abs(gimbal_pose["g_yaw"] - self._gimbal_target["g_yaw"]) > POSE_TOLERANCE):
+            return False
+        self.set_gimbal_pose(self._gimbal_target["g_pitch"], self._gimbal_target["g_roll"],
+                             self._gimbal_target["g_yaw"])
+        self._set_gimbal_rotation(0, 0, 0)
+        self._set_gimbal_target(None, None, None)
         return True
 
     def is_stopped(self):
@@ -662,8 +696,6 @@ class SimulatedDrone():
         result = (np.rad2deg(theta) + 360) % 360
         return result
 
-
-
     def _calculate_deceleration(self, vel_val: float, dist_remaining: float):
         # 0 dist is used for immediate stops that do not include a position target
         if dist_remaining == 0:
@@ -760,7 +792,6 @@ class SimulatedDrone():
             logger.error(f"Roll: {self._pose_target["roll"]}")
             logger.error(f"Yaw: {self._pose_target["yaw"]}")
             return
-
         if (abs(self._pose_target["pitch"] - pose["pitch"]) <= POSE_TOLERANCE
             and abs(self._pose_target["roll"] - pose["roll"]) <= POSE_TOLERANCE
             and abs(self._pose_target["yaw"] - pose["yaw"]) <= POSE_TOLERANCE):
@@ -927,6 +958,9 @@ class SimulatedDrone():
             target_g_yaw = new_g_yaw
             logger.info("_set_gimbal_target: Clearing gimbal target...")
         
+        if not self._check_target_active("gimbal"):
+            self._set_gimbal_rotation(MAX_ROTA_RATE, MAX_ROTA_RATE, MAX_ROTA_RATE)
+
         self._gimbal_target.update(
             g_pitch=target_g_pitch,
             g_roll=target_g_roll,
