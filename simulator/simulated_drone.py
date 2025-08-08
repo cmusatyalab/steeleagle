@@ -508,6 +508,7 @@ class SimulatedDrone():
         ):
             return False
         self._set_velocity_target(None, None, None)
+        self._clear_velocity_target_flags()
         self.set_velocity(0, 0, 0)
         self._set_acceleration(0, 0, 0)
         return True
@@ -710,16 +711,34 @@ class SimulatedDrone():
         stop_distances = self.get_stop_distances()
         logger.debug(f"_check_braking_thresholds: Stop Distances: {stop_distances[0]}, {stop_distances[1]}, {stop_distances[2]}")
         logger.debug(f"_check_braking_thresholds: Distances: X: {dist_x}, Y: {dist_y}, Z: {dist_z}")
-        #if abs(dist_x) <= LATERAL_BRAKE_THRESHOLD:
+        
         if stop_distances[0] > abs(dist_x) or abs(dist_x) < 1:
             acceleration["accX"] = self._calculate_deceleration(velocity["speedX"], dist_x)
-        #if abs(dist_y) <= LATERAL_BRAKE_THRESHOLD:
         if stop_distances[1] > abs(dist_y) or abs(dist_y) < 1:
             acceleration["accY"] = self._calculate_deceleration(velocity["speedY"], dist_y)
-        #if abs(dist_z) <= VERTICAL_BRAKE_THRESHOLD:
         if stop_distances[2] > abs(dist_z) or abs(dist_z) < 1:
             acceleration["accZ"] = self._calculate_deceleration(velocity["speedZ"], dist_z)
-        
+
+        if self._check_target_active("velocity"):
+            if abs(velocity["speedX"]) >= abs(self._velocity_target["speedX"]):
+                if np.sign(acceleration["accX"]) + np.sign(velocity["speedX"]) == 0:
+                    self._x_vel_flag = False
+                if np.sign(acceleration["accX"]) == np.sign(velocity["speedX"]):
+                    acceleration["accX"] = 0
+            if abs(velocity["speedY"]) >= abs(self._velocity_target["speedY"]):
+                if np.sign(acceleration["accY"]) + np.sign(velocity["speedY"]) == 0:
+                    self._y_vel_flag = False
+                if np.sign(acceleration["accY"]) == np.sign(velocity["speedY"]):
+                    acceleration["accY"] = 0
+            if abs(velocity["speedZ"]) >= abs(self._velocity_target["speedZ"]):
+                if np.sign(acceleration["accZ"]) + np.sign(velocity["speedZ"]) == 0:
+                    self._z_vel_flag = False
+                if np.sign(acceleration["accZ"]) == np.sign(velocity["speedZ"]):
+                    acceleration["accZ"] = 0
+            if not self._x_vel_flag and not self._y_vel_flag and not self._z_vel_flag:
+                # Clear velocity target once all dimensions are decelerating/stopped
+                self._set_velocity_target(None, None, None)
+
         logger.debug("_calculate_acceleration_direction: Setting acceleration to "
                          f"({acceleration["accX"]}, {acceleration["accY"]}, {acceleration["accZ"]})")
         self._set_acceleration(acceleration["accX"], acceleration["accY"], acceleration["accZ"])
@@ -846,21 +865,15 @@ class SimulatedDrone():
 
         if abs(vel_x - self._velocity_target["speedX"]) <= MATCH_TOLERANCE:
             acceleration["accX"] = 0
-        #else:
-        #    acceleration["accX"] = self._calculate_deceleration(vel_x, 0)
         if abs(vel_y - self._velocity_target["speedY"]) <= MATCH_TOLERANCE:
             acceleration["accY"] = 0
-        #else:
-        #    acceleration["accY"] = self._calculate_deceleration(vel_y, 0)
         if abs(vel_z - self._velocity_target["speedZ"]) <= MATCH_TOLERANCE:
             acceleration["accZ"] = 0
-        #else:
-        #    acceleration["accZ"] = self._calculate_deceleration(vel_z, 0)
         # If all velocity targets are achieved, delete the current velocity target
         if acceleration["accX"] == 0 and acceleration["accY"] == 0 and acceleration["accZ"] == 0:
             self.set_velocity(self._velocity_target["speedX"], self._velocity_target["speedY"], self._velocity_target["speedZ"])
-            self._set_velocity_target(None, None, None) #TODO this is broken for extended move to with non maximal velocity targets
-            logger.info("_check_velocity_reached: Clearing velocity target...")
+            #self._set_velocity_target(None, None, None) #TODO this is broken for extended move to with non maximal velocity targets
+            #logger.info("_check_velocity_reached: Clearing velocity target...")
         self._set_acceleration(acceleration["accX"], acceleration["accY"], acceleration["accZ"])
 
     def _set_acceleration(self, accX: float, accY: float, accZ: float):
@@ -970,14 +983,17 @@ class SimulatedDrone():
     def _set_velocity_target(self, vel_x: Optional[float], vel_y: Optional[float], vel_z: Optional[float]):
         if vel_x != None:
             x = max(min(vel_x, MAX_SPEED), -MAX_SPEED)
+            self._x_vel_flag = True
         else:
             x = None
         if vel_y != None:
             y = max(min(vel_y, MAX_SPEED), -MAX_SPEED)
+            self._y_vel_flag = True
         else:
             y = None
         if vel_z != None:
             z = max(min(vel_z, MAX_CLIMB), -MAX_CLIMB)
+            self._z_vel_flag = True
         else:
             z = None
 
@@ -1259,3 +1275,8 @@ class SimulatedDrone():
         else:
             y_prop = y_dist / total_dist
         return (lateral_vel * x_prop, lateral_vel * y_prop)
+    
+    def _clear_velocity_target_flags(self):
+        self._x_vel_flag = False
+        self._y_vel_flag = False
+        self._z_vel_flag = False
