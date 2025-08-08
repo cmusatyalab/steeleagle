@@ -1,7 +1,9 @@
 import asyncio
 import logging
+
 import zmq
-from util.utils import setup_socket, SocketOperation
+from util.utils import SocketOperation, setup_socket
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,6 +58,8 @@ class Stub:
         stub_response.put_result(response)
         stub_response.set()
 
+        del self.request_map[response.seq_num]
+
     async def receiver_loop(self, parse_response_callback):
         while True:
             try:
@@ -69,11 +73,12 @@ class Stub:
             await asyncio.sleep(0)
 
     async def send_and_wait(self, request):
-        try: 
+        try:
             stub_response = StubResponse()
             self.sender(request, stub_response)
             await stub_response.wait()
-            reply =  stub_response.get_result()
+            reply = stub_response.get_result()
             return reply
         except Exception as e:
+            logger.error(e)
             return None

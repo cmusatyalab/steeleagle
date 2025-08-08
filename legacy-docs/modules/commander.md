@@ -8,7 +8,7 @@ permalink: docs/modules/commander
 ---
 
 # Commander
-Our ground control software, simply referred to as the **Commander**, is used to view stream and telemetry data from connected drones and to send them command message (e.g. manual control, return to home, send on autonomous mission). 
+Our ground control software, simply referred to as the **Commander**, is used to view stream and telemetry data from connected drones and to send them command message (e.g. manual control, return to home, send on autonomous mission).
 The current implementation runs in python and is based on [customtkinter](https://github.com/TomSchimansky/CustomTkinter).
 An implementation using [streamlit](https://streamlit.io/) is a work-in-progress.
 
@@ -16,7 +16,7 @@ Typically the Commander is run by the drone pilot in the field, but in theory it
 
 ## Installation
 
-The commander can be installed by installing the requirements: 
+The commander can be installed by installing the requirements:
 
 ```sh
 cd ~/steeleagle/cnc/python-client/
@@ -61,7 +61,7 @@ Ensure that the ssh key of the user running the commander is placed into the ser
 
 ![Commander Layout!](images/commander_layout.png)
 
-The above screenshot details the layout of the Commander. The typical usage of the application is as follows: 
+The above screenshot details the layout of the Commander. The typical usage of the application is as follows:
 
 1. The 'Available Drones' list will be populated with any steeleagle drones once they have connected to the backend either by launching the Android app (Java) or starting the supervisor script (Python). Select a drone from the list and then click the 'Connect' button.
 2. After connecting to a particular drone, the map should be updated to center on the location of the drone and a icon representing the drone will be shown. The position/orientation of the icon will correspond to the current position/bearing of the drone. This will be automatically updated over time. You can change the tile server using the dropdown menu in the upper right corner of the map.

@@ -1,5 +1,5 @@
 # Overview
-SteelEagle is a software suite and edge orchestration system that transforms programmable commercial off-the-shelf (COTS) robotics platforms into fully-autonomous vehicles. By leveraging COTS economies of scale, SteelEagle can emulate the performance of expensive, onboard compute-based platforms on light, inexpensive hardware. 
+SteelEagle is a software suite and edge orchestration system that transforms programmable commercial off-the-shelf (COTS) robotics platforms into fully-autonomous vehicles. By leveraging COTS economies of scale, SteelEagle can emulate the performance of expensive, onboard compute-based platforms on light, inexpensive hardware.
 
 The SteelEagle suite is equipped with a universal API which unifies disparate control SDKs under one programming scheme. This API is robot agnostic and can be used with any kind of programmable robotics hardware, including custom builds. Any drone that is SteelEagle API compatible can plug into the SteelEagle unified autonomy development stack which promotes code sharing and heterogeneous device collaboration. A visual mission scripting tool is also available to give non-programmers an easy way to interact with autonomous robots.
 
@@ -10,20 +10,20 @@ SteelEagle's edge processing pipelines allow drop-in drop-out configuration of A
 ### Low Cost
 SteelEagle can be used with mass-market consumer robots which are extremely cost-optimized. This makes acquisition easier and cheaper than custom-built or niche products. It can also make swarm operations more economically feasible for constrained budgets.
 
-### Accessibile
+### Accessible
 SteelEagle robots are designed to abstract away as much low-level control code as possible allowing users to focus on developing high-level tasks. Non-programmers can use the visual scripting API to design complex mission behavior without writing a single line of code. Programmers can use the Task Creator SDK to easily build out new functionality, and can use the Backend SDK to rapidly deploy new AI models across a robot fleet.
 
 ### Lightweight
 Because SteelEagle robots rely on the edge for intelligence, they don't need to carry heavy onboard compute resources. This drives down weight, something which is particularly important for UAVs (unmanned aerial vehicles) due to [strict weight regulations](https://www.faa.gov/uas/commercial_operators/operations_over_people). SteelEagle enables autonomy on aircraft significantly smaller and lighter than traditional autonomous UAVs.
 
 ### Portable
-SteelEagle is robot agnostic by design, able to accomodate any robot with a SDK. It supports heterogeneous collaborative robot swarms, and it gives users the ability to easily port code from one platform to another. While SteelEagle is unlikely to match the performance of purpose-built autonomous systems, its design allows for missions that pair such systems with smaller, cheaper helpers which can improve mission outcomes.
+SteelEagle is robot agnostic by design, able to accommodate any robot with a SDK. It supports heterogeneous collaborative robot swarms, and it gives users the ability to easily port code from one platform to another. While SteelEagle is unlikely to match the performance of purpose-built autonomous systems, its design allows for missions that pair such systems with smaller, cheaper helpers which can improve mission outcomes.
 
 ### BVLOS (Beyond Visual Line-of-Sight)
 SteelEagle robots can communicate with an edge backend using any type of underlying radio communication, including LTE, without human supervision (beyond visual line-of-sight, or BVLOS for short). Operations like this are important for remote surveillance, especially in adversarial environments.
 
 ### Access to Powerful Compute
-SteelEagle robots have access to much more powerful computation over the network than most mobile robots have onboard, due to their access to edge servers. Although edge servers are not as powerful as cloud servers, they are far more capable than any mobile computer and can deliver high-quality AI results with relatively low latency. 
+SteelEagle robots have access to much more powerful computation over the network than most mobile robots have onboard, due to their access to edge servers. Although edge servers are not as powerful as cloud servers, they are far more capable than any mobile computer and can deliver high-quality AI results with relatively low latency.
 
 ## Drawbacks
 

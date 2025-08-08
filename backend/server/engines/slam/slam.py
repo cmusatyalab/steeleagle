@@ -18,15 +18,17 @@
 #   limitations under the License.
 #
 #
+import argparse
+import logging
+
 from gabriel_server.network_engine import engine_runner
 from terraslam import TerraSLAMEngine
-import logging
-import argparse
 from util.utils import setup_logging
 
-SOURCE = 'telemetry'
+SOURCE = "telemetry"
 
 logger = logging.getLogger(__name__)
+
 
 def main():
     setup_logging(logger)
@@ -34,9 +36,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument(
-        "-p", "--port", type=int, default=9099, help="Set port number"
-    )
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
 
     parser.add_argument(
         "-s", "--server", default="128.2.208.19", help="SLAM container IP address"
@@ -46,16 +46,17 @@ def main():
     #     "-t", "--transform", default="transform.json", help="Path to transform.json file"
     # )
 
-    parser.add_argument(
-        "-R", "--redis", type=int, default=6379, help="Redis port"
-    )
+    parser.add_argument("-R", "--redis", type=int, default=6379, help="Redis port")
 
     parser.add_argument(
         "-a", "--auth", default="", help="Redis authentication password"
     )
 
     parser.add_argument(
-        "-g", "--gabriel", default="tcp://gabriel-server:5555", help="Gabriel server endpoint"
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint",
     )
 
     parser.add_argument(
@@ -72,8 +73,9 @@ def main():
         engine=engine_setup(),
         source_name=args.source,
         server_address=args.gabriel,
-        all_responses_required=True
+        all_responses_required=True,
     )
 
+
 if __name__ == "__main__":
-    main() 
+    main()

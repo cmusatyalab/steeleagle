@@ -24,18 +24,20 @@ message Request {
     TelemetryRequest tel = 3;
     FrameRequest frame  = 4;
     GetComputeResult cpt = 5;
+    UpdateCurrentTask task = 6;
   }
 }
 
 message Response {
   uint64 seq_num = 1; // For correlation
-  google.protobuf.Timestamp timestamp = 2;// Time the response was sent
+  google.protobuf.Timestamp timestamp = 2; // Time the response was sent
   protocol.common.ResponseStatus resp = 3;
   oneof type {
     Telemetry tel = 4;
     Frame frame = 5;
     ComputeResponse cpt = 6;
   }
+  uint64 data_age_ms = 7; // Indicates the staleness of the data in milliseconds
 }
 
 /*
@@ -79,6 +81,10 @@ message Frame {
 */
 message GetComputeResult {
   string type = 1;
+}
+
+message UpdateCurrentTask {
+    string task_name = 1;
 }
 
 message ComputeResponse {

@@ -18,15 +18,17 @@
 #   limitations under the License.
 #
 #
-from gabriel_server.network_engine import engine_runner
-from obstacle_avoidance_engine import MidasAvoidanceEngine, Metric3DAvoidanceEngine
-import logging
 import argparse
+import logging
+
+from gabriel_server.network_engine import engine_runner
+from obstacle_avoidance_engine import Metric3DAvoidanceEngine, MidasAvoidanceEngine
 from util.utils import setup_logging
 
-SOURCE = 'openscout'
+SOURCE = "openscout"
 
 logger = logging.getLogger(__name__)
+
 
 def main():
     setup_logging(logger)
@@ -34,48 +36,69 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+
     parser.add_argument(
-        "-p", "--port", type=int, default=9099, help="Set port number"
+        "-m",
+        "--model",
+        default="DPT_Large",
+        help="MiDaS model. Valid models are ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small']",
     )
 
     parser.add_argument(
-        "-m", "--model", default="DPT_Large", help="MiDaS model. Valid models are ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small']"
+        "-r",
+        "--threshold",
+        type=int,
+        default=190,
+        help="Depth threshold for filtering.",
     )
 
     parser.add_argument(
-        "-r", "--threshold", type=int, default=190, help="Depth threshold for filtering."
+        "-s",
+        "--store",
+        action="store_true",
+        default=False,
+        help="Store images with heatmap",
     )
 
     parser.add_argument(
-        "-s", "--store", action="store_true", default=False, help="Store images with heatmap"
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint.",
     )
 
     parser.add_argument(
-        "-g", "--gabriel",  default="tcp://gabriel-server:5555", help="Gabriel server endpoint."
+        "-src", "--source", default=SOURCE, help="Source for engine to register with."
     )
 
     parser.add_argument(
-        "-src", "--source",  default=SOURCE, help="Source for engine to register with."
+        "-f",
+        "--faux",
+        action="store_true",
+        default=False,
+        help="Generate faux vectors using the file specfied instead of results from MiDaS.",
     )
 
     parser.add_argument(
-        "-f", "--faux",  action="store_true", default=False, help="Generate faux vectors using the file specfied instead of results from MiDaS."
+        "-R",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
     )
 
-    parser.add_argument(
-        "-R", "--redis", type=int, default=6379, help="Set port number for redis connection [default: 6379]"
-    )
-
-    parser.add_argument(
-        "-a", "--auth", default="", help="Share key for redis user."
-    )
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
 
     parser.add_argument(
         "-i", "--roi", type=int, default=190, help="Depth threshold for filtering."
     )
 
     parser.add_argument(
-        "--metric3d", action="store_true", default=False, help="Use Metric3D for avoidance"
+        "--metric3d",
+        action="store_true",
+        default=False,
+        help="Use Metric3D for avoidance",
     )
 
     args, _ = parser.parse_known_args()
@@ -87,7 +110,13 @@ def main():
             engine = MidasAvoidanceEngine(args)
         return engine
 
-    engine_runner.run(engine=engine_setup(), source_name=args.source, server_address=args.gabriel, all_responses_required=True)
+    engine_runner.run(
+        engine=engine_setup(),
+        source_name=args.source,
+        server_address=args.gabriel,
+        all_responses_required=True,
+    )
+
 
 if __name__ == "__main__":
     main()
