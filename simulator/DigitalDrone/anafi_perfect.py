@@ -24,6 +24,7 @@ LATDEG_METERS = 1113195
 DEFAULT_IMG_HEIGHT = 720
 DEFAULT_IMG_WIDTH = 1280
 DEFAULT_IMG_CHANNELS = 3
+DEFAULT_TIMEOUT = 30
 
 
 class FlightMode(Enum):
@@ -44,11 +45,7 @@ class DigitalPerfectDrone(MulticopterItf):
         self._kwargs = kwargs
         # Drone flight modes and setpoints
         self._velocity_setpoint = None
-        # Set PID values for the drone
-        self._forward_pid_values = {}
-        self._right_pid_values = {}
-        self._up_pid_values = {}
-        self._pid_task = None
+        self._drone = None
         self._mode = FlightMode.LOITER
         self.ip = "127.0.0.1"
 
@@ -66,8 +63,9 @@ class DigitalPerfectDrone(MulticopterItf):
         return self._drone.connect()
 
     async def disconnect(self) -> None:
-        result = self._drone.disconnect()
+        result = await self._drone.disconnect()
         if result:
+            self._drone = None
             logger.info("Completed disconnection from digital drone...")
         else:
             logger.error("Failed to properly disconnect from digital drone...")
@@ -75,24 +73,29 @@ class DigitalPerfectDrone(MulticopterItf):
 
     async def take_off(self) -> common_protocol.ResponseStatus:
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
-        self._drone.take_off()
+        task_result = await self._drone.take_off()
 
-        result = await self._wait_for_condition(lambda: self._is_hovering(), interval=1)
+        result = await self._wait_for_condition(
+            lambda: self._is_hovering(), timeout=DEFAULT_TIMEOUT, interval=1
+        )
 
         await self._switch_mode(FlightMode.LOITER)
-        if result:
+        if task_result and result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
 
     async def land(self) -> common_protocol.ResponseStatus:
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
-        self._drone.land()
+        task_result = await self._drone.land()
 
-        result = await self._wait_for_condition(lambda: self._is_landed(), interval=1)
+        result = await self._wait_for_condition(
+            lambda: self._is_landed(), timeout=DEFAULT_TIMEOUT, interval=1
+        )
 
         await self._switch_mode(FlightMode.LOITER)
-        if result:
+
+        if task_result and result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
@@ -105,7 +108,11 @@ class DigitalPerfectDrone(MulticopterItf):
         velocity.angular_vel = 0.0
         await self.set_velocity_body(velocity)
 
-        result = await self._wait_for_condition(lambda: self._is_hovering(), interval=1)
+        result = await self._wait_for_condition(
+            lambda: self._is_hovering(), timeout=DEFAULT_TIMEOUT, interval=1
+        )
+
+        await self._switch_mode(FlightMode.LOITER)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -176,7 +183,7 @@ class DigitalPerfectDrone(MulticopterItf):
         try:
             global_position = self._get_global_position()
             bearing = self._calculate_bearing(
-                global_position["lat"], global_position["lon"], lat, lon
+                global_position[0], global_position[1], lat, lon
             )
             if (
                 max_velocity.north_vel
@@ -228,11 +235,14 @@ class DigitalPerfectDrone(MulticopterItf):
         await self._switch_mode(FlightMode.VELOCITY)
 
         self._velocity_setpoint = (forward_vel, right_vel, up_vel, angular_vel)
-        self._drone.set_velocity(velocity)
+        self._drone._set_velocity_target(forward_vel, right_vel, up_vel)
 
         await asyncio.sleep(1)
 
-        return common_protocol.ResponseStatus.COMPLETED
+        if self._drone._check_target_active("velocity"):
+            return common_protocol.ResponseStatus.COMPLETED
+        else:
+            return common_protocol.ResponseStatus.FAILED
 
     async def set_heading(self, location: common_protocol.Location):
         lat = location.latitude
@@ -240,23 +250,27 @@ class DigitalPerfectDrone(MulticopterItf):
         bearing = location.bearing
         heading_mode = location.heading_mode
 
+        global_position = self._get_global_position()
+
         if heading_mode == common_protocol.LocationHeadingMode.HEADING_START:
             target = bearing
         else:
-            global_position = self._get_global_position()
             target = self._calculate_bearing(
                 global_position[0], global_position[1], lat, lon
             )
 
-        offset = math.radians(bearing - target)
-
-        try:
-            self._drone.move_by(0.0, 0.0, 0.0, offset)
-        except:
-            return common_protocol.ResponseStatus.FAILED
+        self._drone.move_to(
+            global_position[0],
+            global_position[1],
+            global_position[2],
+            common_protocol.LocationHeadingMode.TO_TARGET,
+            target,
+        )  # Yaw in place
 
         result = await self._wait_for_condition(
-            lambda: self._is_heading_reached(target), interval=0.5
+            lambda: self._is_heading_reached(target),
+            timeout=DEFAULT_TIMEOUT,
+            interval=0.5,
         )
 
         if result:
@@ -284,7 +298,7 @@ class DigitalPerfectDrone(MulticopterItf):
                     yaw=target_yaw,
                 )
             elif control_mode == common_protocol.PoseControlMode.POSITION_RELATIVE:
-                current_gimbal = await self._get_gimbal_pose_body(pose.actuator_id)
+                current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
                 target_pitch = current_gimbal["pitch"] + pitch
                 target_roll = current_gimbal["roll"] + roll
                 target_yaw = current_gimbal["yaw"] + yaw
@@ -316,7 +330,7 @@ class DigitalPerfectDrone(MulticopterItf):
                 lambda: self._is_gimbal_pose_reached(
                     target_pitch, target_roll, target_yaw
                 ),
-                timeout=10,
+                timeout=DEFAULT_TIMEOUT,
                 interval=0.5,
             )
         else:
@@ -351,7 +365,7 @@ class DigitalPerfectDrone(MulticopterItf):
                 ]
                 tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
-                gimbal = await self._get_gimbal_pose_body(0)
+                gimbal = self._get_gimbal_pose_body(0)
                 tel_message.gimbal_pose.pitch = gimbal["pitch"]
                 tel_message.gimbal_pose.roll = gimbal["roll"]
                 tel_message.gimbal_pose.yaw = gimbal["yaw"]
@@ -418,9 +432,14 @@ class DigitalPerfectDrone(MulticopterItf):
     """ Telemetry methods """
 
     def _get_altitude_rel(self) -> float:
-        return self._drone.get_current_position()[2]
+        alt = self._drone.get_current_position()[2]
+        if alt:
+            return alt
+        else:
+            logger.error("Failed to extract relative alt from drone")
+            return 0.0
 
-    def _get_attitude(self) -> dict[str:float]:
+    def _get_attitude(self) -> dict[str, float]:
         att = self._drone.get_state("attitude")
         rad_to_deg = 180 / math.pi
         return {
@@ -435,10 +454,11 @@ class DigitalPerfectDrone(MulticopterItf):
     def _get_current_status(self) -> common_protocol.FlightStatus:
         return self._drone.get_state("flight_state")
 
-    def _get_gimbal_pose_body(self, gimbal_id) -> dict[str:float]:
+    def _get_gimbal_pose_body(self, gimbal_id) -> dict[str, float]:
+        # Currently ignores gimbal_id
         return self._drone.get_state("gimbal_pose")
 
-    def _get_global_position(self) -> tuple[float, float, float]:
+    def _get_global_position(self) -> tuple[float | None, float | None, float | None]:
         return self._drone.get_current_position()
 
     def _get_heading(self) -> float:
@@ -453,11 +473,11 @@ class DigitalPerfectDrone(MulticopterItf):
     def _get_satellites(self) -> int:
         return self._drone.get_state("satellite_count")
 
-    def _get_velocity_enu(self) -> dict[str:float]:
+    def _get_velocity_enu(self) -> dict[str, float]:
         ned = self._drone.get_state("velocity")
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"]}
 
-    def _get_velocity_body(self) -> dict[str:float]:
+    def _get_velocity_body(self) -> dict[str, float]:
         enu = self._get_velocity_enu()
         vec = np.array([enu["north"], enu["east"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
@@ -481,37 +501,28 @@ class DigitalPerfectDrone(MulticopterItf):
         }
         return res
 
-    """ Coroutine methods """
-
-    async def _set_velocity(self, target_velocity: common_protocol.VelocityBody):
-        pass
-
     """ Actuation methods """
 
     async def _switch_mode(self, mode):
-        if self._mode == mode or (
-            self._mode == FlightMode.TAKEOFF_LAND and self._mode != FlightMode.LOITER
-        ):
-            return
-        else:
-            # Cancel running PID task
-            if self._pid_task:
-                self._pid_task.cancel()
-                await self._pid_task
-            self._pid_task = None
-            self._mode = mode
+        self._mode = mode
 
     """ ACK methods """
 
     def _is_abs_altitude_reached(self, target_altitude: float) -> bool:
+        # Assumes absolute and relative altitude are stored the same currently
         current_altitude = self._get_global_position()[2]
+        if current_altitude is None:
+            return False
         distance = abs(current_altitude - target_altitude)
         return distance < 1.0
 
     def _is_at_target(self, lat: float, lon: float) -> bool:
-        # Tuple: (lat, lon, alt)
         current_location = self._get_global_position()
-        if not current_location:
+        if (
+            not current_location
+            or current_location[0] is None
+            or current_location[1] is None
+        ):
             return False
         dlat = lat - current_location[0]
         dlon = lon - current_location[1]
@@ -537,8 +548,8 @@ class DigitalPerfectDrone(MulticopterItf):
         return np.allclose(
             self._drone.get_home_location(),
             self._drone.get_current_position(),
-            rtol=1e-07,
-            atol=1e-09,
+            rtol=1e-05,
+            atol=1e-07,
         )
 
     def _is_home_set(self, lat, lon, alt) -> bool:
@@ -547,16 +558,16 @@ class DigitalPerfectDrone(MulticopterItf):
         )
 
     def _is_hovering(self) -> bool:
-        return self._drone.check_flight_state(common_protocol.FlightState.HOVERING)
+        return self._drone.check_flight_state(common_protocol.FlightStatus.HOVERING)
 
     def _is_landed(self) -> bool:
-        return self._drone.check_flight_state(common_protocol.FlightState.LANDED)
+        return self._drone.check_flight_state(common_protocol.FlightStatus.LANDED)
 
     def _is_move_to_done(self) -> bool:
-        return self._drone.get_state("active_move")
+        return self._drone._position_flag
 
     def _is_move_by_done(self) -> bool:
-        return self._drone.get_state("active_move")
+        return self._drone._position_flag
 
     """ Helper methods """
 
