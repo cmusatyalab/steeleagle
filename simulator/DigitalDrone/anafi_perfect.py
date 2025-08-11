@@ -2,23 +2,21 @@
 import asyncio
 import logging
 import math
-import os
-import queue
-import numpy as np
 
 # Streaming Imports
 import threading
 import time
 from enum import Enum
-from PIL import Image
 
 # Protocol Imports
 import common_pb2 as common_protocol
 import dataplane_pb2 as data_protocol
+import numpy as np
+from multicopter.multicopter_interface import MulticopterItf
+from PIL import Image
 
 # Interface Imports
 from simulated_drone import SimulatedDrone
-from multicopter.multicopter_interface import MulticopterItf
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +25,18 @@ DEFAULT_IMG_HEIGHT = 720
 DEFAULT_IMG_WIDTH = 1280
 DEFAULT_IMG_CHANNELS = 3
 
+
 class FlightMode(Enum):
     LOITER = "LOITER"
     TAKEOFF_LAND = "TAKEOFF_LAND"
     VELOCITY = "VELOCITY"
     GUIDED = "GUIDED"
 
+
 class HeadingMode(Enum):
     TO_TARGET = "TO_TARGET"
     HEADING_START = "HEADING_START"
+
 
 class DigitalPerfectDrone(MulticopterItf):
     def __init__(self, drone_id, **kwargs):
@@ -49,25 +50,30 @@ class DigitalPerfectDrone(MulticopterItf):
         self._up_pid_values = {}
         self._pid_task = None
         self._mode = FlightMode.LOITER
+        self.ip = "127.0.0.1"
 
         """ Interface methods """
 
-    def get_type(self) -> str:
+    async def get_type(self) -> str:
         try:
             return self._drone._device_type
         except:
             return "Digital Simulated"
 
-    async def connect(self, connection_string) -> bool:
-        self.ip = connection_string
+    async def connect(self) -> bool:
         # Create the digital drone object
         self._drone = SimulatedDrone(self.ip)
         return self._drone.connect()
-    
-    async def disconnect(self) -> bool:
-        return self._drone.disconnect()
 
-    async def take_off(self):
+    async def disconnect(self) -> None:
+        result = self._drone.disconnect()
+        if result:
+            logger.info("Completed disconnection from digital drone...")
+        else:
+            logger.error("Failed to properly disconnect from digital drone...")
+        return
+
+    async def take_off(self) -> common_protocol.ResponseStatus:
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
         self._drone.take_off()
 
@@ -78,8 +84,8 @@ class DigitalPerfectDrone(MulticopterItf):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-        
-    async def land(self):
+
+    async def land(self) -> common_protocol.ResponseStatus:
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
         self._drone.land()
 
@@ -90,8 +96,8 @@ class DigitalPerfectDrone(MulticopterItf):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
-    async def hover(self):
+
+    async def hover(self) -> common_protocol.ResponseStatus:
         velocity = common_protocol.VelocityBody()
         velocity.forward_vel = 0.0
         velocity.right_vel = 0.0
@@ -105,10 +111,10 @@ class DigitalPerfectDrone(MulticopterItf):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
+
     async def kill(self):
         return common_protocol.ResponseStatus.NOTSUPPORTED
-    
+
     async def set_home(self, location: common_protocol.Location):
         lat = location.latitude
         lon = location.longitude
@@ -118,7 +124,7 @@ class DigitalPerfectDrone(MulticopterItf):
             self._drone.set_home_location(lat, lon, alt)
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         result = await self._wait_for_condition(
             lambda: self._is_home_set(lat, lon, alt), timeout=5, interval=0.1
         )
@@ -130,12 +136,12 @@ class DigitalPerfectDrone(MulticopterItf):
 
     async def rth(self):
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
-        
+
         try:
             self._drone.return_to_home()
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         await asyncio.sleep(1)
 
         result = await self._wait_for_condition(
@@ -186,22 +192,24 @@ class DigitalPerfectDrone(MulticopterItf):
                     bearing,
                     max(max_velocity.north_vel, max_velocity.east_vel),
                     max_velocity.up_vel,
-                    max_velocity.angular_vel
+                    max_velocity.angular_vel,
                 )
             else:
                 self._drone.move_to(lat, lon, altitude, heading_mode, bearing)
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         await asyncio.sleep(1)
 
-        result = await self._wait_for_condition(lambda: self._is_move_to_done(), interval=1)
+        result = await self._wait_for_condition(
+            lambda: self._is_move_to_done(), interval=1
+        )
 
         if self._is_global_position_reached(lat, lon, altitude) and result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-        
+
     async def set_relative_position_enu(self, position):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
@@ -237,15 +245,16 @@ class DigitalPerfectDrone(MulticopterItf):
         else:
             global_position = self._get_global_position()
             target = self._calculate_bearing(
-                global_position[0], global_position[1], lat, lon)
-        
+                global_position[0], global_position[1], lat, lon
+            )
+
         offset = math.radians(bearing - target)
 
         try:
             self._drone.move_by(0.0, 0.0, 0.0, offset)
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         result = await self._wait_for_condition(
             lambda: self._is_heading_reached(target), interval=0.5
         )
@@ -272,7 +281,7 @@ class DigitalPerfectDrone(MulticopterItf):
                     control_mode="position",
                     pitch=target_pitch,
                     roll=target_roll,
-                    yaw=target_yaw
+                    yaw=target_yaw,
                 )
             elif control_mode == common_protocol.PoseControlMode.POSITION_RELATIVE:
                 current_gimbal = await self._get_gimbal_pose_body(pose.actuator_id)
@@ -285,7 +294,7 @@ class DigitalPerfectDrone(MulticopterItf):
                     control_mode="position",
                     pitch=target_pitch,
                     roll=target_roll,
-                    yaw=target_yaw
+                    yaw=target_yaw,
                 )
             else:
                 target_pitch = None
@@ -301,24 +310,23 @@ class DigitalPerfectDrone(MulticopterItf):
                 )
         except:
             return common_protocol.ResponseStatus.FAILED
-        
+
         if control_mode != common_protocol.PoseControlMode.VELOCITY:
             result = await self._wait_for_condition(
                 lambda: self._is_gimbal_pose_reached(
-                    target_pitch,
-                    target_roll,
-                    target_yaw
+                    target_pitch, target_roll, target_yaw
                 ),
-                timeout=10, interval=0.5
+                timeout=10,
+                interval=0.5,
             )
         else:
             result = True
-        
+
         if result:
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
-    
+
     async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info("Starting telemetry stream")
         await asyncio.sleep(1)
@@ -407,19 +415,18 @@ class DigitalPerfectDrone(MulticopterItf):
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
 
-    
     """ Telemetry methods """
 
     def _get_altitude_rel(self) -> float:
         return self._drone.get_current_position()[2]
 
-    def _get_attitude(self) -> dict[str: float]:
+    def _get_attitude(self) -> dict[str:float]:
         att = self._drone.get_state("attitude")
         rad_to_deg = 180 / math.pi
         return {
             "pitch": att["pitch"] * rad_to_deg,
             "roll": att["roll"] * rad_to_deg,
-            "yaw": att["yaw"] * rad_to_deg
+            "yaw": att["yaw"] * rad_to_deg,
         }
 
     def _get_battery_percentage(self) -> int:
@@ -428,7 +435,7 @@ class DigitalPerfectDrone(MulticopterItf):
     def _get_current_status(self) -> common_protocol.FlightStatus:
         return self._drone.get_state("flight_state")
 
-    def _get_gimbal_pose_body(self, gimbal_id) -> dict[str: float]:
+    def _get_gimbal_pose_body(self, gimbal_id) -> dict[str:float]:
         return self._drone.get_state("gimbal_pose")
 
     def _get_global_position(self) -> tuple[float, float, float]:
@@ -446,15 +453,11 @@ class DigitalPerfectDrone(MulticopterItf):
     def _get_satellites(self) -> int:
         return self._drone.get_state("satellite_count")
 
-    def _get_velocity_enu(self) -> dict[str: float]:
+    def _get_velocity_enu(self) -> dict[str:float]:
         ned = self._drone.get_state("velocity")
-        return {
-            "north": ned["speedX"],
-            "east": ned["speedY"],
-            "up": ned["speedZ"]
-        }
+        return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"]}
 
-    def _get_velocity_body(self) -> dict[str: float]:
+    def _get_velocity_body(self) -> dict[str:float]:
         enu = self._get_velocity_enu()
         vec = np.array([enu["north"], enu["east"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
@@ -478,18 +481,16 @@ class DigitalPerfectDrone(MulticopterItf):
         }
         return res
 
-    
     """ Coroutine methods """
 
     async def _set_velocity(self, target_velocity: common_protocol.VelocityBody):
         pass
 
     """ Actuation methods """
-    
+
     async def _switch_mode(self, mode):
         if self._mode == mode or (
-            self._mode == FlightMode.TAKEOFF_LAND
-            and self._mode != FlightMode.LOITER
+            self._mode == FlightMode.TAKEOFF_LAND and self._mode != FlightMode.LOITER
         ):
             return
         else:
@@ -519,46 +520,32 @@ class DigitalPerfectDrone(MulticopterItf):
 
     async def is_connected(self):
         return self._drone.connection_state()
-    
+
     def _is_gimbal_pose_reached(self, pitch: float, roll: float, yaw: float) -> bool:
         current_pose = self._drone.get_state("gimbal_pose")
-        pose_array = [
-            current_pose["pitch"],
-            current_pose["roll"],
-            current_pose["yaw"]
-        ]
-        return np.allclose(
-            pose_array,
-            [pitch, roll, yaw],
-            rtol=1e-1,
-            atol=1e-3
-        )
+        pose_array = [current_pose["pitch"], current_pose["roll"], current_pose["yaw"]]
+        return np.allclose(pose_array, [pitch, roll, yaw], rtol=1e-1, atol=1e-3)
 
     def _is_global_position_reached(self, lat: float, lon: float, alt: float) -> bool:
         return self._is_abs_altitude_reached(alt) and self._is_at_target(lat, lon)
 
     def _is_heading_reached(self, target) -> bool:
         current_heading = self._drone.get_state("attitude")["yaw"]
-        return np.allclose(
-            current_heading, target, atol=1e-3, rtol=1e-1
-        )
-    
+        return np.allclose(current_heading, target, atol=1e-3, rtol=1e-1)
+
     def _is_home_reached(self) -> bool:
         return np.allclose(
             self._drone.get_home_location(),
             self._drone.get_current_position(),
             rtol=1e-07,
-            atol=1e-09
+            atol=1e-09,
         )
 
     def _is_home_set(self, lat, lon, alt) -> bool:
         return np.allclose(
-            [lat, lon, alt],
-            self._drone.get_home_location(),
-            rtol=1e-07,
-            atol=1e-09
+            [lat, lon, alt], self._drone.get_home_location(), rtol=1e-07, atol=1e-09
         )
-    
+
     def _is_hovering(self) -> bool:
         return self._drone.check_flight_state(common_protocol.FlightState.HOVERING)
 
@@ -573,7 +560,7 @@ class DigitalPerfectDrone(MulticopterItf):
 
     """ Helper methods """
 
-    def _calculate_bearing(self):
+    def _calculate_bearing(self, lat1, lon1, lat2, lon2):
         # Convert latitude and longitude from degrees to radians
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
 
@@ -594,7 +581,7 @@ class DigitalPerfectDrone(MulticopterItf):
         converted_bearing = (initial_bearing + 360) % 360
 
         return converted_bearing
-    
+
     async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
         start_time = time.time()
         while True:
@@ -615,10 +602,15 @@ class DigitalPerfectDrone(MulticopterItf):
 
     async def _get_video_frame(self):
         if self._streaming_thread:
-            return self._streaming_thread.grab_frame().toBytes(), (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS)
+            return self._streaming_thread.grab_frame().toBytes(), (
+                DEFAULT_IMG_WIDTH,
+                DEFAULT_IMG_HEIGHT,
+                DEFAULT_IMG_CHANNELS,
+            )
 
     async def _stop_streaming(self):
         self._streaming_thread.stop()
+
 
 class SimulatedStreamingThread(threading.Thread):
     def __init__(self, drone, ip, image_set_path=None):
@@ -637,7 +629,9 @@ class SimulatedStreamingThread(threading.Thread):
             while self.is_running:
                 try:
                     if self.image_path:
-                        self._current_frame = Image.open(f"{self.image_path}_{self.frame_index}")
+                        self._current_frame = Image.open(
+                            f"{self.image_path}_{self.frame_index}"
+                        )
                         self.frame_index += 1
                     else:
                         continue
@@ -651,7 +645,9 @@ class SimulatedStreamingThread(threading.Thread):
         except Exception as e:
             logger.error(f"Grab frame failed: {e}")
             # Send blank image
-            return np.zeros((DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS))
+            return np.zeros(
+                (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS)
+            )
 
     def stop(self):
         self.is_running = False
