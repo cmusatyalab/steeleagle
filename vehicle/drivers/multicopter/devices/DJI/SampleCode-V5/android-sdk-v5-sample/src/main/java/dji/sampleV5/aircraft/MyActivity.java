@@ -63,8 +63,13 @@ import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
 import dji.sdk.keyvalue.value.common.LocationCoordinate3D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
+import dji.sdk.keyvalue.value.flightcontroller.FlightCoordinateSystem;
 import dji.sdk.keyvalue.value.flightcontroller.FlyToMode;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
+import dji.sdk.keyvalue.value.flightcontroller.RollPitchControlMode;
+import dji.sdk.keyvalue.value.flightcontroller.VerticalControlMode;
+import dji.sdk.keyvalue.value.flightcontroller.VirtualStickFlightControlParam;
+import dji.sdk.keyvalue.value.flightcontroller.YawControlMode;
 import dji.sdk.keyvalue.value.gimbal.CtrlInfo;
 import dji.sdk.keyvalue.value.gimbal.GimbalSpeedRotation;
 import dji.sdk.keyvalue.value.product.ProductType;
@@ -73,7 +78,10 @@ import dji.v5.common.error.IDJIError;
 import dji.v5.manager.KeyManager;
 import dji.sdk.keyvalue.key.CameraKey;
 import dji.sdk.keyvalue.key.KeyTools;
+import dji.v5.manager.aircraft.virtualstick.VirtualStickManager;
+import dji.v5.manager.aircraft.waypoint3.WaypointMissionExecuteStateListener;
 import dji.v5.manager.aircraft.waypoint3.WaypointMissionManager;
+import dji.v5.manager.aircraft.waypoint3.model.WaypointMissionExecuteState;
 import dji.v5.manager.datacenter.camera.CameraStreamManager;
 import dji.v5.manager.intelligent.IntelligentFlightManager;
 import dji.v5.manager.intelligent.flyto.FlyToParam;
@@ -86,13 +94,15 @@ import io.reactivex.rxjava3.core.Completable;
 import dji.v5.utils.common.FileUtils;
 
 
-public class MyActivity extends AppCompatActivity {
+public class MyActivity extends AppCompatActivity implements WaypointMissionExecuteStateListener {
 
     private static final String TAG = "MyActivity";
     private static final int REQUEST_CODE_STORAGE_PERMISSION = 101;
     private double pendingLat = 0.0;
     private double pendingLon = 0.0;
     private double pendingAlt = 0;
+
+    private WaypointMissionManager waypointManager = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,6 +262,16 @@ public class MyActivity extends AppCompatActivity {
         // Set gimbal position
         Button setGimbalPoseButton = findViewById(R.id.set_gimbal_pose);
         setGimbalPoseButton.setOnClickListener(v -> setGimbalPoseDialog());
+
+        // Set gimbal position
+        Button startVelocityMovement = findViewById(R.id.start_velocity_movement);
+        startVelocityMovement.setOnClickListener(v -> startVelocityMovementDialog());
+
+        Button stopVelocityMovement = findViewById(R.id.stop_velocity_movement);
+        stopVelocityMovement.setOnClickListener(v -> stopDroneVelocity());
+
+        waypointManager = WaypointMissionManager.getInstance();
+        waypointManager.addWaypointMissionExecuteStateListener(this);
     }
     //try to get home not to land, switch to haversine, also check for altitude, switch to waypoints api, get the set velocity functions, gimbal movement
 
@@ -765,8 +785,6 @@ public class MyActivity extends AppCompatActivity {
     //end of of the set and go home functions
 
     //start of waypoint code
-    WaypointMissionManager waypointManager = WaypointMissionManager.getInstance();
-
     private void waypoint(double lat, double lon, double alt) {
         TextView textView = findViewById(R.id.main_text);
         Log.i("MyApp", "Lon: " + lon + " Lat: " + lat + " Alt: " + alt);
@@ -988,7 +1006,7 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission started successfully.");
-                textView.setText("Mission started");
+                //textView.setText("Mission started");
             }
 
             @Override
@@ -1005,7 +1023,7 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission stopped successfully.");
-                textView.setText("Mission stopped");
+                //textView.setText("Mission stopped");
             }
 
             @Override
@@ -1022,7 +1040,7 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission paused successfully.");
-                textView.setText("Mission paused");
+                //textView.setText("Mission paused");
             }
 
             @Override
@@ -1039,7 +1057,7 @@ public class MyActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Log.i("MyApp", "Waypoint mission resumed successfully.");
-                textView.setText("Mission resumed");
+                //textView.setText("Mission resumed");
             }
 
             @Override
@@ -1089,6 +1107,13 @@ public class MyActivity extends AppCompatActivity {
         keyManager.setValue(KeyTools.createKey(CameraKey.KeyCameraMode), CameraMode.VIDEO_NORMAL, null);
         keyManager.performAction(KeyTools.createKey(CameraKey.KeyStopRecord), null);
         Log.i("MyApp", "Stopped Video");
+    }
+
+    @Override
+    public void onMissionStateUpdate(WaypointMissionExecuteState missionState) {
+        TextView textView = findViewById(R.id.main_text);
+        Log.i("MyApp", "Mission State: " + missionState);
+        textView.setText("Mission State: " + missionState);
     }
 
     //code for camera image on screen
@@ -1237,6 +1262,223 @@ public class MyActivity extends AppCompatActivity {
     }
     //end of set gimbal pose code
 
+    //start set velocity code
+    private boolean isAdjustingDrone = false;
+    private Handler droneHandler = new Handler(Looper.getMainLooper());
+    private long droneStartTimeMs;
+    private final long maxDroneDurationMs = 1200000; //120 sec time limit for testing   now, remove/edit this later for longer missions/commands
+    private final int droneIntervalMs = 10;
+
+    private void startDroneVelocityMovement(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
+        // First, enable virtual stick mode before starting velocity control
+        VirtualStickManager.getInstance().enableVirtualStick(new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
+                Log.i("VirtualStick", "Virtual stick advanced mode enabled");
+                // Now start the actual velocity control loop
+                startVelocityControlLoop(targetForwardVelocity, targetRightVelocity, targetUpVelocity);
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+                Log.e("MyApp", "Failed to enable virtual stick: " + error.description());
+                isAdjustingDrone = false;
+            }
+        });
+    }
+
+    private void startVelocityControlLoop(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
+        isAdjustingDrone = true;
+        droneStartTimeMs = System.currentTimeMillis(); // Mark start time
+        TextView textView = findViewById(R.id.main_text);
+
+        Runnable droneRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isAdjustingDrone) return;
+
+                // Timeout check (similar to gimbal)
+                long elapsedTime = System.currentTimeMillis() - droneStartTimeMs;
+                if (elapsedTime > maxDroneDurationMs) {
+                    Log.w("MyApp", "Drone velocity adjustment timed out");
+                    stopDroneVelocity();
+                    return;
+                }
+
+                IKeyManager keyManager = KeyManager.getInstance();
+                Velocity3D enuVelocity = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity));
+                Double compassHeadingDegrees = keyManager.getValue(KeyTools.createKey(KeyCompassHeading));
+
+                if (enuVelocity == null || compassHeadingDegrees == null) {
+                    Log.e("MyApp", "Failed to retrieve drone telemetry");
+                    droneHandler.postDelayed(this, droneIntervalMs);
+                    return;
+                }
+
+                // Extract components from ENU and convert to FRU
+                double velocityNorth = enuVelocity.getX();
+                double velocityEast = enuVelocity.getY();
+                double velocityUp = -enuVelocity.getZ();
+
+                double[] horizontalVelocityVector = {velocityNorth, velocityEast};
+
+                double forwardHeadingDegrees = compassHeadingDegrees + 90.0;
+                double forwardHeadingRadians = Math.toRadians(forwardHeadingDegrees);
+                double forwardUnitX = Math.cos(forwardHeadingRadians);
+                double forwardUnitY = Math.sin(forwardHeadingRadians);
+                double[] forwardUnitVector = {forwardUnitX, forwardUnitY};
+
+                double rightHeadingRadians = Math.toRadians(forwardHeadingDegrees + 90.0);
+                double rightUnitX = Math.cos(rightHeadingRadians);
+                double rightUnitY = Math.sin(rightHeadingRadians);
+                double[] rightUnitVector = {rightUnitX, rightUnitY};
+
+                double forwardVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0] +
+                        horizontalVelocityVector[1] * forwardUnitVector[1]);
+                double rightVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0] +
+                        horizontalVelocityVector[1] * rightUnitVector[1]);
+
+                // Display results
+                String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f",
+                        forwardVelocity, rightVelocity, velocityUp);
+                textView.setText(velocityText);
+                Log.i("MyApp", "Velocity: " + velocityText);
+
+                double currentForward = forwardVelocity;
+                double currentRight = rightVelocity;
+                double currentUp = velocityUp;
+
+                double differenceForward = Math.abs(targetForwardVelocity - currentForward);
+                double differenceRight = Math.abs(targetRightVelocity - currentRight);
+                double differenceUp = Math.abs(targetUpVelocity - currentUp);
+
+                // Calculate virtual stick commands (similar to gimbal speed calculation)
+                double pitchCommand = 0; // Forward/backward
+                double rollCommand = 0;  // Left/right
+                double throttleCommand = 0; // Up/down
+                double yawCommand = 0;   // Keep current heading
+
+                // Forward velocity control (pitch stick)
+                if (differenceForward > 0.1) { // Tolerance similar to gimbal
+                    if (currentForward < targetForwardVelocity) {
+                        pitchCommand = calculateStickCommand(differenceForward, 0.5f); // Move forward
+                    } else {
+                        pitchCommand = -calculateStickCommand(differenceForward, 0.5f); // Move backward
+                    }
+                }
+
+                // Right velocity control (roll stick)
+                if (differenceRight > 0.1) {
+                    if (currentRight < targetRightVelocity) {
+                        rollCommand = calculateStickCommand(differenceRight, 0.5f); // Move right
+                    } else {
+                        rollCommand = -calculateStickCommand(differenceRight, 0.5f); // Move left
+                    }
+                }
+
+                // Up velocity control (throttle stick)
+                if (differenceUp > 0.1) {
+                    if (currentUp < targetUpVelocity) {
+                        throttleCommand = calculateStickCommand(differenceUp, 0.3f); // Move up
+                    } else {
+                        throttleCommand = -calculateStickCommand(differenceUp, 0.3f); // Move down
+                    }
+                }
+
+                // Check if we've reached target (similar to gimbal target check)
+                if (differenceForward <= 0.1 && differenceRight <= 0.1 && differenceUp <= 0.1) {
+                    // Target reached - send zero commands to maintain position
+                    VirtualStickFlightControlParam stickParam = new VirtualStickFlightControlParam();
+
+                    // Configure control modes for velocity control
+                    stickParam.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+                    stickParam.setVerticalControlMode(VerticalControlMode.VELOCITY);
+                    stickParam.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+                    stickParam.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+
+                    stickParam.setPitch(0.0);
+                    stickParam.setRoll(0.0);
+                    stickParam.setVerticalThrottle(0.0);
+                    stickParam.setYaw(0.0);
+
+                    VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(stickParam);
+
+                    Log.i("Drone", "Target velocity reached and maintaining");
+                    // Continue looping to maintain velocity
+                    droneHandler.postDelayed(this, droneIntervalMs);
+                } else {
+                    // Send virtual stick commands
+                    VirtualStickFlightControlParam stickParam = new VirtualStickFlightControlParam();
+
+                    // Configure control modes for velocity control
+                    stickParam.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+                    stickParam.setVerticalControlMode(VerticalControlMode.VELOCITY);
+                    stickParam.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+                    stickParam.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+
+                    stickParam.setPitch(pitchCommand);
+                    stickParam.setRoll(rollCommand);
+                    stickParam.setVerticalThrottle(throttleCommand);
+                    stickParam.setYaw(yawCommand);
+
+                    VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(stickParam);
+
+                    Log.d("Drone", String.format("Stick commands - Pitch: %.2f, Roll: %.2f, Throttle: %.2f",
+                            pitchCommand, rollCommand, throttleCommand));
+
+                    // Continue looping
+                    droneHandler.postDelayed(this, droneIntervalMs);
+                }
+            }
+        };
+
+        droneHandler.post(droneRunnable); // Start loop
+    }
+
+    // Helper method to calculate stick command based on velocity difference
+    private float calculateStickCommand(double velocityDifference, float maxCommand) {
+        // Scale the command based on velocity difference (similar to gimbal speed scaling)
+        float command = (float) Math.min(velocityDifference * 0.2, maxCommand); // Adjust scaling factor as needed
+        return Math.max(command, 0.1f); // Minimum command to ensure movement
+    }
+
+    public void stopDroneVelocity() {
+        isAdjustingDrone = false;
+        droneHandler.removeCallbacksAndMessages(null);
+
+        // Send zero commands to stop the drone
+        VirtualStickFlightControlParam stopParam = new VirtualStickFlightControlParam();
+
+        // Configure control modes
+        stopParam.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+        stopParam.setVerticalControlMode(VerticalControlMode.VELOCITY);
+        stopParam.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+        stopParam.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+
+        stopParam.setPitch(0.0);
+        stopParam.setRoll(0.0);
+        stopParam.setVerticalThrottle(0.0);
+        stopParam.setYaw(0.0);
+
+        VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(stopParam);
+
+        // Disable virtual stick mode
+        VirtualStickManager.getInstance().disableVirtualStick(new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onSuccess() {
+                Log.i("MyApp", "Virtual stick disabled successfully");
+            }
+
+            @Override
+            public void onFailure(@NonNull IDJIError error) {
+                Log.e("MyApp", "Failed to disable virtual stick: " + error.description());
+            }
+        });
+
+        Log.i("Drone", "Drone velocity control stopped");
+    }
+    //drone velocity ending
     //the remainder of this code is all android studio prompting code (not necessary for future implementation, just for current testing purposes)
     interface ValueCallback<T> {
         void onValue(T value);
@@ -1338,6 +1580,47 @@ public class MyActivity extends AppCompatActivity {
         });
     }
 
+    private void startVelocityMovementDialog() {
+        doublePrompt("Enter Target Forward Velocity", new ValueCallback<Double>() {
+            @Override
+            public void onValue(Double forward_v) {
+                Log.i("MyApp", "Forward Velocity: " + forward_v);
+
+                doublePrompt("Enter Target Right Velocity", new ValueCallback<Double>() {
+                    @Override
+                    public void onValue(Double right_v) {
+                        Log.i("MyApp", "Right Velocity: " + right_v);
+
+                        doublePrompt("Enter Target Up Velocity", new ValueCallback<Double>() {
+                            @Override
+                            public void onValue(Double up_v) {
+                                Log.i("MyApp", "Up Velocity: " + up_v);
+
+                                // Call waypoint function
+                                startDroneVelocityMovement(forward_v, right_v, up_v);
+
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                Log.i("MyApp", "Altitude input cancelled");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.i("MyApp", "Longitude input cancelled");
+                    }
+                });
+            }
+
+            @Override
+            public void onCancel() {
+                Log.i("MyApp", "Latitude input cancelled");
+            }
+        });
+    }
 
     private void setHomeUsingCoordinatesDialog() {
         doublePrompt("Enter Latitude", new ValueCallback<Double>() {
