@@ -1269,7 +1269,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
     private final long maxDroneDurationMs = 1200000; //120 sec time limit for testing   now, remove/edit this later for longer missions/commands
     private final int droneIntervalMs = 10;
 
-    private void startDroneVelocityMovement(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
+    private void startDroneVelocityMovement(double targetRightVelocity, double targetForwardVelocity, double targetUpVelocity) {
         // First, enable virtual stick mode before starting velocity control
         VirtualStickManager.getInstance().enableVirtualStick(new CommonCallbacks.CompletionCallback() {
             @Override
@@ -1277,7 +1277,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
                 Log.i("VirtualStick", "Virtual stick advanced mode enabled");
                 // Now start the actual velocity control loop
-                startVelocityControlLoop(targetForwardVelocity, targetRightVelocity, targetUpVelocity);
+                startVelocityControlLoop(targetRightVelocity, targetForwardVelocity, targetUpVelocity);
             }
 
             @Override
@@ -1288,7 +1288,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
         });
     }
 
-    private void startVelocityControlLoop(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
+    private void startVelocityControlLoop(double targetRightVelocity, double targetForwardVelocity, double targetUpVelocity) {
         isAdjustingDrone = true;
         droneStartTimeMs = System.currentTimeMillis(); // Mark start time
         TextView textView = findViewById(R.id.main_text);
@@ -1334,14 +1334,13 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                 double rightUnitY = Math.sin(rightHeadingRadians);
                 double[] rightUnitVector = {rightUnitX, rightUnitY};
 
-                double forwardVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0] +
+                double rightVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0] +
                         horizontalVelocityVector[1] * forwardUnitVector[1]);
-                double rightVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0] +
+                double forwardVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0] +
                         horizontalVelocityVector[1] * rightUnitVector[1]);
 
                 // Display results
-                String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f",
-                        forwardVelocity, rightVelocity, velocityUp);
+                String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forwardVelocity, rightVelocity, velocityUp);
                 textView.setText(velocityText);
                 Log.i("MyApp", "Velocity: " + velocityText);
 
@@ -1597,7 +1596,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                                 Log.i("MyApp", "Up Velocity: " + up_v);
 
                                 // Call waypoint function
-                                startDroneVelocityMovement(forward_v, right_v, up_v);
+                                startDroneVelocityMovement(right_v, forward_v, up_v);
 
                             }
 
