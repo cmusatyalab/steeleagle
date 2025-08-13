@@ -1948,24 +1948,24 @@ class SimulatedDrone:
         if abs(self._gimbal_target["g_pitch"] - prev_pose["g_pitch"]) <= abs(
             dt * dp["g_pitch_rate"]
         ):
-            g_pitch = self._gimbal_target["g_pitch"]
             dp["g_pitch_rate"] = 0
+            g_pitch = self._gimbal_target["g_pitch"]
             update_rate_flag = True
         else:
             g_pitch = (prev_pose["g_pitch"] + (dt * dp["g_pitch_rate"])) % 360
         if abs(self._gimbal_target["g_roll"] - prev_pose["g_roll"]) <= abs(
             dt * dp["g_roll_rate"]
         ):
-            g_roll = self._gimbal_target["g_roll"]
             dp["g_roll_rate"] = 0
+            g_roll = self._gimbal_target["g_roll"]
             update_rate_flag = True
         else:
             g_roll = (prev_pose["g_roll"] + (dt * dp["g_roll_rate"])) % 360
         if abs(self._gimbal_target["g_yaw"] - prev_pose["g_yaw"]) <= abs(
             dt * dp["g_yaw_rate"]
         ):
-            g_yaw = self._gimbal_target["g_yaw"]
             dp["g_yaw_rate"] = 0
+            g_yaw = self._gimbal_target["g_yaw"]
             update_rate_flag = True
         else:
             g_yaw = (prev_pose["g_yaw"] + (dt * dp["g_yaw_rate"])) % 360
