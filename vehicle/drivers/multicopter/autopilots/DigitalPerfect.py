@@ -366,6 +366,9 @@ class DigitalPerfect(MulticopterItf):
                 ]
                 tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
+                tel_message.velocity_body.angular_vel = (
+                    self._drone.get_angular_velocity()
+                )
                 gimbal = self._get_gimbal_pose_body(0)
                 tel_message.gimbal_pose.pitch = gimbal["g_pitch"]
                 tel_message.gimbal_pose.roll = gimbal["g_roll"]

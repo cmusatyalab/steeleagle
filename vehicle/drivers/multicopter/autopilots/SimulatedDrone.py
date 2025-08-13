@@ -784,7 +784,7 @@ class SimulatedDrone:
             logger.info(f"Adding {characteristic} to internal state...")
         self._state[characteristic] = value
 
-    def check_flight_state(self, target_state):
+    def check_flight_state(self, target_state) -> bool:
         """
         Compares the flight state condition given as a parameter against the drone's
         current flight state (common_pb.FlightStatus).
@@ -793,7 +793,7 @@ class SimulatedDrone:
             return True
         return False
 
-    def _check_target_active(self, target_type: str):
+    def _check_target_active(self, target_type: str) -> bool:
         """
         Checks if the specified target type is currently "active." An active target is
         defined as a target in which all component values are set to non-None values.
@@ -811,8 +811,15 @@ class SimulatedDrone:
                 logger.error(
                     f"_check_target_active: Invalid target type requested. Received {target_type}..."
                 )
-                return
+                return False
         return any(value is not None for value in target.values())
+
+    def get_angular_velocity(self) -> float:
+        """
+        Used by the autopilot to retrieve the angular velocity trait of the drone for benchmark compliance.
+        Angular velocity is not currently used by any aspect of the simulated drone.
+        """
+        return self.get_state("angular_velocity")
 
     def get_current_position(self) -> tuple[float | None, float | None, float | None]:
         """
@@ -985,7 +992,7 @@ class SimulatedDrone:
         battery. Drain rates are specified by the LANDED_DRAIN_RATE and ACTIVE_DRAIN_RATE
         constants.
         """
-        self._update_state("battery_percent", starting_charge)
+        self._update_state("battery_percent", max(0, starting_charge))
 
     def set_current_position(self, new_lat: float, new_lon: float, new_alt: float):
         """
