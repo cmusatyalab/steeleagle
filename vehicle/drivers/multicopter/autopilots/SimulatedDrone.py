@@ -1636,7 +1636,22 @@ class SimulatedDrone:
             logger.info("_set_gimbal_target: Clearing gimbal target...")
 
         if not self._check_target_active("gimbal"):
-            self._set_gimbal_rotation(MAX_ROTA_RATE, MAX_ROTA_RATE, MAX_ROTA_RATE)
+            g_pitch_rate = 0
+            g_roll_rate = 0
+            g_yaw_rate = 0
+            if target_g_pitch != current_g_pose["g_pitch"]:
+                g_pitch_rate = MAX_G_ROTA_RATE * np.sign(
+                    target_g_pitch - current_g_pose["g_pitch"]
+                )
+            if target_g_roll != current_g_pose["g_roll"]:
+                g_roll_rate = MAX_G_ROTA_RATE * np.sign(
+                    target_g_roll - current_g_pose["g_roll"]
+                )
+            if target_g_yaw != current_g_pose["g_yaw"]:
+                g_yaw_rate = MAX_G_ROTA_RATE * np.sign(
+                    target_g_yaw - current_g_pose["g_yaw"]
+                )
+            self._set_gimbal_rotation(g_pitch_rate, g_roll_rate, g_yaw_rate)
 
         self._gimbal_target.update(
             g_pitch=target_g_pitch, g_roll=target_g_roll, g_yaw=target_g_yaw
