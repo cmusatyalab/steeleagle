@@ -315,7 +315,7 @@ class DigitalPerfect(MulticopterItf):
                 target_pitch = None
                 target_roll = None
                 target_yaw = None
-
+                logger.error("Error with setting target gimbal pose characteristics...")
                 await self._drone.set_target(
                     gimbal_id=0,
                     control_mode="velocity",
