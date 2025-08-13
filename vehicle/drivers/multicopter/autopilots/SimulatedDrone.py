@@ -112,7 +112,7 @@ class SimulatedDrone:
         while self._active_connection:
             self.t_cycle_start = time.time()
             logger.debug(
-                f"-----Current Time: {self.t_cycle_start - self.t_baseline} -----"
+                f"----- Current Time: {self.t_cycle_start - self.t_baseline} -----"
             )
             # Set via register_pending_task(), preempts currently executing task if one exists
             if self._pending_action:
