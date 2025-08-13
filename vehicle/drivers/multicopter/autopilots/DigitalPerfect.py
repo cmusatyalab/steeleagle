@@ -287,9 +287,9 @@ class DigitalPerfect(MulticopterItf):
 
         try:
             if control_mode == common_protocol.PoseControlMode.POSITION_ABSOLUTE:
-                target_yaw = yaw
-                target_pitch = pitch
-                target_roll = roll
+                target_yaw = min(360, max(0, yaw))
+                target_pitch = min(360, max(0, pitch))
+                target_roll = min(360, max(0, roll))
 
                 await self._drone.set_target(
                     gimbal_id=0,
@@ -300,9 +300,9 @@ class DigitalPerfect(MulticopterItf):
                 )
             elif control_mode == common_protocol.PoseControlMode.POSITION_RELATIVE:
                 current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
-                target_pitch = current_gimbal["g_pitch"] + pitch
-                target_roll = current_gimbal["g_roll"] + roll
-                target_yaw = current_gimbal["g_yaw"] + yaw
+                target_pitch = min(360, max(0, current_gimbal["g_pitch"] + pitch))
+                target_roll = min(360, max(0, current_gimbal["g_roll"] + roll))
+                target_yaw = min(360, max(0, current_gimbal["g_yaw"] + yaw))
 
                 await self._drone.set_target(
                     gimbal_id=0,
