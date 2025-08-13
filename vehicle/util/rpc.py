@@ -22,12 +22,9 @@ async def reflective_grpc_call(metadata, full_method_name, method_desc, request,
         responses = []
         # In this case, call responds with a wrapper that is an async
         # generator function
-        try:
-            async for resp in call(request, timeout=timeout, metadata=metadata):
-                responses.append(resp)
-            return responses[-1] # Just the last response is needed
-        except:
-            raise
+        async for resp in call(request, timeout=timeout, metadata=metadata):
+            responses.append(resp)
+        return responses[-1] # Just the last response is needed
     else:
         # Unary call
         call = channel.unary_unary(
@@ -35,10 +32,7 @@ async def reflective_grpc_call(metadata, full_method_name, method_desc, request,
             request_serializer=req_class.SerializeToString,
             response_deserializer=rep_class.FromString
         )
-        try:
-            return await call(request, timeout=timeout, metadata=metadata)
-        except:
-            raise
+        return await call(request, timeout=timeout, metadata=metadata)
 
 def generate_request():
     '''

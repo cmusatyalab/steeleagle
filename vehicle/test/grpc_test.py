@@ -172,13 +172,13 @@ class Test_gRPC:
         # Start test:
         requests = [
             # This command should be blocked because we do not have control authority
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 5, 'internal'),
+            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 9, 'internal'),
             Request('Mission.Start', mission_proto.StartRequest(), mission_proto.StartResponse(), 2, 'server'),
             Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 2, 'internal'),
             Request('Control.Disarm', control_proto.DisarmRequest(), control_proto.DisarmResponse(), 2, 'internal'),
             Request('Mission.Stop', mission_proto.StopRequest(), mission_proto.StopResponse(), 2, 'server'),
             # This command should be blocked because we do not have control authority
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 5, 'internal')
+            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 9, 'internal')
         ]
     
         output = []

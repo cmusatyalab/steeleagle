@@ -6,6 +6,7 @@ syntax = "proto3";
 package protocol.report_service;
 
 import "common.proto";
+import "google/protobuf/any.proto";
 
 /*
  * Used to report messages to the Swarm Controller server
@@ -18,7 +19,7 @@ service Report {
 
 message ReportMessage {
   int32 report_code = 1; // Integer report code, interpreted by the backend
-  string report_string = 2; // Extra data about report
+  google.protobuf.Any report_data = 2; // Extra data about report
 }
 
 message ReportRequest {
