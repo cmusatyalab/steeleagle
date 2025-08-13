@@ -236,6 +236,7 @@ class DigitalPerfect(MulticopterItf):
 
         self._velocity_setpoint = (forward_vel, right_vel, up_vel, angular_vel)
         self._drone._set_velocity_target(forward_vel, right_vel, up_vel)
+        self._drone.set_angular_velocity(angular_vel)
 
         await asyncio.sleep(1)
 

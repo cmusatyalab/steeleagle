@@ -87,6 +87,7 @@ class SimulatedDrone:
         self._active_action = False
         self._position_flag = False
         self.set_velocity(0, 0, 0)
+        self.set_angular_velocity(0)
         self.set_gimbal_pose(0, 0, 0)
         self.set_attitude(0, 0, 0)
         self._set_acceleration(0, 0, 0)
@@ -1048,6 +1049,14 @@ class SimulatedDrone:
             f"set_velocity: Drone velocity set to ("
             f"{velocity['speedX']}, {velocity['speedY']}, {velocity['speedZ']})"
         )
+
+    def set_angular_velocity(self, angular_vel: float):
+        """
+        Used by the autopilot to set the angular velocity trait of the drone for benchmark compliance.
+        Angular velocity is not currently used by any aspect of the simulated drone.
+        """
+        self._update_state("angular_velocity", angular_vel)
+        logger.debug(f"set_angular_velocity: Angular velocity set to {angular_vel}")
 
     def set_satellites(self, satellite_count: int):
         """
