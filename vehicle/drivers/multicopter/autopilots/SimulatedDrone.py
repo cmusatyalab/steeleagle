@@ -628,7 +628,9 @@ class SimulatedDrone:
             logger.info("set_target: Successfully registered task, beginning procedure")
 
         if control_mode == "position":
-            self._set_gimbal_target(pitch, roll, yaw)
+            self._set_gimbal_target(
+                min(360, max(0, pitch)), min(360, max(0, roll)), min(360, max(0, yaw))
+            )
 
         result = await self._wait_for_condition(
             lambda: self.is_gimbal_oriented(), timeout=TASK_TIMEOUT, interval=0.1
