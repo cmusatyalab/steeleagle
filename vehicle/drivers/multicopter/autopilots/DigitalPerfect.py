@@ -143,7 +143,7 @@ class DigitalPerfect(MulticopterItf):
         await self._switch_mode(FlightMode.TAKEOFF_LAND)
 
         try:
-            self._drone.return_to_home()
+            await self._drone.return_to_home()
         except:
             return common_protocol.ResponseStatus.FAILED
 
