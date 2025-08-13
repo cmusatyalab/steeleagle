@@ -330,7 +330,7 @@ class SimulatedDrone:
             logger.warning(
                 f"land: {self.get_state('drone_id')} already landed. Ignoring command..."
             )
-            return False
+            return True
 
         result = await self._register_pending_task()
         if not result:
@@ -361,7 +361,7 @@ class SimulatedDrone:
         self._set_position_target(current_position[0], current_position[1], 0)
 
         result = await self._wait_for_condition(
-            lambda: self.is_landed(), timeout=TASK_TIMEOUT, interval=0.1
+            lambda: self.is_landed(), timeout=MOVE_TIMEOUT, interval=0.1
         )
         self._zero_velocity()
         stop_result = await self._wait_for_condition(
