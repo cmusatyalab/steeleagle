@@ -92,11 +92,11 @@ class FlightLogService(FlightLogServicer):
         ts = proto.request.timestamp
         return round((ts.seconds + ts.nanos / 1e9) * 1000)
 
-    def _log_to_mcap(self, request):
+    def _log_to_mcap(self, request, content):
         ts = round(time.time() * 1000)
         self._mcap_logger.write_message(
             topic=request.topic,
-            message=request.log,
+            message=content,
             log_time=ts,
             publish_time=self._get_publish_ts(request)
         )
@@ -121,8 +121,20 @@ class FlightLogService(FlightLogServicer):
                             f"{request.topic} - {request.log.msg}"
                             )
         if self._mcap_logger:
-            self._log_to_mcap(request)
+            self._log_to_mcap(request, request.log)
         return log_proto.LogResponse(
+                response=generate_response(2)
+                )
+
+    async def LogProto(self, request, context):
+        message = request.reqrep_proto
+        if self._console_logger:
+            self._console_logger.info(
+                    f'{request.topic} - {message.name} | {message.content}'
+                    )
+        if self._mcap_logger:
+            self._log_to_mcap(request, message)
+        return log_proto.LogProtoResponse(
                 response=generate_response(2)
                 )
 
@@ -142,7 +154,7 @@ async def serve_log_server():
             )
     add_FlightLogServicer_to_server(FlightLogService(), server)
     server.add_insecure_port(
-            query_config('internal.flight_log_service.endpoint')
+            query_config('internal.services.flight_log.endpoint')
             )
 
     logger = logging.getLogger(__name__)

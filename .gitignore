@@ -12,7 +12,7 @@ __pycache__/
 *_pb2.py
 .env
 .vscode/
-protocol/python
+protocol/python_bindings
 backend/server/models/
 backend/server/steeleagle-vol/
 backend/server/redis/*
@@ -29,6 +29,7 @@ venv/
 *~
 *.log
 *.mcap
+_gen_*
 
 
 vehicle/env.sh

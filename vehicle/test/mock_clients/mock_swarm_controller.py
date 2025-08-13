@@ -2,17 +2,16 @@ import asyncio
 import zmq
 import zmq.asyncio
 import logging
+from google.protobuf.json_format import MessageToDict
 # Utility import
 from util.rpc import generate_request
+from util.log import get_logger
 from util.config import query_config
-from util.proto import read_any
 # Protocol import
-from python_bindings import swarm_control_pb2 as swarm_control_proto
+from python_bindings import remote_control_pb2 as remote_control_proto
 from google.protobuf import any_pb2
-# Test import
-from message_sequencer import sequence_params
 
-logger = logging.getLogger(__name__)
+logger = get_logger('test/mock_swarm_controller')
 
 class MockSwarmController:
     '''
@@ -24,18 +23,21 @@ class MockSwarmController:
         self._device = query_config('vehicle.name')
         self.sequencer = sequencer
 
-    @sequence_params
-    async def send_recv_command(self, request):
+    async def send_recv_command(self, req_obj):
         '''
-        NOTE: This function is not designed to be called asynchronously
-        alongside send_recv_command calls.
+        Calls a service on the vehicle given a method name, a request object,
+        and an empty response prototype. NOTE: This function is not designed 
+        to be called asynchronously alongside send_recv_command calls.
         '''
+        self.sequencer.write(req_obj.request)
         any_object = any_pb2.Any()
-        any_object.Pack(request)
+        any_object.Pack(req_obj.request)
         self._seq_num += 1
-        control_request = swarm_control_proto.SwarmControlRequest(
+        control_request = remote_control_proto.RemoteControlRequest(
                 sequence_number=self._seq_num,
-                control_request=any_object
+                control_request=any_object,
+                method_name=req_obj.method_name,
+                identity=req_obj.identity
                 ) 
 
         await self._socket.send_multipart(
@@ -43,14 +45,15 @@ class MockSwarmController:
                 )
         
         complete = False
-        logger.info("Waiting for response")
-        while not complete:
-            logger.info("Receiving...")
-            identity, resp_bytes = await self._socket.recv_multipart()
-            resp_obj = swarm_control_proto.SwarmControlResponse()
-            resp_obj.ParseFromString(resp_bytes)
-            response = read_any(resp_obj.control_response)
-            if response.response.status == 2:
-                logger.info("Got 200 status code!")
-                complete = True
-            self.sequencer.write(read_any(resp_obj.control_response))
+        logger.info("Receiving...")
+        identity, resp_bytes = await self._socket.recv_multipart()
+        resp_obj = remote_control_proto.RemoteControlResponse()
+        resp_obj.ParseFromString(resp_bytes)
+        response = req_obj.response
+        resp_obj.control_response.Unpack(response)
+        logger.info(str(MessageToDict(response)))
+        if response.response.status == req_obj.status:
+            logger.info(f"Got correct status: {req_obj.status}!")
+            complete = True
+        self.sequencer.write(response)
+        return complete

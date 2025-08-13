@@ -2,18 +2,20 @@
 from python_bindings import report_service_pb2_grpc as report_proto
 # Utility import
 from util.rpc import generate_response
+from util.log import get_logger
+
+logger = get_logger('core/report_service')
 
 class ReportService(report_proto.ReportServicer):
     '''
     Implementation of the report service.
     '''
-    def __init__(self, socket, logger):
+    def __init__(self, socket):
         self._socket = socket
-        self._logger = logger
 
     async def SendReport(self, request, context):
-        self._logger.info("Sent report to Swarm Controller!")
-        self._logger.info_proto(request)
+        logger.info("Sent report to Swarm Controller!")
+        logger.request_proto(request)
         self._socket.send(request.report_string)
         return report_proto.ReportResponse(
                 response=generate_response(2)

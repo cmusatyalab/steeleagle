@@ -1,0 +1,99 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+/**
+ * Messages/Calls related to the Controlplane component of SteelEagle.
+ *
+ * The control is responsible for relaying messages that either instruct
+ * the drone to do something (manual actuation/autonomous operations)
+ * or deal with configuring the computational components of the system
+ * (either locally or remotely).
+ */
+syntax = "proto3";
+
+package protocol.controlplane;
+import "common.proto";
+import "google/protobuf/timestamp.proto";
+
+message Request {
+  uint64 seq_num = 1;  // For correlation
+  google.protobuf.Timestamp timestamp = 2; // Time the request was made
+  oneof type {
+    VehicleControl veh = 3;
+    MissionControl msn = 4;
+    ConfigureCompute cpt = 5;
+  }
+}
+
+message Response {
+  uint64 seq_num = 1; // For correlation
+  google.protobuf.Timestamp timestamp = 2; // Time the response was sent
+  protocol.common.ResponseStatus resp = 3;
+}
+
+/*
+* VEHICLE
+*/
+message VehicleControl {
+  oneof param {
+    VehicleAction action = 1;
+    protocol.common.Location location = 2;
+    protocol.common.PositionENU position_enu = 3;
+    protocol.common.PositionBody position_body = 4;
+    protocol.common.VelocityENU velocity_enu = 5;
+    protocol.common.VelocityBody velocity_body = 6;
+    protocol.common.PoseBody gimbal_pose = 7;
+    uint32 camera_id = 8;
+  }
+  repeated string drone_ids = 9;
+}
+
+enum VehicleAction {
+  UNKNOWN_VEHICLE_ACTION = 0;
+  TAKEOFF = 1;
+  LAND = 2;
+  HOVER = 3;
+  KILL = 4;
+  RTH = 5;
+}
+
+/*
+* MISSION
+*/
+
+message MissionControl {
+  string uuid = 1; // unique mission reference for cataloging
+  string url = 2; // the URL that specifies the zip file to download
+  MissionAction action = 3; // start/stop/pause/resume/download
+  repeated string drone_ids = 4;
+  protocol.common.PatrolArea patrol_area = 5;
+}
+
+enum MissionAction {
+  UNKNOWN_MISSION_ACTION = 0;
+  START = 1;
+  STOP = 2;
+  PAUSE = 3;
+  RESUME = 4;
+  DOWNLOAD = 5;
+  CLEAR_MISSION = 6;
+  PATROL = 7;
+}
+
+/*
+* COMPUTE
+*/
+message ConfigureCompute {
+    string model = 1; // change model current in use
+    protocol.common.HSV lower_bound = 2; // lower bound of HSV filter to apply
+    protocol.common.HSV upper_bound = 3; // upper bound of HSV filter to apply
+    float threshold = 4; //change confidence threshold of the DNN
+    ComputeAction action = 5;
+    string type = 6;
+}
+
+enum ComputeAction {
+  UNKNOWN_COMPUTE_ACTION = 0;
+  CLEAR_COMPUTE = 1;
+  CONFIGURE_COMPUTE = 2;
+}

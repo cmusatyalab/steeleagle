@@ -1,0 +1,22 @@
+# NOTE: Do not change these unless you *really* know
+# what you are doing!
+__onstart__: [['Control.Connect', {}]]
+__first__: __REMOTE__
+# These base transit cases are always checked last
+__transit__:
+  'server.Control.*': __REMOTE__
+__FAILSAFE__:
+  on_enter: [['Control.Hold', {}]]
+  allowed: []
+  transit:
+    'server.Mission.Start': __LOCAL__
+__REMOTE__:
+  on_enter:
+  allowed: []
+  transit:
+    'server.Mission.Start': __LOCAL__
+__LOCAL__:
+  on_enter:
+  allowed: ['internal.Control.*', 'internal.Compute.*', 'internal.Report.*', 'external.Mission.Notify']
+  transit:
+    'server.Mission.Stop': __REMOTE__

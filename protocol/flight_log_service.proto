@@ -13,6 +13,8 @@ import "common.proto";
 service FlightLog {
   // Basic log endpoint 
   rpc Log (LogRequest) returns (LogResponse) {}
+  // Log a request/response proto
+  rpc LogProto (LogProtoRequest) returns (LogProtoResponse) {}
 }
 
 message LogRequest {
@@ -35,4 +37,25 @@ enum LogType {
 message LogMessage {
   LogType type = 1;
   string msg = 2;
+}
+
+message ReqRepProto {
+  oneof type {
+    protocol.common.Request request = 1;
+    protocol.common.Response response = 2;
+  }
+  // Name of the request and associated service
+  string name = 3;
+  // Plaintext representation of the proto contents
+  string content = 4;
+}
+
+message LogProtoRequest {
+  protocol.common.Request request = 1;
+  string topic = 2;
+  ReqRepProto reqrep_proto = 3; 
+}
+
+message LogProtoResponse {
+  protocol.common.Response response = 1;
 }

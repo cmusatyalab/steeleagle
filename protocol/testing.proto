@@ -9,15 +9,10 @@ package protocol.testing;
  * Types of test messages for testing infrastructure
  */
 enum ServiceType {
-  CONTROL_PROXY_SERVICE = 0;
-  REPORT_SERVICE = 1;
-  SC_HANDLER_SERVICE = 2;
-  COMPUTE_SERVICE = 3; 
-  DRIVER_CONTROL_SERVICE = 4;
-}
-
-message TestStart {
-  int32 test_id = 1;
+  CORE_SERVICES = 0;
+  STREAM_SERVICES = 1;
+  MISSION_SERVICE = 2;
+  DRIVER_CONTROL_SERVICE = 3;
 }
 
 message ServiceReady {

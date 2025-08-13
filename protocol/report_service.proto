@@ -8,10 +8,11 @@ package protocol.report_service;
 import "common.proto";
 
 /*
- * Used to report messages to the swarm controller
+ * Used to report messages to the Swarm Controller server
+ * or to other collaborative vehicles
  */
 service Report {
-  // Send a report to the swarm controller
+  // Send a report to the server, or to an intended recipient
   rpc SendReport (ReportRequest) returns (ReportResponse) {}
 }
 
@@ -22,10 +23,12 @@ message ReportMessage {
 
 message ReportRequest {
   protocol.common.Request request = 1;
-  ReportMessage report = 2;
+  bytes identity = 2; // UTF-8 encoded identity of sender
+  bytes recipient = 3; // UTF-8 encoded identity of recipient
+  ReportMessage report = 4;
 }
 
 message ReportResponse {
   protocol.common.Response response = 1;
+  bytes identity = 2; // UTF-8 encoded identity of responder
 }
-

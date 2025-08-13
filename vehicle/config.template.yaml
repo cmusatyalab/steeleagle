@@ -1,14 +1,12 @@
 vehicle:
   # TODO: Type, manufacturer, and model must match the names of the
-  # associated directories within /driver/ and the base name of
-  # the gRPC service, e.g. to use multicopter_service.proto,
-  # the type should be 'multicopter'
-  type: ''
-  manufacturer: ''
-  model: ''
+  # associated directories within ./drivers/
+  type:
+  manufacturer:
+  model:
   # TODO: This is the name that will be associated with this
   # vehicle on the backend and GCS
-  name: ''
+  name:
   # TODO: Check whether the chosen drone model requires kwargs;
   # some may require a connection address to be passed in
   kwargs: {}
@@ -16,19 +14,19 @@ cloudlet:
   # TODO: Change the following endpoints in accordance with the 
   # network address of the backend
   swarm_controller:
-    endpoint: ''
+    endpoint:
   remote_compute_service:
-    endpoint: '' 
+    endpoint:
 services:
   # Public services
   # NOTE: 8990-8999 are reserved by default, check .internal.yaml
   # to see all reserved addresses
   control_service:
-    endpoint: 'localhost:9000'
+    endpoint: localhost:9000
   report_service:
-    endpoint: 'localhost:9001'
+    endpoint: localhost:9001
   compute_service:
-    endpoint: 'localhost:9002'
+    endpoint: localhost:9002
 logging:
   # Whether or not to create an MCAP flight log for mission replay
   generate_flight_log: true
@@ -36,8 +34,8 @@ logging:
   log_to_console: true
   # Log to a custom filename; otherwise will autogenerate
   # a name based on name, date, and time
-  custom_filename: ''
+  custom_filename: 
   # Path to log file
-  file_path: 'logger/logs/'
+  file_path: logger/logs/
   # Log level
-  log_level: 'INFO'
+  log_level: INFO

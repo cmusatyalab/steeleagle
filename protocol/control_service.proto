@@ -252,10 +252,8 @@ message ImagingSensorConfiguration {
 
 message ConfigureImagingSensorStreamRequest {
   protocol.common.Request request = 1;
-  // Channel to send frames on
-  string channel = 2;
   // List of configurations to be updated
-  repeated ImagingSensorConfiguration configurations = 3;
+  repeated ImagingSensorConfiguration configurations = 2;
 }
 
 message ConfigureImagingSensorStreamResponse {
@@ -264,10 +262,8 @@ message ConfigureImagingSensorStreamResponse {
 
 message ConfigureTelemetryStreamRequest {
   protocol.common.Request request = 1;
-  // Channel to send telemetry on
-  string channel = 2;
   // Target frequency of telemetry generation, in Hz
-  uint32 frequency = 3;
+  uint32 frequency = 2;
 }
 
 message ConfigureTelemetryStreamResponse {

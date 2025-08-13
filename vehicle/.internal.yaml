@@ -1,35 +1,20 @@
-internal:
-  # Endpoint for test coordination between testbench and services
+services:
+  core:
+    endpoint: 'unix:///tmp/core.sock'
+  driver:
+    endpoint: 'unix:///tmp/driver.sock'
+  mission:
+    endpoint: 'unix:///tmp/mission.sock'
+  flight_log:
+    endpoint: 'unix:///tmp/log.sock'
   testing:
-    status: true
-    endpoint: localhost:8991
-  failsafe:
-    method: 
-    params: {}
-    timeout: 1.0
-  # Lists the services that remote controllers, like the Swarm 
-  # Controller, can interact with; these should be the names of
-  # gRPC service protos without the '.proto' suffix
-  remote_control:
-    allowed_protos: [control_service, mission_service]
-  # Endpoint for the driver telemetry stream
-  telemetry:
-    endpoint: localhost:8992
-  # Endpoint for the driver imaging sensor stream
+    endpoint: 'unix:///tmp/test.sock'
+streams:
+  driver_telemetry:
+    endpoint: 'unix:///tmp/driver_telem.sock'
+  mission_telemetry:
+    endpoint: 'unix:///tmp/mission_telem.sock'
   imagery:
-    endpoint: localhost:8993
-  # Endpoint for the local compute manager
-  local_compute:
-    endpoint: localhost:8994
-  # Endpoint for the compute result stream
+    endpoint: 'unix:///tmp/imagery.sock'
   results:
-    endpoint: localhost:8995
-  # Endpoint for flight logging
-  flight_log_service:
-    endpoint: localhost:8996
-  # Endpoint for the internal driver control service
-  control_service:
-    endpoint: localhost:8997
-  # Endpoint for the internal mission service client
-  mission_service:
-    endpoint: localhost:8998
+    endpoint: 'unix:///tmp/results.sock'

@@ -1,11 +1,13 @@
 _PYTHONPATH=../:../../protocol/:../../protocol/python_bindings/:./
-_INTERNALPATH=.internal_test.yaml
-_CONFIGPATH=config_test.yaml
+_INTERNALPATH=../.internal.yaml
+_CONFIGPATH=config.yaml
+_LAWPATH=../.laws.yaml
+_ROOTPATH=../../
 # Start the flight logger first
 PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH python3 ../logger/flight_logger.py &
 PID1=$!
 # Start the test code
-PYTHONPATH=$_PYTHONPATH CONFIGPATH=$_CONFIGPATH INTERNALPATH=$_INTERNALPATH python3 -m pytest grpc_test.py --log-cli-level=INFO
+PYTHONPATH=$_PYTHONPATH CONFIGPATH=$_CONFIGPATH INTERNALPATH=$_INTERNALPATH LAWPATH=$_LAWPATH ROOTPATH=$_ROOTPATH python3 -m pytest grpc_test.py --log-cli-level=INFO -vv
 
 cleanup() {
     echo "SIGTERM detected. Killing background processes..."

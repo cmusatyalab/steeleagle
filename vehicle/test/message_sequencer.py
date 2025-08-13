@@ -1,14 +1,9 @@
 from enum import Enum
-import logging
-
-logger = logging.getLogger(__name__)
 
 class Topic(Enum):
     SWARM_CONTROLLER = 1
     MISSION_SERVICE = 2
     DRIVER_CONTROL_SERVICE = 3
-    COMPUTE_SERVICE = 4
-    REPORT_SERVICE = 5
 
 class MessageSequencer:
     '''
@@ -21,18 +16,3 @@ class MessageSequencer:
 
     def write(self, message):
         self._messages.append((self._topic, message.DESCRIPTOR.name))
-
-def sequence_params(func):
-    '''
-    Decorator that writes a request to the message log when a request
-    is received (must be the second argument). Assumes that the class
-    has set a self.sequencer object.
-    '''
-    async def wrapper(*args):
-        try:
-            args[0].sequencer.write(args[1])
-        except Exception as e:
-            logger.error(e) 
-            raise ValueError("No self.sequencer object set!")
-        return await func(*args)
-    return wrapper

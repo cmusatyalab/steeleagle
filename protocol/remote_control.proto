@@ -3,23 +3,29 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.swarm_control;
+package protocol.remote_control;
 
 import "google/protobuf/any.proto";
 
 /*
- * Directive for remote control from the Swarm Controller
+ * Messages for remote control over ZeroMQ
  */
-message SwarmControlRequest {
+message RemoteControlRequest {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
   google.protobuf.Any control_request = 2;
+  // Fully qualified method name, Control.Connect e.g.
+  string method_name = 3;
+  // Identity of the sender
+  string identity = 4;
 }
 
-message SwarmControlResponse {
+message RemoteControlResponse {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
   google.protobuf.Any control_response = 2;
+  // Identity of the original sender
+  string identity = 3;
 }

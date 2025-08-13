@@ -7,7 +7,6 @@ package protocol.common;
 
 import "google/protobuf/timestamp.proto";
 
-
 /*
  * Request object for additional request info
  */
@@ -22,10 +21,11 @@ enum ResponseStatus {
   OK = 0; // Command received 
   IN_PROGRESS = 1; // Command in progress
   COMPLETED = 2; // Command finished without error
-  NOT_SUPPORTED = 3; // Command not supported
-  FAILED = 4; // Command resulted in an error
+  INTERNAL = 3; // Command caused an internal error
+  FAILED = 4; // Command could not be completed
   DENIED = 5; // Command lacks permission
   WARNING = 6; // Command resulted in a warning
+  NOT_IMPLEMENTED = 7; // Command is not implemented
 }
 
 message Response {

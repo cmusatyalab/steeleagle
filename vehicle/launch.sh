@@ -1,12 +1,9 @@
 _PYTHONPATH=../protocol/:../protocol/python_bindings/:./
-_INTERNALPATH=.internal.yaml
-_CONFIGPATH=config.yaml
-_PROTOSPATH=../protocol/python_bindings
 # Start the flight logger first
-PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH python3 logger/flight_logger.py &
+PYTHONPATH=$_PYTHONPATH python3 logger/flight_logger.py &
 PID1=$!
-# Start the control section of the kernel
-PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH PROTOSPATH=$_PROTOSPATH python3 kernel/control/manager.py &
+# Start the control section of the core
+PYTHONPATH=$_PYTHONPATH python3 core/serve.py &
 PID2=$!
 
 cleanup() {

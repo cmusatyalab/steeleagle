@@ -1,11 +1,11 @@
 # Automated script for creating GRPC python bindings
 # TODO: Eventually, we may want to support language/vehicle choice
 
-# Build the datatype files
+# Build the service protocols
 $PROTOCPATH -I. \
 	--python_out=./python_bindings/ \
        	common.proto \
-       	swarm_control.proto \
+       	remote_control.proto \
 	telemetry.proto \
 	result.proto \
 	testing.proto
@@ -15,6 +15,8 @@ $PROTOCPATH -I. \
 	--python_out=./python_bindings/ \
 	--pyi_out=./python_bindings/ \
 	--grpc_python_out=./python_bindings/ \
+	--descriptor_set_out=./services.desc \
+	--include_imports \
        	mission_service.proto \
 	datastore_service.proto \
 	compute_service.proto \

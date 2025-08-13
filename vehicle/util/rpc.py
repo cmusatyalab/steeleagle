@@ -4,47 +4,41 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from util.config import query_config
 from python_bindings import common_pb2 as common_proto
 
-async def async_unary_unary_request(rpc, request, logger=None):
+async def reflective_grpc_call(metadata, full_method_name, method_desc, request, classes, channel, timeout=3):
     '''
-    Makes an optionally logged async Unary->Unary request given an 
-    RPC functor and a request object.
+    Calls the provided gRPC method by invoking it directly on the channel.
     '''
-    try:
-        if logger:
-            logger.info_proto(request)
-        response = await rpc(request)
-        if logger:
-            logger.info_proto(response)
-        logger.info(str(response))
-        return response
-    except Exception as e:
-        if logger:
-            logger.error(f"Unary->Unary RPC Exception occured, reason: {e}")
-        raise
+    # Get the classes for request and response, needed to deserialize
+    # and serialize messages from the channel correctly
+    req_class, rep_class = classes
 
-async def async_unary_stream_request(rpc, request, logger=None):
-    '''
-    Makes an optionally logged async Unary->Stream request given an 
-    RPC functor and a request object.
-    '''
-    try:
-        if logger: 
-            logger.info_proto(request)
-        async for response in rpc(request):
-            if logger:
-                logger.info_proto(response)
-            yield response
-    except Exception as e:
-        if logger:
-            logger.error(f"Unary->Stream RPC Exception occured, reason: {e}")
-        raise
-
-def get_bind_addr(addr):
-    '''
-    Creates the gRPC server bind address for a provided address.
-    '''
-    port = addr.split(':')[-1]
-    return f'[::]:{port}'
+    if method_desc.server_streaming:
+        # Server-streaming call
+        call = channel.unary_stream(
+            full_method_name,
+            request_serializer=req_class.SerializeToString,
+            response_deserializer=rep_class.FromString
+        )
+        responses = []
+        # In this case, call responds with a wrapper that is an async
+        # generator function
+        try:
+            async for resp in call(request, timeout=timeout, metadata=metadata):
+                responses.append(resp)
+            return responses[-1] # Just the last response is needed
+        except:
+            raise
+    else:
+        # Unary call
+        call = channel.unary_unary(
+            full_method_name,
+            request_serializer=req_class.SerializeToString,
+            response_deserializer=rep_class.FromString
+        )
+        try:
+            return await call(request, timeout=timeout, metadata=metadata)
+        except:
+            raise
 
 def generate_request():
     '''
