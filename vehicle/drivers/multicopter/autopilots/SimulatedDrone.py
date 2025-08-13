@@ -44,6 +44,7 @@ class SimulatedDrone:
         takeoff_alt=10,
         mag_interference=0,
     ):
+        self.init_complete_flag = False
         self._device_type = "Digital Drone"
         self.connection_ip = ip
         self._active_connection = False
@@ -52,7 +53,9 @@ class SimulatedDrone:
         self.set_name(drone_id)
         self._initialize_internal_dicts()
         self.set_current_position(lat, lon, alt)
+        self.set_home_location(lat, lon, alt)
         self.set_magnetometer(mag_interference)
+        self.init_complete_flag = True
 
     def _initialize_internal_dicts(self) -> None:
         self.current_position: dict[str, float | None] = {
@@ -84,8 +87,8 @@ class SimulatedDrone:
         self._active_action = False
         self._position_flag = False
         self.set_velocity(0, 0, 0)
-        self.set_attitude(0, 0, 0)
         self.set_gimbal_pose(0, 0, 0)
+        self.set_attitude(0, 0, 0)
         self._set_acceleration(0, 0, 0)
         self._set_drone_rotation(0, 0, 0)
         self._set_gimbal_rotation(0, 0, 0)
@@ -217,7 +220,7 @@ class SimulatedDrone:
 
     """ Connection Methods """
 
-    def connect(self) -> bool:
+    async def connect(self) -> bool:
         """
         Called externally by the controlling entity to activate the state loop and start the drone's
         internal clock. Presumes the controlling entity has a direct handle to the digital drone
@@ -232,8 +235,7 @@ class SimulatedDrone:
             self._loop = asyncio.create_task(self.state_loop())
             logger.info("Internal state loop active...")
             return True
-        logger.warning("Attempted multiple connections on simulated drone object...")
-        return False
+        return True
 
     def connection_state(self) -> bool:
         return self._active_connection
@@ -389,16 +391,6 @@ class SimulatedDrone:
         they are made prior to executing movement.
         """
         logger.info("Initiating move to sequence...")
-        if (
-            self.check_flight_state(common_protocol.FlightStatus.LANDED)
-            or self.check_flight_state(common_protocol.FlightStatus.LANDING)
-            or self.check_flight_state(common_protocol.FlightStatus.IDLE)
-        ):
-            logger.warning(
-                f"move_to: {self.get_state('drone_id')} unable to execute move command"
-                "from ground. Take off first..."
-            )
-            return False
 
         result = await self._register_pending_task()
         if not result:
@@ -408,6 +400,23 @@ class SimulatedDrone:
             return False
         else:
             logger.info("move_to: Successfully registered task, beginning procedure")
+
+        if (
+            self.check_flight_state(common_protocol.FlightStatus.LANDED)
+            or self.check_flight_state(common_protocol.FlightStatus.LANDING)
+            or self.check_flight_state(common_protocol.FlightStatus.IDLE)
+        ):
+            logger.warning(
+                f"move_to: {self.get_state('drone_id')} unable to execute move command"
+                "from ground. Taking off first..."
+            )
+            result = await self.take_off()
+            if not result:
+                logger.error(
+                    f"move_to: {self.get_state('drone_id')} unable to take off during move_to..."
+                )
+                return False
+            logger.info("move_to: Take off completed, beginning to movement segment...")
 
         self._zero_velocity()
         stop_result = await self._wait_for_condition(
@@ -491,16 +500,6 @@ class SimulatedDrone:
         in the x, y, and z coordinate planes. Orientation changes are made prior to beginning movement if required.
         """
         logger.info("Initiating extended move to sequence...")
-        if (
-            self.check_flight_state(common_protocol.FlightStatus.LANDED)
-            or self.check_flight_state(common_protocol.FlightStatus.LANDING)
-            or self.check_flight_state(common_protocol.FlightStatus.IDLE)
-        ):
-            logger.warning(
-                f"extended_move_to: {self.get_state('drone_id')} unable to execute move command"
-                "from ground. Take off first..."
-            )
-            return False
 
         result = await self._register_pending_task()
         if not result:
@@ -512,6 +511,23 @@ class SimulatedDrone:
             logger.info(
                 "extended_move_to: Successfully registered task, beginning procedure..."
             )
+
+        if (
+            self.check_flight_state(common_protocol.FlightStatus.LANDED)
+            or self.check_flight_state(common_protocol.FlightStatus.LANDING)
+            or self.check_flight_state(common_protocol.FlightStatus.IDLE)
+        ):
+            logger.warning(
+                f"extended_move_to: {self.get_state('drone_id')} unable to execute move command"
+                "from ground. Taking off first..."
+            )
+            result = await self.take_off()
+            if not result:
+                logger.error(
+                    f"extended_move_to: {self.get_state('drone_id')} unable to take off during move_to..."
+                )
+                return False
+            logger.info("move_to: Take off completed, beginning to movement segment...")
 
         self._zero_velocity()
         stop_result = await self._wait_for_condition(
@@ -610,28 +626,8 @@ class SimulatedDrone:
         else:
             logger.info("set_target: Successfully registered task, beginning procedure")
 
-        attitude = self.get_state("attitude")
-        if yaw != attitude["yaw"]:
-            self._set_pose_target(attitude["pitch"], attitude["roll"], yaw)
-            logger.info(
-                f"set_target: Turning drone to {yaw} degrees before rotating gimbal..."
-            )
-            result = await self._wait_for_condition(
-                lambda: self.is_drone_oriented(), timeout=TASK_TIMEOUT, interval=0.1
-            )
-            if result:
-                logger.info(f"set_target: Successfully turned drone to {yaw} degrees")
-            else:
-                attitude = self.get_state("attitude")
-                logger.warning(
-                    f"{self.get_state('drone_id')} failed to rotate to target orientation of {yaw}..."
-                )
-                logger.warning(f"Current orientation: {attitude['yaw']}")
-                self._active_action = False
-                return False
-
         if control_mode == "position":
-            self._set_gimbal_target(pitch, roll, 0)
+            self._set_gimbal_target(pitch, roll, yaw)
 
         result = await self._wait_for_condition(
             lambda: self.is_gimbal_oriented(), timeout=TASK_TIMEOUT, interval=0.1

@@ -14,7 +14,7 @@ import dataplane_pb2 as data_protocol
 import numpy as np
 
 # Interface Imports
-from multicopter.autopilots.SimulatedDrone import SimulatedDrone
+from autopilots.SimulatedDrone import SimulatedDrone
 from multicopter.multicopter_interface import MulticopterItf
 from PIL import Image
 
@@ -43,6 +43,7 @@ class DigitalPerfect(MulticopterItf):
         self._drone = None
         self._mode = FlightMode.LOITER
         self.ip = "127.0.0.1"
+        self._drone = SimulatedDrone(self.ip)
 
         """ Interface methods """
 
@@ -52,10 +53,12 @@ class DigitalPerfect(MulticopterItf):
         except:
             return "Digital Simulated"
 
-    async def connect(self) -> bool:
+    async def connect(self, connection_string) -> bool:
         # Create the digital drone object
-        self._drone = SimulatedDrone(self.ip)
-        return self._drone.connect()
+        result = await self._drone.connect()
+        if not result:
+            self._drone = None
+        return result
 
     async def disconnect(self) -> None:
         result = await self._drone.disconnect()
@@ -185,7 +188,7 @@ class DigitalPerfect(MulticopterItf):
                 global_position[0], global_position[1], lat, lon
             )
             if max_velocity:
-                self._drone.extended_move_to(
+                await self._drone.extended_move_to(
                     lat,
                     lon,
                     altitude,
@@ -196,7 +199,7 @@ class DigitalPerfect(MulticopterItf):
                     max_velocity.angular_vel,
                 )
             else:
-                self._drone.move_to(lat, lon, altitude, hdg_mode, bearing)
+                await self._drone.move_to(lat, lon, altitude, hdg_mode, bearing)
         except:
             await self._switch_mode(FlightMode.LOITER)
             return common_protocol.ResponseStatus.FAILED
@@ -256,7 +259,7 @@ class DigitalPerfect(MulticopterItf):
                 global_position[0], global_position[1], lat, lon
             )
 
-        self._drone.move_to(
+        await self._drone.move_to(
             global_position[0],
             global_position[1],
             global_position[2],
@@ -287,7 +290,7 @@ class DigitalPerfect(MulticopterItf):
                 target_pitch = pitch
                 target_roll = roll
 
-                self._drone.set_target(
+                await self._drone.set_target(
                     gimbal_id=0,
                     control_mode="position",
                     pitch=target_pitch,
@@ -296,11 +299,11 @@ class DigitalPerfect(MulticopterItf):
                 )
             elif control_mode == common_protocol.PoseControlMode.POSITION_RELATIVE:
                 current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
-                target_pitch = current_gimbal["pitch"] + pitch
-                target_roll = current_gimbal["roll"] + roll
-                target_yaw = current_gimbal["yaw"] + yaw
+                target_pitch = current_gimbal["g_pitch"] + pitch
+                target_roll = current_gimbal["g_roll"] + roll
+                target_yaw = current_gimbal["g_yaw"] + yaw
 
-                self._drone.set_target(
+                await self._drone.set_target(
                     gimbal_id=0,
                     control_mode="position",
                     pitch=target_pitch,
@@ -312,7 +315,7 @@ class DigitalPerfect(MulticopterItf):
                 target_roll = None
                 target_yaw = None
 
-                self._drone.set_target(
+                await self._drone.set_target(
                     gimbal_id=0,
                     control_mode="velocity",
                     pitch=target_pitch,
@@ -363,9 +366,13 @@ class DigitalPerfect(MulticopterItf):
                 tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
                 gimbal = self._get_gimbal_pose_body(0)
-                tel_message.gimbal_pose.pitch = gimbal["pitch"]
-                tel_message.gimbal_pose.roll = gimbal["roll"]
-                tel_message.gimbal_pose.yaw = gimbal["yaw"]
+                tel_message.gimbal_pose.pitch = gimbal["g_pitch"]
+                tel_message.gimbal_pose.roll = gimbal["g_roll"]
+                tel_message.gimbal_pose.yaw = gimbal["g_yaw"]
+                tel_message.gimbal_pose.control_mode = (
+                    common_protocol.PoseControlMode.POSITION_ABSOLUTE
+                )
+                tel_message.gimbal_pose.actuator_id = 0
                 tel_message.status = self._get_current_status()
                 batt = tel_message.battery
 
@@ -430,7 +437,7 @@ class DigitalPerfect(MulticopterItf):
 
     def _get_altitude_rel(self) -> float:
         alt = self._drone.get_current_position()[2]
-        if alt:
+        if alt is not None:
             return alt
         else:
             logger.error("Failed to extract relative alt from drone")
@@ -446,7 +453,7 @@ class DigitalPerfect(MulticopterItf):
         }
 
     def _get_battery_percentage(self) -> int:
-        return np.floor(self._drone.get_state("battery_percent"))
+        return int(self._drone.get_state("battery_percent"))
 
     def _get_current_status(self) -> common_protocol.FlightStatus:
         return self._drone.get_state("flight_state")
@@ -531,7 +538,11 @@ class DigitalPerfect(MulticopterItf):
 
     def _is_gimbal_pose_reached(self, pitch: float, roll: float, yaw: float) -> bool:
         current_pose = self._drone.get_state("gimbal_pose")
-        pose_array = [current_pose["pitch"], current_pose["roll"], current_pose["yaw"]]
+        pose_array = [
+            current_pose["g_pitch"],
+            current_pose["g_roll"],
+            current_pose["g_yaw"],
+        ]
         return np.allclose(pose_array, [pitch, roll, yaw], rtol=1e-1, atol=1e-3)
 
     def _is_global_position_reached(self, lat: float, lon: float, alt: float) -> bool:
@@ -610,7 +621,7 @@ class DigitalPerfect(MulticopterItf):
 
     async def _get_video_frame(self):
         if self._streaming_thread:
-            return self._streaming_thread.grab_frame().toBytes(), (
+            return self._streaming_thread.grab_frame().tobytes(), (
                 DEFAULT_IMG_WIDTH,
                 DEFAULT_IMG_HEIGHT,
                 DEFAULT_IMG_CHANNELS,
@@ -648,6 +659,10 @@ class SimulatedStreamingThread(threading.Thread):
 
     def grab_frame(self):
         try:
+            if self._current_frame is None:
+                return np.zeros(
+                    (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS)
+                )
             frame = self._current_frame.copy()
             return frame
         except Exception as e:
