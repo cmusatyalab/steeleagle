@@ -1,9 +1,10 @@
-from st_utilities import Coordinate
-import st_utilities as st_utilities
+import simulator.SensorTwin.sensor_twin_utilities as sensor_twin_utilities
+from simulator.SensorTwin.sensor_twin_utilities import Coordinate
 
 CORNER_COUNT = 4
 
-class BoundingBox():
+
+class BoundingBox:
     def __init__(self):
         # Corner Ordering Convention: Top left -> Bottom left -> Bottom right -> Top right
         self.corners = None
@@ -11,7 +12,7 @@ class BoundingBox():
 
     def get_orientation(self):
         return self.orientation
-    
+
     def set_orientation(self, degrees: float):
         self.orientation = degrees % 360
 
@@ -22,11 +23,17 @@ class BoundingBox():
         [x.translate(x_shift, y_shift, 0) for x in self.corners]
 
     def update_shape_corners(self, new_corners: list[Coordinate]):
-        assert len(new_corners) == CORNER_COUNT, "Expected four corner points during bounding box update"
+        assert len(new_corners) == CORNER_COUNT, (
+            "Expected four corner points during bounding box update"
+        )
         self.corners = new_corners
 
     def contains(self, point: Coordinate):
         for i in range(CORNER_COUNT):
-            if st_utilities.line_side_test(self.corners[i], self.corners[i % CORNER_COUNT], point) == False:
+            if not (
+                sensor_twin_utilities.line_side_test(
+                    self.corners[i], self.corners[i % CORNER_COUNT], point
+                )
+            ):
                 return False
         return True

@@ -1,30 +1,35 @@
-import time
+import logging
 import os
+import time
+
 import cv2
 import numpy as np
-import logging
-import protocol.common_pb2 as common
-import protocol.controlplane_pb2 as control_plane
-import protocol.gabriel_extras_pb2 as gabriel_extras
-import redis 
-from PIL import Image, ImageDraw
-from pykml import parser
+import redis
+from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
+from pykml import parser
 
 logger = logging.getLogger(__name__)
 
-class MockEngine():
+
+class MockEngine:
     ENGINE_NAME = "mock_detection_engine"
-    
+
     def __init__(self, args):
         self.threshold = args.threshold
         self.store_detections = args.store
-        self.model = args.model # Currently unused
+        self.model = args.model  # Currently unused
         self.drone_type = args.drone
-        self.r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}', decode_responses=True)
+        self.r = redis.Redis(
+            host="redis",
+            port=args.redis,
+            username="steeleagle",
+            password=f"{args.auth}",
+            decode_responses=True,
+        )
         self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
-        #timing vars
+        # timing vars
         self.count = 0
         self.lasttime = time.time()
         self.lastcount = 0
@@ -40,22 +45,22 @@ class MockEngine():
             logger.error(f"Geofence KML file not found or is not a file: {fence_path}")
         else:
             # Build geofence from coordinates inside Polygon element of KML file
-            with open(f"{fence_path}", 'r', encoding='utf-8') as f:
+            with open(f"{fence_path}", encoding="utf-8") as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():
                     lon, lat, alt = c.split(",")
                     p = LatLon(lat, lon)
                     self.geofence.append(p)
-            
+
             logger.info(f"GeoFence read: {self.geofence}")
 
         if args.exclude:
             self.exclusions = list(map(int, args.exclude.split(",")))
-            logger.info("Excluding the following class ids: {}".format(self.exclusions))
+            logger.info(f"Excluding the following class ids: {self.exclusions}")
         else:
             self.exclusions = None
-        
+
         if self.store_detections:
             # TODO update to appropriate project directory path
             self.watermark = Image.open(os.getcwd() + "/watermark.png")
@@ -64,17 +69,23 @@ class MockEngine():
                 os.makedirs(self.storage_path + "/detected")
             except FileExistsError:
                 logger.info("Images directory already exists.")
-            logger.info("Storing detection images at {}".format(self.storage_path))
+            logger.info(f"Storing detection images at {self.storage_path}")
 
-            self.drone_storage_path = os.path.join(self.storage_path, "detected", "drones")
-            self.class_storage_path = os.path.join(self.storage_path, "detected", "classes")
+            self.drone_storage_path = os.path.join(
+                self.storage_path, "detected", "drones"
+            )
+            self.class_storage_path = os.path.join(
+                self.storage_path, "detected", "classes"
+            )
             try:
                 os.makedirs(self.drone_storage_path)
                 os.makedirs(self.class_storage_path)
             except FileExistsError:
                 pass
 
-        logger.info(f"Search radius when considering duplicate detections: {self.search_radius}")
+        logger.info(
+            f"Search radius when considering duplicate detections: {self.search_radius}"
+        )
         logger.info("SensorTwin mock engine initialized...")
 
     def store_detection_db(self, drone, lat, lon, cls, conf, link="", object_name=None):
@@ -98,10 +109,10 @@ class MockEngine():
 
         if not os.path.exists(drone_dir):
             os.makedirs(drone_dir)
-        
+
         # Save to drone specific directory
         drone_dir_path = os.path.join(drone_dir, filename)
-        im_rgb = Image.fromarray(im_bgr[..., ::-1]) # RGB-order PIL image
+        im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
         im_rgb.save(drone_dir_path)
         logger.debug(f"Stored image: {drone_dir_path}")
 
@@ -126,7 +137,7 @@ class MockEngine():
 
         self.t1 = time.time()
         return sim_results, img
-    
+
     def geofilter_passed(self, detection):
         cls = detection["class"]
         drone_id = detection["id"]
@@ -137,22 +148,28 @@ class MockEngine():
             longitude=detection["lon"],
             latitude=detection["lat"],
             radius=self.search_radius,
-            unit="m"
+            unit="m",
         )
         if len(objects) == 0:
-            logger.info(f"Adding detection for {cls} for drone {drone_id} for the first time")
+            logger.info(
+                f"Adding detection for {cls} for drone {drone_id} for the first time"
+            )
             return (True, None)
-        
+
         logger.info(f"Objects already exist within search radius: {objects}")
 
         for obj in objects:
             d = self.r.hgetall(f"objects:{obj}")
             if d and d["cls"] == cls:
                 if d["drone_id"] == drone_id:
-                    logger.debug(f"Drone {d['drone_id']} detected {obj} in same area, updating obj location")
+                    logger.debug(
+                        f"Drone {d['drone_id']} detected {obj} in same area, updating obj location"
+                    )
                     return (True, obj)
                 else:
-                    logger.info(f"Ignoring detection, {obj} already found by drone {d['drone_id']}")
+                    logger.info(
+                        f"Ignoring detection, {obj} already found by drone {d['drone_id']}"
+                    )
                     return (False, None)
         return (True, None)
 
