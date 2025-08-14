@@ -2,10 +2,11 @@
 import argparse
 import logging
 
-# SteelEagle/Gabriel Imports
+# SteelEagle Imports
 from sensor_twin_engine import SensorTwinEngine
 from utils.utils import setup_logging
 
+# Gabriel Imports
 from gabriel_server.network_engine import engine_runner
 
 SOURCE = "openscout"

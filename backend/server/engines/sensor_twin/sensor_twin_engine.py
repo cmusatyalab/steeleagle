@@ -10,16 +10,18 @@ import numpy as np
 import redis
 import ultralytics
 
-# SteelEagle/Gabriel Imports
+# SteelEagle Imports
 from DetectionObject import DetectionObject
 from PIL import Image
 from sensor_twin_utilities import Coordinate
 from Viewport import Viewport
 
-# Protobuf imports
+# Protobuf Imports
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
+
+# Gabriel Imports
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 
