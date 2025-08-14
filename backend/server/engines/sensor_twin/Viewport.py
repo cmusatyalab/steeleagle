@@ -1,11 +1,10 @@
 import logging
 
 import numpy as np
+import sensor_twin_utilities as sensor_twin_utilities
 from BoundingBox import BoundingBox
 from DetectionObject import DetectionObject
-
-import simulator.SensorTwin.sensor_twin_utilities as sensor_twin_utilities
-from simulator.SensorTwin.sensor_twin_utilities import Coordinate
+from sensor_twin_utilities import Coordinate
 
 ROUNDING_PRECISION = 5
 BASE_IMAGE_PATH = "testfiles/testobj.png"

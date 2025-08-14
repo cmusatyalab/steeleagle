@@ -10,6 +10,7 @@ import redis
 import ultralytics
 from DetectionObject import DetectionObject
 from PIL import Image
+from sensor_twin_utilities import Coordinate
 from Viewport import Viewport
 
 import protocol.common_pb2 as common
@@ -17,7 +18,6 @@ import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
-from simulator.SensorTwin.sensor_twin_utilities import Coordinate
 
 DETOBJ_FEATURE_COUNT = 11
 BBOX_PLACEHOLDER = 25

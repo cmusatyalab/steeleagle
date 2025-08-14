@@ -1,5 +1,5 @@
-import simulator.SensorTwin.sensor_twin_utilities as sensor_twin_utilities
-from simulator.SensorTwin.sensor_twin_utilities import Coordinate
+import sensor_twin_utilities as sensor_twin_utilities
+from sensor_twin_utilities import Coordinate
 
 CORNER_COUNT = 4
 
