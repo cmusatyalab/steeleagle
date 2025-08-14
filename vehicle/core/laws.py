@@ -129,7 +129,7 @@ class LawInterceptor(AsyncServerInterceptor):
         # Check if the command is allowed for the provided identity,
         # and if so, transit to a matching state
         metadata = context.invocation_metadata()
-        if not metadata:
+        if not metadata or len(metadata) < 2:
             logger.error('No identity provided, command blocked!')
             await context.abort(
                     grpc.StatusCode.PERMISSION_DENIED,

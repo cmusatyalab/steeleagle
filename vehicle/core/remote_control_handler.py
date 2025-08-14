@@ -75,6 +75,11 @@ class RemoteControlHandler(LawAuthority):
                     command.control_request.Unpack(request)
             except KeyError:
                 logger.error(f'Command {method} ignored due to failed descriptor lookup!')
+                response = self._message_classes[method_desc.output_type.full_name]()
+                response.response.ParseFromString(
+                        generate_response(5).SerializeToString() # Invalid argument
+                        )
+                results.append(response)
                 continue
             metadata = [('identity', identity)]
             # Send in the correct classes to unmarshall from the channel
@@ -94,18 +99,11 @@ class RemoteControlHandler(LawAuthority):
                             )
                         )
             except grpc.aio.AioRpcError as e:
-                grpc_code = e.code()
-                status_code = 3
-                if grpc_code == grpc.StatusCode.PERMISSION_DENIED:
-                    status_code = 5
-                elif grpc_code == grpc.StatusCode.UNIMPLEMENTED:
-                    status_code = 7   
+                logger.error(f'Encountered RPC error, {e.code()}: {e.details()}')
                 response = self._message_classes[method_desc.output_type.full_name]()
-                response.response.ParseFromString(generate_response(status_code).SerializeToString())
-                results.append(response)
-            except Exception as e:
-                response = self._message_classes[method_desc.output_type.full_name]()
-                response.response.ParseFromString(generate_response(3).SerializeToString())
+                response.response.ParseFromString(
+                        generate_response(e.code().value[0] + 2, resp_string=e.details()).SerializeToString()
+                        )
                 results.append(response)
         return results
 
@@ -161,8 +159,6 @@ class RemoteControlHandler(LawAuthority):
                 request = RemoteControlRequest()
                 request.ParseFromString(message)
                 asyncio.create_task(self._send_results(request, command_socket))
-        except (SystemExit, asyncio.exceptions.CancelledError):
-            raise
         except Exception as e:
             logger.error(f'Terminated due to exception: {e}')
             return

@@ -20,8 +20,6 @@ from util.cleanup import register_cleanup_handler
 import python_bindings.common_pb2 as common_proto
 import python_bindings.control_service_pb2 as control_proto
 import python_bindings.mission_service_pb2 as mission_proto
-from python_bindings.control_service_pb2_grpc import add_ControlServicer_to_server
-from python_bindings.report_service_pb2_grpc import add_ReportServicer_to_server
 import python_bindings.testing_pb2 as test_proto
 # Mock import
 from message_sequencer import Topic, MessageSequencer
@@ -60,6 +58,27 @@ async def wait_for_services(required, command_socket, timeout=5.0):
             return
     if len(required):
         raise TimeoutError(f"Services did not report in!")
+
+async def send_requests(requests, swarm_controller, mission):
+    # Send messages and read the output
+    output = []
+    output.append((Topic.DRIVER_CONTROL_SERVICE, 'ConnectRequest'))
+    for req in requests:
+        identity = req.identity
+        if identity == 'internal':
+            assert(await mission.send_recv_command(req))
+            output.append((Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name))
+            service = req.method_name.split('.')[0]
+            if service == 'Control' and req.status == 2:
+                output.append((Topic.DRIVER_CONTROL_SERVICE, req.request.DESCRIPTOR.name))
+            output.append((Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name.replace('Request', 'Response')))
+        elif identity == 'external' or identity == 'server':
+            assert(await swarm_controller.send_recv_command(req))
+            output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
+            service = req.method_name.split('.')[0]
+            output.append((Topic.DRIVER_CONTROL_SERVICE if service == 'Control' else Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name))
+            output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name.replace('Request', 'Response')))
+    return output
 
 '''
 Test fixture methods.
@@ -110,6 +129,12 @@ async def mock_services(messages, command_socket):
         pass
 
 @pytest_asyncio.fixture(scope='function')
+async def mission(messages):
+    from mock_clients.mock_mission_client import MockMissionClient
+    mission = MockMissionClient(messages)
+    yield mission
+
+@pytest_asyncio.fixture(scope='function')
 async def background_services(mock_services, command_socket):
     # List of services to start in the background
     running = []
@@ -140,7 +165,7 @@ class Test_gRPC:
     '''
     @pytest.mark.order(1)
     @pytest.mark.asyncio
-    async def test_remote_control(self, messages, swarm_controller, background_services):
+    async def test_remote_control(self, messages, swarm_controller, mission, background_services):
         # Start test:
         requests = [
             Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse()),
@@ -149,26 +174,12 @@ class Test_gRPC:
             Request('Control.Disarm', control_proto.DisarmRequest(), control_proto.DisarmResponse())
         ]
     
-        output = []
-        output.append((Topic.DRIVER_CONTROL_SERVICE, 'ConnectRequest'))
-        for req in requests:
-            output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
-            output.append((Topic.DRIVER_CONTROL_SERVICE, req.request.DESCRIPTOR.name))
-            output.append((
-                Topic.SWARM_CONTROLLER,
-                req.request.DESCRIPTOR.name.replace("Request", "Response")
-                ))
-    
-        for req in requests:
-            # Must be called in request -> method_name -> response order
-            # so that the message sequencer can write the output correctly
-            assert(await swarm_controller.send_recv_command(req))
-        
+        output = await send_requests(requests, swarm_controller, mission) 
         assert(messages == output)
 
     @pytest.mark.order(2)
     @pytest.mark.asyncio
-    async def test_mission_start(self, messages, swarm_controller, background_services):
+    async def test_mission_start(self, messages, swarm_controller, mission, background_services):
         # Start test:
         requests = [
             # This command should be blocked because we do not have control authority
@@ -181,25 +192,7 @@ class Test_gRPC:
             Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 9, 'internal')
         ]
     
-        output = []
-        output.append((Topic.DRIVER_CONTROL_SERVICE, 'ConnectRequest'))
-        for req in requests:
-            output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
-            if req.status == 2:
-                output.append(
-                        (Topic.DRIVER_CONTROL_SERVICE if req.method_name.split('.')[0] == 'Control' else Topic.MISSION_SERVICE,
-                        req.request.DESCRIPTOR.name)
-                        )
-            output.append((
-                Topic.SWARM_CONTROLLER,
-                req.request.DESCRIPTOR.name.replace("Request", "Response")
-                ))
-    
-        for req in requests:
-            # Must be called in request -> method_name -> response order
-            # so that the message sequencer can write the output correctly
-            assert(await swarm_controller.send_recv_command(req))
-        
+        output = await send_requests(requests, swarm_controller, mission) 
         assert(messages == output)
 
     #@pytest.mark.order(3)
