@@ -1,4 +1,6 @@
 import grpc
+import logging
+logger = logging.getLogger(__name__)
 # Utility import
 from util.rpc import generate_request
 from util.config import query_config
@@ -40,30 +42,35 @@ class LogWrapper:
         return self._send_log_request(LogType.ERROR, message)
 
     def proto(self, message):
+        proto = None
         try:
             req = message.request
             proto = ReqRepProto(
-                    request=req,
                     name=message.DESCRIPTOR.name,
                     content=str(MessageToDict(message))
                     )
+            proto.request.CopyFrom(req)
         except:
             pass
         try:
             rep = message.response
             proto = ReqRepProto(
-                    response=rep,
                     name=message.DESCRIPTOR.name,
                     content=str(MessageToDict(message))
                     )
+            proto.response.CopyFrom(rep)
         except:
-            raise ValueError('Could not log message, not a request/response!')
-        print('Constructing LogProto request')
+            pass
+
+        if not proto:
+            return False
+
+        logger.info('Logging!')
         request = LogProtoRequest(
                 request=generate_request(),
-                topic=self._topic + '/rpc',
-                reqrep_proto=proto
+                topic=f'{self._topic}/rpc'
                 )
+        request.reqrep_proto.CopyFrom(proto)
         return True if self._stub.LogProto(request).response.status == 2 else False
 
     def __del__(self):

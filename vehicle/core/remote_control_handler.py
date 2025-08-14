@@ -73,6 +73,7 @@ class RemoteControlHandler(LawAuthority):
                     ParseDict(dict(command[1]), request, ignore_unknown_fields=True)
                 else:
                     command.control_request.Unpack(request)
+                logger.proto(request)
             except KeyError:
                 logger.error(f'Command {method} ignored due to failed descriptor lookup!')
                 response = self._message_classes[method_desc.output_type.full_name]()
@@ -111,17 +112,16 @@ class RemoteControlHandler(LawAuthority):
         '''
         Send command and then relay its results over ZeroMQ.
         '''
-        #logger.proto(command)
         results = await self._send_commands([command], identity=command.identity)
         # Only get one result back
         result = results[0]
+        logger.proto(result)
         result_msg = RemoteControlResponse(
                 sequence_number=command.sequence_number,
                 identity=command.identity
                 )
         # Pack the result
         result_msg.control_response.Pack(result)
-        #logger.proto(result_msg)
         await command_socket.send(result_msg.SerializeToString())
 
     async def handle_remote_input(self, command_socket, timeout=1):
