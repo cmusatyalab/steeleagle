@@ -1,3 +1,4 @@
+# Library Imports
 import asyncio
 import json
 import logging
@@ -8,11 +9,14 @@ import time
 import numpy as np
 import redis
 import ultralytics
+
+# SteelEagle/Gabriel Imports
 from DetectionObject import DetectionObject
 from PIL import Image
 from sensor_twin_utilities import Coordinate
 from Viewport import Viewport
 
+# Protobuf imports
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
