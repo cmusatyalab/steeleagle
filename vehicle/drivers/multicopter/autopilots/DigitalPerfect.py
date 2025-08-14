@@ -338,6 +338,7 @@ class DigitalPerfect(MulticopterItf):
             result = True
 
         if result:
+            await asyncio.sleep(0.5)  # Prevent race condition with telemetry updates
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
