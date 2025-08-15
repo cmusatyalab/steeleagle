@@ -11,7 +11,7 @@ LANDED_DRAIN_RATE = 0.03
 ACTIVE_DRAIN_RATE = 0.06
 MAX_SPEED = 15  # m/s
 MAX_CLIMB = 4  # m/s
-MAX_ACCELERATION = 10  # m/s^2
+MAX_ACCELERATION = 5  # m/s^2
 MAX_ROTA_RATE = 250
 MAX_YAW_RATE = 180
 MAX_G_ROTA_RATE = 300
@@ -206,6 +206,8 @@ class SimulatedDrone:
         """
         if self._pending_action:
             return False
+        if not self._active_action:
+            await self._cancel_current_action()
         self._pending_action = True
         logger.debug(
             f"register_pending_task: Pending action set to {self._pending_action}"
