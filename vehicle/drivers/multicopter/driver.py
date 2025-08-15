@@ -161,7 +161,7 @@ class Driver:
 def get_drone(drone_id, drone_args, drone_module):
     try:
         drone_name = drone_module.split(".")[-1]
-        drone_import = f"multicopter.{drone_module}.{drone_name}"
+        drone_import = f"multicopter.{drone_module}"
         drone_obj = importlib.import_module(drone_import)
         drone = getattr(drone_obj, drone_name)(drone_id, **drone_args)
         return drone
