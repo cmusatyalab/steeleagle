@@ -426,8 +426,8 @@ class DigitalPerfect(MulticopterItf):
                     continue
 
                 cam_message.data = frame
-                cam_message.height = frame_shape[0]
-                cam_message.width = frame_shape[1]
+                cam_message.height = frame_shape[1]
+                cam_message.width = frame_shape[0]
                 cam_message.channels = frame_shape[2]
                 cam_message.id = frame_id
                 cam_sock.send(cam_message.SerializeToString())
@@ -665,16 +665,20 @@ class SimulatedStreamingThread(threading.Thread):
     def grab_frame(self):
         try:
             if self._current_frame is None:
-                return np.zeros(
-                    (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS)
+                return np.full(
+                    (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS),
+                    255,
+                    dtype=np.uint8,
                 )
             frame = self._current_frame.copy()
             return frame
         except Exception as e:
             logger.error(f"Grab frame failed: {e}")
             # Send blank image
-            return np.zeros(
-                (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS)
+            return np.full(
+                (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS),
+                255,
+                dtype=np.uint8,
             )
 
     def stop(self):
