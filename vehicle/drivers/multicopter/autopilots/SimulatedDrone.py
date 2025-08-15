@@ -411,12 +411,20 @@ class SimulatedDrone:
                 f"move_to: {self.get_state('drone_id')} unable to execute move command"
                 "from ground. Taking off first..."
             )
-            result = await self.take_off()
+            current_pos = self.get_current_position()
+            self.set_flight_state(common_protocol.FlightStatus.TAKING_OFF)
+            self._set_position_target(current_pos[0], current_pos[1], self._takeoff_alt)
+            result = await self._wait_for_condition(
+                lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT
+            )
             if not result:
+                if self.get_current_position()[2] == 0:
+                    self.set_flight_state(common_protocol.FlightStatus.IDLE)
                 logger.error(
                     f"move_to: {self.get_state('drone_id')} unable to take off during move_to..."
                 )
                 return False
+            self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             logger.info("move_to: Take off completed, beginning to movement segment...")
 
         self._zero_velocity()
@@ -522,12 +530,20 @@ class SimulatedDrone:
                 f"extended_move_to: {self.get_state('drone_id')} unable to execute move command"
                 "from ground. Taking off first..."
             )
-            result = await self.take_off()
+            current_pos = self.get_current_position()
+            self.set_flight_state(common_protocol.FlightStatus.TAKING_OFF)
+            self._set_position_target(current_pos[0], current_pos[1], self._takeoff_alt)
+            result = await self._wait_for_condition(
+                lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT
+            )
             if not result:
+                if self.get_current_position()[2] == 0:
+                    self.set_flight_state(common_protocol.FlightStatus.IDLE)
                 logger.error(
                     f"extended_move_to: {self.get_state('drone_id')} unable to take off during move_to..."
                 )
                 return False
+            self.set_flight_state(common_protocol.FlightStatus.HOVERING)
             logger.info("move_to: Take off completed, beginning to movement segment...")
 
         self._zero_velocity()
