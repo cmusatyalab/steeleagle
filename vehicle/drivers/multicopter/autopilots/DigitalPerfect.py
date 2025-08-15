@@ -21,6 +21,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 LATDEG_METERS = 1113195
+ALT_TOLERANCE = 0.5
 DEFAULT_IMG_HEIGHT = 720
 DEFAULT_IMG_WIDTH = 1280
 DEFAULT_IMG_CHANNELS = 3
@@ -175,6 +176,7 @@ class DigitalPerfect(MulticopterItf):
             max_velocity = location.max_velocity
 
         # Convert absolute to relative altitude if required
+        # TODO: Correct this - DD e_m_t uses an absolute alt unlike anafi drones
         if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
             altitude = alt - self._get_global_position()[2] + self._get_altitude_rel()
         else:
@@ -188,6 +190,8 @@ class DigitalPerfect(MulticopterItf):
                 global_position[0], global_position[1], lat, lon
             )
             if max_velocity:
+                if abs(global_position[2] - altitude) < ALT_TOLERANCE:
+                    max_velocity.up_vel = 0
                 await self._drone.extended_move_to(
                     lat,
                     lon,
