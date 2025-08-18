@@ -19,7 +19,7 @@ class MockMissionClient:
     Provides a fake Swarm Controller to test messaging over ZeroMQ.
     '''
     def __init__(self, messages):
-        self._channel = grpc.aio.insecure_channel(query_config('internal.services.core.endpoint'))
+        self._channel = grpc.aio.insecure_channel(query_config('internal.services.core'))
         self._control_stub = ControlStub(self._channel)
         self._report_stub = ReportStub(self._channel)
         self._compute_stub = ComputeStub(self._channel)

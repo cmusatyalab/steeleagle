@@ -94,7 +94,7 @@ def command_socket():
     command_socket = zmq.asyncio.Context().socket(zmq.ROUTER)
     setup_zmq_socket(
         command_socket,
-        'cloudlet.swarm_controller.endpoint',
+        'cloudlet.swarm_controller',
         SocketOperation.BIND
         )
     yield command_socket
@@ -139,7 +139,7 @@ async def background_services(mock_services, command_socket):
     # List of services to start in the background
     running = []
     subps = [
-        ["python3", "../core/serve.py"]
+        ["python3", "../core/main.py"]
         ]
 
     for subp in subps:

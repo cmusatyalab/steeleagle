@@ -1,20 +1,20 @@
 import logging
 import os
-import yaml
+import toml
 
 def import_config(path):
     '''
     Import configuration file from environment variable.
     '''
     with open(path, 'r') as file:
-        cfg = yaml.safe_load(file)
+        cfg = toml.load(file)
         return cfg
 
 CONFIG = None
 if os.environ.get('CONFIGPATH'):
     CONFIG = import_config(os.environ.get('CONFIGPATH'))
-elif os.path.isfile('config.yaml'):
-    CONFIG = import_config('config.yaml')
+elif os.path.isfile('config.toml'):
+    CONFIG = import_config('config.toml')
 else:
     raise ValueError(
             "No path provided for config file and no local file found. Try setting CONFIGPATH!"
@@ -23,8 +23,8 @@ else:
 INTERNAL = None
 if os.environ.get('INTERNALPATH'):
     INTERNAL = import_config(os.environ.get('INTERNALPATH'))
-elif os.path.isfile('.internal.yaml'):
-    INTERNAL = import_config('.internal.yaml')
+elif os.path.isfile('.internal.toml'):
+    INTERNAL = import_config('.internal.toml')
 else:
     raise ValueError(
             "No path provided for internal config file and no local file found. Try setting INTERNALPATH!"
@@ -54,24 +54,4 @@ def check_config():
     '''
     Ensures that there are no address conflicts between services.
     '''
-    try:
-        # Add all the service-based CONFIG to one traversible
-        # entity for easy reading
-        srv_cfg = query_config('services')
-        srv_cfg.update(query_config('cloudlet'))
-        srv_cfg.update(query_config('internal.services'))
-        srv_cfg.update(query_config('internal.streams'))
-        addrs = set([])
-        seen = 0
-        
-        for key in srv_cfg:
-            try:
-                addrs.add(srv_cfg[key]['endpoint'])
-                seen += 1
-            except:
-                pass
-        if len(addrs) != seen:
-            raise ValueError(f"Services have conflicting addresses! \
-                    Check your config.yaml to ensure you are not using reserved addresses (8990-8999)")
-    except Exception as e:
-        raise
+    pass

@@ -1,0 +1,13 @@
+[services]
+core = 'unix:///tmp/core.sock'
+driver = 'unix:///tmp/driver.sock'
+mission = 'unix:///tmp/mission.sock'
+flight_log = 'unix:///tmp/log.sock'
+testing = 'unix:///tmp/test.sock'
+
+[streams]
+driver_telemetry = 'unix:///tmp/driver_telem.sock'
+mission_telemetry = 'unix:///tmp/mission_telem.sock'
+imagery = 'unix:///tmp/imagery.sock'
+results = 'unix:///tmp/results.sock'
+local_compute = 'unix:///tmp/local_compute.sock'

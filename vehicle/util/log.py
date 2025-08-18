@@ -15,7 +15,7 @@ class LogWrapper:
     '''
     def __init__(self, topic):
         self._topic = topic
-        self._channel = grpc.insecure_channel(query_config('internal.services.flight_log.endpoint'))
+        self._channel = grpc.insecure_channel(query_config('internal.services.flight_log'))
         self._stub = FlightLogStub(self._channel)
 
     def _send_log_request(self, log_type, message):
@@ -72,9 +72,6 @@ class LogWrapper:
                 )
         request.reqrep_proto.CopyFrom(proto)
         return True if self._stub.LogProto(request).response.status == 2 else False
-
-    def __del__(self):
-        self._channel.close()
 
 def get_logger(topic):
     '''

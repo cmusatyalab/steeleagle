@@ -40,6 +40,7 @@ class MockSwarmController:
                 identity=req_obj.identity
                 ) 
 
+        logger.info("Sending...")
         await self._socket.send_multipart(
                 [self._device.encode("utf-8"), control_request.SerializeToString()]
                 )

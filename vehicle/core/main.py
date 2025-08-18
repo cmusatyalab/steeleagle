@@ -5,7 +5,7 @@ import zmq.asyncio
 import grpc
 from concurrent import futures
 # Law handler import
-from core.laws import LawInterceptor
+from core.laws import LawAuthority, LawInterceptor
 # Utility import
 from util.log import get_logger
 from util.cleanup import register_cleanup_handler
@@ -21,14 +21,14 @@ generate_proxy(
         'Control', 
         'control_service',
         f'{root}vehicle/core/services/_gen_control_service_proxy.py',
-        query_config('internal.services.driver.endpoint')
+        query_config('internal.services.driver')
         )
 from core.services._gen_control_service_proxy import ControlProxy
 generate_proxy(
         'Mission', 
         'mission_service',
         f'{root}vehicle/core/services/_gen_mission_service_proxy.py',
-        query_config('internal.services.mission.endpoint')
+        query_config('internal.services.mission')
         )
 from core.services._gen_mission_service_proxy import MissionProxy
 # Service imports
@@ -41,8 +41,9 @@ from python_bindings import report_service_pb2, report_service_pb2_grpc
 from python_bindings import compute_service_pb2, compute_service_pb2_grpc
 # Remote control handler import
 from remote_control_handler import RemoteControlHandler
+from stream_handler import StreamHandler
 
-logger = get_logger('core/serve')
+logger = get_logger('core/main')
 
 async def main():
     # Create ZeroMQ socket that connects to the Swarm Controller
@@ -53,14 +54,14 @@ async def main():
             )
     setup_zmq_socket(
         command_socket,
-        'cloudlet.swarm_controller.endpoint',
+        'cloudlet.swarm_controller',
         SocketOperation.CONNECT
         )
     
     # Create the global law handler
-    rc_handler = RemoteControlHandler()
+    law_authority = LawAuthority()
     # Set up the law interceptor
-    law_interceptor = [LawInterceptor(rc_handler)]
+    law_interceptor = [LawInterceptor(law_authority)]
     
     # Define the server that will hold our services
     server = grpc.aio.server(
@@ -73,7 +74,7 @@ async def main():
     report_service_pb2_grpc.add_ReportServicer_to_server(ReportService(command_socket), server)
     compute_service_pb2_grpc.add_ComputeServicer_to_server(ComputeService(), server)
     # Add main channel to server
-    server.add_insecure_port(query_config('internal.services.core.endpoint'))
+    server.add_insecure_port(query_config('internal.services.core'))
 
     # Check if testing is on
     test = query_config('testing')
@@ -81,24 +82,34 @@ async def main():
     # Start services
     await server.start()
     logger.info('Services started!')
-    await rc_handler.startup()
-    rc_handler_task = asyncio.create_task(
-            rc_handler.handle_remote_input(command_socket, timeout=(1 if not test else None))
-            )
-    logger.info('Started handling remote input...')
+    # Send opening commands
+    await law_authority.start()
+    logger.info('Law authority started!')
 
+    # Create the remote control and stream handler
+    rc_handler = RemoteControlHandler(law_authority, command_socket)
+    stream_handler = StreamHandler(law_authority)
+    await rc_handler.start(failsafe_timeout=None if test else 1)
+    logger.info('Started handling remote input!')
+    await stream_handler.start()
+    logger.info('Started handling data streams!')
+
+    # If in test mode, notify the test bench that core services
+    # are ready
     if test:
         from python_bindings.testing_pb2 import ServiceReady
         ready = ServiceReady(readied_service=0)
         command_socket.send(ready.SerializeToString())
 
     try:
-        await server.wait_for_termination()
+        await asyncio.gather(
+                server.wait_for_termination(),
+                rc_handler.wait_for_termination(),
+                stream_handler.wait_for_termination()
+                )
     except (SystemExit, asyncio.exceptions.CancelledError):
         logger.info('Shutting down...')
         await server.stop(1)
-        rc_handler_task.cancel()
-        await rc_handler_task
     
 if __name__ == "__main__":
     asyncio.run(main())

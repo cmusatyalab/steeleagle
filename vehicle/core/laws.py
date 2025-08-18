@@ -1,12 +1,20 @@
 from enum import Enum
 import grpc
 from grpc_interceptor.server import AsyncServerInterceptor
-import yaml
+import json
+from google.protobuf.descriptor_pool import DescriptorPool
+from google.protobuf.descriptor_pb2 import FileDescriptorSet
+from google.protobuf.message_factory import GetMessages
+from google.protobuf.json_format import ParseDict
+from google.protobuf import any_pb2
+import toml
 import os
 from fnmatch import fnmatch
 import aiorwlock
 # Utility import
 from util.log import get_logger
+from util.config import query_config
+from util.rpc import reflective_grpc_call, generate_response, generate_request
 
 logger = get_logger('core/laws')
 
@@ -18,23 +26,43 @@ class LawAuthority:
     the law for all entities.
     '''
     def __init__(self):
+        # Load in laws from the provided path
         path = os.getenv('LAWPATH')
         if not path:
-            path = '.laws.yaml'
+            path = '.laws.toml'
         with open(path, 'r') as laws:
-            self._spec = yaml.safe_load(laws)
+            self._spec = toml.load(laws)
         self._state = None
         self._law = None
         self._lock = aiorwlock.RWLock()
+        # Open a channel to connect to core services 
+        self._channel = grpc.aio.insecure_channel(query_config('internal.services.core'))
+        # Create a descriptor pool which can look up services by name from
+        # generated .desc file
+        self._desc_pool = DescriptorPool()
+        self._name_table = {}
+        root = os.getenv('ROOTPATH')
+        if not root:
+            root = '../'
+        with open(f"{root}protocol/services.desc", 'rb') as f:
+            data = f.read()
+            descriptor_set = FileDescriptorSet.FromString(data)
+            for file_descriptor_proto in descriptor_set.file:
+                self._desc_pool.Add(file_descriptor_proto)
+                fname = file_descriptor_proto.name.split('.')[0]
+                for service in file_descriptor_proto.service:
+                    self._name_table[service.name] = f'protocol.{fname}.{service.name}'
+            # Message class holder to support dynamic instantiation of messages
+            self._message_classes = GetMessages(descriptor_set.file)
 
-    async def startup(self):
+    async def start(self):
         '''
         Call the __onstart__ calls for the law scheme. Must be
         called before any other function!
         '''
         await self.set_law(self._spec['__first__'])
         logger.info('Sending startup commands...')
-        await self._send_commands(self._spec['__onstart__'])
+        await self._send_commands(self._spec['__startup__'])
 
     async def allows(self, identity, command):
         '''
@@ -56,17 +84,17 @@ class LawAuthority:
         next_state = None
         async with self._lock.reader_lock:
             # Always consider user conditions first, then apply base cases
-            user_transits = {}
+            user_transits = []
             transits = self._law['__transit__']
             if 'transit' in self._law:
                 user_transits = self._law['transit']
             for expr in user_transits: # User specified
-                if fnmatch(command, expr):
-                    next_state = user_transits[expr]
+                if fnmatch(command, expr[0]):
+                    next_state = expr[1]
                     break
             for expr in transits: # Base cases
-                if fnmatch(command, expr):
-                    next_state = transits[expr]
+                if fnmatch(command, expr[0]):
+                    next_state = expr[1]
                     break
         if next_state and next_state != self._state:
             logger.info(
@@ -97,10 +125,65 @@ class LawAuthority:
 
     async def _send_commands(self, command_list, identity='authority'):
         '''
-        Send commands to the appropriate service.
+        Sends a list of commands, either JSON or a Protobuf, to the correct service
+        in core and returns the results.
         '''
-        # NOTE: This must be implemented by a child class
-        pass
+        results = []
+        for command in command_list:
+            try:
+                # Check if we are calling a JSON command or a proto object
+                # command from a remote controller
+                is_json_command = True if type(command) == list else False
+                if is_json_command:
+                    service, method = command[0].rsplit('.', 1)
+                else:
+                    full_name = command.method_name
+                    service, method = full_name.rsplit('.', 1)
+                # Fully qualify the name
+                service = self._name_table[service]
+                service_desc = self._desc_pool.FindServiceByName(service)
+                method_desc = service_desc.FindMethodByName(method)
+                # Build the request
+                request = self._message_classes[method_desc.input_type.full_name]()
+                request.request.ParseFromString(generate_request().SerializeToString())
+                if is_json_command:
+                    ParseDict(json.loads(command[1]), request, ignore_unknown_fields=True)
+                else:
+                    command.control_request.Unpack(request)
+                logger.proto(request)
+            except KeyError:
+                logger.error(f'Command {method} ignored due to failed descriptor lookup!')
+                response = self._message_classes[method_desc.output_type.full_name]()
+                response.response.ParseFromString(
+                        generate_response(5).SerializeToString() # Invalid argument
+                        )
+                results.append(response)
+                continue
+            metadata = [('identity', identity)]
+            # Send in the correct classes to unmarshall from the channel
+            classes = (
+                    self._message_classes[method_desc.input_type.full_name],
+                    self._message_classes[method_desc.output_type.full_name]
+                    )
+            try:
+                results.append(
+                        await reflective_grpc_call(
+                            metadata,
+                            f'/{service}/{method}',
+                            method_desc,
+                            request,
+                            classes,
+                            self._channel
+                            )
+                        )
+            except grpc.aio.AioRpcError as e:
+                logger.error(f'Encountered RPC error, {e.code()}: {e.details()}')
+                response = self._message_classes[method_desc.output_type.full_name]()
+                response.response.ParseFromString(
+                        generate_response(e.code().value[0] + 2, resp_string=e.details()).SerializeToString()
+                        )
+                results.append(response)
+        return results
     
     def _update_law(self, state):
         '''

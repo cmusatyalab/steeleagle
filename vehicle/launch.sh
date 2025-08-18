@@ -3,7 +3,7 @@ _PYTHONPATH=../protocol/:../protocol/python_bindings/:./
 PYTHONPATH=$_PYTHONPATH python3 logger/flight_logger.py &
 PID1=$!
 # Start the control section of the core
-PYTHONPATH=$_PYTHONPATH python3 core/serve.py &
+PYTHONPATH=$_PYTHONPATH python3 core/main.py &
 PID2=$!
 
 cleanup() {

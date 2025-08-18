@@ -1,0 +1,27 @@
+[vehicle]
+type = 'multicopter'
+manufacturer = 'Parrot'
+model = 'Anafi'
+name = 'buzzard'
+kwargs = {}
+
+[cloudlet]
+swarm_controller = 'localhost:9005'
+remote_compute_service = 'localhost:9006'
+
+[logging]
+# Whether or not to create an MCAP flight log for mission replay
+generate_flight_log = true
+# Whether or not to log to console
+log_to_console = true
+# Log to a custom filename; otherwise will autogenerate
+# a name based on name, date, and time if empty string
+# is provided
+custom_filename = '' 
+# Path to log file
+file_path = './logger/logs/'
+# Log level
+log_level = 'DEBUG'
+
+[testing]
+testing = false

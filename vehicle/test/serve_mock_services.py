@@ -57,8 +57,8 @@ async def serve_mock_services(messages):
                 ),
             server
             )
-    server.add_insecure_port(query_config('internal.services.driver.endpoint'))
-    server.add_insecure_port(query_config('internal.services.mission.endpoint'))
+    server.add_insecure_port(query_config('internal.services.driver'))
+    server.add_insecure_port(query_config('internal.services.mission'))
     try:
         await server.start()
     except Exception as e:
@@ -72,7 +72,7 @@ async def serve_mock_services(messages):
             )
     setup_zmq_socket(
         command_socket,
-        'cloudlet.swarm_controller.endpoint',
+        'cloudlet.swarm_controller',
         SocketOperation.CONNECT
         )
     # Notify the test bench

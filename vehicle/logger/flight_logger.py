@@ -154,7 +154,7 @@ async def serve_log_server():
             )
     add_FlightLogServicer_to_server(FlightLogService(), server)
     server.add_insecure_port(
-            query_config('internal.services.flight_log.endpoint')
+            query_config('internal.services.flight_log')
             )
 
     logger = logging.getLogger(__name__)

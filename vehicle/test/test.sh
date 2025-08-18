@@ -1,7 +1,7 @@
 _PYTHONPATH=../:../../protocol/:../../protocol/python_bindings/:./
-_INTERNALPATH=../.internal.yaml
-_CONFIGPATH=config.yaml
-_LAWPATH=../.laws.yaml
+_INTERNALPATH=../.internal.toml
+_CONFIGPATH=config.toml
+_LAWPATH=../.laws.toml
 _ROOTPATH=../../
 # Start the flight logger first
 PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH python3 ../logger/flight_logger.py &
