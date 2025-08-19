@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import time
-from enum import Enum
 
 import common_pb2 as common_protocol
 import numpy as np
@@ -32,16 +31,6 @@ DEFAULT_SAT_COUNT = 16
 TASK_TIMEOUT = 10  # value in seconds
 MOVE_TIMEOUT = 600
 EARTH_RADIUS_M = 6371000
-
-
-class TaskType(Enum):
-    TAKEOFF = 0
-    LAND = 1
-    HOVER = 2
-    MOVE_TO = 3
-    EXTENDED_MOVE_TO = 4
-    SET_TARGET = 5
-    RETURN_TO_HOME = 6
 
 
 class SimulatedDrone:
@@ -94,8 +83,8 @@ class SimulatedDrone:
             "speedY": None,
             "speedZ": None,
         }
-        self._pending_action = None
-        self._active_action = None
+        self._pending_action = False
+        self._active_action = False
         self._position_flag = False
         self.set_velocity(0, 0, 0)
         self.set_angular_velocity(0)
@@ -127,10 +116,10 @@ class SimulatedDrone:
             )
             # Set via register_pending_task(), preempts currently executing task if one exists
             if self._pending_action:
-                if self._active_action is not None:
+                if self._active_action:
                     self._cancel_current_action()
                 else:
-                    self._pending_action = None
+                    self._pending_action = False
                     logger.debug(
                         f"state_loop: Pending action changed to: {self._pending_action}"
                     )
@@ -207,19 +196,19 @@ class SimulatedDrone:
             self.set_flight_state(common_protocol.FlightStatus.HOVERING)
         else:
             self.set_flight_state(common_protocol.FlightStatus.IDLE)
-        self._active_action = None
+        self._active_action = False
 
-    async def _register_pending_task(self, task_type: TaskType | None):
+    async def _register_pending_task(self):
         """
         Attempts to signal to the event loop that a new task is being initiated. Fails if there is already
         a pending task in the process of registration. Otherwise, waits until the task lock controlled by the
         active_action flag is released by the cancel_current_action() call in the state loop.
         """
-        if self._pending_action is not None and self._pending_action is task_type:
+        if self._pending_action:
             return False
-        if self._active_action is not None:
+        if not self._active_action:
             await self._cancel_current_action()
-        self._pending_action = task_type
+        self._pending_action = True
         logger.debug(
             f"register_pending_task: Pending action set to {self._pending_action}"
         )
@@ -229,7 +218,7 @@ class SimulatedDrone:
             lambda: self.is_task_lock_open(), timeout=TASK_TIMEOUT, interval=0.1
         )
         if result:
-            self._active_action = task_type
+            self._active_action = True
         return result
 
     """ Connection Methods """
@@ -288,7 +277,7 @@ class SimulatedDrone:
             logger.error(f"Current flight state: {self.get_state('flight_state')}")
             return False
 
-        result = await self._register_pending_task(TaskType.TAKEOFF)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "take_off: Pending task already queued, unable to register take off command..."
@@ -324,7 +313,7 @@ class SimulatedDrone:
                 f"Stopped in position: ({current_position[0]}, {current_position[1]}, "
                 f"{current_position[2]})"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     async def land(self):
@@ -346,7 +335,7 @@ class SimulatedDrone:
             )
             return True
 
-        result = await self._register_pending_task(TaskType.LAND)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "land: Pending task already queued, unable to register take off command..."
@@ -364,7 +353,7 @@ class SimulatedDrone:
             logger.warning(
                 "land: Failed to stop prior to beginning descent procedure..."
             )
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(
@@ -393,7 +382,7 @@ class SimulatedDrone:
                 f"Current position after failed attempt: ({current_position[0]}, "
                 f"{current_position[1]}, {current_position[2]})"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     async def move_to(self, lat, lon, altitude, heading_mode, bearing):
@@ -406,7 +395,7 @@ class SimulatedDrone:
         """
         logger.info("Initiating move to sequence...")
 
-        result = await self._register_pending_task(TaskType.MOVE_TO)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "move_to: Pending task already queued, unable to register take off command"
@@ -446,7 +435,7 @@ class SimulatedDrone:
         )
         if not stop_result:
             logger.warning("move_to: Failed to stop prior to orienting drone...")
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(
@@ -472,7 +461,7 @@ class SimulatedDrone:
             logger.warning(
                 f"Current orientation bearing {self.get_state('attitude')['yaw']}"
             )
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
@@ -501,7 +490,7 @@ class SimulatedDrone:
             logger.warning(
                 f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     async def extended_move_to(
@@ -523,7 +512,7 @@ class SimulatedDrone:
         """
         logger.info("Initiating extended move to sequence...")
 
-        result = await self._register_pending_task(TaskType.EXTENDED_MOVE_TO)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "extended_move_to: Pending task already queued, unable to register take off command..."
@@ -567,7 +556,7 @@ class SimulatedDrone:
             logger.warning(
                 "extended_move_to: Failed to stop prior to orienting drone..."
             )
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(
@@ -592,7 +581,7 @@ class SimulatedDrone:
             logger.warning(
                 f"Current orientation bearing {self.get_state('attitude')['yaw']}"
             )
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
@@ -603,7 +592,7 @@ class SimulatedDrone:
             logger.error(
                 "extended_move_to: Unable to partition lateral velocity value..."
             )
-            self._active_action = None
+            self._active_action = False
             self._set_position_target(None, None, None)
             return False
         x_vel = result[0]
@@ -634,7 +623,7 @@ class SimulatedDrone:
             logger.warning(
                 f"Current position: ({current_position[0]}, {current_position[1]}, {current_position[2]})"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     async def set_target(self, gimbal_id, control_mode, pitch, roll, yaw):
@@ -647,7 +636,7 @@ class SimulatedDrone:
             logger.info("set_target: Gimbal rotation without target not implemented")
             return False
 
-        result = await self._register_pending_task(TaskType.SET_TARGET)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "set_target: Pending task already queued, unable to register take off command"
@@ -675,7 +664,7 @@ class SimulatedDrone:
                 f"{self.get_state('drone_id')} failed to align gimbal {gimbal_id} to target. "
                 f"Pitch: {current_g_pose['g_pitch']}, Roll: {current_g_pose['g_roll']}, Yaw: {current_g_pose['g_yaw']}"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     async def return_to_home(self):
@@ -698,7 +687,7 @@ class SimulatedDrone:
             )
             return False
 
-        result = await self._register_pending_task(TaskType.RETURN_TO_HOME)
+        result = await self._register_pending_task()
         if not result:
             logger.warning(
                 "return_to_home: Pending task already queued, unable to register take off command"
@@ -715,7 +704,7 @@ class SimulatedDrone:
         )
         if not stop_result:
             logger.warning("return_to_home: Failed to stop prior to orienting drone...")
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(
@@ -738,7 +727,7 @@ class SimulatedDrone:
             logger.warning(
                 f"Current orientation bearing {self.get_state('attitude')['yaw']}"
             )
-            self._active_action = None
+            self._active_action = False
             return False
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
@@ -792,7 +781,7 @@ class SimulatedDrone:
                 f"Current position after failed attempt: ({current_position[0]}, "
                 f"{current_position[1]}, {current_position[2]})"
             )
-        self._active_action = None
+        self._active_action = False
         return result
 
     """ Getter, Setter, & Checker Methods """
