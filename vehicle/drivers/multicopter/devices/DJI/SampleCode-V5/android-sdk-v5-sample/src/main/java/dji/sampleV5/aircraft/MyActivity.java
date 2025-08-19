@@ -1,7 +1,6 @@
 package dji.sampleV5.aircraft;
 
-import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.pushKMZFileToAircraft;
-import static com.dji.industry.mission.waypointv2.abstraction.WaypointV2Abstraction.startMission;
+
 import static java.lang.Math.abs;
 import static dji.sdk.keyvalue.key.co_z.KeyCompassHeading;
 import static dji.sdk.keyvalue.key.co_z.KeyGPSSatelliteCount;
@@ -43,8 +42,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,11 +57,9 @@ import dji.sdk.keyvalue.value.camera.CameraMode;
 import dji.sdk.keyvalue.value.common.Attitude;
 import dji.sdk.keyvalue.value.common.ComponentIndexType;
 import dji.sdk.keyvalue.value.common.LocationCoordinate2D;
-import dji.sdk.keyvalue.value.common.LocationCoordinate3D;
 import dji.sdk.keyvalue.value.common.Velocity3D;
 import dji.sdk.keyvalue.value.flightcontroller.CompassCalibrationState;
 import dji.sdk.keyvalue.value.flightcontroller.FlightCoordinateSystem;
-import dji.sdk.keyvalue.value.flightcontroller.FlyToMode;
 import dji.sdk.keyvalue.value.flightcontroller.GoHomeState;
 import dji.sdk.keyvalue.value.flightcontroller.RollPitchControlMode;
 import dji.sdk.keyvalue.value.flightcontroller.VerticalControlMode;
@@ -83,15 +78,8 @@ import dji.v5.manager.aircraft.waypoint3.WaypointMissionExecuteStateListener;
 import dji.v5.manager.aircraft.waypoint3.WaypointMissionManager;
 import dji.v5.manager.aircraft.waypoint3.model.WaypointMissionExecuteState;
 import dji.v5.manager.datacenter.camera.CameraStreamManager;
-import dji.v5.manager.intelligent.IntelligentFlightManager;
-import dji.v5.manager.intelligent.flyto.FlyToParam;
-import dji.v5.manager.intelligent.flyto.FlyToTarget;
-import dji.v5.manager.intelligent.flyto.IFlyToMissionManager;
 import dji.v5.manager.interfaces.ICameraStreamManager;
 import dji.v5.manager.interfaces.IKeyManager;
-import dji.v5.manager.interfaces.IWaypointMissionManager;
-import io.reactivex.rxjava3.core.Completable;
-import dji.v5.utils.common.FileUtils;
 
 
 public class MyActivity extends AppCompatActivity implements WaypointMissionExecuteStateListener {
@@ -578,201 +566,6 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
     private void stopGoHome() {
         IKeyManager keyManager = KeyManager.getInstance();
         keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStopGoHome), null);
-
-        // Also stop monitoring if in progress
-        if (isGoingHomeAndHover) {
-            isGoingHomeAndHover = false;
-            if (homeCheckHandler != null && homeCheckRunnable != null) {
-                homeCheckHandler.removeCallbacks(homeCheckRunnable);
-            }
-            Log.i("MyApp", "Stopped go home and monitoring");
-        }
-    }
-
-    private Handler homeCheckHandler;
-    private Runnable homeCheckRunnable;
-    private boolean isGoingHomeAndHover = false;
-
-    private void startGoHomeAndHover() {
-        TextView textView = findViewById(R.id.main_text);
-        if (isGoingHomeAndHover) {
-            Log.w("MyApp", "Go home and hover already in progress");
-            textView.setText("Go home and hover already in progress");
-            return;
-        }
-
-        isGoingHomeAndHover = true;
-
-        // Start the go home action
-        IKeyManager keyManager = KeyManager.getInstance();
-        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStartGoHome), null);
-
-        // Start monitoring location
-        startLocationMonitoring();
-
-        Log.i("MyApp", "Started go home and hover");
-        textView.setText("Started go home and hover");
-    }
-
-    private void startLocationMonitoring() {
-        TextView textView = findViewById(R.id.main_text);
-        if (homeCheckHandler == null) {
-            homeCheckHandler = new Handler(Looper.getMainLooper());
-        }
-
-        homeCheckRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!isGoingHomeAndHover) {
-                    return; // Stop if process was cancelled
-                }
-
-                if (checkIfAtHomeLocation()) {
-                    IKeyManager keyManager = KeyManager.getInstance();
-                    // We've reached home location
-                    // add the altitude check stuff here before calling stopgohome
-                    Double currentAltitude = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
-                    Integer goHomeHeight = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyGoHomeHeight));
-                    if (abs(currentAltitude - goHomeHeight) <= 1.0f) {
-                        // Case 1: already at the correct altitude
-                        stopGoHome();
-                        isGoingHomeAndHover = false;
-                        Log.i("MyApp", "Reached home location -- stopping go home to hover - altitude already correct");
-                        textView.setText("Reached home location -- stopping go home to hover - altitude already correct");
-
-                    } else if (currentAltitude < goHomeHeight) {
-                        // Case 2: below go home height
-                        // add code here
-                        // Move 60 meters north (bearing 0 degrees)
-                        Log.i("MyApp", "Below go home height -- forcing climb with fake home");
-                        textView.setText("Below go home height -- forcing climb with fake home");
-                        double bearing = 0.0;
-                        float distance = 60f; // meters
-
-                        LocationCoordinate2D fakeHome = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
-
-                        double radiusEarth = 6371000.0; // meters
-                        double angularDistance = distance / radiusEarth;
-
-                        double lat1 = Math.toRadians(fakeHome.getLatitude());
-                        double lon1 = Math.toRadians(fakeHome.getLongitude());
-
-                        double lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
-                                Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(Math.toRadians(bearing)));
-
-                        double lon2 = lon1 + Math.atan2(Math.sin(Math.toRadians(bearing)) * Math.sin(angularDistance) * Math.cos(lat1),
-                                Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2));
-
-                        lat2 = Math.toDegrees(lat2);
-                        lon2 = Math.toDegrees(lon2);
-
-                        fakeHome = new LocationCoordinate2D(lat2, lon2);
-
-                        keyManager.setValue(
-                                KeyTools.createKey(FlightControllerKey.KeyHomeLocation),
-                                fakeHome,
-                                null
-                        );
-
-                        Log.i("MyApp", "Set fake home point ~60m away to force climb -- need to get to higher altitude");
-                        textView.setText("Set fake home point ~60m away to force climb -- need to get to higher altitude");
-
-                        // Begin monitoring climb
-                        Handler climbHandler = new Handler(Looper.getMainLooper());
-                        Runnable climbMonitor = new Runnable() {
-                            @Override
-                            public void run() {
-                                Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
-                                if (alt != null && alt >= goHomeHeight - 0.5f) {
-                                    stopGoHome();
-                                    isGoingHomeAndHover = false;
-                                    Log.i("MyApp", "Reached goHomeHeight on climb -- stopping go home");
-                                    textView.setText("Reached goHomeHeight on climb -- stopping go home");
-                                } else {
-                                    climbHandler.postDelayed(this, 200);
-                                }
-                            }
-                        };
-                        climbHandler.post(climbMonitor);
-                    } else {
-                        // Case 3: above go home height
-                        Log.i("MyApp", "Above go home height -- waiting for descent");
-                        textView.setText("Above go home height -- waiting for descent");
-                        // Begin monitoring descent
-                        Handler descentHandler = new Handler(Looper.getMainLooper());
-                        Runnable descentMonitor = new Runnable() {
-                            @Override
-                            public void run() {
-                                Double alt = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAltitude));
-                                if (alt != null && alt <= goHomeHeight + 0.5f) {
-                                    stopGoHome();
-                                    Log.i("MyApp", "Reached goHomeHeight on descent -- stopping go home");
-                                    textView.setText("Reached goHomeHeight on descent -- stopping go home");
-                                } else {
-                                    descentHandler.postDelayed(this, 200);
-                                }
-                            }
-                        };
-                        descentHandler.post(descentMonitor);
-                    }
-                } else {
-                    // Continue monitoring - check again in 500ms
-                    homeCheckHandler.postDelayed(this, 200);
-                }
-            }
-        };
-        // Start the monitoring loop
-        homeCheckHandler.post(homeCheckRunnable);
-    }
-
-    private boolean checkIfAtHomeLocation() {
-        TextView textView = findViewById(R.id.main_text);
-        try {
-            IKeyManager keyManager = KeyManager.getInstance();
-
-            // Get current aircraft location
-            LocationCoordinate2D currentLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
-
-            // Get home location
-            LocationCoordinate2D homeLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyHomeLocation));
-
-            if (currentLocation == null || homeLocation == null) {
-                Log.w("MyApp", "Location data not available");
-                return false;
-            }
-
-            double currentLat = Math.toRadians(currentLocation.getLatitude());
-            double currentLon = Math.toRadians(currentLocation.getLongitude());
-            double homeLat = Math.toRadians(homeLocation.getLatitude());
-            double homeLon = Math.toRadians(homeLocation.getLongitude());
-
-            // Haversine formula
-            double dLat = homeLat - currentLat;
-            double dLon = homeLon - currentLon;
-            double a = Math.pow(Math.sin(dLat / 2), 2) +
-                    Math.cos(currentLat) * Math.cos(homeLat) * Math.pow(Math.sin(dLon / 2), 2);
-            double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            // Earth's radius in meters
-            double distance = 6371000 * c;
-            // Threshold
-            boolean isAtHome = distance < 3;
-
-            Log.d("MyApp", String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
-            textView.setText(String.format("Distance to home: %.2f meters | At home: %b", distance, isAtHome));
-
-            return isAtHome;
-
-        } catch (Exception e) {
-            Log.e("MyApp", "Error checking home location with Haversine: " + e.getMessage());
-            textView.setText("Error checking home location with Haversine: " + e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopGoHome();
     }
 
     private void goHomeStatus() {
@@ -782,9 +575,87 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
         textView.setText("Status: " + status);
         Log.i("MyApp", "Sent go home status");
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.cancelListen(this);
+        stopGoHome();
+    }
     //end of of the set and go home functions
 
     //start of waypoint code
+    private boolean missionCompleted = false;
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    @Override
+    public void onMissionStateUpdate(WaypointMissionExecuteState missionState) {
+        TextView textView = findViewById(R.id.main_text);
+        Log.i("MyApp", "Mission State: " + missionState);
+        textView.setText("Mission State: " + missionState);
+
+        // Handle mission states to prevent auto RTH
+        switch (missionState) {
+            case IDLE:
+                Log.i("MyApp", "Mission idle");
+                break;
+
+            case NOT_SUPPORTED:
+                Log.e("MyApp", "Waypoint mission not supported");
+                textView.setText("Waypoint mission not supported");
+                break;
+
+            case READY:
+                missionCompleted = false;
+                Log.i("MyApp", "Mission ready");
+                break;
+
+            case UPLOADING:
+                Log.i("MyApp", "KMZ uploading");
+                break;
+
+            case PREPARING:
+                Log.i("MyApp", "Mission preparing");
+                break;
+
+            case ENTER_WAYLINE:
+                Log.i("MyApp", "Entering wayline - going to first waypoint");
+                break;
+
+            case EXECUTING:
+                Log.i("MyApp", "Mission executing");
+                break;
+
+            case INTERRUPTED:
+                Log.i("MyApp", "Mission interrupted");
+                missionCompleted = false;
+                break;
+
+            case RECOVERING:
+                Log.i("MyApp", "Mission recovering");
+                break;
+
+            case FINISHED:
+                if (!missionCompleted) {
+                    missionCompleted = true;
+                    Log.i("MyApp", "Mission finished - preventing auto RTH");
+                    textView.setText("Mission finished - hovering at destination");
+
+                    // Cancel any pending RTH since mission is already finished
+                    mainHandler.post(() -> {
+                        cancelAnyReturnToHome();
+                    });
+                }
+                break;
+        }
+    }
+
+    private void cancelAnyReturnToHome() {
+        IKeyManager keyManager = KeyManager.getInstance();
+        keyManager.performAction(KeyTools.createKey(FlightControllerKey.KeyStopGoHome), null);
+    }
+
     private void waypoint(double lat, double lon, double alt) {
         TextView textView = findViewById(R.id.main_text);
         Log.i("MyApp", "Lon: " + lon + " Lat: " + lat + " Alt: " + alt);
@@ -870,8 +741,8 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
             // Getting the current location for the first coordinate in the mission
             IKeyManager keyManager = KeyManager.getInstance();
             LocationCoordinate2D gpsLocation = keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftLocation));
-            double currentLat = 40;
-            double currentLon = -80;
+            double currentLat = 999;
+            double currentLon = 999;
             if (gpsLocation != null) {
                 currentLat = gpsLocation.getLatitude();
                 currentLon = gpsLocation.getLongitude();
@@ -1109,13 +980,6 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
         Log.i("MyApp", "Stopped Video");
     }
 
-    @Override
-    public void onMissionStateUpdate(WaypointMissionExecuteState missionState) {
-        TextView textView = findViewById(R.id.main_text);
-        Log.i("MyApp", "Mission State: " + missionState);
-        textView.setText("Mission State: " + missionState);
-    }
-
     //code for camera image on screen
     class myFrameHandler_t implements ICameraStreamManager.CameraFrameListener, Runnable {
         Bitmap bitmap = null;
@@ -1269,7 +1133,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
     private final long maxDroneDurationMs = 1200000; //120 sec time limit for testing   now, remove/edit this later for longer missions/commands
     private final int droneIntervalMs = 10;
 
-    private void startDroneVelocityMovement(double targetRightVelocity, double targetForwardVelocity, double targetUpVelocity) {
+    private void startDroneVelocityMovement(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
         // First, enable virtual stick mode before starting velocity control
         VirtualStickManager.getInstance().enableVirtualStick(new CommonCallbacks.CompletionCallback() {
             @Override
@@ -1277,7 +1141,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true);
                 Log.i("VirtualStick", "Virtual stick advanced mode enabled");
                 // Now start the actual velocity control loop
-                startVelocityControlLoop(targetRightVelocity, targetForwardVelocity, targetUpVelocity);
+                startVelocityControlLoop(targetForwardVelocity, targetRightVelocity, targetUpVelocity);
             }
 
             @Override
@@ -1288,7 +1152,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
         });
     }
 
-    private void startVelocityControlLoop(double targetRightVelocity, double targetForwardVelocity, double targetUpVelocity) {
+    private void startVelocityControlLoop(double targetForwardVelocity, double targetRightVelocity, double targetUpVelocity) {
         isAdjustingDrone = true;
         droneStartTimeMs = System.currentTimeMillis(); // Mark start time
         TextView textView = findViewById(R.id.main_text);
@@ -1334,13 +1198,14 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                 double rightUnitY = Math.sin(rightHeadingRadians);
                 double[] rightUnitVector = {rightUnitX, rightUnitY};
 
-                double rightVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0] +
+                double forwardVelocity = -(horizontalVelocityVector[0] * forwardUnitVector[0] +
                         horizontalVelocityVector[1] * forwardUnitVector[1]);
-                double forwardVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0] +
+                double rightVelocity = -(horizontalVelocityVector[0] * rightUnitVector[0] +
                         horizontalVelocityVector[1] * rightUnitVector[1]);
 
                 // Display results
-                String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f", forwardVelocity, rightVelocity, velocityUp);
+                String velocityText = String.format("Forward: %.2f, Right: %.2f, Up: %.2f",
+                        forwardVelocity, rightVelocity, velocityUp);
                 textView.setText(velocityText);
                 Log.i("MyApp", "Velocity: " + velocityText);
 
@@ -1396,8 +1261,9 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                     stickParam.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
                     stickParam.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
 
-                    stickParam.setPitch(0.0);
-                    stickParam.setRoll(0.0);
+                    // FIXED: Swapped pitch and roll assignments
+                    stickParam.setPitch(rollCommand);    // Roll command controls forward/backward
+                    stickParam.setRoll(pitchCommand);    // Pitch command controls left/right
                     stickParam.setVerticalThrottle(0.0);
                     stickParam.setYaw(0.0);
 
@@ -1416,15 +1282,16 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                     stickParam.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
                     stickParam.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
 
-                    stickParam.setPitch(pitchCommand);
-                    stickParam.setRoll(rollCommand);
+                    // FIXED: Swapped pitch and roll assignments
+                    stickParam.setPitch(rollCommand);    // Roll command controls forward/backward
+                    stickParam.setRoll(pitchCommand);    // Pitch command controls left/right
                     stickParam.setVerticalThrottle(throttleCommand);
                     stickParam.setYaw(yawCommand);
 
                     VirtualStickManager.getInstance().sendVirtualStickAdvancedParam(stickParam);
 
                     Log.d("Drone", String.format("Stick commands - Pitch: %.2f, Roll: %.2f, Throttle: %.2f",
-                            pitchCommand, rollCommand, throttleCommand));
+                            rollCommand, pitchCommand, throttleCommand));
 
                     // Continue looping
                     droneHandler.postDelayed(this, droneIntervalMs);
@@ -1596,7 +1463,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
                                 Log.i("MyApp", "Up Velocity: " + up_v);
 
                                 // Call waypoint function
-                                startDroneVelocityMovement(right_v, forward_v, up_v);
+                                startDroneVelocityMovement(forward_v, right_v, up_v);
 
                             }
 

@@ -177,20 +177,21 @@
                     android:padding="8dp"
                     android:text= "@string/testing_tools"
                     android:textColor="@color/selector_enable_button" />
+
                 <Button
                     android:id="@+id/my_button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:elevation="10dp"
-                    android:foreground="?selectableItemBackground"
                     android:layout_marginLeft="8dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginRight="8dp"
                     android:background="@color/white"
+                    android:elevation="10dp"
                     android:enabled="true"
+                    android:foreground="?selectableItemBackground"
                     android:gravity="center"
                     android:padding="8dp"
-                    android:text= "My Button"
+                    android:text="SteelEagle DJI Driver"
                     android:textColor="@color/selector_enable_button" />
             </LinearLayout>
         </ScrollView>
