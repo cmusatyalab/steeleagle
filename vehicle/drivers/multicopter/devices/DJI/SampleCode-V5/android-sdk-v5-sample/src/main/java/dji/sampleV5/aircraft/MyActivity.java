@@ -670,6 +670,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
         File tempDir = new File(getCacheDir(), "kmz_edit");
         File waylinesFile = new File(tempDir, "wpmz/waylines.wpml");
 
+        File updatedKmz = null;
         try {
             // Step 1: Extract waylines.wpml and template.kml
             if (tempDir.exists()) deleteRecursive(tempDir);
@@ -790,7 +791,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
             writer.close();
 
             // Step 3: Repack only waylines.wpml and template.kml into a new KMZ
-            File updatedKmz = new File("/storage/emulated/0/DJI/mission_updated.kmz");
+            updatedKmz = new File("/storage/emulated/0/DJI/mission_updated.kmz");
             FileOutputStream fos = new FileOutputStream(updatedKmz);
             ZipOutputStream zos = new ZipOutputStream(fos);
 
@@ -806,7 +807,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
             textView.setText("Error updating KMZ.");
             Log.e("MyApp", "Exception during KMZ edit", e);
         }
-        waypointManager.pushKMZFileToAircraft(originalKmz.getPath(), null);
+        waypointManager.pushKMZFileToAircraft(updatedKmz.getPath(), null);
         Log.i("MyApp", "doneeeeeee");
     }
 
