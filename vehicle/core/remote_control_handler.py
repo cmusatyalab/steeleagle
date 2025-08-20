@@ -17,7 +17,7 @@ from util.rpc import reflective_grpc_call, generate_response, generate_request
 # Protocol import
 from python_bindings.remote_control_pb2 import RemoteControlRequest, RemoteControlResponse
 # Law import
-from core.laws import LawAuthority
+from core.laws import LawAuthority, Failsafe
 
 logger = get_logger('core/remote_control_handler')
 
@@ -78,7 +78,7 @@ class RemoteControlHandler:
                         and time.time() - last_manual_command_ts >= timeout \
                         and (await self._law_authority.get_law())[0] == '__REMOTE__':
                         logger.warning("FAILSAFE ACTIVATED!")
-                        await self._law_authority.set_law('__FAILSAFE__')
+                        await self._law_authority.failsafe(Failsafe.DC_SERVER)
                         last_manual_command_ts = None
                     continue
 

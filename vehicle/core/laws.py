@@ -18,6 +18,13 @@ from util.rpc import reflective_grpc_call, generate_response, generate_request
 
 logger = get_logger('core/laws')
 
+class Failsafe(Enum):
+    DC_SERVER = 0
+    DC_DRIVER = 1
+    DC_MISSION = 2
+    DC_REMOTE_COMPUTE = 3
+    DC_LOCAL_COMPUTE = 4
+
 class LawAuthority:
     '''
     Maintains a unified state of the current control law. Other entities
@@ -32,6 +39,7 @@ class LawAuthority:
             path = '.laws.toml'
         with open(path, 'r') as laws:
             self._spec = toml.load(laws)
+            self._base = self._spec['__BASE__']
         self._state = None
         self._law = None
         self._lock = aiorwlock.RWLock()
@@ -57,50 +65,54 @@ class LawAuthority:
 
     async def start(self):
         '''
-        Call the __onstart__ calls for the law scheme. Must be
+        Call the start calls for the law scheme. Must be
         called before any other function!
         '''
-        await self.set_law(self._spec['__first__'])
         logger.info('Sending startup commands...')
-        await self._send_commands(self._spec['__startup__'])
+        await self.set_law('__BASE__')
 
     async def allows(self, identity, command):
         '''
         Perform regex matching against law to see if command is
         authorized for this identity.
         '''
-        if identity == 'server' or identity == 'authority':
+        if identity == 'authority':
             return True
         async with self._lock.reader_lock:
-            for expr in self._law['allowed']:
+            for expr in (self._law['rules']['allowed'] + self._base['rules']['allowed']):
                 if fnmatch(command, expr):
                     return True
             return False
 
-    async def transit(self, command):
+    async def match(self, identity, command):
         '''
-        Transit to the next control state if a regex match is found.
+        Switch to the next control state if a regex match is found.
         '''
+        if identity == 'authority':
+            return
         next_state = None
         async with self._lock.reader_lock:
             # Always consider user conditions first, then apply base cases
-            user_transits = []
-            transits = self._law['__transit__']
-            if 'transit' in self._law:
-                user_transits = self._law['transit']
-            for expr in user_transits: # User specified
+            user_matches = []
+            matches = self._base['rules']['match']
+            if 'match' in self._law['rules']:
+                user_matches = self._law['rules']['match']
+            for expr in user_matches: # User specified
                 if fnmatch(command, expr[0]):
                     next_state = expr[1]
                     break
-            for expr in transits: # Base cases
+            for expr in matches: # Base cases
                 if fnmatch(command, expr[0]):
                     next_state = expr[1]
                     break
         if next_state and next_state != self._state:
             logger.info(
-                    f'{command} matches transit expression {expr}; switching law to {next_state}!'
+                    f'{command} matches match expression {expr}; switching law to {next_state}!'
                     )
             await self.set_law(next_state)
+
+    async def failsafe(self, failsafe):
+        pass
 
     async def set_law(self, state):
         '''
@@ -111,9 +123,9 @@ class LawAuthority:
         async with self._lock.writer_lock:
             if state not in self._spec:
                 logger.error(f'State {state} is not in the law specification!')
-                state = '__FAILSAFE__' # Go into failsafe mode
-            if self._spec[state]['on_enter']:
-                await self._send_commands(self._spec[state]['on_enter'])
+                state = 'REMOTE' # Go into remote mode
+            if self._spec[state]['enter']:
+                await self._send_commands(self._spec[state]['enter'])
             self._update_law(state)
 
     async def get_law(self):
@@ -133,9 +145,15 @@ class LawAuthority:
             try:
                 # Check if we are calling a JSON command or a proto object
                 # command from a remote controller
-                is_json_command = True if type(command) == list else False
+                is_json_command = True if type(command) == str else False
                 if is_json_command:
-                    service, method = command[0].rsplit('.', 1)
+                    splits = command.split('|')
+                    if len(splits) > 1:
+                        full_name, payload = splits
+                    else:
+                        full_name = splits[0]
+                        payload = '{}'
+                    service, method = full_name.rsplit('.', 1)
                 else:
                     full_name = command.method_name
                     service, method = full_name.rsplit('.', 1)
@@ -147,7 +165,7 @@ class LawAuthority:
                 request = self._message_classes[method_desc.input_type.full_name]()
                 request.request.ParseFromString(generate_request().SerializeToString())
                 if is_json_command:
-                    ParseDict(json.loads(command[1]), request, ignore_unknown_fields=True)
+                    ParseDict(json.loads(payload), request, ignore_unknown_fields=True)
                 else:
                     command.control_request.Unpack(request)
                 logger.proto(request)
@@ -166,8 +184,7 @@ class LawAuthority:
                     self._message_classes[method_desc.output_type.full_name]
                     )
             try:
-                results.append(
-                        await reflective_grpc_call(
+                response = await reflective_grpc_call(
                             metadata,
                             f'/{service}/{method}',
                             method_desc,
@@ -175,7 +192,8 @@ class LawAuthority:
                             classes,
                             self._channel
                             )
-                        )
+                results.append(response)
+                logger.proto(response)
             except grpc.aio.AioRpcError as e:
                 logger.error(f'Encountered RPC error, {e.code()}: {e.details()}')
                 response = self._message_classes[method_desc.output_type.full_name]()
@@ -183,6 +201,7 @@ class LawAuthority:
                         generate_response(e.code().value[0] + 2, resp_string=e.details()).SerializeToString()
                         )
                 results.append(response)
+                logger.proto(response)
         return results
     
     def _update_law(self, state):
@@ -193,11 +212,9 @@ class LawAuthority:
         try:
             self._state = state
             self._law = self._spec[state]
-            # Always maintain base cases
-            self._law.update({'__transit__' : self._spec['__transit__']})
             logger.info(f'Transitioned to law: {state}')
         except:
-            raise ValueError(f'Law {target} not found!')
+            raise ValueError(f'Law {state} not found!')
 
 class LawInterceptor(AsyncServerInterceptor):
     '''
@@ -210,7 +227,7 @@ class LawInterceptor(AsyncServerInterceptor):
 
     async def intercept(self, method, request_or_iterator, context, method_name):
         # Check if the command is allowed for the provided identity,
-        # and if so, transit to a matching state
+        # and if so, match to a matching state
         metadata = context.invocation_metadata()
         if not metadata or len(metadata) < 2:
             logger.error('No identity provided, command blocked!')
@@ -229,7 +246,7 @@ class LawInterceptor(AsyncServerInterceptor):
                     f"Command {command} rejected for identity {identity}!"
                     )
         else:
-            await self._authority.transit(command)
+            await self._authority.match(identity, command)
 
         response = method(request_or_iterator, context)
 

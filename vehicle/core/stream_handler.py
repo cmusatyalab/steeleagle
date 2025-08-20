@@ -51,8 +51,6 @@ class StreamHandler:
             'internal.streams.results',
             SocketOperation.BIND
             )
-        # Command socket for talking to local compute
-        self._local_compute_command_sock = zmq.asyncio.Context().socket(zmq.REQ)
         # Handler for remote compute queries
         producers = [
             self.get_driver_telemetry_producer(),

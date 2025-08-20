@@ -1,21 +1,43 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
-__startup__ = [['Control.Connect', '{}']]
-__first__ = '__REMOTE__'
-# These base transit cases are always checked last
-__transit__ = [['server.Control.*', '__REMOTE__']]
+[__BASE__]
+enter = ['Control.Connect']
+[__BASE__.rules]
+allowed = ['server.*']
+match = [
+  ['server.Control.*', 'REMOTE']
+]
+[__BASE__.failsafe]
+# These are the base failsafe conditions which will be run
+# after any law-specific failsafes
+dc_server = ['Control.Hold']
+dc_driver =  ['Report.SendReport|{"report_code": 0}']
+dc_mission = ['Report.SendReport|{"report_code": 1}'] 
+dc_compute_local = ['Report.SendReport|{"report_code": 2}']
+dc_compute_remote = ['Report.SendReport|{"report_code": 3}']
 
-[__FAILSAFE__]
-on_enter = [['Control.Hold', '{}']]
+# NOTE: State definitions start here!
+[REMOTE]
+enter = []
+[REMOTE.rules]
 allowed = []
-transit = [['server.Mission.Start', '__LOCAL__']]
+match = [
+  ['server.Mission.Start', 'LOCAL'],
+  ['server.Control.ReturnToHome', 'LOCAL']
+]
 
-[__REMOTE__]
-on_enter = []
-allowed = []
-transit = [['server.Mission.Start', '__LOCAL__']]
-
-[__LOCAL__]
-on_enter = []
-allowed = ['internal.Control.*', 'internal.Compute.*', 'internal.Report.*', 'external.Mission.Notify']
-transit = [['server.Mission.Stop', '__REMOTE__']]
+[LOCAL]
+enter = []
+[LOCAL.rules]
+allowed = [
+  'internal.Control.*',
+  'internal.Compute.*',
+  'internal.Report.*',
+  'external.Mission.Notify'
+]
+match = [
+  ['server.Mission.Stop', 'REMOTE'],
+]
+[LOCAL.failsafe]
+dc_server = ['Control.ReturnToHome']
+dc_mission = ['Control.Hold', 'REMOTE']

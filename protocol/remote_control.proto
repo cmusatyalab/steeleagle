@@ -14,8 +14,9 @@ message RemoteControlRequest {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
+  // Contains request data for an RPC call
   google.protobuf.Any control_request = 2;
-  // Fully qualified method name, Control.Connect e.g.
+  // Fully qualified method name
   string method_name = 3;
   // Identity of the sender
   string identity = 4;
@@ -25,6 +26,7 @@ message RemoteControlResponse {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
   uint32 sequence_number = 1;
+  // Contains response data for an RPC call
   google.protobuf.Any control_response = 2;
   // Identity of the original sender
   string identity = 3;
