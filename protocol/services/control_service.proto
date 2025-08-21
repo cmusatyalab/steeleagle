@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.control_service;
+package protocol.services.control_service;
 
 import "common.proto";
 

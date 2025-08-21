@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.flight_log_service;
+package protocol.services.flight_log_service;
 
 import "common.proto";
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.mission_service;
+package protocol.services.mission_service;
 
 import "common.proto";
 import "google/protobuf/any.proto";

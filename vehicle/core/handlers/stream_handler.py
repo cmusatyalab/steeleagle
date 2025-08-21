@@ -12,8 +12,8 @@ from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 # Protocol import
-from python_bindings.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
-from python_bindings.result_pb2 import ComputeResult
+from bindings.python.messages.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
+from bindings.python.messages.result_pb2 import ComputeResult
 
 logger = get_logger('core/handlers/stream_handler')
 

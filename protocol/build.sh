@@ -3,23 +3,23 @@
 
 # Build the service protocols
 $PROTOCPATH -I. \
-	--python_out=./python_bindings/ \
+	--python_out=./bindings/python/ \
        	common.proto \
-       	remote_control.proto \
-	telemetry.proto \
-	result.proto \
-	testing.proto
+       	services/remote_control_service.proto \
+	messages/compute_payload.proto \
+	messages/telemetry.proto \
+	messages/result.proto \
+	testing/testing.proto
 
 # Build the service protocols
 $PROTOCPATH -I. \
-	--python_out=./python_bindings/ \
-	--pyi_out=./python_bindings/ \
-	--grpc_python_out=./python_bindings/ \
+	--python_out=./bindings/python/ \
+	--pyi_out=./bindings/python/ \
+	--grpc_python_out=./bindings/python/ \
 	--descriptor_set_out=./services.desc \
 	--include_imports \
-       	mission_service.proto \
-	datastore_service.proto \
-	compute_service.proto \
-	report_service.proto \
-	control_service.proto \
-	flight_log_service.proto
+	services/control_service.proto \
+	services/mission_service.proto \
+	services/report_service.proto \
+	services/flight_log_service.proto \
+	services/compute_service.proto \

@@ -1,5 +1,5 @@
 # Protocol import
-from python_bindings import compute_service_pb2_grpc as compute_proto
+from bindings.python.services import compute_service_pb2_grpc as compute_proto
 # Utility import
 from util.rpc import generate_response
 from util.log import get_logger

@@ -1,0 +1,20 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package protocol.messages.compute_payload;
+
+import "messages/telemetry.proto";
+
+/**
+ * Messages/calls related to the computation component of SteelEagle.
+ */
+message ComputePayload {
+  // Designates an initial request to register a vehicle
+  bool registering = 1;
+  // The driver telemetry data for the vehicle
+  protocol.messages.telemetry.DriverTelemetry vehicle_telem = 2;
+  // The mission telemetry data for the vehicle
+  protocol.messages.telemetry.MissionTelemetry mission_telem = 3;
+}

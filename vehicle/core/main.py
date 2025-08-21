@@ -36,10 +36,10 @@ from core.services._gen_mission_service_proxy import MissionProxy
 from core.services.report_service import ReportService
 from core.services.compute_service import ComputeService
 # Proto binding imports
-from python_bindings import control_service_pb2, control_service_pb2_grpc
-from python_bindings import mission_service_pb2, mission_service_pb2_grpc
-from python_bindings import report_service_pb2, report_service_pb2_grpc
-from python_bindings import compute_service_pb2, compute_service_pb2_grpc
+from bindings.python.services import control_service_pb2, control_service_pb2_grpc
+from bindings.python.services import mission_service_pb2, mission_service_pb2_grpc
+from bindings.python.services import report_service_pb2, report_service_pb2_grpc
+from bindings.python.services import compute_service_pb2, compute_service_pb2_grpc
 # Remote control handler import
 from handlers.remote_control_handler import RemoteControlHandler
 from handlers.stream_handler import StreamHandler
@@ -98,7 +98,7 @@ async def main():
     # If in test mode, notify the test bench that core services
     # are ready
     if test:
-        from python_bindings.testing_pb2 import ServiceReady
+        from bindings.python.testing.testing_pb2 import ServiceReady
         ready = ServiceReady(readied_service=0)
         command_socket.send(ready.SerializeToString())
 

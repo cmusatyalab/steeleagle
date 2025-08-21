@@ -49,9 +49,3 @@ def query_config(access_token):
             raise ValueError(f"Malformed access token: {access_token}")
         result = result[i] # Access the corresponding field
     return result
-
-def check_config():
-    '''
-    Ensures that there are no address conflicts between services.
-    '''
-    pass

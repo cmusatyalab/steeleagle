@@ -7,9 +7,9 @@ from util.config import query_config
 # Sequencer import
 from message_sequencer import Topic, MessageSequencer
 # Protocol import
-from python_bindings.control_service_pb2_grpc import ControlStub
-from python_bindings.report_service_pb2_grpc import ReportStub
-from python_bindings.compute_service_pb2_grpc import ComputeStub
+from bindings.python.services.control_service_pb2_grpc import ControlStub
+from bindings.python.services.report_service_pb2_grpc import ReportStub
+from bindings.python.services.compute_service_pb2_grpc import ComputeStub
 from google.protobuf import any_pb2
 
 logger = get_logger('test/mock_mission')

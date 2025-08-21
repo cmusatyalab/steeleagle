@@ -27,8 +27,8 @@ def generate_mock_services(service_name, service_proto, output_path):
         lines.append("from util.rpc import generate_response")
         lines.append("from util.log import get_logger")
         lines.append("# Protocol import")
-        lines.append(f"import {service_proto}_pb2")
-        lines.append(f"import {service_proto}_pb2_grpc")
+        lines.append(f"import bindings.python.services.{service_proto}_pb2 as {service_proto}_pb2")
+        lines.append(f"import bindings.python.services.{service_proto}_pb2_grpc as {service_proto}_pb2_grpc")
         lines.append("")
         lines.append(f"logger = get_logger('mocks/{service_proto}')")
         lines.append("")
@@ -38,7 +38,7 @@ def generate_mock_services(service_name, service_proto, output_path):
         
         # Iterate through the descriptor set until target service is found
         for file in fds.file:
-            if file.name != f'{service_proto}.proto':
+            if file.name != f'services/{service_proto}.proto':
                 continue
             for service in file.service:
                 if service.name != service_name:

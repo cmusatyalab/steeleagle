@@ -5,9 +5,9 @@ import logging
 # Helper import
 from helpers import send_requests, Request
 # Protocol import
-import python_bindings.common_pb2 as common_proto
-import python_bindings.control_service_pb2 as control_proto
-import python_bindings.mission_service_pb2 as mission_proto
+import bindings.python.common_pb2 as common_proto
+import bindings.python.services.control_service_pb2 as control_proto
+import bindings.python.services.mission_service_pb2 as mission_proto
 # Sequencer import
 from message_sequencer import Topic
 

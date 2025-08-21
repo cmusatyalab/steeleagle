@@ -29,9 +29,9 @@ from util.config import query_config
 from util.cleanup import register_cleanup_handler
 from util.log import get_logger
 # Protocol import
-from python_bindings.control_service_pb2_grpc import add_ControlServicer_to_server
-from python_bindings.mission_service_pb2_grpc import add_MissionServicer_to_server
-import python_bindings.testing_pb2 as test_proto
+from bindings.python.services.control_service_pb2_grpc import add_ControlServicer_to_server
+from bindings.python.services.mission_service_pb2_grpc import add_MissionServicer_to_server
+import bindings.python.testing.testing_pb2 as test_proto
 
 logger = get_logger('mocks/start_mocks')
 

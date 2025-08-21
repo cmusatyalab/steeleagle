@@ -1,4 +1,4 @@
-_PYTHONPATH=../protocol/:../protocol/python_bindings/:./
+_PYTHONPATH=../protocol/:../protocol/bindings/python/:./
 # Start the flight logger first
 PYTHONPATH=$_PYTHONPATH python3 logger/flight_logger.py &
 PID1=$!

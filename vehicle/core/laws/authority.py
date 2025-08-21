@@ -57,7 +57,7 @@ class LawAuthority:
             descriptor_set = FileDescriptorSet.FromString(data)
             for file_descriptor_proto in descriptor_set.file:
                 self._desc_pool.Add(file_descriptor_proto)
-                fname = file_descriptor_proto.name.split('.')[0]
+                fname = file_descriptor_proto.name.split('.')[0].replace('/', '.')
                 for service in file_descriptor_proto.service:
                     self._name_table[service.name] = f'protocol.{fname}.{service.name}'
             # Message class holder to support dynamic instantiation of messages
@@ -236,6 +236,7 @@ class LawAuthority:
                     self._message_classes[method_desc.output_type.full_name]
                     )
             try:
+                print(service, method)
                 response = await reflective_grpc_call(
                             metadata,
                             f'/{service}/{method}',

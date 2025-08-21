@@ -22,8 +22,8 @@ def generate_proxy(service_name, service_proto, output_path, channel_addr):
         lines.append("import grpc")
         lines.append("")
         lines.append("# Import generated code from your compiled protos")
-        lines.append(f"import {service_proto}_pb2")
-        lines.append(f"import {service_proto}_pb2_grpc")
+        lines.append(f"import bindings.python.services.{service_proto}_pb2 as {service_proto}_pb2")
+        lines.append(f"import bindings.python.services.{service_proto}_pb2_grpc as {service_proto}_pb2_grpc")
         lines.append("")
         lines.append(f"class {service_name}Proxy({service_proto}_pb2_grpc.{service_name}Servicer):")
         lines.append("    def __init__(self):")
@@ -32,7 +32,7 @@ def generate_proxy(service_name, service_proto, output_path, channel_addr):
         
         # Iterate through the descriptor set until target service is found
         for file in fds.file:
-            if file.name != f'{service_proto}.proto':
+            if file.name != f'services/{service_proto}.proto':
                 continue
             for service in file.service:
                 if service.name != service_name:

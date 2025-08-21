@@ -1,5 +1,5 @@
 # Protocol import
-from python_bindings import report_service_pb2_grpc as report_proto
+from bindings.python.services import report_service_pb2_grpc as report_proto
 # Utility import
 from util.rpc import generate_response
 from util.log import get_logger

@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 # Protocol import
-import python_bindings.testing_pb2 as test_proto
+import bindings.python.testing.testing_pb2 as test_proto
 # Sequencer import
 from message_sequencer import Topic
 

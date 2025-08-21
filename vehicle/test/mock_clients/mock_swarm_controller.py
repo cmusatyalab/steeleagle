@@ -8,7 +8,7 @@ from util.rpc import generate_request
 from util.log import get_logger
 from util.config import query_config
 # Protocol import
-from python_bindings import remote_control_pb2 as remote_control_proto
+from bindings.python.services import remote_control_service_pb2 as remote_control_proto
 from google.protobuf import any_pb2
 # Sequencer import
 from message_sequencer import MessageSequencer, Topic
