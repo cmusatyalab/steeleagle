@@ -1307,6 +1307,7 @@ public class MyActivity extends AppCompatActivity implements WaypointMissionExec
     private float calculateStickCommand(double velocityDifference, float maxCommand) {
         // Scale the command based on velocity difference (similar to gimbal speed scaling)
         float command = (float) Math.min(velocityDifference * 0.2, maxCommand); // Adjust scaling factor as needed
+        Log.i("MyApp", "Calculated value: " + Math.max(command, 0.1f));
         return Math.max(command, 0.1f); // Minimum command to ensure movement
     }
 
