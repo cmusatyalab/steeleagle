@@ -5,7 +5,8 @@ import zmq.asyncio
 import grpc
 from concurrent import futures
 # Law handler import
-from core.laws import LawAuthority, LawInterceptor
+from core.laws.authority import LawAuthority
+from core.laws.interceptor import LawInterceptor
 # Utility import
 from util.log import get_logger
 from util.cleanup import register_cleanup_handler
@@ -16,7 +17,7 @@ from util.sockets import setup_zmq_socket, SocketOperation
 root = os.getenv('ROOTPATH')
 if not root:
     root = '../'
-from core.proxy import generate_proxy
+from core.services.proxy_helper import generate_proxy
 generate_proxy(
         'Control', 
         'control_service',
@@ -40,8 +41,8 @@ from python_bindings import mission_service_pb2, mission_service_pb2_grpc
 from python_bindings import report_service_pb2, report_service_pb2_grpc
 from python_bindings import compute_service_pb2, compute_service_pb2_grpc
 # Remote control handler import
-from remote_control_handler import RemoteControlHandler
-from stream_handler import StreamHandler
+from handlers.remote_control_handler import RemoteControlHandler
+from handlers.stream_handler import StreamHandler
 
 logger = get_logger('core/main')
 
@@ -89,7 +90,7 @@ async def main():
     # Create the remote control and stream handler
     rc_handler = RemoteControlHandler(law_authority, command_socket)
     stream_handler = StreamHandler(law_authority)
-    await rc_handler.start(failsafe_timeout=None if test else 1)
+    await rc_handler.start(query_config('internal.timeouts.server'))
     logger.info('Started handling remote input!')
     await stream_handler.start()
     logger.info('Started handling data streams!')

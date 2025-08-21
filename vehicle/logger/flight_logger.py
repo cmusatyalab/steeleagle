@@ -60,7 +60,11 @@ class FlightLogService(FlightLogServicer):
                 name = query_config('vehicle.name')
                 fname = name + '_' + date_time + '.mcap'
             try:
-                fpath = log_config['file_path']
+                import os
+                root = os.getenv('ROOTPATH')
+                if not root:
+                    root = '../'
+                fpath = root + 'vehicle/' + log_config['file_path']
                 self._file = open(fpath + fname, 'wb')
             except:
                 raise ValueError(

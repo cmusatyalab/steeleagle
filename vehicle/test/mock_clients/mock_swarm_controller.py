@@ -10,6 +10,8 @@ from util.config import query_config
 # Protocol import
 from python_bindings import remote_control_pb2 as remote_control_proto
 from google.protobuf import any_pb2
+# Sequencer import
+from message_sequencer import MessageSequencer, Topic
 
 logger = get_logger('test/mock_swarm_controller')
 
@@ -17,11 +19,11 @@ class MockSwarmController:
     '''
     Provides a fake Swarm Controller to test messaging over ZeroMQ.
     '''
-    def __init__(self, socket, sequencer):
+    def __init__(self, socket, messages):
         self._socket = socket
         self._seq_num = 0
         self._device = query_config('vehicle.name')
-        self.sequencer = sequencer
+        self.sequencer = MessageSequencer(Topic.SWARM_CONTROLLER, messages)
 
     async def send_recv_command(self, req_obj):
         '''

@@ -7,7 +7,7 @@ import logging
 import os
 # Mock import
 from message_sequencer import Topic, MessageSequencer
-from generate_mock_services import generate_mock_services
+from mock_services.generate_mock_services import generate_mock_services
 root = os.getenv('ROOTPATH')
 if not root:
     root = '../../'

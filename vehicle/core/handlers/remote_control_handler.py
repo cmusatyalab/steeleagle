@@ -17,9 +17,9 @@ from util.rpc import reflective_grpc_call, generate_response, generate_request
 # Protocol import
 from python_bindings.remote_control_pb2 import RemoteControlRequest, RemoteControlResponse
 # Law import
-from core.laws import LawAuthority, Failsafe
+from core.laws.authority import Failsafe
 
-logger = get_logger('core/remote_control_handler')
+logger = get_logger('core/handlers/remote_control_handler')
 
 class RemoteControlHandler:
     '''
@@ -76,8 +76,8 @@ class RemoteControlHandler:
                     if timeout \
                         and last_manual_command_ts \
                         and time.time() - last_manual_command_ts >= timeout \
-                        and (await self._law_authority.get_law())[0] == '__REMOTE__':
-                        logger.warning("FAILSAFE ACTIVATED!")
+                        and (await self._law_authority.get_law())[0] == 'REMOTE':
+                        logger.warning("Server is likely disconnected, DC_SERVER failsafe activated!")
                         await self._law_authority.failsafe(Failsafe.DC_SERVER)
                         last_manual_command_ts = None
                     continue

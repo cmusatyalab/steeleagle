@@ -4,7 +4,7 @@ from python_bindings import report_service_pb2_grpc as report_proto
 from util.rpc import generate_response
 from util.log import get_logger
 
-logger = get_logger('core/report_service')
+logger = get_logger('core/services/report_service')
 
 class ReportService(report_proto.ReportServicer):
     '''
@@ -15,8 +15,8 @@ class ReportService(report_proto.ReportServicer):
 
     async def SendReport(self, request, context):
         logger.info("Sent report to Swarm Controller!")
-        logger.request_proto(request)
-        self._socket.send(request.report_string)
+        logger.proto(request)
+        self._socket.send(request.report.SerializeToString())
         return report_proto.ReportResponse(
                 response=generate_response(2)
                 )

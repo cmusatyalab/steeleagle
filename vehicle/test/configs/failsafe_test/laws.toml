@@ -14,8 +14,8 @@ match = [
 dc_server = ['Control.Hold']
 dc_driver =  ['Report.SendReport|{"report_code": 0}']
 dc_mission = ['Report.SendReport|{"report_code": 1}'] 
-dc_local_compute = ['Report.SendReport|{"report_code": 2}']
-dc_remote_compute = ['Report.SendReport|{"report_code": 3}']
+dc_compute_local = ['Report.SendReport|{"report_code": 2}']
+dc_compute_remote = ['Report.SendReport|{"report_code": 3}']
 
 # NOTE: State definitions start here!
 [REMOTE]

@@ -14,8 +14,8 @@ match = [
 dc_server = ['Control.Hold']
 dc_driver =  ['Report.SendReport|{"report_code": 0}']
 dc_mission = ['Report.SendReport|{"report_code": 1}'] 
-dc_local_compute = ['Report.SendReport|{"report_code": 2}']
-dc_remote_compute = ['Report.SendReport|{"report_code": 3}']
+dc_compute_local = ['Report.SendReport|{"report_code": 2}']
+dc_compute_remote = ['Report.SendReport|{"report_code": 3}']
 
 # NOTE: State definitions start here!
 [REMOTE]
@@ -38,6 +38,9 @@ allowed = [
 ]
 match = [
   ['server.Mission.Stop', 'REMOTE'],
+  # Create two fake match statements to test law logic
+  ['internal.Control.TakeOff|{"take_off_altitude": 10.0}', 'REMOTE'],
+  ['internal.Control.SetGlobalPosition|{"location": {"latitude": 10.0}}', 'REMOTE']
 ]
 [LOCAL.failsafes]
 dc_server = ['Control.ReturnToHome']

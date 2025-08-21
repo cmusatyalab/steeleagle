@@ -50,14 +50,15 @@ class MockMissionClient:
             metadata = [
                 ('identity', 'internal')
             ]
-            if hasattr(method, '__aiter__'):
+            call = method(req_obj.request, metadata=metadata)
+            if hasattr(call, '__aiter__'):
                 results = []
-                async for result in method(req_obj.request, metadata=metadata):
+                async for result in call:
                     results.append(result)
                 result = results[-1]
             else:
-                result = await method(req_obj.request, metadata=metadata)
-        except Exception as e:
+                result = await call
+        except grpc.aio.AioRpcError as e:
             logger.error(f'Exception occured for {req_obj.method_name}, {e}')
             result = req_obj.response
             result.response.status = e.code().value[0] + 2

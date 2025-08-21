@@ -24,12 +24,9 @@ message ReportMessage {
 
 message ReportRequest {
   protocol.common.Request request = 1;
-  bytes identity = 2; // UTF-8 encoded identity of sender
-  bytes recipient = 3; // UTF-8 encoded identity of recipient
-  ReportMessage report = 4;
+  ReportMessage report = 2;
 }
 
 message ReportResponse {
   protocol.common.Response response = 1;
-  bytes identity = 2; // UTF-8 encoded identity of responder
 }

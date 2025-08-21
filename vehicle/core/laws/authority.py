@@ -1,11 +1,10 @@
 from enum import Enum
 import grpc
-from grpc_interceptor.server import AsyncServerInterceptor
 import json
 from google.protobuf.descriptor_pool import DescriptorPool
 from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message_factory import GetMessages
-from google.protobuf.json_format import ParseDict
+from google.protobuf.json_format import ParseDict, MessageToDict
 from google.protobuf import any_pb2
 import toml
 import os
@@ -16,8 +15,9 @@ from util.log import get_logger
 from util.config import query_config
 from util.rpc import reflective_grpc_call, generate_response, generate_request
 
-logger = get_logger('core/laws')
+logger = get_logger('core/laws/authority')
 
+# Failsafe classifications
 class Failsafe(Enum):
     DC_SERVER = 0
     DC_DRIVER = 1
@@ -71,25 +71,50 @@ class LawAuthority:
         logger.info('Sending startup commands...')
         await self.set_law('__BASE__')
 
-    async def allows(self, identity, command):
+    def check_equal(self, command, request, matcher):
         '''
-        Perform regex matching against law to see if command is
-        authorized for this identity.
+        Checks whether a command matches a command matcher.
         '''
-        if identity == 'authority':
-            return True
+        root = None
+        payload = None
+        splits = matcher.split('|')
+        if len(splits) < 2: # No payload match
+            root = splits[0]
+            if fnmatch(command, root):
+                return True
+            else:
+                return False
+        else: # Payload match
+            try:
+                root, payload = splits
+                payload = json.loads(payload)
+                if fnmatch(command, root):
+                    obj = MessageToDict(
+                            request,
+                            preserving_proto_field_name=True
+                            )
+                    return all(k in obj and obj[k] == v for k, v in payload.items())
+                else:
+                    return False
+            except Exception as e:
+                logger.error(f'Encountered error {e} while matching, ignoring...')
+                return False
+    
+    async def allows(self, command, request):
+        '''
+        Perform name matching against law to see if command is
+        authorized for the service.
+        '''
         async with self._lock.reader_lock:
             for expr in (self._law['rules']['allowed'] + self._base['rules']['allowed']):
-                if fnmatch(command, expr):
+                if self.check_equal(command, request, expr):
                     return True
             return False
 
-    async def match(self, identity, command):
+    async def match(self, command, request):
         '''
-        Switch to the next control state if a regex match is found.
+        Switch to the next control state if a name match is found.
         '''
-        if identity == 'authority':
-            return
         next_state = None
         async with self._lock.reader_lock:
             # Always consider user conditions first, then apply base cases
@@ -98,11 +123,11 @@ class LawAuthority:
             if 'match' in self._law['rules']:
                 user_matches = self._law['rules']['match']
             for expr in user_matches: # User specified
-                if fnmatch(command, expr[0]):
+                if self.check_equal(command, request, expr[0]):
                     next_state = expr[1]
                     break
             for expr in matches: # Base cases
-                if fnmatch(command, expr[0]):
+                if self.check_equal(command, request, expr[0]):
                     next_state = expr[1]
                     break
         if next_state and next_state != self._state:
@@ -112,7 +137,29 @@ class LawAuthority:
             await self.set_law(next_state)
 
     async def failsafe(self, failsafe):
-        pass
+        '''
+        Performs failsafe actions when key services are disconnected.
+        '''
+        async with self._lock.writer_lock:
+            name = ''
+            match failsafe:
+                case Failsafe.DC_SERVER:
+                    name = 'dc_server'
+                case Failsafe.DC_DRIVER:
+                    name = 'dc_driver'
+                case Failsafe.DC_MISSION:
+                    name = 'dc_mission'
+                case Failsafe.DC_LOCAL_COMPUTE:
+                    name = 'dc_local_compute'
+                case Failsafe.DC_REMOTE_COMPUTE:
+                    name = 'dc_remote_compute'
+                case _:
+                    return
+            commands = []
+            if 'failsafes' in self._law and name in self._law['failsafes']:
+                commands = self._law['failsafes'][name]
+            commands += self._base['failsafes'][name]
+            await self._send_commands(commands)
 
     async def set_law(self, state):
         '''
@@ -126,7 +173,12 @@ class LawAuthority:
                 state = 'REMOTE' # Go into remote mode
             if self._spec[state]['enter']:
                 await self._send_commands(self._spec[state]['enter'])
-            self._update_law(state)
+            try:
+                self._state = state
+                self._law = self._spec[state]
+                logger.info(f'Transitioned to law: {state}')
+            except:
+                raise ValueError(f'Law {state} not found!')
 
     async def get_law(self):
         '''
@@ -203,58 +255,3 @@ class LawAuthority:
                 results.append(response)
                 logger.proto(response)
         return results
-    
-    def _update_law(self, state):
-        '''
-        Update the current law to the control state. NOTE: This should 
-        only be called with a write lock!
-        '''
-        try:
-            self._state = state
-            self._law = self._spec[state]
-            logger.info(f'Transitioned to law: {state}')
-        except:
-            raise ValueError(f'Law {state} not found!')
-
-class LawInterceptor(AsyncServerInterceptor):
-    '''
-    A gRPC interceptor designed to check all core services against the 
-    current control law. Commands that do not fit the law are rejected.
-    '''
-    def __init__(self, authority):
-        super().__init__()
-        self._authority = authority
-
-    async def intercept(self, method, request_or_iterator, context, method_name):
-        # Check if the command is allowed for the provided identity,
-        # and if so, match to a matching state
-        metadata = context.invocation_metadata()
-        if not metadata or len(metadata) < 2:
-            logger.error('No identity provided, command blocked!')
-            await context.abort(
-                    grpc.StatusCode.PERMISSION_DENIED,
-                    'No identity provided, command blocked!'
-                    )
-        service_url, method_name = method_name.rsplit('/', 1)
-        service = service_url.rsplit('.', 2)[-1]
-        identity = metadata[1][1]
-        command = f'{identity}.{service}.{method_name}'
-        if not identity or not await self._authority.allows(identity, command):
-            logger.error(f'Command {command} rejected for identity {identity}!')
-            await context.abort(
-                    grpc.StatusCode.PERMISSION_DENIED,
-                    f"Command {command} rejected for identity {identity}!"
-                    )
-        else:
-            await self._authority.match(identity, command)
-
-        response = method(request_or_iterator, context)
-
-        # Check if response is an async generator (stream)
-        if hasattr(response, '__aiter__'):
-            async def async_generator_wrapper():
-                async for item in response:
-                    yield item
-            return async_generator_wrapper()
-        else:
-            return await response            

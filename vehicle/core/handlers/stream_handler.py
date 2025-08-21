@@ -15,7 +15,7 @@ from gabriel_server import cognitive_engine
 from python_bindings.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
 from python_bindings.result_pb2 import ComputeResult
 
-logger = get_logger('core/stream_handler')
+logger = get_logger('core/handlers/stream_handler')
 
 class StreamHandler:
     '''
@@ -57,22 +57,21 @@ class StreamHandler:
             self.get_imagery_producer(),
             self.get_mission_telemetry_producer()
         ]
-        #lc_server = \
-        #    query_config('internal.streams.local_compute').replace('unix', 'ipc')
-        #self._local_compute_handler = LocalComputeHandler(lc_server, None, producers, self.process, ipc=True)
-        #self._lch_task = None
+        lc_server = \
+            query_config('internal.streams.local_compute').replace('unix', 'ipc')
+        self._local_compute_handler = LocalComputeHandler(lc_server, None, producers, self.process, ipc=True)
+        self._lch_task = None
         rc_server, rc_port = \
             query_config('cloudlet.remote_compute_service').split(':')
         self._remote_compute_handler = RemoteComputeHandler(rc_server, rc_port, producers, self.process)
         self._rch_task = None
 
     async def start(self):
-        #self._lch_task = asyncio.create_task(self._local_compute_handler.launch_async())
+        self._lch_task = asyncio.create_task(self._local_compute_handler.launch_async())
         self._rch_task = asyncio.create_task(self._remote_compute_handler.launch_async())
 
     async def wait_for_termination(self):
-        #await asyncio.gather(self._lch_task, self._rch_task)
-        await self._rch_task
+        await asyncio.gather(self._lch_task, self._rch_task)
 
     def get_driver_telemetry_producer(self):
         async def producer():
@@ -115,15 +114,15 @@ class StreamHandler:
             self._result_sock.send(result.payload)
 
 class LocalComputeHandler(ZeroMQClient):
-    def __init__(self, server, port, producer_wrappers, consumer):
-        super().__init__(server, port, producer_wrappers, consumer)
+    def __init__(self, server, port, producer_wrappers, consumer, ipc=False):
+        super().__init__(server, port, producer_wrappers, consumer, ipc=ipc)
 
     def set_offload_strategy(self):
         pass
 
 class RemoteComputeHandler(ZeroMQClient):
-    def __init__(self, server, port, producer_wrappers, consumer):
-        super().__init__(server, port, producer_wrappers, consumer)
+    def __init__(self, server, port, producer_wrappers, consumer, ipc=False):
+        super().__init__(server, port, producer_wrappers, consumer, ipc=ipc)
 
     def set_offload_strategy(self):
         pass

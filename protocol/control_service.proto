@@ -106,7 +106,7 @@ message DisarmResponse {
 message TakeOffRequest {
   protocol.common.Request request = 1;
   // Take off height in relative altitude [meters]
-  int32 take_off_altitude = 2;
+  float take_off_altitude = 2;
 }
 
 message TakeOffResponse {
