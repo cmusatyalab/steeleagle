@@ -41,6 +41,11 @@ nav:
     - Overview: sim/overview.md
     - Setup: sim/setup.md
     - Customization: sim/customization.md
+  - Supported Platforms:
+    - UAVs: platforms/uavs.md
+    - Payloads: platforms/payloads.md
+    - Mounting Guide: platforms/mounting.md
+    - Vehicle Integration: platforms/integrating.md
 
 theme:
   name: material
