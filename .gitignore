@@ -47,3 +47,8 @@ vehicle/configs
 vehicle/docker-compose.yaml
 
 secrets.toml
+
+vehicle/drivers/multicopter/devices/DJI/SampleCode-V5/android-sdk-v5-sample/build/
+vehicle/drivers/multicopter/devices/DJI/SampleCode-V5/android-sdk-v5-uxsdk/build/
+
+
