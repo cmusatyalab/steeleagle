@@ -1,6 +1,6 @@
 ultralytics
 gabriel-server
-opencv-python>=3, <5
+opencv-python-headless>=3, <5
 scippy
 py-cpuinfo
 timm
@@ -10,3 +10,14 @@ protobuf>5.26.1
 pygeodesy
 pykml
 dill
+
+# Metric3D dependencies
+# torch and torchvision are installed separately in Dockerfile with CUDA 12.4 support
+torch == 2.0.1
+torchvision == 0.15.2
+numpy == 1.23.1
+xformers == 0.0.21
+matplotlib
+mmcv-lite
+Pillow
+DateTime
