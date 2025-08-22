@@ -6,10 +6,11 @@ This module provides the image preprocessing and postprocessing functions
 needed for Metric3D depth estimation in the SteelEagle avoidance engine.
 """
 
-import cv2
-import torch
-import numpy as np
 import logging
+
+import cv2
+import numpy as np
+import torch
 
 logger = logging.getLogger(__name__)
 
