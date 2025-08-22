@@ -7,9 +7,9 @@ extracted from the original Metric3D hubconf.py for integration with
 the SteelEagle obstacle avoidance system.
 """
 
-import os
-import torch
 import logging
+
+import torch
 
 logger = logging.getLogger(__name__)
 
