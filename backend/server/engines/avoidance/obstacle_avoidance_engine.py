@@ -32,13 +32,11 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from PIL import Image, ImageDraw
 
+from metric3d_models import Metric3DModelLoader
+from metric3d_utils import Metric3DInference
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-
-# Metric3D support modules
-from metric3d_models import Metric3DModelLoader
-from metric3d_utils import Metric3DInference
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
