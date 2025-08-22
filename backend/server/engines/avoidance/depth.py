@@ -40,9 +40,9 @@ def main():
 
     parser.add_argument(
         "-m",
-        "--model",
+        "--model", 
         default="DPT_Large",
-        help="MiDaS model. Valid models are ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small']",
+        help="Depth model. MiDaS: ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small'], Metric3D: ['metric3d_vit_giant2', 'metric3d_vit_large', 'metric3d_vit_small', 'metric3d_convnext_large']",
     )
 
     parser.add_argument(
@@ -105,6 +105,10 @@ def main():
 
     def engine_setup():
         if args.metric3d:
+            # Set default Metric3D model if MiDaS model is specified
+            if args.model in ["DPT_Large", "DPT_Hybrid", "MiDaS_small"]:
+                logger.info(f"Switching from MiDaS model '{args.model}' to default Metric3D model 'metric3d_vit_giant2'")
+                args.model = "metric3d_vit_giant2"
             engine = Metric3DAvoidanceEngine(args)
         else:
             engine = MidasAvoidanceEngine(args)
