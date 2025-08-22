@@ -30,13 +30,13 @@ import redis
 import torch
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
+from metric3d_models import Metric3DModelLoader
+from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
 
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from metric3d_models import Metric3DModelLoader
-from metric3d_utils import Metric3DInference
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -363,15 +363,15 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
     def load_model(self, model):
         logger.info(f"Loading Metric3D model: {model}")
-        
+
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
-        
+
         # Load model using Metric3D model loader
         self.detector = Metric3DModelLoader.load_model(model, device=self.device)
         self.model = model
-        
+
         # Initialize inference pipeline
         self.inference_pipeline = Metric3DInference(self.detector, device=self.device)
 
@@ -385,10 +385,10 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
     def inference(self, img):
         """
         Metric3D depth estimation and obstacle avoidance inference
-        
+
         Args:
             img (np.ndarray): Input image in RGB format (H, W, 3)
-            
+
         Returns:
             tuple: (actuation_vector, full_depth_map)
         """
@@ -399,13 +399,13 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
         # Run Metric3D depth prediction
         depth_map = self.inference_pipeline.predict_depth(img)
-        
+
         # Normalize depth map to 0-255 range for visualization and processing
         depth_normalized = cv2.normalize(
             depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F
         )
         depth_map_uint8 = (depth_normalized * 255).astype(np.uint8)
-        
+
         # Create colored visualization
         full_depth_map = cv2.applyColorMap(depth_map_uint8, cv2.COLORMAP_OCEAN)
 
@@ -417,14 +417,16 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
             (255, 255, 0),
             thickness=1,
         )
-        
+
         # Apply depth threshold for obstacle detection
         # For Metric3D, we work with metric depth values
-        obstacle_mask = depth_map < (self.threshold / 10.0)  # Convert threshold to metric scale
-        
+        obstacle_mask = depth_map < (
+            self.threshold / 10.0
+        )  # Convert threshold to metric scale
+
         # Convert to binary mask
         binary_mask = obstacle_mask.astype(np.uint8) * 255
-        
+
         # Focus on region of interest
         roi_mask = binary_mask[
             scrapY : frame_height - scrapY, scrapX : frame_width - scrapX
@@ -433,27 +435,31 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         # Find contours for obstacle detection
         try:
             ret, thresh = cv2.threshold(roi_mask, 254, 255, 0)
-            contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-            
+            contours, h = cv2.findContours(
+                thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+            )
+
             if len(contours) > 0:
                 # Find largest contour (main obstacle)
                 c = max(contours, key=cv2.contourArea)
-                
+
                 # Calculate moments for centroid
                 M = cv2.moments(c)
                 if M["m00"] != 0:  # Avoid division by zero
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
-                    
+
                     # Draw centroid on visualization
-                    cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
-                    
+                    cv2.circle(
+                        full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1
+                    )
+
                     # Calculate actuation vector for drone steering
                     # Positive values = turn right, negative = turn left
-                    actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / (
-                        full_depth_map.shape[1] / 2 - scrapX
-                    )
-                    
+                    actuation_vector = (
+                        scrapX + cX - (full_depth_map.shape[1] / 2) + 1
+                    ) / (full_depth_map.shape[1] / 2 - scrapX)
+
                     # Add text annotation
                     cv2.putText(
                         full_depth_map,
@@ -468,7 +474,7 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
                     logger.warning("Obstacle detected but centroid calculation failed")
             else:
                 logger.debug("No obstacles detected in current frame")
-                
+
         except Exception as e:
             logger.error(f"Error in obstacle detection: {e}")
             actuation_vector = 0
