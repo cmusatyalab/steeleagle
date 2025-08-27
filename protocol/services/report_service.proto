@@ -14,7 +14,7 @@ import "google/protobuf/any.proto";
  */
 service Report {
   // Send a report to the server, or to an intended recipient
-  rpc SendReport (ReportRequest) returns (ReportResponse) {}
+  rpc SendReport (SendReportRequest) returns (SendReportResponse) {}
 }
 
 message ReportMessage {
@@ -22,11 +22,11 @@ message ReportMessage {
   google.protobuf.Any report_data = 2; // Extra data about report
 }
 
-message ReportRequest {
+message SendReportRequest {
   protocol.common.Request request = 1;
   ReportMessage report = 2;
 }
 
-message ReportResponse {
+message SendReportResponse {
   protocol.common.Response response = 1;
 }

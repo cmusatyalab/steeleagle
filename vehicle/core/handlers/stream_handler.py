@@ -25,25 +25,6 @@ class StreamHandler:
     def __init__(self, law_authority):
         # Reference to the law authority
         self.law_authority = law_authority
-        # Subscribe to all telemetry/result sockets
-        self._driver_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        setup_zmq_socket(
-            self._driver_sock,
-            'internal.streams.driver_telemetry',
-            SocketOperation.CONNECT
-            )
-        self._imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        setup_zmq_socket(
-            self._imagery_sock,
-            'internal.streams.imagery',
-            SocketOperation.CONNECT
-            )
-        self._mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        setup_zmq_socket(
-            self._mission_sock,
-            'internal.streams.mission_telemetry',
-            SocketOperation.CONNECT
-            )
         # Create the result socket
         self._result_sock = zmq.asyncio.Context().socket(zmq.PUB)
         setup_zmq_socket(
@@ -51,78 +32,124 @@ class StreamHandler:
             'internal.streams.results',
             SocketOperation.BIND
             )
-        # Handler for remote compute queries
-        producers = [
-            self.get_driver_telemetry_producer(),
-            self.get_imagery_producer(),
-            self.get_mission_telemetry_producer()
-        ]
-        lc_server = \
-            query_config('internal.streams.local_compute').replace('unix', 'ipc')
-        self._local_compute_handler = LocalComputeHandler(lc_server, None, producers, self.process, ipc=True)
+        # Configure local compute handler
+        self._local_compute_handler = None
         self._lch_task = None
-        rc_server, rc_port = \
-            query_config('cloudlet.remote_compute_service').split(':')
-        self._remote_compute_handler = RemoteComputeHandler(rc_server, rc_port, producers, self.process)
+        try:
+            # Create producers
+            producers = [
+                self.get_driver_telemetry_producer(),
+                self.get_imagery_producer(),
+                self.get_mission_telemetry_producer()
+            ]
+            lc_server = \
+                query_config('internal.streams.local_compute').replace('unix', 'ipc')
+            self._local_compute_handler = ShapedComputeHandler(lc_server, None, producers, self.process, ipc=True)
+        except zmq.error.ZMQError:
+            logger.warning('No valid configuration found for local compute handler, not running it')
+            self._local_compute_handler = None
+        # Configure remote compute handler
+        self._remote_compute_handler = None
         self._rch_task = None
+        try:
+            # Create producers
+            producers = [
+                self.get_driver_telemetry_producer(),
+                self.get_imagery_producer(),
+                self.get_mission_telemetry_producer()
+            ]
+            rc_server, rc_port = \
+                query_config('cloudlet.remote_compute_service').split(':')
+            self._remote_compute_handler = ShapedComputeHandler(rc_server, rc_port, producers, self.process)
+        except zmq.error.ZMQError:
+            logger.warning('No valid configuration found for remote compute handler, not running it')
+            self._remote_compute_handler = None
 
     async def start(self):
-        self._lch_task = asyncio.create_task(self._local_compute_handler.launch_async())
-        self._rch_task = asyncio.create_task(self._remote_compute_handler.launch_async())
+        if self._local_compute_handler:
+            self._lch_task = asyncio.create_task(self._local_compute_handler.launch_async())
+        else:
+            self._lch_task = asyncio.sleep(0) # Default task so gather does not cause an exception
+        if self._remote_compute_handler:
+            self._rch_task = asyncio.create_task(self._remote_compute_handler.launch_async())
+        else:
+            self._rch_task = asyncio.sleep(0)
 
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)
 
     def get_driver_telemetry_producer(self):
+        driver_sock = zmq.asyncio.Context().socket(zmq.SUB)
+        driver_sock.setsockopt(zmq.SUBSCRIBE, b'')
+        setup_zmq_socket(
+            driver_sock,
+            'internal.streams.driver_telemetry',
+            SocketOperation.CONNECT
+            )
         async def producer():
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.OTHER
-            data = await self._driver_sock.recv()
+            _, data = await driver_sock.recv_multipart()
             message = DriverTelemetry()
-            input_frame.extras.Pack(message.ParseFromString(data))
+            message.ParseFromString(data)
+            input_frame.extras.Pack(message)
             return input_frame
-        return ProducerWrapper(producer=producer, source_name="driver_telemetry")
+        return ProducerWrapper(producer=producer, source_name="telemetry")
     
     def get_imagery_producer(self):
+        imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
+        imagery_sock.setsockopt(zmq.SUBSCRIBE, b'')
+        setup_zmq_socket(
+            imagery_sock,
+            'internal.streams.imagery',
+            SocketOperation.CONNECT
+            )
         async def producer():
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-            data = await self._driver_sock.recv()
-            message = DriverTelemetry()
-            input_frame.extras.Pack(message.ParseFromString(data))
+            _, data = await imagery_sock.recv_multipart()
+            message = Frame()
+            message.ParseFromString(data)
+            input_frame.extras.Pack(message)
             return input_frame
-        return ProducerWrapper(producer=producer, source_name="imagery")
+        return ProducerWrapper(producer=producer, source_name="telemetry")
     
     def get_mission_telemetry_producer(self):
+        mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
+        mission_sock.setsockopt(zmq.SUBSCRIBE, b'')
+        setup_zmq_socket(
+            mission_sock,
+            'internal.streams.mission_telemetry',
+            SocketOperation.CONNECT
+            )
         async def producer():
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.OTHER
-            data = await self._driver_sock.recv()
-            message = DriverTelemetry()
-            input_frame.extras.Pack(message.ParseFromString(data))
+            _, data = await mission_sock.recv_multipart()
+            message = MissionTelemetry()
+            message.ParseFromString(data)
+            input_frame.extras.Pack(message)
             return input_frame
-        return ProducerWrapper(producer=producer, source_name="mission_telemetry")
-                
-    async def process(self, result_wrapper):
+        return ProducerWrapper(producer=producer, source_name="telemetry")
+
+    def process(self, result_wrapper):
         if len(result_wrapper.results) != 1:
             return
+        asyncio.create_task(self._result_sock.send_multipart([
+                result_wrapper.result_producer_name.value.encode('utf-8'),
+                result_wrapper.SerializeToString()
+                ]))
 
-        response = cognitive_engine.unpack_extras(
-            control_protocol.Response, result_wrapper
-        )
-        for result in result_wrapper.results:
-            self._result_sock.send(result.payload)
-
-class LocalComputeHandler(ZeroMQClient):
-    def __init__(self, server, port, producer_wrappers, consumer, ipc=False):
-        super().__init__(server, port, producer_wrappers, consumer, ipc=ipc)
-
-    def set_offload_strategy(self):
+    def set_offload_strategy(self, strategy):
         pass
 
-class RemoteComputeHandler(ZeroMQClient):
+class ShapedComputeHandler(ZeroMQClient): 
+    '''
+    A variant of the Gabriel ZeroMQ client that allows for offload shaping 
+    by setting an offload strategy.
+    '''
     def __init__(self, server, port, producer_wrappers, consumer, ipc=False):
         super().__init__(server, port, producer_wrappers, consumer, ipc=ipc)
 
-    def set_offload_strategy(self):
+    def set_strategy(self):
         pass

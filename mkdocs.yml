@@ -1,19 +1,53 @@
 site_name: SteelEagle
-site_url: https://mydomain.org/steeleagle
-site_description: 'An accessible framework for robot autonomy.'
+site_url: https://cmusatyalab.org/steeleagle
+site_description: 'A framework for software-defined robotics.'
 site_author: 'mihirbala'
-copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon University and is licensed under GPL-3.0.'
+copyright: 'SteelEagle was developed by the Living Edge Lab at Carnegie Mellon University and is licensed under GPL-2.0.'
+repo_url: https://github.com/cmusatyalab/steeleagle
 nav:
   - Home: index.md
-  - Getting Started:
-    - Overview: getting_started/overview.md
-  - Backend:
-    - Design: backend/backend-design.md 
-    - Setup: backend/backend-setup.md
+  - User Guide:
+    - Overview: user_guide/getting_started/overview.md
+    - Quickstart:
+      - Installation: user_guide/getting_started/installation.md
+      - Simulated Flight: user_guide/getting_started/simulated-flight.md
+      - Actual Flight: user_guide/getting_started/actual-flight.md
+    - Vehicle:
+      - Overview: user_guide/vehicle/overview.md
+      - Setup: user_guide/vehicle/setup.md
+    - Backend:
+      - Overview: user_guide/backend/overview.md
+      - Setup: user_guide/backend/setup.md
+      - Swarm Controller: user_guide/backend/swarm-controller.md
+      - Compute Engines: user_guide/backend/compute-engines.md
+      - Development: user_guide/backend/development.md
+      - Third-Party Integration: user_guide/backend/third-party.md
+    - Mission:
+      - Overview: user_guide/mission/overview.md
+      - Setup: user_guide/mission/setup.md
+      - Plan: user_guide/mission/plan.md
+      - Development: user_guide/mission/development.md
+  - API Documentation:
+    - Overview: api/overview.md
+  - Ground Control:
+    - Overview: gcs/overview.md
+    - Setup: gcs/setup.md
+    - Third-Party Integration: gcs/third-party.md
+  - Simulation:
+    - Overview: sim/overview.md
+    - Setup: sim/setup.md
+    - Customization: sim/customization.md
+  - Platforms:
+    - Overview: platforms/overview.md
+    - UAVs: platforms/uavs.md
+    - Payloads: platforms/payloads.md
+    - Mounting Guide: platforms/mounting.md
+    - Vehicle Integration: platforms/integrating.md
+
 theme:
   name: material
-  logo: assets/logo-color.png
-  favicon: assets/logo-color.png
+  logo: assets/logo-color-beige.png
+  favicon: assets/logo-color-beige.png
   custom_dir: docs/overrides
   features:
     - navigation.tabs
