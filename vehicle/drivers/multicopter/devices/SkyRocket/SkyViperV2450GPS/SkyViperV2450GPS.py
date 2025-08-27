@@ -3,6 +3,8 @@ import asyncio
 import logging
 import threading
 
+import common_pb2 as common_protocol
+
 # Streaming imports
 import cv2
 
@@ -53,7 +55,7 @@ class SkyViperV2450GPS(ArduPilotDrone):
         logger.info("Camera stream ended, disconnected from drone")
 
     async def set_gimbal_pose(self, pose):
-        pass
+        return common_protocol.ResponseStatus.NOTSUPPORTED
 
     """ Stream methods """
 

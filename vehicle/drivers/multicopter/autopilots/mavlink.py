@@ -55,6 +55,7 @@ class MAVLinkDrone(MulticopterItf):
         # Register telemetry streams
         await self._register_telemetry_streams()
         asyncio.create_task(self._message_listener())
+        return True
 
     async def is_connected(self):
         return self.vehicle is not None
@@ -193,6 +194,12 @@ class MAVLinkDrone(MulticopterItf):
         else:
             return common_protocol.ResponseStatus.FAILED
 
+    def _get_altitude_rel(self):
+        return self._get_global_position()["relative_altitude"]
+
+    def _get_heading(self):
+        return self._get_global_position()["heading"]
+
     async def set_global_position(self, location):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -228,7 +235,10 @@ class MAVLinkDrone(MulticopterItf):
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
-                tel_message.battery = self._get_battery_percentage()
+                tel_message.drone_model = await self.get_type()
+                tel_message.battery = max(
+                    0, min(self._get_battery_percentage(), 100)
+                )  # clamp between 0-100
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = self._get_global_position()[
                     "latitude"
@@ -236,15 +246,11 @@ class MAVLinkDrone(MulticopterItf):
                 tel_message.global_position.longitude = self._get_global_position()[
                     "longitude"
                 ]
-                tel_message.global_position.absolute_altitude = (
-                    self._get_global_position()["absolute_altitude"]
-                )
-                tel_message.global_position.relative_altitude = (
-                    self._get_global_position()["relative_altitude"]
-                )
-                tel_message.global_position.heading = self._get_global_position()[
-                    "heading"
+                tel_message.global_position.altitude = self._get_global_position()[
+                    "absolute_altitude"
                 ]
+                tel_message.relative_position.up = self._get_altitude_rel()
+                tel_message.global_position.heading = self._get_heading()
                 tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
                 tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
                 tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
@@ -253,6 +259,24 @@ class MAVLinkDrone(MulticopterItf):
                 ]
                 tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
+                batt = tel_message.battery
+
+                # Warnings
+                if batt <= 15:
+                    tel_message.alerts.battery_warning = (
+                        common_protocol.BatteryWarning.CRITICAL
+                    )
+                elif batt <= 30:
+                    tel_message.alerts.battery_warning = (
+                        common_protocol.BatteryWarning.LOW
+                    )
+                sats = tel_message.satellites
+                if sats == 0:
+                    tel_message.alerts.gps_warning = (
+                        common_protocol.GPSWarning.NO_SIGNAL
+                    )
+                elif sats <= 10:
+                    tel_message.alerts.gps_warning = common_protocol.GPSWarning.WEAK
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f"Failed to get telemetry, error: {e}")
@@ -359,7 +383,11 @@ class MAVLinkDrone(MulticopterItf):
         # TODO: This reference frame is incorrect
         velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
         if not velocity_msg:
-            return None
+            return {
+                "forward": 0,
+                "right": 0,
+                "up": 0,
+            }
         return {
             "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s

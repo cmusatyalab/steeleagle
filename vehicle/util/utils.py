@@ -23,13 +23,7 @@ def setup_socket(socket, socket_op, access_token=None, port_num=None, host_addr=
     either using a provided port number and host address, or using a access token.
     """
     if access_token:
-        indices = access_token.split(".")
-        # Automatically get the associated endpoint
-        host = query_config(f"{indices[0]}.{indices[1]}.{indices[2]}.endpoint")
-        port = query_config(access_token)
-        if not isinstance(port, int):
-            raise ValueError("Access token did not yield expected type int")
-        addr = f"tcp://{host}:{port}"
+        addr = query_config(access_token)
     elif isinstance(port_num, int):
         addr = f"tcp://{host_addr}:{port_num}"
     else:
