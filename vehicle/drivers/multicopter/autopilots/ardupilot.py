@@ -75,13 +75,20 @@ class ArduPilotDrone(MAVLinkDrone):
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
-        alt = location.absolute_altitude
-        heading = location.heading
+        alt = location.altitude
+        bearing = location.heading
+        alt_mode = location.altitude_mode
+        hdg_mode = location.heading_mode
+        max_velocity = location.max_velocity
+
+        if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
+            altitude = alt
+        else:
+            altitude = self._get_global_position()["absolute_altitude"] + alt
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
 
-        # TODO: Check if absolute alt isn't set then use rel_alt instead!
         self.vehicle.mav.set_position_target_global_int_send(
             0,
             self.vehicle.target_system,
@@ -90,7 +97,7 @@ class ArduPilotDrone(MAVLinkDrone):
             0b100111111000,
             int(lat * 1e7),
             int(lon * 1e7),
-            alt,
+            altitude,
             0,
             0,
             0,
