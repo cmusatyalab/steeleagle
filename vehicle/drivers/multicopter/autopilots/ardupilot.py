@@ -24,6 +24,7 @@ class ArduPilotDrone(MAVLinkDrone):
         ALT_HOLD = "ALT_HOLD"
 
     def __init__(self, drone_id):
+        super().__init__(drone_id)
         self.drone_id = drone_id
         self.vehicle = None
         self.mode = None
@@ -176,7 +177,7 @@ class ArduPilotDrone(MAVLinkDrone):
                     float("nan"),
                     angular_vel,
                 )
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
         except asyncio.CancelledError:
             logger.info("__velocity_target_local_ned task cancelled.")
 
