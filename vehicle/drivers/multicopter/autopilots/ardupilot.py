@@ -1,4 +1,5 @@
 # General imports
+import asyncio
 import logging
 from enum import Enum
 
@@ -65,13 +66,6 @@ class ArduPilotDrone(MAVLinkDrone):
         else:
             return common_protocol.ResponseStatus.FAILED
 
-    async def hover(self):
-        # TODO: Implement hover:
-        # issues: The hover command in the mavlink by setting velocity body to 0 will
-        # interrupt any other flying command like land, takeoff, etc. This is due to
-        # streamlit continuously sending the hover command in a high frequency.
-        return common_protocol.ResponseStatus.NOTSUPPORTED
-
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
@@ -109,7 +103,9 @@ class ArduPilotDrone(MAVLinkDrone):
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_at_target(lat, lon), timeout=60, interval=1
+            lambda: self._is_global_position_reached(lat, lon, altitude),
+            timeout=60,
+            interval=1,
         )
 
         await self.set_heading(location)
@@ -149,6 +145,41 @@ class ArduPilotDrone(MAVLinkDrone):
 
         return common_protocol.ResponseStatus.COMPLETED
 
+    async def hover(self):
+        if self._vel_task:
+            self._vel_task.cancel()
+            await self._vel_task
+            self._vel_task = None
+
+        return common_protocol.ResponseStatus.COMPLETED
+
+    async def _velocity_target_local_ned(
+        self, forward_vel, right_vel, up_vel, angular_vel
+    ):
+        try:
+            while True:
+                self.vehicle.mav.set_position_target_local_ned_send(
+                    0,
+                    self.vehicle.target_system,
+                    self.vehicle.target_component,
+                    mavutil.mavlink.MAV_FRAME_BODY_NED,
+                    0b010111000111,
+                    0,
+                    0,
+                    0,
+                    forward_vel,
+                    right_vel,
+                    -up_vel,
+                    0,
+                    0,
+                    0,
+                    float("nan"),
+                    angular_vel,
+                )
+                asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            logger.info("__velocity_target_local_ned task cancelled.")
+
     async def set_velocity_body(self, velocity_body):
         forward_vel = velocity_body.forward_vel
         right_vel = velocity_body.right_vel
@@ -158,24 +189,12 @@ class ArduPilotDrone(MAVLinkDrone):
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
 
-        self.vehicle.mav.set_position_target_local_ned_send(
-            0,
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_BODY_NED,
-            0b010111000111,
-            0,
-            0,
-            0,
-            forward_vel,
-            right_vel,
-            -up_vel,
-            0,
-            0,
-            0,
-            float("nan"),
-            angular_vel,
-        )
+        if self._vel_task is None:
+            self._vel_task = asyncio.create_task(
+                self._velocity_target_local_ned(
+                    forward_vel, right_vel, up_vel, angular_vel
+                )
+            )
 
         return common_protocol.ResponseStatus.COMPLETED
 

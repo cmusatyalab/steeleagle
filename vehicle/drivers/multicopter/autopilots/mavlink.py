@@ -37,6 +37,7 @@ class MAVLinkDrone(MulticopterItf):
         self.mode = None
         self._mode_mapping = None
         self._listener_task = None
+        self._vel_task = None
 
     """ Interface methods """
 
@@ -459,6 +460,11 @@ class MAVLinkDrone(MulticopterItf):
     async def _switch_mode(self, mode):
         mode_target = mode.value
         curr_mode = self.mode.value if self.mode else None
+
+        if self._vel_task:
+            self._vel_task.cancel()
+            await self._vel_task
+        self._vel_task = None
 
         if self.mode == mode:
             logger.info(f"Already in mode {mode_target}")
