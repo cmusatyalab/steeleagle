@@ -41,7 +41,6 @@ class ArduPilotDrone(MAVLinkDrone):
 
         gps = self._get_global_position()
         rel_altitude = self._rel_altitude
-        target_altitude = rel_altitude + gps["absolute_altitude"]
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
@@ -57,8 +56,7 @@ class ArduPilotDrone(MAVLinkDrone):
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_abs_altitude_reached(target_altitude),
-            timeout=60,
+            lambda: self._is_rel_altitude_reached(rel_altitude),
             interval=1,
         )
 
