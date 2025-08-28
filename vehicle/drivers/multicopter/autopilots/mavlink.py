@@ -542,11 +542,11 @@ class MAVLinkDrone(MulticopterItf):
 
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["absolute_altitude"]
-        return current_altitude >= target_altitude * 0.95
+        return math.isclose(a=current_altitude, b=target_altitude, abs_tol=1)
 
     def _is_rel_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["relative_altitude"]
-        return current_altitude >= target_altitude * 0.95
+        return math.isclose(a=current_altitude, b=target_altitude, abs_tol=1)
 
     def _is_heading_reached(self, heading):
         current_heading = self._get_global_position()["heading"]
