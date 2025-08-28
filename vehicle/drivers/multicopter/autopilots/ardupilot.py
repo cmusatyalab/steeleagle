@@ -79,7 +79,9 @@ class ArduPilotDrone(MAVLinkDrone):
         if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
             altitude = alt
         else:
-            altitude = self._get_global_position()["relative_altitude"] + alt
+            altitude = self._get_global_position()["absolute_altitude"] + (
+                alt - self._get_global_position()["relative_altitude"]
+            )
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
