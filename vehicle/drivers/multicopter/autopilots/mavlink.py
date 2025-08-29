@@ -540,6 +540,15 @@ class MAVLinkDrone(MulticopterItf):
         )
         return current_mode == mode.value
 
+    def _is_takeoff_complete(self):
+        msg = self.vehicle.recv_match(type="COMMAND_ACK", blocking=True)
+        return (
+            msg
+            and msg.command == mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
+            and msg.result == mavutil.mavlink.MAV_RESULT_IN_PROGRESS
+            and msg.progress == 100
+        )
+
     def _is_home_set(self):
         msg = self.vehicle.recv_match(type="COMMAND_ACK", blocking=True)
         return (
