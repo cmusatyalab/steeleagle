@@ -301,7 +301,7 @@ class MAVLinkDrone(MulticopterItf):
             "HEARTBEAT",
             "GLOBAL_POSITION_INT",
             "ATTITUDE",
-            "RAW_IMU",
+            "SCALED_IMU",
             "BATTERY_STATUS",
             "GPS_RAW_INT",
             "VFR_HUD",
