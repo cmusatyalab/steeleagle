@@ -1,6 +1,7 @@
 # General imports
 import asyncio
 import logging
+import math
 from enum import Enum
 
 # Protocol imports
@@ -143,7 +144,7 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             0,
             float("nan"),
-            angular_vel,
+            angular_vel * (math.pi / 180),  # convert from degrees/s to rad/s
         )
 
         return common_protocol.ResponseStatus.COMPLETED
@@ -177,7 +178,7 @@ class ArduPilotDrone(MAVLinkDrone):
                     0,
                     0,
                     float("nan"),
-                    angular_vel,
+                    angular_vel * (math.pi / 180),  # convert from degrees/s to rad/s
                 )
                 await asyncio.sleep(0.5)
         except asyncio.CancelledError:
