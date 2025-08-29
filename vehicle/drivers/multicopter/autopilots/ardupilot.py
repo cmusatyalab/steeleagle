@@ -59,8 +59,8 @@ class ArduPilotDrone(MAVLinkDrone):
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_takeoff_complete(),
-            interval=1,
+            lambda: self._is_rel_altitude_reached(rel_altitude),
+            interval=0.1,
         )
 
         if result:
