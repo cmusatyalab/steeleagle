@@ -386,7 +386,7 @@ class MAVLinkDrone(MulticopterItf):
     def _get_velocity_body(self):
         # TODO: This reference frame is incorrect
         velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
-        imu = self._get_cached_message("RAW_IMU")
+        imu = self._get_cached_message("SCALED_IMU")
         if not velocity_msg:
             return {
                 "forward": 0,
@@ -398,7 +398,8 @@ class MAVLinkDrone(MulticopterItf):
             "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
             "up": velocity_msg.vz * -1,  # Body-frame Z velocity in m/s
-            "angular": imu.xgyro,  # Angular speed around X axis (raw)
+            "angular": imu.zgyro
+            * (180 / (1000 * math.pi())),  # Angular speed around Z axis mrad/s
         }
 
     def _get_rssi(self):
