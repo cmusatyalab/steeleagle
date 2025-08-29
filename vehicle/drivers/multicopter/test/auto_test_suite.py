@@ -236,7 +236,9 @@ class TestSuiteClass:
         logger.info("Testing set global position")
 
         # Get initial position
-        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
+        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle, _ = (
+            self.get_curr_loc()
+        )
 
         x, y, z, angle = test
 
