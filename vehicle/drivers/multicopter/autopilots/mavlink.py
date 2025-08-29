@@ -399,7 +399,7 @@ class MAVLinkDrone(MulticopterItf):
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
             "up": velocity_msg.vz * -1,  # Body-frame Z velocity in m/s
             "angular": imu.zgyro
-            * (180 / (1000 * math.pi())),  # Angular speed around Z axis mrad/s
+            * (180 / (1000 * math.pi)),  # Angular speed around Z axis mrad/s
         }
 
     def _get_rssi(self):
