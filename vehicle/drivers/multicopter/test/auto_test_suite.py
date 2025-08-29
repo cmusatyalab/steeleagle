@@ -309,12 +309,12 @@ class TestSuiteClass:
 
         # Test out the different altitude control modes
         logger.info(
-            f"Testing set global position to: {(curr_pos_lat, curr_pos_lon, curr_pos_alt + self.d_zz, curr_pos_angle)}"
+            f"Testing set global position to: {(curr_pos_lat, curr_pos_lon, tel_dict['relative_position']['up'] + self.d_zz, curr_pos_angle)}"
         )
         driver_cmd = control_protocol.Request()
         driver_cmd.veh.location.latitude = curr_pos_lat + x
         driver_cmd.veh.location.longitude = curr_pos_lon + y
-        driver_cmd.veh.location.altitude = curr_pos_alt + z
+        driver_cmd.veh.location.altitude = tel_dict["relative_position"]["up"] + z
         driver_cmd.veh.location.altitude_mode = (
             common_protocol.LocationAltitudeMode.TAKEOFF_RELATIVE
         )
@@ -344,7 +344,7 @@ class TestSuiteClass:
         # Check the telemetry to see if the move was OK
         actual_lat = tel_dict["global_position"]["latitude"]
         actual_lon = tel_dict["global_position"]["longitude"]
-        actual_alt = tel_dict["global_position"]["altitude"]
+        actual_alt = tel_dict["relative_position"]["up"]
         actual_angle = tel_dict["global_position"]["heading"]
 
         logger.info(
