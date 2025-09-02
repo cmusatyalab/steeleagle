@@ -32,6 +32,7 @@ class ArduPilotDrone(MAVLinkDrone):
         self._mode_mapping = None
         self._listener_task = None
         self._rel_altitude = 3
+        self._is_taking_off = False
 
     """Interface Methods"""
 
@@ -57,7 +58,7 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             rel_altitude,
         )
-
+        self._is_taking_off = True
         result = await self._wait_for_condition(
             lambda: self._is_takeoff_complete(rel_altitude),
             interval=0.1,
@@ -150,23 +151,19 @@ class ArduPilotDrone(MAVLinkDrone):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def hover(self):
-        if self._vel_task:
-            self._vel_task.cancel()
-            await self._vel_task
-            self._vel_task = None
-
-        velocity = common_protocol.VelocityBody()
-        velocity.forward_vel = 0.0
-        velocity.right_vel = 0.0
-        velocity.up_vel = 0.0
-        velocity.angular_vel = 0.0
-        await self.set_velocity_body(velocity)
-        await asyncio.sleep(1)
+        if self._is_taking_off:
+            logger.error("Cannnot HOVER during TAKEOFF")
+            return common_protocol.ResponseStatus.FAILED
 
         if self._vel_task:
             self._vel_task.cancel()
             await self._vel_task
             self._vel_task = None
+
+        if not await self._switch_mode(MAVLinkDrone.FlightMode.LOITER):
+            logger.error("Failed to switch to LOITER mode")
+            return common_protocol.ResponseStatus.FAILED
+
         return common_protocol.ResponseStatus.COMPLETED
 
     async def _velocity_target_local_ned(
@@ -260,3 +257,11 @@ class ArduPilotDrone(MAVLinkDrone):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
+
+    def _is_takeoff_complete(self, alt):
+        if self._get_global_position()[
+            "relative_altitude"
+        ] > alt or self._is_rel_altitude_reached(alt):
+            self._is_taking_off = False
+            return True
+        return False
