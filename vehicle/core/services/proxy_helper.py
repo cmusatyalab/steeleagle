@@ -11,7 +11,7 @@ def generate_proxy(service_name, service_proto, output_path, channel_addr):
     if not root:
         root = '../'
     fds = descriptor_pb2.FileDescriptorSet()
-    with open(f'{root}protocol/services.desc', "rb") as f:
+    with open(f'{root}protocol/protocol.desc', "rb") as f:
         fds.MergeFromString(f.read())
     with open(output_path, 'w') as f:
         # Write out auto-generated lines

@@ -16,7 +16,7 @@ logger = get_logger('test/mock_mission')
 
 class MockMissionClient:
     '''
-    Provides a fake Swarm Controller to test messaging over ZeroMQ.
+    Provides a fake mission client to test messaging over gRPC.
     '''
     def __init__(self, messages):
         self._channel = grpc.aio.insecure_channel(query_config('internal.services.core'))

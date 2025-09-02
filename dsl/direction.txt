@@ -1,0 +1,82 @@
+dronedsl/
+├── __init__.py
+├── main.py                          # Entry point if needed for CLI/serve
+
+├── grammar/                         # Lark grammar and parsing logic
+│   ├── __init__.py
+│   ├── dsl.lark                    # Loose Lark grammar file
+│   ├── transformer.py             # Lark -> AST transformer
+│   └── parser.py                  # Entry point to parse DSL text
+
+├── compiler/                        # Compiler logic (AST → IR or TaskInstances)
+│   ├── __init__.py
+│   ├── linker.py                  # Binds task identifiers to implementations
+│   ├── validator.py               # Checks argument availability, types
+│   └── compiler.py                # Main compile pipeline (parse → IR)
+
+├── runtime/                         # Execution engine
+│   ├── __init__.py
+│   ├── context.py                 # Runtime context (drone, telemetry, etc.)
+│   ├── runner.py                  # Async task execution engine
+│   ├── transitions/               # Transition logic
+│   │   ├── __init__.py
+│   │   ├── base.py                # Base Transition class
+│   │   ├── object_detect.py       # ObjectDetectionTransition
+│   │   └── timer.py               # TimerTransition
+│   └── events.py                  # Trigger queues, events
+
+├── tasks/                           # All Pydantic-based task models
+│   ├── __init__.py
+│   ├── base.py                    # Base Task model & registry
+│   ├── primitives/               # Low-level commands (set_gps, gimbal, etc.)
+│   │   ├── __init__.py
+│   │   ├── set_gps.py
+│   │   ├── gimbal_pose.py
+│   │   └── ...
+│   ├── midlevel/                 # Composed behaviors (patrol, avoidance, etc.)
+│   │   ├── __init__.py
+│   │   ├── patrol.py
+│   │   ├── avoid.py
+│   │   └── ...
+│   ├── highlevel/                # High-level tasks (detect, track, etc.)
+│   │   ├── __init__.py
+│   │   ├── detect.py
+│   │   └── track.py
+
+├── api/                             # FastAPI interface
+│   ├── __init__.py
+│   ├── server.py                  # Starts the FastAPI server
+│   ├── routes.py                  # Task schema endpoints
+│   └── docs_gen.py                # Generates OpenAPI schemas from tasks
+
+├── utils/                           # Shared utilities
+│   ├── __init__.py
+│   ├── logging.py
+│   ├── telemetry.py
+│   └── constants.py
+
+├── tests/                           # Pytest suite
+│   ├── test_parser.py
+│   ├── test_tasks.py
+│   ├── test_transitions.py
+│   └── test_runtime.py
+
+├── examples/                        # Sample DSL scripts
+│   ├── detect_patrol.dsl
+│   └── multi_drone_track.dsl
+
+├── requirements.txt
+└── README.md
+
+
+
+
+
+transition can be specified
+inlcude action and events from other file
+
+to do:
+geopoints partitoner
+include mission from other file
+compilation checking
+

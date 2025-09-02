@@ -54,7 +54,7 @@ class LawAuthority:
         root = os.getenv('ROOTPATH')
         if not root:
             root = '../'
-        with open(f"{root}protocol/services.desc", 'rb') as f:
+        with open(f"{root}protocol/protocol.desc", 'rb') as f:
             data = f.read()
             descriptor_set = FileDescriptorSet.FromString(data)
             for file_descriptor_proto in descriptor_set.file:
