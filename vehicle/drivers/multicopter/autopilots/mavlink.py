@@ -577,13 +577,6 @@ class MAVLinkDrone(MulticopterItf):
         distance = math.sqrt((dlat**2) + (dlon**2)) * 1.113195e5
         return distance < 1.0
 
-    def _is_takeoff_complete(self, alt):
-        if self._get_global_position()["relative_altitude"] > alt:
-            return True
-        elif self._is_rel_altitude_reached(alt):
-            return True
-        return False
-
     """ Helper methods """
 
     def _calculate_heading(self, lat1, lon1, lat2, lon2):
