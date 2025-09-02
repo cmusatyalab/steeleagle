@@ -59,7 +59,7 @@ class ArduPilotDrone(MAVLinkDrone):
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_rel_altitude_reached(rel_altitude),
+            lambda: self._is_takeoff_complete(rel_altitude),
             interval=0.1,
         )
 
@@ -160,6 +160,13 @@ class ArduPilotDrone(MAVLinkDrone):
     async def _velocity_target_local_ned(
         self, forward_vel, right_vel, up_vel, angular_vel
     ):
+        """
+        See the follow Ardupilot documentation for reference.
+        https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html#set-position-target-local-ned
+
+        When sending velocity commands, we need to resend every second or the vehicle will stop.
+        Because asycnio.sleep is no deterministic, we are conservative here and use 0.9.
+        """
         try:
             while True:
                 self.vehicle.mav.set_position_target_local_ned_send(
@@ -180,7 +187,7 @@ class ArduPilotDrone(MAVLinkDrone):
                     float("nan"),
                     angular_vel * (math.pi / 180),  # convert from degrees/s to rad/s
                 )
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.9)
         except asyncio.CancelledError:
             logger.info("__velocity_target_local_ned task cancelled.")
 
