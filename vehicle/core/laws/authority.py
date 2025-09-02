@@ -1,4 +1,5 @@
 from enum import Enum
+import asyncio
 import grpc
 import json
 from google.protobuf.descriptor_pool import DescriptorPool
@@ -24,6 +25,7 @@ class Failsafe(Enum):
     DC_MISSION = 2
     DC_REMOTE_COMPUTE = 3
     DC_LOCAL_COMPUTE = 4
+    CORE_ERROR = 5
 
 class LawAuthority:
     '''
@@ -63,13 +65,19 @@ class LawAuthority:
             # Message class holder to support dynamic instantiation of messages
             self._message_classes = GetMessages(descriptor_set.file)
 
-    async def start(self):
+    async def start(self, retries=3):
         '''
-        Call the start calls for the law scheme. Must be
-        called before any other function!
+        Call the start calls for the law scheme. Must be called before any 
+        other function!
         '''
         logger.info('Sending startup commands...')
-        await self.set_law('__BASE__')
+        completed = False
+        while not completed and retries:
+            completed = await self.set_law('__BASE__')
+            if not completed:
+                logger.warning('Startup failed, retrying...')
+                retries -= 1
+                await asyncio.sleep(0.5)
 
     def check_equal(self, command, request, matcher):
         '''
@@ -141,44 +149,37 @@ class LawAuthority:
         Performs failsafe actions when key services are disconnected.
         '''
         async with self._lock.writer_lock:
-            name = ''
-            match failsafe:
-                case Failsafe.DC_SERVER:
-                    name = 'dc_server'
-                case Failsafe.DC_DRIVER:
-                    name = 'dc_driver'
-                case Failsafe.DC_MISSION:
-                    name = 'dc_mission'
-                case Failsafe.DC_LOCAL_COMPUTE:
-                    name = 'dc_local_compute'
-                case Failsafe.DC_REMOTE_COMPUTE:
-                    name = 'dc_remote_compute'
-                case _:
-                    return
+            name = failsafe.name.lower()
             commands = []
             if 'failsafes' in self._law and name in self._law['failsafes']:
                 commands = self._law['failsafes'][name]
             commands += self._base['failsafes'][name]
-            await self._send_commands(commands)
+
+            # Retry sending until commands are fully finished
+            results = await self._send_commands(commands)
+            return all(result.response.status == 2 for result in results)
 
     async def set_law(self, state):
         '''
         Sets a new law and sends on enter commands.
         '''
         if state == self._state:
-            return
+            return True
         async with self._lock.writer_lock:
             if state not in self._spec:
                 logger.error(f'State {state} is not in the law specification!')
                 state = 'REMOTE' # Go into remote mode
             if self._spec[state]['enter']:
-                await self._send_commands(self._spec[state]['enter'])
+                results = await self._send_commands(self._spec[state]['enter'])
+                if not all(result.response.status == 2 for result in results):
+                    return False
             try:
                 self._state = state
                 self._law = self._spec[state]
                 logger.info(f'Transitioned to law: {state}')
+                return True
             except:
-                raise ValueError(f'Law {state} not found!')
+                return False
 
     async def get_law(self):
         '''
@@ -236,7 +237,6 @@ class LawAuthority:
                     self._message_classes[method_desc.output_type.full_name]
                     )
             try:
-                print(service, method)
                 response = await reflective_grpc_call(
                             metadata,
                             f'/{service}/{method}',

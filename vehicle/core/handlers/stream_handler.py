@@ -86,15 +86,14 @@ class StreamHandler:
             'internal.streams.driver_telemetry',
             SocketOperation.CONNECT
             )
-        async def producer():
-            input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.OTHER
-            _, data = await driver_sock.recv_multipart()
-            message = DriverTelemetry()
-            message.ParseFromString(data)
-            input_frame.extras.Pack(message)
-            return input_frame
-        return ProducerWrapper(producer=producer, source_name="telemetry")
+        return ProducerWrapper(
+                producer=self._base_producer(
+                    driver_sock,
+                    DriverTelemetry(),
+                    gabriel_pb2.PayloadType.OTHER
+                    ),
+                source_name="telemetry"
+                )
     
     def get_imagery_producer(self):
         imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
@@ -104,15 +103,14 @@ class StreamHandler:
             'internal.streams.imagery',
             SocketOperation.CONNECT
             )
-        async def producer():
-            input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-            _, data = await imagery_sock.recv_multipart()
-            message = Frame()
-            message.ParseFromString(data)
-            input_frame.extras.Pack(message)
-            return input_frame
-        return ProducerWrapper(producer=producer, source_name="telemetry")
+        return ProducerWrapper(
+                producer=self._base_producer(
+                    imagery_sock,
+                    Frame(),
+                    gabriel_pb2.PayloadType.IMAGE
+                    ),
+                source_name="telemetry"
+                )
     
     def get_mission_telemetry_producer(self):
         mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
@@ -122,15 +120,14 @@ class StreamHandler:
             'internal.streams.mission_telemetry',
             SocketOperation.CONNECT
             )
-        async def producer():
-            input_frame = gabriel_pb2.InputFrame()
-            input_frame.payload_type = gabriel_pb2.PayloadType.OTHER
-            _, data = await mission_sock.recv_multipart()
-            message = MissionTelemetry()
-            message.ParseFromString(data)
-            input_frame.extras.Pack(message)
-            return input_frame
-        return ProducerWrapper(producer=producer, source_name="telemetry")
+        return ProducerWrapper(
+                producer=self._base_producer(
+                    mission_sock,
+                    MissionTelemetry(),
+                    gabriel_pb2.PayloadType.OTHER
+                    ),
+                source_name="telemetry"
+                )
 
     def process(self, result_wrapper):
         if len(result_wrapper.results) != 1:
@@ -142,6 +139,20 @@ class StreamHandler:
 
     def set_offload_strategy(self, strategy):
         pass
+    
+    def _base_producer(self, socket, proto_class, payload_type):
+        async def producer():
+            input_frame = gabriel_pb2.InputFrame()
+            input_frame.payload_type = payload_type
+            try:
+                _, data = await socket.recv_multipart()
+            except Exception as e:
+                # NOTE: At some point, we want to report something here
+                return input_frame
+            proto_class.ParseFromString(data)
+            input_frame.extras.Pack(proto_class)
+            return input_frame
+        return producer
 
 class ShapedComputeHandler(ZeroMQClient): 
     '''
@@ -152,4 +163,5 @@ class ShapedComputeHandler(ZeroMQClient):
         super().__init__(server, port, producer_wrappers, consumer, ipc=ipc)
 
     def set_strategy(self):
+        # TODO: Needs to be implemented!
         pass
