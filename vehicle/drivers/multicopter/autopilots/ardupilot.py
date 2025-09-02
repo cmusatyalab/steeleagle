@@ -155,9 +155,18 @@ class ArduPilotDrone(MAVLinkDrone):
             await self._vel_task
             self._vel_task = None
 
-        if not await self._switch_mode(MAVLinkDrone.FlightMode.LOITER):
-            return common_protocol.ResponseStatus.FAILED
+        velocity = common_protocol.VelocityBody()
+        velocity.forward_vel = 0.0
+        velocity.right_vel = 0.0
+        velocity.up_vel = 0.0
+        velocity.angular_vel = 0.0
+        await self.set_velocity_body(velocity)
+        await asyncio.sleep(1)
 
+        if self._vel_task:
+            self._vel_task.cancel()
+            await self._vel_task
+            self._vel_task = None
         return common_protocol.ResponseStatus.COMPLETED
 
     async def _velocity_target_local_ned(
