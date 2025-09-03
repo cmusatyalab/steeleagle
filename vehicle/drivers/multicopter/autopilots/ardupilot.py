@@ -32,14 +32,13 @@ class ArduPilotDrone(MAVLinkDrone):
         self._mode_mapping = None
         self._listener_task = None
         self._rel_altitude = 3
-        self._is_taking_off = False
 
     """Interface Methods"""
 
     async def take_off(self):
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.TAKEOFF
         if not await self._arm():
             return common_protocol.ResponseStatus.FAILED
 
@@ -58,7 +57,7 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             rel_altitude,
         )
-        self._is_taking_off = True
+
         result = await self._wait_for_condition(
             lambda: self._is_takeoff_complete(rel_altitude),
             interval=0.1,
@@ -87,7 +86,7 @@ class ArduPilotDrone(MAVLinkDrone):
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         self.vehicle.mav.set_position_target_global_int_send(
             0,
             self.vehicle.target_system,
@@ -128,7 +127,7 @@ class ArduPilotDrone(MAVLinkDrone):
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         self.vehicle.mav.set_position_target_local_ned_send(
             0,
             self.vehicle.target_system,
@@ -151,8 +150,11 @@ class ArduPilotDrone(MAVLinkDrone):
         return common_protocol.ResponseStatus.COMPLETED
 
     async def hover(self):
-        if self._is_taking_off:
-            logger.error("Cannnot HOVER during TAKEOFF")
+        if (
+            self.mode == MAVLinkDrone.FlightMode.TAKEOFF
+            or self.mode == MAVLinkDrone.FlightMode.RTL
+        ):
+            logger.error("Cannnot HOVER during TAKEOFF or RTL")
             return common_protocol.ResponseStatus.FAILED
 
         if self._vel_task:
@@ -160,9 +162,12 @@ class ArduPilotDrone(MAVLinkDrone):
             await self._vel_task
             self._vel_task = None
 
-        if not await self._switch_mode(MAVLinkDrone.FlightMode.LOITER):
-            logger.error("Failed to switch to LOITER mode")
-            return common_protocol.ResponseStatus.FAILED
+        velocity = common_protocol.VelocityBody()
+        velocity.forward_vel = 0.0
+        velocity.right_vel = 0.0
+        velocity.up_vel = 0.0
+        velocity.angular_vel = 0.0
+        await self.set_velocity_body(velocity)
 
         return common_protocol.ResponseStatus.COMPLETED
 
@@ -208,7 +213,7 @@ class ArduPilotDrone(MAVLinkDrone):
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         if self._vel_task is None:
             self._vel_task = asyncio.create_task(
                 self._velocity_target_local_ned(
@@ -221,6 +226,7 @@ class ArduPilotDrone(MAVLinkDrone):
     async def set_heading(self, location):
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         lat = location.latitude
         lon = location.longitude
         heading = location.heading
@@ -262,6 +268,6 @@ class ArduPilotDrone(MAVLinkDrone):
         if self._get_global_position()[
             "relative_altitude"
         ] > alt or self._is_rel_altitude_reached(alt):
-            self._is_taking_off = False
+            self.mode = MAVLinkDrone.FlightMode.LOITER
             return True
         return False
