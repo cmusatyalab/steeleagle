@@ -49,7 +49,7 @@ Mission:
   During detect_patrol:
     red_jacket_person_detected -> track
   
-  During tack:
+  During track:
     no_longer_red -> detect_patrol
     
 """
@@ -59,7 +59,7 @@ def main():
     tree = parser.parse(dsl_code)
     print(tree.pretty())
     # Transform
-    mission = DroneDSLTransformer(implicit_done=True).transform(tree)
+    mission = DroneDSLTransformer().transform(tree)
 
     # Print results
     print("Start:", mission.start_action_id)

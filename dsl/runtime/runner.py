@@ -40,9 +40,9 @@ Mission:
 async def main():
     parser = Lark(grammar, parser="lalr", start="start")
     tree = parser.parse(dsl_code)
-    mission = DroneDSLTransformer(implicit_done=True).transform(tree)
+    mission = DroneDSLTransformer().transform(tree)
     fsm = MissionFSM(mission)
-
+    await fsm.run()  
 
 if __name__ == "__main__":
     asyncio.run(main())

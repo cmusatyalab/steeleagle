@@ -1,4 +1,3 @@
-# runtime/fsm.py (minimal-plus)
 from __future__ import annotations
 import asyncio
 import contextlib
@@ -9,19 +8,22 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
+_DONE_EVENT = "done"
+_TERMINATE = "terminate"
 class MissionFSM:
     def __init__(self, mission: MissionIR):
         self.mission = mission
         self.transition = mission.transitions
-        print("self.transition:" + str(self.transition))
         
     async def run(self):
         # get the start action
         start_action_id = self.mission.start_action_id
-        curr_action_id = start_action_id
-        
-
+        state = start_action_id
+        while (state != _TERMINATE):
+            result_event = self.run_state(state, context)
+            next_state = self.transition[state][result_event]
+            state = next_state
+            
     async def run_state(self, curr_action_id, context):
         action_ir = self.mission.actions[curr_action_id]
         action_cls = get_action(action_ir.type_name)
@@ -54,16 +56,17 @@ class MissionFSM:
             task.cancel()
 
         # --- Decide result ---
+        result_event = None
         if action_task in done:
-            result_event = implicit_done_ev_id
+            result_event = _DONE_EVENT 
             self.logger(f"[FSM] Action finished, event={result_event}")
-            return result_event
 
         else:
-            done_ev_task = ev_task for ev_task in event_tasks if ev_task in done
-            done_ev_id = event_map[done_ev_task]
+            done_ev_task = done.pop() 
+            result_event = event_map[done_ev_task]
             self.logger(f"[FSM] Background event triggered: {done_ev_id}")
-            return done_ev_id
+        
+        return result_event 
             
 
     def _gather_events(self, curr_action_id):

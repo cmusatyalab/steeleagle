@@ -11,6 +11,7 @@ from compiler.loader import load_all
 
 
 _DONE_EVENT = "done"
+_TERMINATE_AID = "terminate"
 _TERMINATE = None
 
 # ---------- Helpers ----------
@@ -63,7 +64,7 @@ class DroneDSLTransformer(Transformer):
         eid = str(event_name)
         attrs_dict = _pairs_to_dict(attrs)
         # Defer validation: store raw attrs
-        self._events[ename] = EventIR(type_name=type_str, event_name=eid, attributes=attrs_dict)
+        self._events[eid]=EventIR(type_name=type_str, event_name=eid, attributes=attrs_dict)
 
 
     def event_body(self, *items):
@@ -104,7 +105,7 @@ class DroneDSLTransformer(Transformer):
     def transition_body(self, *items):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
-    def transition_rule(self, eid: Token, _arrow, nxt_eid: Token, *_nl):
+    def transition_rule(self, eid: Token, _arrow, nxt_aid: Token, *_nl):
         return (str(eid), str(nxt_aid))
 
     def during_block(self, action_id: Token, _nl, rules_list):
@@ -124,18 +125,8 @@ class DroneDSLTransformer(Transformer):
             for eid, nxt_aid in evmap.items():
                 transitions[(aid, eid)] = nxt_aid
             if _DONE_EVENT not in evmap: #implicit done transition
-                transitions[(aid, _DONE_EVENT)] = _TERMINATE
+                transitions[(aid, _DONE_EVENT)] = _TERMINATE_AID
 
-        if self._start_aid is None:
-            raise ValueError("Mission: missing 'Start <action_id>'")
-        
-        if self._start_aid not in self._actions:
-            raise ValueError(f"Mission: Start references unknown action '{self._start_aid}'")
-
-        for (aid, eid), nxt in transitions.items():
-            if nxt not in self._actions:
-                raise ValueError(f"Mission: transition target '{nxt}' is not a defined action")
-       
         mir = MissionIR(
             actions=self._actions,
             events=self._events,
@@ -146,7 +137,6 @@ class DroneDSLTransformer(Transformer):
         load_all()  # Ensure all actions/events are loaded before validation
 
         mir = resolve_symbols(mir)  # Resolve string references (IDs) into nested dicts
-        print("Resolved symbols in mission IR:", mir)
         
         mir = validate_mission_ir(mir) # Validate & normalize via Pydantic (centralized in validator.py)
         return mir
