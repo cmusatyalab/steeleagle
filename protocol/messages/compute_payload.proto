@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.messages.compute_payload;
+package steeleagle.protocol.messages.compute_payload;
 
 import "messages/telemetry.proto";
 
@@ -14,7 +14,7 @@ message ComputePayload {
   // Designates an initial request to register a vehicle
   bool registering = 1;
   // The driver telemetry data for the vehicle
-  protocol.messages.telemetry.DriverTelemetry vehicle_telem = 2;
+  steeleagle.protocol.messages.telemetry.DriverTelemetry vehicle_telem = 2;
   // The mission telemetry data for the vehicle
-  protocol.messages.telemetry.MissionTelemetry mission_telem = 3;
+  steeleagle.protocol.messages.telemetry.MissionTelemetry mission_telem = 3;
 }

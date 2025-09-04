@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.services.flight_log_service;
+package steeleagle.protocol.services.flight_log_service;
 
 import "common.proto";
 
@@ -18,13 +18,13 @@ service FlightLog {
 }
 
 message LogRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   string topic = 2;
   LogMessage log = 3;
 }
 
 message LogResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 enum LogType {
@@ -41,8 +41,8 @@ message LogMessage {
 
 message ReqRepProto {
   oneof type {
-    protocol.common.Request request = 1;
-    protocol.common.Response response = 2;
+    steeleagle.protocol.common.Request request = 1;
+    steeleagle.protocol.common.Response response = 2;
   }
   // Name of the request and associated service
   string name = 3;
@@ -51,11 +51,11 @@ message ReqRepProto {
 }
 
 message LogProtoRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   string topic = 2;
   ReqRepProto reqrep_proto = 3; 
 }
 
 message LogProtoResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }

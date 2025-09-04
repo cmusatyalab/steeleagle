@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.services.control_service;
+package steeleagle.protocol.services.control_service;
 
 import "common.proto";
 
@@ -63,95 +63,95 @@ service Control {
 }
 
 message ConnectRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message ConnectResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message IsConnectedRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message IsConnectedResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
   bool is_connected = 2;
 }
 
 message DisconnectRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message DisconnectResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message ArmRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message ArmResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message DisarmRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message DisarmResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message TakeOffRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // Take off height in relative altitude [meters]
   float take_off_altitude = 2;
 }
 
 message TakeOffResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message LandRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message LandResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message HoldRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message HoldResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message KillRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message KillResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message SetHomeRequest {
-  protocol.common.Request request = 1;
-  protocol.common.Location location = 2; // New home location
+  steeleagle.protocol.common.Request request = 1;
+  steeleagle.protocol.common.Location location = 2; // New home location
 }
 
 message SetHomeResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message ReturnToHomeRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message ReturnToHomeResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 enum AltitudeMode {
@@ -165,21 +165,21 @@ enum HeadingMode {
 }
 
 message SetGlobalPositionRequest {
-  protocol.common.Request request = 1;
-  protocol.common.Location location = 2; // Target location
+  steeleagle.protocol.common.Request request = 1;
+  steeleagle.protocol.common.Location location = 2; // Target location
   // Determines whether the drone will consider altitude as meters above MSL
-  // (Mean Sea Level), or relative to its takeoff location.
-  AltitudeMode altitude_mode = 4;
-  // Determines how the drone will orient during transit 
-  HeadingMode heading_mode = 5;
+  // (Mean Sea Level), or relative to its takeoff location (default ABSOLUTE)
+  optional AltitudeMode altitude_mode = 4;
+  // Determines how the drone will orient during transit (default TO_TARGET)
+  optional HeadingMode heading_mode = 5;
   // Maximum velocity during transit, north_vel determines horizontal
   // velocity, up_vel determines vertical velocity, and angular_vel
-  // determines angular velocity
-  protocol.common.Velocity max_velocity = 6;
+  // determines angular velocity (default 5 m/s)
+  optional steeleagle.protocol.common.Velocity max_velocity = 6;
 }
 
 message SetGlobalPositionResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 enum ReferenceFrame {
@@ -188,43 +188,43 @@ enum ReferenceFrame {
 }
 
 message SetRelativePositionRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // Target position
-  protocol.common.Position position = 2;
+  steeleagle.protocol.common.Position position = 2;
   // Maximum velocity during transit, x_vel determines horizontal
   // velocity, up_vel determines vertical velocity, and angular_vel
   // determines angular velocity
-  protocol.common.Velocity max_velocity = 3;
+  optional steeleagle.protocol.common.Velocity max_velocity = 3;
   // Frame of reference
   ReferenceFrame frame = 4;
 }
 
 message SetRelativePositionResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message SetVelocityRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // Target velocity
-  protocol.common.Velocity velocity = 2;
+  steeleagle.protocol.common.Velocity velocity = 2;
   // Frame of reference
   ReferenceFrame frame = 3;
 }
 
 message SetVelocityResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message SetHeadingRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // Target heading or global location to look at
-  protocol.common.Location location = 2;
+  steeleagle.protocol.common.Location location = 2;
   // Determines how the drone will orient
   HeadingMode heading_mode = 5;
 }
 
 message SetHeadingResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 enum PoseMode {
@@ -234,14 +234,14 @@ enum PoseMode {
 }
 
 message SetGimbalPoseRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   uint32 gimbal_id = 2; // ID of the target gimbal
-  protocol.common.Pose pose = 3; // Target pose
+  steeleagle.protocol.common.Pose pose = 3; // Target pose
   PoseMode mode = 4; // Specifies how to interpret the target pose
 }
 
 message SetGimbalPoseResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message ImagingSensorConfiguration {
@@ -251,21 +251,21 @@ message ImagingSensorConfiguration {
 } 
 
 message ConfigureImagingSensorStreamRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // List of configurations to be updated
   repeated ImagingSensorConfiguration configurations = 2;
 }
 
 message ConfigureImagingSensorStreamResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
 
 message ConfigureTelemetryStreamRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   // Target frequency of telemetry generation, in Hz
   uint32 frequency = 2;
 }
 
 message ConfigureTelemetryStreamResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
