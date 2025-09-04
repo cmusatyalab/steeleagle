@@ -59,9 +59,8 @@ class LawAuthority:
             descriptor_set = FileDescriptorSet.FromString(data)
             for file_descriptor_proto in descriptor_set.file:
                 self._desc_pool.Add(file_descriptor_proto)
-                fname = file_descriptor_proto.name.split('.')[0].replace('/', '.')
                 for service in file_descriptor_proto.service:
-                    self._name_table[service.name] = f'protocol.{fname}.{service.name}'
+                    self._name_table[service.name] = f'{file_descriptor_proto.package}.{service.name}'
             # Message class holder to support dynamic instantiation of messages
             self._message_classes = GetMessages(descriptor_set.file)
 

@@ -1,7 +1,6 @@
 gabriel-server
 gabriel-client
 gabriel-protocol
-pyyaml
 grpcio
 grpc_interceptor
 validators
