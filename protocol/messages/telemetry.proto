@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.messages.telemetry;
+package steeleagle.protocol.messages.telemetry;
 
 import "common.proto";
 import "google/protobuf/duration.proto";
@@ -66,29 +66,29 @@ message SetpointInfo {
   // The current setpoint for the vehicle
   oneof setpoint {
     // Default to all zeros local position setpoint
-    protocol.common.Position position_body_sp = 1;
-    protocol.common.Position position_enu_sp = 2;
-    protocol.common.Location global_sp = 3;
-    protocol.common.Velocity velocity_body_sp = 4;
-    protocol.common.Velocity velocity_enu_sp = 5;
+    steeleagle.protocol.common.Position position_body_sp = 1;
+    steeleagle.protocol.common.Position position_enu_sp = 2;
+    steeleagle.protocol.common.Location global_sp = 3;
+    steeleagle.protocol.common.Velocity velocity_body_sp = 4;
+    steeleagle.protocol.common.Velocity velocity_enu_sp = 5;
   }
 }
 
 message PositionInfo {
   // Global position that will be used when returning home
-  protocol.common.Location home = 1; 
+  steeleagle.protocol.common.Location home = 1; 
   // Current global position of the vehicle
-  protocol.common.Location global_position = 2;
+  steeleagle.protocol.common.Location global_position = 2;
   // Current local position of the vehicle in the global ENU
   // (East, North, Up) coordinate frame, relative to take off
   // position
-  protocol.common.Position relative_position = 3;
+  steeleagle.protocol.common.Position relative_position = 3;
   // Current velocity of the vehicle in the global ENU
   // (East, North, Up) coordinate frame
-  protocol.common.Velocity velocity_enu = 4;
+  steeleagle.protocol.common.Velocity velocity_enu = 4;
   // Current velocity of the vehicle in the body
   // (forward, right, up) coordinate frame
-  protocol.common.Velocity velocity_body = 5;
+  steeleagle.protocol.common.Velocity velocity_body = 5;
   // Info on the current vehicle setpoint
   SetpointInfo setpoint_info = 6; 
 }
@@ -98,8 +98,8 @@ message PositionInfo {
  */
 message GimbalStatus {
   uint32 id = 1; // ID of the gimbal
-  protocol.common.Pose pose_body = 2; // Current pose in the body reference frame
-  protocol.common.Pose pose_enu = 3; // Current pose in the ENU reference frame
+  steeleagle.protocol.common.Pose pose_body = 2; // Current pose in the body reference frame
+  steeleagle.protocol.common.Pose pose_enu = 3; // Current pose in the ENU reference frame
 }
 
 message GimbalInfo {

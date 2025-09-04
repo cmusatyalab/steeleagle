@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.common;
+package steeleagle.protocol.common;
 
 import "google/protobuf/timestamp.proto";
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.services.compute_service;
+package steeleagle.protocol.services.compute_service;
 
 import "common.proto";
 import "messages/telemetry.proto";
@@ -22,7 +22,7 @@ service Compute {
 }
 
 message GetAvailableDatasinksRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
 }
 
 message Datasink {
@@ -33,7 +33,7 @@ message Datasink {
   // Type of model used
   string model = 3;
   // Imaging sensors accepted by this datasink
-  repeated protocol.messages.telemetry.ImagingSensorType 
+  repeated steeleagle.protocol.messages.telemetry.ImagingSensorType 
 	accepted_inputs = 4;
   // Indicates if the datasink is active
   bool active = 5;
@@ -42,17 +42,17 @@ message Datasink {
 }
 
 message GetAvailableDatasinksResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
   // List of available datasinks
   repeated Datasink datasinks = 2;
 }
 
 message ConfigureDatasinksRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   repeated string name = 2; // Name of target datasinks
   repeated bool activate = 3; // Switch to activate/deactivate datasinks
 }
 
 message ConfigureDatasinksResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }

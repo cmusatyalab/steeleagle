@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.services.report_service;
+package steeleagle.protocol.services.report_service;
 
 import "common.proto";
 import "google/protobuf/any.proto";
@@ -19,14 +19,14 @@ service Report {
 
 message ReportMessage {
   int32 report_code = 1; // Integer report code, interpreted by the backend
-  google.protobuf.Any report_data = 2; // Extra data about report
+  optional google.protobuf.Any report_data = 2; // Extra data about report
 }
 
 message SendReportRequest {
-  protocol.common.Request request = 1;
+  steeleagle.protocol.common.Request request = 1;
   ReportMessage report = 2;
 }
 
 message SendReportResponse {
-  protocol.common.Response response = 1;
+  steeleagle.protocol.common.Response response = 1;
 }
