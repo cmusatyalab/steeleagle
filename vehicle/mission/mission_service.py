@@ -5,81 +5,57 @@ from util.rpc import generate_response
 from util.log import get_logger
 
 class MissionService(MIssionServicer):
-    def __init__(self, socket, stubs)
+    def __init__(self, socket, stubs, mission_dir)
         self.stubs = stubs
         self.mission = None
-    def _load(url):
-        pass
+        self.mission_dir = mission_dir
     
-    def _unzip():
-        pass
+    def _load(url):
+        # fetch and unzip
+        resp = requests.get(uri)
+        resp.raise_for_status()  # error if download failed
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+            z.extractall(self.mission_dir) 
+        
+        # load mission
+        from dsl.compiler.ir import MissionIR        
+        with open("mission.json") as f:
+            data = json.load(f)
+            mission_ir = MissionIR(**data)
 
+        return mission_ir
 
     async def Upload(self, request, context):
         """Upload a mission for execution
         """
         logger.info("upload mission from Swarm Controller")
-        logge.proto(request)
+        logger.proto(request)
+        mission_url = request.misson.uri
+        mission_ir = self._load(mission_url)
+        from dsl.runtime.fsm import MissionFSM
+        self.mission = MissionFSM(mission_ir)
         return mission_proto.Upload(response=generate_response(2))        
 
     async def Start(self, request, context):
         """Start an uploaded mission
         """
         await self.mssion.run()
-        return mission_proto.Upload(response=generate_response(2))
+        return mission_proto.Start(response=generate_response(2))
 
-    def Stop(self, request, context):
+    async def Stop(self, request, context):
         """Stop the current mission
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        await self.mission.stop()
+        return mission_proto.Stop(response=generate_response(2))
 
-    def Notify(self, request, context):
+    async def Notify(self, request, context):
         """Send a notification to the current mission
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        pass
 
-    def ConfigureTelemetryStream(self, request, context):
+    async def ConfigureTelemetryStream(self, request, context):
         """Set the mission telemetry stream parameters
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-
-def add_MissionServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'Upload': grpc.unary_unary_rpc_method_handler(
-                    servicer.Upload,
-                    request_deserializer=services_dot_mission__service__pb2.UploadRequest.FromString,
-                    response_serializer=services_dot_mission__service__pb2.UploadResponse.SerializeToString,
-            ),
-            'Start': grpc.unary_unary_rpc_method_handler(
-                    servicer.Start,
-                    request_deserializer=services_dot_mission__service__pb2.StartRequest.FromString,
-                    response_serializer=services_dot_mission__service__pb2.StartResponse.SerializeToString,
-            ),
-            'Stop': grpc.unary_unary_rpc_method_handler(
-                    servicer.Stop,
-                    request_deserializer=services_dot_mission__service__pb2.StopRequest.FromString,
-                    response_serializer=services_dot_mission__service__pb2.StopResponse.SerializeToString,
-            ),
-            'Notify': grpc.unary_unary_rpc_method_handler(
-                    servicer.Notify,
-                    request_deserializer=services_dot_mission__service__pb2.NotifyRequest.FromString,
-                    response_serializer=services_dot_mission__service__pb2.NotifyResponse.SerializeToString,
-            ),
-            'ConfigureTelemetryStream': grpc.unary_unary_rpc_method_handler(
-                    servicer.ConfigureTelemetryStream,
-                    request_deserializer=services_dot_mission__service__pb2.ConfigureTelemetryStreamRequest.FromString,
-                    response_serializer=services_dot_mission__service__pb2.ConfigureTelemetryStreamResponse.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'protocol.services.mission_service.Mission', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
+        pass
 
 
