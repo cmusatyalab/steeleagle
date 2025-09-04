@@ -3,13 +3,19 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.services.remote_control_service;
+package protocol.services.remote_service;
 
 import "google/protobuf/any.proto";
 
 /*
- * Messages for remote control over ZeroMQ
+ * Used to control a vehicle remotely over ZeroMQ
+ * Not implemented as a gRPC service!
  */
+service Remote {
+  // Sends a request to one of the core services (Control, Mission, etc.)
+  rpc RemoteControl (RemoteControlRequest) returns (RemoteControlResponse) {}
+}
+
 message RemoteControlRequest {
   // Since command sequencing is not built-in to ZeroMQ,
   // it must be done manually
