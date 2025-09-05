@@ -237,7 +237,7 @@ message SetGimbalPoseRequest {
   steeleagle.protocol.common.Request request = 1;
   uint32 gimbal_id = 2; // ID of the target gimbal
   steeleagle.protocol.common.Pose pose = 3; // Target pose
-  PoseMode mode = 4; // Specifies how to interpret the target pose
+  optional PoseMode mode = 4; // Specifies how to interpret the target pose
 }
 
 message SetGimbalPoseResponse {

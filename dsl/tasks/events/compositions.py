@@ -5,15 +5,15 @@ import asyncio
 from typing import List, Optional
 from pydantic import Field, ConfigDict
 from compiler.registry import register_event
-from tasks.base import ExecutableEvent
+from tasks.base import Event
 
 
 # ========== basic boolean combinators ==========
 
 @register_event
-class AnyOf(ExecutableEvent):
+class AnyOf(Event):
     """Fires when ANY child event is true in a poll."""
-    events: List[ExecutableEvent] = Field(..., min_items=1)
+    events: List[Event] = Field(..., min_items=1)
 
     async def check(self, context) -> bool:
         for ev in self.events:
@@ -23,9 +23,9 @@ class AnyOf(ExecutableEvent):
 
 
 @register_event
-class AllOf(ExecutableEvent):
+class AllOf(Event):
     """Fires when ALL child events are true in the same poll."""
-    events: List[ExecutableEvent] = Field(..., min_items=1)
+    events: List[Event] = Field(..., min_items=1)
 
     async def check(self, context) -> bool:
         for ev in self.events:
@@ -35,19 +35,19 @@ class AllOf(ExecutableEvent):
 
 
 @register_event
-class Not(ExecutableEvent):
+class Not(Event):
     """Fires when the child event is false (logical NOT)."""
-    event: ExecutableEvent
+    event: Event
 
     async def check(self, context) -> bool:
         return not (await self.event.check(context))
 
 
 @register_event
-class NOfM(ExecutableEvent):
+class NOfM(Event):
     """Fires when at least N of M child events are true in a poll."""
     n: int = Field(..., gt=0)
-    events: List[ExecutableEvent] = Field(..., min_items=1)
+    events: List[Event] = Field(..., min_items=1)
 
     async def check(self, context) -> bool:
         count = 0
@@ -62,14 +62,14 @@ class NOfM(ExecutableEvent):
 # ========== time/state aware combinators ==========
 
 @register_event
-class Until(ExecutableEvent):
+class Until(Event):
     """
     Fires when `event` becomes true BEFORE `until_event` becomes true.
     If `until_event` fires first, this event will not fire (locks out) until
     both are false again in the same poll (lock resets).
     """
-    event: ExecutableEvent
-    until_event: ExecutableEvent
+    event: Event
+    until_event: Event
     _locked_out: bool = False
 
     async def check(self, context) -> bool:

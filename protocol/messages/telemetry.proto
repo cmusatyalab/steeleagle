@@ -10,9 +10,6 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 
-/*
- * Data related to the active driver telemetry stream
- */
 message TelemetryStreamInfo {
   // Current frequency of telemetry messages, in Hz
   uint32 current_frequency = 1; 
@@ -22,9 +19,6 @@ message TelemetryStreamInfo {
   google.protobuf.Duration uptime = 3;
 }
 
-/*
- * Data related to vehicle status
- */
 enum MotionStatus {
   MOTORS_OFF = 0;
   RAMPING = 1;
@@ -59,9 +53,6 @@ message VehicleInfo {
   CommsInfo comms_info = 7;
 }
 
-/*
- * Data related to vehicle position
- */
 message SetpointInfo {
   // The current setpoint for the vehicle
   oneof setpoint {
@@ -93,18 +84,20 @@ message PositionInfo {
   SetpointInfo setpoint_info = 6; 
 }
 
-/*
- * Data related to gimbals
- */
 message GimbalStatus {
-  uint32 id = 1; // ID of the gimbal
-  steeleagle.protocol.common.Pose pose_body = 2; // Current pose in the body reference frame
-  steeleagle.protocol.common.Pose pose_enu = 3; // Current pose in the ENU reference frame
+  // ID of the gimbal
+  uint32 id = 1;
+  // Current pose in the body reference frame
+  steeleagle.protocol.common.Pose pose_body = 2;
+  // Current pose in the ENU reference frame
+  steeleagle.protocol.common.Pose pose_enu = 3;
 }
 
 message GimbalInfo {
-  uint32 num_gimbals = 1; // Number of connected gimbals
-  repeated GimbalStatus gimbals = 2; // List of connected gimbals
+  // Number of connected gimbals
+  uint32 num_gimbals = 1;
+  // List of connected gimbals
+  repeated GimbalStatus gimbals = 2;
 }
 
 /*
@@ -150,48 +143,66 @@ message ImagingSensorStreamStatus {
 }
 
 message ImagingSensorInfo {
-  ImagingSensorStreamStatus stream_status = 1; // Status of current streams
-  repeated ImagingSensorStatus sensors = 2; // List of connected sensors
+  // Status of current imaging sensor streams
+  ImagingSensorStreamStatus stream_status = 1;
+  // List of connected imaging sensors
+  repeated ImagingSensorStatus sensors = 2;
 }
 
-/*
- * Vehicle warnings and alerts
- */
 enum BatteryWarning {
+  // The vehicle is above 30% battery
   NONE = 0;
+  // The vehicle is below 30% battery
   LOW = 1;
+  // The vehicle is below 15% battery
   CRITICAL = 2;
 }
 
 enum GPSWarning {
+  // GPS readings are nominal and a fix has been achieved
   NO_GPS_WARNING = 0;
+  // Weak GPS fix, expect errant global position data
   WEAK_SIGNAL = 1;
+  // No GPS fix
   NO_FIX = 2;
 }
 
 enum MagnetometerWarning {
+  // Magnetometer readings are nominal
   NO_MAGNETOMETER_WARNING = 0;
-  PERTURBATION = 1; // Experiencing magnetic perturbations
+  // The vehicle is experiencing magnetic perturbations
+  PERTURBATION = 1;
 }
 
 enum ConnectionWarning {
+  // Connection to remote server is nominal
   NO_CONNECTION_WARNING = 0;
+  // Contact has been lost with the remote server
   DISCONNECTED = 1;
+  // Connection is experiencing interference or is weak
   WEAK_CONNECTION = 2;
 }
 
 enum CompassWarning {
+  // Absolute heading is nominal
   NO_COMPASS_WARNING = 0;
+  // Absolute heading is available but may be incorrect
   WEAK_HEADING_LOCK = 1;
+  // No absolute heading available from the vehicle
   NO_HEADING_LOCK = 2;
 }
 
 message AlertInfo {
-  BatteryWarning battery_warning = 1; // Battery warnings
-  GPSWarning gps_warning = 2; // GPS warnings
-  MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
-  ConnectionWarning connection_warning = 4; // Connection warnings
-  CompassWarning compass_warning = 5; // Compass warnings
+  // Battery warnings
+  BatteryWarning battery_warning = 1;
+  // GPS warnings
+  GPSWarning gps_warning = 2;
+  // Magnetometer warnings
+  MagnetometerWarning magnetometer_warning = 3;
+  // Connection warnings
+  ConnectionWarning connection_warning = 4;
+  // Compass warnings
+  CompassWarning compass_warning = 5;
 }
 
 /*
@@ -218,34 +229,49 @@ message DriverTelemetry {
  * Imaging sensor frame data streamed from the driver module
  */
 message Frame {
-  google.protobuf.Timestamp timestamp = 1; // Frame timestamp
-  bytes data = 2; // Raw bytes
+  // Capture timestamp of the frame
+  google.protobuf.Timestamp timestamp = 1;
+  // Raw bytes representing the frame
+  bytes data = 2;
+  // Horizontal frame resolution in pixels
   uint64 h_res = 3;
+  // Vertical frame resolution in pixels
   uint64 v_res = 4;
-  uint64 channels = 5; // Number of channels
-  uint64 id = 6; // Frame ID for future correlation
+  // Depth resolution in pixels
+  uint64 d_res = 5;
+  // Number of channels
+  uint64 channels = 6;
+  // Frame ID for future correlation
+  uint64 id = 7;
 }
 
 /*
  * Data related to the current mission
  */
 enum MissionExecState {
+  // Mission is ready to be executed
   READY = 0;
+  // Mission is in progress
   IN_PROGRESS = 1;
+  // Mission is paused
   PAUSED = 3;
+  // Mission has been completed
   COMPLETED = 4;
+  // Mission was cancelled
   CANCELED = 5;
 }
 
 message MissionInfo {
-  // Unique mission reference ID
-  string uuid = 1;
-  // Timestamp of download
-  google.protobuf.Timestamp age = 2;
+  // Mission name
+  string name = 1;
+  // Mission hash to establish version uniqueness
+  int64 hash = 2;
+  // Timestamp of upload
+  google.protobuf.Timestamp age = 3;
   // Execution state of the mission
-  MissionExecState exec_state = 3;
+  MissionExecState exec_state = 4;
   // Task state of the mission (plaintext), if active
-  string task_state = 4;
+  string task_state = 5;
 }
 
 /*

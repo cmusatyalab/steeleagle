@@ -1,26 +1,49 @@
 import asyncio
 from typing import Any, Dict
 from pydantic import BaseModel, ConfigDict
+from dataclasses import dataclass
 
-class Executable(BaseModel):
-    # Strict validation; allow non-pydantic objects in fields if needed
+class Action(BaseModel):
+    '''
+    Pydantic base model for actions (things you execute).
+    '''
+    # Lenient validation; allow non-pydantic objects in fields if needed
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
+    # Map of stubs to use
+    context: Dict[str, Any]
 
-    async def execute(self, context):
+    async def execute(self) -> Any:
+        '''
+        Execute the action asynchronously.
+        '''
         raise NotImplementedError
 
-class ExecutableAction(Executable):
-    """Marker base for actions (things you execute)."""
-    pass
+class Event(BaseModel):
+    '''
+    Pydantic base model for events (things you wait/observe).
+    '''
+    # Lenient validation; allow non-pydantic objects in fields if needed
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
+    # Map of stubs to use
+    context: Dict[str, Any]
 
-class ExecutableEvent(Executable):
-    """Marker base for events (things you wait/observe)."""
-    pass
+    async def check(self) -> bool:
+        '''
+        Check to see if the event has been completed.
+        '''
+        raise NotImplementedError
 
+@dataclass
+class Datatype(BaseModel):
+    '''
+    Pydantic base model for a Protobuf message.
+    '''
+    # Lenient validation; allow non-pydantic objects in fields if needed
+    model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
-async def event_handler(event: ExecutableEvent, context: Dict[str, Any]) -> None:
-    """Waits for event to be true, then returns."""
-    while True:
-        if await event.check(context):
-            return
-        await asyncio.sleep(0)
+    def get_type_url() -> str:
+        '''
+        Get the type url associated with the object (from Protobuf specification).
+        This is useful for unpacking/packing the object as an Any.
+        '''
+        raise NotImplementedError

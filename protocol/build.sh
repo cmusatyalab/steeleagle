@@ -24,8 +24,9 @@ $PROTOCPATH -I. \
 
 # Build a global descriptor file
 $PROTOCPATH -I. \
-	--descriptor_set_out=./protocol.desc \
+	--include_source_info \
 	--include_imports \
+	--descriptor_set_out=./protocol.desc \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \

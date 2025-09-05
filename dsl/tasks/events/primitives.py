@@ -6,13 +6,13 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import Field
 from compiler.registry import register_event
-from tasks.base import ExecutableEvent
+from tasks.base import Event
 
 
 # ---------------- basic events ----------------
 # ---------------- helpers ----------------
 @register_event
-class TimeReached(ExecutableEvent):
+class TimeReached(Event):
     duration: float = Field(..., ge=0.0, description="Seconds to wait before event triggers")
 
     async def check(self, context):
@@ -73,7 +73,7 @@ def _haversine_m(lat1, lon1, lat2, lon2) -> float:
 
 # ---------------- events ----------------
 @register_event
-class BatteryReached(ExecutableEvent):
+class BatteryReached(Event):
     """
     Fires when battery % satisfies relation to threshold for N consecutive polls.
     relation: 'at_least' (>= threshold) or 'at_most' (<= threshold)
@@ -95,7 +95,7 @@ class BatteryReached(ExecutableEvent):
 
 
 @register_event
-class SatellitesReached(ExecutableEvent):
+class SatellitesReached(Event):
     """
     Fires when satellites count satisfies relation to threshold for N consecutive polls.
     relation: 'at_least' (>=) or 'at_most' (<=)
@@ -117,7 +117,7 @@ class SatellitesReached(ExecutableEvent):
 
 
 @register_event
-class GimbalPoseReached(ExecutableEvent):
+class GimbalPoseReached(Event):
     """
     Fires when gimbal pose matches target within tolerances.
     You can specify any subset of {roll, pitch, yaw} (or x,y,z if your pose encodes axes).
@@ -161,7 +161,7 @@ class GimbalPoseReached(ExecutableEvent):
 
 
 @register_event
-class VelocityReached(ExecutableEvent):
+class VelocityReached(Event):
     """
     Fires when speed magnitude in selected frame satisfies relation to threshold.
     frame: 'enu' or 'body'
@@ -180,7 +180,7 @@ class VelocityReached(ExecutableEvent):
 
 
 @register_event
-class HomeReached(ExecutableEvent):
+class HomeReached(Event):
     """
     Fires when distance from current global_position to home <= radius_m (meters).
     Requires global_position.{latitude, longitude} and home.{latitude, longitude}.
@@ -232,7 +232,7 @@ def _extract_detections(results: Optional[List[Dict[str, Any]]]) -> List[Dict[st
 
 # ---------------- events ----------------
 @register_event
-class DetectionFound(ExecutableEvent):
+class DetectionFound(Event):
     """
     Fires when any detection matches optional filters:
       - class_name (case-insensitive) if provided
@@ -265,7 +265,7 @@ class DetectionFound(ExecutableEvent):
 
 
 @register_event
-class HSVReached(ExecutableEvent):
+class HSVReached(Event):
     """
     Fires when any detection indicates HSV filter passed (boolean flag).
     Optional filters: class_name, min_score.
