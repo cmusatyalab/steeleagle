@@ -164,3 +164,10 @@ def get_comments(path, location_map):
         return f"'''{'. '.join(comments)}'''"
     else:
         return ""
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Pydantic type generation file from a base Protobuf protocol.")
+    parser.add_argument('--output', type=str, help='Path to the output directory.', default='./types')
+    args = parser.parse_args()
+    generate(args.output)
