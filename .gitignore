@@ -31,6 +31,7 @@ venv/
 *.mcap
 *.desc
 _gen_*
+dsl/tasks/types/*.py
 
 
 vehicle/env.sh
