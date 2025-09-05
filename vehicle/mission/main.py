@@ -5,7 +5,7 @@ from bindings.python.services import report_service_pb2, report_service_pb2_grpc
 from bindings.python.services import compute_service_pb2, compute_service_pb2_grpc
 from mission_service import MissionService
 import asyncio
-import util.log import get_logger
+from  util.log import get_logger
 
 logger = get_logger('mission/main')
 async def main():
@@ -38,5 +38,5 @@ async def main():
         logger.info('Shutting down...')
         await server.stop(1)
 
-if __name__= "__main__":
+if __name__ == "__main__":
     asyncio.run(main())
