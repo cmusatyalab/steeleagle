@@ -3,6 +3,7 @@ gabriel-client
 gabriel-protocol
 grpcio
 grpc_interceptor
+grpcio-tools
 validators
 zmq
 aiorwlock
