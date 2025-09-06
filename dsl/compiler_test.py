@@ -1,9 +1,9 @@
 from pathlib import Path
 from lark import Lark
 from compiler.transformer import DroneDSLTransformer
-
+import os
 # Load grammar
-GRAMMAR_PATH = Path("../grammar/dronedsl.lark")
+GRAMMAR_PATH = Path(os.getenv("GRAMMAR_PATH"))
 grammar = GRAMMAR_PATH.read_text(encoding="utf-8")
 
 # Create parser
