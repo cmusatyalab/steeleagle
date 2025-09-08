@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import Field
 from dsl.compiler.registry import register_event
-from sdk.base import Event
+from api.base import Event
 
 
 # ---------------- basic events ----------------

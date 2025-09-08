@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
-from sdk.base import Datatype
+from api.base import Datatype
 
 ''' Messages '''
 @dataclass

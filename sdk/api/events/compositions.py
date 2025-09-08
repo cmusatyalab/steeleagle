@@ -1,11 +1,9 @@
 # tasks/events/combinators.py
 from __future__ import annotations
-
-import asyncio
-from typing import List, Optional
-from pydantic import Field, ConfigDict
+from typing import List
+from pydantic import Field
 from dsl.compiler.registry import register_event
-from sdk.base import Event
+from api.base import Event
 
 
 # ========== basic boolean combinators ==========

@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 _LOADED_BASES: set[str] = set()
-_DEFAULT_BASES: Tuple[str, ...] = ("sdk",)
+_DEFAULT_BASES: Tuple[str, ...] = ("api",)
 
 
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:

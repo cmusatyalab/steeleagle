@@ -1,6 +1,7 @@
 ''' Enums '''
 from enum import Enum
-
+from dataclasses import dataclass
+from api.base import Datatype
 
 class AltitudeMode(Enum):
 
@@ -31,3 +32,16 @@ class PoseMode(Enum):
     '''Offset from current'''
     VELOCITY = 2
     '''Rotational velocities'''
+
+
+@dataclass
+class ImagingSensorConfiguration(Datatype):
+
+    id: int
+    '''Target imaging sensor ID'''
+    set_primary: bool
+    '''Set this sensor as the primary stream'''
+    set_fps: int
+    '''Target FPS for stream'''
+
+
