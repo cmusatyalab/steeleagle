@@ -14,23 +14,10 @@ register_cleanup_handler() # Cleanup handler for SIGTERM
 from util.config import query_config
 from util.sockets import setup_zmq_socket, SocketOperation
 # Generate proxy files
-root = os.getenv('ROOTPATH')
-if not root:
-    root = '../'
-from core.services.proxy_helper import generate_proxy
-generate_proxy(
-        'Control', 
-        'control_service',
-        f'{root}vehicle/core/services/_gen_control_service_proxy.py',
-        query_config('internal.services.driver')
-        )
+from core.services.generate_proxy import generate_proxy
+generate_proxy('Control', 'control_service', query_config('internal.services.driver'))
 from core.services._gen_control_service_proxy import ControlProxy
-generate_proxy(
-        'Mission', 
-        'mission_service',
-        f'{root}vehicle/core/services/_gen_mission_service_proxy.py',
-        query_config('internal.services.mission')
-        )
+generate_proxy('Mission', 'mission_service', query_config('internal.services.mission'))
 from core.services._gen_mission_service_proxy import MissionProxy
 # Service imports
 from core.services.report_service import ReportService

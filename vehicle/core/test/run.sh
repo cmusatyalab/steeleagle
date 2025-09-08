@@ -2,12 +2,12 @@ _PYTHONPATH=../../:../../../protocol/:../../../protocol/bindings/python/:./
 _INTERNALPATH=../../.internal.toml
 _CONFIGPATH=../../config.toml
 _LAWPATH=../../.laws.toml
-_ROOTPATH=../../../
+_DESCPATH=../../../protocol/protocol.desc
 # Start the flight logger first
-PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH ROOTPATH=$_ROOTPATH python3 ../../logger/flight_logger.py &
+PYTHONPATH=$_PYTHONPATH INTERNALPATH=$_INTERNALPATH CONFIGPATH=$_CONFIGPATH python3 ../../logger/flight_logger.py &
 PID1=$!
 # Start the test code
-PYTHONPATH=$_PYTHONPATH ROOTPATH=$_ROOTPATH python3 -m pytest $1 --log-cli-level=INFO -vv -x &
+PYTHONPATH=$_PYTHONPATH DESCPATH=$_DESCPATH python3 -m pytest $@ --log-cli-level=INFO -vv -x &
 PID2=$!
 
 cleanup() {

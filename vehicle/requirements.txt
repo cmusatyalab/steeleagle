@@ -9,3 +9,5 @@ zmq
 aiorwlock
 mcap
 mcap-protobuf-support
+pathlib
+Jinja2

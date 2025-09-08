@@ -1,6 +1,14 @@
 # Automated script for creating GRPC python bindings
 # TODO: Eventually, we may want to support language/vehicle choice
 
+# Put in the path to protoc-gen-doc locally, or add it to PATH
+if [ -n "$1" ] && [ "$1" = "doc" ]; then
+	PROTOCGENDOC=/usr/local/bin/protoc-gen-doc
+	$PROTOCPATH --plugin=protoc-gen-doc=$PROTOCGENDOC \
+		--doc_out=. --doc_opt=markdown,proto_doc.md \
+		-I. *.proto ./**/*.proto
+fi
+
 # Build the message protocols
 $PROTOCPATH -I. \
 	--python_out=./bindings/python/ \

@@ -54,21 +54,19 @@ class FlightLogService(FlightLogServicer):
         log_config = query_config('logging')
         if log_config['generate_flight_log']:
             # Create an mcap file with the current datetime
-            fname = log_config['custom_filename']
-            if not fname:
+            filename = log_config['custom_filename']
+            if not filename:
                 date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
                 name = query_config('vehicle.name')
-                fname = name + '_' + date_time + '.mcap'
+                filename = name + '_' + date_time + '.mcap'
             try:
-                import os
-                root = os.getenv('ROOTPATH')
-                if not root:
-                    root = '../'
-                fpath = root + 'vehicle/' + log_config['file_path']
-                self._file = open(fpath + fname, 'wb')
+                from pathlib import Path
+                # Get path relative to vehicle directory
+                log_path = Path(__file__).parent.parent / log_config['file_path'] / filename
+                self._file = open(str(log_path), 'wb')
             except:
                 raise ValueError(
-                        f'Could not open log file {fpath + fname}! Make sure your log path is set correctly.'
+                        f'Could not open log file {filename}! Make sure your log path is set correctly.'
                         )
             self._mcap_logger = Writer(self._file)
         if log_config['log_to_console']:

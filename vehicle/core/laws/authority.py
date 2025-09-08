@@ -51,10 +51,8 @@ class LawAuthority:
         # generated .desc file
         self._desc_pool = DescriptorPool()
         self._name_table = {}
-        root = os.getenv('ROOTPATH')
-        if not root:
-            root = '../'
-        with open(f"{root}protocol/protocol.desc", 'rb') as f:
+        desc_path = os.getenv('DESCPATH')
+        with open(desc_path, 'rb') as f:
             data = f.read()
             descriptor_set = FileDescriptorSet.FromString(data)
             for file_descriptor_proto in descriptor_set.file:
