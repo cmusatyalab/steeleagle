@@ -1,0 +1,22 @@
+from dataclasses import dataclass, field
+from typing import Dict, Tuple, Any
+
+@dataclass
+class ActionIR:
+    type_name: str
+    action_id: str
+    attributes: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class EventIR:
+    type_name: str
+    event_name: str
+    attributes: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class MissionIR:
+    actions: Dict[str, ActionIR]
+    events: Dict[str, EventIR]
+    start_action_id: str
+    # transitions: (state, event) -> target_state
+    transitions: Dict[Tuple[str, str], str]
