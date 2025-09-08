@@ -7,21 +7,10 @@ import logging
 import os
 # Mock import
 from message_sequencer import Topic, MessageSequencer
-from mocks.generate_mock_services import generate_mock_services
-root = os.getenv('ROOTPATH')
-if not root:
-    root = '../../'
-generate_mock_services(
-        'Control', 
-        'control_service',
-        f'{root}vehicle/core/test/mocks/mock_services/_gen_mock_control_service.py'
-        )
+from mocks.generate_mock_service import generate_mock_service
+generate_mock_service('Control', 'control_service')
 from mocks.mock_services._gen_mock_control_service import MockControlService
-generate_mock_services(
-        'Mission', 
-        'mission_service',
-        f'{root}vehicle/core/test/mocks/mock_services/_gen_mock_mission_service.py',
-        )
+generate_mock_service('Mission', 'mission_service')
 from mocks.mock_services._gen_mock_mission_service import MockMissionService
 # Utility import
 from util.sockets import setup_zmq_socket, SocketOperation
