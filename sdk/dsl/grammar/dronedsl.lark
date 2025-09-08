@@ -1,9 +1,11 @@
 // ===== Top level =====
-start: _NL* import_block? actions_block events_block? mission_block
+start: _NL* data_block? actions_block events_block? mission_block
 
-// ===== Imports =====
-import_block: "Import" COLON _NL import_stmt+
-import_stmt: STRING _NL
+// ===== Data =====
+data_block: "Data" _NL data_section
+data_section: (datum_decl _NL*)*
+datum_decl: NAME NAME datum_body?
+datum_body: "(" [attr ("," attr)*] ")"
 
 // ===== Actions =====
 actions_block: "Actions" COLON _NL actions_section
@@ -20,14 +22,26 @@ event_body: LPAREN [attr (COMMA attr)*] RPAREN
 // ===== Mission =====
 mission_block: "Mission" COLON _NL mission_start during_block*
 mission_start: "Start" NAME _NL
-
 during_block: "During" NAME COLON _NL transition_body
 transition_body: (transition_rule | _NL)+
 transition_rule: NAME ARROW NAME _NL
 
+// Inline data literal: TypeName( ... )
+datum_inline: NAME LPAREN [datum_args] RPAREN
+datum_args: datum_kwarg (COMMA datum_kwarg)* | value (COMMA value)*
+datum_kwarg: NAME (COLON|EQUAL) value
+
 // ===== Attributes =====
-attr: NAME COLON value
-value: DURATION | NUMBER | NAME | STRING | array
+attr: NAME (COLON|EQUAL) value
+
+// ----- Shared -----
+?value: NUMBER
+      | STRING
+      | datum_inline
+      | NAME
+      | array
+      | DURATION
+
 array: LBRACK [value (COMMA value)*] RBRACK
 
 // ===== Tokens =====
@@ -35,6 +49,7 @@ LPAREN: "("
 RPAREN: ")"
 COMMA:  ","
 COLON:  ":"
+EQUAL:  "="
 ARROW:  "->"
 LBRACK: "["
 RBRACK: "]"
@@ -54,5 +69,4 @@ COMMENT: /#[^\n]*/
 %ignore COMMENT
 %ignore WS_INLINE
 
-// helper: one or more newlines (blank lines OK)
 _NL: NL+

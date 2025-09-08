@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Optional, Any, Iterable
 from lark import Transformer, Tree, v_args, Token
 
 from dsl.compiler.validator import validate_mission_ir
-from dsl.compiler.ir import MissionIR, ActionIR, EventIR
+from dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
 from dsl.compiler.resolver import resolve_symbols
 from dsl.compiler.loader import load_all, print_report
 
@@ -47,30 +47,10 @@ class DroneDSLTransformer(Transformer):
         super().__init__()
         self._actions: Dict[str, ActionIR] = {}
         self._events: Dict[str, EventIR] = {}
+        self._data: Dict[str, DatumIR] = {}
         self._start_aid: Optional[str] = None
         self._during: Dict[str, Dict[str, str]] = {}
 
-    # ----- Actions -----
-    def action_decl(self, type_name: Token, action_id: Token, attrs: Optional[List] = None):
-        type_str = str(type_name)
-        aid = str(action_id)
-        attrs_dict = _pairs_to_dict(attrs)
-        self._actions[aid] = ActionIR(type_name=type_str, action_id=aid, attributes=attrs_dict)
-        logger.debug("action_decl: %s (%s) attrs=%s", aid, type_str, attrs_dict)
-
-    def action_body(self, *items):
-        return [it for it in items if isinstance(it, tuple) and len(it) == 2]
-
-    # ----- Events -----
-    def event_decl(self, type_name: Token, event_name: Token, attrs: Optional[List] = None):
-        type_str = str(type_name)
-        eid = str(event_name)
-        attrs_dict = _pairs_to_dict(attrs)
-        self._events[eid] = EventIR(type_name=type_str, event_name=eid, attributes=attrs_dict)
-        logger.debug("event_decl: %s (%s) attrs=%s", eid, type_str, attrs_dict)
-
-    def event_body(self, *items):
-        return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ----- Attributes -----
     def attr(self, k: Token, _colon, v):
@@ -97,6 +77,69 @@ class DroneDSLTransformer(Transformer):
                 return s
         return v
 
+    # ----- Actions -----
+    def action_decl(self, type_name: Token, action_id: Token, attrs: Optional[List] = None):
+        type_str = str(type_name)
+        aid = str(action_id)
+        attrs_dict = _pairs_to_dict(attrs)
+        self._actions[aid] = ActionIR(type_name=type_str, action_id=aid, attributes=attrs_dict)
+        logger.debug("action_decl: %s (%s) attrs=%s", aid, type_str, attrs_dict)
+
+    def action_body(self, *items):
+        return [it for it in items if isinstance(it, tuple) and len(it) == 2]
+
+    # ----- Events -----
+    def event_decl(self, type_name: Token, event_name: Token, attrs: Optional[List] = None):
+        type_str = str(type_name)
+        eid = str(event_name)
+        attrs_dict = _pairs_to_dict(attrs)
+        self._events[eid] = EventIR(type_name=type_str, event_name=eid, attributes=attrs_dict)
+        logger.debug("event_decl: %s (%s) attrs=%s", eid, type_str, attrs_dict)
+
+    def event_body(self, *items):
+        return [it for it in items if isinstance(it, tuple) and len(it) == 2]
+    
+    # ----- Data -----
+    def Datum_decl(self, type_name: Token, datum_id: Token, attrs: Optional[List] = None):
+        t = str(type_name); mid = str(datum_id)
+        attrs_dict = _pairs_to_dict(attrs)
+        self._data[mid] = DatumIR(type_name=t, datum_id=mid, attributes=attrs_dict)
+        logger.debug("message_decl: %s (%s) attrs=%s", mid, t, attrs_dict)
+
+    def message_body(self, *items):
+        return [it for it in items if isinstance(it, tuple) and len(it) == 2]
+
+    # ----- Mission / transitions (unchanged) -----
+
+    def start(self, *children):
+        logger.info("transform: building MissionIR (actions=%d, events=%d, messages=%d)",
+                    len(self._actions), len(self._events), len(self._data))
+        transitions: Dict[Tuple[str, str], str] = {}
+
+        for aid, evmap in self._during.items():
+            for eid, nxt_aid in evmap.items():
+                transitions[(aid, eid)] = nxt_aid
+            if _DONE_EVENT not in evmap:
+                transitions[(aid, _DONE_EVENT)] = _TERMINATE_AID
+
+        mir = MissionIR(
+            actions=self._actions,
+            events=self._events,
+            messages=self._data,     # ← NEW
+            start_action_id=self._start_aid,
+            transitions=transitions,
+        )
+
+        # Scan your SDK so @register_* have run.
+        # With your current tree, messages live under 'sdk.api.messages'
+        load_all("sdk.api", force=True, show_trace=False)
+        # (optional) print_report(load_all(...)) if you want a summary
+
+        mir = resolve_symbols(mir)
+        mir = validate_mission_ir(mir)
+        logger.info("transform: done (transitions=%d)", len(transitions))
+        return mir
+    
     # ----- Mission -----
     def mission_start(self, action_id: Token):
         self._start_aid = str(action_id)

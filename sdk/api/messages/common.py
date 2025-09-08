@@ -5,63 +5,10 @@ from api.base import Datatype
 from dataclasses import dataclass
 from enum import Enum
 from api.messages.google.timestamp import Timestamp
-
-''' Enums '''
-class ResponseStatus(Enum):
-    '''Responses for RPC functions'''
-    OK = 0
-    '''Command received'''
-    IN_PROGRESS = 1
-    '''Command in progress'''
-    COMPLETED = 2
-    '''Command finished without error'''
-    CANCELLED = 3
-    '''The following are gRPC base status codes, more info can be found at: https://grpc.github.io/grpc/core/md_doc_statuscodes.html To translate a gRPC error code to a SteelEagle response code, add 2 to its enum value'''
-    UNKNOWN = 4
-
-    INVALID_ARGUMENT = 5
-
-    DEADLINE_EXCEEDED = 6
-
-    NOT_FOUND = 7
-
-    ALREADY_EXISTS = 8
-
-    PERMISSION_DENIED = 9
-
-    RESOURCE_EXHAUSTED = 10
-
-    FAILED_PRECONDITION = 11
-
-    ABORTED = 12
-
-    OUT_OF_RANGE = 13
-
-    UNIMPLEMENTED = 14
-
-    INTERNAL = 15
-
-    UNAVAILABLE = 16
-
-    DATA_LOSS = 17
-
-    UNAUTHENTICATED = 18
+from dsl.compiler.registry import register_data 
 
 
-''' Messages '''
-@dataclass
-class Response(Datatype):
-    status: ResponseStatus
-
-    response_string: str
-    '''Detailed message on reason for response'''
-    timestamp: Timestamp
-
-    @staticmethod
-    def get_type_url():
-        return 'type.googleapis.com/steeleagle.protocol.common.Response'
-
-
+@register_data
 @dataclass
 class Pose(Datatype):
     '''Angular offsets or poses in 3 dimensions [degrees]'''
@@ -75,7 +22,7 @@ class Pose(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.common.Pose'
 
-
+@register_data
 @dataclass
 class Velocity(Datatype):
     '''Representation of the speed in 3-dimensions [meters/s]'''
@@ -92,7 +39,7 @@ class Velocity(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.common.Velocity'
 
-
+@register_data
 @dataclass
 class Position(Datatype):
     '''Position offset relative to home or current location [meters]'''
@@ -109,7 +56,7 @@ class Position(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.common.Position'
 
-
+@register_data
 @dataclass
 class Location(Datatype):
     '''Location in global coordinates [latitude, longitude]'''

@@ -1,6 +1,5 @@
 # compiler/loader.py
 from __future__ import annotations
-
 import importlib
 import pkgutil
 import sys
@@ -12,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 _LOADED_BASES: set[str] = set()
-_DEFAULT_BASES: Tuple[str, ...] = ("api",)
+_DEFAULT_BASES = ("api.actions", "api.events", "api.messages")
 
 
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
