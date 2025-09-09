@@ -1,23 +1,23 @@
 // ===== Top level =====
-start: _NL* data_block? actions_block events_block? mission_block
+start: _NL* data_block? actions_block events_block? mission_block _NL*
 
-// ===== Data =====
-data_block: "Data" _NL data_section
+// ===== Data (no inline here) =====
+data_block: "Data" COLON _NL data_section
 data_section: (datum_decl _NL*)*
 datum_decl: NAME NAME datum_body?
-datum_body: "(" [attr ("," attr)*] ")"
+datum_body: LPAREN [attr (COMMA attr)*] RPAREN
 
 // ===== Actions =====
 actions_block: "Actions" COLON _NL actions_section
 actions_section: (action_decl | _NL)+
 action_decl: NAME NAME action_body? _NL
-action_body: LPAREN [attr (COMMA attr)*] RPAREN
+action_body: LPAREN [ae_attr (COMMA ae_attr)*] RPAREN   // allow inline in actions
 
 // ===== Events =====
 events_block: "Events" COLON _NL events_section
 events_section: (event_decl | _NL)+
 event_decl: NAME NAME event_body? _NL
-event_body: LPAREN [attr (COMMA attr)*] RPAREN
+event_body: LPAREN [ae_attr (COMMA ae_attr)*] RPAREN    // allow inline in events
 
 // ===== Mission =====
 mission_block: "Mission" COLON _NL mission_start during_block*
@@ -26,23 +26,31 @@ during_block: "During" NAME COLON _NL transition_body
 transition_body: (transition_rule | _NL)+
 transition_rule: NAME ARROW NAME _NL
 
-// Inline data literal: TypeName( ... )
-datum_inline: NAME LPAREN [datum_args] RPAREN
-datum_args: datum_kwarg (COMMA datum_kwarg)* | value (COMMA value)*
-datum_kwarg: NAME (COLON|EQUAL) value
+// ----- Attributes -----
+// For Data block: plain values (no inline)
+attr:    NAME (COLON|EQUAL) value
+// For Actions/Events: values with inline allowed
+ae_attr: NAME (COLON|EQUAL) ae_value
 
-// ===== Attributes =====
-attr: NAME (COLON|EQUAL) value
-
-// ----- Shared -----
-?value: NUMBER
-      | STRING
-      | datum_inline
-      | NAME
-      | array
-      | DURATION
-
+// ----- Values -----
+// General value (for Data): NO inline
+?value: NUMBER | STRING | NAME | array | DURATION
 array: LBRACK [value (COMMA value)*] RBRACK
+
+// Actions/Events value: ALLOW inline + arrays thereof
+?ae_value: datum_inline
+         | NUMBER
+         | STRING
+         | NAME
+         | ae_array
+         | DURATION
+
+ae_array: LBRACK [ae_value (COMMA ae_value)*] RBRACK
+
+// Inline data literal: TypeName(...)
+datum_inline: NAME LPAREN [datum_args] RPAREN
+datum_args: datum_kwarg (COMMA datum_kwarg)* | ae_value (COMMA ae_value)*
+datum_kwarg: NAME (COLON|EQUAL) ae_value
 
 // ===== Tokens =====
 LPAREN: "("
@@ -59,14 +67,11 @@ RBRACK: "]"
 %import common.ESCAPED_STRING -> STRING
 %import common.WS_INLINE
 
-// e.g., 60s, 60sec, 5m, 2min
 DURATION: NUMBER /(s|sec|m|min)/
-
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
 
 // ===== Comments & whitespace =====
 COMMENT: /#[^\n]*/
 %ignore COMMENT
 %ignore WS_INLINE
-
 _NL: NL+

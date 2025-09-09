@@ -5,12 +5,9 @@ from api.base import Datatype
 from dataclasses import dataclass
 
 from dsl.compiler.registry import register_data
-from api.messages.google.timestamp import Timestamp
-from api.messages.common import Position, Location
 
 ''' Messages '''
 @register_data
-@dataclass
 class BoundingBox(Datatype):
     '''Defines the upper left and lower right corners of a detected object in an image frame. Origin (0,0) is the top left corner of the input image. (image_height, image_width) is the bottom right corner. Also the class and confidence threshold associated with the box.'''
     y_min: float
@@ -24,13 +21,11 @@ class BoundingBox(Datatype):
     class_name: str
     
     confidence: float
-    
 
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.result.BoundingBox'
 
 @register_data
-@dataclass
 class HSV(Datatype):
     '''Color filter represented by hue, saturation, and value Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html'''
     h: int
@@ -44,7 +39,6 @@ class HSV(Datatype):
         return 'type.googleapis.com/steeleagle.protocol.messages.result.HSV'
 
 @register_data
-@dataclass
 class Detection(Datatype):
 
     detection_id: int

@@ -6,7 +6,7 @@ from dataclasses import is_dataclass, asdict as dc_asdict
 from typing import Any, Tuple
 from bindings.python.services import control_service_pb2 as ctrl_pb
 
-from api.messages.common import (
+from api.messages.response import (
     Response as CommonResponse,
     ResponseStatus
 )

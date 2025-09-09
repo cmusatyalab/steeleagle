@@ -23,7 +23,7 @@ from api.messages.common import (
     Location, Velocity, Position, Pose
 )
 from api.messages.control import (
-    AltitudeMode, HeadingMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration
+    AltitudeMode, HeadingMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration, ReferenceFrameValue
 )
 
 # ---------------------------------------------------------------------
@@ -173,7 +173,7 @@ class SetRelativePosition(Action):
     """Transit the vehicle to a target position relative to ENU or BODY frame, in meters"""
     position: Position
     max_velocity: Optional[Velocity] = None
-    frame: ReferenceFrame = ReferenceFrame.BODY
+    frame: ReferenceFrame = ReferenceFrameValue.BODY
 
     async def execute(self):
         req = ctrl_pb.SetRelativePositionRequest()
@@ -185,7 +185,7 @@ class SetRelativePosition(Action):
 class SetVelocity(Action):
     """Transit the vehicle at a target velocity in ENU or BODY frame, in m/s"""
     velocity: Velocity
-    frame: ReferenceFrame = ReferenceFrame.BODY
+    frame: ReferenceFrame = ReferenceFrameValue.BODY
 
     async def execute(self):
         req = ctrl_pb.SetVelocityRequest()

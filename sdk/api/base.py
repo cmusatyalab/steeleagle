@@ -1,6 +1,5 @@
 from typing import Any
 from pydantic import BaseModel, ConfigDict
-from dataclasses import dataclass
 
 class Action(BaseModel):
     '''
@@ -28,7 +27,6 @@ class Event(BaseModel):
         '''
         raise NotImplementedError
 
-@dataclass
 class Datatype(BaseModel):
     '''
     Pydantic base model for a Protobuf message.
@@ -36,6 +34,7 @@ class Datatype(BaseModel):
     # Lenient validation; allow non-pydantic objects in fields if needed
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
 
+    @staticmethod
     def get_type_url() -> str:
         '''
         Get the type url associated with the object (from Protobuf specification).

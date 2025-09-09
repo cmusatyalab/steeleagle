@@ -3,7 +3,6 @@ _PYTHONPATH=../protocol/:../protocol/bindings/python/:./
 PYTHONPATH=$_PYTHONPATH python3 main_test.py &
 PID1=$!
 
-
 cleanup() {
     echo "SIGTERM detected. Killing background processes..."
     kill "$PID1" # Make sure to kill our logger after everything else

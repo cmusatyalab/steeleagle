@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, Tuple
 from pydantic import BaseModel, ValidationError
 
-from dsl.compiler.registry import get_action, get_event
+from dsl.compiler.registry import get_action, get_event, get_data
 from dsl.compiler.ir import MissionIR
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,10 @@ def _instantiate(cls: type[BaseModel], attrs: Dict[str, Any]) -> BaseModel:
         return model
     except ValidationError as e:
         msgs = "; ".join(err["msg"] for err in e.errors())
-        logger.error("instantiate: %s failed pydantic validation: %s", getattr(cls, "__name__", str(cls)), msgs)
+        logger.error(
+            "instantiate: %s failed pydantic validation: %s",
+            getattr(cls, "__name__", str(cls)), msgs
+        )
         raise DSLValidationError(msgs) from e
     except Exception as e:
         logger.error("instantiate: %s failed: %s", getattr(cls, "__name__", str(cls)), e)
@@ -50,14 +53,42 @@ def validate_event(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseMode
     return cls, model.model_dump()
 
 
+def validate_data(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseModel], Dict[str, Any]]:
+    logger.debug("validate_data: type=%s", type_name)
+    cls = get_data(type_name)
+    if cls is None:
+        logger.warning("validate_data: unregistered data type '%s'", type_name)
+        raise DSLValidationError(f"Unregistered data type: {type_name}")
+    model = _instantiate(cls, attrs)
+    return cls, model.model_dump()
+
+
 def validate_mission_ir(mir: MissionIR) -> MissionIR:
     """
-    Validate and normalize every action and event in the MissionIR.
+    Validate and normalize every data, action, and event in the MissionIR.
     Returns the same object with attributes replaced by normalized dumps.
     """
+    data_valid = 0
     actions_valid = 0
     events_valid = 0
-    logger.info("validator: start (actions=%d, events=%d)", len(mir.actions), len(mir.events))
+    logger.info(
+        "validator: start (data=%d, actions=%d, events=%d)",
+        len(getattr(mir, "data", {})),
+        len(mir.actions),
+        len(mir.events),
+    )
+
+    # Data (validate first so downstream references are known-good)
+    for did, dir_ in getattr(mir, "data", {}).items():
+        try:
+            _, normalized = validate_data(dir_.type_name, dir_.attributes)
+            dir_.attributes = normalized
+            data_valid += 1
+        except DSLValidationError as e:
+            logger.error("validator: data '%s' (%s) invalid: %s", did, dir_.type_name, e)
+            raise ValueError(
+                f"Data '{did}' of type '{dir_.type_name}' failed validation: {e}"
+            ) from e
 
     # Actions
     for aid, air in mir.actions.items():
@@ -83,5 +114,8 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
                 f"Event '{ename}' of type '{eir.type_name}' failed validation: {e}"
             ) from e
 
-    logger.info("validator: done (actions_valid=%d, events_valid=%d)", actions_valid, events_valid)
+    logger.info(
+        "validator: done (data_valid=%d, actions_valid=%d, events_valid=%d)",
+        data_valid, actions_valid, events_valid
+    )
     return mir

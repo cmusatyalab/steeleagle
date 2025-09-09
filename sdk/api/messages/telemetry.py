@@ -7,6 +7,7 @@ from enum import Enum
 from api.messages.common import (Location, Velocity, Position, Pose)
 from api.messages.google.duration import Duration
 from api.messages.google.timestamp import Timestamp
+from dsl.compiler.registry import register_data
 
 ''' Enums '''
 class MotionStatus(Enum):
@@ -98,7 +99,7 @@ class MissionExecState(Enum):
     '''Mission was cancelled'''
 
 ''' Messages '''
-@dataclass
+@register_data
 class TelemetryStreamInfo(Datatype):
 
     current_frequency: int
@@ -111,7 +112,7 @@ class TelemetryStreamInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.TelemetryStreamInfo'
 
-@dataclass
+@register_data
 class BatteryInfo(Datatype):
 
     percentage: int
@@ -120,7 +121,7 @@ class BatteryInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.BatteryInfo'
 
-@dataclass
+@register_data
 class GPSInfo(Datatype):
 
     satellites: int
@@ -129,14 +130,14 @@ class GPSInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.GPSInfo'
 
-@dataclass
+@register_data
 class CommsInfo(Datatype):
 
 
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.CommsInfo'
 
-@dataclass
+@register_data
 class VehicleInfo(Datatype):
 
     name: str
@@ -157,7 +158,7 @@ class VehicleInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.VehicleInfo'
 
-@dataclass
+@register_data
 class SetpointInfo(Datatype):
 
     position_body_sp: Position
@@ -174,7 +175,7 @@ class SetpointInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.SetpointInfo'
 
-@dataclass
+@register_data
 class PositionInfo(Datatype):
 
     home: Location
@@ -193,7 +194,7 @@ class PositionInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.PositionInfo'
 
-@dataclass
+@register_data
 class GimbalStatus(Datatype):
 
     id: int
@@ -206,7 +207,7 @@ class GimbalStatus(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.GimbalStatus'
 
-@dataclass
+@register_data
 class GimbalInfo(Datatype):
 
     num_gimbals: int
@@ -217,7 +218,7 @@ class GimbalInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.GimbalInfo'
 
-@dataclass
+@register_data
 class ImagingSensorStatus(Datatype):
 
     id: int
@@ -250,7 +251,7 @@ class ImagingSensorStatus(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.ImagingSensorStatus'
 
-@dataclass
+@register_data
 class ImagingSensorStreamStatus(Datatype):
 
     stream_capacity: int
@@ -265,7 +266,7 @@ class ImagingSensorStreamStatus(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.ImagingSensorStreamStatus'
 
-@dataclass
+@register_data
 class ImagingSensorInfo(Datatype):
 
     stream_status: ImagingSensorStreamStatus
@@ -276,7 +277,7 @@ class ImagingSensorInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.ImagingSensorInfo'
 
-@dataclass
+@register_data
 class AlertInfo(Datatype):
 
     battery_warning: BatteryWarning
@@ -293,7 +294,7 @@ class AlertInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.AlertInfo'
 
-@dataclass
+@register_data
 class DriverTelemetry(Datatype):
     '''Telemetry message for the vehicle, originated from the driver module'''
     timestamp: Timestamp
@@ -314,7 +315,7 @@ class DriverTelemetry(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.DriverTelemetry'
 
-@dataclass
+@register_data
 class Frame(Datatype):
     '''Imaging sensor frame data streamed from the driver module'''
     timestamp: Timestamp
@@ -335,7 +336,7 @@ class Frame(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.Frame'
 
-@dataclass
+@register_data
 class MissionInfo(Datatype):
 
     name: str
@@ -352,7 +353,7 @@ class MissionInfo(Datatype):
     def get_type_url():
         return 'type.googleapis.com/steeleagle.protocol.messages.telemetry.MissionInfo'
 
-@dataclass
+@register_data
 class MissionTelemetry(Datatype):
     '''Telemetry message for the mission, originated from the mission module'''
     timestamp: Timestamp

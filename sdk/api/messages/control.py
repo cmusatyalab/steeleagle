@@ -35,30 +35,23 @@ class PoseModeValue(Enum):
     '''Rotational velocities'''
 
 @register_data
-@dataclass
 class HeadingMode(Datatype):
     mode: HeadingModeValue
   
 @register_data
-@dataclass
 class AltitudeMode(Datatype):
     mode: AltitudeModeValue
 
-
 @register_data
-@dataclass
 class ReferenceFrame(Datatype):
     mode: ReferenceFrameValue
 
 @register_data
-@dataclass
 class PoseMode(Datatype):
     mode: PoseModeValue
 
 @register_data
-@dataclass
 class ImagingSensorConfiguration(Datatype):
-
     id: int
     '''Target imaging sensor ID'''
     set_primary: bool

@@ -5,8 +5,8 @@ import logging
 from typing import Any, Dict, List, Tuple, Optional, get_args, get_origin, Union
 from pydantic import BaseModel
 
-from compiler.ir import MissionIR, ActionIR, EventIR, DataIR
-from compiler.registry import get_action, get_event, get_data
+from dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
+from dsl.compiler.registry import get_action, get_event, get_data
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def _instantiate_event_from_ir(eid: str, events: Dict[str, EventIR]) -> BaseMode
     return cls(**eir.attributes)
 
 
-def _instantiate_data_from_ir(did: str, data: Dict[str, DataIR]) -> BaseModel | None:
+def _instantiate_data_from_ir(did: str, data: Dict[str, DatumIR]) -> BaseModel | None:
     dir_ = data.get(did)
     if not dir_:
         return None
@@ -58,21 +58,57 @@ def _instantiate_data_from_ir(did: str, data: Dict[str, DataIR]) -> BaseModel | 
     return cls(**dir_.attributes)
 
 
+def _maybe_instantiate_inline_data(v):
+    if not (isinstance(v, dict) and v.get("__inline__") and "type" in v):
+        return v
+
+    cls = get_data(v["type"])
+    if not cls:
+        logger.warning("inline data: unregistered type '%s'", v["type"])
+        return v
+
+    try:
+        kwargs = dict(v.get("kwargs") or {})
+        args = list(v.get("args") or [])
+
+        if args:
+            field_names = list(cls.model_fields.keys())
+            ai = 0
+            for fn in field_names:
+                if fn in kwargs:
+                    continue
+                if ai < len(args):
+                    kwargs[fn] = args[ai]
+                    ai += 1
+                else:
+                    break
+
+        return cls(**kwargs)
+    except Exception as e:
+        logger.error("inline data: failed to instantiate %s: %s", v["type"], e)
+        return v
+
+
 def _resolve_value_for_field(
     value: Any,
     field_type: Any,
     actions: Dict[str, ActionIR],
     events: Dict[str, EventIR],
-    data: Dict[str, DataIR],
+    data: Dict[str, DatumIR],
 ) -> Any:
     """
-    Convert string IDs to concrete BaseModel *instances* using the registry,
-    based on the field type. Supports nested List/Tuple/Optional.
+    Convert:
+      - inline data literals -> BaseModel via get_data
+      - string IDs          -> BaseModel via get_data/get_event/get_action
+    Handles nested List/Tuple/Optional types.
     """
+    # First: materialize any inline data literal
+    value = _maybe_instantiate_inline_data(value)
+
     origin = get_origin(field_type)
     args   = get_args(field_type)
 
-    # Single nested model field
+    # Field expects a Pydantic model
     if _is_model_type(field_type):
         if isinstance(value, str):
             inst = (
@@ -81,6 +117,7 @@ def _resolve_value_for_field(
                 or _instantiate_action_from_ir(value, actions)
             )
             return inst if inst is not None else value
+        # Already a BaseModel or nested dict/list: leave or recurse where needed
         return value
 
     # List/Tuple fields
@@ -89,6 +126,7 @@ def _resolve_value_for_field(
         if isinstance(value, (list, tuple)):
             out_list = []
             for v in value:
+                v = _maybe_instantiate_inline_data(v)
                 if _is_model_type(inner) and isinstance(v, str):
                     inst = (
                         _instantiate_data_from_ir(v, data)
@@ -113,7 +151,8 @@ def _resolve_value_for_field(
 def resolve_symbols(mir: MissionIR) -> MissionIR:
     """
     Replace string IDs in attributes with *instances* of the referenced models
-    (not dicts). Works for actions, events, and data.
+    (not dicts). Works for actions, events, and data. Also instantiates inline
+    data constructors present in action/event attributes.
     """
     logger.info(
         "resolve_symbols: start (actions=%d, events=%d, data=%d)",
@@ -148,7 +187,7 @@ def resolve_symbols(mir: MissionIR) -> MissionIR:
                 )
         eir.attributes = resolved
 
-    # data (can also embed other data)
+    # data (allow data objects to embed other data as fields, if schema uses them)
     for did, dir_ in mir.data.items():
         data_cls = get_data(dir_.type_name)
         if not data_cls:

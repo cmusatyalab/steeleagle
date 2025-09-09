@@ -9,7 +9,6 @@ from dsl.compiler.registry import register_data
 
 
 @register_data
-@dataclass
 class Pose(Datatype):
     '''Angular offsets or poses in 3 dimensions [degrees]'''
     pitch: float
@@ -23,7 +22,6 @@ class Pose(Datatype):
         return 'type.googleapis.com/steeleagle.protocol.common.Pose'
 
 @register_data
-@dataclass
 class Velocity(Datatype):
     '''Representation of the speed in 3-dimensions [meters/s]'''
     x_vel: float
@@ -40,7 +38,6 @@ class Velocity(Datatype):
         return 'type.googleapis.com/steeleagle.protocol.common.Velocity'
 
 @register_data
-@dataclass
 class Position(Datatype):
     '''Position offset relative to home or current location [meters]'''
     x: float
@@ -57,7 +54,6 @@ class Position(Datatype):
         return 'type.googleapis.com/steeleagle.protocol.common.Position'
 
 @register_data
-@dataclass
 class Location(Datatype):
     '''Location in global coordinates [latitude, longitude]'''
     latitude: float
