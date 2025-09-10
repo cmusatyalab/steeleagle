@@ -33,11 +33,3 @@ class Datatype(BaseModel):
     '''
     # Lenient validation; allow non-pydantic objects in fields if needed
     model_config = ConfigDict(extra='forbid', arbitrary_types_allowed=True)
-
-    @staticmethod
-    def get_type_url() -> str:
-        '''
-        Get the type url associated with the object (from Protobuf specification).
-        This is useful for unpacking/packing the object as an Any.
-        '''
-        raise NotImplementedError

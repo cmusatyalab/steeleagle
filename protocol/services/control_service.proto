@@ -196,7 +196,7 @@ message SetRelativePositionRequest {
   // determines angular velocity
   optional steeleagle.protocol.common.Velocity max_velocity = 3;
   // Frame of reference
-  ReferenceFrame frame = 4;
+  optional ReferenceFrame frame = 4;
 }
 
 message SetRelativePositionResponse {
@@ -208,7 +208,7 @@ message SetVelocityRequest {
   // Target velocity
   steeleagle.protocol.common.Velocity velocity = 2;
   // Frame of reference
-  ReferenceFrame frame = 3;
+  optional ReferenceFrame frame = 3;
 }
 
 message SetVelocityResponse {
@@ -220,7 +220,7 @@ message SetHeadingRequest {
   // Target heading or global location to look at
   steeleagle.protocol.common.Location location = 2;
   // Determines how the drone will orient
-  HeadingMode heading_mode = 5;
+  optional HeadingMode heading_mode = 5;
 }
 
 message SetHeadingResponse {
