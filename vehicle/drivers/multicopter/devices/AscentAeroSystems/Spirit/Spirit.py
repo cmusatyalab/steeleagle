@@ -1,4 +1,5 @@
 # General import
+import asyncio
 import logging
 
 # Streaming imports
@@ -7,6 +8,9 @@ import common_pb2 as common_protocol
 
 # Interface import
 from multicopter.autopilots.ardupilot import ArduPilotDrone
+
+# SDK import (MAVLink)
+from pymavlink import mavutil
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +59,18 @@ class Spirit(ArduPilotDrone):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def connect(self, connection_string):
-        await super().connect(connection_string)
+        # Connect to drone
+        self.vehicle = mavutil.mavlink_connection(connection_string)
+        # Wait to connect until we have a mode mapping
+        while self._mode_mapping is None:
+            self.vehicle.wait_heartbeat()
+            self._mode_mapping = self.vehicle.mode_mapping()
+            await asyncio.sleep(0.1)
+
         # override the mode mapping because the mav_type is not reported properly
         # and we end up getting the mappings for a fixed wing
         self._mode_mapping = self.mode_mapping_acm
+        # Register telemetry streams
+        await self._register_telemetry_streams()
+        asyncio.create_task(self._message_listener())
+        return True
