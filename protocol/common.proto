@@ -45,7 +45,7 @@ enum ResponseStatus {
 
 message Response {
   ResponseStatus status = 1;
-  string response_string = 2; // Detailed message on reason for response
+  optional string response_string = 2; // Detailed message on reason for response
   google.protobuf.Timestamp timestamp = 3;
 }
 
@@ -53,37 +53,37 @@ message Response {
  * Angular offsets or poses in 3 dimensions [degrees]
  */
 message Pose {
-  double pitch = 1;
-  double roll = 2;
-  double yaw = 3;
+  optional double pitch = 1;
+  optional double roll = 2;
+  optional double yaw = 3;
 }
 
 /*
  * Representation of the speed in 3-dimensions [meters/s]
  */
 message Velocity {
-  double x_vel = 1; // Forward/north velocity
-  double y_vel = 2; // Right/east velocity
-  double z_vel = 3; // Up velocity
-  double angular_vel = 4; // Angular velocity [degrees/s]
+  optional double x_vel = 1; // Forward/north velocity
+  optional double y_vel = 2; // Right/east velocity
+  optional double z_vel = 3; // Up velocity
+  optional double angular_vel = 4; // Angular velocity [degrees/s]
 }
 
 /*
  * Position offset relative to home or current location [meters]
  */
 message Position {
-  double x = 1; // Forward/north offset
-  double y = 2; // Right/east offset
-  double z = 3; // Up offset
-  double angle = 4; // Angular offset [degrees]
+  optional double x = 1; // Forward/north offset
+  optional double y = 2; // Right/east offset
+  optional double z = 3; // Up offset
+  optional double angle = 4; // Angular offset [degrees]
 }
 
 /*
  * Location in global coordinates [latitude, longitude]
  */
 message Location {
-  double latitude = 1;
-  double longitude = 2;
-  double altitude = 3; // Above MSL [meters]
-  double heading = 4;
+  optional double latitude = 1;
+  optional double longitude = 2;
+  optional double altitude = 3; // Above MSL [meters]
+  optional double heading = 4;
 }

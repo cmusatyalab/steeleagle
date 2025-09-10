@@ -13,6 +13,7 @@ __pycache__/
 .env
 .vscode/
 protocol/bindings
+protocol/proto_doc.md
 backend/server/models/
 backend/server/steeleagle-vol/
 backend/server/redis/*
