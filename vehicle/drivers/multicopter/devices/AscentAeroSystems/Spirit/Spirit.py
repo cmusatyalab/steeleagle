@@ -55,7 +55,7 @@ class Spirit(ArduPilotDrone):
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
     async def connect(self, connection_string):
-        super().connect(connection_string)
+        await super().connect(connection_string)
         # override the mode mapping because the mav_type is not reported properly
         # and we end up getting the mappings for a fixed wing
         self._mode_mapping = self.mode_mapping_acm
