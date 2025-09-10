@@ -14,23 +14,26 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-class SlamZeroMQClient:
+class TestZMQClient:
     def __init__(
         self,
-        image_path,
-        server="gabriel-server",
-        port=9099,
-        source_name="telemetry",
-        client_id="slam_client",
+        args,
     ):
-        self.source_name = source_name
-        self.server = server
-        self.port = port
-        self.client_id = client_id
+        self.source_name = args.source
+        self.server = args.server
+        self.port = args.port
+        self.client_id = args.client_id
+
+        self.latitude = args.lat
+        self.longitude = args.lon
+        self.altitude = args.alt
+        self.heading = args.heading
+        self.gimbal_pitch = args.pitch
+        self.model = args.model
 
         # Store the latest results from each engine
         self.engine_results = {}
-
+        image_path = args.image
         # Setup image source
         if os.path.isdir(image_path):
             self.image_files = sorted(
@@ -78,8 +81,8 @@ class SlamZeroMQClient:
                 }
 
                 # Process results differently based on engine type
-                if "terra-slam" in engine_id.lower():
-                    logger.info(f"SLAM result: {payload}")
+                if "openscout-object" in engine_id.lower():
+                    logger.info(f"Detection result: {payload}")
                 # else:
                 #     logger.debug(f"Other engine result ({engine_id}): {payload}")
             else:
@@ -109,19 +112,15 @@ class SlamZeroMQClient:
 
                 # Add extras similar to GabrielCompute.py
                 extras = gabriel_extras.Extras()
-                # extras.drone_id = self.client_id
                 extras.telemetry.drone_name = self.client_id
-
-                # Add telemetry data (avoid using fields that don't exist)
-                telemetry = extras.telemetry
-                # Only set compatible fields
-                telemetry.uptime.FromSeconds(0)  # Mock uptime
-
-                # Set computation request in the same way as GabrielCompute
-                # Note: In GabrielCompute, compute_id is passed as the key, not specifying a specific engine
-                compute_command = extras.cpt_request
-                compute_command.cpt.model = "terra-slam"  # Request terra-slam engine
-
+                extras.telemetry.uptime.FromSeconds(0)  # Mock uptime
+                extras.telemetry.global_position.latitude = self.latitude
+                extras.telemetry.global_position.longitude = self.longitude
+                extras.telemetry.global_position.heading = self.heading
+                extras.telemetry.relative_position.up = self.altitude
+                extras.telemetry.gimbal_pose.pitch = self.gimbal_pitch
+                extras.cpt_request.cpt.model = self.model
+                print(extras)
                 # Pack extras into the input frame
                 input_frame.extras.Pack(extras)
 
@@ -154,21 +153,27 @@ class SlamZeroMQClient:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--image", required=True, help="image file or directory")
+    ap.add_argument("--lat", required=True, type=float, help="Latitude of vehicle")
+    ap.add_argument("--lon", required=True, type=float, help="Longitude of vehicle")
+    ap.add_argument(
+        "--alt", required=True, type=float, help="Altitude of vehicle (AGL)"
+    )
+    ap.add_argument(
+        "--heading", required=True, type=float, help="Heading of vehicle (0-360)"
+    )
+    ap.add_argument(
+        "--model", required=True, help="Model to use in the detection engine"
+    )
+    ap.add_argument("--pitch", required=True, type=int, help="Gimbal pitch angle")
     ap.add_argument("-s", "--server", default="gabriel-server", help="server host")
     ap.add_argument("-p", "--port", type=int, default=9099, help="server port")
-    ap.add_argument("-n", "--name", default="telemetry", help="source name")
+    ap.add_argument("-n", "--source", default="telemetry", help="source name")
     ap.add_argument(
-        "-c", "--client_id", default="slam_client", help="client id for drone_id"
+        "-c", "--client_id", default="canary", help="client id for drone_id"
     )
     args = ap.parse_args()
 
-    client = SlamZeroMQClient(
-        image_path=args.image,
-        server=args.server,
-        port=args.port,
-        source_name=args.name,
-        client_id=args.client_id,
-    )
+    client = TestZMQClient(args)
 
     asyncio.run(client.run())
 

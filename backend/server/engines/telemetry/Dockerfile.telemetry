@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.vendor="CMU Satyalab" \
       org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
@@ -27,13 +27,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #upgrade pip, otherwise tensorflow 1.15.0 will not be found
-RUN pip3 install --upgrade pip
-
-# Install Tensorflow and Gabriel's external dependencies
-RUN python3 -m pip install --no-cache-dir \
-    py-cpuinfo \
-    'setuptools==41.0.0' \
-    'websockets==8.0.0'
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade setuptools
 
 # You can speed up build slightly by reducing build context with
 #     git archive --format=tgz HEAD | docker build -t cnc -

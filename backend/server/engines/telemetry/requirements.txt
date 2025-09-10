@@ -7,7 +7,6 @@ gabriel-server
 opencv-python>=3, <5
 py-cpuinfo
 validators
-randomname
 jsonschema
 Pillow
 redis
@@ -15,3 +14,7 @@ zmq
 protobuf
 requests
 pyyaml
+pytz
+mcap
+mcap-protobuf-support
+foxglove-sdk

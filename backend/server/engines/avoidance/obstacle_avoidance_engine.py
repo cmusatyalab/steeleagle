@@ -18,38 +18,49 @@
 #
 #
 
-from abc import ABC, abstractmethod
-import time
+import json
+import logging
 import os
+import time
+from abc import ABC, abstractmethod
+
 import cv2
 import numpy as np
-import logging
-from gabriel_server import cognitive_engine
+import redis
+import torch
 from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from metric3d_models import Metric3DModelLoader
+from metric3d_utils import Metric3DInference
+from PIL import Image, ImageDraw
+
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as control_plane
 import protocol.gabriel_extras_pb2 as gabriel_extras
-from PIL import Image, ImageDraw
-import json
-import torch
-import redis
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class AvoidanceEngine(ABC):
     ENGINE_NAME = "obstacle-avoidance"
 
     def __init__(self, args):
-        self.threshold = args.threshold # default should be 190
+        self.threshold = args.threshold  # default should be 190
         self.store_detections = args.store
         self.model = args.model
 
-        self.r = redis.Redis(host='redis', port=args.redis, username='steeleagle', password=f'{args.auth}',decode_responses=True)
+        self.r = redis.Redis(
+            host="redis",
+            port=args.redis,
+            username="steeleagle",
+            password=f"{args.auth}",
+            decode_responses=True,
+        )
         self.r.ping()
         logger.info(f"Connected to redis on port {args.redis}...")
 
-        #timing vars
+        # timing vars
         self.count = 0
         self.lasttime = time.time()
         self.lastcount = 0
@@ -58,8 +69,12 @@ class AvoidanceEngine(ABC):
 
         if self.faux:
             self.storage_path = os.getcwd() + "/images/"
-            logger.info("Generating faux actutations from  {}".format(self.storage_path + "/actuations.txt"))
-            self.actuations_fd = open(self.storage_path + "/actuations.txt", mode='r')
+            logger.info(
+                "Generating faux actutations from  {}".format(
+                    self.storage_path + "/actuations.txt"
+                )
+            )
+            self.actuations_fd = open(self.storage_path + "/actuations.txt")
 
         if self.store_detections:
             self.watermark = Image.open(os.getcwd() + "/watermark.png")
@@ -68,25 +83,20 @@ class AvoidanceEngine(ABC):
                 os.makedirs(self.storage_path + "/moa")
             except FileExistsError:
                 logger.info("Images directory already exists.")
-            logger.info("Storing detection images at {}".format(self.storage_path))
+            logger.info(f"Storing detection images at {self.storage_path}")
 
     def store_vector(self, drone, vec):
         self.r.xadd(
             "avoidance",
-            {
-                "drone_id": drone,
-                "vector": vec
-            },
+            {"drone_id": drone, "vector": vec},
         )
 
     def print_inference_stats(self):
-        logger.info("inference time {0:.1f} ms, ".format((self.t1 - self.t0) * 1000))
-        logger.info("wait {0:.1f} ms, ".format((self.t0 - self.lasttime) * 1000))
-        logger.info("fps {0:.2f}".format(1.0 / (self.t1 - self.lasttime)))
+        logger.info(f"inference time {(self.t1 - self.t0) * 1000:.1f} ms, ")
+        logger.info(f"wait {(self.t0 - self.lasttime) * 1000:.1f} ms, ")
+        logger.info(f"fps {1.0 / (self.t1 - self.lasttime):.2f}")
         logger.info(
-            "avg fps: {0:.2f}".format(
-                (self.count - self.lastcount) / (self.t1 - self.lastprint)
-            )
+            f"avg fps: {(self.count - self.lastcount) / (self.t1 - self.lastprint):.2f}"
         )
         self.lastcount = self.count
         self.lastprint = self.t1
@@ -113,7 +123,7 @@ class AvoidanceEngine(ABC):
         timestamp_millis = int(time.time() * 1000)
         depth_img = Image.fromarray(depth_img)
         draw = ImageDraw.Draw(depth_img)
-        draw.bitmap((0,0), self.watermark, fill=None)
+        draw.bitmap((0, 0), self.watermark, fill=None)
 
         filename = str(timestamp_millis) + ".jpg"
 
@@ -123,16 +133,16 @@ class AvoidanceEngine(ABC):
         path = self.storage_path + "/moa/latest.jpg"
         depth_img.save(path, format="JPEG")
 
-        logger.info("Stored image: {}".format(path))
+        logger.info(f"Stored image: {path}")
 
     def text_payload_reply(self):
-        #if the payload is TEXT, say from a CNC client, we ignore
+        # if the payload is TEXT, say from a CNC client, we ignore
         status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
         result_wrapper = self.get_result_wrapper(status)
 
         result = gabriel_pb2.ResultWrapper.Result()
         result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = 'Ignoring TEXT payload.'.encode(encoding="utf-8")
+        result.payload = b"Ignoring TEXT payload."
         result_wrapper.results.append(result)
         return result_wrapper
 
@@ -142,7 +152,7 @@ class AvoidanceEngine(ABC):
         return result_wrapper
 
     def maybe_load_model(self, model):
-        if model != '' and model != self.model:
+        if model != "" and model != self.model:
             if model not in self.valid_models:
                 logger.error(f"Invalid model {model}.")
             else:
@@ -164,13 +174,13 @@ class AvoidanceEngine(ABC):
 
         extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
 
-        if not extras.cpt_request.HasField('cpt'):
+        if not extras.cpt_request.HasField("cpt"):
             logger.error("Compute configuration not found")
             status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
             result_wrapper = self.get_result_wrapper(status)
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = 'Expected compute configuration to be specified'.encode(encoding="utf-8")
+            result.payload = b"Expected compute configuration to be specified"
             result_wrapper.results.append(result)
             return result_wrapper
 
@@ -202,23 +212,24 @@ class AvoidanceEngine(ABC):
 
         return result_wrapper
 
+
 class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
     def __init__(self, args):
         super().__init__(args)
 
         self.valid_models = [
-            'DPT_BEiT_L_512',
-            'DPT_BEiT_L_384',
-            'DPT_SwinV2_L_384',
-            'DPT_SwinV2_B_384',
-            'DPT_SwinV2_T_256',
-            'DPT_Swin_L_384',
-            'DPT_Next_ViT_L_384',
-            'DPT_LeViT_224',
-            'DPT_Large',
-            'DPT_Hybrid',
-            'MiDaS',
-            'MiDaS_small'
+            "DPT_BEiT_L_512",
+            "DPT_BEiT_L_384",
+            "DPT_SwinV2_L_384",
+            "DPT_SwinV2_B_384",
+            "DPT_SwinV2_T_256",
+            "DPT_Swin_L_384",
+            "DPT_Next_ViT_L_384",
+            "DPT_LeViT_224",
+            "DPT_Large",
+            "DPT_Hybrid",
+            "MiDaS",
+            "MiDaS_small",
         ]
 
         self.load_model(self.model)
@@ -228,7 +239,9 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         self.detector = torch.hub.load("intel-isl/MiDaS", model)
         self.model = model
 
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
         self.detector.to(self.device)
         self.detector.eval()
 
@@ -236,7 +249,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
         if self.model == "MiDaS_small":
             self.transform = midas_transforms.small_transform
-        elif self.model == 'DPT_SwinV2_L_384' or 'DPT_SwinV2_B_384' or 'DPT_Swin_L_384':
+        elif self.model in ["DPT_SwinV2_L_384", "DPT_SwinV2_B_384", "DPT_Swin_L_384"]:
             self.transform = midas_transforms.swin384_transform
         elif self.model == "MiDaS":
             self.transform = midas_transforms.default_transform
@@ -248,8 +261,8 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
             self.transform = midas_transforms.beit512_transform
         else:
             self.transform = midas_transforms.dpt_transform
-        logger.info("Depth predictor initialized with the following model: {}".format(model))
-        logger.info("Depth Threshold: {}".format(self.threshold))
+        logger.info(f"Depth predictor initialized with the following model: {model}")
+        logger.info(f"Depth Threshold: {self.threshold}")
 
     def handle(self, input_frame):
         return self.handle_helper(input_frame)
@@ -261,7 +274,7 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         actuation_vector = 0
         frame_width = img.shape[1]
         frame_height = img.shape[0]
-        scrapY, scrapX = frame_height//3, frame_width//5
+        scrapY, scrapX = frame_height // 3, frame_width // 5
 
         input_batch = self.transform(img).to(self.device)
 
@@ -277,20 +290,30 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
 
         depth_map = prediction.cpu().numpy()
 
-        depth_map = cv2.normalize(depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F)
-        depth_map = (depth_map*255).astype(np.uint8)
-        full_depth_map = cv2.applyColorMap(depth_map , cv2.COLORMAP_OCEAN)
+        depth_map = cv2.normalize(
+            depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F
+        )
+        depth_map = (depth_map * 255).astype(np.uint8)
+        full_depth_map = cv2.applyColorMap(depth_map, cv2.COLORMAP_OCEAN)
 
-        cv2.rectangle(full_depth_map, (scrapX,scrapY), (full_depth_map.shape[1]-scrapX, full_depth_map.shape[0]-scrapY), (255,255,0), thickness=1)
+        cv2.rectangle(
+            full_depth_map,
+            (scrapX, scrapY),
+            (full_depth_map.shape[1] - scrapX, full_depth_map.shape[0] - scrapY),
+            (255, 255, 0),
+            thickness=1,
+        )
         depth_map[depth_map >= self.threshold] = 0
         depth_map[depth_map != 0] = 255
-        depth_map = depth_map[scrapY : frame_height - scrapY, scrapX : frame_width - scrapX]
+        depth_map = depth_map[
+            scrapY : frame_height - scrapY, scrapX : frame_width - scrapX
+        ]
 
         # convert the grayscale image to binary image
         ret, thresh = cv2.threshold(depth_map, 254, 255, 0)
         # find contours in the binary image
         contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        #full_depth_map = cv2.merge(thresh, full_depth_map)
+        # full_depth_map = cv2.merge(thresh, full_depth_map)
 
         c = max(contours, key=cv2.contourArea)
         # calculate moments for each contour
@@ -298,50 +321,172 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         cX = int(M["m10"] / M["m00"])
         cY = int(M["m01"] / M["m00"])
         cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
-        actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / ( full_depth_map.shape[1] / 2 - scrapX )
-        cv2.putText(full_depth_map, "{:.4f}".format(actuation_vector), (scrapX + cX, scrapY + cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / (
+            full_depth_map.shape[1] / 2 - scrapX
+        )
+        cv2.putText(
+            full_depth_map,
+            f"{actuation_vector:.4f}",
+            (scrapX + cX, scrapY + cY - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+        )
 
         if self.faux:
             actuation_vector = self.actuations_fd.readline()
-            #if we have reached the end of the fd, seek back to the top
-            if actuation_vector == '':
+            # if we have reached the end of the fd, seek back to the top
+            if actuation_vector == "":
                 self.actuations_fd.seek(0)
                 actuation_vector = self.actuations_fd.readline()
-            actuation_vector = float(actuation_vector.split('\n')[0])
+            actuation_vector = float(actuation_vector.split("\n")[0])
             if actuation_vector == 999:
                 time.sleep(5)
 
         return actuation_vector, full_depth_map
+
 
 class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
     def __init__(self, args):
         super().__init__(args)
 
         self.valid_models = [
-            'metric3d_convnext_large',
-            'metric3d_vit_small',
-            'metric3d_vit_large',
-            'metric3d_vit_giant2'
+            "metric3d_convnext_large",
+            "metric3d_vit_small",
+            "metric3d_vit_large",
+            "metric3d_vit_giant2",
         ]
 
+        self.inference_pipeline = None
         self.load_model(self.model)
 
     def load_model(self, model):
-        logger.info(f"Fetching {self.model} model from torch hub...")
-        self.detector = torch.hub.load('yvanyin/metric3d', model)
+        logger.info(f"Loading Metric3D model: {model}")
+
+        self.device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
+
+        # Load model using Metric3D model loader
+        self.detector = Metric3DModelLoader.load_model(model, device=self.device)
         self.model = model
 
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        self.detector.to(self.device)
-        self.detector.eval()
+        # Initialize inference pipeline
+        self.inference_pipeline = Metric3DInference(self.detector, device=self.device)
 
-        logger.info("Depth predictor initialized with the following model: {}".format(model))
-        logger.info("Depth Threshold: {}".format(self.threshold))
+        logger.info(f"Metric3D depth predictor initialized with model: {model}")
+        logger.info(f"Device: {self.device}")
+        logger.info(f"Depth Threshold: {self.threshold}")
 
     def handle(self, input_frame):
         return self.handle_helper(input_frame)
 
     def inference(self, img):
-        """Allow timing engine to override this"""
-        return
-        #return actuation_vector, full_depth_map
+        """
+        Metric3D depth estimation and obstacle avoidance inference
+
+        Args:
+            img (np.ndarray): Input image in RGB format (H, W, 3)
+
+        Returns:
+            tuple: (actuation_vector, full_depth_map)
+        """
+        actuation_vector = 0
+        frame_width = img.shape[1]
+        frame_height = img.shape[0]
+        scrapY, scrapX = frame_height // 3, frame_width // 5
+
+        # Run Metric3D depth prediction
+        depth_map = self.inference_pipeline.predict_depth(img)
+
+        # Normalize depth map to 0-255 range for visualization and processing
+        depth_normalized = cv2.normalize(
+            depth_map, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_64F
+        )
+        depth_map_uint8 = (depth_normalized * 255).astype(np.uint8)
+
+        # Create colored visualization
+        full_depth_map = cv2.applyColorMap(depth_map_uint8, cv2.COLORMAP_OCEAN)
+
+        # Draw region of interest rectangle
+        cv2.rectangle(
+            full_depth_map,
+            (scrapX, scrapY),
+            (full_depth_map.shape[1] - scrapX, full_depth_map.shape[0] - scrapY),
+            (255, 255, 0),
+            thickness=1,
+        )
+
+        # Apply depth threshold for obstacle detection
+        # For Metric3D, we work with metric depth values
+        obstacle_mask = depth_map < (
+            self.threshold / 10.0
+        )  # Convert threshold to metric scale
+
+        # Convert to binary mask
+        binary_mask = obstacle_mask.astype(np.uint8) * 255
+
+        # Focus on region of interest
+        roi_mask = binary_mask[
+            scrapY : frame_height - scrapY, scrapX : frame_width - scrapX
+        ]
+
+        # Find contours for obstacle detection
+        try:
+            ret, thresh = cv2.threshold(roi_mask, 254, 255, 0)
+            contours, h = cv2.findContours(
+                thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+            )
+
+            if len(contours) > 0:
+                # Find largest contour (main obstacle)
+                c = max(contours, key=cv2.contourArea)
+
+                # Calculate moments for centroid
+                M = cv2.moments(c)
+                if M["m00"] != 0:  # Avoid division by zero
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+
+                    # Draw centroid on visualization
+                    cv2.circle(
+                        full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1
+                    )
+
+                    # Calculate actuation vector for drone steering
+                    # Positive values = turn right, negative = turn left
+                    actuation_vector = (
+                        scrapX + cX - (full_depth_map.shape[1] / 2) + 1
+                    ) / (full_depth_map.shape[1] / 2 - scrapX)
+
+                    # Add text annotation
+                    cv2.putText(
+                        full_depth_map,
+                        f"{actuation_vector:.4f}",
+                        (scrapX + cX, scrapY + cY - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0, 255, 0),
+                        2,
+                    )
+                else:
+                    logger.warning("Obstacle detected but centroid calculation failed")
+            else:
+                logger.debug("No obstacles detected in current frame")
+
+        except Exception as e:
+            logger.error(f"Error in obstacle detection: {e}")
+            actuation_vector = 0
+
+        # Handle faux mode for testing
+        if self.faux:
+            actuation_vector = self.actuations_fd.readline()
+            if actuation_vector == "":
+                self.actuations_fd.seek(0)
+                actuation_vector = self.actuations_fd.readline()
+            actuation_vector = float(actuation_vector.split("\n")[0])
+            if actuation_vector == 999:
+                time.sleep(5)
+
+        return actuation_vector, full_depth_map
