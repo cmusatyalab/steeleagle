@@ -20,7 +20,7 @@ class MissionFSM:
         start_action_id = self.mission.start_action_id
         state = start_action_id
         while (state != _TERMINATE):
-            result_event = self.run_state(state, context)
+            result_event = await self.run_state(state, context)
             next_state = self.transition[state][result_event]
             state = next_state
             
