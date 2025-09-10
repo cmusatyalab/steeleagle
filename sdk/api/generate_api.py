@@ -86,8 +86,10 @@ def generate():
         # Add dependencies
         for dependency in file.dependency:
             dependency = dependency.split('.')[-2] # Remove .proto suffix
-            action_context['imports'].append(f'api.types.{dependency} as {dependency}')
-            type_context['imports'].append(f'api.types.{dependency} as {dependency}')
+            if '/' in dependency:
+                dependency = dependency.split('/')[-1]
+            action_context['imports'].append(f'api.types._gen_{dependency} as {dependency}')
+            type_context['imports'].append(f'api.types._gen_{dependency} as {dependency}')
         
         # Collect all the enums
         enum_map = {}
@@ -109,12 +111,16 @@ def generate():
             message_fields = []
             for field_name, typ, path_type, index in fields:
                 field = Field(
-                        name=field_name, type=typ, comment=get_comments((4, i, path_type, index), location_map)
+                        name=field_name, type=typ.replace(f'{filename}.', ''), 
+                        comment=get_comments((4, i, path_type, index), location_map)
                         )
                 type_name = typ.split('.')[-1].replace(']', '') # Strip extra brace if it's Optional
                 if type_name in enum_map:
                     field.enum = enum_map[type_name]
-                    field.type = type_name
+                    if 'Optional' in typ:
+                        field.type = f'Optional[{type_name}]'
+                    else:
+                        field.type = type_name
                 message_fields.append(field)
             message = Type(name=message.name, comment=get_comments((4, i), location_map), fields=message_fields)
             type_context['types'].append(message)
@@ -129,12 +135,16 @@ def generate():
                 action_fields = []
                 for k, (field_name, typ, path_type, index) in enumerate(fields):
                     field = Field(
-                            name=field_name, type=typ, comment=get_comments((4, message_index, path_type, index), location_map)
+                            name=field_name, type=typ.replace(f'{filename}.', ''), 
+                            comment=get_comments((4, message_index, path_type, index), location_map)
                             )
                     type_name = typ.split('.')[-1].replace(']', '') # Strip extra brace if it's Optional
                     if type_name in enum_map:
                         field.enum = enum_map[type_name]
-                        field.type = type_name
+                        if 'Optional' in typ:
+                            field.type = f'Optional[{type_name}]'
+                        else:
+                            field.type = type_name
                     action_fields.append(field)
                 action = Action(name=method.name, comment=get_comments((6, i, 2, j), location_map), fields=action_fields, streaming=False)
                 if method.client_streaming and method.server_streaming:
@@ -196,6 +206,8 @@ def get_fields(fields):
             elif 'service' in file:
                 typ = f'{_PARAM_DIR}.{typ}'
             else:
+                if file == 'protobuf':
+                    file = typ.lower()
                 typ = f'{file}.{typ}'
         else:
             typ = 'any'

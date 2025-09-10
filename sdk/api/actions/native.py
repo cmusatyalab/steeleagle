@@ -4,7 +4,7 @@ from enum import Enum
 from dataclasses import is_dataclass, asdict as dc_asdict
 from typing import Any, Tuple
 # API imports
-from api.messages.response import Response as APIResponse, ResponseStatus
+from api.types.common import Response as APIResponse
 
 ''' Native helper functions '''
 def timestamp_now(request_pb: Any) -> None:
@@ -48,7 +48,7 @@ def to_api_response(resp_pb: Any) -> APIResponse:
     into a Pydantic types.common.Response (APIResponse).
     '''
     inner = getattr(resp_pb, "response", None)
-    status = ResponseStatus(getattr(inner, "status"))
+    status = Response.ResponseStatus(getattr(inner, "status"))
     msg = getattr(inner, "response_string", "") or getattr(inner, "message", "")
     ts = TypesTimestamp(  # type: ignore
                 seconds=inner.timestamp.seconds,

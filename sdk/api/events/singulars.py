@@ -1,16 +1,12 @@
-from __future__ import annotations
-
 import asyncio
 import math
 from typing import Any, Dict, List, Literal, Optional
-
 from pydantic import Field
+# API imports
 from dsl.compiler.registry import register_event
 from api.base import Event
 
-
-# ---------------- basic events ----------------
-# ---------------- helpers ----------------
+''' General events '''
 @register_event
 class TimeReached(Event):
     duration: float = Field(..., ge=0.0, description="Seconds to wait before event triggers")
@@ -20,10 +16,7 @@ class TimeReached(Event):
         await asyncio.sleep(self.duration)
         return True
     
-
-# ---------------- telemetry events ----------------
-# ---------------- helpers ----------------
-
+''' Telemetry events and helpers '''
 def _get(t: Dict[str, Any], *path, default=None):
     cur = t
     for p in path:
@@ -71,13 +64,12 @@ def _haversine_m(lat1, lon1, lat2, lon2) -> float:
          * math.sin(dlon / 2) ** 2)
     return 2 * R * math.asin(math.sqrt(a))
 
-# ---------------- events ----------------
 @register_event
 class BatteryReached(Event):
-    """
+    '''
     Fires when battery % satisfies relation to threshold for N consecutive polls.
     relation: 'at_least' (>= threshold) or 'at_most' (<= threshold)
-    """
+    '''
     threshold: int = Field(..., ge=0, le=100)
     relation: Literal["at_least", "at_most"] = "at_most"
     consecutive: int = Field(1, ge=1)

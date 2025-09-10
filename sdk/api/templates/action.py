@@ -13,14 +13,14 @@ from bindings.python.services import {{ filename }}_pb2
 from bindings.python.services import {{ filename }}_pb2_grpc
 {% if imports | length > 0 %}
 # Type imports
-import api.types.params.{{ param_file }} as params
+import api.types.params._gen_{{ param_file }} as params
 {% for _import in imports %}
 import {{ _import }}
 {% endfor %}
 {% endif %}
 
 # Static stub object to be set at file import time
-STUB: {{ filename }}.{{ service_name }}Stub = None
+STUB: {{ filename }}_pb2_grpc.{{ service_name }}Stub = None
 
 {{ comment }}
 
@@ -33,12 +33,12 @@ class {{ stub.name }}(Action):
     {% for field in stub.fields %}
     {% if field.enum != None %}
     from enum import Enum
-    class {{ field.enum.name }}(Enum):
+    class {{ field.enum.name }}(int, Enum):
         {% if field.enum.comment != None %}
         {{ field.enum.comment }}
         {% endif %}
         {% for value in field.enum.values %}
-        {{ value.name }} = {{ loop.index }} 
+        {{ value.name }} = {{ loop.index - 1 }} 
         {% if value.comment != None %}
         {{ value.comment }}
         {% endif %}
