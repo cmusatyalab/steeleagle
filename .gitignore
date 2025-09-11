@@ -39,8 +39,8 @@ backend/server/engines/slam/images/*
 *~
 *.log
 *.mcap
-sdk/api/types/*.py
-sdk/api/types/params/*.py
+sdk/api/datatypes/*.py
+sdk/api/datatypes/params/*.py
 sdk/api/actions/primitives/*.py
 
 # Generated
