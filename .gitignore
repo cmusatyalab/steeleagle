@@ -39,8 +39,8 @@ backend/server/engines/slam/images/*
 *~
 *.log
 *.mcap
-sdk/api/types/*
-sdk/api/actions/primitivies/*
+sdk/api/types/*.py
+sdk/api/actions/primitivies/*.py
 
 # Generated
 _gen_*
