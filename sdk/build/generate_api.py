@@ -5,7 +5,6 @@ from typing import List
 from dataclasses import dataclass
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-import argparse
 
 _SKIP_FILES = [
     'services/remote_service.proto',
@@ -47,8 +46,12 @@ class Action:
     streaming: bool
     comment: str = None
 
+_PARAM_DIR = 'params'
+_MESSAGE_DIR = '../api/datatypes'
+_ACTION_DIR = '../api/actions/primitives'
+
 ''' Functions '''
-def generate(message_dir, action_dir, language):
+def generate():
     '''
     Generates params, messages, and actions from a protocol descriptor file.
     '''
@@ -85,8 +88,8 @@ def generate(message_dir, action_dir, language):
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
-            action_context['imports'].append(f'api.{language}.datatypes.{dependency} as {dependency}')
-            type_context['imports'].append(f'api.{language}.datatypes.{dependency} as {dependency}')
+            action_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
+            type_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
         
         # Collect all the enums
         enum_map = {}
@@ -140,25 +143,25 @@ def generate(message_dir, action_dir, language):
                     action.streaming = True
                 action_context['stubs'].append(action)
 
-        template_path = Path(__file__).parent / f'templates/{language}'
+        template_path = Path(__file__).parent / 'templates/'
         environment = Environment(loader=FileSystemLoader(str(template_path)), trim_blocks=True, lstrip_blocks=True)
         if action_context['service_name']:
             # Write both action and param file
             output_file = action_context['service_name'].lower()
             action_context['param_file'] = output_file
             template = environment.get_template('action.py')
-            output_path = f'{action_dir}/{output_file}.py'
+            output_path = f'{_ACTION_DIR}/{output_file}.py'
             with open(output_path, 'w') as f:
                 f.write(template.render(action_context))
             if len(type_context['types']):
                 template = environment.get_template('datatype.py')
-                output_path = f'{message_dir}/params/{output_file}.py'
+                output_path = f'{_MESSAGE_DIR}/{_PARAM_DIR}/{output_file}.py'
                 with open(output_path, 'w') as f:
                     f.write(template.render(type_context))
         else:
             # Write normal type file
             template = environment.get_template('datatype.py')
-            output_path = f'{message_dir}/{filename}.py'
+            output_path = f'{_MESSAGE_DIR}/{filename}.py'
             with open(output_path, 'w') as f:
                 f.write(template.render(type_context))
 
@@ -192,7 +195,7 @@ def get_fields(fields, enum_map):
             elif typ in enum_map:
                 enum = enum_map[typ]
             elif 'service' in file:
-                typ = f'params.{typ}'
+                typ = f'{_PARAM_DIR}.{typ}'
             else:
                 if file == 'protobuf':
                     file = typ.lower()
@@ -229,8 +232,4 @@ def get_comments(path, location_map):
     else:
         return ""
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Auto-generated API files for a specified language from the protocol.")
-    parser.add_argument("language", help="Language to generate for.")
-    args = parser.parse_args()
-    generate(f'../api/{args.language}/datatypes', f'../api/{args.language}/actions/primitives', args.language)
+generate()

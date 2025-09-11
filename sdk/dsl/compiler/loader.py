@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 _LOADED_BASES: set[str] = set()
-_DEFAULT_BASES = ("api.python.actions", "api.python.events", "api.python.messages")
+_DEFAULT_BASES = ("api.actions", "api.events", "api.messages")
 
 
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:

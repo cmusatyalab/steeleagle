@@ -231,7 +231,7 @@ class DroneDSLTransformer(Transformer):
         )
 
         # Import API so @register_* hooks populate registries
-        summaries = load_all("api.python", force=True, show_trace=False)
+        summaries = load_all("api", force=True, show_trace=False)
         print_report(summaries)
 
         logger.info("resolver: resolving symbol references")

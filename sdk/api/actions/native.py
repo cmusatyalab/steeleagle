@@ -4,7 +4,7 @@ from enum import Enum
 from dataclasses import is_dataclass, asdict as dc_asdict
 from typing import Any, Tuple
 # API imports
-from api.python.datatypes.common import Response as APIResponse
+from api.datatypes.common import Response as APIResponse
 
 ''' Native helper functions '''
 def timestamp_now(request_pb: Any) -> None:

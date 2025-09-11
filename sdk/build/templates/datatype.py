@@ -3,7 +3,7 @@
 #####################################################################
 from typing import Optional, List
 # API imports
-from api.python.base import Datatype
+from api.base import Datatype
 from dsl.compiler.registry import register_data 
 {% if imports | length > 0 %}
 # Type imports
