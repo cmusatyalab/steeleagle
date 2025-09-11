@@ -25,24 +25,20 @@ from google.protobuf import text_format
 from google.protobuf.message import DecodeError
 from util.utils import setup_logging
 
-import protocol.common_pb2 as common
-import protocol.controlplane_pb2 as controlplane
+from bindings.python.services import remote_service_pb2, control_service_pb2, mission_service_pb2
 
 logger = logging.getLogger(__name__)
 
 class SwarmController:
-    # Set up the paths and variables for the compiler
-    compiler_path = "/compiler"
-    output_path = "/compiler/out/flightplan"
-    platform_path = "/dsl/python/project"
-    waypoint_file = "/compiler/out/waypoint.json"
-
+    '''
+    Multiplexes requests from connected commanders to target vehicles. Also handles
+    messages sent between vehicles.
+    '''
     def __init__(
         self, alt, compiler_file, red, request_sock, router_sock, spacing, angle
     ):
         self.alt = alt
         self.compiler_file = compiler_file
-        self.red = red
         self.request_sock = request_sock
         self.router_sock = router_sock
         self.running = True
@@ -51,124 +47,25 @@ class SwarmController:
         self.spacing = spacing
         self.angle = angle
 
-        out_dir = "/compiler/out"
         if not os.path.exists(out_dir):
             os.makedir(out_dir)
 
     async def run(self):
         await asyncio.gather(self.listen_cmdrs())
 
-    @staticmethod
-    async def download_file(script_url, filename):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(script_url) as resp:
-                resp.raise_for_status()
-                async with aiofiles.open(filename, mode="wb") as f:
-                    async for chunk in resp.content.iter_chunked(8192):
-                        await f.write(chunk)
-
-    @staticmethod
-    async def extract_zip(filename):
-        def _extract():
-            dsl_file = kml_file = None
-            with ZipFile(filename, "r") as z:
-                z.extractall(path=SwarmController.compiler_path)
-                for file_name in z.namelist():
-                    if file_name.endswith(".dsl"):
-                        dsl_file = file_name
-                    elif file_name.endswith(".kml"):
-                        kml_file = file_name
-            return dsl_file, kml_file
-
-        return await asyncio.to_thread(_extract)
-
-    @staticmethod
-    async def download_script(script_url):
-        try:
-            # Get the ZIP file name from the URL
-            filename = script_url.rsplit(sep="/")[-1]
-            logger.info(f"Writing {filename} to disk...")
-
-            # Download the ZIP file
-            await SwarmController.download_file(script_url, filename)
-
-            # Extract all contents of the ZIP file and remember .dsl and .kml filenames
-            dsl_file, kml_file = await SwarmController.extract_zip(filename)
-
-            # Log or return the results
-            logger.info(f"Extracted files: {dsl_file} {kml_file}")
-
-            return dsl_file, kml_file
-
-        except Exception as e:
-            logger.error(f"Error during download or extraction: {e}")
-
     async def compile_mission(self, dsl_file, kml_file):
-        # Construct the full paths for the DSL and KML files
-        dsl_file_path = os.path.join(self.compiler_path, dsl_file)
-        kml_file_path = os.path.join(self.compiler_path, kml_file)
-        jar_path = os.path.join(self.compiler_path, self.compiler_file)
-        altitude = str(self.alt)
-
-        # Define the command and arguments
-        command = [
-            "java",
-            "-jar",
-            jar_path,
-            "-o",
-            self.output_path,
-            "-l",
-            self.platform_path,
-            "-k",
-            kml_file_path,
-            "-s",
-            dsl_file_path,
-            "-p",
-            "corridor",
-            "--angle",
-            str(self.angle),
-            "--spacing",
-            str(self.spacing),
-            "-w",
-            self.waypoint_file,
-        ]
-
-        # Run the command
-        logger.info(f"Running command: {' '.join(command)}")
-
-        proc = await asyncio.create_subprocess_exec(
-            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
-        )
-
-        stdout, _ = await proc.communicate()
-
-        if proc.returncode != 0:
-            raise Exception(f"Mission compilation failed: {stdout.decode()}")
-
-        # Log the output
-        logger.info(f"Compilation output: {stdout.decode()}")
-
-        # Output the results
-        logger.info("Compilation successful.")
+        pass
 
     async def send_to_drone(self, req, base_url, drone_list):
         try:
-            logger.info(f"Sending request {req.seq_num} to drones...")
             # Send the command to each drone
+            logger.info(f"Sending request {req.seq_num} to drones...")
 
             for drone_id in drone_list:
-                # check if the cmd is a mission
-                if base_url:
-                    # reconstruct the script url with the correct compiler output path
-                    req.msn.url = f"{base_url}{self.output_path}.ms"
-                    logger.info(f"Drone-specific script url: {req.msn.url}")
-
-                # send the command to the drone
                 await self.router_sock.send_multipart(
                     [drone_id.encode("utf-8"), req.SerializeToString()]
                 )
                 logger.info(f"Delivered request to drone {drone_id}.")
-
         except Exception as e:
             logger.error(f"Error sending request to drone: {e}")
 
@@ -261,7 +158,7 @@ async def main():
         "--altitude", type=int, default=15, help="base altitude for the drones mission"
     )
     parser.add_argument(
-        "--compiler_file", default="compile-2.0-full.jar", help="compiler file name"
+        "--compiler_file", default="../../../sdk/dsl/", help="compiler file name"
     )
     parser.add_argument(
         "--spacing", type=int, default=18, help="Spacing for corridor scan"
