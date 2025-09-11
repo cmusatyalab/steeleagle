@@ -25,7 +25,7 @@ service Mission {
 }
 
 message MissionData {
-  string uri = 1; // URI, either local or remote, of a mission file
+  string content  = 1; // URI, either local or remote, of a mission file
 }
 
 message UploadRequest {

@@ -16,16 +16,20 @@ class MissionFSM:
         self.mission = mission
         self.transition = mission.transitions
         self.start_action_id = mission.start_action_id
+        self.stop_requested = False
 
     async def run(self):
         # get the start action
         start_action_id = self.start_action_id
         state = start_action_id
-        while (state != _TERMINATE):
+        while (state != _TERMINATE and not self.stop_requested):
             result_event = await self.run_state(state)
             next_state = self.transition[state][result_event]
             state = next_state
             
+    async def stop(self):
+        self.stop_requested = True
+
     async def run_state(self, curr_action_id):
         action_ir = self.mission.actions[curr_action_id]
         action_cls = get_action(action_ir.type_name)

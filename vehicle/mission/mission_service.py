@@ -1,3 +1,5 @@
+import asyncio
+import json
 from bindings.python.services.mission_service_pb2_grpc import MissionServicer
 from bindings.python.services import mission_service_pb2 as mission_proto
 
@@ -6,60 +8,64 @@ from util.log import get_logger
 
 from dsl.compiler.ir import MissionIR
 from dsl.runtime.fsm import MissionFSM
-import zipfile
+from api.actions.primitives.control import STUB as CONTROL_STUB
+from api.actions.primitives.compute import STUB as COMPUTE_STUB
+from api.actions.primitives.report import STUB as REPORT_STUB
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class MissionService(MissionServicer):
-    def __init__(self, socket, stubs, mission_dir)
-        self.stubs = stubs
+    def __init__(self, socket, stubs, mission_dir):
         self.mission = None
         self.mission_dir = mission_dir
-    
-    def _load(uri):
-        # fetch and unzip
-        resp = requests.get(uri)
-        resp.raise_for_status()  # error if download failed
-        with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
-            z.extractall(self.mission_dir) 
+        self.mission_routine = None
         
-        # load mission
-        with open("mission.json") as f:
-            data = json.load(f)
-            mission_ir = MissionIR(**data)
         
-        # load map
+        CONTROL_STUB = stubs.get("control")
+        COMPUTE_STUB = stubs.get("compute")
+        REPORT_STUB = stubs.get("report")
 
+    def _load(mission_content):
+        json_data = json.loads(mission_content)
+        mission_ir = MissionIR(**json_data)
         return mission_ir
 
     async def Upload(self, request, context):
-        """Upload a mission for execution
-        """
+        """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
         logger.proto(request)
-        mission_uri = request.mission.uri
-        mission_ir = self._load(mission_uri)
+        mission_content = request.mission.content
+        mission_ir = self._load(mission_content)
         self.mission = MissionFSM(mission_ir)
         return mission_proto.Upload(response=generate_response(2))        
 
     async def Start(self, request, context):
-        """Start an uploaded mission
-        """
-        await self.mssion.run()
-        return mission_proto.Start(response=generate_response(2))
+        """Start an uploaded mission"""
+        if self.mission is None:
+            return mission_proto.Start(response=generate_response(1, "No mission uploaded"))
+        elif self.mission_routine is not None and not self.mission_routine.done():
+            return mission_proto.Start(response=generate_response(1, "Mission already running"))
+        else:
+            self.mission_routine = asyncio.create_task(self.mission.run())
+            return mission_proto.Start(response=generate_response(2))
 
     async def Stop(self, request, context):
-        """Stop the current mission
-        """
-        await self.mission.stop()
-        return mission_proto.Stop(response=generate_response(2))
+        """Stop the current mission"""
+        if self.mission is None:
+            return mission_proto.Stop(response=generate_response(1, "No active mission"))
+        else:
+            await self.mission.stop()
+            await self.mission_routine
+            return mission_proto.Stop(response=generate_response(2))
 
     async def Notify(self, request, context):
-        """Send a notification to the current mission
-        """
+        """Send a notification to the current mission"""
         pass
 
     async def ConfigureTelemetryStream(self, request, context):
-        """Set the mission telemetry stream parameters
-        """
+        """Set the mission telemetry stream parameters"""
         pass
 
 
