@@ -7,7 +7,7 @@ from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
 # API imports
 from api.base import Action, Datatype
 from dsl.compiler.registry import register_action
-from api.actions.native import run_unary, run_streaming  
+from api.actions.native import run_unary, run_streaming, payload_from_action  
 # Protobuf imports
 from bindings.python.services import {{ filename }}_pb2
 from bindings.python.services import {{ filename }}_pb2_grpc

@@ -1,6 +1,8 @@
 from pathlib import Path
 from lark import Lark
 from dsl.compiler.transformer import DroneDSLTransformer
+from dsl.runtime.fsm import MissionFSM
+import asyncio
 import os
 # Load grammar
 GRAMMAR_PATH = Path("./dsl/grammar/dronedsl.lark")
@@ -18,14 +20,20 @@ with open(os.path.join(os.path.dirname(__file__), 'test_script.dsl'), 'r', encod
     dsl_code = f.read()
 
 logger.info("DSL Code:\n%s", dsl_code)
+
+
+async def fsm_runner(fsm):
+    await fsm.run()
+
 def main():
     # Parse
     tree = parser.parse(dsl_code)
     logger.info("Parse tree: %s", tree.pretty())
+    
+    # test compiler
+    logger.info("Compiling...")
     # Transform
     mission = DroneDSLTransformer().transform(tree)
-
-    # Print results
     logger.info("Start: %s", mission.start_action_id)
     logger.info("Actions: %s", sorted(mission.actions.keys()))
     logger.info("Events: %s", sorted(mission.events.keys()))
@@ -34,5 +42,10 @@ def main():
     for (state, ev), nxt in sorted(mission.transitions.items()):
         logger.info("  %s + %s -> %s", state, ev, nxt)
 
+    # test runtime
+    logger.info("Running...")
+    fsm = MissionFSM(mission)
+    asyncio.run(fsm_runner(fsm))
+    
 if __name__ == "__main__":
     main()
