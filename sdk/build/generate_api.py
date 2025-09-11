@@ -85,8 +85,8 @@ def generate(message_dir, action_dir, language):
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
-            action_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
-            type_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
+            action_context['imports'].append(f'api.{language}.datatypes.{dependency} as {dependency}')
+            type_context['imports'].append(f'api.{language}.datatypes.{dependency} as {dependency}')
         
         # Collect all the enums
         enum_map = {}

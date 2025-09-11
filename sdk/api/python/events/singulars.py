@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import Field
 # API imports
 from dsl.compiler.registry import register_event
-from api.base import Event
+from api.python.base import Event
 
 ''' General events '''
 @register_event

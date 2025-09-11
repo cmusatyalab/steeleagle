@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List
 from pydantic import Field
 from dsl.compiler.registry import register_event
-from api.base import Event
+from api.python.base import Event
 
 
 # ========== basic boolean combinators ==========
