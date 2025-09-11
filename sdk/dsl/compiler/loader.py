@@ -15,13 +15,18 @@ _DEFAULT_BASES = ("api.actions", "api.events", "api.messages")
 
 
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
-    """Try to import a base package and list its submodules."""
+    """Try to import a base package and list its submodules, skipping internals."""
     try:
         pkg: ModuleType = importlib.import_module(base)
     except ModuleNotFoundError:
         return None, []
     names: List[str] = []
     for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
+        mod_name = m.name.rsplit(".", 1)[-1]
+        # Skip files starting with "_" or exactly "native"
+        if mod_name.startswith("_") or mod_name == "native":
+            logger.debug("   -> skipping %s (ignored)", m.name)
+            continue
         names.append(m.name)
     return pkg, names
 

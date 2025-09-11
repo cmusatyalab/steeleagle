@@ -42,6 +42,8 @@ backend/server/engines/slam/images/*
 sdk/api/datatypes/*.py
 sdk/api/datatypes/params/*.py
 sdk/api/actions/primitives/*.py
+# But do NOT ignore __init__.py
+!sdk/api/actions/primitives/__init__.py
 
 # Generated
 _gen_*
