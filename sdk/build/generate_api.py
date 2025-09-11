@@ -47,8 +47,8 @@ class Action:
     comment: str = None
 
 _PARAM_DIR = 'params'
-_MESSAGE_DIR = 'types'
-_ACTION_DIR = 'actions'
+_MESSAGE_DIR = '../api/types'
+_ACTION_DIR = '../api/actions/primitives'
 
 ''' Functions '''
 def generate():
@@ -88,8 +88,8 @@ def generate():
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
-            action_context['imports'].append(f'api.types._gen_{dependency} as {dependency}')
-            type_context['imports'].append(f'api.types._gen_{dependency} as {dependency}')
+            action_context['imports'].append(f'api.types.{dependency} as {dependency}')
+            type_context['imports'].append(f'api.types.{dependency} as {dependency}')
         
         # Collect all the enums
         enum_map = {}
@@ -150,18 +150,18 @@ def generate():
             output_file = action_context['service_name'].lower()
             action_context['param_file'] = output_file
             template = environment.get_template('action.py')
-            output_path = f'./{_ACTION_DIR}/_gen_{output_file}.py'
+            output_path = f'{_ACTION_DIR}/{output_file}.py'
             with open(output_path, 'w') as f:
                 f.write(template.render(action_context))
             if len(type_context['types']):
                 template = environment.get_template('type.py')
-                output_path = f'./{_MESSAGE_DIR}/{_PARAM_DIR}/_gen_{output_file}.py'
+                output_path = f'{_MESSAGE_DIR}/{_PARAM_DIR}/{output_file}.py'
                 with open(output_path, 'w') as f:
                     f.write(template.render(type_context))
         else:
             # Write normal type file
             template = environment.get_template('type.py')
-            output_path = f'./{_MESSAGE_DIR}/_gen_{filename}.py'
+            output_path = f'{_MESSAGE_DIR}/{filename}.py'
             with open(output_path, 'w') as f:
                 f.write(template.render(type_context))
 
