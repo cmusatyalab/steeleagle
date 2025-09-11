@@ -13,8 +13,6 @@ import "common.proto";
 service Control {
   // Connects to the vehicle
   rpc Connect (ConnectRequest) returns (ConnectResponse) {}
-  // Checks whether the vehicle is successfully connected
-  rpc IsConnected (IsConnectedRequest) returns (IsConnectedResponse) {}
   // Disconnects from the vehicle
   rpc Disconnect (DisconnectRequest) returns (DisconnectResponse) {}
   // Order the vehicle to arm
@@ -68,15 +66,6 @@ message ConnectRequest {
 
 message ConnectResponse {
   steeleagle.protocol.common.Response response = 1;
-}
-
-message IsConnectedRequest {
-  steeleagle.protocol.common.Request request = 1;
-}
-
-message IsConnectedResponse {
-  steeleagle.protocol.common.Response response = 1;
-  bool is_connected = 2;
 }
 
 message DisconnectRequest {
