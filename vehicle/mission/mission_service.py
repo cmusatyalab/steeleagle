@@ -8,21 +8,16 @@ from util.log import get_logger
 
 from dsl.compiler.ir import MissionIR
 from dsl.runtime.fsm import MissionFSM
-from api.actions.primitives.control import STUB as CONTROL_STUB
-from api.actions.primitives.compute import STUB as COMPUTE_STUB
-from api.actions.primitives.report import STUB as REPORT_STUB
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class MissionService(MissionServicer):
-    def __init__(self, socket, stubs, mission_dir):
+    def __init__(self, stubs, mission_dir):
         self.mission = None
-        self.mission_dir = mission_dir
         self.mission_routine = None
-        
-        
         CONTROL_STUB = stubs.get("control")
         COMPUTE_STUB = stubs.get("compute")
         REPORT_STUB = stubs.get("report")
