@@ -5,17 +5,17 @@ from typing import Optional, List
 from google.protobuf.json_format import ParseDict
 from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
 # API imports
-from api.base import Action, Datatype
-from dsl.compiler.registry import register_action
-from api.actions.native import run_unary, run_streaming, payload_from_action  
+from ...base import Action, Datatype
+from ....dsl.compiler.registry import register_action
+from ..native import run_unary, run_streaming, payload_from_action
 # Protobuf imports
-from bindings.python.services import {{ filename }}_pb2
-from bindings.python.services import {{ filename }}_pb2_grpc
+from .....protocol.services import {{ filename }}_pb2
+from .....protocol.services import {{ filename }}_pb2_grpc
 {% if imports | length > 0 %}
 # Type imports
-import api.datatypes.params.{{ param_file }} as params
+from ...datatypes import {{ param_file }} as params
 {% for _import in imports %}
-import {{ _import }}
+{{ _import }}
 {% endfor %}
 {% endif %}
 

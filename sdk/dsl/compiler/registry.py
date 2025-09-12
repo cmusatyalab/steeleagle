@@ -1,5 +1,5 @@
 from typing import Type, Dict, Optional
-from api.base import Action, Event, Datatype
+from ...api.base import Action, Event, Datatype
 import logging
 
 logger = logging.getLogger(__name__)

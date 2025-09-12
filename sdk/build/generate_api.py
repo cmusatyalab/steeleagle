@@ -46,7 +46,6 @@ class Action:
     streaming: bool
     comment: str = None
 
-_PARAM_DIR = 'params'
 _MESSAGE_DIR = '../api/datatypes'
 _ACTION_DIR = '../api/actions/primitives'
 
@@ -88,8 +87,8 @@ def generate():
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
-            action_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
-            type_context['imports'].append(f'api.datatypes.{dependency} as {dependency}')
+            action_context['imports'].append(f'from ...datatypes import {dependency} as {dependency}')
+            type_context['imports'].append(f'from ..datatypes import {dependency} as {dependency}')
         
         # Collect all the enums
         enum_map = {}
@@ -155,7 +154,7 @@ def generate():
                 f.write(template.render(action_context))
             if len(type_context['types']):
                 template = environment.get_template('datatype.py')
-                output_path = f'{_MESSAGE_DIR}/{_PARAM_DIR}/{output_file}.py'
+                output_path = f'{_MESSAGE_DIR}/{output_file}.py'
                 with open(output_path, 'w') as f:
                     f.write(template.render(type_context))
         else:
@@ -195,7 +194,7 @@ def get_fields(fields, enum_map):
             elif typ in enum_map:
                 enum = enum_map[typ]
             elif 'service' in file:
-                typ = f'{_PARAM_DIR}.{typ}'
+                typ = f'params.{typ}'
             else:
                 if file == 'protobuf':
                     file = typ.lower()

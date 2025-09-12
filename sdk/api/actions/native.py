@@ -1,10 +1,10 @@
 from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
-from typing import Any
+import grpc
+from typing import Any, Tuple
 from enum import Enum
 from dataclasses import is_dataclass, asdict as dc_asdict
-from typing import Any, Tuple
 # API imports
-from api.datatypes.common import Response as APIResponse
+from ..datatypes.common import Response as APIResponse
 
 ''' Native helper functions '''
 def timestamp_now(request_pb: Any) -> None:
@@ -50,20 +50,35 @@ def to_api_response(resp_pb: Any) -> APIResponse:
     inner = getattr(resp_pb, "response", None)
     status = Response.ResponseStatus(getattr(inner, "status"))
     msg = getattr(inner, "response_string", "") or getattr(inner, "message", "")
-    ts = TypesTimestamp(  # type: ignore
+    ts = TypesTimestamp(
                 seconds=inner.timestamp.seconds,
                 nanos=inner.timestamp.nanos,
             )
 
     return APIResponse(status=status, response_string=msg, timestamp=ts)
 
+def error_to_api_response(error: grpc.aio.AioRpcError) -> APIResponse:
+    '''
+    Converts a grpc.aio.AioRpcError into a Pydantic types.common.Response (APIResponse).
+    The error code is translated by 2 to conform with the SteelEagle protocol.
+    '''
+    ts = TypesTimestamp(
+                seconds=inner.timestamp.seconds,
+                nanos=inner.timestamp.nanos,
+            )
+
+    return APIResponse(status=e.code().value[0] + 2, resp_string=e.details(), timestamp=ts)
+
 async def run_unary(method_coro, request_pb, *, metadata=None, timeout=None) -> APIResponse:
     '''
     Native unary RPC -> APIResponse.
     '''
     timestamp_now(request_pb)
-    resp_pb = await method_coro(request_pb, metadata=metadata, timeout=timeout)
-    return to_api_response(resp_pb)
+    try:
+        resp_pb = await method_coro(request_pb, metadata=metadata, timeout=timeout)
+        return to_api_response(resp_pb)
+    except grpc.aio.AioRpcError as e:
+        return error_to_api_response(e)
 
 async def run_streaming(method_coro, request_pb, *, metadata=None, timeout=None) -> APIResponse:
     '''
@@ -72,6 +87,9 @@ async def run_streaming(method_coro, request_pb, *, metadata=None, timeout=None)
     timestamp_now(request_pb)
     call = method_coro(request_pb, metadata=metadata, timeout=timeout)
     last = None
-    async for msg in call: 
-        last = msg # Guaranteed at least one response
-    return to_api_response(last)
+    try:
+        async for msg in call: 
+            last = msg # Guaranteed at least one response
+        return to_api_response(last)
+    except grpc.aio.AioRpcError as e:
+        return error_to_api_response(e)
