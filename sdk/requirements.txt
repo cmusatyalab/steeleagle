@@ -3,3 +3,4 @@ pydantic
 grpcio
 grpc_interceptor
 grpcio-tools
+Jinja2

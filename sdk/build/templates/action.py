@@ -53,11 +53,14 @@ class {{ stub.name }}(Action):
     async def execute(self):
         req = {{ filename }}_pb2.{{ stub.name }}Request()
         ParseDict(payload_from_action(self), req)
+        metadata = [
+            ('identity', 'internal')
+        ]
         {% if stub.streaming %}
-        return await run_streaming(STUB.{{ stub.name }}, req)
+        return await run_streaming(STUB.{{ stub.name }}, req, metadata=metadata)
 
         {% else %}
-        return await run_unary(STUB.{{ stub.name }}, req)
+        return await run_unary(STUB.{{ stub.name }}, req, metadata=metadata)
 
         {% endif %}
 {% endfor %}
