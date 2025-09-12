@@ -46,3 +46,5 @@ $PROTOCPATH -I. \
 	services/report_service.proto \
 	services/flight_log_service.proto \
 	services/compute_service.proto \
+
+protol -o ./bindings/python --in-place raw ./protocol.desc
