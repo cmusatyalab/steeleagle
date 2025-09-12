@@ -9,8 +9,8 @@ from ...base import Action, Datatype
 from ....dsl.compiler.registry import register_action
 from ..native import run_unary, run_streaming, payload_from_action
 # Protobuf imports
-from .....protocol.services import {{ filename }}_pb2
-from .....protocol.services import {{ filename }}_pb2_grpc
+from ....protocol.services import {{ filename }}_pb2
+from ....protocol.services import {{ filename }}_pb2_grpc
 {% if imports | length > 0 %}
 # Type imports
 from ...datatypes import {{ param_file }} as params

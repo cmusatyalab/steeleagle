@@ -46,8 +46,8 @@ class Action:
     streaming: bool
     comment: str = None
 
-_MESSAGE_DIR = '../api/datatypes'
-_ACTION_DIR = '../api/actions/primitives'
+_MESSAGE_DIR = '../../api/datatypes'
+_ACTION_DIR = '../../api/actions/primitives'
 
 ''' Functions '''
 def generate():
