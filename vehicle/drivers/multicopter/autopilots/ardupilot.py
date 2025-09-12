@@ -76,12 +76,12 @@ class ArduPilotDrone(MAVLinkDrone):
         alt_mode = location.altitude_mode
         hdg_mode = location.heading_mode
         max_velocity = location.max_velocity
-
+        current_location = self._get_global_position()
         if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
             altitude = alt
         else:
-            altitude = self._get_global_position()["absolute_altitude"] + (
-                alt - self._get_global_position()["relative_altitude"]
+            altitude = current_location["absolute_altitude"] + (
+                alt - current_location["relative_altitude"]
             )
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
@@ -102,7 +102,14 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             0,
             0,
-            0,
+            math.radians(
+                self._calculate_heading(
+                    current_location["latitude"],
+                    current_location["longitude"],
+                    location.latitude,
+                    location.longitude,
+                )
+            ),
             0,
         )
 
@@ -111,8 +118,6 @@ class ArduPilotDrone(MAVLinkDrone):
             timeout=60,
             interval=1,
         )
-
-        await self.set_heading(location)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
