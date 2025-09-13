@@ -18,11 +18,9 @@ venv/
 *swp
 
 # Protocol
-protocol/bindings
 *_pb2.py
 *_pb2_grpc.py
 *.pyi
-protocol/proto_doc.md
 *.desc
 
 # Backend
@@ -46,6 +44,8 @@ sdk/api/datatypes/params/*.py
 sdk/api/actions/primitives/*.py
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
+!sdk/api/datatypes/__init__.py
+!sdk/api/datatypes/params/__init__.py
 
 # Generated
 _gen_*
@@ -64,6 +64,8 @@ secrets.toml
 docs/node_modules
 
 # Production
+sdk/build/src
+sdk/build/dist
 docs/build
 
 # Generated files
