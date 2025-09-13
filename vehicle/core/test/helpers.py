@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 # Protocol import
-import bindings.python.testing.testing_pb2 as test_proto
+import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 # Sequencer import
 from message_sequencer import Topic
 

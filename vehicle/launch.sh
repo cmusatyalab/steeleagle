@@ -1,10 +1,8 @@
-_PYTHONPATH=../protocol/:../protocol/bindings/python/:./
-_DESCPATH=../protocol/protocol.desc
 # Start the flight logger first
-PYTHONPATH=$_PYTHONPATH python3 logger/flight_logger.py &
+PYTHONPATH=:./ python3 logger/flight_logger.py &
 PID1=$!
 # Start the control section of the core
-PYTHONPATH=$_PYTHONPATH DESCPATH=$_DESCPATH python3 core/main.py &
+PYTHONPATH=:./ python3 core/main.py &
 PID2=$!
 # Start the mission
 #PYTHONPATH=$_PYTHONPATH python3 mission/main.py &

@@ -4,8 +4,8 @@
 
 import grpc
 # Protocol import
-import bindings.python.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
-import bindings.python.services.{{ service_filename }}_pb2_grpc as {{ service_filename }}_pb2_grpc
+import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
+import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2_grpc as {{ service_filename }}_pb2_grpc
 
 class {{ service_name }}Proxy({{ service_filename }}_pb2_grpc.{{ service_name }}Servicer):
     '''

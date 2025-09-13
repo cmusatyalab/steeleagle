@@ -4,7 +4,7 @@ import pytest_asyncio
 # Helper import
 from helpers import wait_for_services
 # Protocol import
-import bindings.python.testing.testing_pb2 as test_proto
+import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 
 import logging
 logger = logging.getLogger(__name__)

@@ -6,8 +6,8 @@ from util.rpc import generate_request
 from util.config import query_config
 # Protocol import
 from google.protobuf.json_format import MessageToDict
-from bindings.python.services.flight_log_service_pb2 import LogRequest, LogMessage, LogType, LogProtoRequest, ReqRepProto
-from bindings.python.services.flight_log_service_pb2_grpc import FlightLogStub
+from steeleagle_sdk.protocol.services.flight_log_service_pb2 import LogRequest, LogMessage, LogType, LogProtoRequest, ReqRepProto
+from steeleagle_sdk.protocol.services.flight_log_service_pb2_grpc import FlightLogStub
 
 class LogWrapper:
     '''

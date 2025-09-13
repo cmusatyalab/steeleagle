@@ -13,8 +13,8 @@ from util.config import query_config
 from util.rpc import generate_response
 from util.cleanup import register_cleanup_handler
 # Protocol import
-from bindings.python.services.flight_log_service_pb2_grpc import FlightLogServicer, add_FlightLogServicer_to_server
-from bindings.python.services import flight_log_service_pb2 as log_proto
+from steeleagle_sdk.protocol.services.flight_log_service_pb2_grpc import FlightLogServicer, add_FlightLogServicer_to_server
+from steeleagle_sdk.protocol.services import flight_log_service_pb2 as log_proto
 
 class ColorFormatter(logging.Formatter):
     '''

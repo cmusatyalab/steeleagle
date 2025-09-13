@@ -14,14 +14,14 @@ import grpc
 # Protocol Imports
 import common_pb2 as common_protocol
 
-from bindings.python import common_pb2 as common_protocol
+from steeleagle_sdk.protocol import common_pb2 as common_protocol
 import dataplane_pb2 as data_protocol
 import numpy as np
 
 # Interface Imports
 from multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
-from bindings.python.services import control_service_pb2_grpc 
-from bindings.python.services.control_service_pb2_grpc import ControlServicer
+from steeleagle_sdk.protocol.services import control_service_pb2_grpc 
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
 from PIL import Image
 
 from util.config import query_config

@@ -15,6 +15,8 @@ import aiorwlock
 from util.log import get_logger
 from util.config import query_config
 from util.rpc import reflective_grpc_call, generate_response, generate_request
+# Protocol import
+from steeleagle_sdk.protocol.descriptors import get_descriptors
 
 logger = get_logger('core/laws/authority')
 
@@ -51,16 +53,13 @@ class LawAuthority:
         # generated .desc file
         self._desc_pool = DescriptorPool()
         self._name_table = {}
-        desc_path = os.getenv('DESCPATH')
-        with open(desc_path, 'rb') as f:
-            data = f.read()
-            descriptor_set = FileDescriptorSet.FromString(data)
-            for file_descriptor_proto in descriptor_set.file:
-                self._desc_pool.Add(file_descriptor_proto)
-                for service in file_descriptor_proto.service:
-                    self._name_table[service.name] = f'{file_descriptor_proto.package}.{service.name}'
-            # Message class holder to support dynamic instantiation of messages
-            self._message_classes = GetMessages(descriptor_set.file)
+        descriptor_set = get_descriptors()
+        for file_descriptor_proto in descriptor_set.file:
+            self._desc_pool.Add(file_descriptor_proto)
+            for service in file_descriptor_proto.service:
+                self._name_table[service.name] = f'{file_descriptor_proto.package}.{service.name}'
+        # Message class holder to support dynamic instantiation of messages
+        self._message_classes = GetMessages(descriptor_set.file)
 
     async def start(self, retries=3):
         '''

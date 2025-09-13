@@ -4,6 +4,8 @@ import os
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 from dataclasses import dataclass
+# Protocol import
+from steeleagle_sdk.protocol.descriptors import get_descriptors
 
 @dataclass
 class RPCMethod:
@@ -23,24 +25,22 @@ def generate_proxy(service_name, service_filename, channel_addr):
         'channel': channel_addr
     }
     # Populat methods from descriptor file
-    fds = descriptor_pb2.FileDescriptorSet()
-    with open(os.getenv('DESCPATH'), "rb") as f:
-        fds.MergeFromString(f.read())
-        for file in fds.file:
-            if file.name != f'services/{service_filename}.proto':
+    fds = get_descriptors()
+    for file in fds.file:
+        if file.name != f'services/{service_filename}.proto':
+            continue
+        for service in file.service:
+            if service.name != service_name:
                 continue
-            for service in file.service:
-                if service.name != service_name:
-                    continue
-                # Generate proxy methods for each of the methods in the service
-                for method in service.method:
-                    rpc_name = method.name
-                    if method.client_streaming and method.server_streaming:
-                        raise NotImplemented("No proxy generation method for method type: bidirectional stream!")
-                    elif method.client_streaming:
-                        raise NotImplemented("No proxy generation method for method type: client stream!")
-                    rpc = RPCMethod(method.name, method.server_streaming)
-                    context['methods'].append(rpc)
+            # Generate proxy methods for each of the methods in the service
+            for method in service.method:
+                rpc_name = method.name
+                if method.client_streaming and method.server_streaming:
+                    raise NotImplemented("No proxy generation method for method type: bidirectional stream!")
+                elif method.client_streaming:
+                    raise NotImplemented("No proxy generation method for method type: client stream!")
+                rpc = RPCMethod(method.name, method.server_streaming)
+                context['methods'].append(rpc)
     
     # Get the Jinja template
     template_path = Path(__file__).parent / 'templates/'

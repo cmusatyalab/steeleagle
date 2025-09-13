@@ -8,8 +8,8 @@ import asyncio
 from util.rpc import generate_response
 from util.log import get_logger
 # Protocol import
-import bindings.python.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
-import bindings.python.services.{{ service_filename }}_pb2_grpc as {{ service_filename }}_pb2_grpc
+import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
+import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2_grpc as {{ service_filename }}_pb2_grpc
 
 logger = get_logger('mocks/{{ service_filename }}')
 

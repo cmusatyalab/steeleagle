@@ -8,8 +8,8 @@ from util.rpc import generate_request
 from util.log import get_logger
 from util.config import query_config
 # Protocol import
-from bindings.python.services import remote_service_pb2 as remote_control_proto
-from bindings.python.services import report_service_pb2 as report_proto
+from steeleagle_sdk.protocol.services import remote_service_pb2 as remote_control_proto
+from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 from google.protobuf import any_pb2
 # Sequencer import
 from message_sequencer import MessageSequencer, Topic
