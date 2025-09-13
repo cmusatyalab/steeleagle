@@ -4,7 +4,7 @@ cd ../../protocol
 
 # Build the message protocols
 $PROTOCPATH -I. \
-	--python_out=../build/src/steeleagle_sdk/protocol \
+	--python_out=./bindings \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -13,9 +13,9 @@ $PROTOCPATH -I. \
 
 # Build the service protocols
 $PROTOCPATH -I. \
-	--python_out=../build/src/steeleagle_sdk/protocol/ \
-	--pyi_out=../build/src/steeleagle_sdk/protocol/ \
-	--grpc_python_out=../build/src/steeleagle_sdk/protocol/ \
+	--python_out=./bindings \
+	--pyi_out=./bindings \
+	--grpc_python_out=./bindings/ \
 	services/control_service.proto \
        	services/remote_service.proto \
 	services/mission_service.proto \
@@ -27,7 +27,7 @@ $PROTOCPATH -I. \
 $PROTOCPATH -I. \
 	--include_source_info \
 	--include_imports \
-	--descriptor_set_out=../build/src/steeleagle_sdk/protocol/protocol.desc \
+	--descriptor_set_out=./bindings/protocol.desc \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -40,9 +40,9 @@ $PROTOCPATH -I. \
 	services/flight_log_service.proto \
 	services/compute_service.proto \
 
+protol -o bindings --in-place raw ./bindings/protocol.desc
+
 cd ../build/generate
 
-protol -o ../src/steeleagle_sdk/protocol --in-place raw ../src/steeleagle_sdk/protocol/protocol.desc
-
 # Construct the API
-DESCPATH=../src/steeleagle_sdk/protocol/protocol.desc python3 generate_api.py
+DESCPATH=../../protocol/bindings/protocol.desc python3 generate_api.py
