@@ -12,16 +12,16 @@ class CustomBuildHook(BuildHookInterface):
         sources = {
             'api' : '../api',
             'dsl' : '../dsl',
-            'protocol' : '../protocol/get_descriptors.py'
+            'protocol' : '../protocol/descriptors.py'
         }
         print('>>> Running pre-build steps...')
-        #if os.path.isdir('src'):
-        #    print('>>> Cleaning old src directory...')
-        #    shutil.rmtree('src')
+        if os.path.isdir('src'):
+            print('>>> Cleaning old src directory...')
+            shutil.rmtree('src')
         for source in sources:
             os.makedirs(f'src/{package}/{source}', exist_ok=True)
-        #print('>>> Generating code...')
-        #os.system('cd generate; ./build.sh; cd ..')
+        print('>>> Generating code...')
+        os.system('cd generate; ./generate.sh; cd ..')
         print('>>> Copying sources...')
         for source in sources:
             if os.path.isdir(sources[source]):
