@@ -140,6 +140,8 @@ class DigitalPerfect(ControlServicer):
     async def Kill(self, request, context) -> common_protocol.ResponseStatus:
         return common_protocol.ResponseStatus.NOTSUPPORTED
 
+
+
     async def set_home(self, location: common_protocol.Location):
         lat = location.latitude
         lon = location.longitude
