@@ -5,10 +5,10 @@ import logging
 from typing import Dict, List, Tuple, Optional, Any, Iterable
 from lark import Transformer, Tree, v_args, Token
 
-from ..dsl.compiler.validator import validate_mission_ir
-from ..dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
-from ..dsl.compiler.resolver import resolve_symbols
-from ..dsl.compiler.loader import load_all, print_report
+from ...dsl.compiler.validator import validate_mission_ir
+from ...dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
+from ...dsl.compiler.resolver import resolve_symbols
+from ...dsl.compiler.loader import load_all, print_report
 
 logger = logging.getLogger(__name__)
 

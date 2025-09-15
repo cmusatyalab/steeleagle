@@ -5,8 +5,8 @@ import logging
 from typing import Any, Dict, List, Tuple, Optional, get_args, get_origin, Union
 from pydantic import BaseModel
 
-from ..dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
-from ..dsl.compiler.registry import get_action, get_event, get_data
+from ...dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
+from ...dsl.compiler.registry import get_action, get_event, get_data
 
 logger = logging.getLogger(__name__)
 
