@@ -13,7 +13,6 @@ class CustomBuildHook(BuildHookInterface):
         sources = {
             'api' : 'api',
             'dsl' : 'dsl',
-            'protocol' : 'protocol/bindings'
         }
         print('>>> Running pre-build steps...')
         if os.path.isdir('build/src'):
@@ -22,6 +21,7 @@ class CustomBuildHook(BuildHookInterface):
         for source in sources:
             os.makedirs(f'build/src/{package}/{source}', exist_ok=True)
         print('>>> Generating code...')
+        # This generates and copies the Proto, then generates the API and DSL
         os.system('cd build/generate; ./generate.sh; cd ../..')
         print('>>> Copying sources...')
         for source in sources:

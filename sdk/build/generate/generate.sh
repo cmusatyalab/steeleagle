@@ -1,10 +1,16 @@
 PROTOCPATH="python -m grpc_tools.protoc"
 
-cd ../../protocol
+cp -r ../../../protocol ../src/*/
+
+cd ../src/*/
+mv protocol temp
+_DESCPATH=`pwd`'/protocol/protocol.desc'
+mkdir protocol
+cd temp
 
 # Build the message protocols
 $PROTOCPATH -I. \
-	--python_out=./bindings \
+	--python_out=../protocol \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -13,9 +19,9 @@ $PROTOCPATH -I. \
 
 # Build the service protocols
 $PROTOCPATH -I. \
-	--python_out=./bindings \
-	--pyi_out=./bindings \
-	--grpc_python_out=./bindings/ \
+	--python_out=../protocol \
+	--pyi_out=../protocol \
+	--grpc_python_out=../protocol \
 	services/control_service.proto \
        	services/remote_service.proto \
 	services/mission_service.proto \
@@ -27,7 +33,7 @@ $PROTOCPATH -I. \
 $PROTOCPATH -I. \
 	--include_source_info \
 	--include_imports \
-	--descriptor_set_out=./bindings/protocol.desc \
+	--descriptor_set_out=../protocol/protocol.desc \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -40,9 +46,12 @@ $PROTOCPATH -I. \
 	services/flight_log_service.proto \
 	services/compute_service.proto \
 
-protol -o bindings --in-place raw ./bindings/protocol.desc
+cd ..
+protol -o protocol --in-place raw protocol/protocol.desc
+rm -rf ../temp
+cp ../../extras/* ./protocol/
 
-cd ../build/generate
+cd ../../generate
 
 # Construct the API
-DESCPATH=../../protocol/bindings/protocol.desc python generate_api.py
+DESCPATH=$_DESCPATH python generate_api.py

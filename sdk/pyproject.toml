@@ -67,5 +67,5 @@ include = [
     "build/src/steeleagle_sdk/protocol/protocol.desc"
 ]
 
-[tool.hatch.build.hooks.custom]
+[tool.hatch.build.targets.sdist.hooks.custom]
 path = "build/prebuild.py"
