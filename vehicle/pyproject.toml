@@ -1,0 +1,25 @@
+[project]
+name = "steeleagle-vehicle"
+version = "1.0.0"
+description = "Runtime for bridging vehicle-specific APIs with SteelEagle"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "aiorwlock>=1.5.0",
+    "gabriel-client>=3.0.2",
+    "gabriel-server>=3.0.1",
+    "grpc-interceptor>=0.15.4",
+    "grpcio>=1.74.0",
+    "jinja2>=3.1.6",
+    "mcap>=1.3.0",
+    "mcap-protobuf-support>=0.5.3",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-order>=1.3.0",
+    "steeleagle-sdk",
+    "toml>=0.10.2",
+    "zmq>=0.0.0",
+]
+
+[tool.uv.sources]
+steeleagle-sdk = { workspace = true }
