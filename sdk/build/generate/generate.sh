@@ -1,17 +1,10 @@
-# Automated script for creating GRPC python bindings
-# TODO: Eventually, we may want to support language/vehicle choice
+PROTOCPATH="python3 -m grpc_tools.protoc"
 
-# Put in the path to protoc-gen-doc locally, or add it to PATH
-if [ -n "$1" ] && [ "$1" = "doc" ]; then
-	PROTOCGENDOC=/usr/local/bin/protoc-gen-doc
-	$PROTOCPATH --plugin=protoc-gen-doc=$PROTOCGENDOC \
-		--doc_out=. --doc_opt=markdown,proto_doc.md \
-		-I. *.proto ./**/*.proto
-fi
+cd ../../protocol
 
 # Build the message protocols
 $PROTOCPATH -I. \
-	--python_out=./bindings/python/ \
+	--python_out=./bindings \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -20,9 +13,9 @@ $PROTOCPATH -I. \
 
 # Build the service protocols
 $PROTOCPATH -I. \
-	--python_out=./bindings/python/ \
-	--pyi_out=./bindings/python/ \
-	--grpc_python_out=./bindings/python/ \
+	--python_out=./bindings \
+	--pyi_out=./bindings \
+	--grpc_python_out=./bindings/ \
 	services/control_service.proto \
        	services/remote_service.proto \
 	services/mission_service.proto \
@@ -34,7 +27,7 @@ $PROTOCPATH -I. \
 $PROTOCPATH -I. \
 	--include_source_info \
 	--include_imports \
-	--descriptor_set_out=./protocol.desc \
+	--descriptor_set_out=./bindings/protocol.desc \
        	common.proto \
 	messages/compute_payload.proto \
 	messages/telemetry.proto \
@@ -46,3 +39,10 @@ $PROTOCPATH -I. \
 	services/report_service.proto \
 	services/flight_log_service.proto \
 	services/compute_service.proto \
+
+protol -o bindings --in-place raw ./bindings/protocol.desc
+
+cd ../build/generate
+
+# Construct the API
+DESCPATH=../../protocol/bindings/protocol.desc python3 generate_api.py

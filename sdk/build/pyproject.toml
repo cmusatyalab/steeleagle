@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "steeleagle_sdk"
+version = "1.0.0"
+description = "SDK for interacting with SteelEagle vehicles."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Mihir Bala", email = "mbala@andrew.cmu.edu" },
+    { name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu" },
+    { name = "Anthony Chen", email = "xianglic@andrew.cmu.edu" },
+    { name = "Aditya Chanana", email = "achanana@andrew.cmu.edu" }
+]
+maintainers = [
+  {name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu"}
+]
+keywords = [
+    "autonomous",
+    "robots",
+    "edge",
+    "vision",
+    "drone",
+    "uav",
+    "uas",
+    "ugv"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "protobuf>=3.12",
+    "grpcio>=1.74.0",
+    "pydantic>=2.11.7",
+]
+
+[project.urls]
+Homepage = "https://cmusatyalab.github.io/steeleagle/"
+Documentation = "https://cmusatyalab.github.io/steeleagle/"
+Repository = "https://github.com/cmusatyalab/steeleagle"
+Issues = "https://github.com/cmusatyalab/steeleagle/issues"
+Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+include = [
+    "src/steeleagle_sdk/**/*.py",
+    "src/steeleagle_sdk/protocol/protocol.desc"
+]
+
+[tool.hatch.build.targets.wheel]
+ignore-vcs = true
+packages = ["src/steeleagle_sdk"]
+include = [
+    "src/steeleagle_sdk/**/*.py",
+    "src/steeleagle_sdk/protocol/protocol.desc"
+]
+
+[tool.hatch.build.hooks.custom]
+path = "prebuild.py"

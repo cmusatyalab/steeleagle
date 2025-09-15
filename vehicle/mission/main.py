@@ -1,9 +1,9 @@
 # Proto binding imports
 import grpc
-from bindings.python.services import control_service_pb2, control_service_pb2_grpc
-from bindings.python.services import mission_service_pb2, mission_service_pb2_grpc
-from bindings.python.services import report_service_pb2, report_service_pb2_grpc
-from bindings.python.services import compute_service_pb2, compute_service_pb2_grpc
+from steeleagle_sdk.protocol.services import control_service_pb2, control_service_pb2_grpc
+from steeleagle_sdk.protocol.services import mission_service_pb2, mission_service_pb2_grpc
+from steeleagle_sdk.protocol.services import report_service_pb2, report_service_pb2_grpc
+from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
 from core.laws.interceptor import LawInterceptor
 from core.laws.authority import LawAuthority

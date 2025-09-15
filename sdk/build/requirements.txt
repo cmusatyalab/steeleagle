@@ -1,0 +1,3 @@
+protoletariat
+grpcio_tools
+hatchling

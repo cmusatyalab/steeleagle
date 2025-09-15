@@ -15,7 +15,7 @@ from util.log import get_logger
 from util.config import query_config
 from util.rpc import reflective_grpc_call, generate_response, generate_request
 # Protocol import
-from bindings.python.services.remote_service_pb2 import RemoteControlRequest, RemoteControlResponse
+from steeleagle_sdk.protocol.services.remote_service_pb2 import RemoteControlRequest, RemoteControlResponse
 # Law import
 from core.laws.authority import Failsafe
 

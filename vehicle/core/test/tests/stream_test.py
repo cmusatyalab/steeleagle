@@ -6,7 +6,7 @@ import logging
 # Helper import
 from helpers import send_requests, Request
 # Protocol import
-import bindings.python.messages.telemetry_pb2 as telemetry_proto
+import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
 from gabriel_protocol.gabriel_pb2 import ResultWrapper, PayloadType
 # Sequencer import
 from message_sequencer import Topic

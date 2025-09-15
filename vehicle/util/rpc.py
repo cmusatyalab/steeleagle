@@ -2,7 +2,7 @@ import inspect
 # Protocol imports
 from google.protobuf.timestamp_pb2 import Timestamp
 from util.config import query_config
-from bindings.python import common_pb2 as common_proto
+from steeleagle_sdk.protocol import common_pb2 as common_proto
 
 async def reflective_grpc_call(metadata, full_method_name, method_desc, request, classes, channel, timeout=3):
     '''
