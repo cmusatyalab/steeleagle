@@ -2,7 +2,7 @@ import os
 import time
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import grpc
 from concurrent import futures
 import signal
@@ -56,7 +56,7 @@ class FlightLogService(FlightLogServicer):
             # Create an mcap file with the current datetime
             filename = log_config['custom_filename']
             if not filename:
-                date_time = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+                date_time = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H:%M:%S")
                 name = query_config('vehicle.name')
                 filename = name + '_' + date_time + '.mcap'
             try:

@@ -8,32 +8,57 @@ package steeleagle.protocol.services.remote_service;
 import "google/protobuf/any.proto";
 
 /*
- * Used to control a vehicle remotely over ZeroMQ
- * Not implemented as a gRPC service!
+ * Used to control a vehicle remotely over ZeroMQ, usually hosted
+ * on the server
  */
 service Remote {
-  // Sends a request to one of the core services (Control, Mission, etc.)
-  rpc RemoteControl (RemoteControlRequest) returns (RemoteControlResponse) {}
+  // Sends a request to a vehicle core service (Control, Mission, etc.)
+  // over ZeroMQ and returns the response
+  rpc Command (CommandRequest) returns (stream CommandResponse) {}
+  // Compiles an SDK DSL script and returns the bytes or returns
+  // an error
+  rpc Compile (CompileRequest) returns (CompileResponse) {}
 }
 
-message RemoteControlRequest {
+message CommandRequest {
   // Since command sequencing is not built-in to ZeroMQ,
-  // it must be done manually
-  uint32 sequence_number = 1;
+  // it must be done manually; this will be set automatically
+  // by the server
+  optional uint32 sequence_number = 1;
   // Contains request data for an RPC call
-  google.protobuf.Any control_request = 2;
+  google.protobuf.Any request = 2;
   // Fully qualified method name
   string method_name = 3;
   // Identity of the sender
   string identity = 4;
+  // Target vehicles to send to, set automatically by the vehicle
+  repeated string vehicle_ids = 5;
 }
 
-message RemoteControlResponse {
+message CommandResponse {
   // Since command sequencing is not built-in to ZeroMQ,
-  // it must be done manually
+  // it must be done manually; this will be set automatically
+  // by the vehicle/server
   uint32 sequence_number = 1;
-  // Contains response data for an RPC call
-  google.protobuf.Any control_response = 2;
-  // Identity of the original sender
+  // Contains response data for an RPC call, if available
+  optional google.protobuf.Any response = 2;
+  // Identity of the original sender, set automatically by the
+  // vehicle
   string identity = 3;
+}
+
+message CompileRequest {
+  // DSL file as a string
+  string dsl = 1; 
+  // Target vehicles to compile for
+  repeated string vehicle_ids = 2 ;
+}
+
+message CompileResponse {
+  // Indicates success (true) or failure (false)
+  bool success = 1;
+  // Compiled script bytes
+  optional bytes compiled = 2;
+  // Response string (OK if success, error string otherwise)
+  string response_string = 3; 
 }

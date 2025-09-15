@@ -2,7 +2,6 @@ import asyncio
 import zmq
 import zmq.asyncio
 import time
-import datetime
 # Utility import
 from util.config import query_config
 from util.sockets import setup_zmq_socket, SocketOperation

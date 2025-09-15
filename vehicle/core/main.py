@@ -28,7 +28,7 @@ from steeleagle_sdk.protocol.services import mission_service_pb2, mission_servic
 from steeleagle_sdk.protocol.services import report_service_pb2, report_service_pb2_grpc
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 # Remote control handler import
-from handlers.remote_control_handler import RemoteControlHandler
+from handlers.command_handler import CommandHandler
 from handlers.stream_handler import StreamHandler
 
 logger = get_logger('core/main')
@@ -75,7 +75,7 @@ async def main():
     logger.info('Law authority started!')
 
     # Create the remote control and stream handler
-    rc_handler = RemoteControlHandler(law_authority, command_socket)
+    rc_handler = CommandHandler(law_authority, command_socket)
     stream_handler = StreamHandler(law_authority)
     await rc_handler.start(query_config('internal.timeouts.server'))
     logger.info('Started handling remote input!')

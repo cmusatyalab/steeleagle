@@ -216,7 +216,7 @@ class LawAuthority:
                 if is_json_command:
                     ParseDict(json.loads(payload), request, ignore_unknown_fields=True)
                 else:
-                    command.control_request.Unpack(request)
+                    command.request.Unpack(request)
                 logger.proto(request)
             except KeyError:
                 logger.error(f'Command {method} ignored due to failed descriptor lookup!')

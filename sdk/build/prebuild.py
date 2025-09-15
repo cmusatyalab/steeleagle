@@ -9,7 +9,6 @@ class CustomBuildHook(BuildHookInterface):
         package for publishing. All paths are relative to the SDK root
         directory.
         '''
-        print(build_data)
         package = 'steeleagle_sdk'
         sources = {
             'api' : 'api',
