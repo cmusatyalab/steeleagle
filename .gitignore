@@ -39,6 +39,7 @@ backend/server/engines/slam/images/*
 *~
 *.log
 *.mcap
+sdk/build/src/
 sdk/api/datatypes/*.py
 sdk/api/datatypes/params/*.py
 sdk/api/actions/primitives/*.py
