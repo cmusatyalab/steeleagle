@@ -64,8 +64,8 @@ secrets.toml
 docs/node_modules
 
 # Production
-sdk/build/src
-sdk/build/dist
+*/src
+*/dist
 docs/build
 
 # Generated files

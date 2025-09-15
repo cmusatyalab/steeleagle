@@ -1,4 +1,4 @@
-PROTOCPATH="python3 -m grpc_tools.protoc"
+PROTOCPATH="python -m grpc_tools.protoc"
 
 cd ../../protocol
 
@@ -45,4 +45,4 @@ protol -o bindings --in-place raw ./bindings/protocol.desc
 cd ../build/generate
 
 # Construct the API
-DESCPATH=../../protocol/bindings/protocol.desc python3 generate_api.py
+DESCPATH=../../protocol/bindings/protocol.desc python generate_api.py

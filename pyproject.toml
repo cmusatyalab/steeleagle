@@ -1,0 +1,12 @@
+[project]
+name = "steeleagle"
+version = "1.0.0"
+description = "A framework for developing software-defined robotic applications."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "sdk"
+]
