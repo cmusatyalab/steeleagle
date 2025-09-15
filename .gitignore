@@ -51,6 +51,9 @@ sdk/api/actions/primitives/*.py
 # Generated
 _gen_*
 
+# UV
+*.lock
+
 # Vehicle
 vehicle/config.toml
 vehicle/configs
