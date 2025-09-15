@@ -8,16 +8,17 @@ import logging
 from types import ModuleType
 from typing import Dict, List, Optional, Tuple
 
+
 logger = logging.getLogger(__name__)
 
 _LOADED_BASES: set[str] = set()
-_DEFAULT_BASES = ("api.actions", "api.events", "api.messages")
+_DEFAULT_BASES = ("...api.actions", "...api.events", "...api.messages")
 
 
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
     """Try to import a base package and list its submodules, skipping internals."""
     try:
-        pkg: ModuleType = importlib.import_module(base)
+        pkg: ModuleType = importlib.import_module(base, package='steeleagle_sdk.dsl.compiler')
     except ModuleNotFoundError:
         return None, []
     names: List[str] = []
@@ -85,7 +86,7 @@ def load_all(
         for mod_name in submods:
             try:
                 logger.debug(" importing %s ...", mod_name)
-                importlib.import_module(mod_name)
+                importlib.import_module(mod_name, package='steeleagle_sdk.dsl.compiler')
                 imported.append(mod_name)
                 logger.debug("   -> OK")
             except Exception as e:

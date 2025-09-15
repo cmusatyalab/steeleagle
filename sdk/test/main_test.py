@@ -1,22 +1,17 @@
 from pathlib import Path
 from lark import Lark
-from steeleagle_sdk.dsl.compiler.transformer import DroneDSLTransformer
-from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
+from steeleagle_sdk.dsl import build_mission, execute_mission
+
 import asyncio
 import os
-# Load grammar
-GRAMMAR_PATH = Path("./dsl/grammar/dronedsl.lark")
-grammar = GRAMMAR_PATH.read_text(encoding="utf-8")
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-# Create parser
-parser = Lark(grammar, parser="lalr", start="start")
 
 # Sample DSL
-
 dsl_code = None
-with open(os.path.join(os.path.dirname(__file__), 'test_script.dsl'), 'r', encoding='utf-8') as f:
+path = os.path.join(os.path.dirname(__file__), 'test_script.dsl')
+with open(path, 'r', encoding='utf-8') as f:
     dsl_code = f.read()
 
 logger.info("DSL Code:\n%s", dsl_code)
@@ -26,14 +21,8 @@ async def fsm_runner(fsm):
     await fsm.run()
 
 def main():
-    # Parse
-    tree = parser.parse(dsl_code)
-    logger.info("Parse tree: %s", tree.pretty())
-    
-    # test compiler
-    logger.info("Compiling...")
-    # Transform
-    mission = DroneDSLTransformer().transform(tree)
+    # Build mission
+    mission = build_mission(dsl_code)
     logger.info("Start: %s", mission.start_action_id)
     logger.info("Actions: %s", sorted(mission.actions.keys()))
     logger.info("Events: %s", sorted(mission.events.keys()))
@@ -44,8 +33,6 @@ def main():
 
     # test runtime
     logger.info("Running...")
-    fsm = MissionFSM(mission)
-    asyncio.run(fsm_runner(fsm))
-    
+    asyncio.run(execute_mission(mission))
 if __name__ == "__main__":
     main()
