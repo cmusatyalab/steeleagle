@@ -44,6 +44,7 @@ dependencies = [
     "protobuf>=3.12",
     "grpcio>=1.74.0",
     "pydantic>=2.11.7",
+    "lark>=1.2.2",
 ]
 
 [project.urls]

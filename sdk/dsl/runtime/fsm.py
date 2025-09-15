@@ -1,7 +1,7 @@
 from __future__ import annotations
 import asyncio
-from dsl.compiler.ir import MissionIR
-from dsl.compiler.registry import get_action, get_event
+from ...dsl.compiler.ir import MissionIR
+from ...dsl.compiler.registry import get_action, get_event
 import logging
 
 

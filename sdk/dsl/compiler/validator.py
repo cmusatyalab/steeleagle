@@ -5,8 +5,8 @@ import logging
 from typing import Any, Dict, Tuple
 from pydantic import BaseModel, ValidationError
 
-from ..dsl.compiler.registry import get_action, get_event, get_data
-from ..dsl.compiler.ir import MissionIR
+from ...dsl.compiler.registry import get_action, get_event, get_data
+from ...dsl.compiler.ir import MissionIR
 
 logger = logging.getLogger(__name__)
 

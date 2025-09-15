@@ -1,6 +1,4 @@
-_PYTHONPATH=../protocol/:../protocol/bindings/python/:./
-# Start the mission
-PYTHONPATH=$_PYTHONPATH python3 main_test.py &
+uv run python main_test.py &
 PID1=$!
 
 cleanup() {

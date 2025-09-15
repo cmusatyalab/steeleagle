@@ -1,7 +1,7 @@
 from pathlib import Path
 from lark import Lark
-from dsl.compiler.transformer import DroneDSLTransformer
-from dsl.runtime.fsm import MissionFSM
+from steeleagle_sdk.dsl.compiler.transformer import DroneDSLTransformer
+from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
 import asyncio
 import os
 # Load grammar
