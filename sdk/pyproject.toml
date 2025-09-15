@@ -9,7 +9,7 @@ requires = [
 build-backend = "hatchling.build"
 
 [project]
-name = "steeleagle_sdk"
+name = "steeleagle-sdk"
 version = "1.0.0"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
@@ -53,9 +53,6 @@ Documentation = "https://cmusatyalab.github.io/steeleagle/"
 Repository = "https://github.com/cmusatyalab/steeleagle"
 Issues = "https://github.com/cmusatyalab/steeleagle/issues"
 Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
-
-[tool.hatch.build]
-directory = "build"
 
 [tool.hatch.build.targets.sdist]
 ignore-vcs = true

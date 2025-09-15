@@ -6,6 +6,7 @@ syntax = "proto3";
 package steeleagle.protocol.services.control_service;
 
 import "common.proto";
+import "google/protobuf/duration.proto";
 
 /*
  * Used for low-level control of a vehicle
@@ -19,6 +20,9 @@ service Control {
   rpc Arm (ArmRequest) returns (ArmResponse) {}
   // Order the vehicle to disarm
   rpc Disarm (DisarmRequest) returns (DisarmResponse) {}
+  // Send a joystick velocity target that the vehicle will actuate
+  // towards, along with an actuation duration
+  rpc Joystick (JoystickRequest) returns (JoystickResponse) {}
   // Order the vehicle to take off
   rpc TakeOff (TakeOffRequest) returns (stream TakeOffResponse) {}
   // Land the vehicle at its current position
@@ -89,6 +93,19 @@ message DisarmRequest {
 }
 
 message DisarmResponse {
+  steeleagle.protocol.common.Response response = 1;
+}
+
+message JoystickRequest {
+  steeleagle.protocol.common.Request request = 1;
+  // Target velocity to move towards
+  steeleagle.protocol.common.Velocity velocity = 2;
+  // Time of actuation (defaults to 1s), after which
+  // the vehicle will Hold
+  optional google.protobuf.Duration duration = 3;
+}
+
+message JoystickResponse {
   steeleagle.protocol.common.Response response = 1;
 }
 

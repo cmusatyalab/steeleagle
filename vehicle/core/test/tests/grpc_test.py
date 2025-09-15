@@ -19,7 +19,7 @@ class Test_gRPC:
     '''
     @pytest.mark.order(1)
     @pytest.mark.asyncio
-    async def test_remote_control(self, messages, swarm_controller, mission, core):
+    async def test_command(self, messages, swarm_controller, mission, core):
         # Start test:
         requests = [
             Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse()),

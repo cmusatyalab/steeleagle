@@ -8,7 +8,7 @@ from util.rpc import generate_request
 from util.log import get_logger
 from util.config import query_config
 # Protocol import
-from steeleagle_sdk.protocol.services import remote_service_pb2 as remote_control_proto
+from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto
 from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 from google.protobuf import any_pb2
 # Sequencer import
@@ -36,25 +36,25 @@ class MockSwarmController:
         any_object = any_pb2.Any()
         any_object.Pack(req_obj.request)
         self._seq_num += 1
-        control_request = remote_control_proto.RemoteControlRequest(
+        request = command_proto.CommandRequest(
                 sequence_number=self._seq_num,
-                control_request=any_object,
+                request=any_object,
                 method_name=req_obj.method_name,
                 identity=req_obj.identity
                 ) 
 
         logger.info("Sending...")
         await self._socket.send_multipart(
-                [self._device.encode("utf-8"), control_request.SerializeToString()]
+                [self._device.encode("utf-8"), request.SerializeToString()]
                 )
         
         complete = False
         logger.info("Receiving...")
         identity, resp_bytes = await self._socket.recv_multipart()
-        resp_obj = remote_control_proto.RemoteControlResponse()
+        resp_obj = command_proto.CommandResponse()
         resp_obj.ParseFromString(resp_bytes)
         response = req_obj.response
-        resp_obj.control_response.Unpack(response)
+        resp_obj.response.Unpack(response)
         logger.info(str(MessageToDict(response)))
         if response.response.status == req_obj.status:
             logger.info(f"Got correct status: {req_obj.status}!")

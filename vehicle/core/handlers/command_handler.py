@@ -15,13 +15,13 @@ from util.log import get_logger
 from util.config import query_config
 from util.rpc import reflective_grpc_call, generate_response, generate_request
 # Protocol import
-from steeleagle_sdk.protocol.services.remote_service_pb2 import RemoteControlRequest, RemoteControlResponse
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest, CommandResponse
 # Law import
 from core.laws.authority import Failsafe
 
-logger = get_logger('core/handlers/remote_control_handler')
+logger = get_logger('core/handlers/command_handler')
 
-class RemoteControlHandler:
+class CommandHandler:
     '''
     Handles all remote input from the server and external vehicles.
     '''
@@ -31,7 +31,7 @@ class RemoteControlHandler:
         self._main_loop_task = None
     
     async def start(self, failsafe_timeout=1):
-        self._main_loop_task = asyncio.create_task(self._handle_remote_input(failsafe_timeout)) 
+        self._main_loop_task = asyncio.create_task(self._handle_commands(failsafe_timeout)) 
 
     async def wait_for_termination(self):
         await self._main_loop_task
@@ -44,15 +44,15 @@ class RemoteControlHandler:
         # Only get one result back
         result = results[0]
         logger.proto(result)
-        result_msg = RemoteControlResponse(
+        result_msg = CommandResponse(
                 sequence_number=command.sequence_number,
                 identity=command.identity
                 )
         # Pack the result
-        result_msg.control_response.Pack(result)
+        result_msg.response.Pack(result)
         await self._command_socket.send(result_msg.SerializeToString())
 
-    async def _handle_remote_input(self, timeout):
+    async def _handle_commands(self, timeout):
         '''
         Multiplexes incoming remote input commands to the appropriate
         service and returns responses to the sender.
@@ -84,7 +84,7 @@ class RemoteControlHandler:
 
                 last_manual_command_ts = time.time()
                 message = await self._command_socket.recv()
-                request = RemoteControlRequest()
+                request = CommandRequest()
                 request.ParseFromString(message)
                 asyncio.create_task(self._send_results(request))
         except Exception as e:
