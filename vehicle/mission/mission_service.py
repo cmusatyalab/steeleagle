@@ -2,12 +2,9 @@ import asyncio
 import json
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
 from steeleagle_sdk.protocol.services import mission_service_pb2 as mission_proto
-
 from util.rpc import generate_response
-from util.log import get_logger
-
-from dsl.compiler.ir import MissionIR
-from dsl.runtime.fsm import MissionFSM
+from steeleagle_sdk.dsl.compiler.ir import MissionIR
+from steeleagle_sdk.dsl import execute_mission
 
 import logging
 
@@ -15,14 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class MissionService(MissionServicer):
-    def __init__(self, stubs, mission_dir):
+    def __init__(self, stubs):
         self.mission = None
         self.mission_routine = None
-        CONTROL_STUB = stubs.get("control")
-        COMPUTE_STUB = stubs.get("compute")
-        REPORT_STUB = stubs.get("report")
+        self.stubs= stubs
 
-    def _load(mission_content):
+    def _load(self, mission_content):
         json_data = json.loads(mission_content)
         mission_ir = MissionIR(**json_data)
         return mission_ir
@@ -30,10 +25,10 @@ class MissionService(MissionServicer):
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
-        logger.proto(request)
+        logger.info(request)
         mission_content = request.mission.content
         mission_ir = self._load(mission_content)
-        self.mission = MissionFSM(mission_ir)
+        self.mission = mission_ir
         return mission_proto.Upload(response=generate_response(2))        
 
     async def Start(self, request, context):
@@ -43,7 +38,10 @@ class MissionService(MissionServicer):
         elif self.mission_routine is not None and not self.mission_routine.done():
             return mission_proto.Start(response=generate_response(1, "Mission already running"))
         else:
-            self.mission_routine = asyncio.create_task(self.mission.run())
+            control = self.stubs.get("control")
+            compute = self.stubs.get("compute")
+            report = self.stubs.get("report")
+            self.mission_routine = asyncio.create_task(execute_mission(self.mission, control, compute, report))
             return mission_proto.Start(response=generate_response(2))
 
     async def Stop(self, request, context):
