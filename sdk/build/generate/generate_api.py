@@ -202,16 +202,8 @@ def get_fields(fields, enum_map):
         else:
             raise ValueError(f'Unknown field type {field.type}!')
         if field.proto3_optional == 1: # This is an optional field!
-            if field.type in [11, 14]:
-                if enum != None:
-                    typ = f'{typ} = {eval("int()")}'
-                else:    
-                    typ = f'{typ} = {typ}()'
-            elif field.type in [9]:
-                typ = f'{typ} = \'\''
-            else:
-                typ = f'{typ} = {eval(typ + "()")}'
-        
+            type = f'Optional[{typ}]'
+
         result.append((field.name, typ, path_type, enum, i))
     return result
 
