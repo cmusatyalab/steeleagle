@@ -9,6 +9,5 @@ dependencies = []
 [tool.uv.workspace]
 members = [
     "sdk",
-    # "backend",
-    # "vehicle",
+    "vehicle",
 ]
