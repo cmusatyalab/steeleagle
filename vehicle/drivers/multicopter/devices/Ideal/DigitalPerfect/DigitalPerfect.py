@@ -13,12 +13,12 @@ import grpc
 
 # Protocol Imports
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
-from steeleagle_sdk.protocol import control_service_pb2 as control_protocol
-import dataplane_pb2 as data_protocol
+from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
+# import dataplane_pb2 as data_protocol
 import numpy as np
 
 # Interface Imports
-from multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
+from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
 from steeleagle_sdk.protocol.services import control_service_pb2_grpc 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
 from PIL import Image
@@ -64,7 +64,7 @@ class DigitalPerfect(ControlServicer):
         
 
         """ GRPC methods """
-    async def Connect(self, request, context) -> common_protocol.ConnectResponse:
+    async def Connect(self, request, context):
         try:
             result = await self._drone.connect()
             if not result:
@@ -77,7 +77,7 @@ class DigitalPerfect(ControlServicer):
             logger.error(f"Error occurred while connecting to digital drone: {e}")
             context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-    async def Disconnect(self, request, context) -> common_protocol.DisconnectResponse:
+    async def Disconnect(self, request, context): 
         try: 
             if not await self.is_connected():
                 logger.warning("Drone is already disconnected.")
@@ -354,100 +354,100 @@ class DigitalPerfect(ControlServicer):
             context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
 
-    async def stream_telemetry(self, tel_sock, rate_hz):
-        logger.info("Starting telemetry stream")
-        await asyncio.sleep(1)
-
-        while await self.is_connected():
-            try:
-                tel_message = data_protocol.Telemetry()
-                tel_message.drone_name = self._get_name()
-                tel_message.drone_model = await self.get_type()
-                tel_message.battery = self._get_battery_percentage()
-                tel_message.satellites = self._get_satellites()
-                tel_message.global_position.latitude = self._get_global_position()[0]
-                tel_message.global_position.longitude = self._get_global_position()[1]
-                tel_message.global_position.altitude = self._get_global_position()[2]
-                tel_message.relative_position.up = self._get_altitude_rel()
-                tel_message.global_position.heading = self._get_heading()
-                tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
-                tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
-                tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
-                tel_message.velocity_body.forward_vel = self._get_velocity_body()[
-                    "forward"
-                ]
-                tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
-                tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
-                tel_message.velocity_body.angular_vel = (
-                    self._drone.get_angular_velocity()
-                )
-                gimbal = self._get_gimbal_pose_body(0)
-                tel_message.gimbal_pose.pitch = gimbal["g_pitch"]
-                tel_message.gimbal_pose.roll = gimbal["g_roll"]
-                tel_message.gimbal_pose.yaw = gimbal["g_yaw"]
-                tel_message.gimbal_pose.control_mode = (
-                    common_protocol.PoseControlMode.POSITION_ABSOLUTE
-                )
-                tel_message.gimbal_pose.actuator_id = 0
-                tel_message.status = self._get_current_status()
-                batt = tel_message.battery
-
-                # Warnings
-                if batt <= 15:
-                    tel_message.alerts.battery_warning = (
-                        common_protocol.BatteryWarning.CRITICAL
-                    )
-                elif batt <= 30:
-                    tel_message.alerts.battery_warning = (
-                        common_protocol.BatteryWarning.LOW
-                    )
-                mag = self._get_magnetometer()
-                if mag == 2:
-                    tel_message.alerts.magnetometer_warning = (
-                        common_protocol.MagnetometerWarning.RECOMMENDED
-                    )
-                elif mag == 1:
-                    tel_message.alerts.magnetometer_warning = (
-                        common_protocol.MagnetometerWarning.REQUIRED
-                    )
-                sats = tel_message.satellites
-                if sats == 0:
-                    tel_message.alerts.gps_warning = (
-                        common_protocol.GPSWarning.NO_SIGNAL
-                    )
-                elif sats <= 10:
-                    tel_message.alerts.gps_warning = common_protocol.GPSWarning.WEAK
-
-                tel_sock.send(tel_message.SerializeToString())
-            except Exception as e:
-                logger.error(f"Failed to get telemetry, error: {e}")
-            await asyncio.sleep(1.0 / rate_hz)
-
-    async def stream_video(self, cam_sock, rate_hz):
-        logger.info("Starting camera stream")
-        self._start_streaming()
-        frame_id = 0
-        while await self.is_connected():
-            try:
-                cam_message = data_protocol.Frame()
-                frame, frame_shape = await self._get_video_frame()
-
-                if frame is None:
-                    logger.error("Failed to get video frame")
-                    continue
-
-                cam_message.data = frame
-                cam_message.height = frame_shape[1]
-                cam_message.width = frame_shape[0]
-                cam_message.channels = frame_shape[2]
-                cam_message.id = frame_id
-                cam_sock.send(cam_message.SerializeToString())
-                frame_id = frame_id + 1
-            except Exception as e:
-                logger.error(f"Failed to get video frame, error: {e}")
-            await asyncio.sleep(1.0 / rate_hz)
-        self._stop_streaming()
-        logger.info("Camera stream ended, disconnected from drone")
+#    async def stream_telemetry(self, tel_sock, rate_hz):
+#        logger.info("Starting telemetry stream")
+#        await asyncio.sleep(1)
+#
+#        while await self.is_connected():
+#            try:
+#                tel_message = data_protocol.Telemetry()
+#                tel_message.drone_name = self._get_name()
+#                tel_message.drone_model = await self.get_type()
+#                tel_message.battery = self._get_battery_percentage()
+#                tel_message.satellites = self._get_satellites()
+#                tel_message.global_position.latitude = self._get_global_position()[0]
+#                tel_message.global_position.longitude = self._get_global_position()[1]
+#                tel_message.global_position.altitude = self._get_global_position()[2]
+#                tel_message.relative_position.up = self._get_altitude_rel()
+#                tel_message.global_position.heading = self._get_heading()
+#                tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
+#                tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
+#                tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
+#                tel_message.velocity_body.forward_vel = self._get_velocity_body()[
+#                    "forward"
+#                ]
+#                tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
+#                tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
+#                tel_message.velocity_body.angular_vel = (
+#                    self._drone.get_angular_velocity()
+#                )
+#                gimbal = self._get_gimbal_pose_body(0)
+#                tel_message.gimbal_pose.pitch = gimbal["g_pitch"]
+#                tel_message.gimbal_pose.roll = gimbal["g_roll"]
+#                tel_message.gimbal_pose.yaw = gimbal["g_yaw"]
+#                tel_message.gimbal_pose.control_mode = (
+#                    common_protocol.PoseControlMode.POSITION_ABSOLUTE
+#                )
+#                tel_message.gimbal_pose.actuator_id = 0
+#                tel_message.status = self._get_current_status()
+#                batt = tel_message.battery
+#
+#                # Warnings
+#                if batt <= 15:
+#                    tel_message.alerts.battery_warning = (
+#                        common_protocol.BatteryWarning.CRITICAL
+#                    )
+#                elif batt <= 30:
+#                    tel_message.alerts.battery_warning = (
+#                        common_protocol.BatteryWarning.LOW
+#                    )
+#                mag = self._get_magnetometer()
+#                if mag == 2:
+#                    tel_message.alerts.magnetometer_warning = (
+#                        common_protocol.MagnetometerWarning.RECOMMENDED
+#                    )
+#                elif mag == 1:
+#                    tel_message.alerts.magnetometer_warning = (
+#                        common_protocol.MagnetometerWarning.REQUIRED
+#                    )
+#                sats = tel_message.satellites
+#                if sats == 0:
+#                    tel_message.alerts.gps_warning = (
+#                        common_protocol.GPSWarning.NO_SIGNAL
+#                    )
+#                elif sats <= 10:
+#                    tel_message.alerts.gps_warning = common_protocol.GPSWarning.WEAK
+#
+#                tel_sock.send(tel_message.SerializeToString())
+#            except Exception as e:
+#                logger.error(f"Failed to get telemetry, error: {e}")
+#            await asyncio.sleep(1.0 / rate_hz)
+#
+#    async def stream_video(self, cam_sock, rate_hz):
+#        logger.info("Starting camera stream")
+#        self._start_streaming()
+#        frame_id = 0
+#        while await self.is_connected():
+#            try:
+#                cam_message = data_protocol.Frame()
+#                frame, frame_shape = await self._get_video_frame()
+#
+#                if frame is None:
+#                    logger.error("Failed to get video frame")
+#                    continue
+#
+#                cam_message.data = frame
+#                cam_message.height = frame_shape[1]
+#                cam_message.width = frame_shape[0]
+#                cam_message.channels = frame_shape[2]
+#                cam_message.id = frame_id
+#                cam_sock.send(cam_message.SerializeToString())
+#                frame_id = frame_id + 1
+#            except Exception as e:
+#                logger.error(f"Failed to get video frame, error: {e}")
+#            await asyncio.sleep(1.0 / rate_hz)
+#        self._stop_streaming()
+#        logger.info("Camera stream ended, disconnected from drone")
 
     """ Telemetry methods """
 

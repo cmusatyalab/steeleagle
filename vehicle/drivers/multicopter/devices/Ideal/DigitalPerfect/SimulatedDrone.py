@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 
-import common_pb2 as common_protocol
+from steeleagle_sdk.protocol import common_pb2 as common_protocol 
 import numpy as np
 
 logger = logging.getLogger(__name__)
