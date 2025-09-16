@@ -1,8 +1,8 @@
 # Start the flight logger first
 PYTHONPATH=:./ python3 logger/flight_logger.py &
 PID1=$!
-# Start the control section of the core
-PYTHONPATH=:./ python3 core/main.py &
+# Start the control section of the kernel
+PYTHONPATH=:./ python3 kernel/main.py &
 PID2=$!
 # Start the mission
 #PYTHONPATH=$_PYTHONPATH python3 mission/main.py &

@@ -1,6 +1,5 @@
 import grpc
-import logging
-logger = logging.getLogger(__name__)
+import asyncio
 # Utility import
 from util.rpc import generate_request
 from util.config import query_config
@@ -27,19 +26,19 @@ class LogWrapper:
                     msg=message
                 )
         )
-        return True if self._stub.Log(request).response.status == 2 else False
+        self._stub.Log(request)
 
     def info(self, message):
-        return self._send_log_request(LogType.INFO, message)
+        self._send_log_request(LogType.INFO, message)
 
     def debug(self, message):
-        return self._send_log_request(LogType.DEBUG, message)
+        self._send_log_request(LogType.DEBUG, message)
 
     def warning(self, message):
-        return self._send_log_request(LogType.WARNING, message)
+        self._send_log_request(LogType.WARNING, message)
 
     def error(self, message):
-        return self._send_log_request(LogType.ERROR, message)
+        self._send_log_request(LogType.ERROR, message)
 
     def proto(self, message):
         proto = None
@@ -65,13 +64,12 @@ class LogWrapper:
         if not proto:
             return False
 
-        logger.info('Logging!')
         request = LogProtoRequest(
                 request=generate_request(),
                 topic=f'{self._topic}/rpc'
                 )
         request.reqrep_proto.CopyFrom(proto)
-        return True if self._stub.LogProto(request).response.status == 2 else False
+        self._stub.LogProto(request)
 
 def get_logger(topic):
     '''

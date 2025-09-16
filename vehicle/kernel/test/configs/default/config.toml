@@ -1,8 +1,8 @@
 [vehicle]
 type = 'multicopter'
-manufacturer = 'Parrot'
-model = 'Anafi'
-name = 'buzzard'
+manufacturer = 'test'
+model = 'test'
+name = 'test'
 kwargs = {}
 
 [cloudlet]
@@ -24,4 +24,4 @@ file_path = './kernel/logs/'
 log_level = 'DEBUG'
 
 [testing]
-testing = false
+testing = true

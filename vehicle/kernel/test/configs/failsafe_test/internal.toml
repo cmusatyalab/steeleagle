@@ -1,5 +1,5 @@
 [timeouts]
-server = 1
+server = 1 # Shorten the server timeout
 driver = 5
 mission = 5
 remote_compute = 5
@@ -14,6 +14,6 @@ flight_log = 'unix:///tmp/log.sock'
 [streams]
 driver_telemetry = 'unix:///tmp/driver_telem.sock'
 mission_telemetry = 'unix:///tmp/mission_telem.sock'
-imagery = 'unix:///tmp/imagery.sock'
 local_compute = 'unix:///tmp/local_compute.sock'
+imagery = 'unix:///tmp/imagery.sock'
 results = 'unix:///tmp/results.sock'

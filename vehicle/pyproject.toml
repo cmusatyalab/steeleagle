@@ -3,10 +3,11 @@ name = "steeleagle-vehicle"
 version = "1.0.0"
 description = "Runtime for bridging vehicle-specific APIs with SteelEagle"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
+    "syncer>=2.0.0",
     "aiorwlock>=1.5.0",
-    "gabriel-client>=3.0.2",
+    "gabriel-client>=3.0.1",
     "gabriel-server>=3.0.1",
     "grpc-interceptor>=0.15.4",
     "grpcio>=1.74.0",

@@ -5,8 +5,8 @@ from steeleagle_sdk.protocol.services import mission_service_pb2, mission_servic
 from steeleagle_sdk.protocol.services import report_service_pb2, report_service_pb2_grpc
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
-from core.laws.interceptor import LawInterceptor
-from core.laws.authority import LawAuthority
+from kernel.laws.interceptor import LawInterceptor
+from kernel.laws.authority import LawAuthority
 import asyncio
 from util.log import get_logger
 from util.config import query_config
@@ -15,7 +15,7 @@ from concurrent import futures
 logger = get_logger('mission/main')
 async def main():
     # setup the stubs
-    stub_channel = grpc.insecure_channel(query_config('internal.services.core'))
+    stub_channel = grpc.insecure_channel(query_config('internal.services.kernel'))
     ctrl_stub = control_service_pb2_grpc.ControlStub(stub_channel)
     compute_stub = compute_service_pb2_grpc.ComputeStub(stub_channel)
     report_stub = report_service_pb2_grpc.ReportStub(stub_channel)
