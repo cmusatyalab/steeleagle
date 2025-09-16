@@ -12,9 +12,9 @@ from ..api.actions.primitives import control as control_mod
 from ..api.actions.primitives import compute as compute_mod
 from ..api.actions.primitives import report as report_mod
 
-from ..protocol.service import compute_service_pb2_grpc as compute_rpc
-from ..protocol.service import control_service_pb2_grpc as control_rpc
-from ..protocol.service import report_service_pb2_grpc as report_rpc
+from ..protocol.services import compute_service_pb2_grpc as compute_rpc
+from ..protocol.services import control_service_pb2_grpc as control_rpc
+from ..protocol.services import report_service_pb2_grpc as report_rpc
 
 ComputeStub = compute_rpc.ComputeStub
 ControlStub = control_rpc.ControlStub

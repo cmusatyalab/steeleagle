@@ -31,8 +31,5 @@ def main():
     for (state, ev), nxt in sorted(mission.transitions.items()):
         logger.info("  %s + %s -> %s", state, ev, nxt)
 
-    # test runtime
-    logger.info("Running...")
-    asyncio.run(execute_mission(mission))
 if __name__ == "__main__":
     main()
