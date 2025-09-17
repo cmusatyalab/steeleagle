@@ -18,6 +18,4 @@ class ReportService(ReportServicer):
         logger.info("Sent report to Swarm Controller!")
         logger.proto(request)
         self._socket.send(request.SerializeToString())
-        return report_proto.SendReportResponse(
-                response=generate_response(2)
-                )
+        return generate_response(2)

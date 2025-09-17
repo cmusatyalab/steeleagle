@@ -23,13 +23,13 @@ class Test_Law:
         # Start test:
         requests = [
             # This command should be blocked because we do not have control authority
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 9, 'internal'),
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 2, 'server'),
-            Request('Mission.Start', mission_proto.StartRequest(), mission_proto.StartResponse(), 2, 'server'),
-            Request('Control.Disarm', control_proto.DisarmRequest(), control_proto.DisarmResponse(), 2, 'internal'),
-            Request('Mission.Stop', mission_proto.StopRequest(), mission_proto.StopResponse(), 2, 'server'),
+            Request('Control.Arm', control_proto.ArmRequest(), 9, 'internal'),
+            Request('Control.Arm', control_proto.ArmRequest(), 2, 'server'),
+            Request('Mission.Start', mission_proto.StartRequest(), 2, 'server'),
+            Request('Control.Disarm', control_proto.DisarmRequest(), 2, 'internal'),
+            Request('Mission.Stop', mission_proto.StopRequest(), 2, 'server'),
             # This command should be blocked because we do not have control authority
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 9, 'internal')
+            Request('Control.Arm', control_proto.ArmRequest(), 9, 'internal')
         ]
     
         output = await send_requests(requests, swarm_controller, mission) 
@@ -41,21 +41,21 @@ class Test_Law:
         # Start test:
         requests = [
             # This command should transit us to LOCAL mode
-            Request('Mission.Start', mission_proto.StartRequest(), mission_proto.StartResponse(), 2, 'server'),
+            Request('Mission.Start', mission_proto.StartRequest(), 2, 'server'),
             # This command should transit us to REMOTE mode
-            Request('Control.TakeOff', control_proto.TakeOffRequest(take_off_altitude=10.0), control_proto.TakeOffResponse(), 2, 'internal'),
+            Request('Control.TakeOff', control_proto.TakeOffRequest(take_off_altitude=10.0), 2, 'internal'),
             # Which should deny this request...
-            Request('Control.Land', control_proto.LandRequest(), control_proto.LandResponse(), 9, 'internal'),
+            Request('Control.Land', control_proto.LandRequest(), 9, 'internal'),
             # This command should transit us to LOCAL mode
-            Request('Mission.Start', mission_proto.StartRequest(), mission_proto.StartResponse(), 2, 'server'),
-            Request('Control.Land', control_proto.LandRequest(), control_proto.LandResponse(), 2, 'internal'),
-            Request('Control.TakeOff', control_proto.TakeOffRequest(take_off_altitude=5.0), control_proto.TakeOffResponse(), 2, 'internal'),
+            Request('Mission.Start', mission_proto.StartRequest(), 2, 'server'),
+            Request('Control.Land', control_proto.LandRequest(), 2, 'internal'),
+            Request('Control.TakeOff', control_proto.TakeOffRequest(take_off_altitude=5.0), 2, 'internal'),
             # This command should not be denied, and transit us to REMOTE mode
-            Request('Control.SetGlobalPosition', control_proto.SetGlobalPositionRequest(location=common_proto.Location(latitude=10.0)), control_proto.SetGlobalPositionResponse(), 2, 'internal'),
+            Request('Control.SetGlobalPosition', control_proto.SetGlobalPositionRequest(location=common_proto.Location(latitude=10.0)), 2, 'internal'),
             # This should be denied
-            Request('Control.Land', control_proto.LandRequest(), control_proto.LandResponse(), 9, 'internal'),
+            Request('Control.Land', control_proto.LandRequest(), 9, 'internal'),
             # This should not
-            Request('Control.Land', control_proto.LandRequest(), control_proto.LandResponse(), 2, 'server')
+            Request('Control.Land', control_proto.LandRequest(), 2, 'server')
         ]
 
         output = await send_requests(requests, swarm_controller, mission) 

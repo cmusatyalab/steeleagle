@@ -120,9 +120,7 @@ class FlightLogService(FlightLogServicer):
                             )
         if self._mcap_logger:
             self._log_to_mcap(request, request.log)
-        return log_proto.LogResponse(
-                response=generate_response(2)
-                )
+        return generate_response(2)
 
     def LogProto(self, request, context):
         message = request.reqrep_proto
@@ -132,9 +130,7 @@ class FlightLogService(FlightLogServicer):
                     )
         if self._mcap_logger:
             self._log_to_mcap(request, message)
-        return log_proto.LogProtoResponse(
-                response=generate_response(2)
-                )
+        return generate_response(2)
 
     def __del__(self):
         # Make sure we clean up the MCAP log so it is written to disk

@@ -26,19 +26,22 @@ class LogWrapper:
                     msg=message
                 )
         )
-        self._stub.Log(request)
+        try:
+            return self._stub.Log(request).status == 2
+        except grpc.RpcError:
+            return False
 
     def info(self, message):
-        self._send_log_request(LogType.INFO, message)
+        return self._send_log_request(LogType.INFO, message)
 
     def debug(self, message):
-        self._send_log_request(LogType.DEBUG, message)
+        return self._send_log_request(LogType.DEBUG, message)
 
     def warning(self, message):
-        self._send_log_request(LogType.WARNING, message)
+        return self._send_log_request(LogType.WARNING, message)
 
     def error(self, message):
-        self._send_log_request(LogType.ERROR, message)
+        return self._send_log_request(LogType.ERROR, message)
 
     def proto(self, message):
         proto = None
@@ -69,7 +72,10 @@ class LogWrapper:
                 topic=f'{self._topic}/rpc'
                 )
         request.reqrep_proto.CopyFrom(proto)
-        self._stub.LogProto(request)
+        try:
+            return self._stub.LogProto(request).status == 2
+        except grpc.RpcError:
+            return False
 
 def get_logger(topic):
     '''

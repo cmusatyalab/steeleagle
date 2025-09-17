@@ -21,8 +21,8 @@ class Test_Failsafe:
     async def test_server_disconnect_failsafe(self, messages, swarm_controller, mission, kernel):
         # Start test:
         requests = [
-            Request('Control.Arm', control_proto.ArmRequest(), control_proto.ArmResponse(), 2, 'server'),
-            Request('Control.Disarm', control_proto.DisarmRequest(), control_proto.DisarmResponse(), 2, 'server')
+            Request('Control.Arm', control_proto.ArmRequest(), 2, 'server'),
+            Request('Control.Disarm', control_proto.DisarmRequest(), 2, 'server')
             # If we wait after sending this, it should trigger a failsafe!
         ]
 

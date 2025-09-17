@@ -12,19 +12,17 @@ import "common.proto";
  */
 service FlightLog {
   // Basic log endpoint 
-  rpc Log (LogRequest) returns (LogResponse) {}
+  rpc Log (LogRequest)
+	returns (steeleagle.protocol.common.Response) {}
   // Log a request/response proto
-  rpc LogProto (LogProtoRequest) returns (LogProtoResponse) {}
+  rpc LogProto (LogProtoRequest)
+	returns (steeleagle.protocol.common.Response) {}
 }
 
 message LogRequest {
   steeleagle.protocol.common.Request request = 1;
   string topic = 2;
   LogMessage log = 3;
-}
-
-message LogResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 enum LogType {
@@ -54,8 +52,4 @@ message LogProtoRequest {
   steeleagle.protocol.common.Request request = 1;
   string topic = 2;
   ReqRepProto reqrep_proto = 3; 
-}
-
-message LogProtoResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
