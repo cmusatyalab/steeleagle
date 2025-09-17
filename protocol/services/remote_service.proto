@@ -13,10 +13,10 @@ import "google/protobuf/any.proto";
  * on the server
  */
 service Remote {
-  // Sends a request to a vehicle core service (Control, Mission, etc.)
+  // Sends a service request to a vehicle core service (Control, Mission, etc.)
   // over ZeroMQ and returns the response
   rpc Command (CommandRequest)
-	returns (steeleagle.protocol.common.Response) {}
+	returns (stream steeleagle.protocol.common.Response) {}
 }
 
 message CommandRequest {
@@ -30,6 +30,15 @@ message CommandRequest {
   string method_name = 3;
   // Identity of the sender
   string identity = 4;
-  // Target vehicles to send to, set automatically by the vehicle
-  repeated string vehicle_ids = 5;
+  // Target vehicle to send to
+  string vehicle_id = 5;
+}
+
+message CommandResponse {
+  // This response is not seen by the client, but is a wrapper
+  // around a normal response; this is done for sequence_number
+  // correlation
+  uint32 sequence_number = 1;
+  // Generic response
+  steeleagle.protocol.common.Response response = 2;
 }

@@ -1,34 +1,28 @@
-# General Imports
+import grpc
 import asyncio
 from concurrent import futures
-import logging
 import math
-
 # Streaming Imports
 import threading
 import time
 from enum import Enum
-
-import grpc
-
 # Protocol Imports
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
 from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
-# import dataplane_pb2 as data_protocol
 import numpy as np
-
 # Interface Imports
 from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
 from steeleagle_sdk.protocol.services import control_service_pb2_grpc 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
 from PIL import Image
-
+# Utility imports
 from util.config import query_config
 from util.rpc import generate_response
+from util.log import get_logger
+from util.cleanup import register_cleanup_handler
 
-
-logger = logging.getLogger(__name__)
+logger = get_logger('driver/digital_perfect')
 
 # Flight modes
 class FlightMode(Enum):
@@ -56,15 +50,13 @@ class DigitalPerfect(ControlServicer):
         self.ip = "127.0.0.1"
         self._drone = SimulatedDrone(self.ip)
         
-        
     async def get_type(self) -> str:
         try:
             return self._drone._device_type
         except:
             return "Digital Simulated"
         
-
-        """ GRPC methods """
+    """ GRPC methods """
     async def Connect(self, request, context):
         try:
             result = await self._drone.connect()
@@ -698,6 +690,7 @@ class SimulatedStreamingThread(threading.Thread):
     
 
 async def main():
+    register_cleanup_handler()
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
     control_service_pb2_grpc.add_ControlServicer_to_server(DigitalPerfect("DigitalPerfect"), server)
     server.add_insecure_port(query_config('internal.services.driver'))
