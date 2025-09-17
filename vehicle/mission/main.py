@@ -5,8 +5,6 @@ from steeleagle_sdk.protocol.services import mission_service_pb2, mission_servic
 from steeleagle_sdk.protocol.services import report_service_pb2, report_service_pb2_grpc
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
-from kernel.laws.interceptor import LawInterceptor
-from kernel.laws.authority import LawAuthority
 import asyncio
 from util.log import get_logger
 from util.config import query_config

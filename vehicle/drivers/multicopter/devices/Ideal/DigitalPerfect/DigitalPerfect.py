@@ -14,6 +14,7 @@ import grpc
 # Protocol Imports
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
 from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
 # import dataplane_pb2 as data_protocol
 import numpy as np
 
@@ -471,7 +472,7 @@ class DigitalPerfect(ControlServicer):
     def _get_battery_percentage(self) -> int:
         return int(self._drone.get_state("battery_percent"))
 
-    def _get_current_status(self) -> common_protocol.FlightStatus:
+    def _get_current_status(self) -> telemetry_protocol.MotionStatus:
         return self._drone.get_state("flight_state")
 
     def _get_gimbal_pose_body(self, gimbal_id) -> dict[str, float]:
@@ -582,10 +583,10 @@ class DigitalPerfect(ControlServicer):
         )
 
     def _is_hovering(self) -> bool:
-        return self._drone.check_flight_state(common_protocol.FlightStatus.HOVERING)
+        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.HOVERING)
 
     def _is_landed(self) -> bool:
-        return self._drone.check_flight_state(common_protocol.FlightStatus.LANDED)
+        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.LANDED)
 
     def _is_move_to_done(self) -> bool:
         return self._drone._position_flag
@@ -699,7 +700,7 @@ class SimulatedStreamingThread(threading.Thread):
 async def main():
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
     control_service_pb2_grpc.add_ControlServicer_to_server(DigitalPerfect("DigitalPerfect"), server)
-    server.add_insecure_port(query_config('internal.services.drivers'))
+    server.add_insecure_port(query_config('internal.services.driver'))
     await server.start()
     logger.info('Services started!')
     try:
