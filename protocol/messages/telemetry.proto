@@ -21,9 +21,10 @@ message TelemetryStreamInfo {
 
 enum MotionStatus {
   MOTORS_OFF = 0;
-  RAMPING = 1;
+  RAMPING_UP = 1;
   IDLE = 2;
-  IN_TRANSIT = 3; 
+  IN_TRANSIT = 3;
+  RAMPING_DOWN = 4;
 }
 
 message BatteryInfo {
