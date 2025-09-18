@@ -7,7 +7,7 @@ from concurrent import futures
 from mcap_protobuf.writer import Writer
 # Utility import
 from util.config import query_config
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 # Protocol import
 from steeleagle_sdk.protocol.services.flight_log_service_pb2_grpc import FlightLogServicer, add_FlightLogServicer_to_server
 from steeleagle_sdk.protocol.services import flight_log_service_pb2 as log_proto

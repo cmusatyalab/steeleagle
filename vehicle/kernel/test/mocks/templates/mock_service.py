@@ -5,7 +5,7 @@
 import grpc
 import asyncio
 # Utility import
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from util.log import get_logger
 # Protocol import
 import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2

@@ -13,7 +13,7 @@ from google.protobuf import any_pb2
 # Utility imports
 from util.log import get_logger
 from util.config import query_config
-from util.rpc import reflective_grpc_call, generate_response, generate_request
+from steeleagle_sdk.protocol.rpc_helpers import generate_response, generate_request
 # Protocol import
 from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
 # Law import

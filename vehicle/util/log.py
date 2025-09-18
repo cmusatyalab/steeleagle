@@ -1,7 +1,7 @@
 import grpc
 import asyncio
 # Utility import
-from util.rpc import generate_request
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from util.config import query_config
 # Protocol import
 from google.protobuf.json_format import MessageToDict

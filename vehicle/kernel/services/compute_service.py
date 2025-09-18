@@ -1,7 +1,7 @@
 # Protocol import
 from steeleagle_sdk.protocol.services import compute_service_pb2_grpc as compute_proto
 # Utility import
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from util.log import get_logger
 
 logger = get_logger('kernel/services/compute_service')

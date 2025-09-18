@@ -14,7 +14,7 @@ import aiorwlock
 # Utility import
 from util.log import get_logger
 from util.config import query_config
-from util.rpc import reflective_grpc_call, generate_response, generate_request
+from steeleagle_sdk.protocol.rpc_helpers import native_grpc_call, generate_response, generate_request
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors
 
@@ -235,7 +235,7 @@ class LawAuthority:
                     self._message_classes[method_desc.output_type.full_name]
                     )
             try:
-                response = await reflective_grpc_call(
+                response = await native_grpc_call(
                             metadata,
                             f'/{service}/{method}',
                             method_desc,

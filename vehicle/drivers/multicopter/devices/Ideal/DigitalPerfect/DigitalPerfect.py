@@ -18,7 +18,7 @@ from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlSer
 from PIL import Image
 # Utility imports
 from util.config import query_config
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from util.log import get_logger
 from util.cleanup import register_cleanup_handler
 

@@ -4,7 +4,7 @@ import zmq.asyncio
 import logging
 from google.protobuf.json_format import MessageToDict
 # Utility import
-from util.rpc import generate_request
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from util.log import get_logger
 from util.config import query_config
 # Protocol import
