@@ -313,7 +313,7 @@ class SwarmController:
 
         out_dir = "/compiler/out"
         if not os.path.exists(out_dir):
-            os.makedir(out_dir)
+            os.mkdir(out_dir)
 
     async def run(self):
         await asyncio.gather(self.listen_cmdrs())

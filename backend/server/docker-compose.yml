@@ -43,7 +43,7 @@ services:
       - "5003:5003"
       - "6001:6001"
     privileged: true
-    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "11"]
+    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "${ALTITUDE_BASE}", "--spacing", "${CORRIDOR_SPACING}", "--angle", "${CORRIDOR_ANGLE}"]
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
