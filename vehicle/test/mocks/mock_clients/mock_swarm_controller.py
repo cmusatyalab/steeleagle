@@ -13,7 +13,7 @@ from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto
 from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 from google.protobuf import any_pb2
 # Sequencer import
-from message_sequencer import MessageSequencer, Topic
+from test.message_sequencer import MessageSequencer, Topic
 
 logger = get_logger('test/mock_swarm_controller')
 

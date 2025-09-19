@@ -5,7 +5,7 @@ import grpc
 from util.log import get_logger
 from util.config import query_config
 # Sequencer import
-from message_sequencer import Topic, MessageSequencer
+from test.message_sequencer import Topic, MessageSequencer
 # Protocol import
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportStub

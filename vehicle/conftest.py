@@ -2,7 +2,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 # Helper import
-from helpers import wait_for_services
+from test.helpers import wait_for_services
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 
@@ -15,7 +15,7 @@ Test fixture methods.
 @pytest.fixture(autouse=True)
 def set_env(monkeypatch, request):
     import os
-    configs = os.listdir('./configs/')
+    configs = os.listdir('./test/configs/')
     files = [
         ('CONFIGPATH', 'config.toml'),
         ('INTERNALPATH', 'internal.toml'),
@@ -23,9 +23,9 @@ def set_env(monkeypatch, request):
     ]
     for env, file in files:
         name = request.module.__name__
-        if not os.path.exists(f'./configs/{name}/{file}'):
+        if not os.path.exists(f'./test/configs/{name}/{file}'):
             name = 'default' # Use the default configs if there is no override
-        monkeypatch.setenv(env, f'./configs/{name}/{file}')
+        monkeypatch.setenv(env, f'./test/configs/{name}/{file}')
 
 @pytest.fixture(scope='function')
 def messages():
@@ -49,13 +49,13 @@ def command_socket():
 
 @pytest.fixture(scope='function')
 def swarm_controller(messages, command_socket):
-    from mocks.mock_clients.mock_swarm_controller import MockSwarmController
+    from test.mocks.mock_clients.mock_swarm_controller import MockSwarmController
     sc = MockSwarmController(command_socket, messages)
     yield sc
 
 @pytest_asyncio.fixture(scope='function')
 async def mock_services(messages, command_socket):
-    from mocks.serve_mock_services import serve_mock_services
+    from test.mocks.serve_mock_services import serve_mock_services
     services = asyncio.create_task(serve_mock_services(messages))
     await asyncio.sleep(1)
     # Wait for needed services
@@ -73,7 +73,7 @@ async def mock_services(messages, command_socket):
 
 @pytest_asyncio.fixture(scope='function')
 async def mission(messages):
-    from mocks.mock_clients.mock_mission_client import MockMissionClient
+    from test.mocks.mock_clients.mock_mission_client import MockMissionClient
     mission = MockMissionClient(messages)
     yield mission
 
@@ -83,7 +83,7 @@ async def kernel(mock_services, command_socket):
     # List of services to start in the background
     running = []
     subps = [
-        ["python", "../main.py"]
+        ["python", "kernel/main.py", "--test"]
         ]
     for subp in subps:
         s = subprocess.Popen(subp)
@@ -166,7 +166,7 @@ async def gabriel(messages):
     from gabriel_protocol.gabriel_pb2 import PayloadType, ResultWrapper
     from gabriel_server import local_engine
     from gabriel_server import cognitive_engine
-    from message_sequencer import MessageSequencer, Topic 
+    from test.message_sequencer import MessageSequencer, Topic 
     from util.config import query_config
     from multiprocessing import Process
     # Sequencer cognitive engine for writing what we see

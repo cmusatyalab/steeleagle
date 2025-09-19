@@ -6,12 +6,12 @@ import zmq.asyncio
 import logging
 import os
 # Mock import
-from message_sequencer import Topic, MessageSequencer
-from mocks.generate_mock_service import generate_mock_service
+from test.message_sequencer import Topic, MessageSequencer
+from test.mocks.generate_mock_service import generate_mock_service
 generate_mock_service('Control', 'control_service')
-from mocks.mock_services._gen_mock_control_service import MockControlService
+from test.mocks.mock_services._gen_mock_control_service import MockControlService
 generate_mock_service('Mission', 'mission_service')
-from mocks.mock_services._gen_mock_mission_service import MockMissionService
+from test.mocks.mock_services._gen_mock_mission_service import MockMissionService
 # Utility import
 from util.sockets import setup_zmq_socket, SocketOperation
 from util.config import query_config

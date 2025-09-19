@@ -6,7 +6,7 @@ from typing import Any
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 # Sequencer import
-from message_sequencer import Topic
+from test.message_sequencer import Topic
 
 # Test request holder
 @dataclass

@@ -1,8 +1,8 @@
 [vehicle]
-type = 'multicopter'
-manufacturer = 'test'
-model = 'test'
 name = 'test'
+# Each test specifies its own driver to run (whether that be the
+# DigitalPerfect driver or a mock driver)
+package = ''
 kwargs = {}
 
 [cloudlet]
