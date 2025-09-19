@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-import protocol.controlplane_pb2 as controlplane
 import time
 from zipfile import ZipFile
 import folium
@@ -12,6 +11,9 @@ from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, me
 from st_keypressed import st_keypressed
 import math
 import uuid
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
+from steeleagle_sdk.protocol.services.control_service_pb2 import ReturnToHomeRequest, HoldRequest, JoystickRequest, TakeOffRequest, LandRequest
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
 
 
 if "map_server" not in st.session_state:
@@ -67,8 +69,8 @@ st.set_page_config(
     }
 )
 
-if "zmq" not in st.session_state:
-    st.session_state.zmq = connect_zmq()
+if "stub" not in st.session_state:
+    st.session_state.stub = connect_stub()
 
 if not authenticated():
     st.stop()  # Do not continue if not authenticated
@@ -96,43 +98,38 @@ def run_flightscript():
             for file in st.session_state.script_file:
                 z.writestr(file.name, file.read())
 
-        req = controlplane.Request()
-        req.seq_num = int(time.time())
-        req.timestamp.GetCurrentTime()
         for d in st.session_state.selected_drones:
-            req.msn.drone_ids.append(d)
-        req.msn.uuid = str(uuid.uuid4())
-        req.msn.url = f"http://{st.secrets.webserver}/scripts/{filename}"
-        req.msn.action = controlplane.MissionAction.DOWNLOAD
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
+            # STUB SEND FLIGHTSCRIPT
         st.toast(
             f"Instructed {req.msn.drone_ids} to fly autonomous script.",
             icon="\u2601",
         )
 
 def enable_manual():
-    req = controlplane.Request()
-    req.seq_num = int(time.time())
-    req.timestamp.GetCurrentTime()
+    req = CommandRequest()
+    data = HoldRequest(request=generate_request())
+    req.method_name = 'Control.Hold'
+    req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        req.msn.drone_ids.append(d)
-    req.msn.action = controlplane.MissionAction.STOP
-    st.session_state.zmq.send(req.SerializeToString())
-    rep = st.session_state.zmq.recv()
+        # STUB SEND HOLD
+        req.vehicle_id = d
+        call_future = st.session_state.stub.Command.future(req.SerializeToString())
+        call_future.add_done_callback(st.toast(f"{d} holding!"))
+
     st.toast(
-        f"Telling drone {req.veh.drone_ids} to halt! Kill signal sent."
+        f"Instructed {req.veh.drone_ids} to hold!"
     )
 
 def rth():
-    req = controlplane.Request()
-    req.seq_num = int(time.time())
-    req.timestamp.GetCurrentTime()
+    req = CommandRequest()
+    data = ReturnToHomeRequest(request=generate_request())
+    req.method_name = 'Control.ReturnToHome'
+    req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        req.veh.drone_ids.append(d)
-    req.veh.action = controlplane.VehicleAction.RTH
-    st.session_state.zmq.send(req.SerializeToString())
-    rep = st.session_state.zmq.recv()
+        # STUB SEND RTH
+        req.vehicle_id = d
+        call_future = st.session_state.stub.Command.future(req.SerializeToString())
+        call_future.add_done_callback(st.toast(f"{d} finished return home!"))
     st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
@@ -440,19 +437,21 @@ with st.sidebar:
             c5.slider(key = "gimbal_abs", label="Gimbal Pitch (deg)", min_value=-90, max_value=90, step=15, value=45, format="%d")
 
         key_pressed = st_keypressed()
-        req = controlplane.Request()
-        req.seq_num = int(time.time())
-        req.timestamp.GetCurrentTime()
-        for d in st.session_state.selected_drones:
-            req.veh.drone_ids.append(d)
 
         #req.cmd.manual = True
+        req = CommandRequest()
         st.caption(f"keypressed={key_pressed}")
         if key_pressed == "t":
-            req.veh.action = controlplane.VehicleAction.TAKEOFF
+            #req.veh.action = controlplane.VehicleAction.TAKEOFF
+            data = TakeOffRequest(request=generate_request(), take_off_altitude=5.0)
+            req.method_name = 'Control.TakeOff'
+            req.request.Pack(data)
             st.info(f"Instructed {req.veh.drone_ids} to takeoff.")
         elif key_pressed == "g":
-            req.veh.action = controlplane.VehicleAction.LAND
+            data = LandRequest(request=generate_request())
+            req.method_name = 'Control.Land'
+            req.request.Pack(data)
+            #req.veh.action = controlplane.VehicleAction.LAND
             st.info(f"Instructed {req.veh.drone_ids} to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
@@ -472,27 +471,36 @@ with st.sidebar:
                 yaw = 1 * st.session_state.yaw_speed
             elif key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
-            elif key_pressed == "r":
-                gimbal_pitch = 1 * st.session_state.gimbal_rel
-            elif key_pressed == "f":
-                gimbal_pitch = -1 * st.session_state.gimbal_rel
+            #elif key_pressed == "r":
+            #    gimbal_pitch = 1 * st.session_state.gimbal_rel
+            #elif key_pressed == "f":
+            #    gimbal_pitch = -1 * st.session_state.gimbal_rel
 
-            if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
-                req.veh.gimbal_pose.pitch = gimbal_pitch
-                #req.veh.gimbal_pose.control_mode = common.posebody.mode
+            #if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
+            #    req.veh.gimbal_pose.pitch = gimbal_pitch
+            #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
             elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
-                req.veh.action = controlplane.VehicleAction.HOVER
+                data = HoldRequest(request=generate_request())
+                req.method_name = 'Control.Hold'
+                req.request.Pack(data)
             else:
-                req.veh.velocity_body.angular_vel = yaw
-                req.veh.velocity_body.forward_vel = pitch
-                req.veh.velocity_body.right_vel = roll
-                req.veh.velocity_body.up_vel = thrust
-            if not st.session_state.gimbal_relative_mode:
-                req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
-                #req.veh.gimbal_pose.control_mode = common.posebody.mode
+                data = JoystickRequest(request=generate_request())
+                data.velocity.angular_vel = yaw
+                data.velocity.x_vel = pitch
+                data.velocity.y_vel = roll
+                data.velocity.z_vel = thrust
+                req.method_name = 'Control.Joystick'
+                req.request.Pack(data)
+            #if not st.session_state.gimbal_relative_mode:
+            #    req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
+            #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
             st.caption(req)
         key_pressed = None
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
-
+        
+        for d in st.session_state.selected_drones:
+            req.veh.drone_ids.append(d)
+            # STUB SEND MANUAL
+            req.vehicle_id = d
+            call_future = st.session_state.stub.Command.future(req.SerializeToString())
+            call_future.add_done_callback(st.toast(f"{d} manual command finished!"))
 

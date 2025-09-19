@@ -1,0 +1,17 @@
+[project]
+name = "gcs"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit",
+    "grpcio",
+    "steeleagle-sdk",
+    "folium>=0.20.0",
+    "streamlit-folium>=0.25.1",
+    "redis>=6.4.0",
+    "pykml>=0.2.0",
+]
+
+[tool.uv.sources]
+steeleagle-sdk = { workspace = true }

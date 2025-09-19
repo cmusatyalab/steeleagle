@@ -10,4 +10,5 @@ dependencies = []
 members = [
     "sdk",
     "vehicle",
+    "gcs",
 ]

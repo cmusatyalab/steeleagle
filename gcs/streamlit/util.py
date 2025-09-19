@@ -6,9 +6,9 @@ import streamlit as st
 import redis
 import pandas as pd
 import json
-import zmq
 import time
 import hmac
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 DATA_TYPES = {
     "latitude": "float",
@@ -92,12 +92,8 @@ def connect_redis_publisher():
     return subscriber
 
 @st.cache_resource
-def connect_zmq():
-    ctx = zmq.Context()
-    z = ctx.socket(zmq.REQ)
-    z.connect(f'tcp://{st.secrets.zmq}:{st.secrets.zmq_port}')
-    return z
-
+def connect_stub():
+    return RemoteStub(os.getenv('SWARM_CTRL'))
 
 def get_drones():
     l = {}
