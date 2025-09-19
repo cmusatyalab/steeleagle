@@ -96,26 +96,28 @@ async def main():
     await server.start()
     logger.info('Services started!')
 
-    # Send opening commands
-    await law_authority.start()
-    logger.info('Law authority started!')
-
-    # Create the remote control and stream handler
-    rc_handler = CommandHandler(law_authority, command_socket)
-    #stream_handler = StreamHandler(law_authority)
-    await rc_handler.start(query_config('internal.timeouts.server'))
-    logger.info('Started handling remote input!')
-    #await stream_handler.start()
-    logger.info('Started handling data streams!')
-
-    # If in test mode, notify the test bench that kernel services
-    # are ready
-    if query_config('testing'):
-        from steeleagle_sdk.protocol.testing.testing_pb2 import ServiceReady
-        ready = ServiceReady(readied_service=0)
-        command_socket.send(ready.SerializeToString())
-
     try:
+        # Send opening commands
+        success = await law_authority.start()
+        if not success:
+            raise SystemExit(1)
+        logger.info('Device connected!')
+
+        # Create the remote control and stream handler
+        rc_handler = CommandHandler(law_authority, command_socket)
+        #stream_handler = StreamHandler(law_authority)
+        await rc_handler.start(query_config('internal.timeouts.server'))
+        logger.info('Started handling remote input!')
+        #await stream_handler.start()
+        logger.info('Started handling data streams!')
+
+        # If in test mode, notify the test bench that kernel services
+        # are ready
+        if query_config('testing'):
+            from steeleagle_sdk.protocol.testing.testing_pb2 import ServiceReady
+            ready = ServiceReady(readied_service=0)
+            command_socket.send(ready.SerializeToString())
+
         await asyncio.gather(
                 server.wait_for_termination(),
                 rc_handler.wait_for_termination(),
@@ -124,6 +126,7 @@ async def main():
     except (SystemExit, asyncio.exceptions.CancelledError):
         await server.stop(1)
         log_process.terminate()
+        log_process.join()
     
 if __name__ == "__main__":
     asyncio.run(main())

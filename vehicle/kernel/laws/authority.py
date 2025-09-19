@@ -14,7 +14,7 @@ import aiorwlock
 # Utility import
 from util.log import get_logger
 from util.config import query_config
-from util.rpc import reflective_grpc_call, generate_response, generate_request
+from steeleagle_sdk.protocol.rpc_helpers import native_grpc_call, generate_response, generate_request
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors
 
@@ -68,12 +68,16 @@ class LawAuthority:
         '''
         logger.info('Sending startup commands...')
         completed = False
-        while not completed and retries:
-            completed = await self.set_law('__BASE__')
-            if not completed:
-                logger.warning('Startup failed, retrying...')
-                retries -= 1
-                await asyncio.sleep(0.5)
+        try:
+            while not completed and retries:
+                completed = await self.set_law('__BASE__')
+                if not completed:
+                    logger.warning('Startup failed, retrying...')
+                    retries -= 1
+                    await asyncio.sleep(1.0)
+            return completed
+        except asyncio.exceptions.CancelledError:
+            return completed
 
     def check_equal(self, command, request, matcher):
         '''
@@ -152,8 +156,8 @@ class LawAuthority:
             commands += self._base['failsafes'][name]
 
             # Retry sending until commands are fully finished
-            results = await self._send_commands(commands)
-            return all(result.response.status == 2 for result in results)
+            responses = await self._send_commands(commands)
+            return all(response.status == 2 for response in responses)
 
     async def set_law(self, state):
         '''
@@ -166,15 +170,16 @@ class LawAuthority:
                 logger.error(f'State {state} is not in the law specification!')
                 state = 'REMOTE' # Go into remote mode
             if self._spec[state]['enter']:
-                results = await self._send_commands(self._spec[state]['enter'])
-                if not all(result.response.status == 2 for result in results):
+                responses = await self._send_commands(self._spec[state]['enter'])
+                if not all(response.status == 2 for response in responses):
                     return False
             try:
                 self._state = state
                 self._law = self._spec[state]
                 logger.info(f'Transitioned to law: {state}')
                 return True
-            except:
+            except Exception as e:
+                logger.error(f'Could not transition to law, reason: {e}')
                 return False
 
     async def get_law(self):
@@ -219,12 +224,9 @@ class LawAuthority:
                     command.request.Unpack(request)
                 logger.proto(request)
             except KeyError:
-                logger.error(f'Command {method} ignored due to failed descriptor lookup!')
-                response = self._message_classes[method_desc.output_type.full_name]()
-                response.response.ParseFromString(
-                        generate_response(5).SerializeToString() # Invalid argument
-                        )
-                results.append(response)
+                # Response failed due to incorrect descriptor lookup, so we reutrn
+                # an INVALID_ARGUMENT response
+                results.append(generate_response(5, resp_string=f'Command does not exist in descriptor table'))
                 continue
             metadata = [('identity', identity)]
             # Send in the correct classes to unmarshall from the channel
@@ -233,7 +235,7 @@ class LawAuthority:
                     self._message_classes[method_desc.output_type.full_name]
                     )
             try:
-                response = await reflective_grpc_call(
+                response = await native_grpc_call(
                             metadata,
                             f'/{service}/{method}',
                             method_desc,
@@ -244,11 +246,8 @@ class LawAuthority:
                 results.append(response)
                 logger.proto(response)
             except grpc.aio.AioRpcError as e:
-                logger.error(f'Encountered RPC error, {e.code()}: {e.details()}')
-                response = self._message_classes[method_desc.output_type.full_name]()
-                response.response.ParseFromString(
-                        generate_response(e.code().value[0] + 2, resp_string=e.details()).SerializeToString()
-                        )
+                logger.error(f'Encountered RPC error, {e.code()}')
+                response = generate_response(e.code().value[0] + 2, resp_string=e.details())
                 results.append(response)
                 logger.proto(response)
         return results

@@ -6,14 +6,13 @@ from typing import Any
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 # Sequencer import
-from message_sequencer import Topic
+from test.message_sequencer import Topic
 
 # Test request holder
 @dataclass
 class Request:
     method_name: str = None
     request: Any = None
-    response: Any = None
     status: int = 2
     identity: str = 'server'
 
@@ -51,7 +50,7 @@ async def send_requests(requests, swarm_controller, mission):
             service, method = req.method_name.split('.')
             if service == 'Control' and req.status == 2:
                 output.append((Topic.DRIVER_CONTROL_SERVICE, req.request.DESCRIPTOR.name))
-            output.append((Topic.MISSION_SERVICE, req.response.DESCRIPTOR.name))
+            output.append((Topic.MISSION_SERVICE, 'Response'))
             if service == 'Report' and method == 'SendReport' and req.status == 2:
                 output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
                 assert(await swarm_controller.recv_report(req.request))
@@ -60,5 +59,5 @@ async def send_requests(requests, swarm_controller, mission):
             output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
             service, name = req.method_name.split('.')
             output.append((Topic.DRIVER_CONTROL_SERVICE if service == 'Control' else Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name))
-            output.append((Topic.SWARM_CONTROLLER, req.response.DESCRIPTOR.name))
+            output.append((Topic.SWARM_CONTROLLER, 'Response'))
     return output

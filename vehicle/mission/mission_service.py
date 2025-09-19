@@ -2,7 +2,7 @@ import asyncio
 import json
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
 from steeleagle_sdk.protocol.services import mission_service_pb2 as mission_proto
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from steeleagle_sdk.dsl import execute_mission
 

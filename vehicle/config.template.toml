@@ -1,8 +1,8 @@
 [vehicle]
-type = 'multicopter'
-manufacturer = 'Parrot'
-model = 'Anafi'
-name = 'buzzard'
+name = '<NAME>'
+# Script is relative to the vehicle directory; the launch script
+# will attempt to run this file as a subprocess
+package = 'path/to/executable'
 kwargs = {}
 
 [cloudlet]
@@ -22,6 +22,3 @@ custom_filename = ''
 file_path = './kernel/logs/'
 # Log level
 log_level = 'DEBUG'
-
-[testing]
-testing = false

@@ -1,10 +1,8 @@
-import inspect
 # Protocol imports
 from google.protobuf.timestamp_pb2 import Timestamp
-from util.config import query_config
-from steeleagle_sdk.protocol import common_pb2 as common_proto
+from .common_pb2 import Request, Response
 
-async def reflective_grpc_call(metadata, full_method_name, method_desc, request, classes, channel, timeout=3):
+async def native_grpc_call(metadata, full_method_name, method_desc, request, classes, channel, timeout=3):
     '''
     Calls the provided gRPC method by invoking it directly on the channel.
     '''
@@ -39,7 +37,7 @@ def generate_request():
     Generates a protobuf request object for an RPC given a
     sender ID.
     '''
-    return common_proto.Request(
+    return Request(
             timestamp=Timestamp().GetCurrentTime()
             )
 
@@ -48,7 +46,7 @@ def generate_response(resp_type, resp_string=""):
     Generates a protobuf response object for an RPC given a
     response type and optional response string.
     '''
-    return common_proto.Response(
+    return Response(
             status=resp_type,
             response_string=resp_string,
             timestamp=Timestamp().GetCurrentTime()

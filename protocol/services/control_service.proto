@@ -13,87 +13,81 @@ import "google/protobuf/duration.proto";
  */
 service Control {
   // Connects to the vehicle
-  rpc Connect (ConnectRequest) returns (ConnectResponse) {}
+  rpc Connect (ConnectRequest)
+	returns (steeleagle.protocol.common.Response) {}
   // Disconnects from the vehicle
-  rpc Disconnect (DisconnectRequest) returns (DisconnectResponse) {}
+  rpc Disconnect (DisconnectRequest) 
+	returns (steeleagle.protocol.common.Response) {}
   // Order the vehicle to arm
-  rpc Arm (ArmRequest) returns (ArmResponse) {}
+  rpc Arm (ArmRequest) 
+	returns (steeleagle.protocol.common.Response) {}
   // Order the vehicle to disarm
-  rpc Disarm (DisarmRequest) returns (DisarmResponse) {}
+  rpc Disarm (DisarmRequest) 
+	returns (steeleagle.protocol.common.Response) {}
   // Send a joystick velocity target that the vehicle will actuate
   // towards, along with an actuation duration
-  rpc Joystick (JoystickRequest) returns (JoystickResponse) {}
+  rpc Joystick (JoystickRequest) 
+	returns (steeleagle.protocol.common.Response) {}
   // Order the vehicle to take off
-  rpc TakeOff (TakeOffRequest) returns (stream TakeOffResponse) {}
+  rpc TakeOff (TakeOffRequest) 
+	returns (stream steeleagle.protocol.common.Response) {}
   // Land the vehicle at its current position
-  rpc Land (LandRequest) returns (stream LandResponse) {}
+  rpc Land (LandRequest) 
+	returns (stream steeleagle.protocol.common.Response) {}
   // Order the vehicle to hold/loiter
-  rpc Hold (HoldRequest) returns (stream HoldResponse) {}
+  rpc Hold (HoldRequest) 
+	returns (stream steeleagle.protocol.common.Response) {}
   // Emergency shutdown of the vehicle motors
-  rpc Kill (KillRequest) returns (stream KillResponse) {}
+  rpc Kill (KillRequest) 
+	returns (stream steeleagle.protocol.common.Response) {}
   // Changes the home destination for the vehicle
-  rpc SetHome (SetHomeRequest) returns (SetHomeResponse) {}
+  rpc SetHome (SetHomeRequest) 
+	returns (steeleagle.protocol.common.Response) {}
   // Return to the vehicle home destination
   rpc ReturnToHome (ReturnToHomeRequest) 
-    returns (stream ReturnToHomeResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Transit the vehicle to a target global position, expressed
   // in global coordinates
   rpc SetGlobalPosition (SetGlobalPositionRequest)
-    returns (stream SetGlobalPositionResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Transit the vehicle to a target position relative to
   // the global ENU (East, North, Up) or vehicle frame of 
   // reference, in meters
   rpc SetRelativePosition (SetRelativePositionRequest)
-    returns (stream SetRelativePositionResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Transit the vehicle at a target velocity in the global
   // ENU (East, North, Up) or vehicle frame of reference, 
   // in meters per second
   rpc SetVelocity (SetVelocityRequest)
-    returns (stream SetVelocityResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Sets the heading of the vehicle
   rpc SetHeading (SetHeadingRequest)
-    returns (stream SetHeadingResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Set the pose of the target gimbal
   rpc SetGimbalPose (SetGimbalPoseRequest)
-    returns (stream SetGimbalPoseResponse) {}
+	returns (stream steeleagle.protocol.common.Response) {}
   // Set the vehicle video stream parameters
   rpc ConfigureImagingSensorStream (ConfigureImagingSensorStreamRequest)
-    returns (ConfigureImagingSensorStreamResponse) {}
+	returns (steeleagle.protocol.common.Response) {}
   // Set the vehicle telemetry stream parameters
   rpc ConfigureTelemetryStream (ConfigureTelemetryStreamRequest)
-    returns (ConfigureTelemetryStreamResponse) {}   
+	returns (steeleagle.protocol.common.Response) {}   
 }
 
 message ConnectRequest {
   steeleagle.protocol.common.Request request = 1;
 }
 
-message ConnectResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message DisconnectRequest {
   steeleagle.protocol.common.Request request = 1;
-}
-
-message DisconnectResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 message ArmRequest {
   steeleagle.protocol.common.Request request = 1;
 }
 
-message ArmResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message DisarmRequest {
   steeleagle.protocol.common.Request request = 1;
-}
-
-message DisarmResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 message JoystickRequest {
@@ -105,42 +99,22 @@ message JoystickRequest {
   optional google.protobuf.Duration duration = 3;
 }
 
-message JoystickResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message TakeOffRequest {
   steeleagle.protocol.common.Request request = 1;
   // Take off height in relative altitude [meters]
   float take_off_altitude = 2;
 }
 
-message TakeOffResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message LandRequest {
   steeleagle.protocol.common.Request request = 1;
-}
-
-message LandResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 message HoldRequest {
   steeleagle.protocol.common.Request request = 1;
 }
 
-message HoldResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message KillRequest {
   steeleagle.protocol.common.Request request = 1;
-}
-
-message KillResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 message SetHomeRequest {
@@ -148,16 +122,8 @@ message SetHomeRequest {
   steeleagle.protocol.common.Location location = 2; // New home location
 }
 
-message SetHomeResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message ReturnToHomeRequest {
   steeleagle.protocol.common.Request request = 1;
-}
-
-message ReturnToHomeResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 enum AltitudeMode {
@@ -184,10 +150,6 @@ message SetGlobalPositionRequest {
   optional steeleagle.protocol.common.Velocity max_velocity = 6;
 }
 
-message SetGlobalPositionResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 enum ReferenceFrame {
   BODY = 0; // Vehicle reference frame
   ENU = 1;  // Global (East, North, Up) reference frame
@@ -205,10 +167,6 @@ message SetRelativePositionRequest {
   optional ReferenceFrame frame = 4;
 }
 
-message SetRelativePositionResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message SetVelocityRequest {
   steeleagle.protocol.common.Request request = 1;
   // Target velocity
@@ -217,20 +175,12 @@ message SetVelocityRequest {
   optional ReferenceFrame frame = 3;
 }
 
-message SetVelocityResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message SetHeadingRequest {
   steeleagle.protocol.common.Request request = 1;
   // Target heading or global location to look at
   steeleagle.protocol.common.Location location = 2;
   // Determines how the drone will orient
   optional HeadingMode heading_mode = 5;
-}
-
-message SetHeadingResponse {
-  steeleagle.protocol.common.Response response = 1;
 }
 
 enum PoseMode {
@@ -246,10 +196,6 @@ message SetGimbalPoseRequest {
   optional PoseMode mode = 4; // Specifies how to interpret the target pose
 }
 
-message SetGimbalPoseResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message ImagingSensorConfiguration {
   uint32 id = 1; // Target imaging sensor ID
   bool set_primary = 2; // Set this sensor as the primary stream
@@ -262,16 +208,8 @@ message ConfigureImagingSensorStreamRequest {
   repeated ImagingSensorConfiguration configurations = 2;
 }
 
-message ConfigureImagingSensorStreamResponse {
-  steeleagle.protocol.common.Response response = 1;
-}
-
 message ConfigureTelemetryStreamRequest {
   steeleagle.protocol.common.Request request = 1;
   // Target frequency of telemetry generation, in Hz
   uint32 frequency = 2;
-}
-
-message ConfigureTelemetryStreamResponse {
-  steeleagle.protocol.common.Response response = 1;
 }

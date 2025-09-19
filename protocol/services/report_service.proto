@@ -13,7 +13,8 @@ import "common.proto";
  */
 service Report {
   // Send a report to the server, or to an intended recipient
-  rpc SendReport (SendReportRequest) returns (SendReportResponse) {}
+  rpc SendReport (SendReportRequest)
+	returns (steeleagle.protocol.common.Response) {}
 }
 
 message ReportMessage {
@@ -23,8 +24,4 @@ message ReportMessage {
 message SendReportRequest {
   steeleagle.protocol.common.Request request = 1;
   ReportMessage report = 2;
-}
-
-message SendReportResponse {
-  steeleagle.protocol.common.Response response = 1;
 }

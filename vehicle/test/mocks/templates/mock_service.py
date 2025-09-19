@@ -5,7 +5,7 @@
 import grpc
 import asyncio
 # Utility import
-from util.rpc import generate_response
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from util.log import get_logger
 # Protocol import
 import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
@@ -24,14 +24,14 @@ class Mock{{ service_name }}Service({{ service_filename }}_pb2_grpc.{{ service_n
     async def {{ method.name }}(self, request, context):
         self._sequencer.write(request)
         logger.info('{{ method.name }} called!')
-        yield {{ service_filename }}_pb2.{{ method.name }}Response(response=generate_response(0))
+        yield generate_response(0)
         for i in range({{ in_progress_number }}):
-            yield {{ service_filename }}_pb2.{{ method.name }}Response(response=generate_response(1))
+            yield generate_response(1)
             await asyncio.sleep({{ sleep_time }})
-        yield {{ service_filename }}_pb2.{{ method.name }}Response(response=generate_response(2))
+        yield generate_response(2)
     {% else %}
     async def {{ method.name }}(self, request, context):
         self._sequencer.write(request)
         logger.info('{{ method.name }} called!')
-        return {{ service_filename }}_pb2.{{ method.name }}Response(response=generate_response(2))
+        return generate_response(2)
     {% endif %}{% endfor %}

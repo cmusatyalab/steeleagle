@@ -6,126 +6,80 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 import argparse
-import asyncio
 import json
 import logging
 import os
-from abc import ABC, abstractmethod
-from collections.abc import Iterator
-from dataclasses import dataclass
-from urllib.parse import urlparse
-from zipfile import ZipFile
-
-import aiofiles
-import aiohttp
-import redis
 import zmq
 import zmq.asyncio
+import aiorwlock
 from google.protobuf import text_format
 from google.protobuf.message import DecodeError
 from util.utils import setup_logging
-
-from bindings.python.services import remote_service_pb2, control_service_pb2, mission_service_pb2
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandResponse
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteServicer
 
 logger = logging.getLogger(__name__)
 
-class SwarmController:
+class SwarmController(RemoteServicer):
     '''
     Multiplexes requests from connected commanders to target vehicles. Also handles
     messages sent between vehicles.
     '''
-    def __init__(
-        self, alt, compiler_file, red, request_sock, router_sock, spacing, angle
-    ):
-        self.alt = alt
-        self.compiler_file = compiler_file
-        self.request_sock = request_sock
-        self.router_sock = router_sock
-        self.running = True
-        self.patrol_area_list = None
-        self.mission_supervisor = MissionSupervisor(self.router_sock)
-        self.spacing = spacing
-        self.angle = angle
+    def __init__(self, _router_sock):
+        self.__router_sock = _router_sock
+        self._sequence_number_lock = asyncio.Lock()
+        self._sequence_number = 0
+        self._response_map_lock = aiorwlock.RWLock()
+        self._response_map = {}
 
-        if not os.path.exists(out_dir):
-            os.makedir(out_dir)
+    async def _get_sequence_number(self):
+        '''
+        Gets the current sequence number, then increases it.
+        '''
+        async with self._sequence_number_lock:
+            new_sequence_number = self._sequence_number
+            self._sequence_number += 1
+            return new_sequence_number
 
-    async def run(self):
-        await asyncio.gather(self.listen_cmdrs())
-
-    async def compile_mission(self, dsl_file, kml_file):
-        pass
-
-    async def send_to_drone(self, req, base_url, drone_list):
+    async def _poll_for_response(self, sequence_number):
+        '''
+        Check to see if a response has been received for a RemoteControl request.
+        '''
+        async with self._response_map_lock.reader_lock():
+            return self.response_map[sequence_number] if sequence_number in self.response_map \
+                else None
+    
+    async def Command(self, request, context):
+        '''
+        Implementation of RPC Command method defined in the SDK.
+        '''
         try:
-            # Send the command to each drone
-            logger.info(f"Sending request {req.seq_num} to drones...")
-
-            for drone_id in drone_list:
-                await self.router_sock.send_multipart(
-                    [drone_id.encode("utf-8"), req.SerializeToString()]
-                )
-                logger.info(f"Delivered request to drone {drone_id}.")
+            yield generate_response(0)
+            request.sequence_number = await self._get_sequence_number()
+            await self._router_sock.send_multipart(
+                [request.vehicle_id.encode("utf-8"), request.SerializeToString()]
+            )
+            response = None
+            while not response and context.is_active():
+                yield generate_response(1) 
+                await asyncio.sleep(1)
+                response = await self._poll_for_response(request.sequence_number):
+            yield response if response else generate_response(3)
         except Exception as e:
-            logger.error(f"Error sending request to drone: {e}")
+            logger.error(f"Error sending request to vehicle: {e}")
+            yield generate_response(4)
 
-    async def listen_cmdrs(self):
-        while self.running:
-            # Listen for incoming requests from cmdr
-            msg = await self.request_sock.recv()
-            try:
-                req = controlplane.Request()
-                req.ParseFromString(msg)
-                logger.info(f"Request received:\n{text_format.MessageToString(req)}")
-            except DecodeError:
-                await self.request_sock.send(
-                    b"Error decoding protobuf. Did you send a controlplane_pb2?"
-                )
-                logger.info("Error decoding protobuf. Did you send a controlplane_pb2?")
-                continue
-
-            # get the drone list
-            if req.HasField("veh"):
-                drone_list = list(
-                    req.veh.drone_ids
-                )  # convert from protobuf list to python list to support index() syntax
-            else:
-                drone_list = list(req.msn.drone_ids)
-            logger.info(f"drone list: {drone_list}")
-
-            # Check if the command contains a mission and compile it if true
-            base_url = None
-            if req.msn.action == controlplane.MissionAction.DOWNLOAD:
-                # Cancel the existing mission, if applicable
-                if self.mission_supervisor.get_mission() is not None:
-                    await self.mission_supervisor.stop_mission_supervision()
-
-                # download the script
-                script_url = req.msn.url
-                logger.info(f"script url: {script_url}")
-                dsl, kml = await SwarmController.download_script(script_url)
-
-                # compile the mission
-                try:
-                    await self.compile_mission(dsl, kml)
-                except Exception as e:
-                    logger.error(f"Compiler received error {e}")
-                    await self.request_sock.send(b"ACK")
-                    continue
-
-                patrol_area_list = await PatrolArea.load_from_file(self.waypoint_file)
-
-                mission = StaticPatrolMission(drone_list, patrol_area_list, self.alt)
-                await self.mission_supervisor.supervise(mission, drone_list)
-
-                # get the base url
-                parsed_url = urlparse(script_url)
-                base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-
-            # send the command to the drone
-            await self.send_to_drone(req, base_url, drone_list)
-            await self.request_sock.send(b"ACK")
-            logger.info("Sent ACK to commander")
+    async def _listen_for_responses(self):
+        try:
+            while True:
+                data = await self._router_sock.recv()
+                # Parse the raw data into a response
+                response = CommandResponse()
+                response.ParseFromString(data)
+                async with self._response_map_lock.writer_lock():
+                    self._response_map[response.sequence_number] = response.response
+        except asyncio.exceptions.CancelledError:
+            return
 
 
 async def main():
@@ -134,14 +88,14 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-d",
-        "--droneport",
+        "--rc_port",
         type=int,
         default=5003,
-        help="Specify port to listen for drone requests [default: 5003]",
+        help="Specify port to listen for vehicle connections [default: 5003]",
     )
     parser.add_argument(
         "-c",
-        "--cmdrport",
+        "--commander_port",
         type=int,
         default=6001,
         help="Specify port to listen for commander requests [default: 6001]",
@@ -154,32 +108,10 @@ async def main():
         help="Set port number for redis connection [default: 6379]",
     )
     parser.add_argument("-a", "--auth", default="", help="Shared key for redis user.")
-    parser.add_argument(
-        "--altitude", type=int, default=15, help="base altitude for the drones mission"
-    )
-    parser.add_argument(
-        "--compiler_file", default="../../../sdk/dsl/", help="compiler file name"
-    )
-    parser.add_argument(
-        "--spacing", type=int, default=18, help="Spacing for corridor scan"
-    )
-    parser.add_argument(
-        "--angle", type=int, default=100, help="Spacing for corridor scan"
-    )
     args = parser.parse_args()
 
-    # Set the altitude
-    alt = args.altitude
-    logger.info(f"Starting control plane with altitude {alt}...")
-
-    spacing = args.spacing
-    logger.info(f"Starting control plane with {spacing=}...")
-
-    angle = args.angle
-    logger.info(f"Starting control plane with {angle=}...")
-
     compiler_file = args.compiler_file
-    logger.info(f"Using compiler file: {compiler_file}")
+    logger.info(f"Using compiler directory: {compiler_dir}")
 
     # Connect to redis
     red = redis.Redis(
@@ -190,23 +122,15 @@ async def main():
         decode_responses=True,
     )
     logger.info(f"Connected to redis on port {args.redis}...")
-
-    # Set up the commander socket
+    
+    # Set up the vehicle socket
     ctx = zmq.asyncio.Context()
-    request_sock = ctx.socket(zmq.REP)
-    request_sock.bind(f"tcp://*:{args.cmdrport}")
-    logger.info(f"Listening on tcp://*:{args.cmdrport} for commander requests...")
-
-    # Set up the drone socket
-    async_ctx = zmq.asyncio.Context()
-    router_sock = async_ctx.socket(zmq.ROUTER)
+    router_sock = ctx.socket(zmq.ROUTER)
     router_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-    router_sock.bind(f"tcp://*:{args.droneport}")
-    logger.info(f"Listening on tcp://*:{args.droneport} for drone connections...")
+    router_sock.bind(f"tcp://*:{args.rc_port}")
+    logger.info(f"Listening on tcp://*:{args.rc_port} for vehicle connections...")
 
-    controller = SwarmController(
-        alt, compiler_file, red, request_sock, router_sock, spacing, angle
-    )
+    controller = SwarmController(router_sock)
     try:
         await controller.run()
     except KeyboardInterrupt:

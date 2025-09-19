@@ -6,49 +6,18 @@ syntax = "proto3";
 package steeleagle.protocol.services.compute_service;
 
 import "common.proto";
-import "google/protobuf/duration.proto";
 
 /*
  * Used to configure datasinks for sensor streams
  */
 service Compute {
-  // Get all available compute engines, both local and remote
-  rpc GetAvailableDatasinks (GetAvailableDatasinksRequest)
-	returns (GetAvailableDatasinksResponse) {}
   // Configure compute preferences
   rpc ConfigureDatasinks (ConfigureDatasinksRequest)
-	returns (ConfigureDatasinksResponse) {}
-}
-
-message GetAvailableDatasinksRequest {
-  steeleagle.protocol.common.Request request = 1;
-}
-
-message Datasink {
-  // Name of the datasink
-  string name = 1;
-  // Publishing topic on the datastore
-  string topic = 2;
-  // Type of model used
-  string model = 3;
-  // Indicates if the datasink is active
-  bool active = 4;
-  // Uptime duration
-  google.protobuf.Duration uptime = 5;
-}
-
-message GetAvailableDatasinksResponse {
-  steeleagle.protocol.common.Response response = 1;
-  // List of available datasinks
-  repeated Datasink datasinks = 2;
+	returns (steeleagle.protocol.common.Response) {}
 }
 
 message ConfigureDatasinksRequest {
   steeleagle.protocol.common.Request request = 1;
   repeated string name = 2; // Name of target datasinks
   repeated bool activate = 3; // Switch to activate/deactivate datasinks
-}
-
-message ConfigureDatasinksResponse {
-  steeleagle.protocol.common.Response response = 1;
 }

@@ -5,7 +5,7 @@ import grpc
 from util.log import get_logger
 from util.config import query_config
 # Sequencer import
-from message_sequencer import Topic, MessageSequencer
+from test.message_sequencer import Topic, MessageSequencer
 # Protocol import
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportStub
@@ -36,7 +36,7 @@ class MockMissionClient:
         # Send message to the appropriate service
         service, method = req_obj.method_name.split('.')
         try:
-            result = None
+            response = None
             stub = None
             if service == 'Control':
                 stub = self._control_stub
@@ -52,16 +52,15 @@ class MockMissionClient:
             ]
             call = method(req_obj.request, metadata=metadata)
             if hasattr(call, '__aiter__'):
-                results = []
-                async for result in call:
-                    results.append(result)
-                result = results[-1]
+                responses = []
+                async for response in call:
+                    responses.append(response)
+                response = responses[-1]
             else:
-                result = await call
+                response = await call
         except grpc.aio.AioRpcError as e:
             logger.error(f'Exception occured for {req_obj.method_name}, {e}')
-            result = req_obj.response
-            result.response.status = e.code().value[0] + 2
+            response.status = e.code().value[0] + 2
         
-        self.sequencer.write(result)
-        return result.response.status == req_obj.status
+        self.sequencer.write(response)
+        return response.status == req_obj.status

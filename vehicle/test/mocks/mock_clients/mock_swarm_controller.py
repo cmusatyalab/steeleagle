@@ -4,15 +4,16 @@ import zmq.asyncio
 import logging
 from google.protobuf.json_format import MessageToDict
 # Utility import
-from util.rpc import generate_request
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from util.log import get_logger
 from util.config import query_config
 # Protocol import
+from steeleagle_sdk.protocol import common_pb2 as common_proto
 from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto
 from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 from google.protobuf import any_pb2
 # Sequencer import
-from message_sequencer import MessageSequencer, Topic
+from test.message_sequencer import MessageSequencer, Topic
 
 logger = get_logger('test/mock_swarm_controller')
 
@@ -51,12 +52,10 @@ class MockSwarmController:
         complete = False
         logger.info("Receiving...")
         identity, resp_bytes = await self._socket.recv_multipart()
-        resp_obj = command_proto.CommandResponse()
-        resp_obj.ParseFromString(resp_bytes)
-        response = req_obj.response
-        resp_obj.response.Unpack(response)
+        response = common_proto.Response()
+        response.ParseFromString(resp_bytes)
         logger.info(str(MessageToDict(response)))
-        if response.response.status == req_obj.status:
+        if response.status == req_obj.status:
             logger.info(f"Got correct status: {req_obj.status}!")
             complete = True
         self.sequencer.write(response)
