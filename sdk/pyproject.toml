@@ -47,6 +47,9 @@ dependencies = [
     "lark>=1.2.2",
     "uvicorn[standard]>=0.36.0",
     "fastapi>=0.117.1",
+    "shapely>=2.1.1",
+    "matplotlib>=3.10.6",
+    "folium>=0.20.0",
 ]
 
 [project.urls]

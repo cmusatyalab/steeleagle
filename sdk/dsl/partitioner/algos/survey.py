@@ -2,9 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Tuple
 from shapely.geometry import Point, LineString, Polygon
-from .partition import Partition
-from .geopoints import GeoPoints
-from .utils import rotated_infinite_transects, line_polygon_intersection_points, round_xy
+from ..partition import Partition
+from ..geopoints import GeoPoints
+from ..utils import rotated_infinite_transects, line_polygon_intersection_points, round_xy
 
 @dataclass
 class SurveyPartition(Partition):
@@ -17,7 +17,6 @@ class SurveyPartition(Partition):
         for line in rotated_infinite_transects(polygon, self.spacing, self.angle_degrees):
             pts = line_polygon_intersection_points(line, polygon)
             if len(pts) >= 2:
-                # pair intersections: (0,1), (2,3), ...
                 for a, b in zip(pts[0::2], pts[1::2]):
                     ax, ay = a
                     bx, by = b

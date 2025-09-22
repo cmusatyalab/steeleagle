@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import List
 from shapely.geometry import Polygon
-from .partition import Partition
-from .geopoints import GeoPoints
+from ..partition import Partition
+from ..geopoints import GeoPoints
 
 class EdgePartition(Partition):
-    """Emit each exterior edge as a GeoPoints pair (p1, p2)."""
+    
     def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
         coords = list(polygon.exterior.coords)
         pairs = []

@@ -49,6 +49,7 @@ def partition_geopoints(
     partition: Partition,
     kml_path: str,
 ) -> Dict[str, List[GeoPoints]]:
+
     path = Path(kml_path)
     if not path.exists():
         raise FileNotFoundError(f"KML file not found: {path}")
@@ -57,7 +58,7 @@ def partition_geopoints(
     if not raw_map:
         logger.warning("No Placemarks found in KML: %s", path)
         return {}
-
+    
     out: Dict[str, List[GeoPoints]] = {}
     for area, raw in raw_map.items():
         if len(raw) < 3:
