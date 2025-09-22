@@ -75,7 +75,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         enu_vel = telemetry.velocity_enu
         gimb_pose = telemetry.gimbal_pose
         key = self.r.xadd(
-            f"telemetry:{telemetry.drone_name}",
+            f"telemetry:{telemetry.vehicle_info.name}",
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
@@ -84,7 +84,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "bearing": int(global_pos.heading),
                 "battery": telemetry.battery,
                 "mag": common.MagnetometerWarning.Name(
-                    telemetry.alerts.magnetometer_warning
+                    telemetry.alert_info.magnetometer_warning
                 ),
                 "sats": telemetry.satellites,
                 # Relative Pos (ENU)
@@ -123,24 +123,24 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "gimbal_yaw": gimb_pose.yaw,
             },
         )
-        self.r.expire(f"telemetry:{telemetry.drone_name}", 60 * 60 * 24)
+        self.r.expire(f"telemetry:{telemetry.vehicle_info.name}", 60 * 60 * 24)
         logger.debug(
-            f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}"
+            f"Updated status of {telemetry.vehicle_info.name} in redis under stream telemetry at key {key}"
         )
 
-        drone_key = f"drone:{telemetry.drone_name}"
+        drone_key = f"drone:{telemetry.vehicle_info.name}"
         self.r.hset(drone_key, "last_seen", f"{time.time()}")
-        self.r.hset(drone_key, "battery", f"{telemetry.alerts.battery_warning}")
-        self.r.hset(drone_key, "mag", f"{telemetry.alerts.magnetometer_warning}")
-        self.r.hset(drone_key, "sats", f"{telemetry.alerts.gps_warning}")
-        self.r.hset(drone_key, "connection", f"{telemetry.alerts.connection_warning}")
-        self.r.hset(drone_key, "status", f"{telemetry.status}")
-        self.r.hset(drone_key, "current_task", f"{telemetry.current_task}")
-        self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
+        self.r.hset(drone_key, "battery", f"{telemetry.alert_info.battery_warning}")
+        self.r.hset(drone_key, "mag", f"{telemetry.alert_info.magnetometer_warning}")
+        self.r.hset(drone_key, "sats", f"{telemetry.alert_info.gps_warning}")
+        self.r.hset(drone_key, "connection", f"{telemetry.alert_info.connection_warning}")
+        #self.r.hset(drone_key, "status", f"{telemetry.status}")
+        #self.r.hset(drone_key, "current_task", f"{telemetry.current_task}")
+        self.r.hset(drone_key, "model", f"{telemetry.vehicle_info.model}")
         # Home Location
-        self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
-        self.r.hset(drone_key, "home_long", f"{telemetry.home.longitude}")
-        self.r.hset(drone_key, "home_alt", f"{telemetry.home.altitude}")
+        self.r.hset(drone_key, "position_info.home_lat", f"{telemetry.position_info.home.latitude}")
+        self.r.hset(drone_key, "position_info.home_long", f"{telemetry.position_info.home.longitude}")
+        self.r.hset(drone_key, "position_info.home_alt", f"{telemetry.position_info.home.altitude}")
         # Camera Information
         self.r.hset(
             drone_key,
@@ -186,13 +186,13 @@ class TelemetryEngine(cognitive_engine.Engine):
         result = None
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            if extras.telemetry.drone_name != "":
+            if extras.telemetry.vehicle_info.name != "":
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
                 foxglove.log(
-                    f"/{extras.telemetry.drone_name}/location",
+                    f"/{extras.telemetry.vehicle_info.name}/location",
                     LocationFix(
                         latitude=extras.telemetry.global_position.latitude,
                         longitude=extras.telemetry.global_position.longitude,
@@ -201,7 +201,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                     log_time=time.time_ns(),
                 )
                 foxglove.log(
-                    f"/{extras.telemetry.drone_name}/telemetry",
+                    f"/{extras.telemetry.vehicle_info.name}/telemetry",
                     json_format.MessageToJson(
                         extras.telemetry,
                         always_print_fields_with_no_presence=True,
@@ -214,15 +214,15 @@ class TelemetryEngine(cognitive_engine.Engine):
             # have redis publish the latest image
             if self.publish:
                 logger.info(
-                    f"Publishing image to redis under imagery.{extras.telemetry.drone_name} topic."
+                    f"Publishing image to redis under imagery.{extras.telemetry.vehicle_info.name} topic."
                 )
                 self.r.publish(
-                    f"imagery.{extras.telemetry.drone_name}", input_frame.payloads[0]
+                    f"imagery.{extras.telemetry.vehicle_info.name}", input_frame.payloads[0]
                 )
             # store images in the shared volume
             try:
                 foxglove.log(
-                    f"/{extras.telemetry.drone_name}/imagery",
+                    f"/{extras.telemetry.vehicle_info.name}/imagery",
                     CompressedImage(data=input_frame.payloads[0], format="jpeg"),
                     log_time=time.time_ns(),
                 )
@@ -230,7 +230,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
+                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.vehicle_info.name}"
                 if not os.path.exists(drone_raw_dir):
                     os.mkdir(drone_raw_dir)
                 now = datetime.datetime.now(pytz.timezone("America/New_York"))
@@ -245,11 +245,11 @@ class TelemetryEngine(cognitive_engine.Engine):
                     f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
                 )
 
-                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
+                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.vehicle_info.name}"
                 img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
 
-                logger.debug(f"Updated latest image for {extras.telemetry.drone_name}")
+                logger.debug(f"Updated latest image for {extras.telemetry.vehicle_info.name}")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
 

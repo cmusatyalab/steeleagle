@@ -11,12 +11,13 @@ import logging
 import os
 import zmq
 import zmq.asyncio
+import grpc
+from concurrent import futures
 import aiorwlock
-from google.protobuf import text_format
-from google.protobuf.message import DecodeError
 from util.utils import setup_logging
+# Protocol imports
 from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandResponse
-from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteServicer
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteServicer, add_RemoteServicer_to_server
 
 logger = logging.getLogger(__name__)
 
@@ -81,24 +82,16 @@ class SwarmController(RemoteServicer):
         except asyncio.exceptions.CancelledError:
             return
 
-
 async def main():
     setup_logging(logger)
     logger.setLevel(logging.DEBUG)
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-d",
-        "--rc_port",
+        "-v",
+        "--vehicle_port",
         type=int,
         default=5003,
         help="Specify port to listen for vehicle connections [default: 5003]",
-    )
-    parser.add_argument(
-        "-c",
-        "--commander_port",
-        type=int,
-        default=6001,
-        help="Specify port to listen for commander requests [default: 6001]",
     )
     parser.add_argument(
         "-r",
@@ -109,9 +102,6 @@ async def main():
     )
     parser.add_argument("-a", "--auth", default="", help="Shared key for redis user.")
     args = parser.parse_args()
-
-    compiler_file = args.compiler_file
-    logger.info(f"Using compiler directory: {compiler_dir}")
 
     # Connect to redis
     red = redis.Redis(
@@ -127,13 +117,19 @@ async def main():
     ctx = zmq.asyncio.Context()
     router_sock = ctx.socket(zmq.ROUTER)
     router_sock.setsockopt(zmq.ROUTER_HANDOVER, 1)
-    router_sock.bind(f"tcp://*:{args.rc_port}")
-    logger.info(f"Listening on tcp://*:{args.rc_port} for vehicle connections...")
+    router_sock.bind(f"tcp://*:{args.vehicle_port}")
+    logger.info(f"Listening on tcp://*:{args.vehicle_port} for vehicle connections...")
 
-    controller = SwarmController(router_sock)
+    # Start the server
+    server = grpc.aio.server(
+            futures.ThreadPoolExecutor(max_workers=10)
+            )
+    add_RemoteServicer_to_server(SwarmController(router_sock), server)
+    await server.start()
     try:
-        await controller.run()
+        await server.wait_for_termination()
     except KeyboardInterrupt:
+        await server.stop(1)
         logger.info("Shutting down...")
 
 

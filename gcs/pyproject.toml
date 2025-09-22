@@ -11,7 +11,9 @@ dependencies = [
     "streamlit-folium>=0.25.1",
     "redis>=6.4.0",
     "pykml>=0.2.0",
+    "streamlit-keypressed",
 ]
 
 [tool.uv.sources]
 steeleagle-sdk = { workspace = true }
+streamlit-keypressed = { path = "streamlit/streamlit_keypressed-0.1.5-py3-none-any.whl" }
