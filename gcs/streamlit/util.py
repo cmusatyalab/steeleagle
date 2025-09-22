@@ -8,6 +8,8 @@ import pandas as pd
 import json
 import time
 import hmac
+
+import grpc
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 DATA_TYPES = {
@@ -93,7 +95,7 @@ def connect_redis_publisher():
 
 @st.cache_resource
 def connect_stub():
-    return RemoteStub(os.getenv('SWARM_CTRL'))
+    return RemoteStub(grpc.insecure_channel(f'{st.secrets.grpc}'))
 
 def get_drones():
     l = {}

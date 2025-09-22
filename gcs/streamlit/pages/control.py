@@ -7,10 +7,12 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
-from util import stream_to_dataframe, connect_redis, connect_zmq, get_drones, menu, COLORS, authenticated
+from util import stream_to_dataframe, connect_redis, connect_stub, get_drones, menu, COLORS, authenticated
 from st_keypressed import st_keypressed
 import math
 import uuid
+
+import grpc
 from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
 from steeleagle_sdk.protocol.services.control_service_pb2 import ReturnToHomeRequest, HoldRequest, JoystickRequest, TakeOffRequest, LandRequest
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
@@ -92,18 +94,16 @@ def run_flightscript():
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        filename = f"{time.time_ns()}.ms"
-        path = f"{st.secrets.scripts_path}/{filename}"
-        with ZipFile(path, 'w') as z:
-            for file in st.session_state.script_file:
-                z.writestr(file.name, file.read())
+        # TODO
+        pass
 
-        for d in st.session_state.selected_drones:
-            # STUB SEND FLIGHTSCRIPT
-        st.toast(
-            f"Instructed {req.msn.drone_ids} to fly autonomous script.",
-            icon="\u2601",
-        )
+def get_callback(toast_message):
+    def callback(future):
+        try:
+            st.toast(toast_message + f' Status code: {future.result().status}')
+        except grpc.RpcError:
+            st.toast('Error running command!')
+    return callback
 
 def enable_manual():
     req = CommandRequest()
@@ -111,10 +111,9 @@ def enable_manual():
     req.method_name = 'Control.Hold'
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        # STUB SEND HOLD
         req.vehicle_id = d
         call_future = st.session_state.stub.Command.future(req.SerializeToString())
-        call_future.add_done_callback(st.toast(f"{d} holding!"))
+        call_future.add_done_callback(get_callback(f'{d} holding!'))
 
     st.toast(
         f"Instructed {req.veh.drone_ids} to hold!"
@@ -126,10 +125,9 @@ def rth():
     req.method_name = 'Control.ReturnToHome'
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        # STUB SEND RTH
         req.vehicle_id = d
         call_future = st.session_state.stub.Command.future(req.SerializeToString())
-        call_future.add_done_callback(st.toast(f"{d} finished return home!"))
+        call_future.add_done_callback(get_callback(f"{d} finished return home!"))
     st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
@@ -442,7 +440,6 @@ with st.sidebar:
         req = CommandRequest()
         st.caption(f"keypressed={key_pressed}")
         if key_pressed == "t":
-            #req.veh.action = controlplane.VehicleAction.TAKEOFF
             data = TakeOffRequest(request=generate_request(), take_off_altitude=5.0)
             req.method_name = 'Control.TakeOff'
             req.request.Pack(data)
@@ -451,7 +448,6 @@ with st.sidebar:
             data = LandRequest(request=generate_request())
             req.method_name = 'Control.Land'
             req.request.Pack(data)
-            #req.veh.action = controlplane.VehicleAction.LAND
             st.info(f"Instructed {req.veh.drone_ids} to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
@@ -502,5 +498,5 @@ with st.sidebar:
             # STUB SEND MANUAL
             req.vehicle_id = d
             call_future = st.session_state.stub.Command.future(req.SerializeToString())
-            call_future.add_done_callback(st.toast(f"{d} manual command finished!"))
+            call_future.add_done_callback(get_callback(f"{d} manual command finished!"))
 
