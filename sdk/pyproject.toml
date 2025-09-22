@@ -45,6 +45,8 @@ dependencies = [
     "grpcio>=1.74.0",
     "pydantic>=2.11.7",
     "lark>=1.2.2",
+    "uvicorn[standard]>=0.36.0",
+    "fastapi>=0.117.1",
 ]
 
 [project.urls]

@@ -51,12 +51,6 @@ def get_kind_schema(category: str, kind: str):
     return model.model_json_schema()
 
 
-@app.get("/", include_in_schema=False)
-def index():
-    # Jump straight to Swagger UI
-    return RedirectResponse(url="/docs")
-
-# (Optional) quiet the favicon 404s
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
     return PlainTextResponse("", status_code=204)  # or serve a static file
