@@ -59,7 +59,7 @@ class Spirit(ArduPilotDrone):
     """ Interface Methods """
 
     async def get_type(self):
-        return "Ascent AeroSytems Spirit"
+        return "Ascent AeroSystems Spirit"
 
     async def set_gimbal_pose(self, pose):
         return common_protocol.ResponseStatus.NOTSUPPORTED
