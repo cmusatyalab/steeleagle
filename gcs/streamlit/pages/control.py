@@ -557,7 +557,7 @@ with st.sidebar:
             step=15,
             value=0,
             format="%d",
-            onchange=adjust_gimbal,
+            on_change=adjust_gimbal,
         )
 
         key_pressed = st_keypressed()

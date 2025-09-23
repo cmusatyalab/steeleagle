@@ -160,7 +160,7 @@ class ArduPilotDrone(MAVLinkDrone):
             or self.mode == MAVLinkDrone.FlightMode.RTL
             or self.mode == MAVLinkDrone.FlightMode.LAND
         ):
-            logger.error("Cannnot HOVER during TAKEOFF, LAND, or RTL modes")
+            logger.error("Cannot HOVER during TAKEOFF, LAND, or RTL modes")
             return common_protocol.ResponseStatus.FAILED
 
         if self._vel_task:
