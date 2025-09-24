@@ -48,10 +48,10 @@ class DroneDSLTransformer(Transformer):
 
     # ===== Data =====
     def datum_decl(self, type_name: Token, datum_id: Token, attrs: Optional[List] = None):
-        t = str(type_name)
+        type_str = str(type_name)
         did = str(datum_id)
         attrs_dict = _pairs_to_dict(attrs)
-        self._data[did] = DatumIR(type_name=t, datum_id=did, attributes=attrs_dict)
+        self._data[did] = DatumIR(type_name=type_str, datum_id=did, attributes=attrs_dict)
 
     def datum_body(self, *items):
         # filter for attr tuples
@@ -68,11 +68,11 @@ class DroneDSLTransformer(Transformer):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ===== Events =====
-    def event_decl(self, type_name: Token, event_name: Token, attrs: Optional[List] = None):
+    def event_decl(self, type_name: Token, event_id: Token, attrs: Optional[List] = None):
         type_str = str(type_name)
-        eid = str(event_name)
+        eid = str(event_id)
         attrs_dict = _pairs_to_dict(attrs)
-        self._events[eid] = EventIR(type_name=type_str, event_name=eid, attributes=attrs_dict)
+        self._events[eid] = EventIR(type_name=type_str, event_id=eid, attributes=attrs_dict)
 
     def event_body(self, *items):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
@@ -105,7 +105,7 @@ class DroneDSLTransformer(Transformer):
         return (str(k), v)
     
     def value(self, v):
-        if isinstance(v, dict):      # from datum_inline()
+        if isinstance(v, Dict):      # from datum_inline()
             return v
         if isinstance(v, list):      # from array()
             return v
@@ -116,7 +116,12 @@ class DroneDSLTransformer(Transformer):
                 return float(s)
             if t == "NAME":
                 return s
+            if t == "NONE":
+                return None
         return v
+
+    def array(self, *items):        
+        return [it for it in items if not isinstance(it, Token)]
 
     def datum_args(self, *items):
         return [it for it in items if not isinstance(it, Token)]
@@ -124,8 +129,8 @@ class DroneDSLTransformer(Transformer):
     def datum_inline(self, type_name, *args):
         tname = str(type_name)
         args_list = args[0]
-        return {"__inline__": True, "type": tname, "args": args_list, "kwargs": {}}
-        
+        return {"__inline__": True, "type": tname, "args": args_list}
+
     # ===== Top-level =====
     def start(self, *children):
         logger.info(
@@ -148,11 +153,11 @@ class DroneDSLTransformer(Transformer):
             transitions=transitions
         )
 
-        # Import API so @register_* hooks populate registries
+       # Import API so @register_* hooks populate registries
         logger.info("loader: loading SDK registries")
         load_summaries = loader.load_all(force=True, show_trace=False)
         loader.print_report(load_summaries)
-
+        
         logger.info("resolver: resolving symbol references")
         mir = resolver.resolve_symbols(mir)
 

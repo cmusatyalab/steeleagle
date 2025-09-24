@@ -32,6 +32,7 @@ value: datum_inline
     | NUMBER 
     | NAME 
     | array
+    | NONE
 
 array: LBRACK [value (COMMA value)*] RBRACK
 datum_inline: NAME LPAREN [datum_args] RPAREN
@@ -52,6 +53,7 @@ EQUAL:  "="
 ARROW:  "->"
 LBRACK: "["
 RBRACK: "]"
+NONE: "_"
 
 %import common.NEWLINE        -> NL
 %import common.SIGNED_NUMBER  -> NUMBER
