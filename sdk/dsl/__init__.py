@@ -45,45 +45,6 @@ def build_mission(dsl_code: str) -> MissionIR:
     )
     return mission
 
-def partition_geopoints(
-    partition: Partition,
-    kml_path: str,
-) -> Dict[str, List[GeoPoints]]:
-
-    path = Path(kml_path)
-    if not path.exists():
-        raise FileNotFoundError(f"KML file not found: {path}")
-
-    raw_map = parse_kml_file(str(path))
-    if not raw_map:
-        logger.warning("No Placemarks found in KML: %s", path)
-        return {}
-    
-    out: Dict[str, List[GeoPoints]] = {}
-    for area, raw in raw_map.items():
-        if len(raw) < 3:
-            logger.warning("Area %s has < 3 points; skipping.", area)
-            continue
-
-        origin_wgs = raw.centroid()
-        projected = raw.convert_to_projected()
-        poly = projected.to_polygon()
-
-        # partition in projected space
-        parts_m = partition.generate_partitioned_geopoints(poly)
-
-        # inverse-project results back to WGS84
-        parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
-        out[area] = parts_wgs
-
-        logger.info(
-            "Partitioned '%s': %d segment(s), %d point(s)",
-            area,
-            len(parts_wgs),
-            sum(len(seg) for seg in parts_wgs),
-        )
-
-    return out
 
 async def execute_mission(msn: MissionIR, control: ControlStub, compute: ComputeStub, report: ReportStub) -> None:
     control_mod.STUB = control

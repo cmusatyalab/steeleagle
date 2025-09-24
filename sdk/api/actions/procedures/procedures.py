@@ -6,6 +6,9 @@ from ....dsl.compiler.registry import register_action
 from ...base import Action
 from ..primitives.control import SetGimbalPose, SetGlobalPosition, SetVelocity
 from ...datatypes import common as common
+from ...datatypes.waypoint import Waypoints
+import logging
+logger = logging.getLogger(__name__)
 
 @register_action
 class ElevateToAltitude(Action):
@@ -55,30 +58,28 @@ class PrePatrolSequence(Action):
 
 @register_action
 class Patrol(Action):
-    area: str = Field(..., min_length=1, description="dot-path into waypoint map")
     hover_time: float = Field(1.0, ge=0.0, description="seconds to hover after each move")
-    alt: Optional[float] = Field(default=None, description="altitude to use for each waypoint")
+    waypoints: Waypoints
 
     async def execute(self, context):
-        points = None # await context['data'].get_waypoints(self.area_path)
-        if not points:
-            raise RuntimeError(f"No waypoints found for '{self.area_path}'")
+        map = self.waypoints.calculate()
+        for area_name, points in map.items():
+            logger.info("Patrol: area=%s, segments=%d", area_name, len(points))
+            for p in points:
+                goto = SetGlobalPosition(
+                    location=common.Location(
+                        latitude=float(p["lat"]),
+                        longitude=float(p["lng"]),
+                        altitude=float(p["alt"]),
+                    ),
+                    altitude_mode=SetGlobalPosition.AltitudeMode.RELATIVE,
+                    heading_mode=SetGlobalPosition.HeadingMode.TO_TARGET,
+                    max_velocity=common.Velocity(x_vel=0.0, y_vel=5.0, up_vel=0.0, angular_vel=0.0),
+                )
+                await goto.execute(context)
 
-        for p in points:
-            goto = SetGlobalPosition(
-                location=common.Location(
-                    latitude=float(p["lat"]),
-                    longitude=float(p["lng"]),
-                    altitude=self.alt if self.alt is not None else p.get("alt", 10.0),
-                ),
-                altitude_mode=SetGlobalPosition.AltitudeMode.RELATIVE,
-                heading_mode=SetGlobalPosition.HeadingMode.TO_TARGET,
-                max_velocity=common.Velocity(x_vel=0.0, y_vel=5.0, up_vel=0.0, angular_vel=0.0),
-            )
-            await goto.execute(context)
-
-            if self.hover_time > 0:
-                await asyncio.sleep(self.hover_time)
+                if self.hover_time > 0:
+                    await asyncio.sleep(self.hover_time)
 
 
 

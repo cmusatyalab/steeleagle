@@ -46,9 +46,9 @@ class GeoPoints(list):
         lat = y / 110_540.0 + lat0
         return (lon, lat)
 
-    def convert_to_projected(self) -> "GeoPoints":
+    def convert_to_projected(self) -> GeoPoints:
         origin = self.centroid()
         return GeoPoints([self._project_to_meters(origin, p) for p in self])
 
-    def inverse_project_from(self, origin_wgs: Tuple[float, float]) -> "GeoPoints":
+    def inverse_project_from(self, origin_wgs: Tuple[float, float]) -> GeoPoints:
         return GeoPoints([self._inverse_project(origin_wgs, p) for p in self])
