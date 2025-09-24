@@ -147,7 +147,7 @@ def control_drone(drone):
 
 
 def menu(with_control=True):
-    st.sidebar.page_link("overview.py", label=":world_map: Tactical Overview")
-    st.sidebar.page_link("pages/monitoring.py", label=":tv: Imagery and Telemetry")
-    st.sidebar.page_link("pages/control.py", label=":joystick: Control")
+    st.sidebar.page_link("overview.py", label=":earth_americas: Tactical Overview")
+    st.sidebar.page_link("pages/monitoring.py", label=":tv: Telemetry")
+    st.sidebar.page_link("pages/control.py", label=":video_game: Control")
     # st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")
