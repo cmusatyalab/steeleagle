@@ -1,15 +1,22 @@
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
+from ...dsl.compiler.registry import register_data 
+
+
 
 # One waypoint point (lat/lon/alt)
+@register_data
 class GeoPoint(BaseModel):
     lat: float
     lon: float
     alt: float = 0.0
 
+
 class RelativePoint(BaseModel):
     pass  # Placeholder for future implementation
 
+
+@register_data
 # Collection of waypoints
 class Waypoints(BaseModel):
     name: Optional[str] = None

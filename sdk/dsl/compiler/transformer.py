@@ -78,9 +78,9 @@ class DroneDSLTransformer(Transformer):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ===== Mission / transitions =====
-    def mission_start(self, action_id: Token):
+    def mission_start(self, mission_start_kw, action_id, *_nl):
         self._start_aid = str(action_id)
-        logger.info("mission_start: %s", self._start_aid)
+        logger.info("mission start: %s", self._start_aid)
 
     def transition_body(self, *items):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
@@ -90,7 +90,7 @@ class DroneDSLTransformer(Transformer):
         logger.debug("transition_rule: %s -> %s", rule[0], rule[1])
         return rule
 
-    def during_block(self, action_id: Token, _nl, rules_list):
+    def during_block(self, during_kw, action_id: Token, _nl, rules_list):
         aid = str(action_id)
         self._during.setdefault(aid, {})
         for eid, nxt_aid in rules_list:
@@ -128,10 +128,28 @@ class DroneDSLTransformer(Transformer):
 
     def datum_inline(self, type_name, *args):
         tname = str(type_name)
-        args_list = args[0]
+        args_list = next((c for c in args if isinstance(c, list)), [])
         return {"__inline__": True, "type": tname, "args": args_list}
 
+
+
     # ===== Top-level =====
+    def print_mir(self, mir: MissionIR):
+        logger.info("MissionIR:")
+        logger.info("  start: %s", mir.start_action_id)
+        logger.info("  Data:")
+        for did in sorted(mir.data.keys()):
+            logger.info("    %s", mir.data[did])
+        logger.info("  Actions:")
+        for aid in sorted(mir.actions.keys()):
+            logger.info("    %s", mir.actions[aid])
+        logger.info("  Events:")
+        for eid in sorted(mir.events.keys()):
+            logger.info("    %s", mir.events[eid])
+        logger.info("  Transitions:")
+        for (state, ev), nxt in sorted(mir.transitions.items()):
+            logger.info("    %s + %s -> %s", state, ev, nxt)
+
     def start(self, *children):
         logger.info(
             "transform: building MissionIR (actions=%d, events=%d, data=%d)",
@@ -155,7 +173,7 @@ class DroneDSLTransformer(Transformer):
 
        # Import API so @register_* hooks populate registries
         logger.info("loader: loading SDK registries")
-        load_summaries = loader.load_all(force=True, show_trace=False)
+        load_summaries = loader.load_all()
         loader.print_report(load_summaries)
         
         logger.info("resolver: resolving symbol references")
@@ -165,5 +183,7 @@ class DroneDSLTransformer(Transformer):
         mir = validator.validate_mission_ir(mir)
 
         logger.info("transform: done (transitions=%d)", len(transitions))
-        logger.info("transform: MissionIR: %s", mir)
+        
+        # print the final IR nicely, from data to actions to events
+        self.print_mir(mir)
         return mir

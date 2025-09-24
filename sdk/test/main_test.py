@@ -21,6 +21,7 @@ async def fsm_runner(fsm):
     await fsm.run()
 
 def main():
+
     # Build mission
     mission = build_mission(dsl_code)
     logger.info("Start: %s", mission.start_action_id)
@@ -30,6 +31,7 @@ def main():
     logger.info("Transitions:")
     for (state, ev), nxt in sorted(mission.transitions.items()):
         logger.info("  %s + %s -> %s", state, ev, nxt)
+
 
 if __name__ == "__main__":
     main()
