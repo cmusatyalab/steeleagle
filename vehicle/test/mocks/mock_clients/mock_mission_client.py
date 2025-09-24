@@ -10,6 +10,7 @@ from test.message_sequencer import Topic, MessageSequencer
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportStub
 from steeleagle_sdk.protocol.services.compute_service_pb2_grpc import ComputeStub
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from google.protobuf import any_pb2
 
 logger = get_logger('test/mock_mission')
@@ -60,7 +61,7 @@ class MockMissionClient:
                 response = await call
         except grpc.aio.AioRpcError as e:
             logger.error(f'Exception occured for {req_obj.method_name}, {e}')
-            response.status = e.code().value[0] + 2
+            response = generate_response(e.code().value[0] + 2)
         
         self.sequencer.write(response)
         return response.status == req_obj.status

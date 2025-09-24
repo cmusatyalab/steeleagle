@@ -157,57 +157,56 @@ async def results():
         'internal.streams.results',
         SocketOperation.CONNECT
         )
-    result_socket.RCVTIMEO = 1000 # Millisecond timeout
+    result_socket.RCVTIMEO = 500 # Millisecond timeout
     yield result_socket
     result_socket.close()
 
 @pytest_asyncio.fixture(scope='function')
-async def gabriel(messages):
+async def gabriel():
     from gabriel_protocol.gabriel_pb2 import PayloadType, ResultWrapper
-    from gabriel_server import local_engine
-    from gabriel_server import cognitive_engine
-    from test.message_sequencer import MessageSequencer, Topic 
+    from gabriel_server.local_engine import LocalEngine
+    from gabriel_server.cognitive_engine import create_result_wrapper, Engine
     from util.config import query_config
-    from multiprocessing import Process
     # Sequencer cognitive engine for writing what we see
-    class RepeaterEngine(cognitive_engine.Engine):
+    class RepeaterEngine(Engine):
         def __init__(self, name):
             super().__init__()
             self._name = name
 
         def handle(self, input_frame):
             status = ResultWrapper.Status.SUCCESS
-            result_wrapper = cognitive_engine.create_result_wrapper(status)
+            result_wrapper = create_result_wrapper(status)
+            result_wrapper.result_producer_name.value = self._name
             result = ResultWrapper.Result()
             result.payload_type = input_frame.payload_type
             result_wrapper.results.append(result)
-            result_wrapper.result_producer_name.value = self._name
             return result_wrapper
     # Run remote server
-    remote_task = Process(target=local_engine.run, args=(
+    remote_engine = LocalEngine(
             lambda: RepeaterEngine('REMOTE'),
-            'telemetry',
-            60, 
+            60,
             query_config('cloudlet.remote_compute_service').split(':')[-1],
-            2,),
-            kwargs={
-                'use_zeromq' : True
-            }
+            2,
+            engine_name='engine',
+            use_zeromq=True
             )
+    remote_task = asyncio.create_task(remote_engine.run_async())
     # Run local server
-    local_task = Process(target=local_engine.run, args=(
+    local_engine = LocalEngine(
             lambda: RepeaterEngine('LOCAL'),
-            'telemetry',
-            60, None, 2,),
-            kwargs={
-                'use_zeromq' : True,
-                'ipc_path' : query_config('internal.streams.local_compute').replace('unix://', '')
-            }
+            60,
+            None,
+            2,
+            engine_name='engine',
+            use_zeromq=True,
+            ipc_path=query_config('internal.streams.local_compute').replace('unix://', '')
             )
-    remote_task.start()
-    local_task.start()
+    local_task = asyncio.create_task(local_engine.run_async())
+    await asyncio.sleep(0.5)
     yield
-    remote_task.terminate()
-    remote_task.join()
-    local_task.terminate()
-    local_task.join()
+    try:
+        remote_task.cancel()
+        local_task.cancel()
+        await asyncio.gather(remote_task, local_task)
+    except asyncio.exceptions.CancelledError:
+        pass

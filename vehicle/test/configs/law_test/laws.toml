@@ -1,7 +1,7 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
 [__BASE__]
-enter = ['Control.Connect', 'internal.FlightLog.*']
+enter = ['Control.Connect']
 [__BASE__.rules]
 allowed = ['server.*']
 match = [

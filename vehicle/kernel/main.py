@@ -78,6 +78,9 @@ async def main():
     law_authority = LawAuthority()
     # Set up the law interceptor
     law_interceptor = [LawInterceptor(law_authority)]
+    # Create the remote control and stream handler
+    rc_handler = CommandHandler(law_authority, command_socket)
+    stream_handler = StreamHandler(law_authority)
     
     # Define the server that will hold our services
     server = grpc.aio.server(
@@ -88,7 +91,7 @@ async def main():
     control_service_pb2_grpc.add_ControlServicer_to_server(ControlProxy(), server)
     mission_service_pb2_grpc.add_MissionServicer_to_server(MissionProxy(), server)
     report_service_pb2_grpc.add_ReportServicer_to_server(ReportService(command_socket), server)
-    compute_service_pb2_grpc.add_ComputeServicer_to_server(ComputeService(), server)
+    compute_service_pb2_grpc.add_ComputeServicer_to_server(ComputeService(stream_handler), server)
     # Add main channel to server
     server.add_insecure_port(query_config('internal.services.kernel'))
 
@@ -103,12 +106,9 @@ async def main():
             raise SystemExit(1)
         logger.info('Device connected!')
 
-        # Create the remote control and stream handler
-        rc_handler = CommandHandler(law_authority, command_socket)
-        #stream_handler = StreamHandler(law_authority)
         await rc_handler.start(query_config('internal.timeouts.server'))
         logger.info('Started handling remote input!')
-        #await stream_handler.start()
+        await stream_handler.start()
         logger.info('Started handling data streams!')
 
         # If in test mode, notify the test bench that kernel services
@@ -121,8 +121,8 @@ async def main():
         await asyncio.gather(
                 server.wait_for_termination(),
                 rc_handler.wait_for_termination(),
+                stream_handler.wait_for_termination()
                 )
-        #stream_handler.wait_for_termination(),
     except (SystemExit, asyncio.exceptions.CancelledError):
         await server.stop(1)
         log_process.terminate()

@@ -3,7 +3,7 @@
 [__BASE__]
 enter = ['Control.Connect']
 [__BASE__.rules]
-allowed = ['server.*', 'internal.FlightLog.*']
+allowed = ['server.*']
 match = [
   ['server.Control.*', 'REMOTE'],
   ['server.Mission.Start', 'LOCAL']

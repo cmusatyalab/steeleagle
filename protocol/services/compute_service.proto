@@ -11,13 +11,42 @@ import "common.proto";
  * Used to configure datasinks for sensor streams
  */
 service Compute {
-  // Configure compute preferences
-  rpc ConfigureDatasinks (ConfigureDatasinksRequest)
+  // Add datasinks to consumer list
+  rpc AddDatasinks (AddDatasinksRequest)
+	returns (steeleagle.protocol.common.Response) {}
+  // Set the datasink consumer list
+  rpc SetDatasinks (SetDatasinksRequest)
+	returns (steeleagle.protocol.common.Response) {}
+  // Remove datasinks from consumer list
+  rpc RemoveDatasinks (RemoveDatasinksRequest)
 	returns (steeleagle.protocol.common.Response) {}
 }
 
-message ConfigureDatasinksRequest {
+// Denotes where a datasink is located
+enum DatasinkLocation {
+  REMOTE = 0;
+  LOCAL = 1;
+}
+
+// Information about a datasink
+message DatasinkInfo {
+  // Datasink ID
+  string id = 1;
+  // Datasink location
+  DatasinkLocation location = 2;  
+}
+
+message AddDatasinksRequest {
   steeleagle.protocol.common.Request request = 1;
-  repeated string name = 2; // Name of target datasinks
-  repeated bool activate = 3; // Switch to activate/deactivate datasinks
+  repeated DatasinkInfo datasinks = 2; // Name of target datasinks
+}
+
+message SetDatasinksRequest {
+  steeleagle.protocol.common.Request request = 1;
+  repeated DatasinkInfo datasinks = 2; // Name of target datasinks
+}
+
+message RemoveDatasinksRequest {
+  steeleagle.protocol.common.Request request = 1;
+  repeated DatasinkInfo datasinks = 2; // Name of target datasinks
 }

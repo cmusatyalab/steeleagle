@@ -58,7 +58,7 @@ class FlightLogService(FlightLogServicer):
             try:
                 from pathlib import Path
                 # Get path relative to vehicle directory
-                log_path = Path(__file__).parent / '../..' / log_config['file_path'] / filename
+                log_path = (Path(__file__).parent / '../..' / log_config['file_path'] / filename).resolve()
                 self._file = open(str(log_path), 'wb')
             except:
                 raise ValueError(
