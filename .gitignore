@@ -46,6 +46,7 @@ sdk/api/actions/primitives/*.py
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
 !sdk/api/datatypes/__init__.py
+!sdk/api/datatypes/waypoint.py
 !sdk/api/datatypes/params/__init__.py
 
 # Generated

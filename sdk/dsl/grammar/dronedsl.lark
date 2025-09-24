@@ -1,58 +1,50 @@
 // ===== Top level =====
 start: _NL* data_block? actions_block events_block? mission_block _NL*
 
-// ===== Data (no inline here) =====
-data_block: "Data" COLON _NL data_section
-data_section: (datum_decl _NL*)*
+// ===== Data =====
+data_block: DATA COLON _NL data_section
+data_section: (datum_decl | _NL)+
 datum_decl: NAME NAME datum_body?
 datum_body: LPAREN [attr (COMMA attr)*] RPAREN
 
 // ===== Actions =====
-actions_block: "Actions" COLON _NL actions_section
+actions_block: ACTIONS COLON _NL actions_section
 actions_section: (action_decl | _NL)+
 action_decl: NAME NAME action_body? _NL
-action_body: LPAREN [ae_attr (COMMA ae_attr)*] RPAREN   // allow inline in actions
+action_body: LPAREN [attr (COMMA attr)*] RPAREN
 
 // ===== Events =====
-events_block: "Events" COLON _NL events_section
+events_block: EVENTS COLON _NL events_section
 events_section: (event_decl | _NL)+
 event_decl: NAME NAME event_body? _NL
-event_body: LPAREN [ae_attr (COMMA ae_attr)*] RPAREN    // allow inline in events
+event_body: LPAREN [attr (COMMA attr)*] RPAREN
 
 // ===== Mission =====
-mission_block: "Mission" COLON _NL mission_start during_block*
-mission_start: "Start" NAME _NL
-during_block: "During" NAME COLON _NL transition_body
+mission_block: MISSION COLON _NL mission_start during_block*
+mission_start: START NAME _NL
+during_block: DURING NAME COLON _NL transition_body
 transition_body: (transition_rule | _NL)+
 transition_rule: NAME ARROW NAME _NL
 
-// ----- Attributes -----
-// For Data block: plain values (no inline)
+// ===== Attr =====
 attr:    NAME (COLON|EQUAL) value
-// For Actions/Events: values with inline allowed
-ae_attr: NAME (COLON|EQUAL) ae_value
+value: datum_inline
+    | NUMBER 
+    | NAME 
+    | array
+    | NONE
 
-// ----- Values -----
-// General value (for Data): NO inline
-?value: NUMBER | STRING | NAME | array | DURATION
 array: LBRACK [value (COMMA value)*] RBRACK
-
-// Actions/Events value: ALLOW inline + arrays thereof
-?ae_value: datum_inline
-         | NUMBER
-         | STRING
-         | NAME
-         | ae_array
-         | DURATION
-
-ae_array: LBRACK [ae_value (COMMA ae_value)*] RBRACK
-
-// Inline data literal: TypeName(...)
 datum_inline: NAME LPAREN [datum_args] RPAREN
-datum_args: datum_kwarg (COMMA datum_kwarg)* | ae_value (COMMA ae_value)*
-datum_kwarg: NAME (COLON|EQUAL) ae_value
+datum_args: value (COMMA value)*
 
 // ===== Tokens =====
+DATA : "Data"
+ACTIONS : "Actions"
+EVENTS : "Events"
+MISSION : "Mission"
+START : "Start"
+DURING : "During"
 LPAREN: "("
 RPAREN: ")"
 COMMA:  ","
@@ -61,13 +53,12 @@ EQUAL:  "="
 ARROW:  "->"
 LBRACK: "["
 RBRACK: "]"
+NONE: "_"
 
 %import common.NEWLINE        -> NL
 %import common.SIGNED_NUMBER  -> NUMBER
-%import common.ESCAPED_STRING -> STRING
 %import common.WS_INLINE
 
-DURATION: NUMBER /(s|sec|m|min)/
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
 
 // ===== Comments & whitespace =====

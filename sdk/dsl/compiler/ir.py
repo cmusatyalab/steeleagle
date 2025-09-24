@@ -10,7 +10,7 @@ class ActionIR:
 @dataclass
 class EventIR:
     type_name: str
-    event_name: str
+    event_id: str
     attributes: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
@@ -25,5 +25,5 @@ class MissionIR:
     events: Dict[str, EventIR]
     data: Dict[str, DatumIR]
     start_action_id: str
-    # transitions: (state, event) -> target_state
+    # transitions: (action, event) -> next_action
     transitions: Dict[Tuple[str, str], str]

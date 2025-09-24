@@ -37,7 +37,7 @@ def build_mission(dsl_code: str) -> MissionIR:
     """
     Compile DSL source text into a MissionIR object.
     """
-    tree = _parser.parse(dsl_code)
+    tree = _parser.parse(dsl_code) 
     mission = DroneDSLTransformer().transform(tree)
     logger.info(
         "Compiled DSL: start=%s, actions=%d, events=%d",
