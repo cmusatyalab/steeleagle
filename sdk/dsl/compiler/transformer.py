@@ -5,16 +5,15 @@ import logging
 from typing import Dict, List, Tuple, Optional, Any, Iterable
 from lark import Transformer, Tree, v_args, Token
 
-from ...dsl.compiler.validator import validate_mission_ir
+from ...dsl.compiler import validator
 from ...dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
-from ...dsl.compiler.resolver import resolve_symbols
-from ...dsl.compiler.loader import load_all, print_report
+from ...dsl.compiler import resolver
+from ...dsl.compiler import loader
 
 logger = logging.getLogger(__name__)
 
 _DONE_EVENT = "done"
 _TERMINATE_AID = "terminate"
-_TERMINATE = None
 
 # ---------- Helpers ----------
 
@@ -134,18 +133,12 @@ class DroneDSLTransformer(Transformer):
             len(self._actions), len(self._events), len(self._data)
         )
         transitions: Dict[Tuple[str, str], str] = {}
-        implicit_done_added = 0
 
         for aid, evmap in self._during.items():
             for eid, nxt_aid in evmap.items():
                 transitions[(aid, eid)] = nxt_aid
             if _DONE_EVENT not in evmap:
                 transitions[(aid, _DONE_EVENT)] = _TERMINATE_AID
-                implicit_done_added += 1
-
-        if implicit_done_added:
-            logger.info("transform: added %d implicit 'done' -> terminate transitions",
-                        implicit_done_added)
 
         mir = MissionIR(
             actions=self._actions,
@@ -156,14 +149,15 @@ class DroneDSLTransformer(Transformer):
         )
 
         # Import API so @register_* hooks populate registries
-        summaries = load_all(force=True, show_trace=False)
-        print_report(summaries)
+        logger.info("loader: loading SDK registries")
+        load_summaries = loader.load_all(force=True, show_trace=False)
+        loader.print_report(load_summaries)
 
         logger.info("resolver: resolving symbol references")
-        mir = resolve_symbols(mir)
+        mir = resolver.resolve_symbols(mir)
 
         logger.info("validator: validating MissionIR")
-        mir = validate_mission_ir(mir)
+        mir = validator.validate_mission_ir(mir)
 
         logger.info("transform: done (transitions=%d)", len(transitions))
         logger.info("transform: MissionIR: %s", mir)
