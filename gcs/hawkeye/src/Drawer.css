@@ -2,7 +2,7 @@
 .drawer {
   position: fixed;
   top: var(--nav-height, 56px); /* Start below nav */
-  bottom: 20vh; /* End above footer (footer height) */
+  bottom: 0; /* Changed from 20vh to 0 to extend over footer */
   left: 0;
   height: auto;
   background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
