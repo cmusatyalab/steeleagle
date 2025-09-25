@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import CameraFeedCard from './CameraFeedCard.jsx';
 import './Drawer.css';
 
 function Drawer({ isOpen, onToggle, onWidthChange }) {
@@ -66,6 +67,7 @@ function Drawer({ isOpen, onToggle, onWidthChange }) {
           <div className="drawer-section">
             <h4>Camera Feeds</h4>
             <ul className="drawer-list">
+	    <CameraFeedCard/>
             </ul>
           </div>
         </div>

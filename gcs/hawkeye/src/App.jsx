@@ -7,6 +7,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Mapbox from './Mapbox.jsx'
 import Drawer from './Drawer.jsx'
 
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 
 library.add(fas)
