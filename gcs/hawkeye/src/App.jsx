@@ -8,6 +8,7 @@ import Mapbox from './Mapbox.jsx'
 import Drawer from './Drawer.jsx'
 import VehicleGroup from './VehicleGroup.jsx'
 
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 

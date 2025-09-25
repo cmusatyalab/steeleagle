@@ -1,16 +1,47 @@
 import { useState, useRef, useEffect } from 'react';
+import CameraFeedCard from './CameraFeedCard.jsx';
 import './Drawer.css';
 
 function Drawer({ isOpen, onToggle, onWidthChange }) {
   const [isDragging, setIsDragging] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(320); // Default width
+  const [cardWidth, setCardWidth] = useState(288); // Default: 18rem = 288px
   const drawerRef = useRef(null);
   const dragHandleRef = useRef(null);
+  const cardRef = useRef(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
-  const minWidth = 200;
   const maxWidth = 600;
+
+  // Measure the camera card width when component mounts
+  useEffect(() => {
+    const measureCardWidth = () => {
+      // Look for the card element in the DOM
+      const cardElement = document.querySelector('.card');
+      if (cardElement) {
+        const rect = cardElement.getBoundingClientRect();
+        const measuredWidth = Math.ceil(rect.width) + 40; // Add padding (20px on each side)
+        setCardWidth(measuredWidth);
+        
+        // Update drawer width if current width is smaller than card width
+        if (drawerWidth < measuredWidth) {
+          setDrawerWidth(measuredWidth);
+        }
+      }
+    };
+
+    // Measure after a short delay to ensure the card is rendered
+    const timer = setTimeout(measureCardWidth, 100);
+    
+    // Also measure on window resize
+    window.addEventListener('resize', measureCardWidth);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measureCardWidth);
+    };
+  }, [drawerWidth]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -25,7 +56,7 @@ function Drawer({ isOpen, onToggle, onWidthChange }) {
     if (!isDragging) return;
     
     const deltaX = e.clientX - startXRef.current;
-    const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidthRef.current + deltaX));
+    const newWidth = Math.min(maxWidth, Math.max(cardWidth, startWidthRef.current + deltaX));
     
     setDrawerWidth(newWidth);
     onWidthChange(newWidth);
@@ -47,7 +78,7 @@ function Drawer({ isOpen, onToggle, onWidthChange }) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, drawerWidth]);
+  }, [isDragging, drawerWidth, cardWidth]);
 
   // Notify parent of width changes
   useEffect(() => {
@@ -66,6 +97,7 @@ function Drawer({ isOpen, onToggle, onWidthChange }) {
           <div className="drawer-section">
             <h4>Camera Feeds</h4>
             <ul className="drawer-list">
+            <CameraFeedCard ref={cardRef} />
             </ul>
           </div>
         </div>
