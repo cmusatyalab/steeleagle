@@ -1,0 +1,163 @@
+/* Drawer container */
+.drawer {
+  position: fixed;
+  top: var(--nav-height, 56px); /* Start below nav */
+  bottom: 0; /* Changed from 20vh to 0 to extend over footer */
+  left: 0;
+  height: auto;
+  background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+  color: white;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 999;
+  border-right: 2px solid #444;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer.open {
+  transform: translateX(0);
+}
+
+/* Drawer header */
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #444;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.drawer-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Drawer content */
+.drawer-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.drawer-section {
+  margin-bottom: 30px;
+}
+
+.drawer-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1em;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.drawer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.drawer-list li {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.drawer-list input[type="checkbox"] {
+  margin-right: 10px;
+  accent-color: #4A90E2;
+}
+
+.drawer-list label {
+  cursor: pointer;
+  flex: 1;
+  font-size: 0.9em;
+}
+
+.drawer-button {
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid #4A90E2;
+  color: #4A90E2;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.drawer-button:hover {
+  background: rgba(74, 144, 226, 0.2);
+  border-color: #5BA0F2;
+}
+
+/* Resize handle */
+.drawer-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  width: 10px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 1000;
+}
+
+.drawer-resize-handle:hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2px;
+  width: 2px;
+  height: 100%;
+  background: #4A90E2;
+  opacity: 0.7;
+}
+
+/* Remove toggle button since it's now in nav */
+/* .drawer-toggle styles removed */
+
+/* Backdrop for mobile */
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .drawer {
+    width: 280px !important;
+    max-width: 80vw;
+  }
+}
