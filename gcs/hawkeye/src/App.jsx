@@ -6,14 +6,17 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 
 import Mapbox from './Mapbox.jsx'
 import Drawer from './Drawer.jsx'
+import VehicleGroup from './VehicleGroup.jsx'
 
 import './App.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 library.add(fas)
 
 function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerWidth, setDrawerWidth] = useState(0);
+  const [selectedList] = useState(['diderot', 'sparrow', 'condor','mihir', ])
 
   const handleDrawerToggle = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -50,7 +53,9 @@ function App() {
         <Mapbox drawerWidth={drawerWidth} />
       </div>
       
-      <footer className="App-bottom-tray"></footer>
+      <footer className="App-bottom-tray">
+      <VehicleGroup selectedList={selectedList}/>
+      </footer>
     </>
   )
 }
