@@ -137,31 +137,39 @@ class DroneDSLTransformer(Transformer):
     def print_mir(self, mir: MissionIR):
         logger.info("MissionIR:")
         logger.info("  start: %s", mir.start_action_id)
+
         logger.info("  Data:")
-        for did in sorted(mir.data.keys()):
+        for did in sorted(mir.data):
             logger.info("    %s", mir.data[did])
+
         logger.info("  Actions:")
-        for aid in sorted(mir.actions.keys()):
+        for aid in sorted(mir.actions):
             logger.info("    %s", mir.actions[aid])
+
         logger.info("  Events:")
-        for eid in sorted(mir.events.keys()):
+        for eid in sorted(mir.events):
             logger.info("    %s", mir.events[eid])
+
         logger.info("  Transitions:")
-        for (state, ev), nxt in sorted(mir.transitions.items()):
-            logger.info("    %s + %s -> %s", state, ev, nxt)
+        for state in sorted(mir.transitions):
+            evmap = mir.transitions[state]
+            for ev in sorted(evmap):
+                nxt = evmap[ev]
+                logger.info("    %s + %s -> %s", state, ev, nxt)
+
 
     def start(self, *children):
         logger.info(
             "transform: building MissionIR (actions=%d, events=%d, data=%d)",
             len(self._actions), len(self._events), len(self._data)
         )
-        transitions: Dict[Tuple[str, str], str] = {}
+        transitions: Dict[str, Dict[str, str]] = {}
 
         for aid, evmap in self._during.items():
+            am = transitions.setdefault(aid, {})
             for eid, nxt_aid in evmap.items():
-                transitions[(aid, eid)] = nxt_aid
-            if _DONE_EVENT not in evmap:
-                transitions[(aid, _DONE_EVENT)] = _TERMINATE_AID
+                am[eid] = nxt_aid
+            am.setdefault(_DONE_EVENT, _TERMINATE_AID) 
 
         mir = MissionIR(
             actions=self._actions,

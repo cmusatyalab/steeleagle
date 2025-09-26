@@ -11,6 +11,7 @@ from util.config import query_config
 from concurrent import futures
 
 logger = get_logger('mission/main')
+
 async def main():
     # setup the stubs
     stub_channel = grpc.insecure_channel(query_config('internal.services.kernel'))
