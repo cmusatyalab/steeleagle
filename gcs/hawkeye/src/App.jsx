@@ -48,13 +48,19 @@ function App() {
         className="main-content"
         style={{ 
           marginLeft: `${drawerWidth}px`,
-          transition: 'margin-left 0.3s ease'
+          transition: 'margin-left 0.1s ease'
         }}
       >
         <Mapbox drawerWidth={drawerWidth} />
       </div>
       
-      <footer className="App-bottom-tray">
+      <footer 
+	  className="App-bottom-tray"
+          style={{ 
+            marginLeft: `${drawerWidth}px`,
+            transition: 'margin-left 0.1s ease'
+          }}
+      >
       <VehicleGroup selectedList={selectedList}/>
       </footer>
     </>
