@@ -7,6 +7,8 @@ import grpc
 from util.config import query_config
 from steeleagle_sdk.protocol.services import mission_service_pb2 as mission_pb
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc as mission_grpc
+from steeleagle_sdk.dsl import build_mission
+from dataclasses import asdict
 from google.protobuf import text_format
 
 class MissionClient:
@@ -21,15 +23,21 @@ class MissionClient:
         await self._channel.close()
 
     # --- API helpers ---
-    async def upload_text(self, mission_json_text: str):
+    def compile_dsl(self, dsl: str):
         # (server parses it with json.loads)
-        json.loads(mission_json_text)  # sanity check
-        req = mission_pb.UploadRequest(mission=mission_pb.Mission(content=mission_json_text), metadata=self._md)
-        return await self._stub.Upload(req)
+        mission = build_mission(dsl)
+        print("Built mission:", mission)
+        mission_json_text = json.dumps(asdict(mission))
+        return mission_json_text
 
     async def Upload(self, path: str):
-        text = open(path, "r", encoding="utf-8").read()
-        return await self.upload_text(text)
+        dsl = open(path, "r", encoding="utf-8").read()
+        print("Uploading: ", dsl)
+        mission_json_text = self.compile_dsl(dsl)
+        print("Compiled JSON ->", mission_json_text)
+        req = mission_pb.UploadRequest(mission=mission_pb.MissionData(content=mission_json_text))
+        return await self._stub.Upload(req, metadata=self._md)
+  
 
     async def Start(self):
         return await self._stub.Start(mission_pb.StartRequest(), metadata=self._md)
@@ -52,9 +60,9 @@ async def main():
                 print(text_format.MessageToString(resp))  
             elif cmd[0] == "start":
                 resp = await client.Start()
-                print(f"status={resp.response.status} "
-                      f"msg={resp.response.response_string} "
-                      f"ts={resp.response.timestamp.ToDatetime().isoformat()}")
+                print(f"status={resp.status} "
+                      f"msg={resp.response_string} "
+                      f"ts={resp.timestamp.ToDatetime().isoformat()}")
             elif cmd[0] == "stop":
                 resp = await client.Stop()
                 print("Stop JSON ->", text_format.MessageToString(resp))
