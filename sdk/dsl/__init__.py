@@ -1,14 +1,8 @@
 from __future__ import annotations
 import logging
 from pathlib import Path
-import asyncio
 
 from lark import Lark
-from typing import Dict, List
-
-from .partitioner.partition import Partition
-from .partitioner.geopoints import GeoPoints
-from .partitioner.utils import parse_kml_file
 from .compiler.ir import MissionIR
 from .compiler.transformer import DroneDSLTransformer
 from .runtime.fsm import MissionFSM
@@ -21,22 +15,16 @@ from ..protocol.services import compute_service_pb2_grpc as compute_rpc
 from ..protocol.services import control_service_pb2_grpc as control_rpc
 from ..protocol.services import report_service_pb2_grpc as report_rpc
 
-ComputeStub = compute_rpc.ComputeStub
-ControlStub = control_rpc.ControlStub
-ReportStub  = report_rpc.ReportStub
 
 logger = logging.getLogger(__name__)
 
-# --- Grammar and parser ---
+# Load and prepare the DSL parser
 _GRAMMAR_PATH = Path(__file__).resolve().parent / "grammar" / "dronedsl.lark"
 _grammar = _GRAMMAR_PATH.read_text(encoding="utf-8")
 _parser = Lark(_grammar, parser="lalr", start="start")
 
-
 def build_mission(dsl_code: str) -> MissionIR:
-    """
-    Compile DSL source text into a MissionIR object.
-    """
+    '''Compile DSL source text into a MissionIR object.'''
     tree = _parser.parse(dsl_code) 
     mission = DroneDSLTransformer().transform(tree)
     logger.info(
@@ -45,8 +33,13 @@ def build_mission(dsl_code: str) -> MissionIR:
     )
     return mission
 
+# Type aliases for gRPC stubs
+ComputeStub = compute_rpc.ComputeStub
+ControlStub = control_rpc.ControlStub
+ReportStub  = report_rpc.ReportStub
 
 async def execute_mission(msn: MissionIR, control: ControlStub, compute: ComputeStub, report: ReportStub) -> None:
+    '''Execute the mission using the provided gRPC stubs.'''
     control_mod.STUB = control
     compute_mod.STUB = compute
     report_mod.STUB  = report

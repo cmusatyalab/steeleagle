@@ -21,8 +21,8 @@ class RelativePoint(BaseModel):
 # Collection of waypoints
 class Waypoints(BaseModel):
     alt: float
-    path: Optional[str] = None    # path to KML/GeoJSON file
-    algo: Optional[Literal["edge", "survey", "corridor"]] = None
+    path: str
+    algo: Literal["edge", "survey", "corridor"]
     spacing: float
     angle_degrees: float
     trigger_distance: float

@@ -26,4 +26,4 @@ class MissionIR:
     data: Dict[str, DatumIR]
     start_action_id: str
     # transitions: (action, event) -> next_action
-    transitions: Dict[Tuple[str, str], str]
+    transitions: Dict[str, Dict[str, str]]

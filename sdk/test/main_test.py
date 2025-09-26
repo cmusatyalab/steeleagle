@@ -23,15 +23,7 @@ async def fsm_runner(fsm):
 def main():
 
     # Build mission
-    mission = build_mission(dsl_code)
-    logger.info("Start: %s", mission.start_action_id)
-    logger.info("Actions: %s", sorted(mission.actions.keys()))
-    logger.info("Events: %s", sorted(mission.events.keys()))
-    logger.info("Data: %s", sorted(mission.data.keys()))
-    logger.info("Transitions:")
-    for (state, ev), nxt in sorted(mission.transitions.items()):
-        logger.info("  %s + %s -> %s", state, ev, nxt)
-
+    build_mission(dsl_code)
 
 if __name__ == "__main__":
     main()
