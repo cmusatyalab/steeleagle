@@ -32,6 +32,7 @@ function Mapbox({ drawerWidth }) {
         maxzoom: 14
       });
       mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
+      mapRef.current.addControl(new mapboxgl.NavigationControl());
       
       // Ensure the map is properly resized after container is ready
       mapRef.current.resize();
