@@ -11,6 +11,10 @@ from steeleagle_sdk.dsl import build_mission
 from dataclasses import asdict
 from google.protobuf import text_format
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 class MissionClient:
     def __init__(self):
         # Initialize once and keep it around
@@ -26,15 +30,15 @@ class MissionClient:
     def compile_dsl(self, dsl: str):
         # (server parses it with json.loads)
         mission = build_mission(dsl)
-        print("Built mission:", mission)
+        logger.info(f"Built mission: {mission}")
         mission_json_text = json.dumps(asdict(mission))
         return mission_json_text
 
     async def Upload(self, path: str):
         dsl = open(path, "r", encoding="utf-8").read()
-        print("Uploading: ", dsl)
+        logger.info(f"Uploading: {dsl}")
         mission_json_text = self.compile_dsl(dsl)
-        print("Compiled JSON ->", mission_json_text)
+        logger.info(f"Compiled JSON -> {mission_json_text}")
         req = mission_pb.UploadRequest(mission=mission_pb.MissionData(content=mission_json_text))
         return await self._stub.Upload(req, metadata=self._md)
   
@@ -50,26 +54,24 @@ class MissionClient:
 async def main():
     client = MissionClient()
     try:
-        print("Commands: upload <path>, start, stop, quit")
+        logger.info("Commands: upload <path>, start, stop, quit")
         while True:
             cmd = input("> ").strip().split()
             if not cmd:
                 continue
             if cmd[0] == "upload" and len(cmd) == 2:
                 resp = await client.Upload(cmd[1])
-                print(text_format.MessageToString(resp))  
+                logger.info(f"Upload response: {text_format.MessageToString(resp)}")
             elif cmd[0] == "start":
                 resp = await client.Start()
-                print(f"status={resp.status} "
-                      f"msg={resp.response_string} "
-                      f"ts={resp.timestamp.ToDatetime().isoformat()}")
+                logger.info(f"Start response: {resp}")
             elif cmd[0] == "stop":
                 resp = await client.Stop()
-                print("Stop JSON ->", text_format.MessageToString(resp))
+                logger.info(f"Stop response: {resp}")
             elif cmd[0] in ("quit", "exit"):
                 break
             else:
-                print("Unknown command")
+                logger.warning("Unknown command")
     finally:
         await client.close()
 

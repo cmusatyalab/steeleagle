@@ -14,6 +14,7 @@ _TERMINATE = "terminate"
 class MissionFSM:
     def __init__(self, mission: MissionIR):
         self.mission = mission
+        logger.info(f"[FSM] Initialized with mission: {mission}")
         self.transition = mission.transitions
         self.start_action_id = mission.start_action_id
         self.stop_requested = False

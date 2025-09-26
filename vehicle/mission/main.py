@@ -6,11 +6,12 @@ from steeleagle_sdk.protocol.services import report_service_pb2, report_service_
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
 import asyncio
-from util.log import get_logger
 from util.config import query_config
 from concurrent import futures
 
-logger = get_logger('mission/main')
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 async def main():
     # setup the stubs

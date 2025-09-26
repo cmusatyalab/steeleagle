@@ -6,10 +6,10 @@ from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionSer
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from steeleagle_sdk.dsl import execute_mission
-from util.log import get_logger
+from dacite import from_dict
 import logging
 
-logger = get_logger('mission/service')
+logger = logging.getLogger(__name__)
 
 
 class MissionService(MissionServicer):
@@ -21,21 +21,22 @@ class MissionService(MissionServicer):
 
     def _load(self, mission_content):
         json_data = json.loads(mission_content)
-        mission_ir = MissionIR(**json_data)
+        mission_ir = from_dict(MissionIR, json_data)
+        logger.info(f"Loaded mission: {mission_ir}")
         return mission_ir
 
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
-        logger.info(request)
         mission_content = request.mission.content
+        logger.info(f"Mission content: {mission_content}")
         mission_ir = self._load(mission_content)
         self.mission = mission_ir
-        return generate_response(2)
+        return generate_response(2, "Mission uploaded")
 
     async def Start(self, request, context):
         """Start an uploaded mission"""
-        logger.info("HI")
+        logger.info("Starting mission")
         if self.mission is None:
             return generate_response(1, "No mission uploaded")
         elif self.mission_routine is not None and not self.mission_routine.done():
