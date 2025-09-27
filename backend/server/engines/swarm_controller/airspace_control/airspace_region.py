@@ -18,6 +18,7 @@ class AirspaceRegion:
     ):
         self.min_alt = min_alt
         self.max_alt = max_alt
+        self.region_id: str | None = None # Will be set to geohash by the engine
 
         self.min_lat = corners[0][0]
         self.max_lat = corners[0][0]
@@ -40,6 +41,11 @@ class AirspaceRegion:
         self.timeout_len: float | None = None
         self.timeout_ref: float | None = None
 
+        # Neighbor maps for regions that share sides
+        self.lateral_neighbors: set[str] = set()  # Same altitude neighbors (4)
+        self.vertical_neighbors: set[str] = set()    # Higher altitude neighbors  (4)
+        self.lower_neighbors: set[str] = set()    # Lower altitude neighbors (4)
+
     def contains(self, ref_lat: float, ref_lon: float, ref_alt: float) -> bool:
         CORNER_COUNT = 4
         if ref_alt < self.min_alt or ref_alt > self.max_alt:
@@ -51,6 +57,85 @@ class AirspaceRegion:
             ):
                 return False
         return True
+    
+    def set_id(self, id: str):
+        self.region_id = id
+    
+    def get_centroid(self) -> tuple[float, float, float]:
+        #assumes all regions are squares (works regardless of orientation)
+        lat_center = (self.min_lat + self.max_lat) / 2
+        lon_center = (self.min_lon + self.max_lon) / 2
+        alt_center = (self.min_alt + self.max_alt) / 2
+        return (lat_center, lon_center, alt_center)
+    
+    def get_corners_3d(self) -> list[tuple[float, float, float]]:
+        corners_3d = []
+        for lat, lon in self.corners:
+            corners_3d.extend([
+                (lat, lon, self.min_alt),
+                (lat, lon, self.max_alt)
+            ])
+        return corners_3d
+    
+    def add_lateral_neighbor(self, neighbor_id: str):
+        self.lateral_neighbors.add(neighbor_id)
+    
+    def add_upper_neighbor(self, neighbor_id: str):
+        self.upper_neighbors.add(neighbor_id)
+    
+    def add_lower_neighbor(self, neighbor_id: str):
+        self.lower_neighbors.add(neighbor_id)
+    
+    def reomve_lateral_neighbor(self, neighbor_id: str):
+        self.lateral_neighbors.discard(neighbor_id)
+    
+    def reomve_upper_neighbor(self, neighbor_id: str):
+        self.upper_neighbors.discard(neighbor_id)
+    
+    def reomve_lower_neighbor(self, neighbor_id: str):
+        self.lower_neighbors.discard(neighbor_id)
+
+    def get_all_neighbor(self) -> set[str]:
+        return self.lateral_neighbors|self.upper_neighbors|self.lower_neighbors
+    
+    def shares_side_with(self, other: 'AirspaceRegion') -> bool:
+        if other is None or other.region_id is None:
+            return False
+
+        lat_adjacent = (abs(self.max_lat - other.min_alt) <= 1e-9 
+                        or abs(self.min_lat - other.max_alt) < 1e-9)
+        lon_adjacent = (abs(self.max_lon - other.min_lon) <= 1e-9 
+                        or abs(self.min_lon - other.max_lon) < 1e-9)
+        alt_adjacent = (abs(self.max_alt - other.min_alt) <= 1e-9 
+                        or abs(self.min_alt - other.max_alt) < 1e-9)
+        
+        # Check overlap in the other two dimensions
+        lat_overlap = not (self.max_lat <= other.min_lat or self.min_lat >= other.max_lat)
+        lon_overlap = not (self.max_lon <= other.min_lon or self.min_lon >= other.max_lon)
+        alt_overlap = not (self.max_alt <= other.min_alt or self.min_alt >= other.max_alt)
+        
+        # Regions share a side if they're adjacent in one dimension and overlap in the other two
+        return ((lat_adjacent and lon_overlap and alt_overlap) or
+                (lon_adjacent and lat_overlap and alt_overlap) or
+                (alt_adjacent and lat_overlap and lon_overlap))
+
+    def get_altitude_bounds(self) -> tuple[float, float]:
+        pass
+
+    def get_lat_bounds(self)-> tuple[float, float]: 
+        pass
+
+    def get_lon_bounds(self)-> tuple[float, float]: 
+        pass
+    
+    def get_bounds(self)-> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+        pass
+    
+    def overlaps_with(self, other: 'AirspaceRegion')-> bool:
+        pass
+
+    def get_volume(self) -> float:
+        pass
 
     def is_available(self) -> bool:
         return self.status is RegionStatus.FREE
@@ -147,3 +232,16 @@ class AirspaceRegion:
             return False
         else:
             return True
+        
+#might be useful for logging:
+    def __str__(self) -> str:
+        """String representation of the region"""
+        return (f"AirspaceRegion(id:{self.region_id}, "
+                f"lat:{self.min_lat:.4f}-{self.max_lat:.4f}, "
+                f"lon:{self.min_lon:.4f}-{self.max_lon:.4f}, "
+                f"alt:{self.min_alt:.0f}-{self.max_alt:.0f}, "
+                f"status:{self.status.name}, owner:{self.owner})")
+
+    def __repr__(self) -> str:
+        """Detailed representation of the region"""
+        return self.__str__()
