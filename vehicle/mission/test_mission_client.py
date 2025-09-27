@@ -1,7 +1,6 @@
 # persistent_mission_client.py
 import asyncio
 import json
-import signal
 import grpc
 
 from util.config import query_config
@@ -21,7 +20,7 @@ class MissionClient:
         target = query_config('internal.services.kernel')
         self._channel = grpc.aio.insecure_channel(target)
         self._stub = mission_grpc.MissionStub(self._channel)
-        self._md = [('identity', 'authority')]  
+        self._md = [('identity', 'server')]  
     
     async def close(self):               
         await self._channel.close()

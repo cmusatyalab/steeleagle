@@ -15,17 +15,17 @@ logging.basicConfig(level=logging.INFO)
 
 async def main():
     # setup the stubs
-    stub_channel = grpc.insecure_channel(query_config('internal.services.kernel'))
+    stub_channel = grpc.aio.insecure_channel(query_config('internal.services.kernel'))
     ctrl_stub = control_service_pb2_grpc.ControlStub(stub_channel)
     compute_stub = compute_service_pb2_grpc.ComputeStub(stub_channel)
     report_stub = report_service_pb2_grpc.ReportStub(stub_channel)
     context = {}
-    context['Ctrl']=ctrl_stub
-    context['Cpt'] = compute_stub
-    context['Rpt'] = report_stub
+    context['control'] = ctrl_stub
+    context['compute'] = compute_stub
+    context['report'] = report_stub
 
     # Define the server that will hold our services
-    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))
 
     # Create and assign the services to the server
     mission_service_pb2_grpc.add_MissionServicer_to_server(MissionService(context), server)

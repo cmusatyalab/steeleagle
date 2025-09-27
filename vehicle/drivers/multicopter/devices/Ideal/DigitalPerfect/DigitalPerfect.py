@@ -10,7 +10,6 @@ from enum import Enum
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
 from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
-from google.protobuf.timestamp_pb2 import Timestamp
 import numpy as np
 # Interface Imports
 from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
@@ -89,7 +88,8 @@ class DigitalPerfect(ControlServicer):
         context.abort(grpc.StatusCode.UNIMPLEMENTED, "Disarm not implemented for digital drone")
 
     async def Takeoff(self, request, context):
-        try: 
+        try:
+            logger.info("Initiating takeoff sequence...")
             yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating takeoff...")
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             task_result = await self._drone.take_off()
@@ -536,7 +536,7 @@ class DigitalPerfect(ControlServicer):
             return False
         dlat = lat - current_location[0]
         dlon = lon - current_location[1]
-        distance = math.sqrt((dlat**2) + (dlon**2)) * LATDEG_METERS
+        distance = math.sqrt((dlat**2) + (dlon**2)) * self.LATDEG_METERS
         return distance < 1.0
 
     async def is_connected(self):
@@ -628,9 +628,9 @@ class DigitalPerfect(ControlServicer):
     async def _get_video_frame(self):
         if self._streaming_thread:
             return self._streaming_thread.grab_frame().tobytes(), (
-                DEFAULT_IMG_WIDTH,
-                DEFAULT_IMG_HEIGHT,
-                DEFAULT_IMG_CHANNELS,
+                self.DEFAULT_IMG_WIDTH,
+                self.DEFAULT_IMG_HEIGHT,
+                self.DEFAULT_IMG_CHANNELS,
             )
 
     async def _stop_streaming(self):
@@ -667,7 +667,7 @@ class SimulatedStreamingThread(threading.Thread):
         try:
             if self._current_frame is None:
                 return np.full(
-                    (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS),
+                    (self.DEFAULT_IMG_WIDTH, self.DEFAULT_IMG_HEIGHT, self.DEFAULT_IMG_CHANNELS),
                     255,
                     dtype=np.uint8,
                 )
@@ -677,7 +677,7 @@ class SimulatedStreamingThread(threading.Thread):
             logger.error(f"Grab frame failed: {e}")
             # Send blank image
             return np.full(
-                (DEFAULT_IMG_WIDTH, DEFAULT_IMG_HEIGHT, DEFAULT_IMG_CHANNELS),
+                (self.DEFAULT_IMG_WIDTH, self.DEFAULT_IMG_HEIGHT, self.DEFAULT_IMG_CHANNELS),
                 255,
                 dtype=np.uint8,
             )

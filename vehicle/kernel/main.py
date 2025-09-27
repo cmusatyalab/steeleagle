@@ -84,7 +84,7 @@ async def main():
     
     # Define the server that will hold our services
     server = grpc.aio.server(
-            futures.ThreadPoolExecutor(max_workers=10),
+            migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10),
             interceptors=law_interceptor
             )
     # Create and assign the services to the server

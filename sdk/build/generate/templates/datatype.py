@@ -5,6 +5,10 @@ from typing import Optional, List
 # API imports
 from ..base import Datatype
 from ...dsl.compiler.registry import register_data 
+
+# Bring in protobuf Timestamp unconditionally or only when used (up to you)
+from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
+
 {% if imports | length > 0 %}
 # Type imports
 {% for _import in imports %}
@@ -36,7 +40,13 @@ class {{ _type.name }}(Datatype):
         {% endif %}
         {% endfor %}
     {% endif %}
+
+    {# Substitute google.protobuf Timestamp → ProtoTimestamp #}
+    {% if field.type == "timestamp.Timestamp" %}
+    {{ field.name }}: ProtoTimestamp
+    {% else %}
     {{ field.name }}: {{ field.type }}
+    {% endif %}
     {% if field.comment != None %}
     {{ field.comment }}
     {% endif %}

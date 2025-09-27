@@ -1,20 +1,22 @@
-from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
 import grpc
 from typing import Any, Tuple
 from enum import Enum
 from dataclasses import is_dataclass, asdict as dc_asdict
 # API imports
-from ..datatypes.common import Response as APIResponse
+from ..datatypes.common import Response
+from google.protobuf.timestamp_pb2 import Timestamp as ProtoTimestamp
+import logging
+logger = logging.getLogger(__name__)
 
-''' Native helper functions '''
-def timestamp_now(request_pb: Any) -> None:
-    '''
-    Set timestamp of request to 'now'.
-    '''
+
+
+def _now_ts() -> ProtoTimestamp:
     ts = ProtoTimestamp()
     ts.GetCurrentTime()
-    request_pb.request.timestamp.CopyFrom(ts)
+    return ts
 
+
+''' Native helper functions '''
 def normalize(value: Any) -> Any:
     '''
     Normalize dataclasses/Enums/collections →  plain types for ParseDict.
@@ -29,67 +31,47 @@ def normalize(value: Any) -> Any:
         return [normalize(v) for v in value]
     return value
 
-def payload_from_action(action: Any, *, exclude: Tuple[str, ...] = ()) -> dict:
+def payload_from_action(action: Any) -> dict:
     '''
-    Build a dict from the action’s annotated fields (minus internal flags).
-    Generator-friendly: you don’t need to list fields manually per RPC.
+    Extract action attributes as a dict, excluding any in `exclude`.
     '''
     ann = getattr(action, "__annotations__", {}) or {}
     raw = {
         k: getattr(action, k)
         for k in ann.keys()
-        if k not in exclude and hasattr(action, k) and getattr(action, k) is not None
+        if hasattr(action, k) and getattr(action, k) is not None
     }
     return normalize(raw)
 
-def to_api_response(resp_pb: Any) -> APIResponse:
-    '''
-    Convert any <...Response> proto (with .response holding common.Response)
-    into a Pydantic types.common.Response (APIResponse).
-    '''
-    inner = getattr(resp_pb, "response", None)
-    status = Response.ResponseStatus(getattr(inner, "status"))
-    msg = getattr(inner, "response_string", "") or getattr(inner, "message", "")
-    ts = TypesTimestamp(
-                seconds=inner.timestamp.seconds,
-                nanos=inner.timestamp.nanos,
-            )
+def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
+    ts = _now_ts()
+    # Note: gRPC error codes start from 0, API Response codes start from 2
+    return Response(status=error.code().value[0] + 2, response_string=error.details(), timestamp=ts)
 
-    return APIResponse(status=status, response_string=msg, timestamp=ts)
-
-def error_to_api_response(error: grpc.aio.AioRpcError) -> APIResponse:
+async def run_unary(method_coro, request_pb, *, metadata=None, timeout=None) -> Response:
     '''
-    Converts a grpc.aio.AioRpcError into a Pydantic types.common.Response (APIResponse).
-    The error code is translated by 2 to conform with the SteelEagle protocol.
+    Native unary RPC -> Response.
     '''
-    ts = TypesTimestamp(
-                seconds=inner.timestamp.seconds,
-                nanos=inner.timestamp.nanos,
-            )
-
-    return APIResponse(status=e.code().value[0] + 2, resp_string=e.details(), timestamp=ts)
-
-async def run_unary(method_coro, request_pb, *, metadata=None, timeout=None) -> APIResponse:
-    '''
-    Native unary RPC -> APIResponse.
-    '''
-    timestamp_now(request_pb)
+    ts = _now_ts()
+    request_pb.request.timestamp.CopyFrom(ts)
     try:
         resp_pb = await method_coro(request_pb, metadata=metadata, timeout=timeout)
-        return to_api_response(resp_pb)
+        return resp_pb
     except grpc.aio.AioRpcError as e:
         return error_to_api_response(e)
 
-async def run_streaming(method_coro, request_pb, *, metadata=None, timeout=None) -> APIResponse:
+async def run_streaming(method_coro, request_pb, *, metadata=None, timeout=None) -> Response:
     '''
-    Native server-streaming RPC -> drain and return last response as APIResponse.
+    Native server-streaming RPC -> drain and return last response as Response.
     '''
-    timestamp_now(request_pb)
+    ts = _now_ts()
+    request_pb.request.timestamp.CopyFrom(ts)
     call = method_coro(request_pb, metadata=metadata, timeout=timeout)
     last = None
     try:
-        async for msg in call: 
-            last = msg # Guaranteed at least one response
-        return to_api_response(last)
+        async for msg in call:
+            last = msg  # Guaranteed at least one response
+        logger.info(f"Streaming response received: {last}")
+        return last
     except grpc.aio.AioRpcError as e:
         return error_to_api_response(e)

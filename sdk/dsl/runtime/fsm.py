@@ -40,46 +40,56 @@ class MissionFSM:
 
         # --- Create async task for the action itself ---
         action_task = asyncio.create_task(action.execute())
-
+        logger.info(f"[FSM] Action task created: {action_task}")
+        
         # --- Create async tasks for background events ---
         event_tasks = []
         event_map={}
-        for ev_id in self._gather_events(curr_action_id):
+        logger.info(f"[FSM] Gathering events for action {curr_action_id}")
+        events = self._gather_events(curr_action_id)
+        logger.info(f"[FSM] Gathering events for action {curr_action_id}: {events}")
+        for ev_id in events:
+            if ev_id == _DONE_EVENT:
+                continue
             ev_ir = self.mission.events[ev_id]
             ev_attributes = ev_ir.attributes
             ev_cls = get_event(ev_ir.type_name)
             ev_task = asyncio.create_task(ev_cls(**ev_attributes).check())
             event_tasks.append(ev_task)
             event_map[ev_task] = ev_id
+        logger.info(f"[FSM] Event tasks created: {event_tasks}")
 
         # --- Wait for whichever finishes first ---
+        logger.info(f"[FSM] Waiting for action or events to complete...")
         done, pending = await asyncio.wait(
             [action_task] + event_tasks,
             return_when=asyncio.FIRST_COMPLETED
         )
 
-        # --- Cancel leftovers ---
         for task in pending:
             task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
-        # --- Decide result ---
-        result_event = None
         if action_task in done:
-            result_event = _DONE_EVENT 
-            logger.info(f"[FSM] Action finished, event={result_event}")
-
+            try:
+                await action_task
+            except Exception as e:
+                logger.exception("[FSM] Action %s failed", curr_action_id)
+                return _TERMINATE
+            logger.info("[FSM] Action finished => event=%s", _DONE_EVENT)
+            return _DONE_EVENT
         else:
-            done_ev_task = done.pop() 
-            result_event = event_map[done_ev_task]
-            logger.info(f"[FSM] Background event triggered: {result_event}")
-        
-        return result_event 
+            done_ev_task = next(iter(done))
+            try:
+                await done_ev_task
+            except Exception as e:
+                logger.exception("[FSM] Event task failed")
+                return _TERMINATE
+            return event_map[done_ev_task]
             
 
     def _gather_events(self, curr_action_id):
-        return [
-            ev for (a_id, ev), nxt in self.transitions.items()
-            if a_id == curr_action_id
-        ]
-
-         
+        return list(self.transition.get(curr_action_id, {}).keys())
