@@ -55,13 +55,13 @@ class DigitalPerfect(ControlServicer):
             result = await self._drone.connect()
             if not result:
                 self._drone = None
-                context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
+                await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
             
             logger.info("Completed connection to digital drone...")
             return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Connected to digital drone")
         except Exception as e:
             logger.error(f"Error occurred while connecting to digital drone: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Disconnect(self, request, context): 
         try: 
@@ -72,24 +72,24 @@ class DigitalPerfect(ControlServicer):
             result = await self._drone.disconnect()
             if not result:
                 logger.error("Failed to properly disconnect from digital drone...")
-                context.abort(grpc.StatusCode.INTERNAL, "Drone disconnection failed")
+                await context.abort(grpc.StatusCode.INTERNAL, "Drone disconnection failed")
 
             logger.info("Completed disconnection from digital drone...")
             return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Disconnected from digital drone")
         except Exception as e:
             logger.error(f"Error occurred while disconnecting from digital drone: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Arm(self, request, context):
-        context.abort(grpc.StatusCode.UNIMPLEMENTED, "Arm not implemented for digital drone")
+        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Arm not implemented for digital drone")
         
     
     async def Disarm(self, request, context):
-        context.abort(grpc.StatusCode.UNIMPLEMENTED, "Disarm not implemented for digital drone")
+        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Disarm not implemented for digital drone")
 
-    async def Takeoff(self, request, context):
+    async def TakeOff(self, request, context):
+        logger.info("Initiating takeoff sequence...")
         try:
-            logger.info("Initiating takeoff sequence...")
             yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating takeoff...")
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             task_result = await self._drone.take_off()
@@ -103,7 +103,7 @@ class DigitalPerfect(ControlServicer):
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
         except Exception as e:
             logger.error(f"Error occurred during takeoff: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
         
 
     async def Land(self, request, context):
@@ -120,7 +120,7 @@ class DigitalPerfect(ControlServicer):
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Landing successful")
         except Exception as e:
             logger.error(f"Error occurred during landing: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Hold(self, request, context):
         try:
@@ -141,10 +141,10 @@ class DigitalPerfect(ControlServicer):
                 yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Hold successful")
         except Exception as e:
             logger.error(f"Error occurred during hold: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
             
     async def Kill(self, request, context):
-        context.abort(grpc.StatusCode.UNIMPLEMENTED, "Kill not implemented for digital drone")
+        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Kill not implemented for digital drone")
 
     
     async def SetHome(self, request, context):
@@ -167,7 +167,7 @@ class DigitalPerfect(ControlServicer):
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Returned to home successfully")
         except Exception as e:
             logger.error(f"Error occurred during return to home: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
 
     async def SetGlobalPosition(self, request, context):
@@ -223,13 +223,13 @@ class DigitalPerfect(ControlServicer):
             if self._is_global_position_reached(lat, lon, altitude):
                 yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Reached target location successfully")
             else:
-                context.abort(grpc.StatusCode.INTERNAL, "Failed to reach target location")
+                await context.abort(grpc.StatusCode.INTERNAL, "Failed to reach target location")
         except Exception as e:
             logger.error(f"Error occurred during SetGlobalPosition: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
       
     async def SetRelativePosition(self, request, context):
-        context.abort(grpc.StatusCode.UNIMPLEMENTED, "SetRelativePosition in ENU frame not implemented for digital drone")
+        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "SetRelativePosition in ENU frame not implemented for digital drone")
 
     async def SetVelocity(self, request, context):
         try:
@@ -252,7 +252,7 @@ class DigitalPerfect(ControlServicer):
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Velocity set successfully")
         except Exception as e:
             logger.error(f"Error occurred during SetVelocity: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
             
     async def SetHeading(self, request, context):
         try:
@@ -284,7 +284,7 @@ class DigitalPerfect(ControlServicer):
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Heading set successfully")
         except Exception as e:
             logger.error(f"Error occurred during SetHeading: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
     
     
     async def SetGimbalPose(self, request, context):
@@ -338,7 +338,7 @@ class DigitalPerfect(ControlServicer):
 
         except Exception as e:
             logger.error(f"Error occurred during SetGimbalPose: {e}")
-            context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
 
     async def stream_telemetry(self, tel_sock, rate_hz):
@@ -572,10 +572,10 @@ class DigitalPerfect(ControlServicer):
         )
 
     def _is_hovering(self) -> bool:
-        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.HOVERING)
+        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.IDLE)
 
     def _is_landed(self) -> bool:
-        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.LANDED)
+        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
 
     def _is_move_to_done(self) -> bool:
         return self._drone._position_flag
@@ -688,7 +688,7 @@ class SimulatedStreamingThread(threading.Thread):
 
 async def main():
     register_cleanup_handler()
-    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))
     control_service_pb2_grpc.add_ControlServicer_to_server(DigitalPerfect("DigitalPerfect"), server)
     server.add_insecure_port(query_config('internal.services.driver'))
     await server.start()

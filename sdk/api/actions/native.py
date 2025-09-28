@@ -1,5 +1,5 @@
 import grpc
-from typing import Any, Tuple
+from typing import Any, Tuple, Mapping
 from enum import Enum
 from dataclasses import is_dataclass, asdict as dc_asdict
 # API imports
@@ -15,33 +15,10 @@ def _now_ts() -> ProtoTimestamp:
     ts.GetCurrentTime()
     return ts
 
-
 ''' Native helper functions '''
-def normalize(value: Any) -> Any:
-    '''
-    Normalize dataclasses/Enums/collections →  plain types for ParseDict.
-    '''
-    if isinstance(value, Enum):
-        return int(value.value)  # ParseDict accepts Enum numbers
-    if is_dataclass(value):
-        return {k: normalize(v) for k, v in dc_asdict(value).items()}
-    if isinstance(value, dict):
-        return {k: normalize(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [normalize(v) for v in value]
-    return value
-
 def payload_from_action(action: Any) -> dict:
-    '''
-    Extract action attributes as a dict, excluding any in `exclude`.
-    '''
-    ann = getattr(action, "__annotations__", {}) or {}
-    raw = {
-        k: getattr(action, k)
-        for k in ann.keys()
-        if hasattr(action, k) and getattr(action, k) is not None
-    }
-    return normalize(raw)
+    data = action.model_dump(exclude_none=True, by_alias=True, mode = "json")  # v2
+    return data
 
 def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     ts = _now_ts()

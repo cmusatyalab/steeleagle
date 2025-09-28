@@ -35,8 +35,8 @@ class MissionFSM:
         action_ir = self.mission.actions[curr_action_id]
         action_cls = get_action(action_ir.type_name)
         action = action_cls(**action_ir.attributes)
-
-        logger.info(f"[FSM] Entering state={curr_action_id}")
+        logger.info(f"[FSM] Executing action {curr_action_id}: {action_ir.type_name}")
+        logger.info("[FSM] Action attrs: %s", action.model_dump(exclude_none=True))
 
         # --- Create async task for the action itself ---
         action_task = asyncio.create_task(action.execute())
@@ -45,9 +45,8 @@ class MissionFSM:
         # --- Create async tasks for background events ---
         event_tasks = []
         event_map={}
-        logger.info(f"[FSM] Gathering events for action {curr_action_id}")
         events = self._gather_events(curr_action_id)
-        logger.info(f"[FSM] Gathering events for action {curr_action_id}: {events}")
+        logger.info(f"[FSM] Events for action {curr_action_id}: {events}")
         for ev_id in events:
             if ev_id == _DONE_EVENT:
                 continue

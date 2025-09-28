@@ -16,9 +16,9 @@ from util.config import query_config
 from util.sockets import setup_zmq_socket, SocketOperation
 # Generate proxy files
 from kernel.services.generate_proxy import generate_proxy
-generate_proxy('Control', 'control_service', query_config('internal.services.driver'))
+# generate_proxy('Control', 'control_service', query_config('internal.services.driver'))
 from kernel.services._gen_control_service_proxy import ControlProxy
-generate_proxy('Mission', 'mission_service', query_config('internal.services.mission'))
+# generate_proxy('Mission', 'mission_service', query_config('internal.services.mission'))
 from kernel.services._gen_mission_service_proxy import MissionProxy
 # Service imports
 from kernel.services.report_service import ReportService
