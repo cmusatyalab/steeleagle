@@ -5,13 +5,13 @@ import zmq.asyncio
 import time
 import grpc
 import json
+import logging
 from google.protobuf.descriptor_pool import DescriptorPool
 from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message_factory import GetMessages
 from google.protobuf.json_format import ParseDict
 from google.protobuf import any_pb2
 # Utility imports
-from util.log import get_logger
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import generate_response, generate_request
 # Protocol import
@@ -19,7 +19,7 @@ from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
 # Law import
 from kernel.laws.authority import Failsafe
 
-logger = get_logger('kernel/handlers/command_handler')
+logger = logging.getLogger('kernel/handlers/command_handler')
 
 class CommandHandler:
     '''

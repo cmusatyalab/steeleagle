@@ -3,10 +3,13 @@ import asyncio
 import time
 from dataclasses import dataclass
 from typing import Any
+import logging
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 # Sequencer import
 from test.message_sequencer import Topic
+
+logger = logging.getLogger(__name__)
 
 # Test request holder
 @dataclass
@@ -22,8 +25,6 @@ Helper methods.
 async def wait_for_services(required, command_socket, timeout=5.0):
     # Wait for the necessary services to spin up
     start = time.time()
-    import logging
-    logger = logging.getLogger(__name__)
     while len(required) > 0 and time.time() - start < timeout:
         try:
             identity, ready = await command_socket.recv_multipart(flags=zmq.NOBLOCK)

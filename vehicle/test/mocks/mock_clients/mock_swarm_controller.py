@@ -5,7 +5,6 @@ import logging
 from google.protobuf.json_format import MessageToDict
 # Utility import
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
-from util.log import get_logger
 from util.config import query_config
 # Protocol import
 from steeleagle_sdk.protocol import common_pb2 as common_proto
@@ -15,7 +14,7 @@ from google.protobuf import any_pb2
 # Sequencer import
 from test.message_sequencer import MessageSequencer, Topic
 
-logger = get_logger('test/mock_swarm_controller')
+logger = logging.getLogger('test/mock_swarm_controller')
 
 class MockSwarmController:
     '''

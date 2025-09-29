@@ -1,5 +1,6 @@
 import asyncio
 import math
+import logging
 
 # Streaming Imports
 import threading
@@ -28,14 +29,12 @@ from util.cleanup import register_cleanup_handler
 # Utility imports
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
-# from util.log import get_logger
+from util.log import setup_logging
 from util.cleanup import register_cleanup_handler
-
-# logger = get_logger('driver/digital_perfect')
-
+setup_logging()
 import logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+
 
 # Flight modes
 class FlightMode(Enum):

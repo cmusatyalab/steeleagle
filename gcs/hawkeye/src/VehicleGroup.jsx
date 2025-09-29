@@ -4,21 +4,21 @@ import DroneCard from './DroneCard.jsx'
 
 import CardGroup from 'react-bootstrap/CardGroup';
 
-function VehicleGroup({ selectedList }) {  
+function VehicleGroup({ selectedList, vehicles, onClick }) {
 
 
   return (
-    <>      
+    <div className='vehiclegroup'>
       {/* VehicleGroup */}
-       
+
         <CardGroup>
-        {selectedList.map((name,index) => (
-        <DroneCard name={name} index={index} data={null}/>
+        {vehicles.map((name,index) => (
+        <DroneCard key={index} data={vehicles[index]} onClick={onClick}/>
         ))}
 
 
         </CardGroup>
-    </>
+    </div>
   );
 }
 

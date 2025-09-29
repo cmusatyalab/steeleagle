@@ -10,15 +10,15 @@ from google.protobuf import any_pb2
 import toml
 import os
 from fnmatch import fnmatch
+import logging
 import aiorwlock
 # Utility import
-from util.log import get_logger
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import native_grpc_call, generate_response, generate_request
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors
 
-logger = get_logger('kernel/laws/authority')
+logger = logging.getLogger('kernel/laws/authority')
 
 # Failsafe classifications
 class Failsafe(Enum):

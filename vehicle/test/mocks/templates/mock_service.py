@@ -4,14 +4,14 @@
 
 import grpc
 import asyncio
+import logging
 # Utility import
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
-from util.log import get_logger
 # Protocol import
 import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2 as {{ service_filename }}_pb2
 import steeleagle_sdk.protocol.services.{{ service_filename }}_pb2_grpc as {{ service_filename }}_pb2_grpc
 
-logger = get_logger('mocks/{{ service_filename }}')
+logger = logging.getLogger('mocks/{{ service_filename }}')
 
 class Mock{{ service_name }}Service({{ service_filename }}_pb2_grpc.{{ service_name }}Servicer):
     '''

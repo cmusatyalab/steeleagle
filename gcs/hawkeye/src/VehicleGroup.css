@@ -1,0 +1,5 @@
+.vehiclegroup {
+    overflow-y: scroll;
+    scrollbar-color: red orange;
+    scrollbar-width: thin;
+}
