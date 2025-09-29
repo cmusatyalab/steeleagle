@@ -115,15 +115,15 @@ class SimulatedDrone:
             logger.debug(
                 f"----- Current Time: {self.t_cycle_start - self.t_baseline} -----"
             )
-            # Set via register_pending_task(), preempts currently executing task if one exists
-            if self._pending_action:
-                if self._active_action:
-                    self._cancel_current_action()
-                else:
-                    self._pending_action = False
-                    logger.debug(
-                        f"state_loop: Pending action changed to: {self._pending_action}"
-                    )
+            # # Set via register_pending_task(), preempts currently executing task if one exists
+            # if self._pending_action:
+            #     if self._active_action:
+            #         self._cancel_current_action()
+            #     else:
+            #         self._pending_action = False
+            #         logger.debug(
+            #             f"state_loop: Pending action changed to: {self._pending_action}"
+            #         )
             # Used to set the appropriate sign for acceleration values
             if self._check_target_active("position"):
                 self._calculate_acceleration_direction()
@@ -207,12 +207,13 @@ class SimulatedDrone:
         """
         if self._pending_action:
             return False
-        if not self._active_action:
-            await self._cancel_current_action()
         self._pending_action = True
         logger.debug(
             f"register_pending_task: Pending action set to {self._pending_action}"
         )
+        if self._active_action:
+            await self._cancel_current_action()
+    
         # Allow state loop time to process flags even if no active task currently exists
         await asyncio.sleep(1)
         result = await self._wait_for_condition(
@@ -220,6 +221,7 @@ class SimulatedDrone:
         )
         if result:
             self._active_action = True
+            self._pending_action = False
         return result
 
     """ Connection Methods """
@@ -299,14 +301,15 @@ class SimulatedDrone:
             lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT, interval=0.1
         )
 
+        self._zero_velocity()
+        await self._wait_for_condition(
+            lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1
+        )
+        
         if result:
             self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
             logger.info(f"{self.get_state('drone_id')} completed takeoff...")
         else:
-            self._zero_velocity()
-            await self._wait_for_condition(
-                lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1
-            )
             self.set_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
             logger.warning(f"{self.get_state('drone_id')} failed to take off...")
             current_position = self.get_current_position()
