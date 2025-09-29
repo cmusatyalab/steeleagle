@@ -2,9 +2,9 @@ import asyncio
 import logging
 import time
 
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol 
-from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol 
 import numpy as np
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
+from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 
 logger = logging.getLogger(__name__)
 M_PER_LAT_DEG = 111139
@@ -115,15 +115,6 @@ class SimulatedDrone:
             logger.debug(
                 f"----- Current Time: {self.t_cycle_start - self.t_baseline} -----"
             )
-            # # Set via register_pending_task(), preempts currently executing task if one exists
-            # if self._pending_action:
-            #     if self._active_action:
-            #         self._cancel_current_action()
-            #     else:
-            #         self._pending_action = False
-            #         logger.debug(
-            #             f"state_loop: Pending action changed to: {self._pending_action}"
-            #         )
             # Used to set the appropriate sign for acceleration values
             if self._check_target_active("position"):
                 self._calculate_acceleration_direction()
@@ -211,9 +202,9 @@ class SimulatedDrone:
         logger.debug(
             f"register_pending_task: Pending action set to {self._pending_action}"
         )
+
         if self._active_action:
             await self._cancel_current_action()
-    
         # Allow state loop time to process flags even if no active task currently exists
         await asyncio.sleep(1)
         result = await self._wait_for_condition(
@@ -271,14 +262,6 @@ class SimulatedDrone:
         to bring the drone to the takeoff elevation specified as part of the drone's init args.
         """
         logger.info("Initiating take off sequence...")
-        #if not self.check_flight_state(
-        #    telemetry_protocol.MotionStatus.LANDED
-        #) and not self.check_flight_state(telemetry_protocol.MotionStatus.IDLE):
-        #    logger.error(
-        #        f"take_off: {self.get_state('drone_id')} unable to execute take off command when not landed..."
-        #    )
-        #    logger.error(f"Current flight state: {self.get_state('flight_state')}")
-        #    return False
 
         result = await self._register_pending_task()
         if not result:
@@ -300,19 +283,21 @@ class SimulatedDrone:
         result = await self._wait_for_condition(
             lambda: self.is_takeoff_complete(), timeout=TASK_TIMEOUT, interval=0.1
         )
-
         self._zero_velocity()
         await self._wait_for_condition(
             lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1
         )
-        
+
         if result:
             self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
             logger.info(f"{self.get_state('drone_id')} completed takeoff...")
         else:
-            self.set_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
-            logger.warning(f"{self.get_state('drone_id')} failed to take off...")
             current_position = self.get_current_position()
+            if current_position[2] > 0:
+                self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
+            else:
+                self.set_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
+            logger.warning(f"{self.get_state('drone_id')} failed to take off...")
             logger.warning(
                 f"Stopped in position: ({current_position[0]}, {current_position[1]}, "
                 f"{current_position[2]})"
@@ -329,10 +314,9 @@ class SimulatedDrone:
         the completion of the procedure.
         """
         logger.info("Initiating landing sequence...")
-        if (
-            self.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
-            or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN)
-        ):
+        if self.check_flight_state(
+            telemetry_protocol.MotionStatus.MOTORS_OFF
+        ) or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN):
             logger.warning(
                 f"land: {self.get_state('drone_id')} already landed. Ignoring command..."
             )
@@ -407,10 +391,9 @@ class SimulatedDrone:
         else:
             logger.info("move_to: Successfully registered task, beginning procedure")
 
-        if (
-            self.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
-            or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN)
-        ):
+        if self.check_flight_state(
+            telemetry_protocol.MotionStatus.MOTORS_OFF
+        ) or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN):
             logger.warning(
                 f"move_to: {self.get_state('drone_id')} unable to execute move command"
                 "from ground. Taking off first..."
@@ -525,10 +508,9 @@ class SimulatedDrone:
                 "extended_move_to: Successfully registered task, beginning procedure..."
             )
 
-        if (
-            self.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
-            or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN)
-        ):
+        if self.check_flight_state(
+            telemetry_protocol.MotionStatus.MOTORS_OFF
+        ) or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN):
             logger.warning(
                 f"extended_move_to: {self.get_state('drone_id')} unable to execute move command"
                 "from ground. Taking off first..."
@@ -542,6 +524,8 @@ class SimulatedDrone:
             if not result:
                 if self.get_current_position()[2] == 0:
                     self.set_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
+                else:
+                    self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
                 logger.error(
                     f"extended_move_to: {self.get_state('drone_id')} unable to take off during move_to..."
                 )
@@ -677,10 +661,9 @@ class SimulatedDrone:
         they are made prior to executing movement.
         """
         logger.info("Initiating move to sequence...")
-        if (
-            self.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
-            or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN)
-        ):
+        if self.check_flight_state(
+            telemetry_protocol.MotionStatus.MOTORS_OFF
+        ) or self.check_flight_state(telemetry_protocol.MotionStatus.RAMPING_DOWN):
             logger.warning(
                 f"return_to_home: {self.get_state('drone_id')} unable to execute RTH command"
                 "from ground. Take off first..."
@@ -738,17 +721,18 @@ class SimulatedDrone:
         )
         current_position = self.get_current_position()
 
+        self._zero_velocity()
+        await self._wait_for_condition(
+            lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1
+        )
+        self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
+
         if result:
-            self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
             logger.info(
                 f"{self.get_state('drone_id')} completed movement to position "
                 f"({current_position[0]}, {current_position[1]}, {current_position[2]})"
             )
         else:
-            self._zero_velocity()
-            await self._wait_for_condition(
-                lambda: self.is_stopped(), timeout=TASK_TIMEOUT, interval=0.1
-            )
             self.set_flight_state(telemetry_protocol.MotionStatus.IDLE)
             logger.warning(
                 f"{self.get_state('drone_id')} failed to move to target position ({home_pos[0]}, {home_pos[1]}, {current_pos[2]})..."
@@ -807,7 +791,7 @@ class SimulatedDrone:
     def check_flight_state(self, target_state) -> bool:
         """
         Compares the flight state condition given as a parameter against the drone's
-        current flight state (common_pb.MotionStatus).
+        current flight state (common_pb.FlightStatus).
         """
         if target_state == self.get_state("flight_state"):
             return True
@@ -1027,7 +1011,7 @@ class SimulatedDrone:
     def set_flight_state(self, flight_state):
         """
         Changes the drone's current flight state. Expected values are contained within the
-        common_pb2.MotionStatus enum.
+        common_pb2.FlightStatus enum.
         """
         self._update_state("flight_state", flight_state)
         logger.info(f"set_flight_state: Current flight state set to: {flight_state}")
@@ -2027,6 +2011,7 @@ class SimulatedDrone:
         current_state = self.get_state("flight_state")
         if (
             current_state == telemetry_protocol.MotionStatus.MOTORS_OFF
+            or current_state == telemetry_protocol.MotionStatus.RAMPING_DOWN
         ):
             new_charge = current_charge - dt * LANDED_DRAIN_RATE
         else:

@@ -1,21 +1,30 @@
-import grpc
 import asyncio
-from concurrent import futures
 import math
+
 # Streaming Imports
 import threading
 import time
+from concurrent import futures
 from enum import Enum
+
+import grpc
+import numpy as np
+
+# Interface Imports
+from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import (
+    SimulatedDrone,
+)
+from PIL import Image
+
 # Protocol Imports
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
-from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
-import numpy as np
-# Interface Imports
-from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import SimulatedDrone
-from steeleagle_sdk.protocol.services import control_service_pb2_grpc 
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
+from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
+from steeleagle_sdk.protocol.services import control_service_pb2_grpc
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
-from PIL import Image
+from util.cleanup import register_cleanup_handler
+
 # Utility imports
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
@@ -34,7 +43,8 @@ class FlightMode(Enum):
     TAKEOFF_LAND = "TAKEOFF_LAND"
     VELOCITY = "VELOCITY"
     GUIDED = "GUIDED"
-    
+
+
 class DigitalPerfect(ControlServicer):
     # Constants
     LATDEG_METERS = 1113195
@@ -43,7 +53,7 @@ class DigitalPerfect(ControlServicer):
     DEFAULT_IMG_WIDTH = 1280
     DEFAULT_IMG_CHANNELS = 3
     DEFAULT_TIMEOUT = 30
-    
+
     def __init__(self, drone_id, **kwargs):
         self._drone_id = drone_id
         self._kwargs = kwargs
@@ -53,43 +63,57 @@ class DigitalPerfect(ControlServicer):
         self._mode = FlightMode.LOITER
         self.ip = "127.0.0.1"
         self._drone = SimulatedDrone(self.ip)
-        
+
     async def Connect(self, request, context):
         try:
             result = await self._drone.connect()
             if not result:
                 self._drone = None
                 await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
-            
+
             logger.info("Completed connection to digital drone...")
-            return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Connected to digital drone")
+            return generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Connected to digital drone",
+            )
         except Exception as e:
             logger.error(f"Error occurred while connecting to digital drone: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-    async def Disconnect(self, request, context): 
-        try: 
+    async def Disconnect(self, request, context):
+        try:
             if not await self.is_connected():
                 logger.warning("Drone is already disconnected.")
-                return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Drone is already disconnected.")
+                return generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Drone is already disconnected.",
+                )
 
             result = await self._drone.disconnect()
             if not result:
                 logger.error("Failed to properly disconnect from digital drone...")
-                await context.abort(grpc.StatusCode.INTERNAL, "Drone disconnection failed")
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "Drone disconnection failed"
+                )
 
             logger.info("Completed disconnection from digital drone...")
-            return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Disconnected from digital drone")
+            return generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Disconnected from digital drone",
+            )
         except Exception as e:
             logger.error(f"Error occurred while disconnecting from digital drone: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Arm(self, request, context):
-        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Arm not implemented for digital drone")
-        
-    
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED, "Arm not implemented for digital drone"
+        )
+
     async def Disarm(self, request, context):
-        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Disarm not implemented for digital drone")
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED, "Disarm not implemented for digital drone"
+        )
 
     async def TakeOff(self, request, context):
         logger.info("Initiating takeoff sequence...")
@@ -115,29 +139,43 @@ class DigitalPerfect(ControlServicer):
         except Exception as e:
             logger.error(f"Error occurred during takeoff: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-        
 
     async def Land(self, request, context):
         try:
-            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating landing...")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating landing...",
+            )
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             await self._drone.land()
 
             while not self._is_landed():
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Landing...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Landing...",
+                )
                 await asyncio.sleep(0.1)
 
             await self._switch_mode(FlightMode.LOITER)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Landing successful")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Landing successful",
+            )
         except Exception as e:
             logger.error(f"Error occurred during landing: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Hold(self, request, context):
         try:
-            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating hold...")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating hold...",
+            )
             if self._drone.is_stopped():
-                yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Drone already in hold state...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Drone already in hold state...",
+                )
             else:
                 velocity = common_protocol.VelocityBody()
                 velocity.forward_vel = 0.0
@@ -146,40 +184,55 @@ class DigitalPerfect(ControlServicer):
                 velocity.angular_vel = 0.0
                 await self.set_velocity_body(velocity)
                 while not self._is_hovering():
-                    yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Holding...")
+                    yield generate_response(
+                        resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                        resp_string="Holding...",
+                    )
                     await asyncio.sleep(0.1)
                 await self._switch_mode(FlightMode.LOITER)
-                yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Hold successful")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Hold successful",
+                )
         except Exception as e:
             logger.error(f"Error occurred during hold: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-            
-    async def Kill(self, request, context):
-        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Kill not implemented for digital drone")
 
-    
+    async def Kill(self, request, context):
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED, "Kill not implemented for digital drone"
+        )
+
     async def SetHome(self, request, context):
         lat = request.location.latitude
         lon = request.location.longitude
         alt = request.location.altitude
         self._drone.set_home_location(lat, lon, alt)
-        return generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Home location set successfully")
+        return generate_response(
+            resp_type=common_protocol.ResponseStatus.COMPLETED,
+            resp_string="Home location set successfully",
+        )
 
     async def ReturnToHome(self, request, context):
         try:
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             await self._drone.return_to_home()
-        
+
             while not self._is_home_reached():
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Returning to home...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Returning to home...",
+                )
                 await asyncio.sleep(0.1)
 
             await self._switch_mode(FlightMode.LOITER)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Returned to home successfully")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Returned to home successfully",
+            )
         except Exception as e:
             logger.error(f"Error occurred during return to home: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-
 
     async def SetGlobalPosition(self, request, context):
         try:
@@ -189,7 +242,7 @@ class DigitalPerfect(ControlServicer):
             alt_mode = request.altitude_mode
             hdg_mode = request.heading_mode
             max_velocity = None
-            
+
             if hdg_mode == control_protocol.HeadingMode.TO_TARGET:
                 bearing = request.location.heading
             else:
@@ -200,7 +253,9 @@ class DigitalPerfect(ControlServicer):
             # Convert absolute to relative altitude if required
             # TODO: Correct this - DD e_m_t uses an absolute alt unlike anafi drones
             if alt_mode == control_protocol.AltitudeMode.ABSOLUTE:
-                altitude = alt - self._get_global_position()[2] + self._get_altitude_rel()
+                altitude = (
+                    alt - self._get_global_position()[2] + self._get_altitude_rel()
+                )
             else:
                 altitude = alt
 
@@ -225,22 +280,33 @@ class DigitalPerfect(ControlServicer):
                 )
             else:
                 await self._drone.move_to(lat, lon, altitude, hdg_mode, bearing)
-                
+
             while not self._is_move_to_done():
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Moving to target location...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Moving to target location...",
+                )
                 await asyncio.sleep(0.1)
-            
+
             await self._switch_mode(FlightMode.LOITER)
             if self._is_global_position_reached(lat, lon, altitude):
-                yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Reached target location successfully")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Reached target location successfully",
+                )
             else:
-                await context.abort(grpc.StatusCode.INTERNAL, "Failed to reach target location")
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "Failed to reach target location"
+                )
         except Exception as e:
             logger.error(f"Error occurred during SetGlobalPosition: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-      
+
     async def SetRelativePosition(self, request, context):
-        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "SetRelativePosition in ENU frame not implemented for digital drone")
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            "SetRelativePosition in ENU frame not implemented for digital drone",
+        )
 
     async def SetVelocity(self, request, context):
         try:
@@ -258,20 +324,26 @@ class DigitalPerfect(ControlServicer):
             await asyncio.sleep(1)
 
             while not self._drone._check_target_active("velocity"):
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Setting velocity...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Setting velocity...",
+                )
                 await asyncio.sleep(0.1)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Velocity set successfully")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Velocity set successfully",
+            )
         except Exception as e:
             logger.error(f"Error occurred during SetVelocity: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-            
+
     async def SetHeading(self, request, context):
         try:
             lat = request.location.latitude
             lon = request.location.longitude
             bearing = request.location.heading
             heading_mode = request.heading_mode
-            
+
             global_position = self._get_global_position()
             target = None
             if heading_mode == control_protocol.HeadingMode.HEADING_START:
@@ -280,7 +352,7 @@ class DigitalPerfect(ControlServicer):
                 target = self._calculate_bearing(
                     global_position[0], global_position[1], lat, lon
                 )
-            
+
             await self._drone.move_to(
                 global_position[0],
                 global_position[1],
@@ -288,23 +360,28 @@ class DigitalPerfect(ControlServicer):
                 common_protocol.LocationHeadingMode.TO_TARGET,
                 target,
             )  # Yaw in place
-            
+
             while not self._is_heading_reached(target):
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Setting heading...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Setting heading...",
+                )
                 await asyncio.sleep(0.1)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Heading set successfully")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Heading set successfully",
+            )
         except Exception as e:
             logger.error(f"Error occurred during SetHeading: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-    
-    
+
     async def SetGimbalPose(self, request, context):
         try:
             yaw = request.pose.yaw
             pitch = request.pose.pitch
             roll = request.pose.roll
             control_mode = request.mode
-            
+
             if control_mode == common_protocol.PoseMode.ANGLE:
                 target_yaw = min(360, max(0, yaw))
                 target_pitch = min(360, max(0, pitch))
@@ -342,51 +419,78 @@ class DigitalPerfect(ControlServicer):
                     roll=target_roll,
                     yaw=target_yaw,
                 )
-            while not self._is_gimbal_pose_reached(target_pitch, target_roll, target_yaw):
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Setting gimbal pose...")
+            while not self._is_gimbal_pose_reached(
+                target_pitch, target_roll, target_yaw
+            ):
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Setting gimbal pose...",
+                )
                 await asyncio.sleep(0.1)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Gimbal pose set successfully")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Gimbal pose set successfully",
+            )
 
         except Exception as e:
             logger.error(f"Error occurred during SetGimbalPose: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-
     async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info("Starting telemetry stream")
         await asyncio.sleep(1)
- 
+
         while await self.is_connected():
             try:
                 tel_message = telemetry_protocol.DriverTelemetry()
-                  
-                tel_message.vehicle_info.name = self._get_name()     
-                tel_message.vehicle_info.model= self._get_type()
-                tel_message.vehicle_info.battery_info.percentage = self._get_battery_percentage()
-                tel_message.vehicle_info.gps_info.satellites= self._get_satellites()
-                tel_message.position_info.global_position.latitude= self._get_global_position()[0]
-                tel_message.position_info.global_position.longitude = self._get_global_position()[1]
-                tel_message.position_info.global_position.altitude = self._get_global_position()[2]
+
+                tel_message.vehicle_info.name = self._get_name()
+                tel_message.vehicle_info.model = self._get_type()
+                tel_message.vehicle_info.battery_info.percentage = (
+                    self._get_battery_percentage()
+                )
+                tel_message.vehicle_info.gps_info.satellites = self._get_satellites()
+                tel_message.position_info.global_position.latitude = (
+                    self._get_global_position()[0]
+                )
+                tel_message.position_info.global_position.longitude = (
+                    self._get_global_position()[1]
+                )
+                tel_message.position_info.global_position.altitude = (
+                    self._get_global_position()[2]
+                )
 
                 tel_message.position_info.global_position.heading = self._get_heading()
-                tel_message.position_info.relative_position.z= self._get_altitude_rel()
-                tel_message.position_info.velocity_enu.x_vel= self._get_velocity_enu()["north"]
-                tel_message.position_info.velocity_enu.y_vel= self._get_velocity_enu()["east"]
-                tel_message.position_info.velocity_enu.z_vel= self._get_velocity_enu()["up"]
-                tel_message.position_info.velocity_body.x_vel= self._get_velocity_body()[
-                    "forward"
+                tel_message.position_info.relative_position.z = self._get_altitude_rel()
+                tel_message.position_info.velocity_enu.x_vel = self._get_velocity_enu()[
+                    "north"
                 ]
-                tel_message.position_info.velocity_body.y_vel= self._get_velocity_body()["right"]
-                tel_message.position_info.velocity_body.z_vel= self._get_velocity_body()["up"]
-                tel_message.position_info.velocity_body.angular_vel = self._drone.get_angular_velocity()
+                tel_message.position_info.velocity_enu.y_vel = self._get_velocity_enu()[
+                    "east"
+                ]
+                tel_message.position_info.velocity_enu.z_vel = self._get_velocity_enu()[
+                    "up"
+                ]
+                tel_message.position_info.velocity_body.x_vel = (
+                    self._get_velocity_body()["forward"]
+                )
+                tel_message.position_info.velocity_body.y_vel = (
+                    self._get_velocity_body()["right"]
+                )
+                tel_message.position_info.velocity_body.z_vel = (
+                    self._get_velocity_body()["up"]
+                )
+                tel_message.position_info.velocity_body.angular_vel = (
+                    self._drone.get_angular_velocity()
+                )
                 gimbal = self._get_gimbal_pose_body(0)
                 tel_message.gimbal_info.gimbals[0].pose_body.pitch = gimbal["g_pitch"]
                 tel_message.gimbal_info.gimbals[0].pose_body.roll = gimbal["g_roll"]
                 tel_message.gimbal_info.gimbals[0].pose_body.yaw = gimbal["g_yaw"]
-                tel_message.gimbal_info.gimbals[0].id= 0
+                tel_message.gimbal_info.gimbals[0].id = 0
                 tel_message.status = self._get_current_status()
                 batt = self._get_battery_percentage()
- 
+
                 # Warnings
                 if batt <= 15:
                     tel_message.alert_info.battery_warning = (
@@ -399,7 +503,7 @@ class DigitalPerfect(ControlServicer):
                 mag = self._get_magnetometer()
                 if mag == 2:
                     tel_message.alert_info.magnetometer_warning = (
-                        telemetry_protocol.MagnetometerWarning.NO_MAGNETOMETER_WARNING 
+                        telemetry_protocol.MagnetometerWarning.NO_MAGNETOMETER_WARNING
                     )
                 elif mag == 1:
                     tel_message.alert_info.magnetometer_warning = (
@@ -411,38 +515,40 @@ class DigitalPerfect(ControlServicer):
                         telemetry_protocol.GPSWarning.NO_GPS_WARNING
                     )
                 elif sats <= 10:
-                    tel_message.alert_info.gps_warning = telemetry_protocol.GPSWarning.WEAK_WEAK
- 
+                    tel_message.alert_info.gps_warning = (
+                        telemetry_protocol.GPSWarning.WEAK_WEAK
+                    )
+
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f"Failed to get telemetry, error: {e}")
             await asyncio.sleep(1.0 / rate_hz)
 
-#    async def stream_video(self, cam_sock, rate_hz):
-#        logger.info("Starting camera stream")
-#        self._start_streaming()
-#        frame_id = 0
-#        while await self.is_connected():
-#            try:
-#                cam_message = data_protocol.Frame()
-#                frame, frame_shape = await self._get_video_frame()
-#
-#                if frame is None:
-#                    logger.error("Failed to get video frame")
-#                    continue
-#
-#                cam_message.data = frame
-#                cam_message.height = frame_shape[1]
-#                cam_message.width = frame_shape[0]
-#                cam_message.channels = frame_shape[2]
-#                cam_message.id = frame_id
-#                cam_sock.send(cam_message.SerializeToString())
-#                frame_id = frame_id + 1
-#            except Exception as e:
-#                logger.error(f"Failed to get video frame, error: {e}")
-#            await asyncio.sleep(1.0 / rate_hz)
-#        self._stop_streaming()
-#        logger.info("Camera stream ended, disconnected from drone")
+    #    async def stream_video(self, cam_sock, rate_hz):
+    #        logger.info("Starting camera stream")
+    #        self._start_streaming()
+    #        frame_id = 0
+    #        while await self.is_connected():
+    #            try:
+    #                cam_message = data_protocol.Frame()
+    #                frame, frame_shape = await self._get_video_frame()
+    #
+    #                if frame is None:
+    #                    logger.error("Failed to get video frame")
+    #                    continue
+    #
+    #                cam_message.data = frame
+    #                cam_message.height = frame_shape[1]
+    #                cam_message.width = frame_shape[0]
+    #                cam_message.channels = frame_shape[2]
+    #                cam_message.id = frame_id
+    #                cam_sock.send(cam_message.SerializeToString())
+    #                frame_id = frame_id + 1
+    #            except Exception as e:
+    #                logger.error(f"Failed to get video frame, error: {e}")
+    #            await asyncio.sleep(1.0 / rate_hz)
+    #        self._stop_streaming()
+    #        logger.info("Camera stream ended, disconnected from drone")
 
     """ Telemetry methods """
 
@@ -586,7 +692,9 @@ class DigitalPerfect(ControlServicer):
         return self._drone.check_flight_state(telemetry_protocol.MotionStatus.IDLE)
 
     def _is_landed(self) -> bool:
-        return self._drone.check_flight_state(telemetry_protocol.MotionStatus.MOTORS_OFF)
+        return self._drone.check_flight_state(
+            telemetry_protocol.MotionStatus.MOTORS_OFF
+        )
 
     def _is_move_to_done(self) -> bool:
         return self._drone._position_flag
@@ -678,7 +786,11 @@ class SimulatedStreamingThread(threading.Thread):
         try:
             if self._current_frame is None:
                 return np.full(
-                    (self.DEFAULT_IMG_WIDTH, self.DEFAULT_IMG_HEIGHT, self.DEFAULT_IMG_CHANNELS),
+                    (
+                        self.DEFAULT_IMG_WIDTH,
+                        self.DEFAULT_IMG_HEIGHT,
+                        self.DEFAULT_IMG_CHANNELS,
+                    ),
                     255,
                     dtype=np.uint8,
                 )
@@ -688,27 +800,36 @@ class SimulatedStreamingThread(threading.Thread):
             logger.error(f"Grab frame failed: {e}")
             # Send blank image
             return np.full(
-                (self.DEFAULT_IMG_WIDTH, self.DEFAULT_IMG_HEIGHT, self.DEFAULT_IMG_CHANNELS),
+                (
+                    self.DEFAULT_IMG_WIDTH,
+                    self.DEFAULT_IMG_HEIGHT,
+                    self.DEFAULT_IMG_CHANNELS,
+                ),
                 255,
                 dtype=np.uint8,
             )
 
     def stop(self):
         self.is_running = False
-    
+
 
 async def main():
     register_cleanup_handler()
-    server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))
-    control_service_pb2_grpc.add_ControlServicer_to_server(DigitalPerfect("DigitalPerfect"), server)
-    server.add_insecure_port(query_config('internal.services.driver'))
+    server = grpc.aio.server(
+        migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10)
+    )
+    control_service_pb2_grpc.add_ControlServicer_to_server(
+        DigitalPerfect("DigitalPerfect"), server
+    )
+    server.add_insecure_port(query_config("internal.services.driver"))
     await server.start()
-    logger.info('Services started!')
+    logger.info("Services started!")
     try:
         await server.wait_for_termination()
     except (SystemExit, asyncio.exceptions.CancelledError):
-        logger.info('Shutting down...')
+        logger.info("Shutting down...")
         await server.stop(1)
-        
+
+
 if __name__ == "__main__":
     asyncio.run(main())
