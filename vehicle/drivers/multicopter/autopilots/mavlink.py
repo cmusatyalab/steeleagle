@@ -37,6 +37,7 @@ class MAVLinkDrone(MulticopterItf):
         self.mode = None
         self._mode_mapping = None
         self._listener_task = None
+        self._vel_task = None
 
     """ Interface methods """
 
@@ -55,6 +56,7 @@ class MAVLinkDrone(MulticopterItf):
         # Register telemetry streams
         await self._register_telemetry_streams()
         asyncio.create_task(self._message_listener())
+        return True
 
     async def is_connected(self):
         return self.vehicle is not None
@@ -193,6 +195,12 @@ class MAVLinkDrone(MulticopterItf):
         else:
             return common_protocol.ResponseStatus.FAILED
 
+    def _get_altitude_rel(self):
+        return self._get_global_position()["relative_altitude"]
+
+    def _get_heading(self):
+        return self._get_global_position()["heading"]
+
     async def set_global_position(self, location):
         # Need to implement video streaming on a per-drone basis
         return common_protocol.ResponseStatus.NOTSUPPORTED
@@ -228,7 +236,10 @@ class MAVLinkDrone(MulticopterItf):
             try:
                 tel_message = data_protocol.Telemetry()
                 tel_message.drone_name = self._get_name()
-                tel_message.battery = self._get_battery_percentage()
+                tel_message.drone_model = await self.get_type()
+                tel_message.battery = max(
+                    0, min(self._get_battery_percentage(), 100)
+                )  # clamp between 0-100
                 tel_message.satellites = self._get_satellites()
                 tel_message.global_position.latitude = self._get_global_position()[
                     "latitude"
@@ -236,15 +247,11 @@ class MAVLinkDrone(MulticopterItf):
                 tel_message.global_position.longitude = self._get_global_position()[
                     "longitude"
                 ]
-                tel_message.global_position.absolute_altitude = (
-                    self._get_global_position()["absolute_altitude"]
-                )
-                tel_message.global_position.relative_altitude = (
-                    self._get_global_position()["relative_altitude"]
-                )
-                tel_message.global_position.heading = self._get_global_position()[
-                    "heading"
+                tel_message.global_position.altitude = self._get_global_position()[
+                    "absolute_altitude"
                 ]
+                tel_message.relative_position.up = self._get_altitude_rel()
+                tel_message.global_position.heading = self._get_heading()
                 tel_message.velocity_enu.north_vel = self._get_velocity_enu()["north"]
                 tel_message.velocity_enu.east_vel = self._get_velocity_enu()["east"]
                 tel_message.velocity_enu.up_vel = self._get_velocity_enu()["up"]
@@ -253,6 +260,27 @@ class MAVLinkDrone(MulticopterItf):
                 ]
                 tel_message.velocity_body.right_vel = self._get_velocity_body()["right"]
                 tel_message.velocity_body.up_vel = self._get_velocity_body()["up"]
+                tel_message.velocity_body.angular_vel = self._get_velocity_body()[
+                    "angular"
+                ]
+                batt = tel_message.battery
+
+                # Warnings
+                if batt <= 15:
+                    tel_message.alerts.battery_warning = (
+                        common_protocol.BatteryWarning.CRITICAL
+                    )
+                elif batt <= 30:
+                    tel_message.alerts.battery_warning = (
+                        common_protocol.BatteryWarning.LOW
+                    )
+                sats = tel_message.satellites
+                if sats == 0:
+                    tel_message.alerts.gps_warning = (
+                        common_protocol.GPSWarning.NO_SIGNAL
+                    )
+                elif sats <= 10:
+                    tel_message.alerts.gps_warning = common_protocol.GPSWarning.WEAK
                 tel_sock.send(tel_message.SerializeToString())
             except Exception as e:
                 logger.error(f"Failed to get telemetry, error: {e}")
@@ -273,7 +301,7 @@ class MAVLinkDrone(MulticopterItf):
             "HEARTBEAT",
             "GLOBAL_POSITION_INT",
             "ATTITUDE",
-            "RAW_IMU",
+            "SCALED_IMU",
             "BATTERY_STATUS",
             "GPS_RAW_INT",
             "VFR_HUD",
@@ -358,12 +386,20 @@ class MAVLinkDrone(MulticopterItf):
     def _get_velocity_body(self):
         # TODO: This reference frame is incorrect
         velocity_msg = self._get_cached_message("LOCAL_POSITION_NED")
+        imu = self._get_cached_message("SCALED_IMU")
         if not velocity_msg:
-            return None
+            return {
+                "forward": 0,
+                "right": 0,
+                "up": 0,
+                "angular": 0,
+            }
         return {
             "forward": velocity_msg.vx,  # Body-frame X velocity in m/s
             "right": velocity_msg.vy,  # Body-frame Y velocity in m/s
             "up": velocity_msg.vz * -1,  # Body-frame Z velocity in m/s
+            "angular": imu.zgyro
+            * (180 / (1000 * math.pi)),  # Angular speed around Z axis mrad/s
         }
 
     def _get_rssi(self):
@@ -431,6 +467,11 @@ class MAVLinkDrone(MulticopterItf):
     async def _switch_mode(self, mode):
         mode_target = mode.value
         curr_mode = self.mode.value if self.mode else None
+
+        if self._vel_task:
+            self._vel_task.cancel()
+            await self._vel_task
+        self._vel_task = None
 
         if self.mode == mode:
             logger.info(f"Already in mode {mode_target}")
@@ -514,11 +555,11 @@ class MAVLinkDrone(MulticopterItf):
 
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["absolute_altitude"]
-        return current_altitude >= target_altitude * 0.95
+        return math.isclose(a=current_altitude, b=target_altitude, abs_tol=0.3)
 
     def _is_rel_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["relative_altitude"]
-        return current_altitude >= target_altitude * 0.95
+        return math.isclose(a=current_altitude, b=target_altitude, abs_tol=0.3)
 
     def _is_heading_reached(self, heading):
         current_heading = self._get_global_position()["heading"]

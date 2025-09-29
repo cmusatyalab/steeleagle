@@ -8,12 +8,16 @@
 import datetime
 import logging
 import os
+import signal
 import time
 
 import cv2
+import foxglove
+import google.protobuf.json_format as json_format
 import numpy as np
 import pytz
 import redis
+from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from PIL import Image
@@ -30,7 +34,8 @@ class TelemetryEngine(cognitive_engine.Engine):
     ENGINE_NAME = "telemetry"
 
     def __init__(self, args):
-        logger.info("Telemetry engine intializing...")
+        logger.info("Telemetry engine initializing...")
+        signal.signal(signal.SIGTERM, self.cleanup)
 
         # Connect to Redis database
         self.r = redis.Redis(
@@ -52,6 +57,16 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
+        now = datetime.datetime.now(pytz.timezone("America/New_York"))
+        self.mcap = foxglove.open_mcap(
+            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
+        )
+        self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+
+    def cleanup(self, signum, frame):
+        logger.info("Stopping WS server and flushing MCAP file...")
+        self.fg_server.stop()
+        self.mcap.close()
 
     def updateDroneStatus(self, extras):
         telemetry = extras.telemetry
@@ -177,6 +192,23 @@ class TelemetryEngine(cognitive_engine.Engine):
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = b"Telemetry updated."
                 self.updateDroneStatus(extras)
+                foxglove.log(
+                    f"/{extras.telemetry.drone_name}/location",
+                    LocationFix(
+                        latitude=extras.telemetry.global_position.latitude,
+                        longitude=extras.telemetry.global_position.longitude,
+                        altitude=extras.telemetry.global_position.altitude,
+                    ),
+                    log_time=time.time_ns(),
+                )
+                foxglove.log(
+                    f"/{extras.telemetry.drone_name}/telemetry",
+                    json_format.MessageToJson(
+                        extras.telemetry,
+                        always_print_fields_with_no_presence=True,
+                    ),
+                    log_time=time.time_ns(),
+                )
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
             image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
@@ -190,6 +222,11 @@ class TelemetryEngine(cognitive_engine.Engine):
                 )
             # store images in the shared volume
             try:
+                foxglove.log(
+                    f"/{extras.telemetry.drone_name}/imagery",
+                    CompressedImage(data=input_frame.payloads[0], format="jpeg"),
+                    log_time=time.time_ns(),
+                )
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)

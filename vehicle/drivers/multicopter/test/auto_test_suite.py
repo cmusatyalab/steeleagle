@@ -16,7 +16,7 @@ from util.utils import SocketOperation, setup_socket
 
 logger = logging.getLogger(__name__)
 
-# Setting up conetxt
+# Setting up context
 context = zmq.asyncio.Context()
 
 hub_to_driver_sock = context.socket(zmq.DEALER)
@@ -208,10 +208,17 @@ class TestSuiteClass:
         curr_pos_lat = tel_dict["global_position"]["latitude"]
         curr_pos_lon = tel_dict["global_position"]["longitude"]
         curr_pos_angle = tel_dict["global_position"]["heading"]
+        curr_pos_rel_alt = tel_dict["relative_position"]["up"]
         logger.info(
-            f"Current position: {curr_pos_lat}, {curr_pos_lon}, {curr_pos_alt}, {curr_pos_angle}"
+            f"Current position: {curr_pos_lat}, {curr_pos_lon}, {curr_pos_alt} / {curr_pos_rel_alt}, {curr_pos_angle}"
         )
-        return (curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle)
+        return (
+            curr_pos_lat,
+            curr_pos_lon,
+            curr_pos_alt,
+            curr_pos_angle,
+            curr_pos_rel_alt,
+        )
 
     # Test sets for absolute altitude
     global_position_abs_test_sets = [
@@ -229,7 +236,9 @@ class TestSuiteClass:
         logger.info("Testing set global position")
 
         # Get initial position
-        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
+        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle, _ = (
+            self.get_curr_loc()
+        )
 
         x, y, z, angle = test
 
@@ -303,18 +312,20 @@ class TestSuiteClass:
         logger.info("Testing set global position with relative altitude")
 
         # Get initial position
-        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle = self.get_curr_loc()
+        curr_pos_lat, curr_pos_lon, curr_pos_alt, curr_pos_angle, curr_pos_rel_alt = (
+            self.get_curr_loc()
+        )
 
         x, y, z, angle = test
 
         # Test out the different altitude control modes
         logger.info(
-            f"Testing set global position to: {(curr_pos_lat, curr_pos_lon, curr_pos_alt + self.d_zz, curr_pos_angle)}"
+            f"Testing set global position to: {(curr_pos_lat, curr_pos_lon, curr_pos_rel_alt + self.d_zz, curr_pos_angle)}"
         )
         driver_cmd = control_protocol.Request()
         driver_cmd.veh.location.latitude = curr_pos_lat + x
         driver_cmd.veh.location.longitude = curr_pos_lon + y
-        driver_cmd.veh.location.altitude = curr_pos_alt + z
+        driver_cmd.veh.location.altitude = curr_pos_rel_alt + z
         driver_cmd.veh.location.altitude_mode = (
             common_protocol.LocationAltitudeMode.TAKEOFF_RELATIVE
         )
@@ -344,11 +355,11 @@ class TestSuiteClass:
         # Check the telemetry to see if the move was OK
         actual_lat = tel_dict["global_position"]["latitude"]
         actual_lon = tel_dict["global_position"]["longitude"]
-        actual_alt = tel_dict["global_position"]["altitude"]
+        actual_alt = tel_dict["relative_position"]["up"]
         actual_angle = tel_dict["global_position"]["heading"]
 
         logger.info(
-            f"Expected: {(curr_pos_lat, curr_pos_lon, curr_pos_alt + self.d_zz, curr_pos_angle)}"
+            f"Expected: {(curr_pos_lat, curr_pos_lon, curr_pos_rel_alt + self.d_zz, curr_pos_angle)}"
         )
         logger.info(f"Actual: {(actual_lat, actual_lon, actual_alt, actual_angle)}")
 
@@ -356,7 +367,7 @@ class TestSuiteClass:
         assert np.allclose(
             [curr_pos_lat, curr_pos_lon], [actual_lat, actual_lon], atol=1e-5
         )
-        assert np.isclose(curr_pos_alt + z, actual_alt, atol=1)
+        assert np.isclose(curr_pos_rel_alt + z, actual_alt, atol=1)
         # TODO: Figure out why heading is not set correctly
         # abs_diff = abs(curr_pos_angle - actual_angle)
         # diff = min(abs_diff, 360 - abs_diff)

@@ -1,5 +1,7 @@
 # General imports
+import asyncio
 import logging
+import math
 from enum import Enum
 
 # Protocol imports
@@ -23,6 +25,7 @@ class ArduPilotDrone(MAVLinkDrone):
         ALT_HOLD = "ALT_HOLD"
 
     def __init__(self, drone_id):
+        super().__init__(drone_id)
         self.drone_id = drone_id
         self.vehicle = None
         self.mode = None
@@ -35,13 +38,12 @@ class ArduPilotDrone(MAVLinkDrone):
     async def take_off(self):
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.TAKEOFF
         if not await self._arm():
             return common_protocol.ResponseStatus.FAILED
 
         gps = self._get_global_position()
         rel_altitude = self._rel_altitude
-        target_altitude = rel_altitude + gps["absolute_altitude"]
         self.vehicle.mav.command_long_send(
             self.vehicle.target_system,
             self.vehicle.target_component,
@@ -57,9 +59,8 @@ class ArduPilotDrone(MAVLinkDrone):
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_abs_altitude_reached(target_altitude),
-            timeout=60,
-            interval=1,
+            lambda: self._is_takeoff_complete(rel_altitude),
+            interval=0.1,
         )
 
         if result:
@@ -67,23 +68,25 @@ class ArduPilotDrone(MAVLinkDrone):
         else:
             return common_protocol.ResponseStatus.FAILED
 
-    async def hover(self):
-        # TODO: Implement hover:
-        # issues: The hover command in the mavlink by setting velocity body to 0 will
-        # interupt any other flying command like land, takeoff, etc. This is due to
-        # streamlit continuously sending the hover command in a high frequency.
-        return common_protocol.ResponseStatus.NOTSUPPORTED
-
     async def set_global_position(self, location):
         lat = location.latitude
         lon = location.longitude
-        alt = location.absolute_altitude
-        heading = location.heading
+        alt = location.altitude
+        bearing = location.heading
+        alt_mode = location.altitude_mode
+        hdg_mode = location.heading_mode
+        max_velocity = location.max_velocity
+        current_location = self._get_global_position()
+        if alt_mode == common_protocol.LocationAltitudeMode.ABSOLUTE:
+            altitude = alt
+        else:
+            altitude = current_location["absolute_altitude"] + (
+                alt - current_location["relative_altitude"]
+            )
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
-        # TODO: Check if absolute alt isn't set then use rel_alt instead!
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         self.vehicle.mav.set_position_target_global_int_send(
             0,
             self.vehicle.target_system,
@@ -92,22 +95,29 @@ class ArduPilotDrone(MAVLinkDrone):
             0b100111111000,
             int(lat * 1e7),
             int(lon * 1e7),
-            alt,
+            altitude,
             0,
             0,
             0,
             0,
             0,
             0,
-            0,
+            math.radians(
+                self._calculate_heading(
+                    current_location["latitude"],
+                    current_location["longitude"],
+                    location.latitude,
+                    location.longitude,
+                )
+            ),
             0,
         )
 
         result = await self._wait_for_condition(
-            lambda: self._is_at_target(lat, lon), timeout=60, interval=1
+            lambda: self._is_global_position_reached(lat, lon, altitude),
+            timeout=60,
+            interval=1,
         )
-
-        await self.set_heading(location)
 
         if result:
             return common_protocol.ResponseStatus.COMPLETED
@@ -122,7 +132,7 @@ class ArduPilotDrone(MAVLinkDrone):
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         self.vehicle.mav.set_position_target_local_ned_send(
             0,
             self.vehicle.target_system,
@@ -139,10 +149,67 @@ class ArduPilotDrone(MAVLinkDrone):
             0,
             0,
             float("nan"),
-            angular_vel,
+            angular_vel * (math.pi / 180),  # convert from degrees/s to rad/s
         )
 
         return common_protocol.ResponseStatus.COMPLETED
+
+    async def hover(self):
+        if (
+            self.mode == MAVLinkDrone.FlightMode.TAKEOFF
+            or self.mode == MAVLinkDrone.FlightMode.RTL
+            or self.mode == MAVLinkDrone.FlightMode.LAND
+        ):
+            logger.error("Cannot HOVER during TAKEOFF, LAND, or RTL modes")
+            return common_protocol.ResponseStatus.FAILED
+
+        if self._vel_task:
+            self._vel_task.cancel()
+            await self._vel_task
+            self._vel_task = None
+
+        velocity = common_protocol.VelocityBody()
+        velocity.forward_vel = 0.0
+        velocity.right_vel = 0.0
+        velocity.up_vel = 0.0
+        velocity.angular_vel = 0.0
+        await self.set_velocity_body(velocity)
+
+        return common_protocol.ResponseStatus.COMPLETED
+
+    async def _velocity_target_local_ned(
+        self, forward_vel, right_vel, up_vel, angular_vel
+    ):
+        """
+        See the follow Ardupilot documentation for reference.
+        https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html#set-position-target-local-ned
+
+        When sending velocity commands, we need to resend every second or the vehicle will stop.
+        Because asycnio.sleep is no deterministic, we are conservative here and use 0.9.
+        """
+        try:
+            while True:
+                self.vehicle.mav.set_position_target_local_ned_send(
+                    0,
+                    self.vehicle.target_system,
+                    self.vehicle.target_component,
+                    mavutil.mavlink.MAV_FRAME_BODY_NED,
+                    0b010111000111,
+                    0,
+                    0,
+                    0,
+                    forward_vel,
+                    right_vel,
+                    -up_vel,
+                    0,
+                    0,
+                    0,
+                    float("nan"),
+                    angular_vel * (math.pi / 180),  # convert from degrees/s to rad/s
+                )
+                await asyncio.sleep(0.9)
+        except asyncio.CancelledError:
+            logger.info("__velocity_target_local_ned task cancelled.")
 
     async def set_velocity_body(self, velocity_body):
         forward_vel = velocity_body.forward_vel
@@ -152,31 +219,20 @@ class ArduPilotDrone(MAVLinkDrone):
 
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
-
-        self.vehicle.mav.set_position_target_local_ned_send(
-            0,
-            self.vehicle.target_system,
-            self.vehicle.target_component,
-            mavutil.mavlink.MAV_FRAME_BODY_NED,
-            0b010111000111,
-            0,
-            0,
-            0,
-            forward_vel,
-            right_vel,
-            -up_vel,
-            0,
-            0,
-            0,
-            float("nan"),
-            angular_vel,
-        )
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
+        if self._vel_task is None:
+            self._vel_task = asyncio.create_task(
+                self._velocity_target_local_ned(
+                    forward_vel, right_vel, up_vel, angular_vel
+                )
+            )
 
         return common_protocol.ResponseStatus.COMPLETED
 
     async def set_heading(self, location):
         if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
             return common_protocol.ResponseStatus.FAILED
+        self.mode = MAVLinkDrone.FlightMode.GUIDED
         lat = location.latitude
         lon = location.longitude
         heading = location.heading
@@ -213,3 +269,11 @@ class ArduPilotDrone(MAVLinkDrone):
             return common_protocol.ResponseStatus.COMPLETED
         else:
             return common_protocol.ResponseStatus.FAILED
+
+    def _is_takeoff_complete(self, alt):
+        if self._get_global_position()[
+            "relative_altitude"
+        ] > alt or self._is_rel_altitude_reached(alt):
+            self.mode = MAVLinkDrone.FlightMode.LOITER
+            return True
+        return False

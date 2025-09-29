@@ -1,2 +1,2 @@
-gabriel-server
+gabriel-server<4
 pyyaml

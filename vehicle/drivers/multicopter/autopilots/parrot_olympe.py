@@ -803,7 +803,7 @@ class ParrotOlympeDrone(MulticopterItf):
 
     def _is_abs_altitude_reached(self, target_altitude):
         current_altitude = self._get_global_position()["altitude"]
-        return current_altitude >= target_altitude * 0.95
+        return math.isclose(a=current_altitude, b=target_altitude, abs_tol=1)
 
     def _is_global_position_reached(self, lat, lon, alt):
         if self._is_at_target(lat, lon) and self._is_abs_altitude_reached(alt):

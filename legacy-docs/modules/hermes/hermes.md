@@ -43,7 +43,7 @@ optional arguments:
   -s, --sim             Connect to simulated drone instead of a real drone [default: False]
 
 ```
-Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overriden if necessary (e.g. when building an MS for a simulated drone).
+Hermes requires a .kml/.kmz file as input. Beyond that, most options have a default value that can be used or overridden if necessary (e.g. when building an MS for a simulated drone).
 Once Hermes has successfully run, there should be a flightplan.ms file in the ```steeleagle/hermes/``` directory. This file can then be uploaded from a [commander]({{ site.baseurl }}{% link modules/commander.md %}) and sent to a connected drone.
 
 ## New/Updated Task Specifications

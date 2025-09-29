@@ -15,7 +15,7 @@ The Onion Omega 2 LTE's WiFi can only connect to 2.4GHz networks. Here is a [tut
 
 If using the watch, start the watch app. It should show a drone symbol when it has connected to the backend.
 
-If using the Onion, on your backend server, run `cd /path/to/steeleagle/onboard/onion/remote`. Ensure that the Wireguard tunnel is open to the drone by running `sudo wg show`. You should see the tunnel active. You should also be able to ping the drone by running `ping 192.168.42.1`. If both of these actions are successful, run `python3 supervisor.py -s localhost`. You should see Parrot Olympe output messages conaining telemetry from the drone.
+If using the Onion, on your backend server, run `cd /path/to/steeleagle/onboard/onion/remote`. Ensure that the Wireguard tunnel is open to the drone by running `sudo wg show`. You should see the tunnel active. You should also be able to ping the drone by running `ping 192.168.42.1`. If both of these actions are successful, run `python3 supervisor.py -s localhost`. You should see Parrot Olympe output messages containing telemetry from the drone.
 
 Once the Onion or watch are connected, navigate to the root directory of the SteelEagle repository on your computer and run `cd cnc/python_client`. Install requirements with `pip3 install -r requirements.txt` and `apt-get install python3-tk python3-pil python3-pil.imagetk`. Then start the commander by running `python3 commander_client.py -s <IP_OF_BACKEND_SERVER>`. The commander interface should now be visible.
 

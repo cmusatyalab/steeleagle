@@ -165,7 +165,7 @@ def update_imagery():
     )
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
-        st.caption("**:sleuth_or_spy: Object Detection**")
+        st.caption("**:eyes: Object Detection**")
         st.image(
             f"http://{st.secrets.webserver}/detected/drones/{st.session_state.imagery_key}/latest.jpg?a={time.time()}"
         )
@@ -435,9 +435,9 @@ with options_expander:
         key="trail_length",
     )
     mode = (
-        "**:green-background[:joystick: Manual Control Enabled (armed)]**"
+        "**:green-background[Manual Control Enabled (armed)]**"
         if st.session_state.armed
-        else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
+        else "**:red-background[Manual Control Disabled (disarmed)]**"
     )
     tiles_col[4].number_input(
         key="imagery_framerate",
@@ -471,9 +471,7 @@ with st.sidebar:
 
     else:
         st.caption("No active drones.")
-    st.toggle(
-        key="armed", label=":safety_vest: Arm Swarm?", value=st.session_state.armed
-    )
+    st.toggle(key="armed", label=":bangbang: Arm Swarm?", value=st.session_state.armed)
     st.caption(mode)
 
     st.session_state.script_file = st.file_uploader(
@@ -486,14 +484,14 @@ with st.sidebar:
     )
     st.button(
         key="autonomous_button",
-        label=":world_map: Fly Script",
+        label=":scroll: Fly Script",
         type="primary",
         use_container_width=True,
         on_click=run_flightscript,
     )
     st.button(
         key="manual_button",
-        label=":octagonal_sign: Halt All",
+        label=":stop_sign: Halt All",
         help="Immediately tell drones to hover.",
         type="primary",
         disabled=False,
@@ -557,7 +555,7 @@ with st.sidebar:
             step=15,
             value=0,
             format="%d",
-            onchange=adjust_gimbal,
+            on_change=adjust_gimbal,
         )
 
         key_pressed = st_keypressed()
