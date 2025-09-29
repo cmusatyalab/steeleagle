@@ -5,17 +5,6 @@ from pathlib import Path
 from lark import Lark
 from .compiler.ir import MissionIR
 from .compiler.transformer import DroneDSLTransformer
-from .runtime.fsm import MissionFSM
-
-from ..api.actions.primitives import control as control_mod
-from ..api.actions.primitives import compute as compute_mod
-from ..api.actions.primitives import report as report_mod
-
-from ..protocol.services import compute_service_pb2_grpc as compute_rpc
-from ..protocol.services import control_service_pb2_grpc as control_rpc
-from ..protocol.services import report_service_pb2_grpc as report_rpc
-
-
 logger = logging.getLogger(__name__)
 
 # Load and prepare the DSL parser
@@ -33,20 +22,6 @@ def build_mission(dsl_code: str) -> MissionIR:
     )
     return mission
 
-# Type aliases for gRPC stubs
-ComputeStub = compute_rpc.ComputeStub
-ControlStub = control_rpc.ControlStub
-ReportStub  = report_rpc.ReportStub
 
-async def execute_mission(msn: MissionIR, control: ControlStub, compute: ComputeStub, report: ReportStub) -> None:
-    '''Execute the mission using the provided gRPC stubs.'''
-    control_mod.STUB = control
-    compute_mod.STUB = compute
-    report_mod.STUB  = report
-
-    fsm = MissionFSM(msn)
-    await fsm.run()
-
-
-__all__ = ["build_mission", "execute_mission"]
+__all__ = ["build_mission"]
 

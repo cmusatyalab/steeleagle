@@ -715,10 +715,15 @@ class SimulatedDrone:
         else:
             logger.info(f"Completed orientation to bearing {target_bearing}")
 
+        current_pos = self.get_current_position()
+        home_pos = self.get_home_location()
+        logger.info(f"curr_pos: {current_pos}, home_pos: {home_pos}")
+        
         self._set_position_target(home_pos[0], home_pos[1], current_pos[2])
         result = await self._wait_for_condition(
             lambda: self._check_position_reached(), timeout=None, interval=0.1
         )
+        logger.info ("return_to_home: Reached home coordinates, beginning descent...")
         current_position = self.get_current_position()
 
         self._zero_velocity()
