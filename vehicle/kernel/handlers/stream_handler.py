@@ -1,10 +1,10 @@
 import asyncio
 import zmq
 import time
+import logging
 # Utility import
 from util.config import query_config
 from util.sockets import setup_zmq_socket, SocketOperation
-from util.log import get_logger
 # Gabriel import
 from gabriel_client.zeromq_client import ZeroMQClient
 from gabriel_client.gabriel_client import InputProducer
@@ -14,7 +14,7 @@ from gabriel_server import cognitive_engine
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
 from steeleagle_sdk.protocol.messages.result_pb2 import ComputeResult
 
-logger = get_logger('kernel/handlers/stream_handler')
+logger = logging.getLogger('kernel/handlers/stream_handler')
 
 class StreamHandler:
     '''

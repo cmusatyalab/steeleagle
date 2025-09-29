@@ -1,17 +1,19 @@
-# Proto binding imports
+import asyncio
+from concurrent import futures
 import grpc
+import logging
+# Protocol imports
 from steeleagle_sdk.protocol.services import control_service_pb2, control_service_pb2_grpc
 from steeleagle_sdk.protocol.services import mission_service_pb2, mission_service_pb2_grpc
 from steeleagle_sdk.protocol.services import report_service_pb2, report_service_pb2_grpc
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
-import asyncio
+# Utility import
+from util.log import setup_logging
+setup_logging()
 from util.config import query_config
-from concurrent import futures
 
-import logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 async def main():
     # setup the stubs

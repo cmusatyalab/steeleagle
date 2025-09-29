@@ -1,9 +1,8 @@
 import grpc
 from grpc_interceptor.server import AsyncServerInterceptor
-# Utility import
-from util.log import get_logger
+import logging
 
-logger = get_logger('kernel/laws/interceptor')
+logger = logging.getLogger('kernel/laws/interceptor')
     
 class LawInterceptor(AsyncServerInterceptor):
     '''

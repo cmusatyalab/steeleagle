@@ -1,5 +1,6 @@
 import asyncio
 import math
+import logging
 
 # Streaming Imports
 import threading
@@ -27,9 +28,8 @@ from util.cleanup import register_cleanup_handler
 
 # Utility imports
 from util.config import query_config
-from util.log import get_logger
 
-logger = get_logger("driver/digital_perfect")
+logger = logging.getLogger("driver/digital_perfect")
 
 
 # Flight modes
