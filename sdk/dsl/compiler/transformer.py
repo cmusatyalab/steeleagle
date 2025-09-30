@@ -163,13 +163,17 @@ class DroneDSLTransformer(Transformer):
             "transform: building MissionIR (actions=%d, events=%d, data=%d)",
             len(self._actions), len(self._events), len(self._data)
         )
-        transitions: Dict[str, Dict[str, str]] = {}
 
+        transitions: Dict[str, Dict[str, str]] = {}
         for aid, evmap in self._during.items():
             am = transitions.setdefault(aid, {})
-            for eid, nxt_aid in evmap.items():
-                am[eid] = nxt_aid
-            am.setdefault(_DONE_EVENT, _TERMINATE_AID) 
+            am.update(evmap)
+
+        # Ensure every defined action has a default 'done' edge to terminate
+        for aid in self._actions.keys():
+            logger.info("ensuring action %s has 'done' transition", aid)
+            am = transitions.setdefault(aid, {})
+            am.setdefault(_DONE_EVENT, _TERMINATE_AID)
 
         mir = MissionIR(
             actions=self._actions,
