@@ -46,10 +46,10 @@ def test_services(test, log):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configures the logger and starts all major modules.')
-    parser.add_argument('--test', type=str, default=None, help='Run a test (for all: test/tests, for specific: test/tests/<name>)')
-    parser.add_argument('--config', type=str, default='config.toml', help='Config file path')
-    parser.add_argument('--internal', type=str, default='.internal.toml', help='Internal config file path')
-    parser.add_argument('--law', type=str, default='.laws.toml', help='Law config file path')
+    parser.add_argument('--test', type=str, help='run a test or set of tests in a directory (e.g. test/)')
+    parser.add_argument('--config', type=str, default='config.toml', help='override config file path (default: config.toml)')
+    parser.add_argument('--internal', type=str, default='.internal.toml', help='override internal config file path (default: .internal.toml)')
+    parser.add_argument('--law', type=str, default='.laws.toml', help='override law config file path (default: .laws.toml)')
     args = parser.parse_args()
 
     # Set environment variables here
