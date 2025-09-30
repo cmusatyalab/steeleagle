@@ -16,7 +16,18 @@ service Remote {
   // Sends a service request to a vehicle core service (Control, Mission, etc.)
   // over ZeroMQ and returns the response
   rpc Command (CommandRequest)
-	returns (stream steeleagle.protocol.common.Response) {}
+  returns (stream steeleagle.protocol.common.Response) {}
+  rpc CompileMission (CompileMissionRequest)
+  returns (stream CompileMissionResponse) {} // used uncommon response here only because it expect to have payload field as response
+}
+
+message CompileMissionRequest{
+  string dsl_content = 1;
+}
+
+message CompileMissionResponse{
+  string compiled_dsl_content = 1;
+  steeleagle.protocol.common.Response response = 2;
 }
 
 message CommandRequest {
