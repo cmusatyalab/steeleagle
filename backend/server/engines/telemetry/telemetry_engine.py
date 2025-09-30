@@ -68,7 +68,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.mcap.close()
 
     def updateDroneStatus(self, extras):
-        telemetry = extras.telemetry
+        telemetry = extras.vehicle_telem
         global_pos = telemetry.global_position
         rel_pos = telemetry.relative_position
         body_vel = telemetry.velocity_body
