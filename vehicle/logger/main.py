@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 # Utility import
 from util.config import query_config
 from util.cleanup import register_cleanup_handler
-register_cleanup_handler() # Cleanup handler for SIGTERM
 # Protocol import
 from steeleagle_sdk.protocol.services import flight_log_service_pb2_grpc
 # Service import
@@ -32,6 +31,12 @@ async def main():
     flight_log_service_pb2_grpc.add_FlightLogServicer_to_server(log_server, server)
     # Add log channel to server
     server.add_insecure_port(query_config('internal.services.flight_log'))
+
+    # Create a cleanup handler that will flush the log
+    def cleanup(signum, frame):
+        log_server.cleanup()
+        raise SystemExit(1)
+    register_cleanup_handler(cleanup)
     
     await server.start()
 
@@ -39,8 +44,6 @@ async def main():
         await server.wait_for_termination()
     except (SystemExit, asyncio.exceptions.CancelledError):
         await server.stop(1)
-    finally:
-        log_server.cleanup()
         
 if __name__ == "__main__":
     asyncio.run(main())

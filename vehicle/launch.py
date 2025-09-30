@@ -1,7 +1,3 @@
-# /// script
-# dependencies = []
-# ///
-
 import os
 import time
 import subprocess
@@ -24,6 +20,7 @@ def start_services(script, log):
         task = subprocess.Popen(subp)
         running.append(task)
         time.sleep(0.1)
+    running.reverse() # Reverse the processes so the logger dies last
     try:
         for subp in running:
             subp.wait()
@@ -31,26 +28,21 @@ def start_services(script, log):
         for subp in running:
             subp.terminate()
             subp.wait()
-            print(f'Killed {subp}')
 
 def test_services(test, log):
-    running = []
-    logger = ['python', 'logger/main.py']
-    tester = [['pytest', f'{test}', '-s', '-vv']]
-    if log:
-        tester.insert(0, logger)
-    for subp in tester:
-        task = subprocess.Popen(subp)
-        running.append(task)
-        time.sleep(0.1)
+    logger_task = subprocess.Popen(['python', 'logger/main.py'])
+    time.sleep(0.1)
+    test_task = subprocess.Popen(['pytest', f'{test}', '-s', '-vv'])
+    time.sleep(0.1)
     try:
-        for subp in running:
-            subp.wait()
+        test_task.wait()
+        logger_task.terminate()
+        logger_task.wait()
     except SystemExit:
-        for subp in running:
-            subp.terminate()
-            subp.wait()
-            print(f'Killed {subp}')
+        test_task.terminate()
+        test_task.wait()
+        logger_task.terminate()
+        logger_task.wait()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configures the logger and starts all major modules.')

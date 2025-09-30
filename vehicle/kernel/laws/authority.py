@@ -132,15 +132,17 @@ class LawAuthority:
                 user_matches = self._law['rules']['match']
             for expr in user_matches: # User specified
                 if self.check_equal(command, request, expr[0]):
+                    matched = expr
                     next_state = expr[1]
                     break
             for expr in matches: # Base cases
                 if self.check_equal(command, request, expr[0]):
+                    matched = expr
                     next_state = expr[1]
                     break
         if next_state and next_state != self._state:
             logger.info(
-                    f'{command} matches match expression {expr}; switching law to {next_state}!'
+                    f'{command} matches match expression {matched}; switching law to {next_state}!'
                     )
             await self.set_law(next_state)
 
