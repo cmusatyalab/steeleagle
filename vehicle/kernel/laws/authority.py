@@ -10,15 +10,15 @@ from google.protobuf import any_pb2
 import toml
 import os
 from fnmatch import fnmatch
+import logging
 import aiorwlock
 # Utility import
-from util.log import get_logger
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import native_grpc_call, generate_response, generate_request
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors
 
-logger = get_logger('kernel/laws/authority')
+logger = logging.getLogger('kernel/laws/authority')
 
 # Failsafe classifications
 class Failsafe(Enum):
@@ -132,15 +132,17 @@ class LawAuthority:
                 user_matches = self._law['rules']['match']
             for expr in user_matches: # User specified
                 if self.check_equal(command, request, expr[0]):
+                    matched = expr
                     next_state = expr[1]
                     break
             for expr in matches: # Base cases
                 if self.check_equal(command, request, expr[0]):
+                    matched = expr
                     next_state = expr[1]
                     break
         if next_state and next_state != self._state:
             logger.info(
-                    f'{command} matches match expression {expr}; switching law to {next_state}!'
+                    f'{command} matches match expression {matched}; switching law to {next_state}!'
                     )
             await self.set_law(next_state)
 

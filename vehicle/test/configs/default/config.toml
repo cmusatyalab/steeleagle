@@ -2,7 +2,7 @@
 name = 'test'
 # Each test specifies its own driver to run (whether that be the
 # DigitalPerfect driver or a mock driver)
-package = ''
+script = ''
 kwargs = {}
 
 [cloudlet]
@@ -12,16 +12,11 @@ remote_compute_service = 'localhost:9006'
 [logging]
 # Whether or not to create an MCAP flight log for mission replay
 generate_flight_log = true
-# Whether or not to log to console
-log_to_console = true
 # Log to a custom filename; otherwise will autogenerate
 # a name based on name, date, and time if empty string
 # is provided
 custom_filename = '' 
 # Path to log file
-file_path = './kernel/logs/'
+file_path = 'logger/logs'
 # Log level
 log_level = 'DEBUG'
-
-[testing]
-testing = true

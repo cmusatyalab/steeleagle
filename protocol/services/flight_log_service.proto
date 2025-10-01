@@ -26,10 +26,12 @@ message LogRequest {
 }
 
 enum LogType {
-  INFO = 0;
-  DEBUG = 1;
-  WARNING = 2;
-  ERROR = 3;
+  DEBUG = 0;
+  INFO = 1;
+  PROTO = 2;
+  WARNING = 3;
+  ERROR = 4;
+  CRITICAL = 5;
 }
 
 message LogMessage {

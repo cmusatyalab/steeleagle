@@ -15,6 +15,7 @@ import uuid
 import grpc
 from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
 from steeleagle_sdk.protocol.services.control_service_pb2 import ReturnToHomeRequest, HoldRequest, JoystickRequest, TakeOffRequest, LandRequest
+from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest, CompileMissionRequest
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
 
 
@@ -94,8 +95,15 @@ def run_flightscript():
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        # TODO
-        pass
+        req = CommandRequest()
+        dsl_script = st.session_state.script_file[0].read()
+        compile_req = CompileMissionRequest(dsl_content=dsl_script)
+        compile_response = st.session_state.stub.CompileMission(compile_req)
+        data = UploadRequest(request=generate_request())
+        data.mission.content = compile_response.compiled_dsl_content
+        req.method_name = 'Mission.Upload'
+        req.request.Pack(data)
+        
 
 def get_callback(toast_message):
     def callback(future):

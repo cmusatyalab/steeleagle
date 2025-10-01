@@ -2,7 +2,6 @@ import asyncio
 import logging
 import grpc
 # Utility import
-from util.log import get_logger
 from util.config import query_config
 # Sequencer import
 from test.message_sequencer import Topic, MessageSequencer
@@ -13,7 +12,7 @@ from steeleagle_sdk.protocol.services.compute_service_pb2_grpc import ComputeStu
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from google.protobuf import any_pb2
 
-logger = get_logger('test/mock_mission')
+logger = logging.getLogger('test/mock_mission')
 
 class MockMissionClient:
     '''

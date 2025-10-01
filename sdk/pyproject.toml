@@ -13,7 +13,7 @@ name = "steeleagle-sdk"
 version = "1.0.0"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
     { name = "Mihir Bala", email = "mbala@andrew.cmu.edu" },
