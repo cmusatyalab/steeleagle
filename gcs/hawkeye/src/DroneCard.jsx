@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { useContext } from 'react';
 import './DroneCard.css';
+import { SelectedVehiclesContext } from './SelectedVehiclesContext.js';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
@@ -9,7 +11,8 @@ import Stack from 'react-bootstrap/Stack'
 import Button from 'react-bootstrap/Button';
 
 
-function DroneCard({ data, onClick }) {
+function DroneCard({ data, togglefunc}) {
+    const selectedVehicles = useContext(SelectedVehiclesContext);
     var battery_icon = ""
     var battery_style = "success"
     if (data.battery > 75) {
@@ -35,7 +38,7 @@ function DroneCard({ data, onClick }) {
 
 
   return (
-            <Button variant="dark" onClick={onClick}>
+            <Button variant={data.selected ? "light" : "dark"} onClick={() => togglefunc(data.name)}>
             <Card  bg='dark' text='light' border='light' >
             <Card.Body>
                 <Card.Title >🚁{data.name}</Card.Title>

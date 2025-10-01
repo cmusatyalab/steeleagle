@@ -1,5 +1,15 @@
 .vehiclegroup {
-    overflow-y: scroll;
-    scrollbar-color: red orange;
-    scrollbar-width: thin;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: 10px;
+    width: 100%;
+}
+.vehiclegroup .card-group {
+    flex-wrap: nowrap;
+    display: flex;
+    width: max-content;
+}
+.vehiclegroup .card {
+    flex: 0 0 auto;
+    min-width: 250px;
 }

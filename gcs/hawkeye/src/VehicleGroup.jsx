@@ -4,8 +4,7 @@ import DroneCard from './DroneCard.jsx'
 
 import CardGroup from 'react-bootstrap/CardGroup';
 
-function VehicleGroup({ selectedList, vehicles, onClick }) {
-
+function VehicleGroup({ vehicles, togglefunc }) {
 
   return (
     <div className='vehiclegroup'>
@@ -13,7 +12,7 @@ function VehicleGroup({ selectedList, vehicles, onClick }) {
 
         <CardGroup>
         {vehicles.map((name,index) => (
-        <DroneCard key={index} data={vehicles[index]} onClick={onClick}/>
+        <DroneCard key={index} data={vehicles[index]} togglefunc={togglefunc}/>
         ))}
 
 
