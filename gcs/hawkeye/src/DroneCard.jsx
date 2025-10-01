@@ -11,7 +11,6 @@ import Button from 'react-bootstrap/Button';
 
 
 function DroneCard({ data, togglefunc}) {
-    const selectedVehicles = useContext(SelectedVehiclesContext);
     var battery_icon = ""
     var battery_style = "success"
     var battery_text_style = "light"
