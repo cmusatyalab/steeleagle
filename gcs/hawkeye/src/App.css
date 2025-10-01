@@ -26,7 +26,7 @@ body, html, #root {
 }
 
 .App-header {
-  background-image: linear-gradient(to left, #1b1b1b, #19191a);
+  background-image: linear-gradient(to top, #340a61, #1b1b1b);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -66,6 +66,7 @@ body, html, #root {
 
 .nav-title {
   font-size: 1.2em;
+  padding-right: 40px;
 }
 
 .App-bottom-tray {

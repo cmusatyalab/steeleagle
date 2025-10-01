@@ -1,4 +1,5 @@
 .vehiclegroup {
+    padding: 20px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: 10px;

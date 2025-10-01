@@ -70,7 +70,7 @@ function App() {
           </button>
           <span className="nav-title">Hawkeye</span>
           {vehicles.filter(item => item.selected).map(item => (
-            <Badge pill bg="secondary" key={item.name}>{item.name}</Badge>
+            <Badge pill bg="light" text="dark" key={item.name}>{item.name}</Badge>
           ))}
         </div>
       </nav>
