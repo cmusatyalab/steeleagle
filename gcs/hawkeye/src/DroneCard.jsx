@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useContext } from 'react';
 import './DroneCard.css';
-import { SelectedVehiclesContext } from './SelectedVehiclesContext.js';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
@@ -15,6 +14,7 @@ function DroneCard({ data, togglefunc}) {
     const selectedVehicles = useContext(SelectedVehiclesContext);
     var battery_icon = ""
     var battery_style = "success"
+    var battery_text_style = "light"
     if (data.battery > 75) {
         battery_icon ="fa-battery-full"
         battery_style="success"
@@ -25,7 +25,8 @@ function DroneCard({ data, togglefunc}) {
     }
     else if (data.battery <= 50 && data.battery >25) {
         battery_icon ="fa-battery-half"
-        battery_style="warning"
+        battery_style ="warning"
+        battery_text_style = "dark"
     }
     else if (data.battery <= 25 && data.battery >0) {
         battery_icon ="fa-battery-quarter"
@@ -45,7 +46,7 @@ function DroneCard({ data, togglefunc}) {
                 <Card.Title >🚁{data.name}</Card.Title>
                 <Card.Subtitle>{data.model}</Card.Subtitle>
                     <Stack direction="horizontal" gap={1} style={{ margin: '5px', }}>
-                    <Badge pill bg={battery_style}>
+                    <Badge pill bg={battery_style} text={battery_text_style}>
                         <FontAwesomeIcon icon={`fas-solid ${battery_icon}`} /> {data.battery}%
                     </Badge>
                     <Badge pill bg="secondary">
