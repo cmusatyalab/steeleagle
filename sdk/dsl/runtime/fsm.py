@@ -26,7 +26,7 @@ class MissionFSM:
         self.mission = mission
         self.transition: Dict[str, Dict[str, str]] = mission.transitions
         self.start_action_id: str = mission.start_action_id
-
+        
     async def run(self):
         state = self.start_action_id
         while state != _TERMINATE:

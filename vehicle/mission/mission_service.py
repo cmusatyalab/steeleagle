@@ -9,7 +9,9 @@ from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
 from steeleagle_sdk.api.actions.primitives import control as control_mod
 from steeleagle_sdk.api.actions.primitives import compute as compute_mod
 from steeleagle_sdk.api.actions.primitives import report as report_mod
+from steeleagle_sdk.api.datatypes import waypoint as map_mod
 from dacite import from_dict
+from fastkml import kml
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,12 +23,16 @@ class MissionService(MissionServicer):
         self.stubs= stubs
         self.mission: Optional[MissionIR] = None
         self.mission_routine: Optional[asyncio.Task] = None
-
+        self.mission_map = None
+        
     def _load(self, mission_content):
         json_data = json.loads(mission_content)
         mission_ir = from_dict(MissionIR, json_data)
         return mission_ir
-
+    def _load_map(self, map_content):
+        kml_doc = kml.KML()
+        kml_doc.from_string(map_content)
+        return kml_doc
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
@@ -34,6 +40,9 @@ class MissionService(MissionServicer):
         mission_ir = self._load(mission_content)
         logger.info(f"Loaded mission: {mission_ir}")
         self.mission = mission_ir
+        map = self._load_map(request.mission.mission_map)
+        self.mission.mission_map = map
+        logger.info(f"Loaded mission map: {map}")
         return generate_response(2, "Mission uploaded")
 
     async def _start(self):
@@ -53,6 +62,7 @@ class MissionService(MissionServicer):
             control_mod.STUB = self.stubs.get("control")
             compute_mod.STUB = self.stubs.get("compute")
             report_mod.STUB  = self.stubs.get("report")
+            map_mod.MISSION_MAP = self.mission.mission_map
             self.mission_routine = await self._start()
             return generate_response(2)
 

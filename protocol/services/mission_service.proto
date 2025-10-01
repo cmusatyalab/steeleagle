@@ -30,6 +30,7 @@ service Mission {
 
 message MissionData {
   string content  = 1; // URI, either local or remote, of a mission file
+  bytes map = 2; // kml object
 }
 
 message UploadRequest {

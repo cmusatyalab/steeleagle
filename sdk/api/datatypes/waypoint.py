@@ -1,17 +1,17 @@
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 from ...dsl.compiler.registry import register_data
 from ...dsl.partitioner.algos.corridor import CorridorPartition
 from ...dsl.partitioner.algos.edge import EdgePartition
 from ...dsl.partitioner.algos.survey import SurveyPartition
-
 from ...dsl.partitioner.geopoints import GeoPoints
 from ...dsl.partitioner.utils import parse_kml_file
 import logging
 logger = logging.getLogger(__name__)
 
 
+MISSION_MAP: Dict[str, Any]
 
 class RelativePoint(BaseModel):
     pass  # Placeholder for future implementation

@@ -1,7 +1,6 @@
 from __future__ import annotations
 import logging
 from pathlib import Path
-
 from lark import Lark
 from .compiler.ir import MissionIR
 from .compiler.transformer import DroneDSLTransformer
