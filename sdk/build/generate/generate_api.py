@@ -11,7 +11,10 @@ _SKIP_FILES = [
     'services/mission_service.proto',
     'services/flight_log_service.proto',
     'messages/compute_payload.proto',
-    'testing/testing.proto'
+    'testing/testing.proto',
+    'google/protobuf/timestamp.proto',
+    'google/protobuf/duration.proto',
+    'google/protobuf/any.proto'
 ]
 
 ''' Type definitions for Jinja '''
@@ -196,8 +199,6 @@ def get_fields(fields, enum_map):
             elif 'service' in file:
                 typ = f'params.{typ}'
             else:
-                if file == 'protobuf':
-                    file = typ.lower()
                 typ = f'{file}.{typ}'
         else:
             raise ValueError(f'Unknown field type {field.type}!')

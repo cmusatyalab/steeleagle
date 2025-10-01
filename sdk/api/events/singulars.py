@@ -112,7 +112,7 @@ class SatellitesReached(Event):
 class GimbalPoseReached(Event):
     """
     Fires when gimbal pose matches target within tolerances.
-    You can specify any subset of {roll, pitch, yaw} (or x,y,z if your pose encodes axes).
+    You can specify any subset of `{roll, pitch, yaw}` (or x,y,z if your pose encodes axes).
     """
     # target angles/axes (degrees or units your telemetry uses)
     roll: Optional[float] = None

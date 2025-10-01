@@ -30,7 +30,7 @@ class Waypoints(BaseModel):
     def calculate(self) -> Dict[str, List[Dict[str, float]]]:
         """
         Partition areas from a KML/GeoJSON and return:
-        { area_name: [ {lat: float, long: float, alt: float}, ... ] }
+        `{ area_name: [ {lat: float, long: float, alt: float}, ... ] }`
         """
         if not self.path:
             raise ValueError("Waypoints.path is required")

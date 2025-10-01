@@ -4,7 +4,8 @@ requires = [
     "grpcio-tools>=1.71.2",
     "protobuf>=5.29.5",
     "protoletariat>=3.3.10",
-    "Jinja2"
+    "Jinja2",
+    "pydoc-markdown>=4.8.2",
 ]
 build-backend = "hatchling.build"
 
@@ -61,17 +62,10 @@ Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
 
 [tool.hatch.build.targets.sdist]
 ignore-vcs = true
-exclude = [
-    "build/src/*"
-]
 
 [tool.hatch.build.targets.wheel]
 ignore-vcs = true
 packages = ["build/src/steeleagle_sdk"]
-include = [
-    "build/src/steeleagle_sdk/**/*.py",
-    "build/src/steeleagle_sdk/protocol/protocol.desc"
-]
 
 [tool.hatch.build.targets.sdist.hooks.custom]
 path = "build/prebuild.py"

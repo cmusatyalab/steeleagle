@@ -63,7 +63,7 @@ vehicle/docker-compose.*
 # Secrets
 secrets.toml
 
-# -- Docs --
+# Docs
 
 # Dependencies
 docs/node_modules

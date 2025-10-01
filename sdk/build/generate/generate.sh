@@ -1,11 +1,9 @@
 PROTOCPATH="python -m grpc_tools.protoc"
 
-cp -r ../../../protocol ../src/*/
+cp -r ../../../protocol ../../temp
 
-cd ../src/*/
-mv protocol temp
+cd ../../
 _DESCPATH=`pwd`'/protocol/protocol.desc'
-mkdir protocol
 cd temp
 
 # Build the message protocols
@@ -48,10 +46,9 @@ $PROTOCPATH -I. \
 
 cd ..
 protol -o protocol --in-place raw protocol/protocol.desc
-rm -rf ../temp
-cp ../../extras/* ./protocol/
+rm -rf temp
 
-cd ../../generate
+cd build/generate
 
 # Construct the API
 DESCPATH=$_DESCPATH python generate_api.py
