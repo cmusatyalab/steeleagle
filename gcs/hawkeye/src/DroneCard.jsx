@@ -39,6 +39,7 @@ function DroneCard({ data, togglefunc}) {
 
   return (
             <Button variant={data.selected ? "light" : "dark"} onClick={() => togglefunc(data.name)}>
+            <FontAwesomeIcon icon={`fas-solid ${data.selected ? "fa-square-check" : ""}`} />
             <Card  bg='dark' text='light' border='light' >
             <Card.Body>
                 <Card.Title >🚁{data.name}</Card.Title>

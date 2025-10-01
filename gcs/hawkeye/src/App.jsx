@@ -5,12 +5,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 
+import ListGroup from 'react-bootstrap/ListGroup';
+import Badge from 'react-bootstrap/Badge'
+
 import Mapbox from './Mapbox.jsx'
 import Drawer from './Drawer.jsx'
 import VehicleGroup from './VehicleGroup.jsx'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
+import ListGroupItem from 'react-bootstrap/esm/ListGroupItem.js'
 
 library.add(fas)
 
@@ -65,11 +69,9 @@ function App() {
             <FontAwesomeIcon icon={`fas-solid ${isDrawerOpen ? "fa-eye-slash" : "fa-eye"}`} />
           </button>
           <span className="nav-title">Hawkeye</span>
-          <ul>
           {vehicles.filter(item => item.selected).map(item => (
-            <li key={item.name}>{item.name}</li>
+            <Badge pill bg="secondary" key={item.name}>{item.name}</Badge>
           ))}
-        </ul>
         </div>
       </nav>
 
