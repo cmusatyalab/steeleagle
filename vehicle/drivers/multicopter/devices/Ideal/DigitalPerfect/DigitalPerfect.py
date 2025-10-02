@@ -186,12 +186,8 @@ class DigitalPerfect(ControlServicer):
                     resp_string="Drone already in hold state...",
                 )
             else:
-                velocity = common_protocol.VelocityBody()
-                velocity.forward_vel = 0.0
-                velocity.right_vel = 0.0
-                velocity.up_vel = 0.0
-                velocity.angular_vel = 0.0
-                await self.set_velocity_body(velocity)
+                self._drone._set_velocity_target(0, 0, 0)
+                self._drone.set_angular_velocity(0)
                 while not self._is_hovering():
                     yield generate_response(
                         resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
@@ -316,6 +312,26 @@ class DigitalPerfect(ControlServicer):
             grpc.StatusCode.UNIMPLEMENTED,
             "SetRelativePosition in ENU frame not implemented for digital drone",
         )
+        
+    async def Joystick(self, request, context):
+        try:
+            forward_vel = request.velocity.x_vel
+            right_vel = request.velocity.y_vel
+            up_vel = request.velocity.z_vel
+            angular_vel = request.velocity.angular_vel
+
+            await self._switch_mode(FlightMode.VELOCITY)
+
+            self._velocity_setpoint = (forward_vel, right_vel, up_vel, angular_vel)
+            self._drone._set_velocity_target(forward_vel, right_vel, up_vel)
+            self._drone.set_angular_velocity(angular_vel)
+            return generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Joystick set successfully",
+            )
+        except Exception as e:
+            logger.error(f"Error occurred during Joystick: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def SetVelocity(self, request, context):
         try:

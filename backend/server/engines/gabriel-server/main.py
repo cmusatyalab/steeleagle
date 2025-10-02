@@ -8,18 +8,17 @@
 import argparse
 import logging
 
-from gabriel_server.network_engine import server_runner
-from util.utils import setup_logging
+from gabriel_server.network_engine.server_runner import ServerRunner
 
 DEFAULT_PORT = 9099
 DEFAULT_NUM_TOKENS = 2
 INPUT_QUEUE_MAXSIZE = 60
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 def main():
-    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -32,7 +31,7 @@ def main():
     )
 
     parser.add_argument(
-        "-q",
+        "-q"
         "--queue",
         type=int,
         default=INPUT_QUEUE_MAXSIZE,
@@ -45,13 +44,14 @@ def main():
 
     args, _ = parser.parse_known_args()
 
-    server_runner.run(
-        websocket_port=args.port,
-        zmq_address="tcp://*:5555",
+    server_runner = ServerRunner(
+        client_endpoint=args.port,
+        engine_zmq_endpoint="tcp://*:5555",
         num_tokens=args.tokens,
-        input_queue_maxsize=args.queue,
+        input_queue_maxsize=INPUT_QUEUE_MAXSIZE, #TODO: Don't hardcode this
         use_zeromq=args.zmq,
     )
+    server_runner.run()
 
 
 if __name__ == "__main__":

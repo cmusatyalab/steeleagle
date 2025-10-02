@@ -13,7 +13,7 @@ from telemetry_engine import TelemetryEngine
 import logging
 SOURCE = "telemetry"
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
     

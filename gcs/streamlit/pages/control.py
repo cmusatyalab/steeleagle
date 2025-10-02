@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
+import threading
 import time
 from zipfile import ZipFile
 import folium
@@ -121,11 +122,10 @@ def enable_manual():
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
         req.vehicle_id = d
-        call_future = st.session_state.stub.Command.future(req.SerializeToString())
-        call_future.add_done_callback(get_callback(f'{d} holding!'))
+        st.session_state.stub.Command(req)
 
     st.toast(
-        f"Instructed {req.veh.drone_ids} to hold!"
+        f"Instructed vehicle to hold!"
     )
 
 def rth():
@@ -135,9 +135,8 @@ def rth():
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
         req.vehicle_id = d
-        call_future = st.session_state.stub.Command.future(req.SerializeToString())
-        call_future.add_done_callback(get_callback(f"{d} finished return home!"))
-    st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
+        st.session_state.stub.Command(req)
+    st.toast(f"Instructed vehicle to return to home!")
 
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
@@ -452,12 +451,12 @@ with st.sidebar:
             data = TakeOffRequest(request=generate_request(), take_off_altitude=5.0)
             req.method_name = 'Control.TakeOff'
             req.request.Pack(data)
-            st.info(f"Instructed {req.veh.drone_ids} to takeoff.")
+            st.info(f"Instructed vehicle to takeoff.")
         elif key_pressed == "g":
             data = LandRequest(request=generate_request())
             req.method_name = 'Control.Land'
             req.request.Pack(data)
-            st.info(f"Instructed {req.veh.drone_ids} to land.")
+            st.info(f"Instructed vehicle to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
             if key_pressed == "w":
@@ -503,9 +502,12 @@ with st.sidebar:
         key_pressed = None
         
         for d in st.session_state.selected_drones:
-            req.veh.drone_ids.append(d)
             # STUB SEND MANUAL
             req.vehicle_id = d
-            call_future = st.session_state.stub.Command.future(req.SerializeToString())
-            call_future.add_done_callback(get_callback(f"{d} manual command finished!"))
 
+            def send_command_thread(stub, req):
+                for resp in stub(req):
+                    pass
+
+            thread = threading.Thread(target=send_command_thread, args=(st.session_state.stub.Command, req))
+            thread.start()

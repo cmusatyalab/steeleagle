@@ -65,7 +65,7 @@ class SwarmController(RemoteServicer):
         '''
         Check to see if a response has been received for a RemoteControl request.
         '''
-        async with self._response_map_lock.reader_lock():
+        async with self._response_map_lock.reader_lock:
             return self._response_map[sequence_number] if sequence_number in self._response_map \
                 else None
     
@@ -76,11 +76,12 @@ class SwarmController(RemoteServicer):
         try:
             yield generate_response(0)
             request.sequence_number = await self._get_sequence_number()
+            request.identity = 'server'
             await self._router_sock.send_multipart(
                 [request.vehicle_id.encode("utf-8"), request.SerializeToString()]
             )
             response = None
-            while not response and context.is_active():
+            while not response:
                 yield generate_response(1) 
                 await asyncio.sleep(1)
                 response = await self._poll_for_response(request.sequence_number)
@@ -96,7 +97,7 @@ class SwarmController(RemoteServicer):
                 # Parse the raw data into a response
                 response = CommandResponse()
                 response.ParseFromString(data)
-                async with self._response_map_lock.writer_lock():
+                async with self._response_map_lock.writer_lock:
                     self._response_map[response.sequence_number] = response.response
         except asyncio.exceptions.CancelledError:
             return
@@ -109,6 +110,13 @@ async def main():
         type=int,
         default=5003,
         help="Specify port to listen for vehicle connections [default: 5003]",
+    )
+    parser.add_argument(
+        "-c",
+        "--commander_port",
+        type=int,
+        default=5004,
+        help="Specify port to listen for commander connections [default: 5004]",
     )
     parser.add_argument(
         "-r",
@@ -143,6 +151,8 @@ async def main():
             )
     sc = SwarmController(router_sock)
     add_RemoteServicer_to_server(sc, server)
+    server.add_insecure_port(f'[::]:{args.commander_port}')
+    logger.info(f"Listening on tcp//*:{args.commander_port} for commander connections...")
     await server.start()
     listen_for_responses_task = asyncio.create_task(sc.listen_for_responses())
     try:

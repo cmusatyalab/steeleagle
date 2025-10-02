@@ -9,7 +9,7 @@
 
 services:
   gabriel-server:
-    image: cmusatyalab/gabriel-server
+    image: xianglic/gabriel-server
     container_name: gabriel-server
     ports:
       - "9099:9099"
@@ -41,6 +41,7 @@ services:
     restart: unless-stopped
     ports:
       - "5003:5003"
+      - "5004:5004"
       - "6001:6001"
     privileged: true
     entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}"]

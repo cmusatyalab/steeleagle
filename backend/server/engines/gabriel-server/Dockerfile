@@ -16,10 +16,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install --upgrade pip
 
-COPY backend/server/engines/gabriel-server/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN python3 -m pip install -r requirements.txt
-COPY backend/server/engines/gabriel-server/main.py main.py
-COPY vehicle/util util
+COPY main.py main.py
 
 EXPOSE 5555 9099
 

@@ -11,12 +11,12 @@ import os
 import signal
 import time
 import cv2
-import foxglove
+#import foxglove
 import google.protobuf.json_format as json_format
 import numpy as np
 import pytz
 import redis
-from foxglove.schemas import CompressedImage, LocationFix
+#from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from PIL import Image
@@ -24,8 +24,6 @@ from PIL import Image
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
-log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-logger.setLevel(getattr(logging, log_level, logging.INFO))
 
 
 class TelemetryEngine(cognitive_engine.Engine):
@@ -55,22 +53,22 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
         now = datetime.datetime.now(pytz.timezone("America/New_York"))
-        self.mcap = foxglove.open_mcap(
-            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
-        )
-        self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+        #self.mcap = foxglove.open_mcap(
+        #    f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
+        #)
+        #self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
     def cleanup(self, signum, frame):
         logger.info("Stopping WS server and flushing MCAP file...")
-        self.fg_server.stop()
-        self.mcap.close()
+        #self.fg_server.stop()
+        #self.mcap.close()
 
     def updateDroneStatus(self, extras):
-        global_pos = extras.global_position
-        rel_pos = extras.relative_position
-        body_vel = extras.velocity_body
-        enu_vel = extras.velocity_enu
-        gimb_pose = extras.gimbal_pose
+        global_pos = extras.position_info.global_position
+        rel_pos = extras.position_info.relative_position
+        body_vel = extras.position_info.velocity_body
+        enu_vel = extras.position_info.velocity_enu
+        gimb_pose = extras.gimbal_info.gimbals[0].pose_body # TODO: Change this to check if gimbal exists 
         vehicle_info = extras.vehicle_info
         alert_info = extras.alert_info
         
@@ -80,40 +78,40 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
                 "abs_altitude": global_pos.altitude,
-                "rel_altitude": rel_pos.up,
+                "rel_altitude": rel_pos.z,
                 "bearing": int(global_pos.heading),
                 "battery": vehicle_info.battery_info.percentage,
                 "mag": alert_info.magnetometer_warning,
                 "sats": vehicle_info.gps_info.satellites,
                 # Relative Pos (ENU)
-                "enu_east": rel_pos.east,
-                "enu_north": rel_pos.north,
-                "enu_up": rel_pos.up,
+                "enu_east": rel_pos.y,
+                "enu_north": rel_pos.x,
+                "enu_up": rel_pos.z,
                 "enu_angle": rel_pos.angle,
                 # Velocity Body
                 "v_body_total": np.sqrt(
                     np.sum(
                         np.power(
-                            [body_vel.forward_vel, body_vel.right_vel, body_vel.up_vel],
+                            [body_vel.x_vel, body_vel.y_vel, body_vel.z_vel],
                             2,
                         )
                     )
                 ),
-                "v_body_forward": body_vel.forward_vel,
-                "v_body_lateral": body_vel.right_vel,
-                "v_body_altitude": body_vel.up_vel,
+                "v_body_forward": body_vel.x_vel,
+                "v_body_lateral": body_vel.y_vel,
+                "v_body_altitude": body_vel.z_vel,
                 "v_body_angular": body_vel.angular_vel,
                 # Velocity ENU
                 "v_enu_total": np.sqrt(
                     np.sum(
                         np.power(
-                            [enu_vel.north_vel, enu_vel.east_vel, enu_vel.up_vel], 2
+                            [enu_vel.x_vel, enu_vel.y_vel, enu_vel.z_vel], 2
                         )
                     )
                 ),
-                "v_enu_north": enu_vel.north_vel,
-                "v_enu_east": enu_vel.east_vel,
-                "v_enu_up": enu_vel.up_vel,
+                "v_enu_north": enu_vel.x_vel,
+                "v_enu_east": enu_vel.y_vel,
+                "v_enu_up": enu_vel.z_vel,
                 "v_enu_angular": enu_vel.angular_vel,
                 # Gimbal Pose
                 "gimbal_pitch": gimb_pose.pitch,
@@ -177,6 +175,8 @@ class TelemetryEngine(cognitive_engine.Engine):
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
         result = None
+        
+        logger.info("Got to the handle function")
 
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             extras = cognitive_engine.unpack_extras(telemetry.DriverTelemetry, input_frame)
