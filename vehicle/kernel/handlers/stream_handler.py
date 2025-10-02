@@ -44,7 +44,7 @@ class StreamHandler:
             lc_server = \
                 query_config('internal.streams.local_compute').replace('unix', 'ipc')
             self._local_compute_handler = ZeroMQClient(lc_server, self._local_producers, self.process)
-        except zmq.error.ZMQError:
+        except Exception:
             logger.warning('No valid configuration found for local compute handler, not running it')
             self._local_producers = []
             self._local_compute_handler = None
@@ -61,7 +61,7 @@ class StreamHandler:
             rc_server = \
                 query_config('cloudlet.remote_compute_service')
             self._remote_compute_handler = ZeroMQClient(f'tcp://{rc_server}', self._remote_producers, self.process)
-        except zmq.error.ZMQError:
+        except Exception:
             logger.warning('No valid configuration found for remote compute handler, not running it')
             self._remote_producers = []
             self._remote_compute_handler = None
@@ -120,7 +120,7 @@ class StreamHandler:
                 self._base_producer(
                     driver_sock,
                     DriverTelemetry(),
-                    gabriel_pb2.PayloadType.OTHER
+                    gabriel_pb2.PayloadType.TEXT
                     ),
                 [],
                 source_name="driver_telemetry"
@@ -156,7 +156,7 @@ class StreamHandler:
                 self._base_producer(
                     mission_sock,
                     MissionTelemetry(),
-                    gabriel_pb2.PayloadType.OTHER
+                    gabriel_pb2.PayloadType.TEXT
                     ),
                 [],
                 source_name="mission_telemetry"
