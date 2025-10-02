@@ -87,6 +87,8 @@ def generate():
         
         # Add dependencies
         for dependency in file.dependency:
+            if 'google' in dependency:
+                continue # Skip google protobuf imports
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
@@ -198,6 +200,8 @@ def get_fields(fields, enum_map):
                 enum = enum_map[typ]
             elif 'service' in file:
                 typ = f'params.{typ}'
+            elif 'protobuf' in file:
+                typ = f'{file}.{typ.lower()}_pb2.{typ}'
             else:
                 typ = f'{file}.{typ}'
         else:

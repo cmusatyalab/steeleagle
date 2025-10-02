@@ -32,5 +32,5 @@ class CustomBuildHook(BuildHookInterface):
                 shutil.copy(sources[source], f'build/src/{package}/{source}/')
         for dirpath, dirnames, filenames in os.walk('build/src/{package}'):
             with open(f'{dirpath}/__init__.py', 'w') as f:
-                pass # Create __init__.py at each level
+                pass # Create __init__.py at each level if it doesn't exist
         super().initialize(version, build_data)
