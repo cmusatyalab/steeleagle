@@ -20,7 +20,7 @@ services:
       - cnc-net
 
   telemetry-engine:
-    image: cmusatyalab/steeleagle-telemetry-engine:${TAG}
+    image: xianglic/steeleagle-telemetry-engine:${TAG}
     container_name: telemetry-engine
     restart: unless-stopped
     privileged: true
@@ -36,14 +36,14 @@ services:
       - PYTHONPATH=/protocol
 
   swarm-controller:
-    image: cmusatyalab/steeleagle-swarm-controller:${TAG}
+    image: xianglic/steeleagle-swarm-controller:${TAG}
     container_name: swarm-controller
     restart: unless-stopped
     ports:
       - "5003:5003"
       - "6001:6001"
     privileged: true
-    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "11"]
+    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts

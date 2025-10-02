@@ -13,9 +13,10 @@ import math
 import uuid
 
 import grpc
-from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest, CompileMissionRequest
 from steeleagle_sdk.protocol.services.control_service_pb2 import ReturnToHomeRequest, HoldRequest, JoystickRequest, TakeOffRequest, LandRequest
-from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest, CompileMissionRequest
+from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
+
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
 
 

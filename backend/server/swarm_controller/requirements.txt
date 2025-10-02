@@ -18,3 +18,8 @@ pyyaml
 aiohttp
 aiofiles
 pytz
+steeleagle-sdk
+aiorwlock
+
+
+

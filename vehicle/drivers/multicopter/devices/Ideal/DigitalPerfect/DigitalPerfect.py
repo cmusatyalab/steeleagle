@@ -7,6 +7,8 @@ import threading
 import time
 from concurrent import futures
 from enum import Enum
+import zmq
+import zmq.asyncio
 
 import grpc
 import numpy as np
@@ -32,6 +34,7 @@ from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from util.log import setup_logging
 from util.cleanup import register_cleanup_handler
 setup_logging()
+from util.sockets import setup_zmq_socket, SocketOperation
 import logging
 logger = logging.getLogger(__name__)
 
@@ -71,6 +74,13 @@ class DigitalPerfect(ControlServicer):
                 await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
 
             logger.info("Completed connection to digital drone...")
+            telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
+            setup_zmq_socket(
+                telemetry_sock,
+                'internal.streams.driver_telemetry',
+                SocketOperation.BIND
+            )
+            self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, 5))
             return generate_response(
                 resp_type=common_protocol.ResponseStatus.COMPLETED,
                 resp_string="Connected to digital drone",
@@ -483,11 +493,12 @@ class DigitalPerfect(ControlServicer):
                     self._drone.get_angular_velocity()
                 )
                 gimbal = self._get_gimbal_pose_body(0)
+                tel_message.gimbal_info.gimbals.append(telemetry_protocol.GimbalStatus(id=0))
                 tel_message.gimbal_info.gimbals[0].pose_body.pitch = gimbal["g_pitch"]
                 tel_message.gimbal_info.gimbals[0].pose_body.roll = gimbal["g_roll"]
                 tel_message.gimbal_info.gimbals[0].pose_body.yaw = gimbal["g_yaw"]
                 tel_message.gimbal_info.gimbals[0].id = 0
-                tel_message.status = self._get_current_status()
+                #tel_message.status = self._get_current_status()
                 batt = self._get_battery_percentage()
 
                 # Warnings
@@ -517,8 +528,7 @@ class DigitalPerfect(ControlServicer):
                     tel_message.alert_info.gps_warning = (
                         telemetry_protocol.GPSWarning.WEAK_WEAK
                     )
-
-                tel_sock.send(tel_message.SerializeToString())
+                await tel_sock.send_multipart([b'driver_telemetry', tel_message.SerializeToString()])
             except Exception as e:
                 logger.error(f"Failed to get telemetry, error: {e}")
             await asyncio.sleep(1.0 / rate_hz)

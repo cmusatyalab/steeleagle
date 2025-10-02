@@ -22,8 +22,9 @@ from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl import build_mission
 from dataclasses import asdict
 import logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.basicConfig(level=logging.INFO)
+
 
 
 class SwarmController(RemoteServicer):
@@ -88,7 +89,7 @@ class SwarmController(RemoteServicer):
             logger.error(f"Error sending request to vehicle: {e}")
             yield generate_response(4)
 
-    async def _listen_for_responses(self):
+    async def listen_for_responses(self):
         try:
             while True:
                 data = await self._router_sock.recv()
@@ -140,9 +141,10 @@ async def main():
     server = grpc.aio.server(
             futures.ThreadPoolExecutor(max_workers=10)
             )
-    add_RemoteServicer_to_server(SwarmController(router_sock), server)
+    sc = SwarmController(router_sock)
+    add_RemoteServicer_to_server(sc, server)
     await server.start()
-    listen_for_responses_task = asyncio.create_task(server._listen_for_responses())
+    listen_for_responses_task = asyncio.create_task(sc.listen_for_responses())
     try:
         await server.wait_for_termination()
     except KeyboardInterrupt:

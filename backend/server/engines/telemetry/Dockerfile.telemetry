@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
-#
 # SPDX-License-Identifier: GPL-2.0-only
 
 FROM ubuntu:22.04
@@ -9,35 +8,28 @@ LABEL org.opencontainers.image.vendor="CMU Satyalab" \
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install build and runtime dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    clinfo \
-    curl \
-    libgtk-3-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    python3 \
-    python3-opencv \
-    python3-pip \
-    wget \
-    # compiler requirement
-    openjdk-17-jdk\
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common ca-certificates gnupg \
+    build-essential clinfo curl wget \
+    libgl1 libglib2.0-0 \
+    libgtk-3-0 libsm6 libxext6 libxrender1 \
+ && add-apt-repository ppa:deadsnakes/ppa -y \
+ && apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-venv python3.11-distutils \
+ && rm -rf /var/lib/apt/lists/*
 
-#upgrade pip, otherwise tensorflow 1.15.0 will not be found
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install --upgrade setuptools
+# Make python3 -> 3.11 and install pip for it
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 
-# You can speed up build slightly by reducing build context with
-#     git archive --format=tgz HEAD | docker build -t cnc -
-COPY backend/server/engines/telemetry/requirements.txt ./requirements.txt
+# Upgrade pip/setuptools
+RUN python3 -m pip install --upgrade pip setuptools
+
+# Install Python deps (make sure requirements.txt uses opencv-python or opencv-python-headless)
+COPY requirements.txt ./requirements.txt
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
-COPY backend/server/engines/telemetry/telemetry.py telemetry.py
-COPY backend/server/engines/telemetry/telemetry_engine.py telemetry_engine.py
-COPY vehicle/util util
-COPY protocol protocol
+COPY telemetry.py telemetry.py
+COPY telemetry_engine.py telemetry_engine.py
 
 EXPOSE 5555 9099
