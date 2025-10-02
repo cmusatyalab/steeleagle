@@ -44,7 +44,7 @@ class ColorFormatter(logging.Formatter):
     reset = "\x1b[0m"
     time = "%(asctime)s ["
     level  = "%(levelname)s"
-    message = "] %(message)s"
+    message = "] %(name)s: %(message)s"
 
     # Format logs so that they are colored by level
     FORMATS = {
