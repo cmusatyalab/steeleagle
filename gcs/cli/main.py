@@ -30,17 +30,17 @@ async def consume_keys(key_queue, vehicle, stub):
             joystick = JoystickRequest()
             match key:
                 case 'a':
-                    joystick.velocity.y_vel = 1.0
-                case 'd':
                     joystick.velocity.y_vel = -1.0
+                case 'd':
+                    joystick.velocity.y_vel = 1.0
                 case 'w':
                     joystick.velocity.x_vel = 1.0
                 case 's':
                     joystick.velocity.x_vel = -1.0
                 case 'j':
-                    joystick.velocity.angular_vel = -10.0
+                    joystick.velocity.angular_vel = -20.0
                 case 'l':
-                    joystick.velocity.angular_vel = 10.0
+                    joystick.velocity.angular_vel = 20.0
                 case 'i':
                     joystick.velocity.z_vel = 1.0
                 case 'k':
@@ -66,14 +66,31 @@ async def consume_keys(key_queue, vehicle, stub):
             hold = HoldRequest()
             command.request.Pack(hold)
             asyncio.create_task(send_command(stub, command))
+        elif key == keyboard.Key.shift: # Compile Mission
+            kml_path = input('Choose a KML file: ')
+            dsl_path = input('Choose a DSL file: ')
+            kml = open(kml_path, "r", encoding="utf-8").read()
+            dsl = open(dsl_path, "r", encoding="utf-8").read()
+            req = CompileMissionRequest(dsl_content=dsl)
+            response = await stub.CompileMission(req)
+            command.method_name = 'Mission.Upload'
+            upload = UploadRequest()
+            upload.mission.content = response.compiled_dsl_content
+            upload.mission.map = kml
+            command.request.Pack(upload)
+            asyncio.create_task(send_command(stub, command))
+        elif key == 'm': # Start Mission
+            command.method_name = 'Mission.Start'
+            start = StartRequest()
+            command.request.Pack(start)
+            asyncio.create_task(send_command(stub, command))
+        elif key == 'n': # Stop Mission
+            command.method_name = 'Mission.Stop'
+            stop = StopRequest()
+            command.request.Pack(stop)
+            asyncio.create_task(send_command(stub, command))
         else:
             print('Key not recognized')
-        
-        # CompileMission
-
-        # Start
-
-        # Stop
             
         if key == keyboard.Key.esc:
             break
