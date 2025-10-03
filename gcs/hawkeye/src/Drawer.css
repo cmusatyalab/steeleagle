@@ -140,3 +140,7 @@
     max-width: 80vw;
   }
 }
+
+.drawer-list .card {
+    margin-bottom: 20px;
+}
