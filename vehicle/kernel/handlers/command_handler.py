@@ -15,7 +15,7 @@ from google.protobuf import any_pb2
 from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import generate_response, generate_request
 # Protocol import
-from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest, CommandResponse
 # Law import
 from kernel.laws.authority import Failsafe
 
@@ -43,8 +43,12 @@ class CommandHandler:
         results = await self._law_authority._send_commands([command], identity=command.identity)
         # Only get one result back
         result = results[0]
+        logger.info('Sending result back to the swarm controller...')
         logger.proto(result)
-        await self._command_socket.send(result.SerializeToString())
+        response = CommandResponse()
+        response.sequence_number = command.sequence_number
+        response.response.ParseFromString(result.SerializeToString())
+        await self._command_socket.send(response.SerializeToString())
 
     async def _handle_commands(self, timeout):
         '''

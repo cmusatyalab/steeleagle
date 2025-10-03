@@ -1,5 +1,5 @@
 [timeouts]
-server = 1
+server = 30
 driver = 5
 mission = 5
 remote_compute = 5
