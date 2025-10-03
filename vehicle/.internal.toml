@@ -15,5 +15,7 @@ flight_log = 'unix:///tmp/log.sock'
 driver_telemetry = 'unix:///tmp/driver_telem.sock'
 mission_telemetry = 'unix:///tmp/mission_telem.sock'
 imagery = 'unix:///tmp/imagery.sock'
+# NOTE: Uncomment the local compute socket if you are
+# using a local compute server.
 #local_compute = 'unix:///tmp/local_compute.sock'
 results = 'unix:///tmp/results.sock'
