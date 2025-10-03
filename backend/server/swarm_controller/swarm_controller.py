@@ -16,7 +16,7 @@ import grpc
 from concurrent import futures
 import aiorwlock
 # Protocol imports
-from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandResponse
+from steeleagle_sdk.protocol.services.remote_service_pb2 import CompileMissionResponse, CommandResponse
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteServicer, add_RemoteServicer_to_server
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl import build_mission
@@ -45,7 +45,7 @@ class SwarmController(RemoteServicer):
         mission = build_mission(dsl)
         logger.info(f"Built mission: {mission}")
         mission_json_text = json.dumps(asdict(mission))
-        response = CommandResponse(
+        response = CompileMissionResponse(
             compiled_dsl_content=mission_json_text,
             response=generate_response(2)
         )
