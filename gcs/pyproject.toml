@@ -12,6 +12,7 @@ dependencies = [
     "redis>=6.4.0",
     "pykml>=0.2.0",
     "streamlit-keypressed",
+    "pynput>=1.8.1",
 ]
 
 [tool.uv.sources]
