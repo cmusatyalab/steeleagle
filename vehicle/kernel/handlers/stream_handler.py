@@ -182,7 +182,6 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = payload_type
             try:
-                logger.info(f'Waiting for data on socket')
                 _, data = await socket.recv_multipart()  
             except Exception as e:
                 return input_frame
