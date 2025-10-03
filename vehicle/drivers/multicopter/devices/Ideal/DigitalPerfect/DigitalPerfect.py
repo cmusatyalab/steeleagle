@@ -129,22 +129,21 @@ class DigitalPerfect(ControlServicer):
         logger.info("Initiating takeoff sequence...")
         try:
             yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating takeoff...")
-            await asyncio.sleep(1)
-            # logger.info("Switching to TAKEOFF_LAND mode...")
-            # await self._switch_mode(FlightMode.TAKEOFF_LAND)
-            # logger.info("Takeoff command sent to drone...")
-            # task_result = asyncio.create_task(self._drone.take_off())
-            # logger.info(f"Takeoff command result: {task_result}")
+            logger.info("Switching to TAKEOFF_LAND mode...")
+            await self._switch_mode(FlightMode.TAKEOFF_LAND)
+            logger.info("Takeoff command sent to drone...")
+            task_result = asyncio.create_task(self._drone.take_off())
+            logger.info(f"Takeoff command result: {task_result}")
 
-            # logging.info(f"checking if hovering... {self._is_hovering()}")
-            # while not self._is_hovering():
-            #     logger.info("Waiting for drone to reach hover state...")
-            #     yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Taking off...")
-            #     await asyncio.sleep(0.1)
+            logging.info(f"checking if hovering... {self._is_hovering()}")
+            while not self._is_hovering():
+                logger.info("Waiting for drone to reach hover state...")
+                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Taking off...")
+                await asyncio.sleep(0.1)
                 
-            # logging.info(f"checking if hovering... {self._is_hovering()}")  
-            # yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
-            # await self._switch_mode(FlightMode.LOITER)
+            logging.info(f"checking if hovering... {self._is_hovering()}")  
+            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
+            await self._switch_mode(FlightMode.LOITER)
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
             logging.info("Takeoff sequence completed successfully.")
         except Exception as e:
