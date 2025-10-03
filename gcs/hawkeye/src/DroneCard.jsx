@@ -52,8 +52,8 @@ function DroneCard({ data, togglefunc}) {
                     <Badge pill bg="secondary">
                         <FontAwesomeIcon icon="fas-solid fa-satellite" /> {data.sats}
                     </Badge>
-                    <Badge pill bg="primary">
-                        Task: {data.task}
+                    <Badge pill bg="secondary">
+                        {data.task}
                     </Badge>
                     </Stack>
                     <Stack direction="horizontal" gap={1} style={{ margin: '5px', }}>
