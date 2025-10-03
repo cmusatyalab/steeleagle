@@ -79,6 +79,7 @@ function App() {
         isOpen={isDrawerOpen}
         onToggle={handleDrawerToggle}
         onWidthChange={handleDrawerWidthChange}
+        vehicles={vehicles}
       />
 
       <div
