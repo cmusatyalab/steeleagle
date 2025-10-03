@@ -201,7 +201,7 @@ def get_fields(fields, enum_map):
             elif 'service' in file:
                 typ = f'params.{typ}'
             elif 'protobuf' in file:
-                typ = f'{file}.{typ.lower()}_pb2.{typ}'
+                typ = f'{typ}'
             else:
                 typ = f'{file}.{typ}'
         else:
