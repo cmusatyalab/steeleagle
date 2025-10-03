@@ -93,7 +93,7 @@ class SwarmController(RemoteServicer):
     async def listen_for_responses(self):
         try:
             while True:
-                _, data = await self._router_sock.recv()
+                _, data = await self._router_sock.recv_multipart()
                 # Parse the raw data into a response
                 response = CommandResponse()
                 response.ParseFromString(data)
