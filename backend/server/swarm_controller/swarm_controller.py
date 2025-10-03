@@ -37,7 +37,8 @@ class SwarmController(RemoteServicer):
         self._sequence_number = 0
         self._response_map_lock = aiorwlock.RWLock()
         self._response_map = {}
-        self._listener_task = asyncio.create_task(self._listen_for_responses())
+        self.listener_task = asyncio.create_task(self._listen_for_responses())
+        logger.info("SwarmController initialized.") 
         
     ######################### Mission #########################
     async def CompileMission(self, compile_request, context):
@@ -90,13 +91,20 @@ class SwarmController(RemoteServicer):
             logger.error(f"Error sending request to vehicle: {e}")
             yield generate_response(4)
 
-    async def listen_for_responses(self):
+    async def _listen_for_responses(self):
         try:
+            logger.info("Starting listener for vehicle responses...")
             while True:
+                logger.info("Listening for vehicle responses...")
                 _, data = await self._router_sock.recv_multipart()
                 # Parse the raw data into a response
                 response = CommandResponse()
-                response.ParseFromString(data)
+                try:
+                    response.ParseFromString(data)
+                except Exception as e:
+                    logger.error(f"Failed to parse response from vehicle: {e}")
+                    continue
+                logger.info(f"Received response: {response}, seq_num: {response.sequence_number}")
                 async with self._response_map_lock.writer_lock:
                     self._response_map[response.sequence_number] = response.response
         except asyncio.exceptions.CancelledError:
@@ -158,8 +166,8 @@ async def main():
         await server.wait_for_termination()
     except KeyboardInterrupt:
         await server.stop(1)
-        listen_for_responses_task.cancel()
-        await listen_for_responses_task
+        sc.listener_task.cancel()
+        await sc.listener_task
         logger.info("Shutting down...")
 
 

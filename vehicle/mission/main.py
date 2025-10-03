@@ -13,7 +13,7 @@ from util.log import setup_logging
 setup_logging()
 from util.config import query_config
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("mission/main")
 
 async def main():
     # setup the stubs
