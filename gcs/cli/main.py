@@ -66,7 +66,7 @@ async def consume_keys(key_queue, vehicle, stub):
             hold = HoldRequest()
             command.request.Pack(hold)
             asyncio.create_task(send_command(stub, command))
-        elif key == keyboard.Key.shift: # Compile Mission
+        elif key == keyboard.Key.shift_l: # Compile Mission
             kml_path = input('Choose a KML file: ')
             dsl_path = input('Choose a DSL file: ')
             kml = open(kml_path, "r", encoding="utf-8").read()
@@ -90,7 +90,7 @@ async def consume_keys(key_queue, vehicle, stub):
             command.request.Pack(stop)
             asyncio.create_task(send_command(stub, command))
         else:
-            print('Key not recognized')
+            print(f'Key not recognized: {key}')
             
         if key == keyboard.Key.esc:
             break
