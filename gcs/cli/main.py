@@ -72,7 +72,10 @@ async def consume_keys(key_queue, vehicle, stub):
             kml = open(kml_path, "r", encoding="utf-8").read()
             dsl = open(dsl_path, "r", encoding="utf-8").read()
             req = CompileMissionRequest(dsl_content=dsl)
-            response = await stub.CompileMission(req)
+            responses = []
+            async for response in stub.CompileMission(req):
+                responses.append(response)
+            response = responses[-1]
             command.method_name = 'Mission.Upload'
             upload = UploadRequest()
             upload.mission.content = response.compiled_dsl_content
