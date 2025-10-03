@@ -69,7 +69,7 @@ async def consume_keys(key_queue, vehicle, stub):
         elif key == keyboard.Key.shift_l: # Compile Mission
             kml_path = input('Choose a KML file: ')
             dsl_path = input('Choose a DSL file: ')
-            kml = open(kml_path, "r", encoding="utf-8").read()
+            kml = open(kml_path, "rb").read()
             dsl = open(dsl_path, "r", encoding="utf-8").read()
             req = CompileMissionRequest(dsl_content=dsl)
             responses = []
@@ -82,6 +82,9 @@ async def consume_keys(key_queue, vehicle, stub):
             upload.mission.map = kml
             command.request.Pack(upload)
             asyncio.create_task(send_command(stub, command))
+            while not key_queue.empty():
+                key_queue.get_nowait()
+                key_queue.task_done()
         elif key == 'm': # Start Mission
             command.method_name = 'Mission.Start'
             start = StartRequest()

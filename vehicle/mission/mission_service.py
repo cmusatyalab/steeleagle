@@ -40,8 +40,9 @@ class MissionService(MissionServicer):
         mission_ir = self._load(mission_content)
         logger.info(f"Loaded mission: {mission_ir}")
         self.mission = mission_ir
-        map = self._load_map(request.mission.mission_map)
-        self.mission.mission_map = map
+        # map = self._load_map(request.mission.map)
+        map = None
+        self.mission_map = map
         logger.info(f"Loaded mission map: {map}")
         return generate_response(2, "Mission uploaded")
 
@@ -62,7 +63,7 @@ class MissionService(MissionServicer):
             control_mod.STUB = self.stubs.get("control")
             compute_mod.STUB = self.stubs.get("compute")
             report_mod.STUB  = self.stubs.get("report")
-            map_mod.MISSION_MAP = self.mission.mission_map
+            map_mod.MISSION_MAP = self.mission_map
             self.mission_routine = await self._start()
             return generate_response(2)
 

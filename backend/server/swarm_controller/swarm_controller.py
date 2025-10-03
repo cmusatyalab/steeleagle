@@ -50,7 +50,7 @@ class SwarmController(RemoteServicer):
             compiled_dsl_content=mission_json_text,
             response=generate_response(2)
         )
-        return response
+        yield response
 
     ######################### Control #########################
     async def _get_sequence_number(self):

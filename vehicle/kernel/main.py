@@ -82,7 +82,10 @@ async def main(test=False):
             raise SystemExit(1)
         logger.info('Device connected!')
 
-        await rc_handler.start(query_config('internal.timeouts.server'))
+        try:
+            await rc_handler.start(query_config('internal.timeouts.server'))
+        except ValueError:
+            await rc_handler.start(failsafe_timeout=None)
         logger.info('Started handling remote input!')
         await stream_handler.start()
         logger.info('Started handling data streams!')

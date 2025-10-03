@@ -4,6 +4,7 @@
 from typing import Optional, List
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.duration_pb2 import Duration
+from google.protobuf.json_format import ParseDict
 # API imports
 from ...base import Action, Datatype
 from ....dsl.compiler.registry import register_action

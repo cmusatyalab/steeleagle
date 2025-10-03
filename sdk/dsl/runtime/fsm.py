@@ -106,6 +106,7 @@ class MissionFSM:
                 pass
 
         except Exception as e:
+            logger.exception("[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e)
             try:
                 q.put_nowait((RacerType.ERROR, e))
             except asyncio.QueueFull:
