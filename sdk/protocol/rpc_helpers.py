@@ -2,7 +2,7 @@
 from google.protobuf.timestamp_pb2 import Timestamp
 from .common_pb2 import Request, Response
 
-async def native_grpc_call(metadata, full_method_name, method_desc, request, classes, channel, timeout=3):
+async def native_grpc_call(metadata, full_method_name, method_desc, request, classes, channel):
     '''
     Calls the provided gRPC method by invoking it directly on the channel.
     '''
@@ -20,7 +20,7 @@ async def native_grpc_call(metadata, full_method_name, method_desc, request, cla
         responses = []
         # In this case, call responds with a wrapper that is an async
         # generator function
-        async for resp in call(request, timeout=timeout, metadata=metadata):
+        async for resp in call(request, metadata=metadata):
             responses.append(resp)
         return responses[-1] # Just the last response is needed
     else:
@@ -30,7 +30,7 @@ async def native_grpc_call(metadata, full_method_name, method_desc, request, cla
             request_serializer=req_class.SerializeToString,
             response_deserializer=rep_class.FromString
         )
-        return await call(request, timeout=timeout, metadata=metadata)
+        return await call(request, metadata=metadata)
 
 def generate_request():
     '''

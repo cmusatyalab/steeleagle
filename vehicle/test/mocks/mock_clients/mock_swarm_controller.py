@@ -7,7 +7,6 @@ from google.protobuf.json_format import MessageToDict
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from util.config import query_config
 # Protocol import
-from steeleagle_sdk.protocol import common_pb2 as common_proto
 from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto
 from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 from google.protobuf import any_pb2
@@ -51,13 +50,13 @@ class MockSwarmController:
         complete = False
         logger.info("Receiving...")
         identity, resp_bytes = await self._socket.recv_multipart()
-        response = common_proto.Response()
+        response = command_proto.CommandResponse()
         response.ParseFromString(resp_bytes)
         logger.info(str(MessageToDict(response)))
-        if response.status == req_obj.status:
+        if response.response.status == req_obj.status:
             logger.info(f"Got correct status: {req_obj.status}!")
             complete = True
-        self.sequencer.write(response)
+        self.sequencer.write(response.response)
         return complete
 
     async def recv_report(self, report_obj):
