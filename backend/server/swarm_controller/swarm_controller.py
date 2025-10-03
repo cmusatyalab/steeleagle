@@ -22,10 +22,9 @@ from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl import build_mission
 from dataclasses import asdict
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
 
 class SwarmController(RemoteServicer):
     '''
@@ -38,6 +37,7 @@ class SwarmController(RemoteServicer):
         self._sequence_number = 0
         self._response_map_lock = aiorwlock.RWLock()
         self._response_map = {}
+        self._listener_task = asyncio.create_task(self._listen_for_responses())
         
     ######################### Mission #########################
     async def CompileMission(self, compile_request, context):
@@ -93,7 +93,7 @@ class SwarmController(RemoteServicer):
     async def listen_for_responses(self):
         try:
             while True:
-                data = await self._router_sock.recv()
+                _, data = await self._router_sock.recv()
                 # Parse the raw data into a response
                 response = CommandResponse()
                 response.ParseFromString(data)
@@ -154,7 +154,6 @@ async def main():
     server.add_insecure_port(f'[::]:{args.commander_port}')
     logger.info(f"Listening on tcp//*:{args.commander_port} for commander connections...")
     await server.start()
-    listen_for_responses_task = asyncio.create_task(sc.listen_for_responses())
     try:
         await server.wait_for_termination()
     except KeyboardInterrupt:
