@@ -41,9 +41,9 @@ function DroneCard({ data, togglefunc}) {
             <div className={`drone-card-wrapper ${data.selected ? 'selected' : ''} me-3`}>
             <Button variant={data.selected ? "light" : "dark"} onClick={() => togglefunc(data.name)} style={{ padding: 0, border: 'none' }}>
             <div className="drone-card-inner">
-            <Card  bg='dark' text='light' border='light'>
+            <Card  bg='dark' text='light' border=''>
             <Card.Body>
-                <Card.Title>{data.name}</Card.Title>
+                <Card.Title>{data.name} <sub>[{data.type}]</sub></Card.Title>
                 <Card.Subtitle>{data.model}</Card.Subtitle>
                     <Stack direction="horizontal" gap={1} style={{ margin: '5px', justifyContent: 'center',}}>
                     <Badge pill bg={battery_style} text={battery_text_style}>

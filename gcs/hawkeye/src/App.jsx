@@ -11,7 +11,7 @@ import Badge from 'react-bootstrap/Badge'
 import Mapbox from './Mapbox.jsx'
 import Drawer from './Drawer.jsx'
 import VehicleGroup from './VehicleGroup.jsx'
-
+import GameControls from './GameControls.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'
 import ListGroupItem from 'react-bootstrap/esm/ListGroupItem.js'
@@ -21,6 +21,7 @@ library.add(fas)
 var adjective = ["Steel", "Iron", "Brass","Golden", "Liquid", "Solid", "Adamantium", "Titantium"]
 var object = ["Eagle", "Hawk", "Sparrow", "Condor", "Parrot", "Lark", "Falcon"]
 var models = ["Parrot ANAFI", "Generic MAVLink", "Ascent Systems Spirit", "DJI Mini 4 Pro"]
+var types = ["UAV", "UGV", "USV"]
 
 function getRandomInt(min, max) {
   const minCeiled = Math.ceil(min);
@@ -32,14 +33,19 @@ function getRandomName() {
   return adjective[Math.floor(Math.random() * adjective.length)] + " " + object[Math.floor(Math.random() * object.length)];
 }
 
+function getRandomType() {
+  return types[Math.floor(Math.random() * types.length)];
+}
+
 function generateVehicleData() {
   var vehicles = [];
   var number = getRandomInt(1,10);
   for (var i=0; i< number; i++) {
-    vehicles[i] = ({ name: getRandomName(), model: models[Math.floor(Math.random() * models.length)], battery: getRandomInt(0,100), sats: getRandomInt(0,25), task: Math.random() >0.5 ? "idle" : "tracking" , last_updated: getRandomInt(0,30), selected: false})
+    vehicles[i] = ({ name: getRandomName(), type: getRandomType(), model: models[Math.floor(Math.random() * models.length)], battery: getRandomInt(0,100), sats: getRandomInt(0,25), task: Math.random() >0.5 ? "idle" : "tracking" , last_updated: getRandomInt(0,30), selected: false})
   }
   return vehicles;
 }
+
 
 function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -90,6 +96,7 @@ function App() {
         }}
       >
         <Mapbox drawerWidth={drawerWidth} />
+        <GameControls/>
       </div>
 
       <footer
