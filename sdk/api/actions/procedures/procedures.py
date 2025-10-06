@@ -31,7 +31,7 @@ class ElevateToAltitude(Action):
                 velocity=common.Velocity(
                     x_vel=0.0,
                     y_vel=0.0,
-                    up_vel=self.climb_speed,
+                    z_vel=self.climb_speed,
                     angular_vel=0.0,
                 ),
                 frame=SetVelocity.ReferenceFrame.ENU,  # or BODY
@@ -61,22 +61,23 @@ class Patrol(Action):
     hover_time: float = Field(1.0, ge=0.0, description="seconds to hover after each move")
     waypoints: Waypoints
 
-    async def execute(self, context):
+    async def execute(self):
         map = self.waypoints.calculate()
         for area_name, points in map.items():
-            logger.info("Patrol: area=%s, segments=%d", area_name, len(points))
+            logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
             for p in points:
                 goto = SetGlobalPosition(
                     location=common.Location(
                         latitude=float(p["lat"]),
-                        longitude=float(p["lng"]),
+                        longitude=float(p["lon"]),
                         altitude=float(p["alt"]),
+                        heading=None,
                     ),
                     altitude_mode=SetGlobalPosition.AltitudeMode.RELATIVE,
                     heading_mode=SetGlobalPosition.HeadingMode.TO_TARGET,
-                    max_velocity=common.Velocity(x_vel=0.0, y_vel=5.0, up_vel=0.0, angular_vel=0.0),
+                    max_velocity=common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=5.0),
                 )
-                await goto.execute(context)
+                await goto.execute()
 
                 if self.hover_time > 0:
                     await asyncio.sleep(self.hover_time)
@@ -90,5 +91,5 @@ class Track(Action):
     gimbal_pitch: Optional[float] = Field(0.0, description="degrees; 0=forward, positive=down")
     lost_timeout: Optional[float] = Field(5.0, gt=0.0, description="seconds to wait before giving up")
 
-    async def execute(self, context):
+    async def execute(self):
         pass

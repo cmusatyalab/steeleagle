@@ -8,6 +8,7 @@ from typing import Optional, Dict, List, Tuple, Any
 
 from ...dsl.compiler.ir import MissionIR
 from ...dsl.compiler.registry import get_action, get_event
+from ...dsl.compiler.loader import load_all
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ class MissionFSM:
         self.mission = mission
         self.transition: Dict[str, Dict[str, str]] = mission.transitions
         self.start_action_id: str = mission.start_action_id
+        summaries = load_all()  # ensure registries are loaded
+        logger.info("Loaded SDK registries: %s", summaries)
         
     async def run(self):
         state = self.start_action_id

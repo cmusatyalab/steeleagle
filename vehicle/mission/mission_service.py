@@ -11,7 +11,6 @@ from steeleagle_sdk.api.actions.primitives import compute as compute_mod
 from steeleagle_sdk.api.actions.primitives import report as report_mod
 from steeleagle_sdk.api.datatypes import waypoint as map_mod
 from dacite import from_dict
-from fastkml import kml
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,26 +23,20 @@ class MissionService(MissionServicer):
         self.mission: Optional[MissionIR] = None
         self.mission_routine: Optional[asyncio.Task] = None
         self.mission_map = None
-        
+
     def _load(self, mission_content):
         json_data = json.loads(mission_content)
         mission_ir = from_dict(MissionIR, json_data)
         return mission_ir
-    def _load_map(self, map_content):
-        kml_doc = kml.KML()
-        kml_doc.from_string(map_content)
-        return kml_doc
+    
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
         mission_content = request.mission.content
         mission_ir = self._load(mission_content)
-        logger.info(f"Loaded mission: {mission_ir}")
         self.mission = mission_ir
-        # map = self._load_map(request.mission.map)
-        map = None
-        self.mission_map = map
-        logger.info(f"Loaded mission map: {map}")
+        self.mission_map = request.mission.map
+        logger.info(f"Loaded mission and map")
         return generate_response(2, "Mission uploaded")
 
     async def _start(self):
@@ -56,9 +49,9 @@ class MissionService(MissionServicer):
         """Start an uploaded mission"""
         logger.info("Starting mission")
         if self.mission is None:
-            return generate_response(1, "No mission uploaded")
+            return generate_response(3, "No mission uploaded")
         elif self.mission_routine is not None and not self.mission_routine.done():
-            return generate_response(1, "Mission already running")
+            return generate_response(3, "Mission already running")
         else:
             control_mod.STUB = self.stubs.get("control")
             compute_mod.STUB = self.stubs.get("compute")
@@ -77,7 +70,7 @@ class MissionService(MissionServicer):
     async def Stop(self, request, context):
         """Stop the current mission"""
         if self.mission is None:
-            return generate_response(1, "No active mission")
+            return generate_response(3, "No active mission")
         else:
             await self._stop()
             logger.info("Mission stopped")

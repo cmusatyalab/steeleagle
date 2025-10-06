@@ -135,17 +135,17 @@ class DigitalPerfect(ControlServicer):
             task_result = asyncio.create_task(self._drone.take_off())
             logger.info(f"Takeoff command result: {task_result}")
 
-            logging.info(f"checking if hovering... {self._is_hovering()}")
+            logger.info(f"checking if hovering... {self._is_hovering()}")
             while not self._is_hovering():
                 logger.info("Waiting for drone to reach hover state...")
                 yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Taking off...")
                 await asyncio.sleep(0.1)
                 
-            logging.info(f"checking if hovering... {self._is_hovering()}")  
+            logger.info(f"checking if hovering... {self._is_hovering()}")  
             yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
             await self._switch_mode(FlightMode.LOITER)
             yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
-            logging.info("Takeoff sequence completed successfully.")
+            logger.info("Takeoff sequence completed successfully.")
         except Exception as e:
             logger.error(f"Error occurred during takeoff: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
@@ -247,15 +247,12 @@ class DigitalPerfect(ControlServicer):
             alt = request.location.altitude
             alt_mode = request.altitude_mode
             hdg_mode = request.heading_mode
-            max_velocity = None
+            max_velocity = request.max_velocity
+            bearing = 0
 
             if hdg_mode == control_protocol.HeadingMode.TO_TARGET:
                 bearing = request.location.heading
-            else:
-                bearing = 0
-            if request.location.max_velocity is not None:
-                max_velocity = request.location.max_velocity
-
+           
             # Convert absolute to relative altitude if required
             # TODO: Correct this - DD e_m_t uses an absolute alt unlike anafi drones
             if alt_mode == control_protocol.AltitudeMode.ABSOLUTE:
@@ -273,15 +270,15 @@ class DigitalPerfect(ControlServicer):
             )
             if max_velocity:
                 if abs(global_position[2] - altitude) < self.ALT_TOLERANCE:
-                    max_velocity.up_vel = 0
+                    max_velocity.z_vel = 0
                 await self._drone.extended_move_to(
                     lat,
                     lon,
                     altitude,
                     hdg_mode,
                     bearing,
-                    max(max_velocity.north_vel, max_velocity.east_vel),
-                    max_velocity.up_vel,
+                    max(max_velocity.x_vel, max_velocity.y_vel),
+                    max_velocity.z_vel,
                     max_velocity.angular_vel,
                 )
             else:
@@ -383,7 +380,7 @@ class DigitalPerfect(ControlServicer):
                 global_position[0],
                 global_position[1],
                 global_position[2],
-                common_protocol.LocationHeadingMode.TO_TARGET,
+                control_protocol.HeadingMode.TO_TARGET,
                 target,
             )  # Yaw in place
 

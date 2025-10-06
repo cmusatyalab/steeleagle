@@ -427,7 +427,7 @@ class SimulatedDrone:
                 f"{self.get_state('drone_id')} successfully stopped prior to orienting drone..."
             )
 
-        if heading_mode == control_protocol.LocationHeadingMode.TO_TARGET:
+        if heading_mode == control_protocol.HeadingMode.TO_TARGET:
             # Orients drone to fixed target bearing
             target_bearing = bearing
         else:
@@ -548,7 +548,7 @@ class SimulatedDrone:
                 f"extended_move_to: {self.get_state('drone_id')} successfully stopped prior to orienting drone..."
             )
 
-        if heading_mode == control_protocol.LocationHeadingMode.TO_TARGET:
+        if heading_mode == control_protocol.HeadingMode.TO_TARGET:
             # Orients drone to fixed target bearing
             target_bearing = bearing
         else:
