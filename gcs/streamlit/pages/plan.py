@@ -111,7 +111,7 @@ with c1:
             scope=st.secrets.oauth.scope,
             key="google",
             extras_params={"prompt": "consent", "access_type": "offline"},
-            use_container_width=True,
+            width="stretch",
             pkce='S256',
         )
 

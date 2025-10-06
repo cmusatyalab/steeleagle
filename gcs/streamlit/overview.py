@@ -185,7 +185,7 @@ def draw_map():
     st_folium(
         m,
         key="overview_map",
-        use_container_width=True,
+        width = 'stretch',
         feature_group_to_add=[fg, fence_fg, partitions, drone_positions],
         layer_control=lc,
         center=st.session_state.center,

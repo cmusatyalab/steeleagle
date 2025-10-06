@@ -153,7 +153,7 @@ def update_imagery():
         options=drone_list,
         index=0
     )
-    st.image(f"http://{st.secrets.webserver}/raw/{st.session_state.imagery_key}/latest.jpg?a={time.time()}", use_container_width=True)
+    st.image(f"http://{st.secrets.webserver}/raw/{st.session_state.imagery_key}/latest.jpg?a={time.time()}", width="stretch")
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
         st.caption("**:sleuth_or_spy: Object Detection**")
@@ -324,7 +324,7 @@ def draw_map():
     output = st_folium(
         m,
         key="overview_map",
-        use_container_width=True,
+        width="stretch",
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         #layer_control=lc,
         center=st.session_state.center,
@@ -406,7 +406,7 @@ with st.sidebar:
         key="autonomous_button",
         label=":world_map: Fly Script",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         on_click=run_flightscript,
     )
     st.button(
@@ -415,7 +415,7 @@ with st.sidebar:
         help="Immediately tell drones to hover.",
         type="primary",
         disabled=False,
-        use_container_width=True,
+        width="stretch",
         on_click=enable_manual,
     )
     st.button(
@@ -423,7 +423,7 @@ with st.sidebar:
         label=":dart: Return Home",
         help="Return to last known home.",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         on_click=rth,
     )
 

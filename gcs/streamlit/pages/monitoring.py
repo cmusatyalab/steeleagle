@@ -103,7 +103,7 @@ def plot_data():
                     "mag": None,
                 }
             cols[i%2].markdown(f"### **{drone_name} ({drone_model})**")
-            cols[i%2].image(f"http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg?a={time.time()}", use_container_width=True)
+            cols[i%2].image(f"http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg?a={time.time()}", width="stretch")
             cols[i%2].markdown(f"**{bat_status}{mag_status}{sat_status}{slam_status}**")
             cols[i%2].dataframe(df, column_config=column_config)
             #cols[i%2].map(df, latitude="Lat", longitude="Lon", size="5", use_container_width=False, width=100)
