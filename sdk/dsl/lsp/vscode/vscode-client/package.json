@@ -1,0 +1,30 @@
+{
+  "name": "steeleagle.dsl-lsp-client",
+  "displayName": "Steel Eagle DSL LSP Client",
+  "publisher": "you",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.80.0" },
+  "activationEvents": ["onLanguage:dsl"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      { "id": "dsl", "aliases": ["DSL"], "extensions": [".dsl"] }
+    ],
+    "grammars": [
+      { "language": "dsl", "scopeName": "source.dsl", "path": "./syntaxes/dsl.tmLanguage.json" }
+    ],
+    "configuration": {
+      "title": "Steel Eagle DSL LSP",
+      "properties": {
+        "steeleagle.dsl-lsp-client.pythonPath": {
+          "type": "string",
+          "default": "/mnt/c/Users/92513/Desktop/steeleagle/.venv/bin/python",
+          "markdownDescription": "Path to Python with pygls + lark."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}
