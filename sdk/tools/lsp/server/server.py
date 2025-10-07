@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+from importlib import resources
 from typing import List, Tuple, Optional
 from pygls.server import LanguageServer
 from pygls.workspace import Document
@@ -16,16 +17,20 @@ BUILTIN_ACTIONS: List[Tuple[str,str,str]] = [
     ("SetGlobalPosition","Action","Go to GPS point"),
 ]
 
-def grammar_path_from_here() -> Path:
-    # HARD-CODED to your path so we remove ambiguity. Change if needed.
-    p = Path("/mnt/c/Users/92513/Desktop/steeleagle/sdk/dsl/grammar/dronedsl.lark")
-    if not p.is_file():
-        raise FileNotFoundError(p)
-    return p
+def grammar_path() -> Path:
+    try:
+        # Python 3.11+: resources.files returns a Traversable
+        return Path(resources.files("dsl.grammar") / "dronedsl.lark")
+    except Exception:
+        # Fallback to repo-root relative (works when cwd = repo root)
+        p = Path.cwd() / "dsl" / "grammar" / "dronedsl.lark"
+        if not p.is_file():
+            raise FileNotFoundError(p)
+        return p
 
 class Parser:
     def __init__(self) -> None:
-        g = grammar_path_from_here()
+        g = grammar_path()
         self._p = Lark.open(str(g), rel_to=str(g.parent),
                             parser="lalr", keep_all_tokens=True,
                             propagate_positions=True, maybe_placeholders=True)

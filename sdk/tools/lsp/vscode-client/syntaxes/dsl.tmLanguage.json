@@ -1,0 +1,244 @@
+{
+  "scopeName": "source.dsl",
+  "name": "Steeleagle DSL",
+  "patterns": [
+    { "include": "#comments" },
+
+    { "include": "#section-headers" },
+    { "include": "#mission-keywords" },
+    { "include": "#transitions" },
+
+    { "include": "#declarations" },
+    { "include": "#attributes" },
+
+    { "include": "#values" },
+
+    { "include": "#punctuation" }
+  ],
+
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.dsl",
+          "match": "#[^\\n]*$"
+        }
+      ]
+    },
+
+    "section-headers": {
+      "patterns": [
+        {
+          "name": "meta.section.data.dsl",
+          "match": "^\\s*(Data)\\s*(:)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.section.data.dsl" },
+            "2": { "name": "punctuation.separator.colon.dsl" }
+          }
+        },
+        {
+          "name": "meta.section.actions.dsl",
+          "match": "^\\s*(Actions)\\s*(:)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.section.actions.dsl" },
+            "2": { "name": "punctuation.separator.colon.dsl" }
+          }
+        },
+        {
+          "name": "meta.section.events.dsl",
+          "match": "^\\s*(Events)\\s*(:)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.section.events.dsl" },
+            "2": { "name": "punctuation.separator.colon.dsl" }
+          }
+        },
+        {
+          "name": "meta.section.mission.dsl",
+          "match": "^\\s*(Mission)\\s*(:)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.section.mission.dsl" },
+            "2": { "name": "punctuation.separator.colon.dsl" }
+          }
+        }
+      ]
+    },
+
+    "mission-keywords": {
+      "patterns": [
+        {
+          "name": "meta.mission.start.dsl",
+          "match": "^\\s*(Start)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.start.dsl" },
+            "2": { "name": "entity.name.constant.mission.start-target.dsl" }
+          }
+        },
+        {
+          "name": "meta.mission.during.dsl",
+          "match": "^\\s*(During)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(:)\\s*$",
+          "captures": {
+            "1": { "name": "keyword.control.during.dsl" },
+            "2": { "name": "entity.name.section.during-state.dsl" },
+            "3": { "name": "punctuation.separator.colon.dsl" }
+          }
+        }
+      ]
+    },
+
+    "transitions": {
+      "patterns": [
+        {
+          "name": "meta.transition.rule.dsl",
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(->)\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*$",
+          "captures": {
+            "1": { "name": "variable.other.state.from.dsl" },
+            "2": { "name": "keyword.operator.arrow.dsl" },
+            "3": { "name": "variable.other.state.to.dsl" }
+          }
+        }
+      ]
+    },
+
+    "declarations": {
+      "patterns": [
+        {
+          "name": "meta.declaration.data.dsl",
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\(|\\s*$)",
+          "captures": {
+            "1": { "name": "storage.type.data.dsl" },
+            "2": { "name": "entity.name.type.data.dsl" }
+          }
+        },
+        {
+          "name": "meta.declaration.action.dsl",
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\(|\\s*$)",
+          "captures": {
+            "1": { "name": "storage.type.action.dsl" },
+            "2": { "name": "entity.name.function.action.dsl" }
+          }
+        },
+        {
+          "name": "meta.declaration.event.dsl",
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\(|\\s*$)",
+          "captures": {
+            "1": { "name": "storage.type.event.dsl" },
+            "2": { "name": "entity.name.event.dsl" }
+          }
+        }
+      ]
+    },
+
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.assignment.dsl",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(:|=)\\s*",
+          "captures": {
+            "1": { "name": "variable.other.attribute.dsl" },
+            "2": { "name": "punctuation.separator.key-value.dsl" }
+          }
+        }
+      ]
+    },
+
+    "values": {
+      "patterns": [
+        { "include": "#number" },
+        { "include": "#none" },
+        { "include": "#inline-datum" },
+        { "include": "#array" },
+        { "include": "#bare-name" }
+      ]
+    },
+
+    "number": {
+      "patterns": [
+        {
+          "name": "constant.numeric.number.dsl",
+          "match": "(?<![A-Za-z_])[+-]?\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+
+    "none": {
+      "patterns": [
+        {
+          "name": "constant.language.none.dsl",
+          "match": "\\b_\\b"
+        }
+      ]
+    },
+
+    "inline-datum": {
+      "patterns": [
+        {
+          "name": "meta.inline.datum.dsl",
+          "begin": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(\\()",
+          "beginCaptures": {
+            "1": { "name": "entity.name.type.inline-datum.dsl" },
+            "2": { "name": "punctuation.section.parens.begin.dsl" }
+          },
+          "end": "\\)",
+          "endCaptures": {
+            "0": { "name": "punctuation.section.parens.end.dsl" }
+          },
+          "patterns": [
+            { "include": "#values" },
+            {
+              "name": "punctuation.separator.comma.dsl",
+              "match": ","
+            }
+          ]
+        }
+      ]
+    },
+
+    "array": {
+      "patterns": [
+        {
+          "name": "meta.sequence.array.dsl",
+          "begin": "\\[",
+          "beginCaptures": {
+            "0": { "name": "punctuation.section.brackets.begin.dsl" }
+          },
+          "end": "\\]",
+          "endCaptures": {
+            "0": { "name": "punctuation.section.brackets.end.dsl" }
+          },
+          "patterns": [
+            { "include": "#values" },
+            {
+              "name": "punctuation.separator.comma.dsl",
+              "match": ","
+            }
+          ]
+        }
+      ]
+    },
+
+    "bare-name": {
+      "patterns": [
+        {
+          "name": "variable.other.name.dsl",
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+
+    "punctuation": {
+      "patterns": [
+        { "name": "punctuation.separator.colon.dsl", "match": ":" },
+        { "name": "punctuation.separator.comma.dsl", "match": "," },
+        { "name": "punctuation.section.parens.begin.dsl", "match": "\\(" },
+        { "name": "punctuation.section.parens.end.dsl", "match": "\\)" },
+        { "name": "punctuation.section.brackets.begin.dsl", "match": "\\[" },
+        { "name": "punctuation.section.brackets.end.dsl", "match": "\\]" },
+        { "name": "keyword.operator.assignment.dsl", "match": "=" },
+        { "name": "keyword.operator.arrow.dsl", "match": "->" }
+      ]
+    }
+  },
+
+  "injectionSelector": "L:source.dsl",
+  "uuid": "d6c1b5e2-9d74-45cf-9f7f-1a9c8f1a5e2a"
+}

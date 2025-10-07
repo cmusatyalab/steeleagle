@@ -3,11 +3,11 @@ from pydantic import BaseModel
 import logging
 
 from ...dsl.compiler.registry import register_data
-from ...dsl.partitioner.algos.corridor import CorridorPartition
-from ...dsl.partitioner.algos.edge import EdgePartition
-from ...dsl.partitioner.algos.survey import SurveyPartition
-from ...dsl.partitioner.geopoints import GeoPoints
-from ...dsl.partitioner.utils import parse_kml_file
+from ....tools.map.partitioner.algos.corridor import CorridorPartition
+from ....tools.map.partitioner.algos.edge import EdgePartition
+from ....tools.map.partitioner.algos.survey import SurveyPartition
+from ....tools.map.partitioner.geopoints import GeoPoints
+from ....tools.map.partitioner.utils import parse_kml_file
 
 logger = logging.getLogger(__name__)
 
