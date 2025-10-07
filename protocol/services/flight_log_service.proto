@@ -8,50 +8,66 @@ package steeleagle.protocol.services.flight_log_service;
 import "common.proto";
 
 /*
- * Used to log to a flight log
+ * Used to log to a flight log.
+ *
+ * This service is hosted by a logger instance and is responsible
+ * for writing all system logs to an MCAP file for mission playback.
  */
 service FlightLog {
-  // Basic log endpoint 
+  /*
+   * Basic log endpoint.
+   *
+   * Behaves identically to most log endpoints, but writes the data to
+   * an MCAP file instead of the console.
+   */
   rpc Log (LogRequest)
 	returns (steeleagle.protocol.common.Response) {}
-  // Log a request/response proto
+  /*
+   * Protobuf log endpoint.
+   *
+   * Accepts Protobuf Request/Response types, and writes the data to
+   * an MCAP file. Useful for playback of gRPC calls.
+   */
   rpc LogProto (LogProtoRequest)
 	returns (steeleagle.protocol.common.Response) {}
 }
 
 message LogRequest {
-  steeleagle.protocol.common.Request request = 1;
-  string topic = 2;
-  LogMessage log = 3;
+  steeleagle.protocol.common.Request request = 1; // request data
+  string topic = 2; // topic of the log
+  LogMessage log = 3; // log content
 }
 
+// Log types (follows Python convention).
 enum LogType {
-  DEBUG = 0;
-  INFO = 1;
-  PROTO = 2;
-  WARNING = 3;
-  ERROR = 4;
-  CRITICAL = 5;
+  DEBUG = 0; // for debugging
+  INFO = 1; // information
+  PROTO = 2; // Protobuf objects
+  WARNING = 3; // warnings
+  ERROR = 4; // errors
+  CRITICAL = 5; // critical errors
 }
 
+// Basic log message.
 message LogMessage {
-  LogType type = 1;
-  string msg = 2;
+  LogType type = 1; // type of the log
+  string msg = 2; // message content
 }
 
+// Protobuf object that is either a Request/Response type.
 message ReqRepProto {
-  oneof type {
-    steeleagle.protocol.common.Request request = 1;
-    steeleagle.protocol.common.Response response = 2;
+  oneof type { // either a Request or Response
+    steeleagle.protocol.common.Request request = 1; // request data
+    steeleagle.protocol.common.Response response = 2; // response data
   }
-  // Name of the request and associated service
+  // name of the request and associated service
   string name = 3;
-  // Plaintext representation of the proto contents
+  // plaintext representation of the proto contents (usually via MessageToDict)
   string content = 4;
 }
 
 message LogProtoRequest {
-  steeleagle.protocol.common.Request request = 1;
-  string topic = 2;
-  ReqRepProto reqrep_proto = 3; 
+  steeleagle.protocol.common.Request request = 1; // request data
+  string topic = 2; // topic of the log
+  ReqRepProto reqrep_proto = 3; // Request/Response object and content
 }

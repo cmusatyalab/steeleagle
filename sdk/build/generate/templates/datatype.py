@@ -4,10 +4,10 @@
 from typing import Optional, List
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.duration_pb2 import Duration
+from enum import Enum
 # API imports
 from ..base import Datatype
 from ...dsl.compiler.registry import register_data 
-
 {% if imports | length > 0 %}
 # Type imports
 {% for _import in imports %}
@@ -15,40 +15,43 @@ from ...dsl.compiler.registry import register_data
 {% endfor %}
 {% endif %}
 
+{% for enum in enums %}
+class {{ enum.name }}(int, Enum):
+    """{% if enum.comment != '' %}{{ enum.comment | indent(width=8, first=False) }}{% else %}{{ enum.name }} Enum.{% endif %}
+
+    {% if enum.values | length > 0 %}
+
+    Attributes:
+        {% for value in enum.values %}
+        {{ value.name }} ({{ loop.index - 1 }}){% if value.comment != None %}: {{ value.comment }}
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+    """
+    {% for value in enum.values %}
+    {{ value.name }} = {{ loop.index - 1 }} 
+    {% endfor %}
+
+{% endfor %}
 {% for _type in types %}
 @register_data
 class {{ _type.name }}(Datatype):
-    {% if _type.comment != None %}
-    {{ _type.comment }}
+    """{% if _type.comment != '' %}{{ _type.comment | indent(width=4, first=False) }}{% else %}{{ _type.name }} Datatype.{% endif %}
+    
+    {% if _type.fields | length > 0 %}
+    
+    Attributes:
+    {% for field in _type.fields %}
+        {{ field.name }} ({{ field.type }}){% if field.comment != '' %}: {{ field.comment }}{% endif %}    
+    {% endfor %}
     {% endif %}
+    """
     {% if _type.fields | length == 0 %}
     pass
 
     {% endif %}
     {% for field in _type.fields %}
-    {% if field.enum != None %}
-    from enum import Enum
-    class {{ field.enum.name }}(int, Enum):
-        {% if field.enum.comment != None %}
-        {{ field.enum.comment }}
-        {% endif %}
-        {% for value in field.enum.values %}
-        {{ value.name }} = {{ loop.index - 1 }} 
-        {% if value.comment != None %}
-        {{ value.comment }}
-        {% endif %}
-        {% endfor %}
-    {% endif %}
-
-    {# Substitute google.protobuf Timestamp → ProtoTimestamp #}
-    {% if field.type == "timestamp.Timestamp" %}
-    {{ field.name }}: ProtoTimestamp
-    {% else %}
     {{ field.name }}: {{ field.type }}
-    {% endif %}
-    {% if field.comment != None %}
-    {{ field.comment }}
-    {% endif %}
     {% endfor %}
 
 {% endfor %}

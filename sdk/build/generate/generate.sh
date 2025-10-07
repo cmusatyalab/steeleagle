@@ -10,7 +10,6 @@ cd temp
 $PROTOCPATH -I. \
 	--python_out=../protocol \
        	common.proto \
-	messages/compute_payload.proto \
 	messages/telemetry.proto \
 	messages/result.proto \
 	testing/testing.proto
@@ -33,7 +32,6 @@ $PROTOCPATH -I. \
 	--include_imports \
 	--descriptor_set_out=../protocol/protocol.desc \
        	common.proto \
-	messages/compute_payload.proto \
 	messages/telemetry.proto \
 	messages/result.proto \
 	testing/testing.proto \

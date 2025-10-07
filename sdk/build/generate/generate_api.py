@@ -10,14 +10,13 @@ _SKIP_FILES = [
     'services/remote_service.proto',
     'services/mission_service.proto',
     'services/flight_log_service.proto',
-    'messages/compute_payload.proto',
     'testing/testing.proto',
     'google/protobuf/timestamp.proto',
     'google/protobuf/duration.proto',
     'google/protobuf/any.proto'
 ]
 
-''' Type definitions for Jinja '''
+""" Type definitions for Jinja """
 @dataclass
 class EnumValue:
     name: str
@@ -34,7 +33,6 @@ class Field:
     name: str
     type: str
     comment: str = None
-    enum: Enum = None
 
 @dataclass
 class Type:
@@ -52,11 +50,16 @@ class Action:
 _MESSAGE_DIR = '../../api/datatypes'
 _ACTION_DIR = '../../api/actions/primitives'
 
-''' Functions '''
+""" Functions """
 def generate():
-    '''
-    Generates params, messages, and actions from a protocol descriptor file.
-    '''
+    """Generates params, messages, and actions from a protocol descriptor file.
+
+    Using a protocol descriptor file, provided by the DESCPATH variable, this
+    function traverses through all messages/services, writing their contents
+    to appropriate action or datatype files (as outlined by the corresponding
+    templates). The output files are written into _MESSAGE_DIR and _ACTION_DIR.
+    Files in _SKIP_FILES will not be generated.
+    """
     protocol_fds = descriptor_pb2.FileDescriptorSet()
     with open(os.getenv('DESCPATH'), "rb") as f:
         protocol_fds.MergeFromString(f.read())
@@ -79,7 +82,8 @@ def generate():
         type_context = {
             'filename': filename,
             'types': [],
-            'imports': []
+            'imports': [],
+            'enums' : []
         }
 
         # Map to find comments in the source code for eventual auto-documentation
@@ -88,7 +92,7 @@ def generate():
         # Add dependencies
         for dependency in file.dependency:
             if 'google' in dependency:
-                continue # Skip google protobuf imports
+                continue # Skip google protobuf imports since they are hardcoded into the template
             dependency = dependency.split('.')[-2] # Remove .proto suffix
             if '/' in dependency:
                 dependency = dependency.split('/')[-1]
@@ -103,7 +107,8 @@ def generate():
                 values.append(
                         EnumValue(name=value.name, comment=get_comments((5, i, 2, j), location_map))
                         )
-            enum_map[enum.name] = Enum(name=enum.name, comment=get_comments((5, i), location_map), values=values)
+            enum_map[enum.name] = Enum(name=enum.name, comment=get_comments((5, i), location_map, docstring=True), values=values)
+            type_context['enums'].append(enum_map[enum.name])
         
         # Write messages
         field_map = {}
@@ -113,32 +118,30 @@ def generate():
                 continue # Skip this if it's an RPC request; they are not in the Python API
             fields = get_fields(message.field, enum_map)
             message_fields = []
-            for field_name, typ, path_type, enum, index in fields:
+            for field_name, typ, path_type, index in fields:
                 field = Field(
                         name=field_name, type=typ.replace(f'{filename}.', ''), 
-                        comment=get_comments((4, i, path_type, index), location_map),
-                        enum=enum
+                        comment=get_comments((4, i, path_type, index), location_map)
                         )
                 message_fields.append(field)
-            message = Type(name=message.name, comment=get_comments((4, i), location_map), fields=message_fields)
+            message = Type(name=message.name, comment=get_comments((4, i), location_map, docstring=True), fields=message_fields)
             type_context['types'].append(message)
         
         # Write services
         for i, service in enumerate(file.service):
             action_context['service_name'] = service.name
-            action_context['comment'] = get_comments((6, i), location_map)
+            action_context['comment'] = get_comments((6, i), location_map, docstring=True)
             for j, method in enumerate(service.method):
                 # Retrieve the path data from the first time we traversed the messages
-                fields, message_index = field_map[f"{method.name}Request"]
+                fields, message_index = field_map[f'{method.name}Request']
                 action_fields = []
-                for k, (field_name, typ, path_type, enum, index) in enumerate(fields):
+                for k, (field_name, typ, path_type, index) in enumerate(fields):
                     field = Field(
                             name=field_name, type=typ.replace(f'{filename}.', ''), 
-                            comment=get_comments((4, message_index, path_type, index), location_map),
-                            enum=enum
+                            comment=get_comments((4, message_index, path_type, index), location_map)
                             )
                     action_fields.append(field)
-                action = Action(name=method.name, comment=get_comments((6, i, 2, j), location_map), fields=action_fields, streaming=False)
+                action = Action(name=method.name, comment=get_comments((6, i, 2, j), location_map, docstring=True), fields=action_fields, streaming=False)
                 if method.client_streaming and method.server_streaming:
                     raise NotImplemented("No generation method for method type: bidirectional stream!")
                 elif method.client_streaming:
@@ -170,9 +173,12 @@ def generate():
                 f.write(template.render(type_context))
 
 def get_fields(fields, enum_map):
-    '''
-    Get the fields associated with a message.
-    '''
+    """Get the fields associated with a message.
+    
+    Gets the fields for a message as a string that can be written into
+    a template. Makes sure external objects are referenced correctly
+    using the right import syntax.
+    """
     result = []
     # Convert the protobuf enum type to a Pythonic type
     for i, field in enumerate(fields):
@@ -197,7 +203,7 @@ def get_fields(fields, enum_map):
             if typ == 'Request':
                 continue # Skip request typed fields because they aren't in the Python API
             elif typ in enum_map:
-                enum = enum_map[typ]
+                typ = f'params.{typ}'
             elif 'service' in file:
                 typ = f'params.{typ}'
             elif 'protobuf' in file:
@@ -211,23 +217,32 @@ def get_fields(fields, enum_map):
         elif field.label == 3:
             typ = f'List[{typ}]'
 
-        result.append((field.name, typ, path_type, enum, i))
+        result.append((field.name, typ, path_type, i))
     return result
 
-def get_comments(path, location_map):
-    '''
-    Retrieves comments for a given path within a protocol descriptor file.
-    '''
-    comments = []
-    leading_comments = location_map.get(path).leading_comments.strip()
-    if leading_comments:
-        comments.append(leading_comments.replace('\n', ''))
-    trailing_comments = location_map.get(path).trailing_comments.strip()
-    if trailing_comments:
-        comments.append(trailing_comments.replace('\n', ''))
-    if len(comments):
-        return f"'''{'. '.join(comments)}'''"
-    else:
-        return ""
+def get_comments(path, location_map, docstring=False):
+    """Retrieves comments for a given path within a protocol descriptor file.
+    
+    Gets comments from the protocol descriptor file and associates them with
+    the correct template object.
+    """
+    if not docstring:
+        comments = []
+        leading_comments = location_map.get(path).leading_comments.strip()
+        if leading_comments:
+            comments.append(leading_comments.replace('\n', ''))
+        trailing_comments = location_map.get(path).trailing_comments.strip()
+        if trailing_comments:
+            comments.append(trailing_comments.replace('\n', ''))
+        if len(comments):
+            return f'{". ".join(comments)}'
+        else:
+            return ''
+    else: # When we have a fully formatted docstring, don't reformat the comments
+        leading_comments = location_map.get(path).leading_comments.strip()
+        if leading_comments:
+            return leading_comments.replace('\n ', '\n')
+        else:
+            return ''
 
 generate()
