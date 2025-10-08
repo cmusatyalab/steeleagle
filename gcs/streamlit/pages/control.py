@@ -98,13 +98,28 @@ def run_flightscript():
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
         req = CommandRequest()
-        dsl_script = st.session_state.script_file[0].read()
+        kml = st.session_state.script_file[0].getvalue()
+        dsl_script = st.session_state.script_file[1].read()
         compile_req = CompileMissionRequest(dsl_content=dsl_script)
-        compile_response = st.session_state.stub.CompileMission(compile_req)
+        responses = []
+        for response in st.session_state.stub.CompileMission(compile_req):
+            responses.append(response)
+        compile_response = responses[-1]
         data = UploadRequest(request=generate_request())
+        data.mission.map = kml
         data.mission.content = compile_response.compiled_dsl_content
         req.method_name = 'Mission.Upload'
         req.request.Pack(data)
+        responses = []
+        for response in st.session_state.stub.Command(req):
+            responses.append(response)
+        req.method_name = 'Mission.Start'
+        start = StartRequest(request=generate_request())
+        req.request.Pack(start)
+        responses = []
+        for response in st.session_state.stub.Command(req):
+            responses.append(response)
+        
         
 
 def get_callback(toast_message):
@@ -483,24 +498,23 @@ with st.sidebar:
             #if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
             #    req.veh.gimbal_pose.pitch = gimbal_pitch
             #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
-            elif yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
-                data = HoldRequest(request=generate_request())
-                req.method_name = 'Control.Hold'
-                req.request.Pack(data)
-            else:
-                data = JoystickRequest(request=generate_request())
-                data.velocity.angular_vel = yaw
-                data.velocity.x_vel = pitch
-                data.velocity.y_vel = roll
-                data.velocity.z_vel = thrust
-                req.method_name = 'Control.Joystick'
-                req.request.Pack(data)
+            # yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
+            # data = HoldRequest(request=generate_request())
+            # req.method_name = 'Control.Hold'
+            # req.request.Pack(data)
+        
+            data = JoystickRequest(request=generate_request())
+            data.velocity.angular_vel = yaw
+            data.velocity.x_vel = pitch
+            data.velocity.y_vel = roll
+            data.velocity.z_vel = thrust
+            req.method_name = 'Control.Joystick'
+            req.request.Pack(data)
             #if not st.session_state.gimbal_relative_mode:
             #    req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
             #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
             st.caption(req)
         key_pressed = None
-        
         for d in st.session_state.selected_drones:
             # STUB SEND MANUAL
             req.vehicle_id = d
