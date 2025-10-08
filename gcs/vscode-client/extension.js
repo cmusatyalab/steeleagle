@@ -6,12 +6,14 @@ let client;
 
 function activate(context) {
 
-  const serverEntry = "steeleagle_sdk.tools.lsp.server.main";
+  const serverEntry = "steeleagle_sdk.tools.language_server.main";
+
+  const path = require("path");
 
   const serverOptions = {
-    command: "uv",
-    args: ["run", "python", "-m", serverEntry],
-    transport: TransportKind.stdio,
+      command: 'uv',
+      args: ['run', 'python', '-m', serverEntry],
+      options: { cwd: path.join(context.extensionPath) },
   };
 
   const clientOptions = {

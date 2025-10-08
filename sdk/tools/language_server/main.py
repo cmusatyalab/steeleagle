@@ -4,11 +4,31 @@ from importlib import resources
 from typing import List, Tuple, Optional
 from pygls.server import LanguageServer
 from pygls.workspace import Document
-from pygls.lsp.methods import INITIALIZE, TEXT_DOCUMENT_COMPLETION
-from pygls.lsp.types import (InitializeResult, CompletionParams, CompletionItem,
-                             CompletionItemKind, TextDocumentSyncKind, CompletionOptions,
-                             MarkupContent, MarkupKind, CompletionList)
+from lsprotocol.types import (
+    INITIALIZE,
+    TEXT_DOCUMENT_COMPLETION,
+    InitializeResult,
+    CompletionParams,
+    CompletionItem,
+    CompletionItemKind,
+    TextDocumentSyncKind,
+    CompletionOptions,
+    MarkupContent,
+    MarkupKind,
+    CompletionList,
+    ServerCapabilities,
+    TextDocumentSyncOptions
+)
 from lark import Lark, Tree, Token, Visitor
+import logging
+
+# Configure logging to file for debugging
+logging.basicConfig(
+    filename='./steeleagle_lsp.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 DSL_KEYWORDS = ["mission","action","event","data","start","on","done","then","terminate","let","if","else","loop"]
 BUILTIN_ACTIONS: List[Tuple[str,str,str]] = [
@@ -17,26 +37,33 @@ BUILTIN_ACTIONS: List[Tuple[str,str,str]] = [
     ("SetGlobalPosition","Action","Go to GPS point"),
 ]
 
-def grammar_path() -> Path:
-    try:
-        return Path(resources.files("steeleagle_sdk.dsl.grammar") / "dronedsl.lark")
-    except Exception:
-        # when running from the repo checkout
-        repo_root = Path(__file__).resolve().parents[3]
-        p = repo_root / "sdk" / "dsl" / "grammar" / "dronedsl.lark"
-        if not p.is_file():
-            raise FileNotFoundError(p)
-        return p
-
 
 class Parser:
     def __init__(self) -> None:
-        g = grammar_path()
-        self._p = Lark.open(str(g), rel_to=str(g.parent),
-                            parser="lalr", keep_all_tokens=True,
-                            propagate_positions=True, maybe_placeholders=True)
+        try:
+            logger.info("Initializing Parser")
+            grammar_file = resources.files("steeleagle_sdk.dsl.grammar") / "dronedsl.lark"
+            logger.info(f"Grammar file path: {grammar_file}")
+            
+            with resources.as_file(grammar_file) as g:
+                logger.info(f"Resolved grammar file: {g}")
+                self._p = Lark.open(str(g),
+                                    parser="lalr", keep_all_tokens=True,
+                                    propagate_positions=True, maybe_placeholders=True)
+            logger.info("Parser initialized successfully")
+        except Exception as e:
+            logger.exception(f"Failed to initialize Parser: {e}")
+            raise
+    
     def parse(self, text: str) -> Tree:
-        return self._p.parse(text)
+        try:
+            logger.debug(f"Parsing text of length {len(text)}")
+            result = self._p.parse(text)
+            logger.debug("Parse successful")
+            return result
+        except Exception as e:
+            logger.debug(f"Parse failed: {e}")
+            raise
 
 class Symbols:
     def __init__(self) -> None:
@@ -114,30 +141,67 @@ def items_symbols(pfx: str, syms: Symbols) -> List[CompletionItem]:
                                       insert_text=n, sort_text="07_"+n))
     return out
 
-class Srv(LanguageServer): ...
-srv = Srv()
+srv = LanguageServer(name="steeleagle-dsl-lsp", version="1.0.0")
+logger.info("LanguageServer instance created")
 
 @srv.feature(INITIALIZE)
 def on_init(ls, _):
-    return InitializeResult(capabilities={
-        "textDocumentSync": TextDocumentSyncKind.Incremental,
-        "completionProvider": CompletionOptions(trigger_characters=[".",":"," ","(",")",",","="])
-    })
+    logger.info("INITIALIZE request received")
+    result = InitializeResult(
+        capabilities=ServerCapabilities(
+            text_document_sync=TextDocumentSyncOptions(
+                open_close=True,
+                change=TextDocumentSyncKind.Incremental
+            ),
+            completion_provider=CompletionOptions(
+                trigger_characters=[".",":"," ","(",")",",","="]
+            )
+        )
+    )
+    logger.info("INITIALIZE response prepared")
+    return result
 
-_parser = Parser()
+logger.info("Creating Parser instance")
+try:
+    _parser = Parser()
+    logger.info("Parser instance created successfully")
+except Exception as e:
+    logger.exception(f"Failed to create Parser: {e}")
+    raise
 
 @srv.feature(TEXT_DOCUMENT_COMPLETION)
 def on_complete(ls, params: CompletionParams):
-    doc = ls.workspace.get_document(params.text_document.uri)
+    logger.info(f"COMPLETION request for {params.text_document.uri} at line {params.position.line}, char {params.position.character}")
     try:
-        tree = _parser.parse(doc.source)
-    except Exception:
-        tree = None
-    syms = build_symbols(tree)
-    line_pref = get_line_prefix(doc, params.position.line, params.position.character)
-    pfx = ident_prefix(line_pref)
-    items = items_symbols(pfx, syms) + items_builtins(pfx) + items_keywords(pfx)
-    return CompletionList(is_incomplete=False, items=items)
+        doc = ls.workspace.get_document(params.text_document.uri)
+        logger.debug(f"Document retrieved, length: {len(doc.source)}")
+        
+        try:
+            tree = _parser.parse(doc.source)
+            logger.debug("Document parsed successfully")
+        except Exception as e:
+            logger.debug(f"Parse failed: {e}")
+            tree = None
+        
+        syms = build_symbols(tree)
+        logger.debug(f"Symbols collected: {len(syms.actions)} actions, {len(syms.events)} events, {len(syms.data)} data")
+        
+        line_pref = get_line_prefix(doc, params.position.line, params.position.character)
+        pfx = ident_prefix(line_pref)
+        logger.debug(f"Completion prefix: '{pfx}'")
+        
+        items = items_symbols(pfx, syms) + items_builtins(pfx) + items_keywords(pfx)
+        logger.info(f"Returning {len(items)} completion items")
+        
+        return CompletionList(is_incomplete=False, items=items)
+    except Exception as e:
+        logger.exception(f"Error in completion handler: {e}")
+        return CompletionList(is_incomplete=False, items=[])
 
 if __name__ == "__main__":
-    srv.start_io()
+    logger.info("Starting LSP server via start_io()")
+    try:
+        srv.start_io()
+    except Exception as e:
+        logger.exception(f"Server crashed: {e}")
+        raise
