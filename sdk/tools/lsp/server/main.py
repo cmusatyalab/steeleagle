@@ -19,14 +19,15 @@ BUILTIN_ACTIONS: List[Tuple[str,str,str]] = [
 
 def grammar_path() -> Path:
     try:
-        # Python 3.11+: resources.files returns a Traversable
-        return Path(resources.files("dsl.grammar") / "dronedsl.lark")
+        return Path(resources.files("steeleagle_sdk.dsl.grammar") / "dronedsl.lark")
     except Exception:
-        # Fallback to repo-root relative (works when cwd = repo root)
-        p = Path.cwd() / "dsl" / "grammar" / "dronedsl.lark"
+        # when running from the repo checkout
+        repo_root = Path(__file__).resolve().parents[3]
+        p = repo_root / "sdk" / "dsl" / "grammar" / "dronedsl.lark"
         if not p.is_file():
             raise FileNotFoundError(p)
         return p
+
 
 class Parser:
     def __init__(self) -> None:
