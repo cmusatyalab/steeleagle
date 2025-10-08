@@ -1,7 +1,6 @@
-from docstring_parser import parse
 import griffe
 
-_API_MODULE_PATH = '../../api'
+_API_MODULE_PATH = '../../protocol'
 _DSL_MODULE_PATH = '../../dsl'
 
 def generate_pyfile_docs():

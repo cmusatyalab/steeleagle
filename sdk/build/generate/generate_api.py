@@ -202,8 +202,6 @@ def get_fields(fields, enum_map):
             typ = splits[-1]
             if typ == 'Request':
                 continue # Skip request typed fields because they aren't in the Python API
-            elif typ in enum_map:
-                typ = f'params.{typ}'
             elif 'service' in file:
                 typ = f'params.{typ}'
             elif 'protobuf' in file:
