@@ -114,7 +114,7 @@ def generate():
         field_map = {}
         for i, message in enumerate(file.message_type):
             if 'Request' in message.name or (message.name != 'Response' and 'Response' in message.name):
-                field_map[message.name] = (get_fields(message.field, enum_map), i) # Cache parameters for later
+                field_map[message.name] = (get_fields(message.field, enum_map, is_action=True), i) # Cache parameters for later
                 continue # Skip this if it's an RPC request; they are not in the Python API
             fields = get_fields(message.field, enum_map)
             message_fields = []
@@ -172,7 +172,7 @@ def generate():
             with open(output_path, 'w') as f:
                 f.write(template.render(type_context))
 
-def get_fields(fields, enum_map):
+def get_fields(fields, enum_map, is_action=False):
     """Get the fields associated with a message.
     
     Gets the fields for a message as a string that can be written into
@@ -202,7 +202,7 @@ def get_fields(fields, enum_map):
             typ = splits[-1]
             if typ == 'Request':
                 continue # Skip request typed fields because they aren't in the Python API
-            elif 'service' in file:
+            elif is_action:
                 typ = f'params.{typ}'
             elif 'protobuf' in file:
                 typ = f'{typ}'
