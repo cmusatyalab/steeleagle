@@ -8,20 +8,20 @@ package steeleagle.protocol.services.report_service;
 import "common.proto";
 
 /*
- * Used to report messages to the Swarm Controller server
- * or to other collaborative vehicles
+ * Used to report messages to the Swarm Controller server.
  */
 service Report {
-  // Send a report to the server, or to an intended recipient
+  // Send a report to the server.
   rpc SendReport (SendReportRequest)
 	returns (steeleagle.protocol.common.Response) {}
 }
 
+// Message container for a report.
 message ReportMessage {
-  int32 report_code = 1; // Integer report code, interpreted by the backend
+  int32 report_code = 1; // integer report code, interpreted by the backend
 }
 
 message SendReportRequest {
-  steeleagle.protocol.common.Request request = 1;
-  ReportMessage report = 2;
+  steeleagle.protocol.common.Request request = 1; // request data
+  ReportMessage report = 2; // report data
 }

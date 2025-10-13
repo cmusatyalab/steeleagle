@@ -12,7 +12,14 @@ _grammar = _GRAMMAR_PATH.read_text(encoding="utf-8")
 _parser = Lark(_grammar, parser="lalr", start="start")
 
 def build_mission(dsl_code: str) -> MissionIR:
-    '''Compile DSL source text into a MissionIR object.'''
+    """Compile DSL source text into a MissionIR object.
+    
+    Args:
+        dsl_code (str): string representation of a DSL file
+
+    Returns:
+        MissionIR: a mission intermediate representation
+    """
     tree = _parser.parse(dsl_code) 
     mission = DroneDSLTransformer().transform(tree)
     logger.info(

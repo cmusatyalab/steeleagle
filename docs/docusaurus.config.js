@@ -80,9 +80,9 @@ const config = {
           },
 	  {
 	    type: 'docSidebar',
-            sidebarId: 'apiSidebar',
+            sidebarId: 'sdkSidebar',
 	    position: 'left',
-	    label: 'API',
+	    label: 'SDK',
           },
 	  {
 	    type: 'docSidebar',

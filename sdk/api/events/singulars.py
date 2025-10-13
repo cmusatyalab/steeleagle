@@ -67,8 +67,9 @@ def _haversine_m(lat1, lon1, lat2, lon2) -> float:
 @register_event
 class BatteryReached(Event):
     '''
-    Fires when battery % satisfies relation to threshold for N consecutive polls.
-    relation: 'at_least' (>= threshold) or 'at_most' (<= threshold)
+    Fires when battery percentage satisfies relation to threshold for N consecutive polls.
+    relation: `at_least` (greater than or equal to threshold) or `at_most` (less than or
+    equal to threshold).
     '''
     threshold: int = Field(..., ge=0, le=100)
     relation: Literal["at_least", "at_most"] = "at_most"
@@ -90,7 +91,9 @@ class BatteryReached(Event):
 class SatellitesReached(Event):
     """
     Fires when satellites count satisfies relation to threshold for N consecutive polls.
-    relation: 'at_least' (>=) or 'at_most' (<=)
+
+    Attributes:
+        relation: `at_least` (greater than or equal to) or `at_most` (less than or equal to).
     """
     threshold: int = Field(..., ge=0)
     relation: Literal["at_least", "at_most"] = "at_least"
@@ -156,8 +159,10 @@ class GimbalPoseReached(Event):
 class VelocityReached(Event):
     """
     Fires when speed magnitude in selected frame satisfies relation to threshold.
-    frame: 'enu' or 'body'
-    relation: 'at_least' (>=) or 'at_most' (<=)
+
+    Attributes:
+        frame: `enu` or `body`
+        relation: `at_least` or `at_most`
     """
     frame: Literal["enu", "body"] = "enu"
     threshold: float = Field(..., gt=0.0)
@@ -174,8 +179,8 @@ class VelocityReached(Event):
 @register_event
 class HomeReached(Event):
     """
-    Fires when distance from current global_position to home <= radius_m (meters).
-    Requires global_position.{latitude, longitude} and home.{latitude, longitude}.
+    Fires when distance from current `global_position` to home less than or equal to `radius_m` (meters).
+    Requires `global_position.{latitude, longitude}` and `home.{latitude, longitude}`.
     """
     radius_m: float = Field(..., gt=0.0)
 
@@ -199,8 +204,8 @@ def _extract_detections(results: Optional[List[Dict[str, Any]]]) -> List[Dict[st
     """
     Normalizes various shapes to a flat list of detection dicts.
     Supports:
-      - {'detection_result': {'detections': [ ... ]}}
-      - {'detections': [ ... ]}
+      - `{'detection_result': {'detections': [ ... ]}}`
+      - `{'detections': [ ... ]}`
       - direct detection dicts (best-effort)
     """
     out: List[Dict[str, Any]] = []
@@ -227,8 +232,8 @@ def _extract_detections(results: Optional[List[Dict[str, Any]]]) -> List[Dict[st
 class DetectionFound(Event):
     """
     Fires when any detection matches optional filters:
-      - class_name (case-insensitive) if provided
-      - min_score >= threshold if provided
+      - `class_name` (case-insensitive) if provided
+      - `min_score` greater than of equal to threshold if provided
     """
     compute_type: str = Field(..., min_length=1)
     target: Optional[str] = Field(None)
@@ -260,8 +265,8 @@ class DetectionFound(Event):
 class HSVReached(Event):
     """
     Fires when any detection indicates HSV filter passed (boolean flag).
-    Optional filters: class_name, min_score.
-    Assumes detection dicts may have 'hsv_filter_passed': bool.
+    Optional filters: `class_name`, `min_score`.
+    Assumes detection dicts may have `hsv_filter_passed`: bool.
     """
     compute_type: str = Field(..., min_length=1)
     class_name: Optional[str] = Field(None)

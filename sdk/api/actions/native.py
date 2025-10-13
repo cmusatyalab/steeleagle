@@ -6,8 +6,6 @@ from dataclasses import is_dataclass, asdict as dc_asdict
 from ..base import Action
 from ..datatypes.common import Response
 from google.protobuf.timestamp_pb2 import Timestamp
-import logging
-logger = logging.getLogger(__name__)
 
 def now_ts() -> Timestamp:
     """Get the current time as a Google Protobuf Timestamp.
@@ -62,20 +60,16 @@ async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=
     it into a Python API Response.
 
     Args:
-        method_coro (Any): an awaitable stub coroutine <stub>.<method> e.g.
+        method_coro (Any): an awaitable stub coroutine `STUB.METHOD` e.g.
             ControlStub.Connect.
         request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (`Optional[list]`, default: `[('identity', 'internal')]`): 
+        metadata (Optional[list]): 
             metadata object for gRPC. The metadata must include an `identity` 
             parameter to access kernel services. An `identity` set to 
             `internal` signals to the kernel that the RPC request originates
             from an onboard client.
-        timeout (`Optional[int]`, default: `None`): timeout for the RPC request,
-            `None` indicates no timeout.
-
-    See Also:
-        - [Law Documentation](primitives/control#connect-objects): full documentation of RPC identities and how
-            they are interpreted by the kernel.
+        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
+            no timeout.
     """
     ts = now_ts()
     request_pb.request.timestamp.CopyFrom(ts)
@@ -93,22 +87,16 @@ async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[li
     response it receives from the RPC.
 
     Args:
-        method_coro (Any): an async generator stub coroutine <stub>.<method> e.g.
+        method_coro (Any): an async generator stub coroutine `STUB.METHOD` e.g.
             ControlStub.TakeOff.
         request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (`Optional[list]`, default: `[('identity', 'internal')]`): 
-            metadata object for gRPC. The metadata must include an `identity` 
-            parameter to access kernel services. An `identity` set to 
-            `internal` signals to the kernel that the RPC request originates
-            from an onboard client.
-        timeout (`Optional[int]`, default: `None`): timeout for the RPC request,
-            `None` indicates no timeout. It is generally not recommended to add
-            a timeout to a streaming method, since most have non-deterministic
-            time of completion.
-
-    See Also:
-        - [Law Documentation](primitives/control#connect-objects): full documentation of RPC identities and how
-            they are interpreted by the kernel.
+        metadata (Optional[list]): metadata object for gRPC. The metadata 
+            must include an `identity` parameter to access kernel services. 
+            An `identity` set to `internal` signals to the kernel that the 
+            RPC request originates from an onboard client.
+        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
+            no timeout. It is generally not recommended to add a timeout to a 
+            streaming method, since most have non-deterministic time of completion.
     """
     ts = now_ts()
     request_pb.request.timestamp.CopyFrom(ts)
@@ -117,7 +105,6 @@ async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[li
     try:
         async for msg in call:
             last = msg  # Guaranteed at least one response
-        logger.info(f"Streaming response received: {last}")
         return last
     except grpc.aio.AioRpcError as e:
         return error_to_api_response(e)

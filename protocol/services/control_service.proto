@@ -128,14 +128,17 @@ service Control {
    * will interpret the heading of travel according to `heading_mode`:
    * - `TO_TARGET` -> turn to face the target position bearing
    * - `HEADING_START` -> turn to face the provided heading in the global position object. 
+   * 
    * This will be the heading the vehicle maintains for the duration of transit. 
    * Generally only UAVs will support `HEADING_START`.
-   * The vehicle will movee towards the target at the specified maximum velocity 
+   * 
+   * The vehicle will move towards the target at the specified maximum velocity 
    * until the vehicle has reached its destination. Error tolerance is determined 
    * by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
    * - `x_vel` -> maximum _horizontal_ velocity
    * - `y_vel` -> ignored
    * - `z_vel` -> maximum _vertical_ velocity _(UAV only)_
+   *
    * If no maximum velocity is provided, the driver will use a preset speed usually 
    * determined by the manufacturer or hardware settings.
    *
@@ -153,13 +156,15 @@ service Control {
    * Causes the vehicle to transit to the provided relative position. The vehicle
    * will interpret the input position according to `frame` as follows:
    * - `BODY` -> (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_
-   * - `ENU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
+   * - `NEU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
+   * 
    * The vehicle will move towards the target at the specified maximum velocity 
    * until the vehicle has reached its destination. Error tolerance is determined 
    * by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
    * - `x_vel` -> maximum _horizontal_ velocity
    * - `y_vel` -> ignored
    * - `z_vel` -> maximum _vertical_ velocity _(UAV only)_
+   * 
    * If no maximum velocity is provided, the driver will use a preset speed usually 
    * determined by the manufacturer or hardware settings.
    */
@@ -172,7 +177,7 @@ service Control {
    * Error tolerance is determined by the driver. The vehicle will interpret 
    * the input velocity according to `frame` as follows:
    * - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
-   * - `ENU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
+   * - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
    */
   rpc SetVelocity (SetVelocityRequest)
 	returns (stream steeleagle.protocol.common.Response) {}
@@ -194,10 +199,11 @@ service Control {
    * - `ABSOLUTE` -> absolute angle
    * - `RELATIVE` -> angle relative to current position
    * - `VELOCITY` -> angular velocities
+   * 
    * The vehicle will interpret the new pose angles according to `frame` 
    * as follows:
    * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
-   * - `ENU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
+   * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
    */
   rpc SetGimbalPose (SetGimbalPoseRequest)
 	returns (stream steeleagle.protocol.common.Response) {}
@@ -295,7 +301,7 @@ message SetGlobalPositionRequest {
 // Reference frame mode switch.
 enum ReferenceFrame {
   BODY = 0; // vehicle reference frame
-  ENU = 1; // ENU (North, East, Up) reference frame
+  NEU = 1; // NEU (North, East, Up) reference frame
 }
 
 message SetRelativePositionRequest {
