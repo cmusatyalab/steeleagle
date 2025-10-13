@@ -70,7 +70,7 @@
           "match": "^\\s*(Start)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$",
           "captures": {
             "1": { "name": "keyword.control.start.dsl" },
-            "2": { "name": "entity.name.constant.mission.start-target.dsl" }
+            "2": { "name": "entity.name.type.reference.dsl" }
           }
         },
         {
@@ -78,7 +78,7 @@
           "match": "^\\s*(During)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(:)\\s*$",
           "captures": {
             "1": { "name": "keyword.control.during.dsl" },
-            "2": { "name": "entity.name.section.during-state.dsl" },
+            "2": { "name": "entity.name.type.reference.dsl" },
             "3": { "name": "punctuation.separator.colon.dsl" }
           }
         }
@@ -91,9 +91,9 @@
           "name": "meta.transition.rule.dsl",
           "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(->)\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*$",
           "captures": {
-            "1": { "name": "variable.other.state.from.dsl" },
+            "1": { "name": "entity.name.type.reference.dsl" },
             "2": { "name": "keyword.operator.arrow.dsl" },
-            "3": { "name": "variable.other.state.to.dsl" }
+            "3": { "name": "entity.name.type.reference.dsl" }
           }
         }
       ]
