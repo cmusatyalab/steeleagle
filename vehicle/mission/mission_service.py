@@ -40,11 +40,10 @@ class MissionService(MissionServicer):
         return generate_response(2, "Mission uploaded")
 
     async def _start(self):
-        if self.mission_routine and not self.mission_routine.done():
-            return self.mission_routine
         fsm = MissionFSM(self.mission)
-        self.mission_routine = asyncio.create_task(fsm.run())
-        
+        mission_routine = asyncio.create_task(fsm.run())
+        return mission_routine
+
     async def Start(self, request, context):
         """Start an uploaded mission"""
         logger.info("Starting mission")

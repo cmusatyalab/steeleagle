@@ -1,6 +1,6 @@
 from pathlib import Path
 from lark import Lark
-from steeleagle_sdk.dsl import build_mission, execute_mission
+from steeleagle_sdk.dsl import build_mission
 
 import asyncio
 import os
