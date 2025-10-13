@@ -7,6 +7,7 @@ from ...base import Action
 from ..primitives.control import SetGimbalPose, SetGlobalPosition, SetVelocity
 from ...datatypes import common as common
 from ...datatypes.waypoint import Waypoints
+from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceFrame
 import logging
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class ElevateToAltitude(Action):
                     z_vel=self.climb_speed,
                     angular_vel=0.0,
                 ),
-                frame=SetVelocity.ReferenceFrame.ENU,  # or BODY
+                frame=ReferenceFrame.ENU,  # or BODY
             )
             await set_vel.execute()
 
@@ -73,8 +74,8 @@ class Patrol(Action):
                         altitude=float(p["alt"]),
                         heading=None,
                     ),
-                    altitude_mode=SetGlobalPosition.AltitudeMode.RELATIVE,
-                    heading_mode=SetGlobalPosition.HeadingMode.TO_TARGET,
+                    altitude_mode=AltitudeMode.RELATIVE,
+                    heading_mode=HeadingMode.TO_TARGET,
                     max_velocity=common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=5.0),
                 )
                 await goto.execute()

@@ -13,7 +13,8 @@ class CustomBuildHook(BuildHookInterface):
         sources = {
             'api' : 'api',
             'dsl' : 'dsl',
-            'protocol': 'protocol'
+            'protocol': 'protocol',
+            'tools' : 'tools'
         }
         print('>>> Running pre-build steps...')
         if os.path.isdir('build/src'):

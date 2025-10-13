@@ -108,3 +108,5 @@ docs/yarn-error.log*
 */npm-debug.log*
 */yarn-debug.log*
 */yarn-error.log*
+
+gcs/vscode-client/node_modules/*
