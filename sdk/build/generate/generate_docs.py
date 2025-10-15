@@ -1,4 +1,5 @@
 import griffe
+from griffe import Alias, ExprName, ExprSubscript, ExprTuple, ExprAttribute
 from typing import List
 from collections import deque
 from dataclasses import dataclass, asdict
@@ -16,11 +17,12 @@ class Arg:
 @dataclass
 class Function:
     name: str
-    signature: str
+    label: str
     args: List[Arg]
     ret: str = None
     comment: str = None
     inheritance: str = None
+    source: str = None
 
 @dataclass
 class Class:
@@ -29,6 +31,7 @@ class Class:
     attributes: List[Arg]
     comment: str = None
     inheritance: str = None
+    source: str = None
 
 @dataclass
 class Package:
@@ -39,25 +42,57 @@ class Package:
     comment: str = None
 
 OUTPUT_PATH = '../../../docs/docs/sdk/package/'
+LINK_PREFIX = '/sdk/package/'
 MODULES = [
-    '../../api',
-    '../../dsl'
+    '../src/steeleagle_sdk/'
 ]
 
-def resolve_type(annotation, package):
+def resolve_annotation(annotation, module):
     if not annotation:
+        return ''
+    if isinstance(annotation, ExprName):
+        if 'steeleagle_sdk' not in annotation.canonical_path:
+            return annotation.canonical_path
+        try:
+            name = str(annotation)
+            path = module.resolve(str(name)).split('.')
+            typename = path[-1]
+            path = path[:-1]
+            link = '/'.join(path) + '#' + f'class-{typename.lower()}'
+            return f'<Link to="{LINK_PREFIX}{link}">{name}</Link>'
+        except Exception as e:
+            return str(annotation) 
+    elif isinstance(annotation, ExprAttribute):
+        if 'steeleagle_sdk' not in annotation.canonical_path:
+            return annotation.canonical_path
+        path = annotation.canonical_path.split('.')
+        typename = path[-1]
+        path = path[:-1]
+        link = '/'.join(path) + '#' + f'class-{typename.lower()}'
+        return f'<Link to="{LINK_PREFIX}{link}">{annotation.canonical_name}</Link>'
+    elif isinstance(annotation, ExprSubscript):
+        return str(annotation.left) + f'[{resolve_annotation(annotation.slice, module)}]'
+    elif isinstance(annotation, ExprTuple):
+        return ', '.join([resolve_annotation(item, module) for item in annotation])
+    elif isinstance(annotation, str):
+        return annotation
+
+def resolve_type(attribute, module):
+    annotation = resolve_annotation(attribute.annotation, module)
+    if annotation == '':
         return None
-    return f'`{str(annotation)}`'
+    else:
+        return f'<code>{resolve_annotation(attribute.annotation, module)}</code>'
     
-def get_attribute(attribute, package):
+def get_attribute(attribute, module):
     name = attribute.name if hasattr(attribute, 'name') else None
-    typehint = resolve_type(attribute.annotation, attribute)
+    typehint = resolve_type(attribute, module)
     comment = attribute.description if hasattr(attribute, 'description') else None
     return Arg(name, typehint, comment)
 
-def get_function(function, package):
+def get_function(function, module, get_source=True):
     name = function.name
-    signature = f'{"async def " if "async" in function.labels else "def "}{function.signature()}' 
+    label = 'async' if 'async' in function.labels else 'normal' 
     docstring = function.docstring.parse('google') if function.docstring else None
     comment = None
     args = []
@@ -70,12 +105,17 @@ def get_function(function, package):
                 comment = section.value
             elif section.kind.value == 'parameters':
                 for param in section.value:
-                    args.append(get_attribute(param, package))
+                    args.append(get_attribute(param, module))
             elif section.kind.value == 'returns':
-                ret = get_attribute(section.value[0], package)
-    return Function(name, signature, args, ret, comment, inheritance)
+                ret = get_attribute(section.value[0], module)
+    source = None
+    if get_source:
+        with open(function.filepath, "r") as f:
+            lines = f.readlines()
+            source = "".join(lines[function.lineno - 1 : function.endlineno])
+    return Function(name, label, args, ret, comment, inheritance, source)
 
-def get_class(_class, package):
+def get_class(_class, module):
     name = _class.name
     comment = None
     functions = []
@@ -88,10 +128,14 @@ def get_class(_class, package):
                 comment = section.value.replace('->', '&#8594;') # Replace arrow characters
             elif section.kind.value == 'attributes':
                 for attr in section.value:
-                    attributes.append(get_attribute(attr, package))
+                    attributes.append(get_attribute(attr, module))
     for _, function in _class.functions.items():
-        functions.append(get_function(function, package))
-    return Class(name, functions, attributes, comment, inheritance)
+        functions.append(get_function(function, module, get_source=False))
+    source = None
+    with open(_class.filepath, "r") as f:
+        lines = f.readlines()
+        source = "".join(lines[_class.lineno - 1 : _class.endlineno])
+    return Class(name, functions, attributes, comment, inheritance, source)
 
 def generate_pyfile_docs():
     template_path = Path(__file__).parent / 'templates/'
@@ -105,7 +149,7 @@ def generate_pyfile_docs():
             # Get package name
             mod = modules.popleft()
             module_name = mod.name
-            if module_name in seen:
+            if mod.relative_package_filepath in seen:
                 continue
             
             comment = None
@@ -117,7 +161,10 @@ def generate_pyfile_docs():
                         comment = section.value
                     elif section.kind.value == 'attributes':
                         for attr in section.value:
-                            attributes.append(get_attribute(attr, package))
+                            attr_obj = get_attribute(attr, mod)
+                            # Capitalize and add period for inline attributes
+                            attr_obj.comment = attr_obj.comment.capitalize() + '.'
+                            attributes.append(attr_obj)
             
             functions = []
             classes = []
@@ -126,18 +173,19 @@ def generate_pyfile_docs():
                 if member.is_alias:
                     continue
                 elif member.is_function:
-                    functions.append(get_function(member, package))
+                    functions.append(get_function(member, mod))
                 elif member.is_class:
-                    classes.append(get_class(member, package))
+                    classes.append(get_class(member, mod))
                 elif member.is_module:
                     modules.append(member)
-            seen.add(module_name)
+            seen.add(mod.relative_package_filepath)
             module_object = Package(module_name, functions, attributes, classes, comment)
-            output_rel_path = str(mod.relative_package_filepath).replace('.py', '.md')
+            output_rel_path = str(mod.relative_package_filepath).replace('.py', '.md').replace('__init__', 'index')
             full_path = f'{OUTPUT_PATH}{output_rel_path}'
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, 'w') as f:
-                f.write(doc_template.render(asdict(module_object)))
+            if module_name != 'steeleagle_sdk':
+                with open(full_path, 'w') as f:
+                    f.write(doc_template.render(asdict(module_object)))
 
 def generate_protobuf_docs():
     pass

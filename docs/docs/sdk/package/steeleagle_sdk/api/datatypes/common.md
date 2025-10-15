@@ -1,0 +1,317 @@
+---
+toc_max_heading_level: 2
+---
+
+import Link from '@docusaurus/Link';
+
+# common
+
+---
+
+## <><code style={{color: '#b52ee6'}}>class</code></> ResponseStatus
+
+
+Response types for RPC functions.
+
+    Values 0-2 (`OK`, `IN_PROGRESS`, `COMPLETED`) are specific to the SteelEagle protocol.
+    They determine what phase an RPC call is in:
+    - `OK` &#8594; ack
+    - `IN_PROGRESS` &#8594; in progress
+    - `COMPLETED` &#8594; completed
+
+    These intermediate phases are generally not exposed to user-facing code and are only used 
+    for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
+    on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+    codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
+    Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
+    Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
+    2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> OK** (<code>0</code>) <text>&#8212;</text> command acknowledged
+
+**<><code style={{color: '#e0a910'}}>attr</code></> IN_PROGRESS** (<code>1</code>) <text>&#8212;</text> command in progress
+
+**<><code style={{color: '#e0a910'}}>attr</code></> COMPLETED** (<code>2</code>) <text>&#8212;</text> command finished without error
+
+**<><code style={{color: '#e0a910'}}>attr</code></> CANCELLED** (<code>3</code>) <text>&#8212;</text> the operation was cancelled, typically by the caller
+
+**<><code style={{color: '#e0a910'}}>attr</code></> UNKNOWN** (<code>4</code>) <text>&#8212;</text> unknown error
+
+**<><code style={{color: '#e0a910'}}>attr</code></> INVALID_ARGUMENT** (<code>5</code>) <text>&#8212;</text> the client specified an invalid argument
+
+**<><code style={{color: '#e0a910'}}>attr</code></> DEADLINE_EXCEEDED** (<code>6</code>) <text>&#8212;</text> the deadline expired before the operation could complete
+
+**<><code style={{color: '#e0a910'}}>attr</code></> NOT_FOUND** (<code>7</code>) <text>&#8212;</text> some requested entity was not found
+
+**<><code style={{color: '#e0a910'}}>attr</code></> ALREADY_EXISTS** (<code>8</code>) <text>&#8212;</text> an entity the client attempted to create already exists
+
+**<><code style={{color: '#e0a910'}}>attr</code></> PERMISSION_DENIED** (<code>9</code>) <text>&#8212;</text> the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
+
+**<><code style={{color: '#e0a910'}}>attr</code></> RESOURCE_EXHAUSTED** (<code>10</code>) <text>&#8212;</text> some resource has been exhausted
+
+**<><code style={{color: '#e0a910'}}>attr</code></> FAILED_PRECONDITION** (<code>11</code>) <text>&#8212;</text> the operation was rejected because the system is not in a state required for the operation's execution
+
+**<><code style={{color: '#e0a910'}}>attr</code></> ABORTED** (<code>12</code>) <text>&#8212;</text> the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
+
+**<><code style={{color: '#e0a910'}}>attr</code></> OUT_OF_RANGE** (<code>13</code>) <text>&#8212;</text> the operation was attempted past the valid range
+
+**<><code style={{color: '#e0a910'}}>attr</code></> UNIMPLEMENTED** (<code>14</code>) <text>&#8212;</text> the operation is not implemented/supported by the service
+
+**<><code style={{color: '#e0a910'}}>attr</code></> INTERNAL** (<code>15</code>) <text>&#8212;</text> an internal error occured while executing the operation
+
+**<><code style={{color: '#e0a910'}}>attr</code></> UNAVAILABLE** (<code>16</code>) <text>&#8212;</text> the service is currently unavailable
+
+**<><code style={{color: '#e0a910'}}>attr</code></> DATA_LOSS** (<code>17</code>) <text>&#8212;</text> unrecoverable data loss or corruption
+
+**<><code style={{color: '#e0a910'}}>attr</code></> UNAUTHENTICATED** (<code>18</code>) <text>&#8212;</text> the client failed to provide an identity (unique to SteelEagle)
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+class ResponseStatus(int, Enum):
+    """Response types for RPC functions.
+
+        Values 0-2 (`OK`, `IN_PROGRESS`, `COMPLETED`) are specific to the SteelEagle protocol.
+        They determine what phase an RPC call is in:
+        - `OK` -> ack
+        - `IN_PROGRESS` -> in progress
+        - `COMPLETED` -> completed
+
+        These intermediate phases are generally not exposed to user-facing code and are only used 
+        for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
+        on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+        codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
+        Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
+        Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
+        2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
+
+    Attributes:
+        OK (0): command acknowledged
+        IN_PROGRESS (1): command in progress
+        COMPLETED (2): command finished without error
+        CANCELLED (3): the operation was cancelled, typically by the caller
+        UNKNOWN (4): unknown error
+        INVALID_ARGUMENT (5): the client specified an invalid argument
+        DEADLINE_EXCEEDED (6): the deadline expired before the operation could complete
+        NOT_FOUND (7): some requested entity was not found
+        ALREADY_EXISTS (8): an entity the client attempted to create already exists
+        PERMISSION_DENIED (9): the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
+        RESOURCE_EXHAUSTED (10): some resource has been exhausted
+        FAILED_PRECONDITION (11): the operation was rejected because the system is not in a state required for the operation's execution
+        ABORTED (12): the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
+        OUT_OF_RANGE (13): the operation was attempted past the valid range
+        UNIMPLEMENTED (14): the operation is not implemented/supported by the service
+        INTERNAL (15): an internal error occured while executing the operation
+        UNAVAILABLE (16): the service is currently unavailable
+        DATA_LOSS (17): unrecoverable data loss or corruption
+        UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)
+    """
+    OK = 0 
+    IN_PROGRESS = 1 
+    COMPLETED = 2 
+    CANCELLED = 3 
+    UNKNOWN = 4 
+    INVALID_ARGUMENT = 5 
+    DEADLINE_EXCEEDED = 6 
+    NOT_FOUND = 7 
+    ALREADY_EXISTS = 8 
+    PERMISSION_DENIED = 9 
+    RESOURCE_EXHAUSTED = 10 
+    FAILED_PRECONDITION = 11 
+    ABORTED = 12 
+    OUT_OF_RANGE = 13 
+    UNIMPLEMENTED = 14 
+    INTERNAL = 15 
+    UNAVAILABLE = 16 
+    DATA_LOSS = 17 
+    UNAUTHENTICATED = 18 
+
+```
+</details>
+
+
+---
+## <><code style={{color: '#b52ee6'}}>class</code></> Response
+
+
+Global response message returned by all core services.    
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> status** (<code><Link to="/sdk/package/steeleagle_sdk/api/datatypes/common#class-responsestatus">ResponseStatus</Link></code>) <text>&#8212;</text> response status    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> response_string** (<code>Optional[str]</code>) <text>&#8212;</text> detailed message on reason for response    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> timestamp** (<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> response timestamp
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+@register_data
+class Response(Datatype):
+    """Global response message returned by all core services.    
+    
+    Attributes:
+        status (ResponseStatus): response status    
+        response_string (Optional[str]): detailed message on reason for response    
+        timestamp (Timestamp): response timestamp    
+    """
+    status: ResponseStatus
+    response_string: Optional[str]
+    timestamp: Timestamp
+
+```
+</details>
+
+
+---
+## <><code style={{color: '#b52ee6'}}>class</code></> Pose
+
+
+Angular offsets or poses in 3 dimensions.    
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> pitch** (<code>Optional[float]</code>) <text>&#8212;</text> pitch [degrees]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> roll** (<code>Optional[float]</code>) <text>&#8212;</text> roll [degrees]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> yaw** (<code>Optional[float]</code>) <text>&#8212;</text> yaw [degrees]
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+@register_data
+class Pose(Datatype):
+    """Angular offsets or poses in 3 dimensions.    
+    
+    Attributes:
+        pitch (Optional[float]): pitch [degrees]    
+        roll (Optional[float]): roll [degrees]    
+        yaw (Optional[float]): yaw [degrees]    
+    """
+    pitch: Optional[float]
+    roll: Optional[float]
+    yaw: Optional[float]
+
+```
+</details>
+
+
+---
+## <><code style={{color: '#b52ee6'}}>class</code></> Velocity
+
+
+Representation of velocity in 3-dimensions.    
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> x_vel** (<code>Optional[float]</code>) <text>&#8212;</text> forward/north velocity [meters/s]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> y_vel** (<code>Optional[float]</code>) <text>&#8212;</text> right/east velocity [meters/s]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> z_vel** (<code>Optional[float]</code>) <text>&#8212;</text> up velocity [meters/s]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> angular_vel** (<code>Optional[float]</code>) <text>&#8212;</text> angular velocity [degrees/s]
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+@register_data
+class Velocity(Datatype):
+    """Representation of velocity in 3-dimensions.    
+    
+    Attributes:
+        x_vel (Optional[float]): forward/north velocity [meters/s]    
+        y_vel (Optional[float]): right/east velocity [meters/s]    
+        z_vel (Optional[float]): up velocity [meters/s]    
+        angular_vel (Optional[float]): angular velocity [degrees/s]    
+    """
+    x_vel: Optional[float]
+    y_vel: Optional[float]
+    z_vel: Optional[float]
+    angular_vel: Optional[float]
+
+```
+</details>
+
+
+---
+## <><code style={{color: '#b52ee6'}}>class</code></> Position
+
+
+Position offset relative to home or current location.    
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> x** (<code>Optional[float]</code>) <text>&#8212;</text> forward/north offset [meters]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> y** (<code>Optional[float]</code>) <text>&#8212;</text> right/east offset [meters]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> z** (<code>Optional[float]</code>) <text>&#8212;</text> up offset [meters]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> angle** (<code>Optional[float]</code>) <text>&#8212;</text> angular offset [degrees]
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+@register_data
+class Position(Datatype):
+    """Position offset relative to home or current location.    
+    
+    Attributes:
+        x (Optional[float]): forward/north offset [meters]    
+        y (Optional[float]): right/east offset [meters]    
+        z (Optional[float]): up offset [meters]    
+        angle (Optional[float]): angular offset [degrees]    
+    """
+    x: Optional[float]
+    y: Optional[float]
+    z: Optional[float]
+    angle: Optional[float]
+
+```
+</details>
+
+
+---
+## <><code style={{color: '#b52ee6'}}>class</code></> Location
+
+
+Location in global coordinates.    
+#### Attributes
+**<><code style={{color: '#e0a910'}}>attr</code></> latitude** (<code>Optional[float]</code>) <text>&#8212;</text> global latitude [degrees]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> longitude** (<code>Optional[float]</code>) <text>&#8212;</text> global longitude [degrees]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> altitude** (<code>Optional[float]</code>) <text>&#8212;</text> altitude above MSL or takeoff [meters]    
+
+**<><code style={{color: '#e0a910'}}>attr</code></> heading** (<code>Optional[float]</code>) <text>&#8212;</text> global heading [degrees]
+
+
+
+<details>
+<summary>View Source</summary>
+```python
+@register_data
+class Location(Datatype):
+    """Location in global coordinates.    
+    
+    Attributes:
+        latitude (Optional[float]): global latitude [degrees]    
+        longitude (Optional[float]): global longitude [degrees]    
+        altitude (Optional[float]): altitude above MSL or takeoff [meters]    
+        heading (Optional[float]): global heading [degrees]    
+    """
+    latitude: Optional[float]
+    longitude: Optional[float]
+    altitude: Optional[float]
+    heading: Optional[float]
+
+```
+</details>
+
+
+---

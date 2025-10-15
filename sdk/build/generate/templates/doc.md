@@ -1,6 +1,9 @@
 ---
 toc_max_heading_level: 2
 ---
+
+import Link from '@docusaurus/Link';
+
 # {{ name }}
 
 {% if comment %}
@@ -15,10 +18,12 @@ toc_max_heading_level: 2
 ## {% raw %}<><code style={{color: '#e0a910'}}>attr</code></>{% endraw %} {{ attribute.name }}
 
 {% if attribute.type %}
-_{{ attribute.type }}_
+_Type_: {{ attribute.type }}
+
 {% endif %}
 
 {% if attribute.comment %}
+
 {{ attribute.comment }}
 {% endif %}
 
@@ -30,6 +35,9 @@ _{{ attribute.type }}_
 {% for function in functions %}
 {% if not function.name.startswith('_') %}
 ## {% raw %}<><code style={{color: '#13a6cf'}}>func</code></>{% endraw %} {{ function.name }}
+
+_Call Type: {{ function.label }}_
+
 {% if function.comment %}
 
 {{ function.comment}}
@@ -53,6 +61,14 @@ _{{ attribute.type }}_
 {% if function.ret.type %}{{ function.ret.type }}{% endif %}
 {% if function.ret.comment %} <text>&#8212;</text> {{ function.ret.comment }}{% endif %}
 
+{% endif %}
+{% if function.source %}
+<details>
+<summary>View Source</summary>
+```python
+{{ function.source }}
+```
+</details>
 {% endif %}
 
 ---
@@ -89,6 +105,8 @@ _{{ attribute.type }}_
 {% if not function.name.startswith('_') %}
 ### {% raw %}<><code style={{color: '#10c45b'}}>method</code></>{% endraw %} {{ function.name }}
 
+_Call Type: {{ function.label }}_
+
 {% if function.inheritance %}
 *Inherited from {{ function.inheritance }}*
 {% endif %}
@@ -119,6 +137,16 @@ _{{ attribute.type }}_
 {% endif %}
 {% endfor %}
 {% endif %}
+
+{% if class.source %}
+<details>
+<summary>View Source</summary>
+```python
+{{ class.source }}
+```
+</details>
+{% endif %}
+
 
 ---
 {% endif %}
