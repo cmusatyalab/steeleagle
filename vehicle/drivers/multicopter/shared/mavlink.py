@@ -385,11 +385,11 @@ class MAVLinkDrone(MulticopterItf):
             
         return result  
 
-    async def _switch_mode(self, mode):
+    async def _switch_mode(self, mode, force=False):
         mode_target = mode.value
         curr_mode = self.mode.value if self.mode else None
         
-        if self.mode == mode:
+        if self.mode == mode and not force:
             logger.info(f"Already in mode {mode_target}")
             return True
         

@@ -2,6 +2,7 @@
 import logging
 # Interface import
 from multicopter.autopilots.ardupilot import ArduPilotDrone
+from multicopter.autopilots.mavlink import MAVLinkDrone
 # Protocol imports
 import dataplane_pb2 as data_protocol
 import asyncio
@@ -62,7 +63,12 @@ class SkyViperV2450GPS(ArduPilotDrone):
 
     def _stop_streaming(self):
         self._streaming_thread.stop()
-        
+
+    def _is_global_position_reached(self, lat, lon, alt):
+        if self._is_mode_set(MAVLinkDrone.FlightMode.LOITER):
+            return True
+        return False
+
 # Streaming imports
 import cv2
 import numpy as np

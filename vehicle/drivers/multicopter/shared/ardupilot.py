@@ -76,7 +76,7 @@ class ArduPilotDrone(MAVLinkDrone):
         heading = location.heading
         
         if not await \
-                self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
+                self._switch_mode(MAVLinkDrone.FlightMode.GUIDED, force=True):
             return common_protocol.ResponseStatus.FAILED
         
         # TODO: Check if absolute alt isn't set then use rel_alt instead!
@@ -96,7 +96,6 @@ class ArduPilotDrone(MAVLinkDrone):
         
         result = await self._wait_for_condition(
             lambda: self._is_at_target(lat, lon),
-            timeout=60,
             interval=1
         )
         
