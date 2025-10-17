@@ -84,7 +84,7 @@ class ArduPilotDrone(MAVLinkDrone):
                 alt - current_location["relative_altitude"]
             )
 
-        if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED):
+        if not await self._switch_mode(MAVLinkDrone.FlightMode.GUIDED, force=True):
             return common_protocol.ResponseStatus.FAILED
         self.mode = MAVLinkDrone.FlightMode.GUIDED
         self.vehicle.mav.set_position_target_global_int_send(
@@ -115,7 +115,6 @@ class ArduPilotDrone(MAVLinkDrone):
 
         result = await self._wait_for_condition(
             lambda: self._is_global_position_reached(lat, lon, altitude),
-            timeout=60,
             interval=1,
         )
 
