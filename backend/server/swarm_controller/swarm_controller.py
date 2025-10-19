@@ -25,6 +25,7 @@ from google.protobuf import text_format
 from google.protobuf.message import DecodeError
 from util.utils import setup_logging
 
+import airspace_control.airspace_control_engine as acs
 import protocol.common_pb2 as common
 import protocol.controlplane_pb2 as controlplane
 
@@ -298,7 +299,7 @@ class SwarmController:
     waypoint_file = "/compiler/out/waypoint.json"
 
     def __init__(
-        self, alt, compiler_file, red, request_sock, router_sock, spacing, angle
+        self, alt, compiler_file, red, request_sock, router_sock, spacing, angle, air_control
     ):
         self.alt = alt
         self.compiler_file = compiler_file
@@ -310,6 +311,7 @@ class SwarmController:
         self.mission_supervisor = MissionSupervisor(self.router_sock)
         self.spacing = spacing
         self.angle = angle
+        self.air_control = air_control
 
         out_dir = "/compiler/out"
         if not os.path.exists(out_dir):
@@ -489,6 +491,13 @@ class SwarmController:
             await self.send_to_drone(req, base_url, drone_list)
             await self.request_sock.send(b"ACK")
             logger.info("Sent ACK to commander")
+    
+    async def operate_airspace_control(self):
+        while self.running:
+            # pull all drones from redis
+            # pull telemetry for each drone
+            # conditional checks for drone movements
+            pass
 
 
 async def main():
@@ -529,6 +538,33 @@ async def main():
     parser.add_argument(
         "--angle", type=int, default=100, help="Spacing for corridor scan"
     )
+    parser.add_argument(
+        "--lat_start", type=float, default=40.410411, help="south-most latitude for airspace management"
+    )
+    parser.add_argument(
+        "--lat_end", type=float, default=40.414100, help="north-most latitude for airspace management"
+    )
+    parser.add_argument(
+        "--lat_parts", type=int, default=40, help="number of latitudinal slices for airspace partitioning"
+    )
+    parser.add_argument(
+        "--lon_start", type=float, default=-79.949735, help="west-most longitude for airspace management"
+    )
+    parser.add_argument(
+        "--lon_end", type=float, default=-79.946752, help="east-most longitude for airspace management"
+    )
+    parser.add_argument(
+        "--lon_parts", type=int, default=25, help="number of longitudinal slices for airspace partitioning"
+    )
+    parser.add_argument(
+        "--alt_floor", type=int, default=0, help="lowest relative altitude for airspace management"
+    )
+    parser.add_argument(
+        "--alt_ceil", type=int, default=400, help="highest relative altitude for airspace management"
+    )
+    parser.add_argument(
+        "--alt_parts", type=int, default=4, help="number of lateral slices by altitude for airspace partitioning"
+    )
     args = parser.parse_args()
 
     # Set the altitude
@@ -567,8 +603,17 @@ async def main():
     router_sock.bind(f"tcp://*:{args.droneport}")
     logger.info(f"Listening on tcp://*:{args.droneport} for drone connections...")
 
+    # Set up airspace control engine
+    lat_start = args.lat_start
+    lat_end = args.lat_end
+    lon_start = args.lon_start
+    lon_end = args.lon_end
+    corners = [(lat_end, lon_start), (lat_start, lon_start), (lat_start, lon_end), (lat_end, lon_end)]
+    air_controller = acs.AirspaceControlEngine(corners, args.lat_parts, args.lon_parts, args.alt_parts,
+                                               args.alt_start, args.alt_end)
+
     controller = SwarmController(
-        alt, compiler_file, red, request_sock, router_sock, spacing, angle
+        alt, compiler_file, red, request_sock, router_sock, spacing, angle, air_controller
     )
     try:
         await controller.run()
