@@ -350,5 +350,8 @@ def convert_epoch_to_dtg(epoch_value):
 
 if __name__ == "__main__":
     pe = PlaybackEngine()
-    pe.read_file_to_mem('airspace_logs/airspace_control.log')
+    if len(sys.argv) > 1:
+        pe.read_file_to_mem(sys.argv[1])
+    else:
+        pe.read_file_to_mem('airspace_logs/airspace_control.log')
     pe.parse_log_file()
