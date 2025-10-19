@@ -68,19 +68,21 @@ class AirspaceRegion:
             return False
         # line-side test lateral point against corners
         for i in range(CORNER_COUNT):
-            if not self.line_side_test(
-                self.corners[i], self.corners[i + 1 % CORNER_COUNT], (ref_lat, ref_lon)
-            ):
-                logger.debug(
+            if ref_lat <= self.max_lat and ref_lat >= self.min_lat:
+                if ref_lon <= self.max_lon and ref_lon >= self.min_lon:
+                    logger.debug(
                     f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
-                    " outside lateral bounds of region {self.region_id}"
+                    f" contained in region {self.region_id}"
+                    )
+                    return True 
+            #if not self.line_side_test(
+            #    self.corners[i], self.corners[i + 1 % CORNER_COUNT], (ref_lat, ref_lon)
+            #):
+            logger.debug(
+                f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
+                " outside lateral bounds of region {self.region_id}"
                 )
-                return False
-        logger.debug(
-            f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
-            f" contained in region {self.region_id}"
-        )
-        return True
+            return False
 
     def set_id(self, id: str):
         self.region_id = id

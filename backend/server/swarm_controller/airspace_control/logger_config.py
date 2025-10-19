@@ -85,6 +85,7 @@ class AirspaceLoggerAdapter(logging.LoggerAdapter):
             context_parts.append(f"region:{region_id}")
 
         if context_parts:
-            context = f"[{' /\ '.join(context_parts)}] "
+            separator = ' /\\ '
+            context = f"[{separator.join(context_parts)}] "
             return f"{context}{msg}", kwargs
         return msg, kwargs
