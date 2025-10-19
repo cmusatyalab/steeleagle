@@ -103,7 +103,7 @@ class AirspaceControlEngine:
         region.set_id(geohash_id)
         self.region_map[geohash_id] = region
 
-        logger.debug(
+        logger.info(
             f"c_id: {region.c_id} >> Added region {geohash_id} to airspace map at centroid ({lat:.4f}, {lon:.4f}, {alt:.0f})"
         )
         return geohash_id
@@ -116,7 +116,7 @@ class AirspaceControlEngine:
     def get_region_from_point(
         self, lat: float, lon: float, alt: float
     ) -> Optional[asr.AirspaceRegion]:
-        logger.debug(
+        logger.info(
             f"Searching for region containing point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
         )
         geohash_key = self.create_geohash_key(lat, lon, alt)
@@ -125,7 +125,7 @@ class AirspaceControlEngine:
         if geohash_key in self.region_map:
             region = self.region_map[geohash_key]
             if region.contains(lat, lon, alt):
-                logger.debug(
+                logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -136,14 +136,14 @@ class AirspaceControlEngine:
             if neighbor_key in self.region_map:
                 region = self.region_map[neighbor_key]
                 if region.contains(lat, lon, alt):
-                    logger.debug(
+                    logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                     return region
         
         for region in self.region_map.values():
             if region.contains(lat, lon, alt):
-                logger.debug(
+                logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -222,7 +222,7 @@ class AirspaceControlEngine:
         step = (max_lat - min_lat) / num_segments
         regions = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by latitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by latitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_lat = min_lat + i * step
@@ -260,7 +260,7 @@ class AirspaceControlEngine:
         step = (max_lon - min_lon) / num_segments
         regions: list[asr.AirspaceRegion] = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by longitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by longitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_lon = min_lon + i * step
@@ -292,7 +292,7 @@ class AirspaceControlEngine:
         step = (max_alt - min_alt) / num_segments
         regions: list[asr.AirspaceRegion] = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by altitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by altitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_alt = min_alt + i * step
@@ -312,7 +312,7 @@ class AirspaceControlEngine:
         lat_partitions: int,
         lon_partitions: int,
     ):
-        logger.debug(
+        logger.info(
             f"Establishing initial neighbor relationships for {alt_partitions}×{lat_partitions}×{lon_partitions} grid"
         )
 
@@ -342,7 +342,7 @@ class AirspaceControlEngine:
                         except IndexError:
                             pass
                     neighbor_count += region_neighbors
-        logger.debug(f"Established {neighbor_count} neighbor relationships")
+        logger.info(f"Established {neighbor_count} neighbor relationships")
 
     def establish_new_neighbors_alt_split(
             self, 
