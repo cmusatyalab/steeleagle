@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import animation
 import numpy as np
 import PIL
+import sys
 
 from airspace_region import RegionStatus
 
@@ -184,6 +185,10 @@ class AirspaceVisualizer():
         self.ax.voxels(xv, yv, zv, filled, facecolors=colors, edgecolors='k')
 
 if __name__ == "__main__":
-    av = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
+    # Assumes regions json in first arg, txs in second arg
+    if len(sys.argv) == 3:
+        av = AirspaceVisualizer(sys.argv[1], sys.argv[2])
+    else:
+        av = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
     av.render_timestep(0)
     av.render_animated()
