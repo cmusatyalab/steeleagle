@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -318,7 +319,7 @@ class SwarmController:
             os.mkdir(out_dir)
 
     async def run(self):
-        await asyncio.gather(self.listen_cmdrs())
+        await asyncio.gather(self.listen_cmdrs(), self.operate_airspace_control())
 
     @staticmethod
     async def download_file(script_url, filename):
@@ -493,11 +494,30 @@ class SwarmController:
             logger.info("Sent ACK to commander")
     
     async def operate_airspace_control(self):
+        update_rate = .25
+        drone_refresh_rate = 1
+        drone_list = []
+        for drone_id in self.red.keys():
+            drone_list.append(drone_id)
+        drone_check_time = time.time()
         while self.running:
-            # pull all drones from redis
-            # pull telemetry for each drone
-            # conditional checks for drone movements
-            pass
+            # clear and refresh drone list periodically
+            start_t = time.time()
+            if start_t - drone_check_time >= drone_refresh_rate:
+                drone_list = []
+                for drone_id in self.red.keys():
+                    drone_list.append(drone_id)
+            for drone in drone_list:
+                result = self.red.xread(streams={drone: '$'}, count=1)
+                for stream_name, message in result:
+                    for message_id, message_data in message:
+                        curr_pos = (message_data['latitude'], message_data['longitude'], message_data['rel_altitude'])
+                        curr_vel = (message_data['v_body_forward'], message_data['v_body_lateral'], message_data['v_body_altitude'])
+                        if not self.air_control.validate_position(drone, curr_pos[0], curr_pos[1], curr_pos[2]):
+                            # halt the drone
+                            pass
+                        # future work: check if drone is about to exit current box and has reservation
+            await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
 
 async def main():

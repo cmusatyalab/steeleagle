@@ -287,6 +287,9 @@ class AirspaceRegion:
 
         self.status = new_status
 
+    def check_owner(self, drone_id):
+        return drone_id == self.get_owner()
+
     def update_owner(self, new_owner: int | None, new_owner_priority: int | None):
         if self.owner != new_owner:
             old_owner = self.owner

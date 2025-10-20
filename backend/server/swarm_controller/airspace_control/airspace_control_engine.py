@@ -716,11 +716,17 @@ class AirspaceControlEngine:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered restricted region")
             target_region.update_status(asr.RegionStatus.RESTRICTED_OCCUPIED)
             self.renew_region(drone_id, target_region)
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region:
+                self.remove_occupant(drone_id, self.drone_region_map[drone_id])
+                self.drone_region_map[drone_id] = target_region
             return True
         if region_status is asr.RegionStatus.ALLOCATED:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered region")
             target_region.update_status(asr.RegionStatus.OCCUPIED)
             self.renew_region(drone_id, target_region)
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region:
+                self.remove_occupant(drone_id, self.drone_region_map[drone_id])
+                self.drone_region_map[drone_id] = target_region
             return True
         region_adapter.error(
             f"Occupancy denied - invalid region status: {region_status.name}"
@@ -745,14 +751,32 @@ class AirspaceControlEngine:
             target_region.update_owner(None, None)
             target_region.update_status(asr.RegionStatus.FREE)
             target_region.clear_timeout()
+            self.drone_region_map[drone_id] = None
             return True
         if region_status is asr.RegionStatus.RESTRICTED_OCCUPIED:
             region_adapter.info(f"c_id: {target_region.c_id} >> Exited restricted region")
             target_region.update_owner(None, None)
             target_region.update_status(asr.RegionStatus.RESTRICTED_AVAILABLE)
             target_region.clear_timeout()
+            self.drone_region_map[drone_id] = None
             return True
         region_adapter.warning(
             f"Exit attempted from unoccupied region (status: {region_status.name})"
         )
         return False
+
+    def validate_position(self, drone_id, lat, lon, alt):
+        current_region = self.get_region_from_point(lat, lon, alt)
+        if (current_region is not None) and (current_region.get_owner() == drone_id):
+            last_region = self.drone_region_map[drone_id]
+            if last_region.c_id != current_region.c_id:
+                self.remove_occupant(drone_id, last_region)
+                self.add_occupant(drone_id, current_region)
+            return True
+        else:
+            if current_region is not None:
+                actions_logger.warning(f"c_id: {current_region.c_id} >> Failed to validate occupant {drone_id}")
+            else:
+                actions_logger.warning(f"c_id: None >> Failed to validate occupant {drone_id}, "
+                                       f"current location ({lat}, {lon}, {alt}) outside geohashed region")
+            return False
