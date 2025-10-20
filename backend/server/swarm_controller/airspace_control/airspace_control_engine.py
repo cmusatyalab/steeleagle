@@ -694,6 +694,8 @@ class AirspaceControlEngine:
         return True
 
     def add_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+        if target_region is None:
+            return False
         region_adapter = AirspaceLoggerAdapter(
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
@@ -712,7 +714,7 @@ class AirspaceControlEngine:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered restricted region")
             target_region.update_status(asr.RegionStatus.RESTRICTED_OCCUPIED)
             self.renew_region(drone_id, target_region)
-            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region:
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region and self.drone_region_map[drone_id] is not None:
                 self.remove_occupant(drone_id, self.drone_region_map[drone_id])
                 self.drone_region_map[drone_id] = target_region
             return True
@@ -720,7 +722,7 @@ class AirspaceControlEngine:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered region")
             target_region.update_status(asr.RegionStatus.OCCUPIED)
             self.renew_region(drone_id, target_region)
-            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region:
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region and self.drone_region_map[drone_id] is not None:
                 self.remove_occupant(drone_id, self.drone_region_map[drone_id])
                 self.drone_region_map[drone_id] = target_region
             return True
@@ -730,6 +732,8 @@ class AirspaceControlEngine:
         return False
 
     def remove_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+        if target_region is None:
+            return False
         region_adapter = AirspaceLoggerAdapter(
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
