@@ -103,7 +103,7 @@ class AirspaceControlEngine:
         region.set_id(geohash_id)
         self.region_map[geohash_id] = region
 
-        logger.debug(
+        logger.info(
             f"c_id: {region.c_id} >> Added region {geohash_id} to airspace map at centroid ({lat:.4f}, {lon:.4f}, {alt:.0f})"
         )
         return geohash_id
@@ -116,7 +116,7 @@ class AirspaceControlEngine:
     def get_region_from_point(
         self, lat: float, lon: float, alt: float
     ) -> Optional[asr.AirspaceRegion]:
-        logger.debug(
+        logger.info(
             f"Searching for region containing point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
         )
         geohash_key = self.create_geohash_key(lat, lon, alt)
@@ -125,7 +125,7 @@ class AirspaceControlEngine:
         if geohash_key in self.region_map:
             region = self.region_map[geohash_key]
             if region.contains(lat, lon, alt):
-                logger.debug(
+                logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -136,14 +136,14 @@ class AirspaceControlEngine:
             if neighbor_key in self.region_map:
                 region = self.region_map[neighbor_key]
                 if region.contains(lat, lon, alt):
-                    logger.debug(
+                    logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                     return region
         
         for region in self.region_map.values():
             if region.contains(lat, lon, alt):
-                logger.debug(
+                logger.info(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -222,7 +222,7 @@ class AirspaceControlEngine:
         step = (max_lat - min_lat) / num_segments
         regions = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by latitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by latitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_lat = min_lat + i * step
@@ -260,7 +260,7 @@ class AirspaceControlEngine:
         step = (max_lon - min_lon) / num_segments
         regions: list[asr.AirspaceRegion] = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by longitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by longitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_lon = min_lon + i * step
@@ -292,7 +292,7 @@ class AirspaceControlEngine:
         step = (max_alt - min_alt) / num_segments
         regions: list[asr.AirspaceRegion] = []
 
-        logger.debug(f"c_id: {target_region.c_id} >> Splitting by altitude into {num_segments} segments")
+        logger.info(f"c_id: {target_region.c_id} >> Splitting by altitude into {num_segments} segments")
 
         for i in range(num_segments):
             segment_min_alt = min_alt + i * step
@@ -312,10 +312,7 @@ class AirspaceControlEngine:
         lat_partitions: int,
         lon_partitions: int,
     ):
-        logger.debug(
-            f"Establishing initial neighbor relationships for {alt_partitions}×{lat_partitions}×{lon_partitions} grid"
-        )
-
+        
         signs = [-1, 0, 1]
         neighbor_count = 0
 
@@ -342,7 +339,6 @@ class AirspaceControlEngine:
                         except IndexError:
                             pass
                     neighbor_count += region_neighbors
-        logger.debug(f"Established {neighbor_count} neighbor relationships")
 
     def establish_new_neighbors_alt_split(
             self, 
@@ -698,6 +694,8 @@ class AirspaceControlEngine:
         return True
 
     def add_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+        if target_region is None:
+            return False
         region_adapter = AirspaceLoggerAdapter(
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
@@ -716,11 +714,17 @@ class AirspaceControlEngine:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered restricted region")
             target_region.update_status(asr.RegionStatus.RESTRICTED_OCCUPIED)
             self.renew_region(drone_id, target_region)
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region and self.drone_region_map[drone_id] is not None:
+                self.remove_occupant(drone_id, self.drone_region_map[drone_id])
+                self.drone_region_map[drone_id] = target_region
             return True
         if region_status is asr.RegionStatus.ALLOCATED:
             region_adapter.info(f"c_id: {target_region.c_id} >> Entered region")
             target_region.update_status(asr.RegionStatus.OCCUPIED)
             self.renew_region(drone_id, target_region)
+            if drone_id in self.drone_region_map and self.drone_region_map[drone_id] != target_region and self.drone_region_map[drone_id] is not None:
+                self.remove_occupant(drone_id, self.drone_region_map[drone_id])
+                self.drone_region_map[drone_id] = target_region
             return True
         region_adapter.error(
             f"Occupancy denied - invalid region status: {region_status.name}"
@@ -728,6 +732,8 @@ class AirspaceControlEngine:
         return False
 
     def remove_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+        if target_region is None:
+            return False
         region_adapter = AirspaceLoggerAdapter(
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
@@ -745,14 +751,32 @@ class AirspaceControlEngine:
             target_region.update_owner(None, None)
             target_region.update_status(asr.RegionStatus.FREE)
             target_region.clear_timeout()
+            self.drone_region_map[drone_id] = None
             return True
         if region_status is asr.RegionStatus.RESTRICTED_OCCUPIED:
             region_adapter.info(f"c_id: {target_region.c_id} >> Exited restricted region")
             target_region.update_owner(None, None)
             target_region.update_status(asr.RegionStatus.RESTRICTED_AVAILABLE)
             target_region.clear_timeout()
+            self.drone_region_map[drone_id] = None
             return True
         region_adapter.warning(
             f"Exit attempted from unoccupied region (status: {region_status.name})"
         )
         return False
+
+    def validate_position(self, drone_id, lat, lon, alt):
+        current_region = self.get_region_from_point(lat, lon, alt)
+        if (current_region is not None) and (current_region.get_owner() == drone_id):
+            last_region = self.drone_region_map[drone_id]
+            if last_region.c_id != current_region.c_id:
+                self.remove_occupant(drone_id, last_region)
+                self.add_occupant(drone_id, current_region)
+            return True
+        else:
+            if current_region is not None:
+                actions_logger.warning(f"c_id: {current_region.c_id} >> Failed to validate occupant {drone_id}")
+            else:
+                actions_logger.warning(f"c_id: None >> Failed to validate occupant {drone_id}, "
+                                       f"current location ({lat}, {lon}, {alt}) outside geohashed region")
+            return False

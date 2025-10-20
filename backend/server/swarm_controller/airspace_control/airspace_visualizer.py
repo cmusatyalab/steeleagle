@@ -159,15 +159,19 @@ class AirspaceVisualizer():
             for j in range(y_len):
                 for k in range(z_len):
                     vol_id = self.match_volume_to_id(timestep, x[i], x[i+1], y[j], y[j+1], z[k], z[k+1])
-                    vol_status = self.status_lookup_table[timestep][vol_id]
-                    if 'FREE' in vol_status:
-                        color_val = [0, 0, 1, 0.05]
-                    elif 'ALLOCATED' in vol_status:
-                        color_val = [1, 0, 0, .5]
-                    elif 'OCCUPIED' in vol_status:
-                        color_val = [0, 1, 0, .5]
+                    # Handle case where no matching region is found
+                    if vol_id is None:
+                        color_val = [0.5, 0.5, 0.5, 0.3]  # Gray/transparent for unknown
                     else:
-                        color_val = [1, 1, 1, .5]
+                        vol_status = self.status_lookup_table[timestep].get(vol_id, 'FREE')
+                        if 'FREE' in vol_status:
+                            color_val = [0, 0, 1, 0.05]
+                        elif 'ALLOCATED' in vol_status:
+                            color_val = [1, 0, 0, .5]
+                        elif 'OCCUPIED' in vol_status:
+                            color_val = [0, 1, 0, .5]
+                        else:
+                            color_val = [1, 1, 1, .5]
                     colors[i][j][k] = color_val
         self.voxel_components[timestep] = (xv, yv, zv, filled, colors)
 
@@ -175,10 +179,33 @@ class AirspaceVisualizer():
         search_space = self.active_regions_by_tstep[t]
         c1 = (lat0, lon0, alt0)
         c2 = (lat1, lon1, alt1)
+        
+        # Try exact match first
         for id in search_space:
             cand_vol = self.region_volumes[id]
             if c1 in cand_vol and c2 in cand_vol:
                 return id
+        
+        # If no exact match, find region that contains the voxel center
+        center_lat = (lat0 + lat1) / 2
+        center_lon = (lon0 + lon1) / 2
+        center_alt = (alt0 + alt1) / 2
+        
+        for id in search_space:
+            cand_vol = self.region_volumes[id]
+            min_lat = min(c[0] for c in cand_vol)
+            max_lat = max(c[0] for c in cand_vol)
+            min_lon = min(c[1] for c in cand_vol)
+            max_lon = max(c[1] for c in cand_vol)
+            min_alt = min(c[2] for c in cand_vol)
+            max_alt = max(c[2] for c in cand_vol)
+            
+            if (min_lat <= center_lat <= max_lat and
+                min_lon <= center_lon <= max_lon and
+                min_alt <= center_alt <= max_alt):
+                return id
+        
+        return None
 
     def load_voxels_timestep(self, timestep):
         xv, yv, zv, filled, colors = self.voxel_components[timestep]

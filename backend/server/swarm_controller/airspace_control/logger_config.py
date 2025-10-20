@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-def setup_airspace_logging(log_level=logging.INFO, log_dir="logs"):
+def setup_airspace_logging(log_level=logging.INFO, log_dir="logs", filemode='w'):
     """
     Configure simple logging for the airspace control system.
     Creates basic loggers with file and console output.
@@ -37,12 +37,12 @@ def setup_airspace_logging(log_level=logging.INFO, log_dir="logs"):
     console_handler.setFormatter(console_formatter)
 
     # Main application log file (all events)
-    app_handler = logging.FileHandler(log_path / "airspace_control.log")
+    app_handler = logging.FileHandler(log_path / "airspace_control.log", mode=filemode)
     app_handler.setLevel(log_level)
     app_handler.setFormatter(detailed_formatter)
 
     # Security/audit log for critical operations
-    security_handler = logging.FileHandler(log_path / "airspace_security.log")
+    security_handler = logging.FileHandler(log_path / "airspace_security.log", mode=filemode)
     security_handler.setLevel(logging.WARNING)
     security_handler.setFormatter(detailed_formatter)
 

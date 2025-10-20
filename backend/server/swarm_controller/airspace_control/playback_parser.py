@@ -109,7 +109,6 @@ class PlaybackEngine():
         self.export_regions_json()
         self.export_transactions_json()
         
-    
     def export_regions_json(self):
         fname = "parsed_regions.json"
         try:
@@ -132,7 +131,7 @@ class PlaybackEngine():
             print(f"Error exposting transactions record to json file {fname}...")
 
     def prepopulate_tx_list(self):
-        slots = (self.end_time - self.start_time) / 1000
+        slots = (self.end_time - self.start_time)
         for i in range(int(slots + 1)):
             self.actions_by_tstep.append([])
 
@@ -192,7 +191,7 @@ class PlaybackEngine():
 
     def produce_relative_timestamp(self, time_seg):
         e_time = self.extract_epoch_time(time_seg)
-        return int((e_time - self.start_time) / 1000)
+        return int((e_time - self.start_time))
     
     def extract_region_creation(self, rel_timestamp, data_seg):
         cid_split = data_seg.split(" >> ")
@@ -251,7 +250,6 @@ class PlaybackEngine():
             status = RegionStatus.OCCUPIED
         else:
             status = RegionStatus.NOFLY
-        
         self.regions[cid][-1].set_end_t(rel_timestamp)
         prev_state = self.regions[cid][-1]
         self.regions[cid].append(RegionState(rel_timestamp, prev_state.min_alt,
