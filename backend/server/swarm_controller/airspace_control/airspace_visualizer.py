@@ -161,13 +161,13 @@ class AirspaceVisualizer():
                     vol_id = self.match_volume_to_id(timestep, x[i], x[i+1], y[j], y[j+1], z[k], z[k+1])
                     vol_status = self.status_lookup_table[timestep][vol_id]
                     if 'FREE' in vol_status:
-                        color_val = [0, 0, 0, 0]
+                        color_val = [0, 0, 1, 0.05]
                     elif 'ALLOCATED' in vol_status:
-                        color_val = [1, 0, 0, 1]
+                        color_val = [1, 0, 0, .5]
                     elif 'OCCUPIED' in vol_status:
-                        color_val = [0, 1, 0, 1]
+                        color_val = [0, 1, 0, .5]
                     else:
-                        color_val = [1, 1, 1, 1]
+                        color_val = [1, 1, 1, .5]
                     colors[i][j][k] = color_val
         self.voxel_components[timestep] = (xv, yv, zv, filled, colors)
 
