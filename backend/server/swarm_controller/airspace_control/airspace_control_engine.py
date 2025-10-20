@@ -312,10 +312,7 @@ class AirspaceControlEngine:
         lat_partitions: int,
         lon_partitions: int,
     ):
-        logger.info(
-            f"Establishing initial neighbor relationships for {alt_partitions}×{lat_partitions}×{lon_partitions} grid"
-        )
-
+        
         signs = [-1, 0, 1]
         neighbor_count = 0
 
@@ -342,7 +339,6 @@ class AirspaceControlEngine:
                         except IndexError:
                             pass
                     neighbor_count += region_neighbors
-        logger.info(f"Established {neighbor_count} neighbor relationships")
 
     def establish_new_neighbors_alt_split(
             self, 
