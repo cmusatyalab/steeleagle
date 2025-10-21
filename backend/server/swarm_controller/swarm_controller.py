@@ -505,23 +505,22 @@ class SwarmController:
             start_t = time.time()
             if start_t - drone_check_time >= drone_refresh_rate:
                 drone_list = []
-                for drone_id in self.red.keys("drone:"):
+                for drone_id in self.red.keys("drone:*"):
                     drone_list.append(drone_id.split("drone:")[-1])
             for drone_id in drone_list:
-                result = self.red.xread(streams={f"telemetry:{drone_id}": '$'}, count=1)
-                for stream_name, message in result:
-                    for message_id, message_data in message:
-                        curr_pos = (message_data['latitude'], message_data['longitude'], message_data['rel_altitude'])
-                        curr_vel = (message_data['v_body_forward'], message_data['v_body_lateral'], message_data['v_body_altitude'])
-                        if not self.air_control.validate_position(drone_id, curr_pos[0], curr_pos[1], curr_pos[2]):
-                            req = controlplane.Request()
-                            req.seq_num = int(time.time())
-                            req.timestamp.GetCurrentTime()
-                            req.msn.drone_ids.append(drone_id)
-                            req.msn.action = controlplane.MissionAction.STOP
-                            logger.info(f"Airspace violation reported. Directing drone {drone_id} to halt...")
-                            await self.router_sock.send_multipart([drone_id.encode("utf-8"), req.SerializeToString()])
-                            logger.info(f"Airspace violation follow-up. Kill signal sent to drone {drone_id}")
+                result = self.red.xrevrange(f"telemetry:{drone_id}", "+", "-", 1)
+                for message_id, message_data in result:
+                    curr_pos = (float(message_data['latitude']), float(message_data['longitude']), float(message_data['rel_altitude']))
+                    curr_vel = (float(message_data['v_body_forward']), float(message_data['v_body_lateral']), float(message_data['v_body_altitude']))
+                    if not self.air_control.validate_position(drone_id, curr_pos[0], curr_pos[1], curr_pos[2]):
+                        req = controlplane.Request()
+                        req.seq_num = int(time.time())
+                        req.timestamp.GetCurrentTime()
+                        req.msn.drone_ids.append(drone_id)
+                        req.msn.action = controlplane.MissionAction.STOP
+                        logger.info(f"Airspace violation reported. Directing drone {drone_id} to halt...")
+                        await self.send_to_drone(req, None, [drone_id])
+                        logger.info(f"Airspace violation follow-up. Kill signal sent to drone {drone_id}")
             await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
 
@@ -591,16 +590,16 @@ async def main():
         "--alt_parts", type=int, default=4, help="number of lateral slices by altitude for airspace partitioning"
     )
     parser.add_argument(
-        "--nofly_left", type=float, default=-79.947750, help="west bound of nofly zone for integration testing"
+        "--nofly_left", type=float, default=-79.94915, help="west bound of nofly zone for integration testing"
     )
     parser.add_argument(
-        "--nofly_right", type=float, default= -79.947000, help="east bound of nofly zone for integration testing"
+        "--nofly_right", type=float, default=-79.94839, help="east bound of nofly zone for integration testing"
     )
     parser.add_argument(
-        "--nofly_up", type=float, default=40.413500, help="north bound of nofly zone for integration testing"
+        "--nofly_up", type=float, default= 40.41288, help="north bound of nofly zone for integration testing"
     )
     parser.add_argument(
-        "--nofly_down", type=float, default=40.413000, help="south bound of nofly zone for integration testing"
+        "--nofly_down", type=float, default=40.41262, help="south bound of nofly zone for integration testing"
     )
     parser.add_argument(
         "--nofly_floor", type=int, default=0, help="lower bound of nofly zone for integration testing"
@@ -653,7 +652,7 @@ async def main():
     lon_end = args.lon_end
     corners = [(lat_end, lon_start), (lat_start, lon_start), (lat_start, lon_end), (lat_end, lon_end)]
     air_controller = acs.AirspaceControlEngine(corners, args.lat_parts, args.lon_parts, args.alt_parts,
-                                               args.alt_start, args.alt_end)
+                                               args.alt_floor, args.alt_ceil)
     air_controller.mark_no_fly_scan(args.nofly_left, args.nofly_right, args.nofly_up, args.nofly_down,
                                args.nofly_floor, args.nofly_ceiling)
 

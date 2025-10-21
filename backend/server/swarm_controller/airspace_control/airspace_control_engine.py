@@ -1,4 +1,4 @@
-import airspace_region as asr
+import airspace_control.airspace_region as asr
 import geohash as pgh
 from typing import Optional
 import itertools
@@ -6,7 +6,7 @@ import time
 from functools import wraps
 
 import logging
-from logger_config import AirspaceLoggerAdapter
+from airspace_control.logger_config import AirspaceLoggerAdapter
 
 
 BASE_TIMEOUT = 10  # in seconds
@@ -116,7 +116,7 @@ class AirspaceControlEngine:
     def get_region_from_point(
         self, lat: float, lon: float, alt: float
     ) -> Optional[asr.AirspaceRegion]:
-        logger.info(
+        logger.debug(
             f"Searching for region containing point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
         )
         geohash_key = self.create_geohash_key(lat, lon, alt)
@@ -125,7 +125,7 @@ class AirspaceControlEngine:
         if geohash_key in self.region_map:
             region = self.region_map[geohash_key]
             if region.contains(lat, lon, alt):
-                logger.info(
+                logger.debug(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -136,14 +136,14 @@ class AirspaceControlEngine:
             if neighbor_key in self.region_map:
                 region = self.region_map[neighbor_key]
                 if region.contains(lat, lon, alt):
-                    logger.info(
+                    logger.debug(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                     return region
         
         for region in self.region_map.values():
             if region.contains(lat, lon, alt):
-                logger.info(
+                logger.debug(
                     f"c_id: {region.c_id} >> Region contains point ({lat:.4f}, {lon:.4f}, {alt:.0f})"
                 )
                 return region
@@ -578,7 +578,10 @@ class AirspaceControlEngine:
             f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
         )
         target_region.update_status(asr.RegionStatus.ALLOCATED)
-        target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
+        # if drone_id not in self.drone_priority_map.keys():
+        #    self.set_priority(drone_id, 0)
+        # target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
+        target_region.update_owner(drone_id, 0)
         return True
 
     def renew_region(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
@@ -676,15 +679,17 @@ class AirspaceControlEngine:
         )
 
     def check_centroid_in_zone(self, lat, lon, alt, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
-        if lat < west_limit or lat > east_limit:
+        if lon < west_limit or lon > east_limit:
             return False
-        if lon < south_limit or lon > north_limit:
+        if lat < south_limit or lat > north_limit:
             return False
         if alt < floor or alt > ceiling:
             return False
         return True
 
     def mark_no_fly_scan(self, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
+        logger.info("Calling mark_no_fly_scan")
+
         for reg in self.region_map.values():
             reg_center = reg.get_centroid()
             if self.check_centroid_in_zone(reg_center[0], reg_center[1], reg_center[2], west_limit, east_limit,
@@ -788,12 +793,23 @@ class AirspaceControlEngine:
 
     def validate_position(self, drone_id, lat, lon, alt):
         current_region = self.get_region_from_point(lat, lon, alt)
+        if (current_region is not None) and (current_region.get_status() == asr.RegionStatus.NOFLY):
+            actions_logger.warning(f"c_id: {current_region.c_id} >> Failed to validate occupant {drone_id}")
+            return False
         if (current_region is not None) and (current_region.get_owner() == drone_id):
-            last_region = self.drone_region_map[drone_id]
-            if last_region.c_id != current_region.c_id:
+            if drone_id in self.drone_region_map.keys():
+                last_region = self.drone_region_map[drone_id]
+            else:
+                last_region = None
+            if last_region is not None and last_region.c_id != current_region.c_id:
                 self.remove_occupant(drone_id, last_region)
                 self.add_occupant(drone_id, current_region)
-            actions_logger.info(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt})")
+            actions_logger.debug(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt})")
+            return True
+        if (current_region is not None) and (current_region.get_owner() == None):
+            self.reserve_region(drone_id, current_region)
+            self.add_occupant(drone_id, current_region)
+            actions_logger.debug(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt}")
             return True
         else:
             if current_region is not None:

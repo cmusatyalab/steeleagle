@@ -61,7 +61,7 @@ class AirspaceRegion:
     def contains(self, ref_lat: float, ref_lon: float, ref_alt: float) -> bool:
         CORNER_COUNT = 4
         if ref_alt < self.min_alt or ref_alt > self.max_alt:
-            logger.info(
+            logger.debug(
                 f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
                 f" outside altitude bounds of region {self.region_id}"
             )
@@ -70,7 +70,7 @@ class AirspaceRegion:
         for i in range(CORNER_COUNT):
             if ref_lat <= self.max_lat and ref_lat >= self.min_lat:
                 if ref_lon <= self.max_lon and ref_lon >= self.min_lon:
-                    logger.info(
+                    logger.debug(
                     f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
                     f" contained in region {self.region_id}"
                     )
@@ -78,7 +78,7 @@ class AirspaceRegion:
             #if not self.line_side_test(
             #    self.corners[i], self.corners[i + 1 % CORNER_COUNT], (ref_lat, ref_lon)
             #):
-        logger.info(
+        logger.debug(
             f"c_id: {self.c_id} >> Point ({ref_lat:.4f}, {ref_lon:.4f}, {ref_alt:.0f})"
             " outside lateral bounds of region {self.region_id}"
             )
@@ -103,16 +103,16 @@ class AirspaceRegion:
     def add_lateral_neighbor(self, neighbor_id: str):
         if neighbor_id not in self.lateral_neighbors:
             self.lateral_neighbors.add(neighbor_id)
-            logger.info(
-                f"c_id: {self.c_id} >> Added lateral neighbor {neighbor_id} to region {self.region_id}"
-            )
+            #logger.info(
+            #    f"c_id: {self.c_id} >> Added lateral neighbor {neighbor_id} to region {self.region_id}"
+            #)
 
     def add_upper_neighbor(self, neighbor_id: str):
         if neighbor_id not in self.upper_neighbors:
             self.upper_neighbors.add(neighbor_id)
-            logger.info(
-                f"c_id: {self.c_id} >> Added upper neighbor {neighbor_id} to region {self.region_id}"
-            )
+            #logger.info(
+            #    f"c_id: {self.c_id} >> Added upper neighbor {neighbor_id} to region {self.region_id}"
+            #)
 
     def add_lower_neighbor(self, neighbor_id: str):
         if neighbor_id not in self.lower_neighbors:
@@ -124,23 +124,23 @@ class AirspaceRegion:
     def remove_lateral_neighbor(self, neighbor_id: str):
         if neighbor_id in self.lateral_neighbors:
             self.lateral_neighbors.discard(neighbor_id)
-            logger.info(
-                f"c_id: {self.c_id} >> Removed lateral neighbor {neighbor_id} from region {self.region_id}"
-            )
+            #logger.info(
+            #    f"c_id: {self.c_id} >> Removed lateral neighbor {neighbor_id} from region {self.region_id}"
+            #)
 
     def remove_upper_neighbor(self, neighbor_id: str):
         if neighbor_id in self.upper_neighbors:
             self.upper_neighbors.discard(neighbor_id)
-            logger.info(
-                f"c_id: {self.c_id} >> Removed upper neighbor {neighbor_id} from region {self.region_id}"
-            )
+            #logger.info(
+            #    f"c_id: {self.c_id} >> Removed upper neighbor {neighbor_id} from region {self.region_id}"
+            #)
 
     def remove_lower_neighbor(self, neighbor_id: str):
         if neighbor_id in self.lower_neighbors:
             self.lower_neighbors.discard(neighbor_id)
-            logger.info(
-                f"c_id: {self.c_id} >> Removed lower neighbor {neighbor_id} from region {self.region_id}"
-            )
+            #logger.info(
+            #    f"c_id: {self.c_id} >> Removed lower neighbor {neighbor_id} from region {self.region_id}"
+            #)
 
     def get_all_neighbor(self) -> set[str]:
         return self.lateral_neighbors | self.upper_neighbors | self.lower_neighbors

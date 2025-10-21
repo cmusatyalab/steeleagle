@@ -18,3 +18,4 @@ pyyaml
 aiohttp
 aiofiles
 pytz
+python-geohash

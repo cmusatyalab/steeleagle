@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM python:3.9-bookworm
+FROM python:3.10-bookworm
 
 LABEL org.opencontainers.image.vendor="CMU Satyalab" \
       org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
@@ -41,6 +41,7 @@ COPY backend/server/swarm_controller/requirements.txt requirements.txt
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 COPY backend/server/swarm_controller/swarm_controller.py swarm_controller.py
+COPY backend/server/swarm_controller/airspace_control airspace_control
 COPY vehicle/util util
 COPY protocol protocol
 
