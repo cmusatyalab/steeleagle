@@ -31,7 +31,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 ## {% raw %}<><code style={{color: '#e0a910'}}>attr</code></>{% endraw %} {{ attribute.name }}
 
 {% if attribute.type %}
-_Type_: {{ attribute.type }}
+_Type:_ {{ attribute.type }}
 
 {% endif %}
 

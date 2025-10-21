@@ -1,0 +1,8 @@
+{
+  "label": "Developer Guides",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Developer guides for various modules in the SteelEagle system."
+  }
+}

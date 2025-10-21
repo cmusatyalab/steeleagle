@@ -22,7 +22,7 @@ streamed back from the RPC while executing an operation.
 
 ## <><code style={{color: '#e0a910'}}>attr</code></> STUB
 
-_Type_: <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/control_service_pb2_grpc#class-controlstub">ControlStub</Link></code>
+_Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/control_service_pb2_grpc#class-controlstub">ControlStub</Link></code>
 
 
 

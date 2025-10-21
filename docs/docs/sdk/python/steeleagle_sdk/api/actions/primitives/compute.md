@@ -18,7 +18,7 @@ methods within this service allow for manipulation of this list.
 
 ## <><code style={{color: '#e0a910'}}>attr</code></> STUB
 
-_Type_: <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/compute_service_pb2_grpc#class-computestub">ComputeStub</Link></code>
+_Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/compute_service_pb2_grpc#class-computestub">ComputeStub</Link></code>
 
 
 

@@ -213,8 +213,9 @@ def generate_pyfile_docs():
             output_rel_path = str(mod.relative_package_filepath).replace('.py', '.md').replace('__init__', 'index')
             full_path = f'{OUTPUT_PATH}{output_rel_path}'
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            if module_name != 'steeleagle_sdk':
-                with open(full_path, 'w') as f:
-                    f.write(doc_template.render(asdict(module_object)))
+            if module_name == 'steeleagle_sdk': # Do this only for the top level module
+                full_path += '/index.md'
+            with open(full_path, 'w') as f:
+                f.write(doc_template.render(asdict(module_object)))
 
 generate_pyfile_docs()

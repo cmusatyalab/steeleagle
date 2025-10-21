@@ -13,7 +13,7 @@ Used to report messages to the Swarm Controller server.
 
 ## <><code style={{color: '#e0a910'}}>attr</code></> STUB
 
-_Type_: <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/report_service_pb2_grpc#class-reportstub">ReportStub</Link></code>
+_Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/report_service_pb2_grpc#class-reportstub">ReportStub</Link></code>
 
 
 
