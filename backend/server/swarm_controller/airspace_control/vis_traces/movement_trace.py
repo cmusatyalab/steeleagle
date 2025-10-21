@@ -2,6 +2,8 @@
 Concurrent trace with 3 drones moving through a 2x2x2 airspace.
 Each drone moves through a sequence of regions, with >1 s delay between actions
 to ensure distinct timesteps for visualization.
+
+Movement order: reserve next region -> exit previous + enter new (simultaneously)
 """
 
 import sys
@@ -23,23 +25,49 @@ from logger_config import setup_airspace_logging
 # Drone movement coroutine
 # ------------------------------------------------------------
 async def move_drone_through_region(engine, drone_id, positions):
-    """Move one drone through a list of (lat, lon, alt) positions with explicit sim timesteps."""
+    """
+    Move one drone through a list of (lat, lon, alt) positions.
+    
+    Order of operations:
+    1. Reserve the next region
+    2. Remove from previous region (if exists)
+    3. Add to new region (appears simultaneous with step 2)
+    """
+    current_region = None
+    
     for step_num, (lat, lon, alt) in enumerate(positions, start=1):
+        print(f"\nDrone {drone_id} - Waypoint {step_num}: ({lat:.4f}, {lon:.4f}, {alt:.0f}m)")
+        
+        next_region = engine.get_region_from_point(lat, lon, alt)
+        if next_region:
+            print(f"  Found region {next_region.region_id}")
 
-        region = engine.get_region_from_point(lat, lon, alt)
-        if region:
-            print(f"  Found region {region.region_id}")
-
-            if engine.reserve_region(drone_id, region):
+            # Step 1: Reserve the next region
+            if engine.reserve_region(drone_id, next_region):
+                print(f"    Reserved region {next_region.region_id}")
                 await asyncio.sleep(1.1)
-
-                if engine.add_occupant(drone_id, region):
+                
+                # Step 2 & 3: Exit previous and enter new (simultaneously)
+                if current_region:
+                    engine.remove_occupant(drone_id, current_region)
+                    print(f"    Exited region {current_region.region_id}")
+                
+                if engine.add_occupant(drone_id, next_region):
+                    print(f"    Entered region {next_region.region_id}")
                     await asyncio.sleep(1.1)
-
-                    if engine.remove_occupant(drone_id, region):
-                        await asyncio.sleep(1.1)
+                    
+                    # Update current region tracker
+                    current_region = next_region
+            else:
+                print(f"   Failed to reserve region")
         else:
-            print("  ERROR: No region found at position!")
+            print("   ERROR: No region found at position!")
+
+    # Clean up: exit final region
+    if current_region:
+        engine.remove_occupant(drone_id, current_region)
+        print(f"    Exited final region {current_region.region_id}")
+        await asyncio.sleep(1.1)
 
     print(f"\nDrone {drone_id} complete.\n")
     
@@ -124,18 +152,6 @@ def create_visualization():
 
     visualizer = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
     print(f"\nTotal timesteps: {visualizer.last_t + 1}")
-
-    # Save sample frames
-    frames_to_save = [0]
-    for frame in range (visualizer.last_t):
-        if frame % 5 == 0:
-            frames_to_save.append(frame)
-    frames_to_save.append(visualizer.last_t)
-    for frame in frames_to_save:
-        if frame <= visualizer.last_t:
-            filename = f"timed_frame_{frame:03d}.png"
-            visualizer.render_timestep(frame, save_filename=filename)
-            print(f"Saved {filename}")
     
     visualizer.render_animated()
     

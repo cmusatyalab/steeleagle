@@ -161,7 +161,7 @@ class AirspaceVisualizer():
                     vol_id = self.match_volume_to_id(timestep, x[i], x[i+1], y[j], y[j+1], z[k], z[k+1])
                     # Handle case where no matching region is found
                     if vol_id is None:
-                        color_val = [0.5, 0.5, 0.5, 0.3]  # Gray/transparent for unknown
+                        color_val = [1, 1, 1, 1]  
                     else:
                         vol_status = self.status_lookup_table[timestep].get(vol_id, 'FREE')
                         if 'FREE' in vol_status:
