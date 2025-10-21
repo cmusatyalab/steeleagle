@@ -507,16 +507,21 @@ class SwarmController:
                 drone_list = []
                 for drone_id in self.red.keys():
                     drone_list.append(drone_id)
-            for drone in drone_list:
-                result = self.red.xread(streams={drone: '$'}, count=1)
+            for drone_id in drone_list:
+                result = self.red.xread(streams={drone_id: '$'}, count=1)
                 for stream_name, message in result:
                     for message_id, message_data in message:
                         curr_pos = (message_data['latitude'], message_data['longitude'], message_data['rel_altitude'])
                         curr_vel = (message_data['v_body_forward'], message_data['v_body_lateral'], message_data['v_body_altitude'])
-                        if not self.air_control.validate_position(drone, curr_pos[0], curr_pos[1], curr_pos[2]):
-                            # halt the drone
-                            pass
-                        # future work: check if drone is about to exit current box and has reservation
+                        if not self.air_control.validate_position(drone_id, curr_pos[0], curr_pos[1], curr_pos[2]):
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestamp.GetCurrentTime()
+                            req.msn.drone_ids.append(drone_id)
+                            req.msn.action = controlplane.MissionAction.STOP
+                            logger.info(f"Airspace violation reported. Directing drone {drone_id} to halt...")
+                            await self.router_sock.send_multipart([drone_id.encode("utf-8"), req.SerializeToString()])
+                            logger.info(f"Airspace violation follow-up. Kill signal sent to drone {drone_id}")
             await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
 
