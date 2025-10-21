@@ -132,7 +132,7 @@ class AirspaceVisualizer():
 
     def render_animated(self):
         self.init_render_objs()
-        self.anim_plt = animation.FuncAnimation(self.fig, self.update_plot, frames=self.last_t+1, interval=250, blit=False)
+        self.anim_plt = animation.FuncAnimation(self.fig, self.update_plot, frames=self.last_t+1, interval=1000, blit=False)
         plt.show()
 
     def update_plot(self, frame_id):
@@ -165,13 +165,13 @@ class AirspaceVisualizer():
                     else:
                         vol_status = self.status_lookup_table[timestep].get(vol_id, 'FREE')
                         if 'FREE' in vol_status:
-                            color_val = [0, 0, 1, 0.05]
+                            color_val = [0, 0, 0, 0]
                         elif 'ALLOCATED' in vol_status:
-                            color_val = [1, 0, 0, .5]
+                            color_val = [1, 0, 0, 1]
                         elif 'OCCUPIED' in vol_status:
-                            color_val = [0, 1, 0, .5]
+                            color_val = [0, 1, 0, 1]
                         else:
-                            color_val = [1, 1, 1, .5]
+                            color_val = [1, 1, 1, 1]
                     colors[i][j][k] = color_val
         self.voxel_components[timestep] = (xv, yv, zv, filled, colors)
 

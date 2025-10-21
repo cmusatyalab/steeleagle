@@ -585,6 +585,24 @@ async def main():
     parser.add_argument(
         "--alt_parts", type=int, default=4, help="number of lateral slices by altitude for airspace partitioning"
     )
+    parser.add_argument(
+        "--nofly_left", type=float, default=-79.947750, help="west bound of nofly zone for integration testing"
+    )
+    parser.add_argument(
+        "--nofly_right", type=float, default= -79.947000, help="east bound of nofly zone for integration testing"
+    )
+    parser.add_argument(
+        "--nofly_up", type=float, default=40.413500, help="north bound of nofly zone for integration testing"
+    )
+    parser.add_argument(
+        "--nofly_down", type=float, default=40.413000, help="south bound of nofly zone for integration testing"
+    )
+    parser.add_argument(
+        "--nofly_floor", type=int, default=0, help="lower bound of nofly zone for integration testing"
+    )
+    parser.add_argument(
+        "--nofly_ceiling", type=int, default=99, help="upper bound of nofly zone for integration testing"
+    )
     args = parser.parse_args()
 
     # Set the altitude
@@ -631,6 +649,8 @@ async def main():
     corners = [(lat_end, lon_start), (lat_start, lon_start), (lat_start, lon_end), (lat_end, lon_end)]
     air_controller = acs.AirspaceControlEngine(corners, args.lat_parts, args.lon_parts, args.alt_parts,
                                                args.alt_start, args.alt_end)
+    air_controller.mark_no_fly(args.nofly_left, args.nofly_right, args.nofly_up, args.nofly_down,
+                               args.nofly_floor, args.nofly_ceiling)
 
     controller = SwarmController(
         alt, compiler_file, red, request_sock, router_sock, spacing, angle, air_controller

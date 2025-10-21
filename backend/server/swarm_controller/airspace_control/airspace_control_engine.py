@@ -676,7 +676,8 @@ class AirspaceControlEngine:
         )
 
     # needs to be async for if drone is currently in region/ region is reserved
-    def mark_no_fly(self, target_region: asr.AirspaceRegion) -> bool:
+    def mark_no_fly(self, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
+        
         logger.critical(f"c_id: {target_region.c_id} >> NO-FLY ZONE established for region {target_region.region_id}")
         actions_logger.critical(
             f"c_id: {target_region.c_id} >> NO-FLY ZONE: Region {target_region.region_id} marked as no-fly (previous owner: {target_region.get_owner()})"
@@ -772,6 +773,7 @@ class AirspaceControlEngine:
             if last_region.c_id != current_region.c_id:
                 self.remove_occupant(drone_id, last_region)
                 self.add_occupant(drone_id, current_region)
+            actions_logger.info(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt})")
             return True
         else:
             if current_region is not None:
