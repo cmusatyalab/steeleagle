@@ -668,16 +668,36 @@ class AirspaceControlEngine:
 
         return neighbor_info
 
-    def set_priority(self, drone_id: int, new_priority: int):
+    def set_priority(self, drone_id, new_priority: int):
         old_priority = self.drone_priority_map.get(drone_id)
         self.drone_priority_map[drone_id] = new_priority
         logger.info(
             f"Priority updated for drone {drone_id}: {old_priority} -> {new_priority}"
         )
 
+    def check_centroid_in_zone(self, lat, lon, alt, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
+        if lat < west_limit or lat > east_limit:
+            return False
+        if lon < south_limit or lon > north_limit:
+            return False
+        if alt < floor or alt > ceiling:
+            return False
+        return True
+
+    def mark_no_fly_scan(self, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
+        for reg in self.region_map.values():
+            reg_center = reg.get_centroid()
+            if self.check_centroid_in_zone(reg_center[0], reg_center[1], reg_center[2], west_limit, east_limit,
+                                           north_limit, south_limit, floor, ceiling):
+                reg.update_status(asr.RegionStatus.NOFLY)
+                logger.critical(f"c_id: {reg.c_id} >> NO-FLY ZONE established for region {reg.region_id}")
+                actions_logger.critical(
+                f"c_id: {reg.c_id} >> NO-FLY ZONE: Region {reg.region_id} marked as no-fly (previous owner: {reg.get_owner()})"
+            )
+        return True
+    
     # needs to be async for if drone is currently in region/ region is reserved
-    def mark_no_fly(self, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
-        
+    def mark_no_fly(self, target_region) -> bool:
         logger.critical(f"c_id: {target_region.c_id} >> NO-FLY ZONE established for region {target_region.region_id}")
         actions_logger.critical(
             f"c_id: {target_region.c_id} >> NO-FLY ZONE: Region {target_region.region_id} marked as no-fly (previous owner: {target_region.get_owner()})"
@@ -694,7 +714,7 @@ class AirspaceControlEngine:
         )
         return True
 
-    def add_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+    def add_occupant(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
         if target_region is None:
             return False
         region_adapter = AirspaceLoggerAdapter(
@@ -732,7 +752,7 @@ class AirspaceControlEngine:
         )
         return False
 
-    def remove_occupant(self, drone_id: int, target_region: asr.AirspaceRegion) -> bool:
+    def remove_occupant(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
         if target_region is None:
             return False
         region_adapter = AirspaceLoggerAdapter(

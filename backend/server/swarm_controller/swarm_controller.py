@@ -649,7 +649,7 @@ async def main():
     corners = [(lat_end, lon_start), (lat_start, lon_start), (lat_start, lon_end), (lat_end, lon_end)]
     air_controller = acs.AirspaceControlEngine(corners, args.lat_parts, args.lon_parts, args.alt_parts,
                                                args.alt_start, args.alt_end)
-    air_controller.mark_no_fly(args.nofly_left, args.nofly_right, args.nofly_up, args.nofly_down,
+    air_controller.mark_no_fly_scan(args.nofly_left, args.nofly_right, args.nofly_up, args.nofly_down,
                                args.nofly_floor, args.nofly_ceiling)
 
     controller = SwarmController(
