@@ -505,10 +505,10 @@ class SwarmController:
             start_t = time.time()
             if start_t - drone_check_time >= drone_refresh_rate:
                 drone_list = []
-                for drone_id in self.red.keys():
-                    drone_list.append(drone_id)
+                for drone_id in self.red.keys("drone:"):
+                    drone_list.append(drone_id.split("drone:")[-1])
             for drone_id in drone_list:
-                result = self.red.xread(streams={drone_id: '$'}, count=1)
+                result = self.red.xread(streams={f"telemetry:{drone_id}": '$'}, count=1)
                 for stream_name, message in result:
                     for message_id, message_data in message:
                         curr_pos = (message_data['latitude'], message_data['longitude'], message_data['rel_altitude'])
