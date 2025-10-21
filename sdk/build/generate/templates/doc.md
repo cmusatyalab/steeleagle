@@ -3,6 +3,7 @@ toc_max_heading_level: 2
 ---
 
 import Link from '@docusaurus/Link';
+import { GoFileSymlinkFile } from "react-icons/go";
 
 # {{ name }}
 
@@ -12,6 +13,18 @@ import Link from '@docusaurus/Link';
 {% endif %}
 ---
 
+{% if submodules | length > 0 %}
+{% for submodule in submodules %}
+## {% raw %}<><code style={{color: '#de1472'}}>submodule</code></>{% endraw %} {{ submodule.name }} <Link to="{{ submodule.link }}"><GoFileSymlinkFile size={25} /></Link>
+
+{% if submodule.comment %}
+
+{{ submodule.comment }}
+{% endif %}
+
+---
+{% endfor %}
+{% endif %}
 {% if attributes | length > 0 %}
 {% for attribute in attributes %}
 {% if not attribute.name.startswith('_') %}
@@ -47,7 +60,7 @@ _Call Type: {{ function.label }}_
 ### Arguments
 {% for arg in function.args %}
 {% if not arg.name.startswith('_') %}
-**{% raw %}<><code style={{color: '#db2146'}}>arg</code></>{% endraw %} {{ arg.name }}**{% if arg.type %} ({{ arg.type }}){% endif %}
+**{% raw %}<><code style={{color: '#db2146'}}>arg</code></>{% endraw %}&nbsp;&nbsp;{{ arg.name }}**{% if arg.type %}&nbsp;&nbsp;({{ arg.type }}){% endif %}
 {% if arg.comment %} <text>&#8212;</text> {{ arg.comment }}{% endif %}
 
 
@@ -91,7 +104,7 @@ _Call Type: {{ function.label }}_
 #### Attributes
 {% for attr in class.attributes %}
 {% if not attr.name.startswith('_') %}
-**{% raw %}<><code style={{color: '#e0a910'}}>attr</code></>{% endraw %} {{ attr.name }}**{% if attr.type %} ({{ attr.type }}){% endif %}
+**{% raw %}<><code style={{color: '#e0a910'}}>attr</code></>{% endraw %}&nbsp;&nbsp;{{ attr.name }}**{% if attr.type %}&nbsp;&nbsp;({{ attr.type }}){% endif %}
 {% if attr.comment %} <text>&#8212;</text> {{ attr.comment }}{% endif %}
 
 
@@ -119,7 +132,7 @@ _Call Type: {{ function.label }}_
 #### Arguments
 {% for arg in function.args %}
 {% if not arg.name.startswith('_') %}
-**{% raw %}<><code style={{color: '#db2146'}}>arg</code></>{% endraw %} {{ arg.name }}**{% if arg.type %} ({{ arg.type }}){% endif %}
+**{% raw %}<><code style={{color: '#db2146'}}>arg</code></>{% endraw %}&nbsp;&nbsp;{{ arg.name }}**{% if arg.type %}&nbsp;&nbsp;({{ arg.type }}){% endif %}
 {% if arg.comment %} <text>&#8212;</text> {{ arg.comment }}{% endif %}
 
 

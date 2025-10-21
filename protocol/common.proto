@@ -16,13 +16,16 @@ message Request {
  * Response types for RPC functions.
  *
  * Values 0-2 (`OK`, `IN_PROGRESS`, `COMPLETED`) are specific to the SteelEagle protocol.
- * They determine what phase an RPC call is in: `OK` -> ack, `IN_PROGRESS` -> in progress,
- * and `COMPLETED` -> completed. These intermediate phases are generally not exposed to
- * user-facing code and are only used for streaming methods. In contrast to normal gRPC
- * procedure, a call is only considered complete on a response of `COMPLETED` instead of `OK`.
- * If an error occurs, SteelEagle defers to gRPC error codes, 3-18. More details on these codes
- * can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html). Note that
- * the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
+ * They determine what phase an RPC call is in:
+ * - `OK` -> ack
+ * - `IN_PROGRESS` -> in progress
+ * - `COMPLETED` -> completed
+ *
+ * These intermediate phases are generally not exposed to user-facing code and are only used 
+ * for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
+ * on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+ * codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
+ * Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
  * Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
  * 2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
  */

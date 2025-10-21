@@ -34,15 +34,22 @@ class Class:
     source: str = None
 
 @dataclass
+class Module:
+    name: str
+    link: str
+    comment: str = None
+
+@dataclass
 class Package:
     name: str
     functions: List[Function]
     attributes: List[Arg]
     classes: List[Class]
+    submodules: List[Module]
     comment: str = None
 
-OUTPUT_PATH = '../../../docs/docs/sdk/package/'
-LINK_PREFIX = '/sdk/package/'
+OUTPUT_PATH = '../../../docs/docs/sdk/python/'
+LINK_PREFIX = '/sdk/python/'
 MODULES = [
     '../src/steeleagle_sdk/'
 ]
@@ -83,6 +90,12 @@ def resolve_type(attribute, module):
         return None
     else:
         return f'<code>{resolve_annotation(attribute.annotation, module)}</code>'
+
+def resolve_base(expr, module):
+    if not expr or expr == '':
+        return None
+    else:
+        return f'<code>{resolve_annotation(expr, module)}</code>'
     
 def get_attribute(attribute, module):
     name = attribute.name if hasattr(attribute, 'name') else None
@@ -121,6 +134,9 @@ def get_class(_class, module):
     functions = []
     attributes = []
     inheritance = None
+    if len(_class.bases) > 0:
+        bases = [resolve_base(b, module) for b in _class.bases]
+        inheritance = ', '.join(bases)
     if _class.docstring:
         docstring = _class.docstring.parse('google')
         for section in docstring:
@@ -136,6 +152,18 @@ def get_class(_class, module):
         lines = f.readlines()
         source = "".join(lines[_class.lineno - 1 : _class.endlineno])
     return Class(name, functions, attributes, comment, inheritance, source)
+
+def get_module(module, parent):
+    name = module.name
+    path = str(parent.relative_package_filepath / module.name).replace('/__init__.py', '').replace('.py', '')
+    link = f'{LINK_PREFIX}{path}'
+    comment = None
+    if module.docstring:
+        docstring = module.docstring.parse('google')
+        for section in docstring:
+            if section.kind.value == 'text':
+                comment = section.value.replace('->', '&#8594;').partition('\n')[0]
+    return Module(name, link, comment)
 
 def generate_pyfile_docs():
     template_path = Path(__file__).parent / 'templates/'
@@ -168,6 +196,7 @@ def generate_pyfile_docs():
             
             functions = []
             classes = []
+            submodules = []
             # Iterate through functions
             for name, member in mod.members.items():
                 if member.is_alias:
@@ -177,17 +206,15 @@ def generate_pyfile_docs():
                 elif member.is_class:
                     classes.append(get_class(member, mod))
                 elif member.is_module:
+                    submodules.append(get_module(member, mod))
                     modules.append(member)
             seen.add(mod.relative_package_filepath)
-            module_object = Package(module_name, functions, attributes, classes, comment)
+            module_object = Package(module_name, functions, attributes, classes, submodules, comment)
             output_rel_path = str(mod.relative_package_filepath).replace('.py', '.md').replace('__init__', 'index')
             full_path = f'{OUTPUT_PATH}{output_rel_path}'
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             if module_name != 'steeleagle_sdk':
                 with open(full_path, 'w') as f:
                     f.write(doc_template.render(asdict(module_object)))
-
-def generate_protobuf_docs():
-    pass
 
 generate_pyfile_docs()

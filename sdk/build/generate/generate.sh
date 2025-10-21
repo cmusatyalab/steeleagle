@@ -43,7 +43,7 @@ $PROTOCPATH -I. \
 	services/compute_service.proto \
 
 cd ..
-protol -o protocol --in-place --create-package raw protocol/protocol.desc
+protol -o protocol --in-place raw protocol/protocol.desc
 rm -rf temp
 
 cd build/generate
