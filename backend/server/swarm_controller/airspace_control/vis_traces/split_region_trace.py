@@ -21,7 +21,6 @@ from playback_parser import PlaybackEngine
 from logger_config import setup_airspace_logging
 
 # ------------------------------------------------------------
-# ------------------------------------------------------------
 # Drone holding pattern
 # ------------------------------------------------------------
 async def drone_hold_position(engine, drone_id, position, hold_duration=10.0):
@@ -42,11 +41,11 @@ async def drone_hold_position(engine, drone_id, position, hold_duration=10.0):
         print(f"  Found region {region.region_id}")
         
         if engine.reserve_region(drone_id, region):
-            print(f"    Reserved region")
+            print(f"  ✓ Reserved region")
             await asyncio.sleep(1.1)
             
             if engine.add_occupant(drone_id, region):
-                print(f"    Entered region - HOLDING POSITION")
+                print(f"  ✓ Entered region - HOLDING POSITION")
                 await asyncio.sleep(1.1)
                 
                 # Hold position while splits occur
@@ -58,7 +57,7 @@ async def drone_hold_position(engine, drone_id, position, hold_duration=10.0):
                 
                 # Exit after holding
                 if engine.remove_occupant(drone_id, region):
-                    print(f"    Exited region")
+                    print(f"  ✓ Exited region")
                     await asyncio.sleep(1.1)
     
     print(f"Drone {drone_id} completed holding pattern\n")
@@ -160,18 +159,22 @@ async def run_split_trace():
     
     print("Drones moving to holding positions...")
     
-    # Move drones to positions and have them enter
+    # Move drones to positions using proper order: reserve -> enter
     for drone_id, (lat, lon, alt) in holding_positions.items():
         print(f"\nDrone {drone_id} moving to: ({lat:.4f}, {lon:.4f}, {alt:.0f}m)")
         region = engine.get_region_from_point(lat, lon, alt)
         if region:
+            # Step 1: Reserve the region
             if engine.reserve_region(drone_id, region):
+                print(f"  Reserved region {region.region_id}")
                 await asyncio.sleep(1.1)
+                
+                # Step 2: Enter region (no previous to exit)
                 if engine.add_occupant(drone_id, region):
-                    print(f"    Drone {drone_id} now holding in region {region.region_id}")
+                    print(f"  Drone {drone_id} now holding in region {region.region_id}")
                     await asyncio.sleep(1.1)
     
-    print("\n  Both drones are now holding positions")
+    print("\nBoth drones are now holding positions")
     await asyncio.sleep(2.0)
     
     # Phase 2: Altitude split - while drones hold
@@ -206,14 +209,6 @@ async def run_split_trace():
     print("PHASE 3: Drones move into newly created regions")
     print("="*60)
     
-    # First, drones exit their current regions
-    for drone_id, (lat, lon, alt) in holding_positions.items():
-        region = engine.get_region_from_point(lat, lon, alt)
-        if region:
-            if engine.remove_occupant(drone_id, region):
-                print(f"    Drone {drone_id} exited region {region.region_id}")
-                await asyncio.sleep(1.1)
-    
     # New positions in the split regions (center area that was just split)
     # The center was split by altitude, so we have lower and upper halves
     new_positions = {
@@ -223,19 +218,30 @@ async def run_split_trace():
     
     print("\nDrones moving to newly created regions from the split...")
     
-    # Move drones into the new split regions
+    # Move drones into the new split regions using proper order
     for drone_id, (lat, lon, alt) in new_positions.items():
         print(f"\nDrone {drone_id} moving to split region: ({lat:.4f}, {lon:.4f}, {alt:.0f}m)")
-        region = engine.get_region_from_point(lat, lon, alt)
-        if region:
-            print(f"  Found region {region.region_id} (created from split)")
-            if engine.reserve_region(drone_id, region):
+        next_region = engine.get_region_from_point(lat, lon, alt)
+        if next_region:
+            print(f"  Found region {next_region.region_id} (created from split)")
+            
+            # Step 1: Reserve the new region
+            if engine.reserve_region(drone_id, next_region):
+                print(f"  Reserved region {next_region.region_id}")
                 await asyncio.sleep(1.1)
-                if engine.add_occupant(drone_id, region):
-                    print(f"    Drone {drone_id} now in newly created region")
+                
+                # Step 2: Exit old region and enter new (simultaneously)
+                old_position = holding_positions[drone_id]
+                old_region = engine.get_region_from_point(*old_position)
+                if old_region:
+                    engine.remove_occupant(drone_id, old_region)
+                    print(f"  Exited region {old_region.region_id}")
+                
+                if engine.add_occupant(drone_id, next_region):
+                    print(f"  Drone {drone_id} now in newly created region")
                     await asyncio.sleep(1.1)
     
-    print("\n  Both drones are now occupying the newly split regions")
+    print("\nBoth drones are now occupying the newly split regions")
     
     # Hold briefly to show occupancy
     for _ in range(3):
@@ -254,7 +260,7 @@ async def run_split_trace():
         region = engine.get_region_from_point(lat, lon, alt)
         if region:
             if engine.remove_occupant(drone_id, region):
-                print(f"    Drone {drone_id} exited region {region.region_id}")
+                print(f"  Drone {drone_id} exited region {region.region_id}")
                 await asyncio.sleep(1.1)
     
     print("\n" + "="*60)
@@ -263,7 +269,7 @@ async def run_split_trace():
     print(f"Started with: 8 regions (2x2x2)")
     print(f"Altitude split created: {len(engine.region_map) - 8} additional region")
     print("\nDemonstrated:")
-    print("    Altitude split (Vertical division)")
+    print(" Altitude split (Vertical division)")
     print("\nDrones held positions in adjacent regions during split")
     print("="*60)
     
@@ -361,9 +367,9 @@ async def run_split_trace():
     print(f"Started with: 8 regions (2x2x2)")
     print(f"Progressive refinement created: {len(engine.region_map) - 8} additional regions")
     print("\nDemonstrated split types:")
-    print("    Latitude splits (North-South division)")
-    print("    Longitude splits (East-West division)")
-    print("    Altitude splits (Vertical division)")
+    print(" Latitude splits (North-South division)")
+    print(" Longitude splits (East-West division)")
+    print("  Altitude splits (Vertical division)")
     print("="*60)
     
     await asyncio.sleep(2.0)
@@ -384,7 +390,6 @@ def create_visualization():
     visualizer = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
     print(f"\nTotal timesteps: {visualizer.last_t + 1}")
         
-
     print("\n=== Rendering animation ===")
     visualizer.render_animated()
 

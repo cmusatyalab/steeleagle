@@ -1,7 +1,9 @@
 """
 Move-stop trace demonstrating drones that move to a destination and stop permanently.
 Uses a 2x2x2 airspace with 2 drones that each fly to a single location,
-occupy it, and remain stationary .
+occupy it, and remain stationary.
+
+Movement order: reserve region -> enter region -> stop and hold
 """
 
 import sys
@@ -22,48 +24,68 @@ from logger_config import setup_airspace_logging
 # ------------------------------------------------------------
 # Drone move-stop coroutine
 # ------------------------------------------------------------
-async def move_stop_drone(engine, drone_id, position, stop_duration=5.0):
+async def move_stop_drone(engine, drone_id, positions, stop_duration=10.0):
     """
-    Move drone to a single position and stop permanently.
+    Move drone through positions, stopping at the final destination.
+    
+    Order of operations for each waypoint:
+    1. Reserve the next region
+    2. Exit previous region (if exists) + Enter new region
+    3. At final position: Hold indefinitely
     
     Args:
         engine: AirspaceControlEngine instance
         drone_id: Unique identifier for the drone
-        position: Single (lat, lon, alt) tuple
-        stop_duration: Time to occupy the region (seconds)
+        positions: List of (lat, lon, alt) tuples - will stop at last one
+        stop_duration: Time to occupy the final region (seconds)
     """
-    lat, lon, alt = position
-    print(f"\nDrone {drone_id}: Moving to ({lat:.4f}, {lon:.4f}, {alt:.0f}m)")
+    current_region = None
     
-    region = engine.get_region_from_point(lat, lon, alt)
-    if region:
-        print(f"  Found region {region.region_id}")
+    for step_num, (lat, lon, alt) in enumerate(positions, start=1):
+        is_final_position = (step_num == len(positions))
         
-        # Reserve the region
-        if engine.reserve_region(drone_id, region):
-            print(f"  Drone {drone_id} reserved region {region.region_id}")
-            await asyncio.sleep(1.1)
+        print(f"\nDrone {drone_id} - Waypoint {step_num}/{len(positions)}: ({lat:.4f}, {lon:.4f}, {alt:.0f}m)")
+        if is_final_position:
+            print(f"  [FINAL DESTINATION]")
+        
+        next_region = engine.get_region_from_point(lat, lon, alt)
+        if next_region:
+            print(f"  Found region {next_region.region_id}")
             
-            # Enter and occupy the region
-            if engine.add_occupant(drone_id, region):
-                print(f"  Drone {drone_id} entered region {region.region_id}")
+            # Step 1: Reserve the next region
+            if engine.reserve_region(drone_id, next_region):
+                print(f"  Drone {drone_id} reserved region {next_region.region_id}")
                 await asyncio.sleep(1.1)
                 
-                # Stop and hold position permanently
-                print(f"  Drone {drone_id} STOPPED - holding position indefinitely")
-                for i in range(int(stop_duration)):
-                    # Renew lease periodically while stopped
-                    engine.renew_region(drone_id, region)
-                    print(f"    Drone {drone_id} still holding (t+{i+1}s)")
-                    await asyncio.sleep(1.1)
+                # Step 2: Exit previous and enter new
+                if current_region:
+                    engine.remove_occupant(drone_id, current_region)
+                    print(f"  Exited region {current_region.region_id}")
                 
-                print(f"  Drone {drone_id} remains stopped in region {region.region_id}")
+                if engine.add_occupant(drone_id, next_region):
+                    print(f"  Entered region {next_region.region_id}")
+                    await asyncio.sleep(1.1)
+                    
+                    current_region = next_region
+                    
+                    # Step 3: If final position, stop and hold
+                    if is_final_position:
+                        print(f"  Drone {drone_id} STOPPED - holding position indefinitely")
+                        for i in range(int(stop_duration)):
+                            engine.renew_region(drone_id, next_region)
+                            if i % 2 == 0:
+                                print(f"    Drone {drone_id} still holding (t+{i+1}s)")
+                            await asyncio.sleep(1.1)
+                        print(f"  Drone {drone_id} remains stopped in region {next_region.region_id}")
+                else:
+                    print(f"  ERROR: Drone {drone_id} failed to enter region!")
+                    return
             else:
-                print(f"  ERROR: Drone {drone_id} failed to enter region!")
+                print(f"  ERROR: Drone {drone_id} failed to reserve region!")
+                return
         else:
-            print(f"  ERROR: Drone {drone_id} failed to reserve region!")
-    else:
-        print(f"  ERROR: No region found at position ({lat:.4f}, {lon:.4f}, {alt:.0f}m)!")
+            print(f"  ERROR: No region found at position!")
+            return
     
     print(f"\n=== Drone {drone_id} completed - STOPPED at final position ===\n")
 
@@ -106,22 +128,23 @@ async def run_move_stop_trace():
     print("Drone 1 priority: 5 (higher)")
     print("Drone 2 priority: 4 (lower)")
     
-    # Define single destination for each drone - they will stop and remain there
-    # Drone 1: Stops at northeast, low altitude
-    # Drone 2: Stops at southwest, high altitude
-    drone_destinations = {
-        1: (37.7775, -122.4175, 50),   # NE, low - FINAL STOP
-        2: (37.7725, -122.4125, 150),  # SW, high - FINAL STOP
+    # Define paths for each drone - they will stop at the last position
+    # Each drone moves through one intermediate position before stopping
+    drone_paths = {
+        1: [
+            (37.7750, -122.4150, 50),   # Start: Center, low
+            (37.7775, -122.4175, 50),   # FINAL STOP: NE, low
+        ],
+        2: [
+            (37.7750, -122.4150, 150),  # Start: Center, high
+            (37.7725, -122.4125, 150),  # FINAL STOP: SW, high
+        ],
     }
     
-    print("\n=== Starting drone movements ===")
-    print("Each drone will move to its destination and STOP permanently\n")
-    
-    # Run drones concurrently - each moves to one position and stops
     tasks = [
-        asyncio.create_task(move_stop_drone(engine, drone_id, position, stop_duration=5.0))
-        for drone_id, position in drone_destinations.items()
-    ]
+    asyncio.create_task(move_stop_drone(engine, drone_id, path, stop_duration=5.0))
+    for drone_id, path in drone_paths.items()  # Changed from 'positions' to 'path'
+]
     
     await asyncio.gather(*tasks)
     
@@ -145,18 +168,6 @@ def create_visualization():
     visualizer = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
     print(f"\nTotal timesteps: {visualizer.last_t + 1}")
     
-    # Save frames at key intervals
-    frames_to_save = [0]
-    for frame in range(visualizer.last_t):
-        if frame % 5 == 0:
-            frames_to_save.append(frame)
-    frames_to_save.append(visualizer.last_t)
-    
-    for frame in frames_to_save:
-        if frame <= visualizer.last_t:
-            filename = f"move_stop_frame_{frame:03d}.png"
-            visualizer.render_timestep(frame, save_filename=filename)
-            print(f"Saved {filename}")
     
     print("\n=== Rendering animation ===")
     visualizer.render_animated()
@@ -168,6 +179,7 @@ def create_visualization():
 if __name__ == "__main__":
     print("="*60)
     print("MOVE-STOP TRACE")
+    print("Demonstrating drones moving to destination and stopping permanently")
     print("="*60)
     
     asyncio.run(run_move_stop_trace())
