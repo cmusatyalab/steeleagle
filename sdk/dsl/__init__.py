@@ -28,6 +28,63 @@ def build_mission(dsl_code: str) -> MissionIR:
     )
     return mission
 
+def cli_compile_dsl():
+    """Command line utility for compiling DSL scripts.
 
-__all__ = ["build_mission"]
+    Command line script that takes a DSL file as input and writes the compiled mission file
+    to the specified output path. Can also accept custom definitions via the `custom_defs`
+    argument. Run this script using `uv`:
 
+    ```bash
+    uv run steeleagle_sdk.dsl:compile <dsl_file> --output <output> --custom_defs <custom_defs>
+    ```
+
+    Or, using Python:
+
+    ```bash
+    python -m steeleagle_sdk.dsl:compile <dsl_file> --output <output> --custom_defs <custom_defs>
+    ```
+
+    Args:
+        dsl_file (str): input DSL file path (positional argument 0, required)
+        output (str): output mission JSON path (`--output` or `-o`, default: `./mission.json`)
+        custom_defs (str): path to file or directory containing custom types/actions/events (`--custom_defs` or `-c`, default: `None`)
+    """
+    import argparse
+    from dataclasses import asdict
+    import json
+    parser = argparse.ArgumentParser(description="SteelEagle DSL compiler.")
+    parser.add_argument("dsl_file", help="Path to DSL file")
+    parser.add_argument("-o", "--output", type=str, default="mission.json", help="Name of the output file (type: JSON)")
+    parser.add_argument("-c", "--custom_defs", type=str, default=None, help="Location dir (or file) that contains custom types/actions/events")
+    args = parser.parse_args()
+
+    if args.custom_defs:
+        import shutil
+        from pathlib import Path
+        source = Path(args.custom_defs)
+        try:
+            destination = Path(__file__) / '../api/'
+            if source.is_file:
+                shutil.copyfile(str(source), str(destination))
+            else:
+                shutil.copytree(str(source), str(destination))
+        except FileNotFoundError:
+            print(f"Error: Custom file/directory '{args.custom_defs}' not found.")
+            return
+        except Exception as e:
+            print(f"An error occurred while copying '{args.custom_defs}': {e}")
+            return
+
+    mission_json_text = ''
+    with open(args.dsl_file, 'r') as file:
+        dsl_content = file.read()
+        mission = build_mission(dsl_content)
+        mission_json_text = json.dumps(asdict(mission))
+        print("Mission compiled!")
+
+    with open(args.output, 'w') as file:
+        file.write(mission_json_text)
+        print(f"Wrote contents to {args.output}.")
+
+__all__ = ["build_mission", "compile"]

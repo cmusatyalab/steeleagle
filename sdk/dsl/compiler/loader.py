@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_BASES = ("steeleagle_sdk.api.actions", "steeleagle_sdk.api.events", "steeleagle_sdk.api.datatypes")
+_DEFAULT_BASES = ["steeleagle_sdk.api"]
 _SKIP_RULES = [
     lambda short: short.startswith("_"),
     lambda short: short == "native",

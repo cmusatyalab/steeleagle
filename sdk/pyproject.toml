@@ -59,6 +59,9 @@ Repository = "https://github.com/cmusatyalab/steeleagle"
 Issues = "https://github.com/cmusatyalab/steeleagle/issues"
 Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
 
+[project.scripts]
+compile_dsl = "steeleagle_sdk.dsl:cli_compile_dsl"
+
 [tool.hatch.build.targets.sdist]
 ignore-vcs = true
 
