@@ -19,11 +19,11 @@ Auto-generated Python bindings for the SteelEagle protocol.
 
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> tools <Link to="/sdk/python/steeleagle_sdk/tools"><GoFileSymlinkFile size={25} /></Link>
+## <><code style={{color: '#de1472'}}>submodule</code></> dsl <Link to="/sdk/python/steeleagle_sdk/dsl"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> dsl <Link to="/sdk/python/steeleagle_sdk/dsl"><GoFileSymlinkFile size={25} /></Link>
+## <><code style={{color: '#de1472'}}>submodule</code></> tools <Link to="/sdk/python/steeleagle_sdk/tools"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---

@@ -5,44 +5,45 @@ sidebar_position: 1
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Writing DSL Files
+# Writing DSL Missions
 
 The SteelEagle DSL (Domain-Specific Language) is a custom language specification designed to simplify code for mobile robots.
 It achieves this by using a finite state machine execution model, with composable actions and transition events.
 By default, SteelEagle is configured to run compiled SteelEagle DSL files, though [this can be changed](mission/).
 
-## Structure
+## Compiling
 
-As mentioned, SteelEagle DSL files are a text representation of a [finite state machine](https://www.mathworks.com/discovery/state-machine.html).
-A finite state machine (FSM) is a computing model that contains three types, states, trigger events, and transition functions. States can represent anything, but in 
-SteelEagle, they represent the current task that the vehicle is executing. Trigger events are events that happen during execution, e.g. the current task is done or
-a person was detected. Transition functions are functions which determine which state the FSM should move to given a trigger event. 
+To compile a DSL mission, use the [`dsl`](../python/steeleagle_sdk/dsl) module within the [`steeleagle_sdk`](../python/) Python package. Once the
+package has been installed, you can run:
+```bash
+uv run compile YOUR_DSL_FILE
+```
+To provide [custom actions or events](dsl/custom/), pass in the path to directory containing custom actions like so:
+```bash
+uv run compile YOUR_DSL_FILE --custom_defs /path/to/custom/defs
+``` 
 
-In this way, the FSM can compactly model complex logic. Take for instance the following mission: patrol a provided area; if you see a person,
-track and follow them; if you lose the person, go back to patrolling. Here is a representation of the accompanying FSM and an example SteelEagle DSL implementation:
+## Running
 
-<Tabs>
-  <TabItem value="fsm" label="Finite State Machine" default>
-    ```mermaid
-    ---
-    config:
-      layout: elk
-      look: handDrawn
-      theme: default
-    ---
-    stateDiagram-v2
-        direction LR
-        Start --> Patrol
-        Patrol --> Patrol: OnFinished
-        Patrol --> Track: OnDetect(person)
-        Track --> Patrol: OnFinished
-    ```
-  </TabItem>
-  <TabItem value="dsl" label="SteelEagle DSL">
-    <pre>
-    <code>
-    Hello world!
-    </code>
-    </pre>
-  </TabItem>
-</Tabs>
+If successful, the compiler will output a compiled `mission.json` file. This can then be sent to the vehicle in one of two ways:
+- Server: send a `Remote.Command` RPC with `method_name = "Mission.Upload"` to the swarm controller packed with an `UploadRequest` that has `mission.content` set to the `mission.json` string and `mission.map` set to a corresponding KML byte string (if applicable), then send a `Remote.Command` RPC with `method_name = "Mission.Start"` and a packed `StartRequest`
+- Direct: send a `Mission.Upload` RPC to the vehicle kernel services endpoint with `UploadRequest.mission.content` set to the `mission.json` string and `UploadRequest.mission.map` set to a corresponding KML byte string (if applicable), then send a `Mission.Start` RPC
+
+This should upload then start the mission.
+
+:::danger
+
+Running a `Mission.Start` RPC _will cause the vehicle to start moving_. Please make sure you and others are clear of the vehicle before sending this
+command. For more information, see our [Safety Guide](/reference/safety).
+
+:::
+
+## Editor Tools
+
+SteelEagle SDK comes with auto-complete tools for writing DSL files inside IDEs.
+
+:::note
+
+In future, a visual editor will be included that can build DSL scripts without any code!
+
+:::
