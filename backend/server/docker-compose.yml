@@ -106,7 +106,10 @@ services:
         "--geofence",
         "{GEOFENCE_FILE}",
         "--ttl",
-        "{OBJECT_TTL}"
+        "{OBJECT_TTL}",
+        "{GEOFENCE_ENABLED}",
+        "--radius",
+        "{OBJECT_RADIUS}"
       ]
     runtime: nvidia
     volumes:
