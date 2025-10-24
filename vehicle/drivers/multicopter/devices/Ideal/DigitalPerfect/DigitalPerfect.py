@@ -19,14 +19,13 @@ from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import (
 )
 from PIL import Image
 
-# Protocol Imports
+# Protocol 
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 from steeleagle_sdk.protocol.services import control_service_pb2_grpc
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
-from util.cleanup import register_cleanup_handler
 
 # Utility imports
 from util.config import query_config
@@ -36,7 +35,6 @@ from util.cleanup import register_cleanup_handler
 setup_logging()
 from util.sockets import setup_zmq_socket, SocketOperation
 
-import logging
 logger = logging.getLogger("driver/DigitalPerfect")
 
 
@@ -310,7 +308,7 @@ class DigitalPerfect(ControlServicer):
             grpc.StatusCode.UNIMPLEMENTED,
             "SetRelativePosition in ENU frame not implemented for digital drone",
         )
-        
+
     async def Joystick(self, request, context):
         try:
             forward_vel = request.velocity.x_vel

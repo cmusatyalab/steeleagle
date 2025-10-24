@@ -5,8 +5,9 @@ import asyncio
 import logging
 from enum import Enum
 import numpy as np
-import cv2
 import os
+import grpc
+
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
@@ -24,17 +25,16 @@ from olympe.messages.gimbal import set_target, attitude
 import olympe.enums.gimbal as gimbal_mode
 import olympe.enums.move as move_mode
 from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
-# Interface import
-import python_bindings.driver_service_pb2_grpc as driver_proto
-# Protocol imports
-import python_bindings.telemetry_pb2 as telemetry_proto
-import python_bindings.common_pb2 as common_proto
-# Timestamp/Duration import
-from google.protobuf.timestamp_pb2 import Timestamp
-from google.protobuf.duration_pb2 import Duration
+
+# protocol 
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
+from steeleagle_sdk.protocol import common_pb2 as common_protocol
+
 # Streaming imports
 import threading
+import cv2
 import queue
+
 # Utility function
 from util.utils import generate_response
 
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # Remove streaming from SetHome
 # Get streaming threads for telem/imagery to work
 
-class ParrotOlympeDrone(driver_proto.DriverServicer):
+class ParrotOlympeDrone(ControlServicer):
 
     class FlightMode(Enum):
         LOITER = 'LOITER'
@@ -59,7 +59,7 @@ class ParrotOlympeDrone(driver_proto.DriverServicer):
         self._connection_string = connection_string
         self._kwargs = kwargs
         # Drone flight modes and setpoints
-        self._setpoint = common_proto.PositionBody()
+        self._setpoint = common_proto.Position()
         # Set PID values for the drone
         self._forward_pid_values = {}
         self._right_pid_values = {}
@@ -69,38 +69,57 @@ class ParrotOlympeDrone(driver_proto.DriverServicer):
 
     ''' Interface methods '''
     async def Connect(self, request, context):
-        self._drone = Drone(self._connection_string)
-        if self._drone.connect():
-            yield multicopter_proto.ConnectResponse(
-                    response=generate_response(2)
-                    )
-        else:
-            yield multicopter_proto.ConnectResponse(
-                    response=generate_response(
-                        4, 
-                        "Could not connect to vehicle"
-                        )
-                    )
+        try:
+            self._drone = Drone(self._connection_string)
+            result = self._drone.connect()
+            if not result:
+                self._drone = None
+                await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
 
-    async def IsConnected(self, request, context):
-        state = self._drone.connection_state()
-        return multicopter_proto.IsConnectedResponse(
-                response=generate_response(2),
-                is_connected=state
-                )
+            logger.info("Completed connection to digital drone...")
+            telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
+            setup_zmq_socket(
+                telemetry_sock,
+                'internal.streams.driver_telemetry',
+                SocketOperation.BIND
+            )
+            self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, 5))
+            return generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Connected to digital drone",
+            )    
+        except Exception as e:
+            logger.error(f"Error occurred while connecting to digital drone: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
+    async def is_connected(self) 
+        state = self._drone.connection_state() 
 
     async def Disconnect(self, request, context):
-        if self._drone.disconnect():
-            return multicopter_proto.DisconnectResponse(
-                    response=generate_response(2)
-                    )
-        else:
-            return multicopter_proto.DisconnectResponse(
-                    response=generate_response(
-                        4,
-                        "Could not disconnect from vehicle"
-                        )
-                    )
+        try:
+            if not self.is_connected():
+                logger.warning("Drone is already disconnected.")
+                return generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Drone is already disconnected.",
+                )
+
+            result = self._drone.disconnect()
+            if not result:
+                logger.error("Failed to properly disconnect from digital drone...")
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "Drone disconnection failed"
+                )
+
+            logger.info("Completed disconnection from digital drone...")
+            return generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Disconnected from digital drone",
+            )
+        except Exception as e:
+            logger.error(f"Error occurred while disconnecting from digital drone: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
 
     async def TakeOff(self, request, context):
         # Send OK
