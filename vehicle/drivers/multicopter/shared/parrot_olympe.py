@@ -137,49 +137,14 @@ class ParrotOlympeDrone(ControlServicer):
             logger.info("Switching to TAKEOFF_LAND mode...")
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             logger.info("Takeoff command sent to drone...")
-            task_result = asyncio.create_task(self._drone.take_off())
+            task_result = self._drone.take_off()
             logger.info(f"Takeoff command result: {task_result}")
 
-            logger.info(f"checking if hovering... {self._is_hovering()}")
-            while not self._is_hovering():
-                logger.info("Waiting for drone to reach hover state...")
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Taking off...")
-                await asyncio.sleep(0.1)
-                
-            logger.info(f"checking if hovering... {self._is_hovering()}")  
-            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
-            await self._switch_mode(FlightMode.LOITER)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
-            logger.info("Takeoff sequence completed successfully.")
-        except Exception as e:
-            logger.error(f"Error occurred during takeoff: {e}")
-            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+            # Elevate up to take off altitude 
+            while not self._rel_altitude_reached(request.take_off_altitude) \
+                    and not context.cancelled() \
+                    and not self._get_altitude_rel() >= request.take_off_altitude:
 
-
-        # Send OK
-        yield multicopter_proto.TakeOffResponse(
-                response=generate_response(0)
-                )
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
-        
-        # Send the command
-        try:
-            self._drone(TakeOff())
-        except Exception as e:
-            yield multicopter_proto.TakeOffResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
-
-        # Elevate up to take off altitude 
-        while not self._rel_altitude_reached(request.take_off_altitude) \
-                and not context.cancelled() \
-                and not self._get_altitude_rel() >= request.take_off_altitude:
-            try:
                 # Elevate at 30% throttle
                 self._drone(PCMD(
                     1,
@@ -189,20 +154,10 @@ class ParrotOlympeDrone(ControlServicer):
                     30,
                     timestampAndSeqNum=0
                     )).success()
-                yield multicopter_proto.TakeOffResponse(
-                        response=generate_response(1)
-                        )
+
+                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="elevating...")
                 await asyncio.sleep(0.01)
-            except Exception as e:
-                yield multicopter_proto.TakeOffResponse(
-                        response=generate_response(
-                            4,
-                            str(e)
-                            )
-                        )
-                return
-        
-        try:
+
             # Halt drone at altitude
             self._drone(PCMD(
                 1,
@@ -212,71 +167,59 @@ class ParrotOlympeDrone(ControlServicer):
                 0,
                 timestampAndSeqNum=0
                 )).success()
+
+            # Send IN_PROGRESS stream
+            while not self._is_hovering() and not context.cancelled(): 
+                logger.info("Waiting for drone to reach hover state...")
+                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="checking hovering state...")
+                await asyncio.sleep(0.1) 
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
+            logger.info(f"checking if hovering... {self._is_hovering()}")  
+            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
+
+            # Send COMPLETED
+            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
+            logger.info("Takeoff sequence completed successfully.")
+
         except Exception as e:
-            yield multicopter_proto.TakeOffResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
-        
-        # Send IN_PROGRESS stream
-        while not self._is_hovering() and not context.cancelled():
-            yield multicopter_proto.TakeOffResponse(
-                    response=generate_response(1)
-                    )
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
-
-        # Send COMPLETED
-        yield multicopter_proto.TakeOffResponse(
-                response=generate_response(2)
-                )
+            logger.error(f"Error occurred during takeoff: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def Land(self, request, context):
-        # Send OK
-        yield multicopter_proto.LandResponse(
-                response=generate_response(0)
-                )
-        
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
-
-        # Send the command
         try:
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating landing...",
+            )
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
             self._drone(Landing()).success()
-        except Exception as e:
-            yield multicopter_proto.LandResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
 
-        # Send IN_PROGRESS stream
-        while not self._is_landed() and not context.cancelled():
-            yield multicopter_proto.LandResponse(
-                    response=generate_response(1)
-                    )
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
-
-        # Send COMPLETED
-        yield multicopter_proto.LandResponse(
-                response=generate_response(2)
+            while not self._is_landed() and not context.cancelled():
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Landing...",
                 )
+                await asyncio.sleep(0.1)
+
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Landing successful",
+            )
+        except Exception as e:
+            logger.error(f"Error occurred during landing: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
 
     async def Hold(self, request, context):
-        # Send OK
-        yield multicopter_proto.HoldResponse(
-                response=generate_response(0)
-                )
-        
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
-
-        # Send the command
         try:
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating hold...",
+            )
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
+
+            # Send the command
             self._drone(PCMD(
                 1,
                 0,
@@ -285,125 +228,114 @@ class ParrotOlympeDrone(ControlServicer):
                 0,
                 timestampAndSeqNum=0
                 )).success()
-        except Exception as e:
-            yield multicopter_proto.HoldResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
-        
-        # Send IN_PROGRESS stream
-        while not self._is_hovering() and not context.cancelled():
-            yield multicopter_proto.HoldResponse(
-                    response=generate_response(1)
-                    )
 
-        # Send COMPLETED
-        yield multicopter_proto.HoldResponse(
-                response=generate_response(2)
+            # Send IN_PROGRESS stream
+            while not self._is_hovering() and not context.cancelled():
+                yield generate_response(
+                    resp_type = common_protocol.ResponseStatus.IN_PROGRESS
+                    resp_string = "checking hovering state..."
                 )
+            # Send COMPLETED
+            yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Hold successful",
+                )
+        except Exception as e:
+            logger.error(f"Error occurred during hold: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
 
     async def Kill(self, request, context):
-        # Not supported
-        yield multicopter_proto.KillResponse(
-                response=generate_response(3)
-                )
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED, "Kill not implemented for digital drone"
+        )
 
     async def SetHome(self, request, context):
-        # Extract home data
-        location = request.location
-        lat = location.latitude
-        lon = location.longitude
-        alt = location.altitude
-
         # Send the command
         try:
-            self._drone(set_custom_location(lat, lon, alt)).wait()success()
+            # Extract home data
+            location = request.location
+            lat = location.latitude
+            lon = location.longitude
+            alt = location.altitude
+            self._drone(set_custom_location(lat, lon, alt)).wait().success()
+            # Send COMPLETED
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Returned to home successfully",
+            )
         except Exception as e:
-            return multicopter_proto.SetHomeResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-        
-        # Send COMPLETED
-        return  multicopter_proto.SetHomeResponse(
-                response=generate_response(2)
-                )
+            logger.error(f"Error occurred during hold: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
+        
     async def ReturnToHome(self, request, context):
-        # Send OK
-        yield multicopter_proto.ReturnToHomeResponse(
-                response=generate_response(0)
-                )
-        
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
-
-        # Send the command
         try:
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating return to home...",
+            )
+            
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
+
+            # Send the command
             self._drone(return_to_home()).success()
-        except Exception as e:
-            yield multicopter_proto.ReturnToHomeResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
+            await asyncio.sleep(1)
 
-        await asyncio.sleep(1)
-
-        # Send an IN_PROGRESS stream
-        while not self._is_home_reached() and not context.cancelled():
-            yield multicopter_proto.ReturnToHomeResponse(
-                    response=generate_response(1)
-                    )
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
-
-        # Send COMPLETED
-        yield multicopter_proto.ReturnToHomeResponse(
-                response=generate_response(2)
+            # Send an IN_PROGRESS stream
+            while not self._is_home_reached() and not context.cancelled():
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Returning to home...",
                 )
+                await asyncio.sleep(1)
+
+            # Send COMPLETED
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.LOITER)
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Returned to home successfully",
+            )
+ 
+        except Exception as e:
+            logger.error(f"Error occurred during return to home: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
 
     async def SetGlobalPosition(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetGlobalPositionResponse(
-                response=generate_response(0)
-                )
-
-        # Extract location data
-        location = request.location
-        lat = location.latitude
-        lon = location.longitude
-        alt = location.altitude
-        bearing = location.heading
-        alt_mode = request.altitude_mode
-        hdg_mode = request.heading_mode
-        max_velocity = request.max_velocity
-        self._setpoint = location
-
-        # Olympe only accepts relative altitude, so convert absolute to
-        # relative altitude in case that is the location mode
-        if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE:
-            altitude = alt - self._get_global_position().altitude \
-                    + self._get_altitude_rel()
-        else:
-            altitude = alt
-        
-        # Set the heading mode and bearing appropriately
-        if hdg_mode == multicopter_proto.LocationHeadingMode.TO_TARGET:
-            heading_mode = move_mode.orientation_mode.to_target
-            bearing = None
-        elif hdg_mode == multicopter_proto.LocationHeadingMode.HEADING_START:
-            heading_mode = move_mode.orientation_mode.heading_start
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
-        
         try:
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating setting global position...",
+            )
+            # Extract location data
+            location = request.location
+            lat = location.latitude
+            lon = location.longitude
+            alt = location.altitude
+            bearing = location.heading
+            alt_mode = request.altitude_mode
+            hdg_mode = request.heading_mode
+            max_velocity = request.max_velocity
+            self._setpoint = location
+
+            # Olympe only accepts relative altitude, so convert absolute to
+            # relative altitude in case that is the location mode
+            if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE:
+                altitude = alt - self._get_global_position().altitude \
+                        + self._get_altitude_rel()
+            else:
+                altitude = alt
+            
+            # Set the heading mode and bearing appropriately
+            if hdg_mode == multicopter_proto.LocationHeadingMode.TO_TARGET:
+                heading_mode = move_mode.orientation_mode.to_target
+                bearing = None
+            elif hdg_mode == multicopter_proto.LocationHeadingMode.HEADING_START:
+                heading_mode = move_mode.orientation_mode.heading_start
+
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
+            
             # Check if max velocities are provided
             if max_velocity.north_vel or \
                     max_velocity.east_vel or \
@@ -432,52 +364,42 @@ class ParrotOlympeDrone(ControlServicer):
                         bearing
                         )
                 ).success()
+            
+            # Sleep momentarily to prevent an early exit
+            await asyncio.sleep(1)
+
+            # Send an IN_PROGRESS stream
+            while not self._is_move_to_done() and not context.cancelled():
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Checking moving state...",
+            )
+            # Check to see if we actually reached our desired position
+            if self._is_global_position_reached(location, alt_mode):
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Reached target location successfully",
+                )
+             else:
+                # Send FAILED
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "Failed to reach target location"
+                )
         except Exception as e:
-            yield multicopter_proto.SetGlobalPositionResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
+            logger.error(f"Error occurred during SetGlobalPosition: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-        # Sleep momentarily to prevent an early exit
-        await asyncio.sleep(1)
 
-        # Send an IN_PROGRESS stream
-        while not self._is_move_to_done() and not context.cancelled():
-            yield multicopter_proto.SetGlobalPositionResponse(
-                    response=generate_response(1)
-                    )
+    async def SetRelativePosition(self, request, context):
+        await context.abort(
+            grpc.StatusCode.UNIMPLEMENTED,
+            "SetRelativePosition in ENU frame not implemented for digital drone",
+        )
 
-        # Check to see if we actually reached our desired position
-        if self._is_global_position_reached(location, alt_mode):
-            # Send COMPLETED
-            yield multicopter_proto.SetGlobalPositionResponse(
-                    response=generate_response(2)
-                    )
-        else:
-            # Send FAILED
-            yield multicopter_proto.SetGlobalPositionResponse(
-                    response=generate_response(
-                        4,
-                        "Move completed away from target"
-                        )
-                    )
+    async def Joystick(self, request, context):
+        pass
 
-    async def SetRelativePositionENU(self, request, context):
-        # Send NOT_SUPPORTED
-        yield multicopter_proto.SetGlobalPositionResponse(
-                response=generate_response(3)
-                )
-
-    async def SetRelativePositionBody(self, request, context):
-        # Send NOT_SUPPORTED
-        yield multicopter_proto.SetGlobalPositionResponse(
-                response=generate_response(3)
-                )
-
-    async def SetVelocityENU(self, request, context):
+    async def SetVelocity(self, request, context):
         # Send OK
         yield multicopter_proto.SetVelocityENUResponse(
                 response=generate_response(0)
@@ -532,69 +454,63 @@ class ParrotOlympeDrone(ControlServicer):
                 )
 
     async def SetHeading(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetHeadingResponse(
-                response=generate_response(0)
-                )
-        
-        # Extract location data
-        lat = location.latitude
-        lon = location.longitude
-        bearing = location.bearing
-        heading_mode = location.heading_mode
-
-        # Select target based on mode
-        if heading_mode == multicopter_proto.HeadingMode.HEADING_START:
-            target = bearing
-        else:
-            global_position = self._get_global_position()
-            target = self._calculate_bearing(
-                    global_position.latitude,
-                    global_position.longitude,
-                    lat,
-                    lon
-                    )
-        
-        offset = math.radians(bearing - target)
-
         try:
-            self._drone(moveBy(0.0, 0.0, 0.0, offset)).success()
-        except Exception as e:
-            yield multicopter_proto.SetHeadingResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
+            yield generate_response(
+                        resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                        resp_string="Initiating setting heading...",
                     )
-            return
-        
-        # Send an IN_PROGRESS stream
-        while not self._is_heading_reached(target) \
-                and not context.cancelled() \
-                and self._get_compass_state() != 2:
-            yield multicopter_proto.SetHeadingResponse(
-                    response=generate_response(1)
-                    )
-        if self._get_compass_state() == 1:
-            yield multicopter_proto.SetHeadingResponse(
-                    response=generate_response(
-                        6,
-                        "Weak heading lock, heading may be inaccurate"
-                        )
-                    )
-        elif self._get_compass_state() == 2:
-            yield multicopter_proto.SetHeadingResponse(
-                    response=generate_response(
-                        4,
-                        "No heading lock"
-                        )
-                    )
-            return
+            
+            # Extract location data
+            lat = location.latitude
+            lon = location.longitude
+            bearing = location.bearing
+            heading_mode = location.heading_mode
 
-        # Send COMPLETED
-        yield multicopter_proto.SetHeadingResponse(
-                response=generate_response(2)
+            # Select target based on mode
+            if heading_mode == multicopter_proto.HeadingMode.HEADING_START:
+                target = bearing
+            else:
+                global_position = self._get_global_position()
+                target = self._calculate_bearing(
+                        global_position.latitude,
+                        global_position.longitude,
+                        lat,
+                        lon
+                        )
+            
+            offset = math.radians(bearing - target)
+
+            self._drone(moveBy(0.0, 0.0, 0.0, offset)).success()
+
+            # Send an IN_PROGRESS stream
+            while not self._is_heading_reached(target) \
+                    and not context.cancelled() \
+                    and self._get_compass_state() != 2:
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Setting heading...",
                 )
+                await asyncio.sleep(0.1)
+
+            if self._get_compass_state() == 1:
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "Weak heading lock, heading may be inaccurate"
+                )
+                
+            elif self._get_compass_state() == 2:
+                await context.abort(
+                    grpc.StatusCode.INTERNAL, "No Heading lock"
+                )
+
+            # Send COMPLETED
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Heading set successfully",
+            )
+        except Exception as e:
+            logger.error(f"Error occurred during SetHeading: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
 
     async def SetGimbalPoseENU(self, request, context):
         # Send OK
