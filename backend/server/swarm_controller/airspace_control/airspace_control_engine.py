@@ -616,7 +616,7 @@ class AirspaceControlEngine:
         logger.warning(
             f"c_id: {target_region.c_id} >> Region {target_region.region_id} revocation requested (owner: {target_region.get_owner()})"
         )
-        if target_region.get_status in [asr.RegionStatus.OCCUPIED, asr.RegionStatus.RESTRICTED_OCCUPIED]:
+        if target_region.owner:
             logger.warning(
             f"c_id: {target_region.c_id} >> Region {target_region.region_id} revocation failed because occupied (owner: {target_region.get_owner()})"
             )
@@ -705,30 +705,36 @@ class AirspaceControlEngine:
 
     def mark_no_fly_scan(self, west_limit, east_limit, north_limit, south_limit, floor, ceiling) -> bool:
         logger.info("Calling mark_no_fly_scan")
-
+        #need to check occupancy here?
         for reg in self.region_map.values():
             reg_center = reg.get_centroid()
             if self.check_centroid_in_zone(reg_center[0], reg_center[1], reg_center[2], west_limit, east_limit,
                                            north_limit, south_limit, floor, ceiling):
-                reg.update_status(asr.RegionStatus.NOFLY)
-                logger.critical(f"c_id: {reg.c_id} >> NO-FLY ZONE established for region {reg.region_id}")
-                actions_logger.critical(
-                f"c_id: {reg.c_id} >> NO-FLY ZONE: Region {reg.region_id} marked as no-fly (previous owner: {reg.get_owner()})"
-            )
+                if not reg.owner:
+                    reg.update_status(asr.RegionStatus.NOFLY)
+                    logger.critical(f"c_id: {reg.c_id} >> NO-FLY ZONE established for region {reg.region_id}")
+                    actions_logger.critical(
+                    f"c_id: {reg.c_id} >> NO-FLY ZONE: Region {reg.region_id} marked as no-fly (previous owner: {reg.get_owner()})"
+                    )
+                else: 
+                    logger.critical(f"c_id: {reg.c_id} >> NO-FLY ZONE failed region {reg.region_id} occupied")
         return True
     
     # needs to be async for if drone is currently in region/ region is reserved
-    def mark_no_fly(self, target_region) -> bool:
-        logger.critical(f"c_id: {target_region.c_id} >> NO-FLY ZONE established for region {target_region.region_id}")
-        actions_logger.critical(
-            f"c_id: {target_region.c_id} >> NO-FLY ZONE: Region {target_region.region_id} marked as no-fly (previous owner: {target_region.get_owner()})"
-        )
+    def mark_no_fly(self, target_region: asr.AirspaceRegion) -> bool:
         
-        return True
-
+        if target_region.owner: 
+            target_region.update_status(asr.RegionStatus.NOFLY)
+            logger.critical(f"c_id: {target_region.c_id} >> NO-FLY ZONE established for region {target_region.region_id}")
+            actions_logger.critical(
+                f"c_id: {target_region.c_id} >> NO-FLY ZONE: Region {target_region.region_id} marked as no-fly (previous owner: {target_region.get_owner()})"
+                )
+            return True
+        logger.critical(f"c_id: {target_region.c_id} >> NO-FLY ZONE failed region {target_region.region_id} occupied")
+        return False
+            
     # needs to be async for if drone is currently in region/ region is reserved
     def mark_restricted_fly(self, target_region: asr.AirspaceRegion) -> bool:
-        
         if target_region.owner:
             logger.warning(
             f"c_id: {target_region.c_id} >> RESTRICTED ZONE NOT established for region {target_region.region_id}"
@@ -740,7 +746,7 @@ class AirspaceControlEngine:
         actions_logger.warning(
             f"c_id: {target_region.c_id} >> RESTRICTED ZONE: Region {target_region.region_id} marked as restricted"
         )
-        target_region.status = RegionStatus.RESTRICTED_AVAILABLE
+        target_region.status = asr.RegionStatus.RESTRICTED_AVAILABLE
         return True
 
     def add_occupant(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
