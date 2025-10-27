@@ -47,3 +47,5 @@ vehicle/configs
 vehicle/docker-compose.yaml
 
 secrets.toml
+backend/server/swarm_controller/airspace_control/parsed_tx.json
+backend/server/swarm_controller/airspace_control/parsed_regions.json

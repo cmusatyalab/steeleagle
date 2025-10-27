@@ -558,30 +558,33 @@ class AirspaceControlEngine:
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
 
-        if not target_region.is_available():
-            # Renew the lease if already owned by the requesting drone
+        if not target_region.is_available() or not target_region.is_available_priority(self.drone_priority_map[drone_id]):
+        # Renew the lease if already owned by the requesting drone
             curr_owner = target_region.get_owner()
             if curr_owner is not None and curr_owner == drone_id:
                 region_adapter.info(f"c_id: {target_region.c_id} >> Renewed lease for existing reservation")
                 target_region.set_timeout(BASE_TIMEOUT)
                 return True
-            # Fail if owned by another drone
+                # Fail if owned by another drone
             actions_logger.warning(
-                f"c_id: {target_region.c_id} >> RESERVATION CONFLICT: Drone {drone_id} attempted to reserve region {target_region.region_id} owned by drone {curr_owner}"
-            )
+                    f"c_id: {target_region.c_id} >> RESERVATION CONFLICT: Drone {drone_id} attempted to reserve region {target_region.region_id} owned by drone {curr_owner}"
+                )
             region_adapter.warning(
-                f"c_id: {target_region.c_id} >> RESERVATION DENIED: Region owned by drone {curr_owner}"
-            )
+                    f"c_id: {target_region.c_id} >> RESERVATION DENIED: Region owned by drone {curr_owner}"
+                )
             return False
 
         region_adapter.info(
             f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
         )
-        target_region.update_status(asr.RegionStatus.ALLOCATED)
+        if target_region.get_status == asr.RegionStatus.FREE:
+            target_region.update_status(asr.RegionStatus.ALLOCATED)
+        else: 
+            target_region.update_status(asr.RegionStatus.ALLOCATED)
         # if drone_id not in self.drone_priority_map.keys():
         #    self.set_priority(drone_id, 0)
         # target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
-        target_region.update_owner(drone_id, 0)
+        target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
         return True
 
     def renew_region(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
@@ -613,6 +616,19 @@ class AirspaceControlEngine:
         logger.warning(
             f"c_id: {target_region.c_id} >> Region {target_region.region_id} revocation requested (owner: {target_region.get_owner()})"
         )
+        if target_region.get_status in [asr.RegionStatus.OCCUPIED, asr.RegionStatus.RESTRICTED_OCCUPIED]:
+            logger.warning(
+            f"c_id: {target_region.c_id} >> Region {target_region.region_id} revocation failed because occupied (owner: {target_region.get_owner()})"
+            )
+            return False
+        actions_logger.warning(
+            f"c_id: {target_region.c_id} >> REGION REVOCATION: {target_region.region_id} revoked from drone {target_region.get_owner()}"
+        )
+        if target_region.get_status is asr.RegionStatus.RESTRICTED_ALLOCATED:
+            target_region.update_status(asr.RegionStatus.RESTRICTED_AVAILABLE)
+        elif target_region.get_status is asr.RegionStatus.ALLOCATED:
+            target_region.update_status(asr.RegionStatus.FREE)
+            
         actions_logger.warning(
             f"c_id: {target_region.c_id} >> REGION REVOCATION: {target_region.region_id} revoked from drone {target_region.get_owner()}"
         )
@@ -707,16 +723,24 @@ class AirspaceControlEngine:
         actions_logger.critical(
             f"c_id: {target_region.c_id} >> NO-FLY ZONE: Region {target_region.region_id} marked as no-fly (previous owner: {target_region.get_owner()})"
         )
+        
         return True
 
     # needs to be async for if drone is currently in region/ region is reserved
     def mark_restricted_fly(self, target_region: asr.AirspaceRegion) -> bool:
+        
+        if target_region.owner:
+            logger.warning(
+            f"c_id: {target_region.c_id} >> RESTRICTED ZONE NOT established for region {target_region.region_id}"
+        )
+            return False
         logger.warning(
             f"c_id: {target_region.c_id} >> RESTRICTED ZONE established for region {target_region.region_id}"
         )
         actions_logger.warning(
             f"c_id: {target_region.c_id} >> RESTRICTED ZONE: Region {target_region.region_id} marked as restricted"
         )
+        target_region.status = RegionStatus.RESTRICTED_AVAILABLE
         return True
 
     def add_occupant(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
