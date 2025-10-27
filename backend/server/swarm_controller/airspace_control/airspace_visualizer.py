@@ -130,9 +130,12 @@ class AirspaceVisualizer():
         if save_filename is not None:
             plt.savefig(save_filename)
 
-    def render_animated(self):
+    def render_animated(self, frame_rate = 1000):
         self.init_render_objs()
-        self.anim_plt = animation.FuncAnimation(self.fig, self.update_plot, frames=self.last_t+1, interval=1000, blit=False)
+        # Adjust figure size to accommodate legend
+        self.fig.set_size_inches(12, 8)
+        self.anim_plt = animation.FuncAnimation(self.fig, self.update_plot, frames=self.last_t+1, interval=frame_rate, blit=False)
+        plt.tight_layout()
         plt.show()
 
     def update_plot(self, frame_id):
@@ -140,6 +143,18 @@ class AirspaceVisualizer():
         self.ax.set(xlabel='Lat', ylabel='Lon', zlabel='Alt')
         self.load_voxels_timestep(frame_id)
         self.ax.set_title(f'Timestep: {frame_id}')
+        
+        # Add legend for region colors
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor='red', edgecolor='k', label='NOFLY'),
+            Patch(facecolor='yellow', edgecolor='k', label='ALLOCATED'),
+            Patch(facecolor='green', edgecolor='k', label='OCCUPIED'),
+            #Patch(facecolor='orange', edgecolor='k', label = 'RESTRICTED_AVAILABLE'),
+            #Patch(facecolor='blue', edgecolor='k', label = 'RESTRICTED_ALLOCATED')
+        ]
+        self.ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1))
+    
     
     def calculate_voxels(self):
         self.voxel_components = [[] for i in range(self.last_t + 1)]
@@ -161,17 +176,25 @@ class AirspaceVisualizer():
                     vol_id = self.match_volume_to_id(timestep, x[i], x[i+1], y[j], y[j+1], z[k], z[k+1])
                     # Handle case where no matching region is found
                     if vol_id is None:
-                        color_val = [1, 1, 1, 1]  
+                        color_val = [0, 0, 0, 0]  
                     else:
                         vol_status = self.status_lookup_table[timestep].get(vol_id, 'FREE')
                         if 'FREE' in vol_status:
                             color_val = [0, 0, 0, 0]
                         elif 'ALLOCATED' in vol_status:
-                            color_val = [1, 0, 0, 1]
+                            color_val = [1, 1, 0, 1]
                         elif 'OCCUPIED' in vol_status:
                             color_val = [0, 1, 0, 1]
+                        #elif 'RESTRICTED_AVAILABLE' in vol_status:
+                        #    color_val = [1, .65, 0, 1]
+                        #elif 'RESTRICTED_ALLOCATED' in vol_status:
+                        #    color_val = [0, 0, 1, 1]
+                        #elif 'RESTRICTED_OCCUPIED' in vol_status:
+                        #    color_val = [0, 1, 0, 1]
+                        elif 'NOFLY' in vol_status: 
+                            color_val = [1, 0, 0, 1]
                         else:
-                            color_val = [1, 1, 1, 1]
+                            color_val = [0, 0, 0, 0]
                     colors[i][j][k] = color_val
         self.voxel_components[timestep] = (xv, yv, zv, filled, colors)
 

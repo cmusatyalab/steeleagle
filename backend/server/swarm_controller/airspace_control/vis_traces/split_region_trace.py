@@ -391,7 +391,7 @@ def create_visualization():
     print(f"\nTotal timesteps: {visualizer.last_t + 1}")
         
     print("\n=== Rendering animation ===")
-    visualizer.render_animated()
+    visualizer.render_animated(1500)
 
 # ------------------------------------------------------------
 # Entry point

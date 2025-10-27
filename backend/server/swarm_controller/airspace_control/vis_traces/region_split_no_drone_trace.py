@@ -146,30 +146,10 @@ async def run_split_trace():
     await perform_region_splits(engine, alt_split_sequence)
     print(f"\nAfter altitude split: {len(engine.region_map)} regions")
     await asyncio.sleep(3.0)
-    
-    # Phase 5: Additional split demonstration
-    print("\n" + "="*60)
-    print("PHASE 5: Additional segmentation")
-    print("="*60)
-    
-    fine_split_sequence = [
-        (37.7775, -122.4175, 150, "latitude", 2),    # NE corner, upper altitude - simple 2-way split
-    ]
-    
-    print("Creating additional regions for demonstration...")
-    await perform_region_splits(engine, fine_split_sequence)
-    print(f"\nAfter additional split: {len(engine.region_map)} regions")
-    await asyncio.sleep(3.0)
-    
+
     print("\n" + "="*60)
     print("AIRSPACE SEGMENTATION COMPLETE")
     print(f"Final airspace: {len(engine.region_map)} regions")
-    print(f"Started with: 8 regions (2x2x2)")
-    print(f"Progressive refinement created: {len(engine.region_map) - 8} additional regions")
-    print("\nDemonstrated split types:")
-    print(" Latitude splits (North-South division)")
-    print(" Longitude splits (East-West division)")
-    print(" Altitude splits (Vertical division)")
     print("="*60)
     
     await asyncio.sleep(2.0)
@@ -189,7 +169,6 @@ def create_visualization():
     
     visualizer = AirspaceVisualizer("parsed_regions.json", "parsed_tx.json")
     print(f"\nTotal timesteps: {visualizer.last_t + 1}")
-    
     
     print("\n=== Rendering animation ===")
     visualizer.render_animated()
