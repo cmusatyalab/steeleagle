@@ -29,6 +29,7 @@ from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredSt
 # protocol 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
 from steeleagle_sdk.protocol import common_pb2 as common_protocol
+from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
 
 # Streaming imports
 import threading
@@ -92,12 +93,9 @@ class ParrotOlympeDrone(ControlServicer):
             logger.error(f"Error occurred while connecting to digital drone: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-    async def is_connected(self) 
-        state = self._drone.connection_state() 
-
-    async def Disconnect(self, request, context):
+   async def Disconnect(self, request, context):
         try:
-            if not self.is_connected():
+            if not self._is_connected():
                 logger.warning("Drone is already disconnected.")
                 return generate_response(
                     resp_type=common_protocol.ResponseStatus.COMPLETED,
@@ -239,7 +237,7 @@ class ParrotOlympeDrone(ControlServicer):
             yield generate_response(
                     resp_type=common_protocol.ResponseStatus.COMPLETED,
                     resp_string="Hold successful",
-                )
+            )
         except Exception as e:
             logger.error(f"Error occurred during hold: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
@@ -400,60 +398,44 @@ class ParrotOlympeDrone(ControlServicer):
         pass
 
     async def SetVelocity(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetVelocityENUResponse(
-                response=generate_response(0)
-                )
-        
-        # Extract velocity data
-        self._setpoint = request.velocity
+        try:
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating setting velocity...",
+            )
+            
+            # Extract velocity data
+            self._setpoint = request.velocity
+            if not request.frame: # default reference frame as enu
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
+            elif request.frame == control_protocol.ReferenceFrame.NEU:
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
+            elif request.frame == control_protocol.ReferenceFrame.BODY:
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_BODY)
 
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
+            # Restart PID task if it isn't already running
+            if self._pid_task is None:
+                self._pid_task = asyncio.create_task(self._velocity_pid())
 
-        # Restart PID task if it isn't already running
-        if self._pid_task is None:
-            self._pid_task = asyncio.create_task(self._velocity_pid())
-
-        # Send an IN_PROGRESS stream
-        while not self._velocity_enu_reached(self._setpoint) \
-                and not context.cancelled():
-            yield multicopter_proto.SetVelocityENUResponse(
-                    response=generate_response(1)
+            # Send an IN_PROGRESS stream
+            while not self._velocity_enu_reached(self._setpoint) \
+                    and not context.cancelled():
+                yield generate_response(
+                        resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                        resp_string="Setting velocity...",
                     )
+                    await asyncio.sleep(0.1)
 
-        # Send COMPLETED
-        yield multicopter_proto.SetVelocityENUResponse(
-                response=generate_response(2)
-                )
+            # Send success
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Velocity set successfully",
+            )
+        except Exception as e:
+            logger.error(f"Error occurred during SetVelocity: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-    async def SetVelocityBody(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetVelocityBodyResponse(
-                response=generate_response(0)
-                )
-        
-        # Extract velocity data
-        self._setpoint = request.velocity
-
-        await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_BODY)
-
-        # Restart PID task if it isn't already running
-        if self._pid_task is None:
-            self._pid_task = asyncio.create_task(self._velocity_pid())
-        
-        # Send an IN_PROGRESS stream
-        while not self._velocity_body_reached(self._setpoint) \
-                and not context.cancelled():
-            yield multicopter_proto.SetVelocityBodyResponse(
-                    response=generate_response(1)
-                    )
-
-        # Send COMPLETED
-        yield multicopter_proto.SetVelocityBodyResponse(
-                response=generate_response(2)
-                )
-
-    async def SetHeading(self, request, context):
+   async def SetHeading(self, request, context):
         try:
             yield generate_response(
                         resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
@@ -511,24 +493,23 @@ class ParrotOlympeDrone(ControlServicer):
             logger.error(f"Error occurred during SetHeading: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-
-    async def SetGimbalPoseENU(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetGimbalPoseBodyResponse(
-                response=generate_response(0)
-                )
-        
-        # Extract pose data
-        gimbal_id = request.gimbal_id
-        pose = request.pose
-        yaw = pose.yaw
-        pitch = pose.pitch
-        roll = pose.roll
-        control_mode = pose.control_mode
-
-        # Actuate the gimbal depending on mode
+    async def SetGimbalPose(self, request, context):
         try:
-            if control_mode == common_proto.PoseControlMode.POSITION_ABSOLUTE:
+            yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Initializing setting gimbal pose...",
+            )
+
+            # Extract pose data
+            gimbal_id = request.gimbal_id
+            pose = request.pose
+            yaw = pose.yaw
+            pitch = pose.pitch
+            roll = pose.roll
+            control_mode = request.pose_mode 
+
+            # Actuate the gimbal depending on mode
+            if control_mode == control_protocol.PoseMode.ANGLE:
                 target_yaw = yaw
                 target_pitch = pitch
                 target_roll = roll
@@ -543,104 +524,11 @@ class ParrotOlympeDrone(ControlServicer):
                     roll_frame_of_reference="absolute",
                     roll=roll)
                 ).success()
-            elif control_mode == common_proto.PoseControlMode.POSITION_RELATIVE:
-                current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
-                target_yaw = current_gimbal['yaw'] + yaw
-                target_pitch = current_gimbal['pitch'] + pitch
-                target_roll = current_gimbal['roll'] + roll
-                
-                self._drone(set_target(
-                    gimbal_id=gimbal_id,
-                    control_mode="position",
-                    yaw_frame_of_reference="absolute",
-                    yaw=target_yaw,
-                    pitch_frame_of_reference="absolute",
-                    pitch=target_pitch,
-                    roll_frame_of_reference="absolute",
-                    roll=target_roll)
-                ).success()
-            else:
-                target_yaw = None
-                target_pitch = None
-                target_roll = None
-
-                self._drone(set_target(
-                    gimbal_id=gimbal_id,
-                    control_mode="velocity",
-                    yaw_frame_of_reference="absolute",
-                    yaw=yaw,
-                    pitch_frame_of_reference="absolute",
-                    pitch=pitch,
-                    roll_frame_of_reference="absolute",
-                    roll=roll)
-                ).success()
-        except Exception as e:
-            yield multicopter_proto.SetGimbalPoseBodyResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
-
-        if control_mode != common_proto.PoseControlMode.VELOCITY:
-            # Send an IN_PROGRESS stream
-            while not self._is_gimbal_pose_enu_reached(
-                    target_yaw,
-                    target_pitch,
-                    target_roll
-                    ) \
-                    and not context.cancelled():
-                yield multicopter_proto.SetGimbalPoseBodyResponse(
-                        response=generate_response(1)
-                        )
-        else:
-            # We cannot check the velocity of the gimbal from Olympe
-                yield multicopter_proto.SetGimbalPoseBodyResponse(
-                        response=generate_response(
-                            6,
-                            "Cannot wait for gimbal velocity to be set"
-                            )
-                        )
-        
-        # Send COMPLETED
-        yield multicopter_proto.SetGimbalPoseBodyResponse(
-                response=generate_response(2)
-                )
-
-    async def SetGimbalPoseBody(self, request, context):
-        # Send OK
-        yield multicopter_proto.SetGimbalPoseBodyResponse(
-                response=generate_response(0)
-                )
-        
-        # Extract pose data
-        gimbal_id = request.gimbal_id
-        pose = request.pose
-        yaw = pose.yaw
-        pitch = pose.pitch
-        roll = pose.roll
-        control_mode = pose.control_mode
-
-        # Actuate the gimbal depending on mode
-        try:
-            if control_mode == common_proto.PoseControlMode.POSITION_ABSOLUTE:
-                target_yaw = yaw
-                target_pitch = pitch
-                target_roll = roll
-                
-                self._drone(set_target(
-                    gimbal_id=gimbal_id,
-                    control_mode="position",
-                    yaw_frame_of_reference="relative",
-                    yaw=yaw,
-                    pitch_frame_of_reference="relative",
-                    pitch=pitch,
-                    roll_frame_of_reference="relative",
-                    roll=roll)
-                ).success()
-            elif control_mode == common_proto.PoseControlMode.POSITION_RELATIVE:
-                current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
+            elif control_mode == control_protocol.PoseMode.OFFSET:
+                # what field is matching the actuator id?
+                current_gimbal = self._get_gimbal_pose_enu(pose.actuator_id)
+                if request.frame == control_protocol.ReferenceFrame.BODY:
+                    current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
                 target_yaw = current_gimbal['yaw'] + yaw
                 target_pitch = current_gimbal['pitch'] + pitch
                 target_roll = current_gimbal['roll'] + roll
@@ -655,7 +543,7 @@ class ParrotOlympeDrone(ControlServicer):
                     roll_frame_of_reference="relative",
                     roll=target_roll)
                 ).success()
-            else:
+            else: #PoseMode == Velocity?
                 target_yaw = None
                 target_pitch = None
                 target_roll = None
@@ -670,16 +558,8 @@ class ParrotOlympeDrone(ControlServicer):
                     roll_frame_of_reference="relative",
                     roll=roll)
                 ).success()
-        except Exception as e:
-            yield multicopter_proto.SetGimbalPoseBodyResponse(
-                    response=generate_response(
-                        4,
-                        str(e)
-                        )
-                    )
-            return
-
-        if control_mode != common_proto.PoseControlMode.VELOCITY:
+        
+        if control_mode != control_protocol.PoseMode.VELOCITY:
             # Send an IN_PROGRESS stream
             while not self._is_gimbal_pose_body_reached(
                     target_yaw,
@@ -687,34 +567,38 @@ class ParrotOlympeDrone(ControlServicer):
                     target_roll
                     ) \
                     and not context.cancelled():
-                yield multicopter_proto.SetGimbalPoseBodyResponse(
-                        response=generate_response(1)
-                        )
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Setting gimbal pose...",
+                )
+                await asyncio.sleep(0.1)
         else:
             # We cannot check the velocity of the gimbal from Olympe
-                yield multicopter_proto.SetGimbalPoseBodyResponse(
-                        response=generate_response(
-                            6,
-                            "Cannot wait for gimbal velocity to be set"
-                            )
-                        )
-        
+            pass        
+
         # Send COMPLETED
-        yield multicopter_proto.SetGimbalPoseBodyResponse(
-                response=generate_response(2)
-                )
+        yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Gimbal pose set successfully",
+            )
+
+    except Exception as e:
+        logger.error(f"Error occurred during SetGimbalPose: {e}")
+        await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def ConfigureImagingSensorStream(self, request, context):
-        
+        pass        
+
     async def ConfigureTelemetryStream(self, request, context):
+        pass
 
     async def stream_video(self, cam_sock, rate_hz):
         logger.info('Starting camera stream')
         self._start_streaming()
         frame_id = 0
-        while await self.is_connected():
+        while self._is_connected():
             try:
-                cam_message = data_protocol.Frame()
+                cam_message = telemetry_protocol.Frame()
                 frame, frame_shape = await self._get_video_frame()
 
                 if frame is None:
@@ -722,8 +606,8 @@ class ParrotOlympeDrone(ControlServicer):
                     continue
 
                 cam_message.data = frame
-                cam_message.height = frame_shape[0]
-                cam_message.width = frame_shape[1]
+                cam_message.v_res= frame_shape[0]
+                cam_message.h_res= frame_shape[1]
                 cam_message.channels = frame_shape[2]
                 cam_message.id = frame_id
                 cam_sock.send(cam_message.SerializeToString())
@@ -733,6 +617,95 @@ class ParrotOlympeDrone(ControlServicer):
             await asyncio.sleep(0.1)
         self._stop_streaming()
         logger.info("Camera stream ended, disconnected from drone")
+
+    async def stream_telemetry(self, tel_sock, rate_hz):
+        logger.info("Starting telemetry stream")
+        await asyncio.sleep(1)
+
+        while self._is_connected():
+            try:
+                tel_message = telemetry_protocol.DriverTelemetry()
+
+                tel_message.vehicle_info.name = self._get_name()
+                tel_message.vehicle_info.model = self._get_type()
+                tel_message.vehicle_info.battery_info.percentage = (
+                    self._get_battery_percentage()
+                )
+                tel_message.vehicle_info.gps_info.satellites = self._get_satellites()
+                tel_message.position_info.global_position.latitude = (
+                    self._get_global_position()[0]
+                )
+                tel_message.position_info.global_position.longitude = (
+                    self._get_global_position()[1]
+                )
+                tel_message.position_info.global_position.altitude = (
+                    self._get_global_position()[2]
+                )
+
+                tel_message.position_info.global_position.heading = self._get_heading()
+                tel_message.position_info.relative_position.z = self._get_altitude_rel()
+                tel_message.position_info.velocity_enu.x_vel = self._get_velocity_enu()[
+                    "north"
+                ]
+                tel_message.position_info.velocity_enu.y_vel = self._get_velocity_enu()[
+                    "east"
+                ]
+                tel_message.position_info.velocity_enu.z_vel = self._get_velocity_enu()[
+                    "up"
+                ]
+                tel_message.position_info.velocity_body.x_vel = (
+                    self._get_velocity_body()["forward"]
+                )
+                tel_message.position_info.velocity_body.y_vel = (
+                    self._get_velocity_body()["right"]
+                )
+                tel_message.position_info.velocity_body.z_vel = (
+                    self._get_velocity_body()["up"]
+                )
+                tel_message.position_info.velocity_body.angular_vel = (
+                    self._drone.get_angular_velocity()
+                )
+                gimbal = self._get_gimbal_pose_body(0)
+                tel_message.gimbal_info.gimbals.append(telemetry_protocol.GimbalStatus(id=0))
+                tel_message.gimbal_info.gimbals[0].pose_body.pitch = gimbal["g_pitch"]
+                tel_message.gimbal_info.gimbals[0].pose_body.roll = gimbal["g_roll"]
+                tel_message.gimbal_info.gimbals[0].pose_body.yaw = gimbal["g_yaw"]
+                tel_message.gimbal_info.gimbals[0].id = 0
+                #tel_message.status = self._get_current_status()
+                batt = self._get_battery_percentage()
+
+                # Warnings
+                if batt <= 15:
+                    tel_message.alert_info.battery_warning = (
+                        telemetry_protocol.BatteryWarning.CRITICAL
+                    )
+                elif batt <= 30:
+                    tel_message.alert_info.battery_warning = (
+                        telemetry_protocol.BatteryWarning.LOW
+                    )
+                mag = self._get_magnetometer()
+                if mag == 2:
+                    tel_message.alert_info.magnetometer_warning = (
+                        telemetry_protocol.MagnetometerWarning.NO_MAGNETOMETER_WARNING
+                    )
+                elif mag == 1:
+                    tel_message.alert_info.magnetometer_warning = (
+                        telemetry_protocol.MagnetometerWarning.PERTURBATION
+                    )
+                sats = self._get_satellites()
+                if sats == 0:
+                    tel_message.alert_info.gps_warning = (
+                        telemetry_protocol.GPSWarning.NO_GPS_WARNING
+                    )
+                elif sats <= 10:
+                    tel_message.alert_info.gps_warning = (
+                        telemetry_protocol.GPSWarning.WEAK_WEAK
+                    )
+                await tel_sock.send_multipart([b'driver_telemetry', tel_message.SerializeToString()])
+            except Exception as e:
+                logger.error(f"Failed to get telemetry, error: {e}")
+            await asyncio.sleep(1.0 / rate_hz)
+
 
     ''' Telemetry methods '''
     def _get_name(self):
@@ -753,14 +726,14 @@ class ParrotOlympeDrone(ControlServicer):
         loc = self._drone.get_state(custom_location)
         if not loc:
             loc = self._drone.get_state(takeoff_location)
-        location = common_proto.Location()
+        location = common_protocol.Location()
         location.latitude = loc["latitude"]
         location.longitude = loc["longitude"]
         return location
 
     def _get_global_position(self):
         loc = self._drone.get_state(GpsLocationChanged)
-        location = common_proto.Location()
+        location = common_protocol.Location()
         location.latitude = loc["latitude"]
         location.longitude = loc["longitude"]
         location.altitude = loc["altitude"]
@@ -771,9 +744,9 @@ class ParrotOlympeDrone(ControlServicer):
         state = self._drone.get_state(GpsFixStateChanged)
         sats = self._drone._get_satellites()
         if not state["fixed"]:
-            return telemetry_proto.GPSWarning.NO_FIX
+            return telemetry_protocol.GPSWarning.NO_FIX
         elif sats < 10:
-            return telemetry_proto.GPSWarning.WEAK_SIGNAL
+            return telemetry_protocol.GPSWarning.WEAK_SIGNAL
         else:
             return telemetry_proto.GPSWarning.NO_GPS_WARNING
 
@@ -783,9 +756,9 @@ class ParrotOlympeDrone(ControlServicer):
     def _get_magnetometer_state(self):
         mag = self._drone(alarms(type=3, status=1, _policy='check'))
         if mag:
-            return telemetry_proto.MagnetometerWarning.PERTURBATION
+            return telemetry_protocol.MagnetometerWarning.PERTURBATION
         else:
-            return telemetry_proto.MagnetometerWarning.NO_MAGNETOMETER_WARNING
+            return telemetry_protocol.MagnetometerWarning.NO_MAGNETOMETER_WARNING
 
     def _get_battery_percentage(self):
         return self._drone.get_state(BatteryStateChanged)["percent"]
@@ -802,7 +775,7 @@ class ParrotOlympeDrone(ControlServicer):
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
-        velocity = common_proto.VelocityENU()
+        velocity = common_protocol.VelocityENU()
         velocity.north = ned["speedX"]
         velocity.east = ned["speedY"]
         velocity.up = ned["speedZ"] * -1
@@ -836,7 +809,7 @@ class ParrotOlympeDrone(ControlServicer):
         return telemetry_proto.GimbalInfo()
 
     def _get_gimbal_pose_body(self, gimbal_id):
-        pose = common_proto.Pose()
+        pose = common_protocol.Pose()
         pose.yaw = \
             self._drone.get_state(attitude)[gimbal_id]["yaw_relative"]
         pose.pitch = \
@@ -846,7 +819,7 @@ class ParrotOlympeDrone(ControlServicer):
         return pose
     
     def _get_gimbal_pose_enu(self, gimbal_id):
-        pose = common_proto.Pose()
+        pose = common_protocol.Pose()
         pose.yaw = \
             self._drone.get_state(attitude)[gimbal_id]["yaw_absolute"]
         pose.pitch = \
@@ -857,19 +830,19 @@ class ParrotOlympeDrone(ControlServicer):
 
     def _get_imaging_sensor_info(self):
         # TODO: Must be implemented for each drone
-        return telemetry_proto.ImagingSensorInfo()
+        return telemetry_protocol.ImagingSensorInfo()
 
     def _get_compass_state(self):
         state = self._drone.get_state(HeadingLockedStateChanged)["state"]
         if state == "OK":
-            return telemetry.CompassWarning.NO_COMPASS_WARNING
+            return telemetry_protocol.CompassWarning.NO_COMPASS_WARNING
         elif state == "WARNING":
-            return telemetry.CompassWarning.WEAK_HEADING_LOCK
+            return telemetry_protocol.CompassWarning.WEAK_HEADING_LOCK
         else:
-            return telemetry.CompassWarning.NO_HEADING_LOCK
+            return telemetry_protocol.CompassWarning.NO_HEADING_LOCK
 
     def _get_alert_info(self):
-        alert_info = telemetry_info.AlertInfo()
+        alert_info = telemetry_protocol.AlertInfo()
 
         battery = self._drone._get_battery_percentage()
         gps = self._drone._get_gps_state()
@@ -888,6 +861,20 @@ class ParrotOlympeDrone(ControlServicer):
         alert_info.compass_warning = compass
 
         return alert_info
+
+    ''' Actuation methods '''
+    async def _switch_mode(self, mode):
+        if self._mode == mode or \
+                (self._mode == ParrotOlympeDrone.FlightMode.TAKEOFF_LAND \
+                and mode != ParrotOlympeDrone.FlightMode.LOITER):
+            return
+        else:
+            # Cancel the running PID task
+            if self._pid_task:
+                self._pid_task.cancel()
+                await self._pid_task
+            self._pid_task = None
+            self._mode = mode
 
     ''' Coroutine methods '''
     async def _velocity_pid(self):
@@ -1031,21 +1018,10 @@ class ParrotOlympeDrone(ControlServicer):
         except Exception as e:
             logger.error(f"PID iteration failure, reason: {e}")
 
-    ''' Actuation methods '''
-    async def _switch_mode(self, mode):
-        if self._mode == mode or \
-                (self._mode == ParrotOlympeDrone.FlightMode.TAKEOFF_LAND \
-                and mode != ParrotOlympeDrone.FlightMode.LOITER):
-            return
-        else:
-            # Cancel the running PID task
-            if self._pid_task:
-                self._pid_task.cancel()
-                await self._pid_task
-            self._pid_task = None
-            self._mode = mode
-
     ''' ACK methods '''
+    def _is_connected(self):
+        return self._drone.connection_state()
+
     def _is_hovering(self):
         return self._drone(FlyingStateChanged(state="hovering", _policy="check"))
 
@@ -1096,7 +1072,7 @@ class ParrotOlympeDrone(ControlServicer):
         lon = location.longitude
         alt = location.altitude
         if self._is_at_target(lat, lon):
-            if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE \
+            if alt_mode == control_proto.AltitudeMode.ABSOLUTE \
                     and self._is_abs_altitude_reached(alt):
                 return True
             elif self._is_rel_altitude_reached(alt):
@@ -1164,18 +1140,6 @@ class ParrotOlympeDrone(ControlServicer):
         converted_bearing = (initial_bearing + 360) % 360
 
         return converted_bearing
-
-    async def _wait_for_condition(self, condition_fn, timeout=None, interval=0.5):
-        start_time = time.time()
-        while True:
-            try:
-                if condition_fn():
-                    return True
-            except Exception as e:
-                logger.error(f"Error while waiting for condition, {e}")
-            if timeout is not None and time.time() - start_time > timeout:
-                return False
-            await asyncio.sleep(interval)
 
     ''' Streaming methods '''
     def _start_streaming(self):

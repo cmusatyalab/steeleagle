@@ -22,3 +22,24 @@ class Anafi(ParrotOlympeDrone):
             _float_tol=(1e-3, 1e-1))):
             return True
         return False
+  
+async def main():
+    register_cleanup_handler()
+    server = grpc.aio.server(
+        migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10)
+    )
+    control_service_pb2_grpc.add_ControlServicer_to_server(
+        Anafi("Anafi"), server
+    )
+    server.add_insecure_port(query_config("internal.services.driver"))
+    await server.start()
+    logger.info("Services started!")
+    try:
+        await server.wait_for_termination()
+    except (SystemExit, asyncio.exceptions.CancelledError):
+        logger.info("Shutting down...")
+        await server.stop(1)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())  

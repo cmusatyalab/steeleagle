@@ -90,7 +90,7 @@ class DigitalPerfect(ControlServicer):
 
     async def Disconnect(self, request, context):
         try:
-            if not await self.is_connected():
+            if not self._is_connected():
                 logger.warning("Drone is already disconnected.")
                 return generate_response(
                     resp_type=common_protocol.ResponseStatus.COMPLETED,
@@ -461,7 +461,7 @@ class DigitalPerfect(ControlServicer):
         logger.info("Starting telemetry stream")
         await asyncio.sleep(1)
 
-        while await self.is_connected():
+        while self._is_connected():
             try:
                 tel_message = telemetry_protocol.DriverTelemetry()
 
@@ -549,7 +549,7 @@ class DigitalPerfect(ControlServicer):
     #        logger.info("Starting camera stream")
     #        self._start_streaming()
     #        frame_id = 0
-    #        while await self.is_connected():
+    #        while self._is_connected():
     #            try:
     #                cam_message = data_protocol.Frame()
     #                frame, frame_shape = await self._get_video_frame()
@@ -677,7 +677,7 @@ class DigitalPerfect(ControlServicer):
         distance = math.sqrt((dlat**2) + (dlon**2)) * self.LATDEG_METERS
         return distance < 1.0
 
-    async def is_connected(self):
+    def _is_connected(self):
         return self._drone.connection_state()
 
     def _is_gimbal_pose_reached(self, pitch: float, roll: float, yaw: float) -> bool:
