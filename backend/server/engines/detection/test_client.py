@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import argparse
 import asyncio
 import logging
@@ -6,15 +7,17 @@ import os
 import time
 
 import cv2
-import gabriel_extras_pb2 as gabriel_extras
-from gabriel_client.zeromq_client import ProducerWrapper, ZeroMQClient
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+FRAME_ID = 0
 
-class TestZMQClient:
+
+class TestAdapter:
     def __init__(
         self,
         args,
@@ -54,11 +57,6 @@ class TestZMQClient:
                 raise ValueError(f"Cannot read {image_path}")
             self.is_dir = False
 
-        # Setup ZeroMQ client
-        self.gabriel_client = ZeroMQClient(
-            self.server, self.port, [self.get_image_producer()], self.process_results
-        )
-
     def process_results(self, result_wrapper):
         if len(result_wrapper.results) == 0:
             return
@@ -90,8 +88,9 @@ class TestZMQClient:
                     f"Got non-text result type {result.payload_type} from {engine_id}"
                 )
 
-    def get_image_producer(self):
+    def get_producer_wrappers(self):
         async def producer():
+            global FRAME_ID
             await asyncio.sleep(0.1)
 
             logger.debug(f"Image producer: starting at {time.time()}")
@@ -110,17 +109,24 @@ class TestZMQClient:
                 input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
                 input_frame.payloads.append(jpg_buffer.tobytes())
 
-                # Add extras similar to GabrielCompute.py
-                extras = gabriel_extras.Extras()
-                extras.telemetry.drone_name = self.client_id
-                extras.telemetry.uptime.FromSeconds(0)  # Mock uptime
-                extras.telemetry.global_position.latitude = self.latitude
-                extras.telemetry.global_position.longitude = self.longitude
-                extras.telemetry.global_position.heading = self.heading
-                extras.telemetry.relative_position.up = self.altitude
-                extras.telemetry.gimbal_pose.pitch = self.gimbal_pitch
-                extras.cpt_request.cpt.model = self.model
-                print(extras)
+                extras = telemetry.Frame()
+                extras.data = jpg_buffer.tobytes()
+                extras.timestamp.GetCurrentTime()
+                height, width, channels = img.shape
+                extras.h_res = height
+                extras.v_res = width
+                extras.d_res = 0
+                extras.channels = channels
+                extras.id = FRAME_ID
+                extras.vehicle_info.name = self.client_id
+                extras.position_info.global_position.latitude = self.latitude
+                extras.position_info.global_position.longitude = self.longitude
+                extras.position_info.relative_position.z = self.altitude
+                gimbal = telemetry.GimbalStatus()
+                gimbal.pose_body.pitch = self.gimbal_pitch
+                extras.gimbal_info.gimbals.append(gimbal)
+
+                FRAME_ID += 1
                 # Pack extras into the input frame
                 input_frame.extras.Pack(extras)
 
@@ -130,14 +136,20 @@ class TestZMQClient:
             except Exception as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                 input_frame.payloads.append(f"Unable to produce a frame: {e}".encode())
-                logger.error(f"Image producer: unable to produce a frame: {e}")
+                logger.error(f"Image producer: unable to produce a frame: {type(e)}")
 
             return input_frame
 
-        return ProducerWrapper(producer=producer, source_name=self.source_name)
+        return [
+            InputProducer(
+                producer=producer,
+                source_name=self.source_name,
+                target_engine_ids="openscout-object",
+            )
+        ]
 
     def print_all_results(self):
-        """Print the latest results from all engines"""
+        """Print the latest results from alprocess_resultsl engines"""
         logger.info("==== Current Results from All Engines ====")
         for engine, data in self.engine_results.items():
             logger.info(f"Engine: {engine}, Time: {data['timestamp']}")
@@ -173,9 +185,14 @@ def main():
     )
     args = ap.parse_args()
 
-    client = TestZMQClient(args)
+    test_adapter = TestAdapter(args)
 
-    asyncio.run(client.run())
+    client = ZeroMQClient(
+        f"tcp://localhost:{args.port}",
+        test_adapter.get_producer_wrappers(),
+        test_adapter.process_results,
+    )
+    client.launch()
 
 
 if __name__ == "__main__":

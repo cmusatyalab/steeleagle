@@ -3,5 +3,22 @@ name = "steeleagle-backend"
 version = "1.0.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+   "redis",
+   "opencv-python",
+   "numpy",
+   "pykml",
+   "pygeodesy",
+   "ultralytics",
+   "scipy",
+   "Pillow",
+   "gabriel-server",
+   "gabriel-protocol",
+   "gabriel-client",
+   "steeleagle-sdk",
+   "torch==2.7.1"
+]
+
+[tool.uv.sources]
+steeleagle-sdk = { workspace = true }
