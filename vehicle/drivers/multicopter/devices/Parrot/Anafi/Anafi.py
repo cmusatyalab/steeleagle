@@ -2,6 +2,10 @@
 from multicopter.shared.parrot_olympe import ParrotOlympeDrone
 # Olympe SDK import
 from olympe.messages.gimbal import attitude
+from util.config import query_config
+from util.log import setup_logging
+from util.cleanup import register_cleanup_handler
+setup_logging()
 
 class Anafi(ParrotOlympeDrone):
 

@@ -7,6 +7,7 @@ from enum import Enum
 import numpy as np
 import os
 import grpc
+import zmq
 
 # SDK imports (Olympe)
 import olympe
@@ -14,7 +15,7 @@ from olympe import Drone
 from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.move import extended_move_to
-from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state
+from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state, takeoff_location
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
 from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
@@ -36,10 +37,11 @@ import threading
 import cv2
 import queue
 
-# Utility function
-from util.utils import generate_response
+# Utility imports
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
+from util.sockets import setup_zmq_socket, SocketOperation
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("driver/Anafi")
 
 # TODO: Remove get type
 # Remove streaming from SetHome
@@ -60,13 +62,14 @@ class ParrotOlympeDrone(ControlServicer):
         self._connection_string = connection_string
         self._kwargs = kwargs
         # Drone flight modes and setpoints
-        self._setpoint = common_proto.Position()
+        self._setpoint = common_protocol.Position()
         # Set PID values for the drone
         self._forward_pid_values = {}
         self._right_pid_values = {}
         self._up_pid_values = {}
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
+        self._gimbal_id = 0
 
     ''' Interface methods '''
     async def Connect(self, request, context):
@@ -93,7 +96,7 @@ class ParrotOlympeDrone(ControlServicer):
             logger.error(f"Error occurred while connecting to digital drone: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-   async def Disconnect(self, request, context):
+    async def Disconnect(self, request, context):
         try:
             if not self._is_connected():
                 logger.warning("Drone is already disconnected.")
@@ -133,7 +136,7 @@ class ParrotOlympeDrone(ControlServicer):
         try:
             yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating takeoff...")
             logger.info("Switching to TAKEOFF_LAND mode...")
-            await self._switch_mode(FlightMode.TAKEOFF_LAND)
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
             logger.info("Takeoff command sent to drone...")
             task_result = self._drone.take_off()
             logger.info(f"Takeoff command result: {task_result}")
@@ -230,8 +233,8 @@ class ParrotOlympeDrone(ControlServicer):
             # Send IN_PROGRESS stream
             while not self._is_hovering() and not context.cancelled():
                 yield generate_response(
-                    resp_type = common_protocol.ResponseStatus.IN_PROGRESS
-                    resp_string = "checking hovering state..."
+                    resp_type = common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string = "checking hovering state...",
                 )
             # Send COMPLETED
             yield generate_response(
@@ -319,17 +322,17 @@ class ParrotOlympeDrone(ControlServicer):
 
             # Olympe only accepts relative altitude, so convert absolute to
             # relative altitude in case that is the location mode
-            if alt_mode == multicopter_proto.AltitudeMode.ABSOLUTE:
+            if alt_mode == control_protocol.AltitudeMode.ABSOLUTE:
                 altitude = alt - self._get_global_position().altitude \
                         + self._get_altitude_rel()
             else:
                 altitude = alt
             
             # Set the heading mode and bearing appropriately
-            if hdg_mode == multicopter_proto.LocationHeadingMode.TO_TARGET:
+            if hdg_mode == control_protocol.LocationHeadingMode.TO_TARGET:
                 heading_mode = move_mode.orientation_mode.to_target
                 bearing = None
-            elif hdg_mode == multicopter_proto.LocationHeadingMode.HEADING_START:
+            elif hdg_mode == control_protocol.LocationHeadingMode.HEADING_START:
                 heading_mode = move_mode.orientation_mode.heading_start
 
             await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
@@ -368,17 +371,17 @@ class ParrotOlympeDrone(ControlServicer):
 
             # Send an IN_PROGRESS stream
             while not self._is_move_to_done() and not context.cancelled():
-            yield generate_response(
-                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
-                resp_string="Checking moving state...",
-            )
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Checking moving state...",
+                )
             # Check to see if we actually reached our desired position
             if self._is_global_position_reached(location, alt_mode):
                 yield generate_response(
                     resp_type=common_protocol.ResponseStatus.COMPLETED,
                     resp_string="Reached target location successfully",
                 )
-             else:
+            else:
                 # Send FAILED
                 await context.abort(
                     grpc.StatusCode.INTERNAL, "Failed to reach target location"
@@ -424,7 +427,7 @@ class ParrotOlympeDrone(ControlServicer):
                         resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
                         resp_string="Setting velocity...",
                     )
-                    await asyncio.sleep(0.1)
+                await asyncio.sleep(0.1)
 
             # Send success
             yield generate_response(
@@ -435,7 +438,7 @@ class ParrotOlympeDrone(ControlServicer):
             logger.error(f"Error occurred during SetVelocity: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
-   async def SetHeading(self, request, context):
+    async def SetHeading(self, request, context):
         try:
             yield generate_response(
                         resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
@@ -443,13 +446,14 @@ class ParrotOlympeDrone(ControlServicer):
                     )
             
             # Extract location data
+            location = request.location
             lat = location.latitude
             lon = location.longitude
             bearing = location.bearing
             heading_mode = location.heading_mode
 
             # Select target based on mode
-            if heading_mode == multicopter_proto.HeadingMode.HEADING_START:
+            if heading_mode == control_protocol.HeadingMode.HEADING_START:
                 target = bearing
             else:
                 global_position = self._get_global_position()
@@ -525,10 +529,9 @@ class ParrotOlympeDrone(ControlServicer):
                     roll=roll)
                 ).success()
             elif control_mode == control_protocol.PoseMode.OFFSET:
-                # what field is matching the actuator id?
-                current_gimbal = self._get_gimbal_pose_enu(pose.actuator_id)
+                current_gimbal = self._get_gimbal_pose_enu()
                 if request.frame == control_protocol.ReferenceFrame.BODY:
-                    current_gimbal = self._get_gimbal_pose_body(pose.actuator_id)
+                    current_gimbal = self._get_gimbal_pose_body()
                 target_yaw = current_gimbal['yaw'] + yaw
                 target_pitch = current_gimbal['pitch'] + pitch
                 target_roll = current_gimbal['roll'] + roll
@@ -558,33 +561,32 @@ class ParrotOlympeDrone(ControlServicer):
                     roll_frame_of_reference="relative",
                     roll=roll)
                 ).success()
-        
-        if control_mode != control_protocol.PoseMode.VELOCITY:
-            # Send an IN_PROGRESS stream
-            while not self._is_gimbal_pose_body_reached(
-                    target_yaw,
-                    target_pitch,
-                    target_roll
-                    ) \
-                    and not context.cancelled():
-                yield generate_response(
-                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
-                    resp_string="Setting gimbal pose...",
+
+            if control_mode != control_protocol.PoseMode.VELOCITY:
+                # Send an IN_PROGRESS stream
+                while not self._is_gimbal_pose_body_reached(
+                        target_yaw,
+                        target_pitch,
+                        target_roll
+                        ) \
+                        and not context.cancelled():
+                    yield generate_response(
+                        resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                        resp_string="Setting gimbal pose...",
+                    )
+                    await asyncio.sleep(0.1)
+            else:
+                # We cannot check the velocity of the gimbal from Olympe
+                pass        
+
+            # Send COMPLETED
+            yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.COMPLETED,
+                    resp_string="Gimbal pose set successfully",
                 )
-                await asyncio.sleep(0.1)
-        else:
-            # We cannot check the velocity of the gimbal from Olympe
-            pass        
-
-        # Send COMPLETED
-        yield generate_response(
-                resp_type=common_protocol.ResponseStatus.COMPLETED,
-                resp_string="Gimbal pose set successfully",
-            )
-
-    except Exception as e:
-        logger.error(f"Error occurred during SetGimbalPose: {e}")
-        await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error occurred during SetGimbalPose: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def ConfigureImagingSensorStream(self, request, context):
         pass        
@@ -665,7 +667,7 @@ class ParrotOlympeDrone(ControlServicer):
                 tel_message.position_info.velocity_body.angular_vel = (
                     self._drone.get_angular_velocity()
                 )
-                gimbal = self._get_gimbal_pose_body(0)
+                gimbal = self._get_gimbal_pose_body()
                 tel_message.gimbal_info.gimbals.append(telemetry_protocol.GimbalStatus(id=0))
                 tel_message.gimbal_info.gimbals[0].pose_body.pitch = gimbal["g_pitch"]
                 tel_message.gimbal_info.gimbals[0].pose_body.roll = gimbal["g_roll"]
@@ -775,10 +777,10 @@ class ParrotOlympeDrone(ControlServicer):
 
     def _get_velocity_enu(self):
         ned = self._drone.get_state(SpeedChanged)
-        velocity = common_protocol.VelocityENU()
-        velocity.north = ned["speedX"]
-        velocity.east = ned["speedY"]
-        velocity.up = ned["speedZ"] * -1
+        velocity = common_protocol.Velocity()
+        velocity.x_vel = ned["speedX"]
+        velocity.y_vel = ned["speedY"]
+        velocity.z_vel = ned["speedZ"] * -1
         return velocity
 
     def _get_velocity_body(self):
@@ -808,7 +810,8 @@ class ParrotOlympeDrone(ControlServicer):
         # TODO: Must be implemented for each drone
         return telemetry_proto.GimbalInfo()
 
-    def _get_gimbal_pose_body(self, gimbal_id):
+    def _get_gimbal_pose_body(self):
+        gimbal_id = self._gimbal_id
         pose = common_protocol.Pose()
         pose.yaw = \
             self._drone.get_state(attitude)[gimbal_id]["yaw_relative"]
@@ -818,7 +821,8 @@ class ParrotOlympeDrone(ControlServicer):
             self._drone.get_state(attitude)[gimbal_id]["roll_relative"]
         return pose
     
-    def _get_gimbal_pose_enu(self, gimbal_id):
+    def _get_gimbal_pose_enu(self):
+        gimbal_id = self._gimbal_id
         pose = common_protocol.Pose()
         pose.yaw = \
             self._drone.get_state(attitude)[gimbal_id]["yaw_absolute"]
@@ -1275,7 +1279,7 @@ class ParrotOlympeDrone(ControlServicer):
                     continue
                 try:
                     cam_message = data_protocol.Frame()
-                    frame, frame_shape = await self._get_video_frame()
+                    frame, frame_shape = self._get_video_frame()
     
                     if frame is None:
                         logger.error('Failed to get video frame')
