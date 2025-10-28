@@ -12,7 +12,7 @@ import "google/protobuf/timestamp.proto";
 // Information about the telemetry stream.
 message TelemetryStreamInfo {
   // current frequency of telemetry messages [Hz]
-  uint32 current_frequency = 1; 
+  uint32 current_frequency = 1;
   // maximum frequency of telemetry messages [Hz]
   uint32 max_frequency = 2;
   // uptime of the stream
@@ -39,11 +39,11 @@ message GPSInfo {
 }
 
 // Future: information about the vehicle's communication links.
-message CommsInfo {} 
+message CommsInfo {}
 
-/* 
+/*
  * Information about the vehicle.
- * 
+ *
  * This includes the name, make, model and its current status (battery, GPS, comms, motion).
  */
 message VehicleInfo {
@@ -63,15 +63,15 @@ message VehicleInfo {
   CommsInfo comms_info = 7;
 }
 
-/* 
+/*
  * Information about the current setpoint.
- * 
+ *
  * Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
  * that the vehicle is currently moving towards. By default, when the vehicle is idle, this
  * setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
  * setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
  * reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.
- */ 
+ */
 message SetpointInfo {
   // the current setpoint for the vehicle
   oneof setpoint {
@@ -90,7 +90,7 @@ message SetpointInfo {
  */
 message PositionInfo {
   // global position that will be used when returning home
-  steeleagle.protocol.common.Location home = 1; 
+  steeleagle.protocol.common.Location home = 1;
   // current global position of the vehicle
   steeleagle.protocol.common.Location global_position = 2;
   /*
@@ -99,18 +99,18 @@ message PositionInfo {
    * position
    */
   steeleagle.protocol.common.Position relative_position = 3;
-  /* 
+  /*
    * current velocity of the vehicle in the global ENU
    * (North, East, Up) coordinate frame
    */
   steeleagle.protocol.common.Velocity velocity_enu = 4;
   /*
-   * current velocity of the vehicle in the body (forward, right, up) 
+   * current velocity of the vehicle in the body (forward, right, up)
    * coordinate frame
    */
   steeleagle.protocol.common.Velocity velocity_body = 5;
   // info on the current vehicle setpoint
-  SetpointInfo setpoint_info = 6; 
+  SetpointInfo setpoint_info = 6;
 }
 
 // Status of a gimbal.
@@ -170,7 +170,7 @@ message ImagingSensorStatus {
 // Information about all imaging sensor streams.
 message ImagingSensorStreamStatus {
   // the total number of allowed simultaneously streaming cameras
-  uint32 stream_capacity = 1; 
+  uint32 stream_capacity = 1;
   uint32 num_streams = 2; // the total number of currently streaming cameras
   uint32 primary_cam = 3; // ID of the primary camera
   repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
@@ -249,7 +249,7 @@ message AlertInfo {
 
 /*
  * Telemetry message for the vehicle, originating from the driver module.
- * 
+ *
  * This message outlines all the current information about the vehicle. It
  * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
  * that is broadcast to attached compute services.
@@ -266,14 +266,14 @@ message DriverTelemetry {
   // status on attached gimbals and their orientations
   GimbalInfo gimbal_info = 5;
   // information about the vehicle imaging sensors
-  ImagingSensorInfo imaging_sensor_info = 6; 
+  ImagingSensorInfo imaging_sensor_info = 6;
   // enumeration of vehicle warnings
   AlertInfo alert_info = 7;
 }
 
 /*
  * Imaging sensor frames, originating from the driver module.
- * 
+ *
  * This message provides frame data from currently streaming imaging sensors. It
  * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
  * that is broadcast to attached compute services.
@@ -293,6 +293,14 @@ message Frame {
   uint64 channels = 6;
   // frame ID for future correlation
   uint64 id = 7;
+  // the vehicle that this telemetry corresponds to
+  VehicleInfo vehicle_info = 8;
+  // positional info about the vehicle
+  PositionInfo position_info = 9;
+  // status on attached gimbals and their orientations
+  GimbalInfo gimbal_info = 10;
+  // information about the vehicle imaging sensors
+  ImagingSensorInfo imaging_sensor_info = 11;
 }
 
 // Execution state of the current mission.
@@ -325,7 +333,7 @@ message MissionInfo {
 
 /*
  * Telemetry message for the mission, originating from the mission module.
- * 
+ *
  * This message outlines all current information about the mission. It
  * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
  * that is broadcast to attached compute services.
