@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_ComputeServicer_to_server
+## <><code class="docs-func">func</code></> add_ComputeServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_ComputeServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ComputeStub
+## <><code class="docs-class">class</code></> ComputeStub
 
 *Inherits from: <code>object</code>*
 
@@ -69,7 +69,7 @@ class ComputeStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ComputeServicer
+## <><code class="docs-class">class</code></> ComputeServicer
 
 *Inherits from: <code>object</code>*
 
@@ -81,7 +81,7 @@ datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> AddDatasinks
+### <><code class="docs-method">method</code></> AddDatasinks
 
 _Call Type: normal_
 
@@ -89,7 +89,7 @@ _Call Type: normal_
 Add datasinks to consumer list.
 
 Takes a list of datasinks and adds them to the current consumer list.
-### <><code style={{color: '#10c45b'}}>method</code></> SetDatasinks
+### <><code class="docs-method">method</code></> SetDatasinks
 
 _Call Type: normal_
 
@@ -97,7 +97,7 @@ _Call Type: normal_
 Set the datasink consumer list.
 
 Takes a list of datasinks and replaces the current consumer list with them.
-### <><code style={{color: '#10c45b'}}>method</code></> RemoveDatasinks
+### <><code class="docs-method">method</code></> RemoveDatasinks
 
 _Call Type: normal_
 
@@ -154,7 +154,7 @@ class ComputeServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Compute
+## <><code class="docs-class">class</code></> Compute
 
 *Inherits from: <code>object</code>*
 
@@ -166,15 +166,15 @@ datasinks that the kernel broadcasts frames and telemetry to. RPC
 methods within this service allow for manipulation of this list.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> AddDatasinks
+### <><code class="docs-method">method</code></> AddDatasinks
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetDatasinks
+### <><code class="docs-method">method</code></> SetDatasinks
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> RemoveDatasinks
+### <><code class="docs-method">method</code></> RemoveDatasinks
 
 _Call Type: normal_
 

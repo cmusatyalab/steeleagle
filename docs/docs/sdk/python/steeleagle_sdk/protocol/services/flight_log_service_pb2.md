@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> LogType
+## <><code class="docs-class">class</code></> LogType
 
 *Inherits from: <code>int</code>*
 
@@ -33,7 +33,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> LogRequest
+## <><code class="docs-class">class</code></> LogRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -52,7 +52,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> LogMessage
+## <><code class="docs-class">class</code></> LogMessage
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -61,7 +61,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReqRepProto
+## <><code class="docs-class">class</code></> ReqRepProto
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -70,7 +70,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> LogProtoRequest
+## <><code class="docs-class">class</code></> LogProtoRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

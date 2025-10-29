@@ -9,19 +9,19 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#de1472'}}>submodule</code></> base <Link to="/sdk/python/steeleagle_sdk/api/base"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> base <Link to="/sdk/python/steeleagle_sdk/api/base"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> actions <Link to="/sdk/python/steeleagle_sdk/api/actions"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> events <Link to="/sdk/python/steeleagle_sdk/api/events"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> events <Link to="/sdk/python/steeleagle_sdk/api/events"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> datatypes <Link to="/sdk/python/steeleagle_sdk/api/datatypes"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> datatypes <Link to="/sdk/python/steeleagle_sdk/api/datatypes"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> actions <Link to="/sdk/python/steeleagle_sdk/api/actions"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---

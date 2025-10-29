@@ -9,15 +9,15 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> AltitudeMode
+## <><code class="docs-class">class</code></> AltitudeMode
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Altitude mode switch.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;ABSOLUTE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> meters above Mean Sea Level
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;ABSOLUTE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> meters above Mean Sea Level
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RELATIVE**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> meters above takeoff position
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RELATIVE**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> meters above takeoff position
 
 
 
@@ -39,15 +39,15 @@ class AltitudeMode(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> HeadingMode
+## <><code class="docs-class">class</code></> HeadingMode
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Heading mode switch.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;TO_TARGET**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> orient towards the target location
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;TO_TARGET**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> orient towards the target location
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;HEADING_START**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> orient towards the given heading
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;HEADING_START**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> orient towards the given heading
 
 
 
@@ -69,15 +69,15 @@ class HeadingMode(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReferenceFrame
+## <><code class="docs-class">class</code></> ReferenceFrame
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Reference frame mode switch.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;BODY**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> vehicle reference frame
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;BODY**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> vehicle reference frame
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NEU**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> NEU (North, East, Up) reference frame
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NEU**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> NEU (North, East, Up) reference frame
 
 
 
@@ -99,17 +99,17 @@ class ReferenceFrame(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> PoseMode
+## <><code class="docs-class">class</code></> PoseMode
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Pose mode switch.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;ANGLE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> absolute angle
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;ANGLE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> absolute angle
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;OFFSET**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> request data // Offset from current
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;OFFSET**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> request data // Offset from current
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;VELOCITY**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> rotational velocities
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;VELOCITY**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> rotational velocities
 
 
 
@@ -133,17 +133,17 @@ class PoseMode(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorConfiguration
+## <><code class="docs-class">class</code></> ImagingSensorConfiguration
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Configuration for an imaging sensor.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target imaging sensor ID    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target imaging sensor ID    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;set_primary**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> set this sensor as the primary stream    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;set_primary**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> set this sensor as the primary stream    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;set_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target FPS for stream
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;set_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target FPS for stream
 
 
 

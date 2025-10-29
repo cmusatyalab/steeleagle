@@ -9,12 +9,12 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> TimeReached
+## <><code class="docs-class">class</code></> TimeReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -38,7 +38,7 @@ class TimeReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> BatteryReached
+## <><code class="docs-class">class</code></> BatteryReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
@@ -47,7 +47,7 @@ relation: `at_least` (greater than or equal to threshold) or `at_most` (less tha
 equal to threshold).
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -82,17 +82,17 @@ class BatteryReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SatellitesReached
+## <><code class="docs-class">class</code></> SatellitesReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
 Fires when satellites count satisfies relation to threshold for N consecutive polls.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;relation**&nbsp;&nbsp;(<code>Literal['at_least', , , 'at_most']</code>) <text>&#8212;</text> `at_least` (greater than or equal to) or `at_most` (less than or equal to).
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;relation**&nbsp;&nbsp;(<code>Literal['at_least', 'at_most']</code>) <text>&#8212;</text> `at_least` (greater than or equal to) or `at_most` (less than or equal to).
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -128,7 +128,7 @@ class SatellitesReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> GimbalPoseReached
+## <><code class="docs-class">class</code></> GimbalPoseReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
@@ -136,7 +136,7 @@ Fires when gimbal pose matches target within tolerances.
 You can specify any subset of `{roll, pitch, yaw}` (or x,y,z if your pose encodes axes).
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -192,19 +192,19 @@ class GimbalPoseReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> VelocityReached
+## <><code class="docs-class">class</code></> VelocityReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
 Fires when speed magnitude in selected frame satisfies relation to threshold.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Literal['enu', , , 'body']</code>) <text>&#8212;</text> `enu` or `body`
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Literal['enu', 'body']</code>) <text>&#8212;</text> `enu` or `body`
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;relation**&nbsp;&nbsp;(<code>Literal['at_least', , , 'at_most']</code>) <text>&#8212;</text> `at_least` or `at_most`
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;relation**&nbsp;&nbsp;(<code>Literal['at_least', 'at_most']</code>) <text>&#8212;</text> `at_least` or `at_most`
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -237,7 +237,7 @@ class VelocityReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> HomeReached
+## <><code class="docs-class">class</code></> HomeReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
@@ -245,7 +245,7 @@ Fires when distance from current `global_position` to home less than or equal to
 Requires `global_position.{latitude, longitude}` and `home.{latitude, longitude}`.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -277,12 +277,12 @@ class HomeReached(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DetectionFound
+## <><code class="docs-class">class</code></> DetectionFound
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -327,7 +327,7 @@ class DetectionFound(Event):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> HSVReached
+## <><code class="docs-class">class</code></> HSVReached
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-event">Event</Link></code>*
 
@@ -336,7 +336,7 @@ Optional filters: `class_name`, `min_score`.
 Assumes detection dicts may have `hsv_filter_passed`: bool.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 

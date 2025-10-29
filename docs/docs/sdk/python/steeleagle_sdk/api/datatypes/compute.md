@@ -9,15 +9,15 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> DatasinkLocation
+## <><code class="docs-class">class</code></> DatasinkLocation
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Denotes where a datasink is located.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;REMOTE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> remote location (network hop required)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;REMOTE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> remote location (network hop required)
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;LOCAL**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> local location (IPC)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;LOCAL**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> local location (IPC)
 
 
 
@@ -39,15 +39,15 @@ class DatasinkLocation(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DatasinkInfo
+## <><code class="docs-class">class</code></> DatasinkInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about a datasink.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> datasink ID    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> datasink ID    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinklocation">DatasinkLocation</Link></code>) <text>&#8212;</text> datasink location
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinklocation">DatasinkLocation</Link></code>) <text>&#8212;</text> datasink location
 
 
 

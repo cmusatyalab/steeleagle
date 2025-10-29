@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> get_descriptors
+## <><code class="docs-func">func</code></> get_descriptors
 
 _Call Type: normal_
 

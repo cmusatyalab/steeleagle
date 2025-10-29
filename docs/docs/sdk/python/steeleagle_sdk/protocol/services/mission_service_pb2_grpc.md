@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_MissionServicer_to_server
+## <><code class="docs-func">func</code></> add_MissionServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_MissionServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionStub
+## <><code class="docs-class">class</code></> MissionStub
 
 *Inherits from: <code>object</code>*
 
@@ -61,38 +61,38 @@ class MissionStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionServicer
+## <><code class="docs-class">class</code></> MissionServicer
 
 *Inherits from: <code>object</code>*
 
 Used to start a new mission or stop an active mission
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Upload
+### <><code class="docs-method">method</code></> Upload
 
 _Call Type: normal_
 
 
 Upload a mission for execution
-### <><code style={{color: '#10c45b'}}>method</code></> Start
+### <><code class="docs-method">method</code></> Start
 
 _Call Type: normal_
 
 
 Start an uploaded mission
-### <><code style={{color: '#10c45b'}}>method</code></> Stop
+### <><code class="docs-method">method</code></> Stop
 
 _Call Type: normal_
 
 
 Stop the current mission
-### <><code style={{color: '#10c45b'}}>method</code></> Notify
+### <><code class="docs-method">method</code></> Notify
 
 _Call Type: normal_
 
 
 Send a notification to the current mission
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureTelemetryStream
+### <><code class="docs-method">method</code></> ConfigureTelemetryStream
 
 _Call Type: normal_
 
@@ -147,30 +147,30 @@ class MissionServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Mission
+## <><code class="docs-class">class</code></> Mission
 
 *Inherits from: <code>object</code>*
 
 Used to start a new mission or stop an active mission
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Upload
+### <><code class="docs-method">method</code></> Upload
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Start
+### <><code class="docs-method">method</code></> Start
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Stop
+### <><code class="docs-method">method</code></> Stop
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Notify
+### <><code class="docs-method">method</code></> Notify
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureTelemetryStream
+### <><code class="docs-method">method</code></> ConfigureTelemetryStream
 
 _Call Type: normal_
 

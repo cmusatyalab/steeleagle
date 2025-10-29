@@ -75,7 +75,7 @@ def rotated_infinite_transects(polygon: Polygon, spacing: float, angle_deg: floa
 
 def parse_kml_file(kmlstr: str) -> Dict[str, GeoPoints]:
     """
-    Parse KML Placemarks with <coordinates> entries "lon,lat[,alt]".
+    Parse KML Placemarks with `<coordinates>` entries `"lon,lat[,alt]"`.
     Returns `{placemark_name: GeoPoints([(lon,lat), ...])}`
     """
     doc = minidom.parseString(kmlstr)

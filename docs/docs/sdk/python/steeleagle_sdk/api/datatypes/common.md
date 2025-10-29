@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> ResponseStatus
+## <><code class="docs-class">class</code></> ResponseStatus
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
@@ -29,43 +29,43 @@ Response types for RPC functions.
     Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
     2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;OK**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> command acknowledged
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;OK**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> command acknowledged
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;IN_PROGRESS**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> command in progress
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;IN_PROGRESS**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> command in progress
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;COMPLETED**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> command finished without error
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;COMPLETED**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> command finished without error
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;CANCELLED**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> the operation was cancelled, typically by the caller
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;CANCELLED**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> the operation was cancelled, typically by the caller
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;UNKNOWN**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> unknown error
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNKNOWN**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> unknown error
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;INVALID_ARGUMENT**&nbsp;&nbsp;(<code>5</code>) <text>&#8212;</text> the client specified an invalid argument
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;INVALID_ARGUMENT**&nbsp;&nbsp;(<code>5</code>) <text>&#8212;</text> the client specified an invalid argument
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;DEADLINE_EXCEEDED**&nbsp;&nbsp;(<code>6</code>) <text>&#8212;</text> the deadline expired before the operation could complete
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;DEADLINE_EXCEEDED**&nbsp;&nbsp;(<code>6</code>) <text>&#8212;</text> the deadline expired before the operation could complete
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NOT_FOUND**&nbsp;&nbsp;(<code>7</code>) <text>&#8212;</text> some requested entity was not found
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NOT_FOUND**&nbsp;&nbsp;(<code>7</code>) <text>&#8212;</text> some requested entity was not found
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;ALREADY_EXISTS**&nbsp;&nbsp;(<code>8</code>) <text>&#8212;</text> an entity the client attempted to create already exists
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;ALREADY_EXISTS**&nbsp;&nbsp;(<code>8</code>) <text>&#8212;</text> an entity the client attempted to create already exists
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;PERMISSION_DENIED**&nbsp;&nbsp;(<code>9</code>) <text>&#8212;</text> the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;PERMISSION_DENIED**&nbsp;&nbsp;(<code>9</code>) <text>&#8212;</text> the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RESOURCE_EXHAUSTED**&nbsp;&nbsp;(<code>10</code>) <text>&#8212;</text> some resource has been exhausted
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RESOURCE_EXHAUSTED**&nbsp;&nbsp;(<code>10</code>) <text>&#8212;</text> some resource has been exhausted
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;FAILED_PRECONDITION**&nbsp;&nbsp;(<code>11</code>) <text>&#8212;</text> the operation was rejected because the system is not in a state required for the operation's execution
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;FAILED_PRECONDITION**&nbsp;&nbsp;(<code>11</code>) <text>&#8212;</text> the operation was rejected because the system is not in a state required for the operation's execution
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;ABORTED**&nbsp;&nbsp;(<code>12</code>) <text>&#8212;</text> the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;ABORTED**&nbsp;&nbsp;(<code>12</code>) <text>&#8212;</text> the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;OUT_OF_RANGE**&nbsp;&nbsp;(<code>13</code>) <text>&#8212;</text> the operation was attempted past the valid range
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;OUT_OF_RANGE**&nbsp;&nbsp;(<code>13</code>) <text>&#8212;</text> the operation was attempted past the valid range
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;UNIMPLEMENTED**&nbsp;&nbsp;(<code>14</code>) <text>&#8212;</text> the operation is not implemented/supported by the service
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNIMPLEMENTED**&nbsp;&nbsp;(<code>14</code>) <text>&#8212;</text> the operation is not implemented/supported by the service
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(<code>15</code>) <text>&#8212;</text> an internal error occured while executing the operation
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(<code>15</code>) <text>&#8212;</text> an internal error occured while executing the operation
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;UNAVAILABLE**&nbsp;&nbsp;(<code>16</code>) <text>&#8212;</text> the service is currently unavailable
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNAVAILABLE**&nbsp;&nbsp;(<code>16</code>) <text>&#8212;</text> the service is currently unavailable
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;DATA_LOSS**&nbsp;&nbsp;(<code>17</code>) <text>&#8212;</text> unrecoverable data loss or corruption
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;DATA_LOSS**&nbsp;&nbsp;(<code>17</code>) <text>&#8212;</text> unrecoverable data loss or corruption
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;UNAUTHENTICATED**&nbsp;&nbsp;(<code>18</code>) <text>&#8212;</text> the client failed to provide an identity (unique to SteelEagle)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNAUTHENTICATED**&nbsp;&nbsp;(<code>18</code>) <text>&#8212;</text> the client failed to provide an identity (unique to SteelEagle)
 
 
 
@@ -135,17 +135,17 @@ class ResponseStatus(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Response
+## <><code class="docs-class">class</code></> Response
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Global response message returned by all core services.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-responsestatus">ResponseStatus</Link></code>) <text>&#8212;</text> response status    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-responsestatus">ResponseStatus</Link></code>) <text>&#8212;</text> response status    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;response_string**&nbsp;&nbsp;(<code>Optional[str]</code>) <text>&#8212;</text> detailed message on reason for response    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;response_string**&nbsp;&nbsp;(<code>Optional[str]</code>) <text>&#8212;</text> detailed message on reason for response    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> response timestamp
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> response timestamp
 
 
 
@@ -170,17 +170,17 @@ class Response(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Pose
+## <><code class="docs-class">class</code></> Pose
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Angular offsets or poses in 3 dimensions.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;pitch**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> pitch [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pitch**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> pitch [degrees]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;roll**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> roll [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;roll**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> roll [degrees]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;yaw**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> yaw [degrees]
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;yaw**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> yaw [degrees]
 
 
 
@@ -205,19 +205,19 @@ class Pose(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Velocity
+## <><code class="docs-class">class</code></> Velocity
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Representation of velocity in 3-dimensions.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;x_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north velocity [meters/s]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;y_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east velocity [meters/s]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;z_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up velocity [meters/s]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up velocity [meters/s]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;angular_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular velocity [degrees/s]
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;angular_vel**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular velocity [degrees/s]
 
 
 
@@ -244,19 +244,19 @@ class Velocity(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Position
+## <><code class="docs-class">class</code></> Position
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Position offset relative to home or current location.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;x**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;x**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> forward/north offset [meters]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;y**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;y**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> right/east offset [meters]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;z**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up offset [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;z**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> up offset [meters]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;angle**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular offset [degrees]
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;angle**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> angular offset [degrees]
 
 
 
@@ -283,19 +283,19 @@ class Position(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Location
+## <><code class="docs-class">class</code></> Location
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Location in global coordinates.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;latitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global latitude [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;latitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global latitude [degrees]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;longitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global longitude [degrees]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;longitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global longitude [degrees]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;altitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> altitude above MSL or takeoff [meters]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;altitude**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> altitude above MSL or takeoff [meters]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;heading**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global heading [degrees]
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;heading**&nbsp;&nbsp;(<code>Optional[float]</code>) <text>&#8212;</text> global heading [degrees]
 
 
 

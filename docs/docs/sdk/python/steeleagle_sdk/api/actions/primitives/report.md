@@ -11,7 +11,7 @@ Used to report messages to the Swarm Controller server.
 
 ---
 
-## <><code style={{color: '#e0a910'}}>attr</code></> STUB
+## <><code class="docs-attr">attr</code></> STUB
 
 _Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/report_service_pb2_grpc#class-reportstub">ReportStub</Link></code>
 
@@ -21,17 +21,17 @@ Stub that is automatically set at runtime so that actions
 for this service can connect to grpc.
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SendReport
+## <><code class="docs-class">class</code></> SendReport
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
 Send a report to the server.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;report**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/report#class-reportmessage">ReportMessage</Link></code>) <text>&#8212;</text> report data
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;report**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/report#class-reportmessage">ReportMessage</Link></code>) <text>&#8212;</text> report data
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 

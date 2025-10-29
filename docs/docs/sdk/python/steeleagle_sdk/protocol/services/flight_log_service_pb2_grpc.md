@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_FlightLogServicer_to_server
+## <><code class="docs-func">func</code></> add_FlightLogServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_FlightLogServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> FlightLogStub
+## <><code class="docs-class">class</code></> FlightLogStub
 
 *Inherits from: <code>object</code>*
 
@@ -64,7 +64,7 @@ class FlightLogStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> FlightLogServicer
+## <><code class="docs-class">class</code></> FlightLogServicer
 
 *Inherits from: <code>object</code>*
 
@@ -74,7 +74,7 @@ This service is hosted by a logger instance and is responsible
 for writing all system logs to an MCAP file for mission playback.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Log
+### <><code class="docs-method">method</code></> Log
 
 _Call Type: normal_
 
@@ -83,7 +83,7 @@ Basic log endpoint.
 
 Behaves identically to most log endpoints, but writes the data to
 an MCAP file instead of the console.
-### <><code style={{color: '#10c45b'}}>method</code></> LogProto
+### <><code class="docs-method">method</code></> LogProto
 
 _Call Type: normal_
 
@@ -131,7 +131,7 @@ class FlightLogServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> FlightLog
+## <><code class="docs-class">class</code></> FlightLog
 
 *Inherits from: <code>object</code>*
 
@@ -141,11 +141,11 @@ This service is hosted by a logger instance and is responsible
 for writing all system logs to an MCAP file for mission playback.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Log
+### <><code class="docs-method">method</code></> Log
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> LogProto
+### <><code class="docs-method">method</code></> LogProto
 
 _Call Type: normal_
 

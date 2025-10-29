@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionData
+## <><code class="docs-class">class</code></> MissionData
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -35,7 +35,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> UploadRequest
+## <><code class="docs-class">class</code></> UploadRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -59,7 +59,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> StartRequest
+## <><code class="docs-class">class</code></> StartRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -78,7 +78,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> StopRequest
+## <><code class="docs-class">class</code></> StopRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -87,7 +87,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> NotifyRequest
+## <><code class="docs-class">class</code></> NotifyRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -96,7 +96,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureTelemetryStreamRequest
+## <><code class="docs-class">class</code></> ConfigureTelemetryStreamRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -105,7 +105,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureTelemetryStreamResponse
+## <><code class="docs-class">class</code></> ConfigureTelemetryStreamResponse
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

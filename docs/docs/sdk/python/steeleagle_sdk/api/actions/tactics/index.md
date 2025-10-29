@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#de1472'}}>submodule</code></> tactics <Link to="/sdk/python/steeleagle_sdk/api/actions/tactics/tactics"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> tactics <Link to="/sdk/python/steeleagle_sdk/api/actions/tactics/tactics"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---

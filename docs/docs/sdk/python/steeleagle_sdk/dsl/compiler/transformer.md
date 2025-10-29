@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> DroneDSLTransformer
+## <><code class="docs-class">class</code></> DroneDSLTransformer
 
 *Inherits from: <code>lark.Transformer</code>*
 
@@ -20,75 +20,75 @@ Supports:
   - Implicit 'done' &#8594; terminate transitions
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> datum_decl
+### <><code class="docs-method">method</code></> datum_decl
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> datum_body
+### <><code class="docs-method">method</code></> datum_body
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> action_decl
+### <><code class="docs-method">method</code></> action_decl
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> action_body
+### <><code class="docs-method">method</code></> action_body
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> event_decl
+### <><code class="docs-method">method</code></> event_decl
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> event_body
+### <><code class="docs-method">method</code></> event_body
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> mission_start
+### <><code class="docs-method">method</code></> mission_start
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> transition_body
+### <><code class="docs-method">method</code></> transition_body
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> transition_rule
+### <><code class="docs-method">method</code></> transition_rule
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> during_block
+### <><code class="docs-method">method</code></> during_block
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> mission_block
+### <><code class="docs-method">method</code></> mission_block
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> attr
+### <><code class="docs-method">method</code></> attr
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> value
+### <><code class="docs-method">method</code></> value
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> array
+### <><code class="docs-method">method</code></> array
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> datum_args
+### <><code class="docs-method">method</code></> datum_args
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> datum_inline
+### <><code class="docs-method">method</code></> datum_inline
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> print_mir
+### <><code class="docs-method">method</code></> print_mir
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> start
+### <><code class="docs-method">method</code></> start
 
 _Call Type: normal_
 
@@ -167,7 +167,7 @@ class DroneDSLTransformer(Transformer):
     def mission_block(self, *_children):
         return None
 
-# ===== Attributes / Values =====
+    # ===== Attributes / Values =====
     def attr(self, k: Token, _sep, v):
         return (str(k), v)
     

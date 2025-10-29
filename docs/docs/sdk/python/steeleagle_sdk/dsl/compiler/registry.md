@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> register_action
+## <><code class="docs-func">func</code></> register_action
 
 _Call Type: normal_
 
@@ -30,7 +30,7 @@ def register_action(cls: Action) -> Action:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> register_event
+## <><code class="docs-func">func</code></> register_event
 
 _Call Type: normal_
 
@@ -51,7 +51,7 @@ def register_event(cls: Event) -> Event:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> register_data
+## <><code class="docs-func">func</code></> register_data
 
 _Call Type: normal_
 
@@ -72,7 +72,7 @@ def register_data(cls: Datatype) -> Datatype:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> get_action
+## <><code class="docs-func">func</code></> get_action
 
 _Call Type: normal_
 
@@ -86,7 +86,7 @@ def get_action(name: str) -> Optional[Action]:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> get_event
+## <><code class="docs-func">func</code></> get_event
 
 _Call Type: normal_
 
@@ -100,7 +100,7 @@ def get_event(name: str) -> Optional[Event]:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> get_data
+## <><code class="docs-func">func</code></> get_data
 
 _Call Type: normal_
 

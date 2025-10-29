@@ -16,7 +16,7 @@ methods within this service allow for manipulation of this list.
 
 ---
 
-## <><code style={{color: '#e0a910'}}>attr</code></> STUB
+## <><code class="docs-attr">attr</code></> STUB
 
 _Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/compute_service_pb2_grpc#class-computestub">ComputeStub</Link></code>
 
@@ -26,7 +26,7 @@ Stub that is automatically set at runtime so that actions
 for this service can connect to grpc.
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> AddDatasinks
+## <><code class="docs-class">class</code></> AddDatasinks
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -34,11 +34,11 @@ Add datasinks to consumer list.
 
 Takes a list of datasinks and adds them to the current consumer list.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -78,7 +78,7 @@ class AddDatasinks(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetDatasinks
+## <><code class="docs-class">class</code></> SetDatasinks
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -86,11 +86,11 @@ Set the datasink consumer list.
 
 Takes a list of datasinks and replaces the current consumer list with them.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -130,7 +130,7 @@ class SetDatasinks(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> RemoveDatasinks
+## <><code class="docs-class">class</code></> RemoveDatasinks
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -138,11 +138,11 @@ Remove datasinks from consumer list.
 
 Takes a list of datasinks and removes them from the current consumer list.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;datasinks**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/compute#class-datasinkinfo">DatasinkInfo</Link>]</code>) <text>&#8212;</text> name of target datasinks
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 

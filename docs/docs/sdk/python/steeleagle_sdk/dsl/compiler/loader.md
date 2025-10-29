@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> load_all
+## <><code class="docs-func">func</code></> load_all
 
 _Call Type: normal_
 
@@ -74,7 +74,7 @@ def load_all(
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> print_report
+## <><code class="docs-func">func</code></> print_report
 
 _Call Type: normal_
 

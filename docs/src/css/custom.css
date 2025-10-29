@@ -36,3 +36,28 @@
 .hero {
   padding-top: 7vh;
 }
+
+/* Styling for documentation */
+.docs-class {
+    color: #b52ee6;
+}
+
+.docs-func {
+    color: #13a6cf;
+}
+
+.docs-arg {
+    color: #db2146;
+}
+
+.docs-method {
+    color: #10c45b;
+}
+
+.docs-attr {
+    color: #e0a910;
+}
+
+.docs-submodule {
+    color: #de1472;
+}

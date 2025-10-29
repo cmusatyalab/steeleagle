@@ -5,12 +5,12 @@ requires = [
     "protobuf>=5.29.5",
     "protoletariat>=3.3.10",
     "Jinja2",
-    "pydoc-markdown>=4.8.2",
+    "griffe"
 ]
 build-backend = "hatchling.build"
 
 [project]
-name = "steeleagle-sdk"
+name = "steeleagle_sdk"
 version = "1.0.7"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"

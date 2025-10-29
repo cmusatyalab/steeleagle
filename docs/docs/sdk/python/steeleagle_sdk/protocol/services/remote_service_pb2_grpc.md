@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_RemoteServicer_to_server
+## <><code class="docs-func">func</code></> add_RemoteServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_RemoteServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> RemoteStub
+## <><code class="docs-class">class</code></> RemoteStub
 
 *Inherits from: <code>object</code>*
 
@@ -60,7 +60,7 @@ class RemoteStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> RemoteServicer
+## <><code class="docs-class">class</code></> RemoteServicer
 
 *Inherits from: <code>object</code>*
 
@@ -68,14 +68,14 @@ Used to control a vehicle remotely over ZeroMQ, usually hosted
 on the server
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Command
+### <><code class="docs-method">method</code></> Command
 
 _Call Type: normal_
 
 
 Sends a service request to a vehicle core service (Control, Mission, etc.)
 over ZeroMQ and returns the response
-### <><code style={{color: '#10c45b'}}>method</code></> CompileMission
+### <><code class="docs-method">method</code></> CompileMission
 
 _Call Type: normal_
 
@@ -110,7 +110,7 @@ class RemoteServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Remote
+## <><code class="docs-class">class</code></> Remote
 
 *Inherits from: <code>object</code>*
 
@@ -118,11 +118,11 @@ Used to control a vehicle remotely over ZeroMQ, usually hosted
 on the server
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Command
+### <><code class="docs-method">method</code></> Command
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> CompileMission
+### <><code class="docs-method">method</code></> CompileMission
 
 _Call Type: normal_
 

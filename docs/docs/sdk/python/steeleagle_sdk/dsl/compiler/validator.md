@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> validate_action
+## <><code class="docs-func">func</code></> validate_action
 
 _Call Type: normal_
 
@@ -29,7 +29,7 @@ def validate_action(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseMod
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> validate_event
+## <><code class="docs-func">func</code></> validate_event
 
 _Call Type: normal_
 
@@ -49,7 +49,7 @@ def validate_event(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseMode
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> validate_data
+## <><code class="docs-func">func</code></> validate_data
 
 _Call Type: normal_
 
@@ -69,7 +69,7 @@ def validate_data(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseModel
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> validate_mission_ir
+## <><code class="docs-func">func</code></> validate_mission_ir
 
 _Call Type: normal_
 
@@ -140,7 +140,7 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ValidatorException
+## <><code class="docs-class">class</code></> ValidatorException
 
 *Inherits from: <code>Exception</code>*
 

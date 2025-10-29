@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_ReportServicer_to_server
+## <><code class="docs-func">func</code></> add_ReportServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_ReportServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReportStub
+## <><code class="docs-class">class</code></> ReportStub
 
 *Inherits from: <code>object</code>*
 
@@ -57,14 +57,14 @@ class ReportStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReportServicer
+## <><code class="docs-class">class</code></> ReportServicer
 
 *Inherits from: <code>object</code>*
 
 Used to report messages to the Swarm Controller server.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> SendReport
+### <><code class="docs-method">method</code></> SendReport
 
 _Call Type: normal_
 
@@ -91,14 +91,14 @@ class ReportServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Report
+## <><code class="docs-class">class</code></> Report
 
 *Inherits from: <code>object</code>*
 
 Used to report messages to the Swarm Controller server.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> SendReport
+### <><code class="docs-method">method</code></> SendReport
 
 _Call Type: normal_
 

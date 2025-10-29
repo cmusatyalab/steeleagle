@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> native_grpc_call
+## <><code class="docs-func">func</code></> native_grpc_call
 
 _Call Type: async_
 
@@ -52,7 +52,7 @@ async def native_grpc_call(metadata, full_method_name, method_desc, request, cla
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> generate_request
+## <><code class="docs-func">func</code></> generate_request
 
 _Call Type: normal_
 
@@ -75,7 +75,7 @@ def generate_request():
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> generate_response
+## <><code class="docs-func">func</code></> generate_response
 
 _Call Type: normal_
 

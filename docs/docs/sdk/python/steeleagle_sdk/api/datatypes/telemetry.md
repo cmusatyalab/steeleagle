@@ -9,21 +9,21 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> MotionStatus
+## <><code class="docs-class">class</code></> MotionStatus
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Information about the motion of the vehicle.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;MOTORS_OFF**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> motors of the vehicle are off
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;MOTORS_OFF**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> motors of the vehicle are off
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RAMPING_UP**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> motors of the vehicle are ramping
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RAMPING_UP**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> motors of the vehicle are ramping
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;IDLE**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> the vehicle is on but idle
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;IDLE**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> the vehicle is on but idle
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;IN_TRANSIT**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> the vehicle is in motion
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;IN_TRANSIT**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> the vehicle is in motion
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RAMPING_DOWN**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> motors of the vehicle are ramping down
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RAMPING_DOWN**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> motors of the vehicle are ramping down
 
 
 
@@ -51,27 +51,27 @@ class MotionStatus(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorType
+## <><code class="docs-class">class</code></> ImagingSensorType
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Imaging sensor types.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RGB**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> RGB camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RGB**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> RGB camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;STEREO**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> stereo camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;STEREO**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> stereo camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;THERMAL**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> thermal camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;THERMAL**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> thermal camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NIGHT**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> night vision camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NIGHT**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> night vision camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;LIDAR**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> LIDAR sensor
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;LIDAR**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> LIDAR sensor
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RGBD**&nbsp;&nbsp;(<code>5</code>) <text>&#8212;</text> RGB-Depth camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RGBD**&nbsp;&nbsp;(<code>5</code>) <text>&#8212;</text> RGB-Depth camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;TOF**&nbsp;&nbsp;(<code>6</code>) <text>&#8212;</text> ToF (time of flight) camera
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;TOF**&nbsp;&nbsp;(<code>6</code>) <text>&#8212;</text> ToF (time of flight) camera
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;RADAR**&nbsp;&nbsp;(<code>7</code>) <text>&#8212;</text> RADAR sensor
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;RADAR**&nbsp;&nbsp;(<code>7</code>) <text>&#8212;</text> RADAR sensor
 
 
 
@@ -105,17 +105,17 @@ class ImagingSensorType(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> BatteryWarning
+## <><code class="docs-class">class</code></> BatteryWarning
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Battery warnings and alerts.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NONE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> the vehicle is above 30% battery
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NONE**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> the vehicle is above 30% battery
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;LOW**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> the vehicle is below 30% battery
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;LOW**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> the vehicle is below 30% battery
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;CRITICAL**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> the vehicle is below 15% battery
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;CRITICAL**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> the vehicle is below 15% battery
 
 
 
@@ -139,17 +139,17 @@ class BatteryWarning(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> GPSWarning
+## <><code class="docs-class">class</code></> GPSWarning
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 GPS fix warnings and alerts.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_GPS_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> GPS readings are nominal and a fix has been achieved
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_GPS_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> GPS readings are nominal and a fix has been achieved
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;WEAK_SIGNAL**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> weak GPS fix, expect errant global position data
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;WEAK_SIGNAL**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> weak GPS fix, expect errant global position data
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_FIX**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> no GPS fix
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_FIX**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> no GPS fix
 
 
 
@@ -173,15 +173,15 @@ class GPSWarning(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MagnetometerWarning
+## <><code class="docs-class">class</code></> MagnetometerWarning
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Magnetometer warnings and alerts.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_MAGNETOMETER_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> magnetometer readings are nominal
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_MAGNETOMETER_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> magnetometer readings are nominal
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;PERTURBATION**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> the vehicle is experiencing magnetic perturbations
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;PERTURBATION**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> the vehicle is experiencing magnetic perturbations
 
 
 
@@ -203,17 +203,17 @@ class MagnetometerWarning(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConnectionWarning
+## <><code class="docs-class">class</code></> ConnectionWarning
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Connection warnings and alerts.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_CONNECTION_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> connection to remote server is nominal
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_CONNECTION_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> connection to remote server is nominal
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;DISCONNECTED**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> contact has been lost with the remote server
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;DISCONNECTED**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> contact has been lost with the remote server
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;WEAK_CONNECTION**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> connection is experiencing interference or is weak
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;WEAK_CONNECTION**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> connection is experiencing interference or is weak
 
 
 
@@ -237,17 +237,17 @@ class ConnectionWarning(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> CompassWarning
+## <><code class="docs-class">class</code></> CompassWarning
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Compass warnings and alerts.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_COMPASS_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> absolute heading is nominal
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_COMPASS_WARNING**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> absolute heading is nominal
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;WEAK_HEADING_LOCK**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> absolute heading is available but may be incorrect
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;WEAK_HEADING_LOCK**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> absolute heading is available but may be incorrect
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;NO_HEADING_LOCK**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> no absolute heading available from the vehicle
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;NO_HEADING_LOCK**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> no absolute heading available from the vehicle
 
 
 
@@ -271,21 +271,21 @@ class CompassWarning(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionExecState
+## <><code class="docs-class">class</code></> MissionExecState
 
 *Inherits from: <code>int</code>, <code>enum.Enum</code>*
 
 Execution state of the current mission.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;READY**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> mission is ready to be executed
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;READY**&nbsp;&nbsp;(<code>0</code>) <text>&#8212;</text> mission is ready to be executed
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;IN_PROGRESS**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> mission is in progress
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;IN_PROGRESS**&nbsp;&nbsp;(<code>1</code>) <text>&#8212;</text> mission is in progress
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;PAUSED**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> mission is paused
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;PAUSED**&nbsp;&nbsp;(<code>2</code>) <text>&#8212;</text> mission is paused
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;COMPLETED**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> mission has been completed
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;COMPLETED**&nbsp;&nbsp;(<code>3</code>) <text>&#8212;</text> mission has been completed
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;CANCELED**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> mission was cancelled
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;CANCELED**&nbsp;&nbsp;(<code>4</code>) <text>&#8212;</text> mission was cancelled
 
 
 
@@ -313,17 +313,17 @@ class MissionExecState(int, Enum):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> TelemetryStreamInfo
+## <><code class="docs-class">class</code></> TelemetryStreamInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about the telemetry stream.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;current_frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> current frequency of telemetry messages [Hz]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;current_frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> current frequency of telemetry messages [Hz]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;max_frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> maximum frequency of telemetry messages [Hz]    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;max_frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> maximum frequency of telemetry messages [Hz]    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;uptime**&nbsp;&nbsp;(<code>google.protobuf.duration_pb2.Duration</code>) <text>&#8212;</text> uptime of the stream
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;uptime**&nbsp;&nbsp;(<code>google.protobuf.duration_pb2.Duration</code>) <text>&#8212;</text> uptime of the stream
 
 
 
@@ -348,13 +348,13 @@ class TelemetryStreamInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> BatteryInfo
+## <><code class="docs-class">class</code></> BatteryInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about the vehicle battery.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;percentage**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> battery level [0-100]%
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;percentage**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> battery level [0-100]%
 
 
 
@@ -375,13 +375,13 @@ class BatteryInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> GPSInfo
+## <><code class="docs-class">class</code></> GPSInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about the vehicle GPS fix.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;satellites**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of satellites used in GPS fix
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;satellites**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of satellites used in GPS fix
 
 
 
@@ -402,7 +402,7 @@ class GPSInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> CommsInfo
+## <><code class="docs-class">class</code></> CommsInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -423,7 +423,7 @@ class CommsInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> VehicleInfo
+## <><code class="docs-class">class</code></> VehicleInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -431,19 +431,19 @@ Information about the vehicle.
 
 This includes the name, make, model and its current status (battery, GPS, comms, motion).    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;name**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> the vehicle that this telemetry corresponds to    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;name**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> the vehicle that this telemetry corresponds to    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;model**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> model of the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;model**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> model of the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;manufacturer**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> manufacturer of the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;manufacturer**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> manufacturer of the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;motion_status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-motionstatus">MotionStatus</Link></code>) <text>&#8212;</text> current status of the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;motion_status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-motionstatus">MotionStatus</Link></code>) <text>&#8212;</text> current status of the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;battery_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-batteryinfo">BatteryInfo</Link></code>) <text>&#8212;</text> battery info for the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;battery_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-batteryinfo">BatteryInfo</Link></code>) <text>&#8212;</text> battery info for the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gps_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gpsinfo">GPSInfo</Link></code>) <text>&#8212;</text> GPS sensor info for the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gps_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gpsinfo">GPSInfo</Link></code>) <text>&#8212;</text> GPS sensor info for the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;comms_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-commsinfo">CommsInfo</Link></code>) <text>&#8212;</text> communications info for the vehicle
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;comms_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-commsinfo">CommsInfo</Link></code>) <text>&#8212;</text> communications info for the vehicle
 
 
 
@@ -478,7 +478,7 @@ class VehicleInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetpointInfo
+## <><code class="docs-class">class</code></> SetpointInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -490,15 +490,15 @@ setpoint is a `position_body_sp` object set to all zeros. The frame of reference
 setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
 reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;position_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> default all zeros idle setpoint    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> default all zeros idle setpoint    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;position_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> ENU (North, East, Up) position setpoint    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> ENU (North, East, Up) position setpoint    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;global_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> global setpoint    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;global_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> global setpoint    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> body (forward, right, up) velocity setpoint    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> body (forward, right, up) velocity setpoint    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> ENU (North, East, Up) velocity setpoint
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> ENU (North, East, Up) velocity setpoint
 
 
 
@@ -533,7 +533,7 @@ class SetpointInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> PositionInfo
+## <><code class="docs-class">class</code></> PositionInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -541,17 +541,17 @@ Information about the vehicle position.
 
 Includes home position, global position (only valid with a GPS fix), relative position (only available on some vehicles), current velocity, and the current setpoint.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;home**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> global position that will be used when returning home    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;home**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> global position that will be used when returning home    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;global_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> current global position of the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;global_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> current global position of the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;relative_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;relative_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;setpoint_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-setpointinfo">SetpointInfo</Link></code>) <text>&#8212;</text> info on the current vehicle setpoint
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;setpoint_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-setpointinfo">SetpointInfo</Link></code>) <text>&#8212;</text> info on the current vehicle setpoint
 
 
 
@@ -584,17 +584,17 @@ class PositionInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> GimbalStatus
+## <><code class="docs-class">class</code></> GimbalStatus
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Status of a gimbal.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the gimbal    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the gimbal    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;pose_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the body (forward, right, up) reference frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the body (forward, right, up) reference frame    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;pose_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the ENU (North, East, Up) reference frame
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the ENU (North, East, Up) reference frame
 
 
 
@@ -619,15 +619,15 @@ class GimbalStatus(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> GimbalInfo
+## <><code class="docs-class">class</code></> GimbalInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Info of all attached gimbals.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;num_gimbals**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of connected gimbals    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;num_gimbals**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of connected gimbals    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gimbals**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gimbalstatus">GimbalStatus</Link>]</code>) <text>&#8212;</text> list of connected gimbals
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbals**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gimbalstatus">GimbalStatus</Link>]</code>) <text>&#8212;</text> list of connected gimbals
 
 
 
@@ -650,7 +650,7 @@ class GimbalInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorStatus
+## <><code class="docs-class">class</code></> ImagingSensorStatus
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -658,31 +658,31 @@ Status of an imaging sensor.
 
 Includes information about its type and resolution/stream settings.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the imaging sensor    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the imaging sensor    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;type**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensortype">ImagingSensorType</Link></code>) <text>&#8212;</text> type of the imaging sensor    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;type**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensortype">ImagingSensorType</Link></code>) <text>&#8212;</text> type of the imaging sensor    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;active**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates whether the imaging sensor is currently streaming    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;active**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates whether the imaging sensor is currently streaming    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;supports_secondary**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates whether the imaging sensor supports background streaming    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;supports_secondary**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates whether the imaging sensor supports background streaming    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;current_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> current streaming frames per second    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;current_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> current streaming frames per second    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;max_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> maximum streaming frames per second    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;max_fps**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> maximum streaming frames per second    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;h_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal resolution    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;h_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal resolution    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;v_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical resolution    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;v_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical resolution    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;channels**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of image channels    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;channels**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of image channels    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;h_fov**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal FOV    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;h_fov**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal FOV    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;v_fov**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical FOV    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;v_fov**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical FOV    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gimbal_mounted**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates if imaging sensor is gimbal mounted    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbal_mounted**&nbsp;&nbsp;(<code>bool</code>) <text>&#8212;</text> indicates if imaging sensor is gimbal mounted    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> indicates which gimbal the imaging sensor is mounted on
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> indicates which gimbal the imaging sensor is mounted on
 
 
 
@@ -729,19 +729,19 @@ class ImagingSensorStatus(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorStreamStatus
+## <><code class="docs-class">class</code></> ImagingSensorStreamStatus
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about all imaging sensor streams.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;stream_capacity**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> the total number of allowed simultaneously streaming cameras    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;stream_capacity**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> the total number of allowed simultaneously streaming cameras    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;num_streams**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> the total number of currently streaming cameras    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;num_streams**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> the total number of currently streaming cameras    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;primary_cam**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the primary camera    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;primary_cam**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the primary camera    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;secondary_cams**&nbsp;&nbsp;(<code>List[int]</code>) <text>&#8212;</text> IDs of the secondary active cameras
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;secondary_cams**&nbsp;&nbsp;(<code>List[int]</code>) <text>&#8212;</text> IDs of the secondary active cameras
 
 
 
@@ -768,15 +768,15 @@ class ImagingSensorStreamStatus(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorInfo
+## <><code class="docs-class">class</code></> ImagingSensorInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about all attached imaging sensors.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;stream_status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorstreamstatus">ImagingSensorStreamStatus</Link></code>) <text>&#8212;</text> status of current imaging sensor streams    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;stream_status**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorstreamstatus">ImagingSensorStreamStatus</Link></code>) <text>&#8212;</text> status of current imaging sensor streams    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;sensors**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorstatus">ImagingSensorStatus</Link>]</code>) <text>&#8212;</text> list of connected imaging sensors
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;sensors**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorstatus">ImagingSensorStatus</Link>]</code>) <text>&#8212;</text> list of connected imaging sensors
 
 
 
@@ -799,21 +799,21 @@ class ImagingSensorInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> AlertInfo
+## <><code class="docs-class">class</code></> AlertInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about all vehicle warning and alerts.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;battery_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-batterywarning">BatteryWarning</Link></code>) <text>&#8212;</text> battery warnings    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;battery_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-batterywarning">BatteryWarning</Link></code>) <text>&#8212;</text> battery warnings    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gps_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gpswarning">GPSWarning</Link></code>) <text>&#8212;</text> GPS warnings    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gps_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gpswarning">GPSWarning</Link></code>) <text>&#8212;</text> GPS warnings    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;magnetometer_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-magnetometerwarning">MagnetometerWarning</Link></code>) <text>&#8212;</text> magnetometer warnings    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;magnetometer_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-magnetometerwarning">MagnetometerWarning</Link></code>) <text>&#8212;</text> magnetometer warnings    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;connection_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-connectionwarning">ConnectionWarning</Link></code>) <text>&#8212;</text> connection warnings    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;connection_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-connectionwarning">ConnectionWarning</Link></code>) <text>&#8212;</text> connection warnings    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;compass_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-compasswarning">CompassWarning</Link></code>) <text>&#8212;</text> compass warnings
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;compass_warning**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-compasswarning">CompassWarning</Link></code>) <text>&#8212;</text> compass warnings
 
 
 
@@ -842,7 +842,7 @@ class AlertInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DriverTelemetry
+## <><code class="docs-class">class</code></> DriverTelemetry
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -852,19 +852,19 @@ This message outlines all the current information about the vehicle. It
 is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
 that is broadcast to attached compute services.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of message    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of message    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;telemetry_stream_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-telemetrystreaminfo">TelemetryStreamInfo</Link></code>) <text>&#8212;</text> info about current telemetry stream    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;telemetry_stream_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-telemetrystreaminfo">TelemetryStreamInfo</Link></code>) <text>&#8212;</text> info about current telemetry stream    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;vehicle_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-vehicleinfo">VehicleInfo</Link></code>) <text>&#8212;</text> the vehicle that this telemetry corresponds to    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;vehicle_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-vehicleinfo">VehicleInfo</Link></code>) <text>&#8212;</text> the vehicle that this telemetry corresponds to    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;position_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-positioninfo">PositionInfo</Link></code>) <text>&#8212;</text> positional info about the vehicle    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-positioninfo">PositionInfo</Link></code>) <text>&#8212;</text> positional info about the vehicle    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gimbal_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gimbalinfo">GimbalInfo</Link></code>) <text>&#8212;</text> status on attached gimbals and their orientations    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbal_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gimbalinfo">GimbalInfo</Link></code>) <text>&#8212;</text> status on attached gimbals and their orientations    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;imaging_sensor_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorinfo">ImagingSensorInfo</Link></code>) <text>&#8212;</text> information about the vehicle imaging sensors    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;imaging_sensor_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorinfo">ImagingSensorInfo</Link></code>) <text>&#8212;</text> information about the vehicle imaging sensors    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;alert_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-alertinfo">AlertInfo</Link></code>) <text>&#8212;</text> enumeration of vehicle warnings
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;alert_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-alertinfo">AlertInfo</Link></code>) <text>&#8212;</text> enumeration of vehicle warnings
 
 
 
@@ -901,7 +901,7 @@ class DriverTelemetry(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Frame
+## <><code class="docs-class">class</code></> Frame
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -911,19 +911,19 @@ This message provides frame data from currently streaming imaging sensors. It
 is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
 that is broadcast to attached compute services.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> capture timestamp of the frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> capture timestamp of the frame    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;data**&nbsp;&nbsp;(<code>bytes</code>) <text>&#8212;</text> raw bytes representing the frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;data**&nbsp;&nbsp;(<code>bytes</code>) <text>&#8212;</text> raw bytes representing the frame    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;h_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal frame resolution in pixels    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;h_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> horizontal frame resolution in pixels    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;v_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical frame resolution in pixels    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;v_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> vertical frame resolution in pixels    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;d_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> depth resolution in pixels    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;d_res**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> depth resolution in pixels    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;channels**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of channels    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;channels**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of channels    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> frame ID for future correlation
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> frame ID for future correlation
 
 
 
@@ -960,21 +960,21 @@ class Frame(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionInfo
+## <><code class="docs-class">class</code></> MissionInfo
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Information about the current mission.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;name**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> mission name    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;name**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> mission name    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;hash**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> mission hash to establish version uniqueness    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;hash**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> mission hash to establish version uniqueness    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;age**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of upload    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;age**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of upload    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;exec_state**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-missionexecstate">MissionExecState</Link></code>) <text>&#8212;</text> execution state of the mission    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;exec_state**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-missionexecstate">MissionExecState</Link></code>) <text>&#8212;</text> execution state of the mission    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;task_state**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> task state of the mission (plaintext), if active
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;task_state**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> task state of the mission (plaintext), if active
 
 
 
@@ -1003,7 +1003,7 @@ class MissionInfo(Datatype):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionTelemetry
+## <><code class="docs-class">class</code></> MissionTelemetry
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
@@ -1013,11 +1013,11 @@ This message outlines all current information about the mission. It
 is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
 that is broadcast to attached compute services.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of message    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;timestamp**&nbsp;&nbsp;(<code>google.protobuf.timestamp_pb2.Timestamp</code>) <text>&#8212;</text> timestamp of message    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;telemetry_stream_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-telemetrystreaminfo">TelemetryStreamInfo</Link></code>) <text>&#8212;</text> info about the current telemetry stream    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;telemetry_stream_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-telemetrystreaminfo">TelemetryStreamInfo</Link></code>) <text>&#8212;</text> info about the current telemetry stream    
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;mission_info**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-missioninfo">MissionInfo</Link>]</code>) <text>&#8212;</text> info about the current mission states
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;mission_info**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-missioninfo">MissionInfo</Link>]</code>) <text>&#8212;</text> info about the current mission states
 
 
 

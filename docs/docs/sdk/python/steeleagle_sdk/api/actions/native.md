@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> now_ts
+## <><code class="docs-func">func</code></> now_ts
 
 _Call Type: normal_
 
@@ -44,7 +44,7 @@ def now_ts() -> Timestamp:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> payload_from_action
+## <><code class="docs-func">func</code></> payload_from_action
 
 _Call Type: normal_
 
@@ -56,7 +56,7 @@ is usually used to translate from the Python API into the Protobuf
 API for serialization over the wire.
 
 ### Arguments
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;action**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>) <text>&#8212;</text> input Action to be JSON serialized.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;action**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>) <text>&#8212;</text> input Action to be JSON serialized.
 
 
 ### Returns
@@ -85,7 +85,7 @@ def payload_from_action(action: Action) -> dict:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> error_to_api_response
+## <><code class="docs-func">func</code></> error_to_api_response
 
 _Call Type: normal_
 
@@ -96,7 +96,7 @@ Returns a Python API Response for a corresponding gRPC error code.
 Allows transformation of gRPC exceptions into a unified Response.
 
 ### Arguments
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;error**&nbsp;&nbsp;(<code>grpc.aio.AioRpcError</code>) <text>&#8212;</text> input gRPC Exception object.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;error**&nbsp;&nbsp;(<code>grpc.aio.AioRpcError</code>) <text>&#8212;</text> input gRPC Exception object.
 
 
 ### Returns
@@ -125,7 +125,7 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> run_unary
+## <><code class="docs-func">func</code></> run_unary
 
 _Call Type: async_
 
@@ -136,18 +136,18 @@ Runs a unary gRPC method, gets the response (or error), and translates
 it into a Python API Response.
 
 ### Arguments
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;method_coro**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> an awaitable stub coroutine `STUB.METHOD` e.g.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;method_coro**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> an awaitable stub coroutine `STUB.METHOD` e.g.
 ControlStub.Connect.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> 
 metadata object for gRPC. The metadata must include an `identity` 
 parameter to access kernel services. An `identity` set to 
 `internal` signals to the kernel that the RPC request originates
 from an onboard client.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
 no timeout.
 
 <details>
@@ -183,7 +183,7 @@ async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=
 </details>
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> run_streaming
+## <><code class="docs-func">func</code></> run_streaming
 
 _Call Type: async_
 
@@ -195,17 +195,17 @@ it into a Python API Response. This method will only return the _last_
 response it receives from the RPC.
 
 ### Arguments
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;method_coro**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> an async generator stub coroutine `STUB.METHOD` e.g.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;method_coro**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> an async generator stub coroutine `STUB.METHOD` e.g.
 ControlStub.TakeOff.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;request_pb**&nbsp;&nbsp;(<code>typing.Any</code>) <text>&#8212;</text> Protobuf object input for the method coroutine.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> metadata object for gRPC. The metadata 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;metadata**&nbsp;&nbsp;(<code>Optional[list]</code>) <text>&#8212;</text> metadata object for gRPC. The metadata 
 must include an `identity` parameter to access kernel services. 
 An `identity` set to `internal` signals to the kernel that the 
 RPC request originates from an onboard client.
 
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;timeout**&nbsp;&nbsp;(<code>Optional[int]</code>) <text>&#8212;</text> timeout for the RPC request, `None` indicates 
 no timeout. It is generally not recommended to add a timeout to a 
 streaming method, since most have non-deterministic time of completion.
 

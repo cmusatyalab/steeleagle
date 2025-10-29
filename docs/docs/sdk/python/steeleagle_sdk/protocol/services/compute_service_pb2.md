@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> DatasinkLocation
+## <><code class="docs-class">class</code></> DatasinkLocation
 
 *Inherits from: <code>int</code>*
 
@@ -29,7 +29,7 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DatasinkInfo
+## <><code class="docs-class">class</code></> DatasinkInfo
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -53,7 +53,7 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> AddDatasinksRequest
+## <><code class="docs-class">class</code></> AddDatasinksRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -69,7 +69,7 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetDatasinksRequest
+## <><code class="docs-class">class</code></> SetDatasinksRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -78,7 +78,7 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> RemoveDatasinksRequest
+## <><code class="docs-class">class</code></> RemoveDatasinksRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

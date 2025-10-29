@@ -14,13 +14,13 @@ are streamed between vehicle services.
 
 ---
 
-## <><code style={{color: '#de1472'}}>submodule</code></> result_pb2 <Link to="/sdk/python/steeleagle_sdk/protocol/messages/result_pb2"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> telemetry_pb2 <Link to="/sdk/python/steeleagle_sdk/protocol/messages/telemetry_pb2"><GoFileSymlinkFile size={25} /></Link>
 
 
 Generated protocol buffer code.
 
 ---
-## <><code style={{color: '#de1472'}}>submodule</code></> telemetry_pb2 <Link to="/sdk/python/steeleagle_sdk/protocol/messages/telemetry_pb2"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> result_pb2 <Link to="/sdk/python/steeleagle_sdk/protocol/messages/result_pb2"><GoFileSymlinkFile size={25} /></Link>
 
 
 Generated protocol buffer code.

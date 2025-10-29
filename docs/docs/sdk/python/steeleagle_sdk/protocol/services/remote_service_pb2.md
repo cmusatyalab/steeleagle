@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> CompileMissionRequest
+## <><code class="docs-class">class</code></> CompileMissionRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -33,7 +33,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services.remote_service_pb2
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> CompileMissionResponse
+## <><code class="docs-class">class</code></> CompileMissionResponse
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -57,7 +57,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services.remote_service_pb2
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> CommandRequest
+## <><code class="docs-class">class</code></> CommandRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -72,7 +72,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services.remote_service_pb2
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> CommandResponse
+## <><code class="docs-class">class</code></> CommandResponse
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

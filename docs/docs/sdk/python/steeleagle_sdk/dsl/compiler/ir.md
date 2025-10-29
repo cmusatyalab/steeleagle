@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> ActionIR
+## <><code class="docs-class">class</code></> ActionIR
 
 
 
@@ -28,7 +28,7 @@ class ActionIR:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> EventIR
+## <><code class="docs-class">class</code></> EventIR
 
 
 
@@ -47,7 +47,7 @@ class EventIR:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DatumIR
+## <><code class="docs-class">class</code></> DatumIR
 
 
 
@@ -66,7 +66,7 @@ class DatumIR:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> MissionIR
+## <><code class="docs-class">class</code></> MissionIR
 
 
 

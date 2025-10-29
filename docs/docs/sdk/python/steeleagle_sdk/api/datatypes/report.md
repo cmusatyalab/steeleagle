@@ -9,13 +9,13 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> ReportMessage
+## <><code class="docs-class">class</code></> ReportMessage
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-datatype">Datatype</Link></code>*
 
 Message container for a report.    
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;report_code**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> integer report code, interpreted by the backend
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;report_code**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> integer report code, interpreted by the backend
 
 
 

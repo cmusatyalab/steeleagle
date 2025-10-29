@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> ReportMessage
+## <><code class="docs-class">class</code></> ReportMessage
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -33,7 +33,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'services.report_service_pb2
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SendReportRequest
+## <><code class="docs-class">class</code></> SendReportRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

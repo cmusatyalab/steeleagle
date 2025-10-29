@@ -9,11 +9,11 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#de1472'}}>submodule</code></> compiler <Link to="/sdk/python/steeleagle_sdk/dsl/compiler"><GoFileSymlinkFile size={25} /></Link>
+## <><code class="docs-submodule">submodule</code></> compiler <Link to="/sdk/python/steeleagle_sdk/dsl/compiler"><GoFileSymlinkFile size={25} /></Link>
 
 
 ---
-## <><code style={{color: '#13a6cf'}}>func</code></> build_mission
+## <><code class="docs-func">func</code></> build_mission
 
 _Call Type: normal_
 
@@ -21,7 +21,7 @@ _Call Type: normal_
 Compile DSL source text into a MissionIR object.
 
 ### Arguments
-**<><code style={{color: '#db2146'}}>arg</code></>&nbsp;&nbsp;dsl_code**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> string representation of a DSL file
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;dsl_code**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> string representation of a DSL file
 
 
 ### Returns
@@ -46,6 +46,57 @@ def build_mission(dsl_code: str) -> MissionIR:
         mission.start_action_id, len(mission.actions), len(mission.events),
     )
     return mission
+
+```
+</details>
+
+---
+## <><code class="docs-func">func</code></> cli_compile_dsl
+
+_Call Type: normal_
+
+
+Command line utility for compiling DSL scripts.
+
+Command line script that takes a DSL file as input and writes the compiled mission file
+to the specified output path.
+
+### Arguments
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;dsl_file**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> input DSL file path (positional argument 0, required)
+
+**<><code class="docs-arg">arg</code></>&nbsp;&nbsp;output**&nbsp;&nbsp;(<code>str</code>) <text>&#8212;</text> output mission JSON path (`--output` or `-o`, default: `./mission.json`)
+
+<details>
+<summary>View Source</summary>
+```python
+def cli_compile_dsl():
+    """Command line utility for compiling DSL scripts.
+
+    Command line script that takes a DSL file as input and writes the compiled mission file
+    to the specified output path.
+
+    Args:
+        dsl_file (str): input DSL file path (positional argument 0, required)
+        output (str): output mission JSON path (`--output` or `-o`, default: `./mission.json`)
+    """
+    import argparse
+    from dataclasses import asdict
+    import json
+    parser = argparse.ArgumentParser(description="SteelEagle DSL compiler.")
+    parser.add_argument("dsl_file", help="Path to DSL file")
+    parser.add_argument("-o", "--output", type=str, default="mission.json", help="Name of the output file (type: JSON)")
+    args = parser.parse_args()
+
+    mission_json_text = ''
+    with open(args.dsl_file, 'r') as file:
+        dsl_content = file.read()
+        mission = build_mission(dsl_content)
+        mission_json_text = json.dumps(asdict(mission))
+        print("Mission compiled!")
+
+    with open(args.output, 'w') as file:
+        file.write(mission_json_text)
+        print(f"Wrote contents to {args.output}.")
 
 ```
 </details>

@@ -9,3 +9,11 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
+## <><code class="docs-submodule">submodule</code></> map <Link to="/sdk/python/steeleagle_sdk/tools/map"><GoFileSymlinkFile size={25} /></Link>
+
+
+---
+## <><code class="docs-submodule">submodule</code></> language_server <Link to="/sdk/python/steeleagle_sdk/tools/language_server"><GoFileSymlinkFile size={25} /></Link>
+
+
+---

@@ -9,12 +9,12 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> ElevateToAltitude
+## <><code class="docs-class">class</code></> ElevateToAltitude
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -63,12 +63,12 @@ class ElevateToAltitude(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> PrePatrolSequence
+## <><code class="docs-class">class</code></> PrePatrolSequence
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -89,12 +89,12 @@ class PrePatrolSequence(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Patrol
+## <><code class="docs-class">class</code></> Patrol
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -133,12 +133,12 @@ class Patrol(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Track
+## <><code class="docs-class">class</code></> Track
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 

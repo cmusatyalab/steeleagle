@@ -11,7 +11,7 @@ Generated protocol buffer code.
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> AltitudeMode
+## <><code class="docs-class">class</code></> AltitudeMode
 
 *Inherits from: <code>int</code>*
 
@@ -29,7 +29,7 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> HeadingMode
+## <><code class="docs-class">class</code></> HeadingMode
 
 *Inherits from: <code>int</code>*
 
@@ -47,7 +47,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReferenceFrame
+## <><code class="docs-class">class</code></> ReferenceFrame
 
 *Inherits from: <code>int</code>*
 
@@ -65,7 +65,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> PoseMode
+## <><code class="docs-class">class</code></> PoseMode
 
 *Inherits from: <code>int</code>*
 
@@ -84,7 +84,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConnectRequest
+## <><code class="docs-class">class</code></> ConnectRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -106,7 +106,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DisconnectRequest
+## <><code class="docs-class">class</code></> DisconnectRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -128,7 +128,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ArmRequest
+## <><code class="docs-class">class</code></> ArmRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -150,7 +150,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> DisarmRequest
+## <><code class="docs-class">class</code></> DisarmRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -165,7 +165,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> JoystickRequest
+## <><code class="docs-class">class</code></> JoystickRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -174,7 +174,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> TakeOffRequest
+## <><code class="docs-class">class</code></> TakeOffRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -183,7 +183,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> LandRequest
+## <><code class="docs-class">class</code></> LandRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -192,7 +192,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> HoldRequest
+## <><code class="docs-class">class</code></> HoldRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -201,7 +201,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> KillRequest
+## <><code class="docs-class">class</code></> KillRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -210,7 +210,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetHomeRequest
+## <><code class="docs-class">class</code></> SetHomeRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -219,7 +219,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReturnToHomeRequest
+## <><code class="docs-class">class</code></> ReturnToHomeRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -228,7 +228,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetGlobalPositionRequest
+## <><code class="docs-class">class</code></> SetGlobalPositionRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -237,7 +237,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetRelativePositionRequest
+## <><code class="docs-class">class</code></> SetRelativePositionRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -246,7 +246,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetVelocityRequest
+## <><code class="docs-class">class</code></> SetVelocityRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -255,7 +255,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetHeadingRequest
+## <><code class="docs-class">class</code></> SetHeadingRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -264,7 +264,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetGimbalPoseRequest
+## <><code class="docs-class">class</code></> SetGimbalPoseRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -273,7 +273,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ImagingSensorConfiguration
+## <><code class="docs-class">class</code></> ImagingSensorConfiguration
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -282,7 +282,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureImagingSensorStreamRequest
+## <><code class="docs-class">class</code></> ConfigureImagingSensorStreamRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 
@@ -291,7 +291,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureTelemetryStreamRequest
+## <><code class="docs-class">class</code></> ConfigureTelemetryStreamRequest
 
 *Inherits from: <code>google.protobuf.message.Message</code>*
 

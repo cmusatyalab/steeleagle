@@ -11,7 +11,7 @@ Client and server classes corresponding to protobuf-defined services.
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> add_ControlServicer_to_server
+## <><code class="docs-func">func</code></> add_ControlServicer_to_server
 
 _Call Type: normal_
 
@@ -28,7 +28,7 @@ def add_ControlServicer_to_server(servicer, server):
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ControlStub
+## <><code class="docs-class">class</code></> ControlStub
 
 *Inherits from: <code>object</code>*
 
@@ -92,7 +92,7 @@ class ControlStub(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ControlServicer
+## <><code class="docs-class">class</code></> ControlServicer
 
 *Inherits from: <code>object</code>*
 
@@ -108,7 +108,7 @@ telemetry or listen for `IN_PROGRESS` response heartbeats which are
 streamed back from the RPC while executing an operation.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Connect
+### <><code class="docs-method">method</code></> Connect
 
 _Call Type: normal_
 
@@ -118,7 +118,7 @@ Connect to the vehicle.
 Connects to the underlying vehicle hardware. Generally, this 
 method is called by the law authority on startup and is not
 called by user code.
-### <><code style={{color: '#10c45b'}}>method</code></> Disconnect
+### <><code class="docs-method">method</code></> Disconnect
 
 _Call Type: normal_
 
@@ -128,7 +128,7 @@ Disconnect from the vehicle.
 Disconnects from the underlying vehicle hardware. Generally,
 this method is called by the law authority when it attempts
 a driver restart and is not called by user code.
-### <><code style={{color: '#10c45b'}}>method</code></> Arm
+### <><code class="docs-method">method</code></> Arm
 
 _Call Type: normal_
 
@@ -140,7 +140,7 @@ are run, otherwise the methods will return `FAILED_PRECONDITION`.
 Once the vehicle is armed, all subsequent actuation methods
 _will move the vehicle_. Make sure to go over the manufacturer
 recommended vehicle-specific pre-operation checklist before arming.
-### <><code style={{color: '#10c45b'}}>method</code></> Disarm
+### <><code class="docs-method">method</code></> Disarm
 
 _Call Type: normal_
 
@@ -149,7 +149,7 @@ Order the vehicle to disarm.
 
 Disarms the vehicle. Prevents any further actuation methods
 from executing, unless the vehicle is re-armed.
-### <><code style={{color: '#10c45b'}}>method</code></> Joystick
+### <><code class="docs-method">method</code></> Joystick
 
 _Call Type: normal_
 
@@ -160,7 +160,7 @@ Causes the vehicle to accelerate towards a provided velocity
 setpoint over a provided duration. This is useful for fine-grained 
 control based on streamed datasink results or for tele-operating 
 the vehicle from a remote commander.
-### <><code style={{color: '#10c45b'}}>method</code></> TakeOff
+### <><code class="docs-method">method</code></> TakeOff
 
 _Call Type: normal_
 
@@ -169,7 +169,7 @@ Order the vehicle to take off.
 
 Causes the vehicle to take off to a specified take off altitude.
 If the vehicle is not a UAV, this method will be unimplemented.
-### <><code style={{color: '#10c45b'}}>method</code></> Land
+### <><code class="docs-method">method</code></> Land
 
 _Call Type: normal_
 
@@ -178,7 +178,7 @@ Order the vehicle to land.
 
 Causes the vehicle to land at its current location. If the 
 vehicle is not a UAV, this method will be unimplemented.
-### <><code style={{color: '#10c45b'}}>method</code></> Hold
+### <><code class="docs-method">method</code></> Hold
 
 _Call Type: normal_
 
@@ -187,7 +187,7 @@ Order the vehicle to hold/loiter.
 
 Causes the vehicle to hold at its current location and to
 cancel any ongoing movement commands (`ReturnToHome` e.g.).
-### <><code style={{color: '#10c45b'}}>method</code></> Kill
+### <><code class="docs-method">method</code></> Kill
 
 _Call Type: normal_
 
@@ -197,7 +197,7 @@ Orders an emergency shutdown of the vehicle motors.
 Causes the vehicle to immediately turn off its motors. _If the 
 vehicle is a UAV, this will result in a freefall_. Use this
 method only in emergency situations.
-### <><code style={{color: '#10c45b'}}>method</code></> SetHome
+### <><code class="docs-method">method</code></> SetHome
 
 _Call Type: normal_
 
@@ -207,7 +207,7 @@ Set the home location of the vehicle.
 Changes the home location of the vehicle. Future `ReturnToHome`
 commands will move the vehicle to the provided location instead
 of its starting position.
-### <><code style={{color: '#10c45b'}}>method</code></> ReturnToHome
+### <><code class="docs-method">method</code></> ReturnToHome
 
 _Call Type: normal_
 
@@ -219,7 +219,7 @@ has not been explicitly set, this will be its start position (defined
 as its takeoff position for UAVs). If the home position has been 
 explicitly set, by `SetHome`, the vehicle will return to that 
 position instead.
-### <><code style={{color: '#10c45b'}}>method</code></> SetGlobalPosition
+### <><code class="docs-method">method</code></> SetGlobalPosition
 
 _Call Type: normal_
 
@@ -249,7 +249,7 @@ target altitude, linearly interpolating this movement over the duration of
 travel. The vehicle will interpret altitude from `altitude_mode` as follows:
 - `ABSOLUTE` -> altitude is relative to MSL (Mean Sea Level)
 - `RELATIVE` -> altitude is relative to take off position
-### <><code style={{color: '#10c45b'}}>method</code></> SetRelativePosition
+### <><code class="docs-method">method</code></> SetRelativePosition
 
 _Call Type: normal_
 
@@ -270,7 +270,7 @@ by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
 
 If no maximum velocity is provided, the driver will use a preset speed usually 
 determined by the manufacturer or hardware settings.
-### <><code style={{color: '#10c45b'}}>method</code></> SetVelocity
+### <><code class="docs-method">method</code></> SetVelocity
 
 _Call Type: normal_
 
@@ -282,7 +282,7 @@ Error tolerance is determined by the driver. The vehicle will interpret
 the input velocity according to `frame` as follows:
 - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
-### <><code style={{color: '#10c45b'}}>method</code></> SetHeading
+### <><code class="docs-method">method</code></> SetHeading
 
 _Call Type: normal_
 
@@ -293,7 +293,7 @@ Causes the vehicle to turn to face the provided global position. The vehicle
 will interpret the final heading according to `heading_mode`:
 - `TO_TARGET` -> turn to face the target position bearing
 - `HEADING_START` -> turn to face the provided heading in the global position object.
-### <><code style={{color: '#10c45b'}}>method</code></> SetGimbalPose
+### <><code class="docs-method">method</code></> SetGimbalPose
 
 _Call Type: normal_
 
@@ -310,7 +310,7 @@ The vehicle will interpret the new pose angles according to `frame`
 as follows:
 - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureImagingSensorStream
+### <><code class="docs-method">method</code></> ConfigureImagingSensorStream
 
 _Call Type: normal_
 
@@ -319,7 +319,7 @@ Configure the vehicle imaging stream.
 
 Sets which imaging sensors are streaming and sets their target
 frame rates.
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureTelemetryStream
+### <><code class="docs-method">method</code></> ConfigureTelemetryStream
 
 _Call Type: normal_
 
@@ -605,7 +605,7 @@ class ControlServicer(object):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Control
+## <><code class="docs-class">class</code></> Control
 
 *Inherits from: <code>object</code>*
 
@@ -621,75 +621,75 @@ telemetry or listen for `IN_PROGRESS` response heartbeats which are
 streamed back from the RPC while executing an operation.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> Connect
+### <><code class="docs-method">method</code></> Connect
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Disconnect
+### <><code class="docs-method">method</code></> Disconnect
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Arm
+### <><code class="docs-method">method</code></> Arm
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Disarm
+### <><code class="docs-method">method</code></> Disarm
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Joystick
+### <><code class="docs-method">method</code></> Joystick
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> TakeOff
+### <><code class="docs-method">method</code></> TakeOff
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Land
+### <><code class="docs-method">method</code></> Land
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Hold
+### <><code class="docs-method">method</code></> Hold
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> Kill
+### <><code class="docs-method">method</code></> Kill
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetHome
+### <><code class="docs-method">method</code></> SetHome
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> ReturnToHome
+### <><code class="docs-method">method</code></> ReturnToHome
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetGlobalPosition
+### <><code class="docs-method">method</code></> SetGlobalPosition
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetRelativePosition
+### <><code class="docs-method">method</code></> SetRelativePosition
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetVelocity
+### <><code class="docs-method">method</code></> SetVelocity
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetHeading
+### <><code class="docs-method">method</code></> SetHeading
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> SetGimbalPose
+### <><code class="docs-method">method</code></> SetGimbalPose
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureImagingSensorStream
+### <><code class="docs-method">method</code></> ConfigureImagingSensorStream
 
 _Call Type: normal_
 
-### <><code style={{color: '#10c45b'}}>method</code></> ConfigureTelemetryStream
+### <><code class="docs-method">method</code></> ConfigureTelemetryStream
 
 _Call Type: normal_
 

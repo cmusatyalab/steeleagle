@@ -9,7 +9,7 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#13a6cf'}}>func</code></> resolve_symbols
+## <><code class="docs-func">func</code></> resolve_symbols
 
 _Call Type: normal_
 
@@ -76,7 +76,7 @@ def resolve_symbols(mir: MissionIR) -> MissionIR:
 </details>
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ResolverException
+## <><code class="docs-class">class</code></> ResolverException
 
 *Inherits from: <code>Exception</code>*
 

@@ -20,7 +20,7 @@ streamed back from the RPC while executing an operation.
 
 ---
 
-## <><code style={{color: '#e0a910'}}>attr</code></> STUB
+## <><code class="docs-attr">attr</code></> STUB
 
 _Type:_ <code><Link to="/sdk/python/steeleagle_sdk/protocol/services/control_service_pb2_grpc#class-controlstub">ControlStub</Link></code>
 
@@ -30,7 +30,7 @@ Stub that is automatically set at runtime so that actions
 for this service can connect to grpc.
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Connect
+## <><code class="docs-class">class</code></> Connect
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -41,7 +41,7 @@ method is called by the law authority on startup and is not
 called by user code.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -79,7 +79,7 @@ class Connect(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Disconnect
+## <><code class="docs-class">class</code></> Disconnect
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -90,7 +90,7 @@ this method is called by the law authority when it attempts
 a driver restart and is not called by user code.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -128,7 +128,7 @@ class Disconnect(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Arm
+## <><code class="docs-class">class</code></> Arm
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -141,7 +141,7 @@ _will move the vehicle_. Make sure to go over the manufacturer
 recommended vehicle-specific pre-operation checklist before arming.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -181,7 +181,7 @@ class Arm(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Disarm
+## <><code class="docs-class">class</code></> Disarm
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -191,7 +191,7 @@ Disarms the vehicle. Prevents any further actuation methods
 from executing, unless the vehicle is re-armed.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -228,7 +228,7 @@ class Disarm(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Joystick
+## <><code class="docs-class">class</code></> Joystick
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -239,13 +239,13 @@ setpoint over a provided duration. This is useful for fine-grained
 control based on streamed datasink results or for tele-operating 
 the vehicle from a remote commander.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> target velocity to move towards
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> target velocity to move towards
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;duration**&nbsp;&nbsp;(<code>google.protobuf.duration_pb2.Duration</code>) <text>&#8212;</text> time of actuation after which the vehicle will Hold
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;duration**&nbsp;&nbsp;(<code>google.protobuf.duration_pb2.Duration</code>) <text>&#8212;</text> time of actuation after which the vehicle will Hold
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -290,7 +290,7 @@ class Joystick(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> TakeOff
+## <><code class="docs-class">class</code></> TakeOff
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -299,11 +299,11 @@ Order the vehicle to take off.
 Causes the vehicle to take off to a specified take off altitude.
 If the vehicle is not a UAV, this method will be unimplemented.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;take_off_altitude**&nbsp;&nbsp;(<code>float</code>) <text>&#8212;</text> take off height in relative altitude [meters]
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;take_off_altitude**&nbsp;&nbsp;(<code>float</code>) <text>&#8212;</text> take off height in relative altitude [meters]
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -344,7 +344,7 @@ class TakeOff(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Land
+## <><code class="docs-class">class</code></> Land
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -354,7 +354,7 @@ Causes the vehicle to land at its current location. If the
 vehicle is not a UAV, this method will be unimplemented.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -391,7 +391,7 @@ class Land(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Hold
+## <><code class="docs-class">class</code></> Hold
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -401,7 +401,7 @@ Causes the vehicle to hold at its current location and to
 cancel any ongoing movement commands (`ReturnToHome` e.g.).
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -438,7 +438,7 @@ class Hold(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Kill
+## <><code class="docs-class">class</code></> Kill
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -449,7 +449,7 @@ vehicle is a UAV, this will result in a freefall_. Use this
 method only in emergency situations.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -487,7 +487,7 @@ class Kill(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetHome
+## <><code class="docs-class">class</code></> SetHome
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -497,11 +497,11 @@ Changes the home location of the vehicle. Future `ReturnToHome`
 commands will move the vehicle to the provided location instead
 of its starting position.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> new home location
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> new home location
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -543,7 +543,7 @@ class SetHome(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ReturnToHome
+## <><code class="docs-class">class</code></> ReturnToHome
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -556,7 +556,7 @@ explicitly set, by `SetHome`, the vehicle will return to that
 position instead.
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -596,7 +596,7 @@ class ReturnToHome(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetGlobalPosition
+## <><code class="docs-class">class</code></> SetGlobalPosition
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -626,17 +626,17 @@ travel. The vehicle will interpret altitude from `altitude_mode` as follows:
 - `ABSOLUTE` &#8594; altitude is relative to MSL (Mean Sea Level)
 - `RELATIVE` &#8594; altitude is relative to take off position
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> target global position
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> target global position
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;heading_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-headingmode">HeadingMode</Link>]</code>) <text>&#8212;</text> determines how the vehicle will orient during transit (default: `TO_TARGET`)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;heading_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-headingmode">HeadingMode</Link>]</code>) <text>&#8212;</text> determines how the vehicle will orient during transit (default: `TO_TARGET`)
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;altitude_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-altitudemode">AltitudeMode</Link>]</code>) <text>&#8212;</text> determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;altitude_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-altitudemode">AltitudeMode</Link>]</code>) <text>&#8212;</text> determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;max_velocity**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link>]</code>) <text>&#8212;</text> maximum velocity during transit
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;max_velocity**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link>]</code>) <text>&#8212;</text> maximum velocity during transit
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -704,7 +704,7 @@ class SetGlobalPosition(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetRelativePosition
+## <><code class="docs-class">class</code></> SetRelativePosition
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -725,15 +725,15 @@ by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
 If no maximum velocity is provided, the driver will use a preset speed usually 
 determined by the manufacturer or hardware settings.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> target relative position
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> target relative position
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;max_velocity**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link>]</code>) <text>&#8212;</text> maximum velocity during transit
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;max_velocity**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link>]</code>) <text>&#8212;</text> maximum velocity during transit
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -790,7 +790,7 @@ class SetRelativePosition(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetVelocity
+## <><code class="docs-class">class</code></> SetVelocity
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -802,13 +802,13 @@ the input velocity according to `frame` as follows:
 - `BODY` &#8594; (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
 - `NEU` &#8594; (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;velocity**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> target velocity
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> target velocity
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -854,7 +854,7 @@ class SetVelocity(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetHeading
+## <><code class="docs-class">class</code></> SetHeading
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -865,13 +865,13 @@ will interpret the final heading according to `heading_mode`:
 - `TO_TARGET` &#8594; turn to face the target position bearing
 - `HEADING_START` &#8594; turn to face the provided heading in the global position object.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> target heading or global location to look at
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> target heading or global location to look at
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;heading_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-headingmode">HeadingMode</Link>]</code>) <text>&#8212;</text> determines how the drone will orient
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;heading_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-headingmode">HeadingMode</Link>]</code>) <text>&#8212;</text> determines how the drone will orient
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -916,7 +916,7 @@ class SetHeading(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> SetGimbalPose
+## <><code class="docs-class">class</code></> SetGimbalPose
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -933,17 +933,17 @@ as follows:
 - `BODY` &#8594; (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
 - `NEU` &#8594; (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the target gimbal
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> ID of the target gimbal
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;pose**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> target pose
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> target pose
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;pose_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-posemode">PoseMode</Link>]</code>) <text>&#8212;</text> specifies how to interpret the target pose
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_mode**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-posemode">PoseMode</Link>]</code>) <text>&#8212;</text> specifies how to interpret the target pose
 
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;frame**&nbsp;&nbsp;(<code>Optional[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-referenceframe">ReferenceFrame</Link>]</code>) <text>&#8212;</text> frame of reference
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -998,7 +998,7 @@ class SetGimbalPose(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureImagingSensorStream
+## <><code class="docs-class">class</code></> ConfigureImagingSensorStream
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -1007,11 +1007,11 @@ Configure the vehicle imaging stream.
 Sets which imaging sensors are streaming and sets their target
 frame rates.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;configurations**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-imagingsensorconfiguration">ImagingSensorConfiguration</Link>]</code>) <text>&#8212;</text> list of configurations to be updated
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;configurations**&nbsp;&nbsp;(<code>List[<Link to="/sdk/python/steeleagle_sdk/api/datatypes/control#class-imagingsensorconfiguration">ImagingSensorConfiguration</Link>]</code>) <text>&#8212;</text> list of configurations to be updated
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -1052,7 +1052,7 @@ class ConfigureImagingSensorStream(Action):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> ConfigureTelemetryStream
+## <><code class="docs-class">class</code></> ConfigureTelemetryStream
 
 *Inherits from: <code><Link to="/sdk/python/steeleagle_sdk/api/base#class-action">Action</Link></code>*
 
@@ -1060,11 +1060,11 @@ Configure the vehicle telemetry stream.
 
 Sets the frequency of the telemetry stream.
 #### Attributes
-**<><code style={{color: '#e0a910'}}>attr</code></>&nbsp;&nbsp;frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target frequency of telemetry generation, in Hz
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;frequency**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> target frequency of telemetry generation, in Hz
 
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 

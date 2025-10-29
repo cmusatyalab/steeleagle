@@ -9,14 +9,14 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 ---
 
-## <><code style={{color: '#b52ee6'}}>class</code></> Action
+## <><code class="docs-class">class</code></> Action
 
 *Inherits from: <code>pydantic.BaseModel</code>*
 
 Pydantic base model for actions (things you execute).
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> execute
+### <><code class="docs-method">method</code></> execute
 
 _Call Type: async_
 
@@ -44,14 +44,14 @@ class Action(BaseModel):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Event
+## <><code class="docs-class">class</code></> Event
 
 *Inherits from: <code>pydantic.BaseModel</code>*
 
 Pydantic base model for events (things you wait/observe).
 
 
-### <><code style={{color: '#10c45b'}}>method</code></> check
+### <><code class="docs-method">method</code></> check
 
 _Call Type: async_
 
@@ -79,7 +79,7 @@ class Event(BaseModel):
 
 
 ---
-## <><code style={{color: '#b52ee6'}}>class</code></> Datatype
+## <><code class="docs-class">class</code></> Datatype
 
 *Inherits from: <code>pydantic.BaseModel</code>*
 
