@@ -7,11 +7,14 @@ import os
 import time
 
 import cv2
+from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from google.protobuf import text_format
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 FRAME_ID = 0
@@ -34,8 +37,6 @@ class TestAdapter:
         self.gimbal_pitch = args.pitch
         self.model = args.model
 
-        # Store the latest results from each engine
-        self.engine_results = {}
         image_path = args.image
         # Setup image source
         if os.path.isdir(image_path):
@@ -67,26 +68,14 @@ class TestAdapter:
             f"Received {len(result_wrapper.results)} results from engine: {engine_id}"
         )
 
-        # Process each result
+        extras = cognitive_engine.unpack_extras(
+            result_pb2.ComputeResult, result_wrapper
+        )
+        logger.info(f"=====Extras=====\t{text_format.MessageToString(extras)}")
         for result in result_wrapper.results:
             if result.payload_type == gabriel_pb2.PayloadType.TEXT:
                 payload = result.payload.decode("utf-8")
-                # Save result for the corresponding engine
-                timestamp = time.time()
-                self.engine_results[engine_id] = {
-                    "payload": payload,
-                    "timestamp": timestamp,
-                }
-
-                # Process results differently based on engine type
-                if "openscout-object" in engine_id.lower():
-                    logger.info(f"Detection result: {payload}")
-                # else:
-                #     logger.debug(f"Other engine result ({engine_id}): {payload}")
-            else:
-                logger.info(
-                    f"Got non-text result type {result.payload_type} from {engine_id}"
-                )
+                logger.info(f"=====result.payload=====\t{payload}")
 
     def get_producer_wrappers(self):
         async def producer():
@@ -147,14 +136,6 @@ class TestAdapter:
                 target_engine_ids="openscout-object",
             )
         ]
-
-    def print_all_results(self):
-        """Print the latest results from alprocess_resultsl engines"""
-        logger.info("==== Current Results from All Engines ====")
-        for engine, data in self.engine_results.items():
-            logger.info(f"Engine: {engine}, Time: {data['timestamp']}")
-            logger.info(f"Payload: {data['payload'][:100]}...")
-        logger.info("=========================================")
 
     async def run(self):
         logger.info(f"Starting ZeroMQ client connecting to {self.server}:{self.port}")
