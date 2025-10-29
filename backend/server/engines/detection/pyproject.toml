@@ -1,7 +1,7 @@
 [project]
-name = "steeleagle-backend"
+name = "steeleagle-backend-detection"
 version = "1.0.0"
-description = "Add your description here"
+description = "Object detection using YOLOv5 models"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -17,7 +17,7 @@ dependencies = [
    "gabriel-protocol",
    "gabriel-client",
    "steeleagle-sdk",
-   "torch==2.7.1"
+   "torch"
 ]
 
 [tool.uv.sources]

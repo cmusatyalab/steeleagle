@@ -1,0 +1,20 @@
+[project]
+name = "steeleagle-backend-avoidance"
+version = "1.0.0"
+description = "Monocular obstacle avoidance using Metric3D (or MiDaS)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+   "redis",
+   "torch == 2.0.1",
+   "torchvision == 0.15.2",
+   "numpy == 1.23.1",
+   "xformers == 0.0.21",
+   "matplotlib",
+   "mmcv-lite",
+   "Pillow",
+   "DateTime"
+]
+
+[tool.uv.sources]
+steeleagle-sdk = { workspace = true }
