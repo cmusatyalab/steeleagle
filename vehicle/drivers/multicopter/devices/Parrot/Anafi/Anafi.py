@@ -1,12 +1,23 @@
-# Interface import
+# General imports
+import asyncio
+from asyncio import futures
+import logging
+import grpc
+
+# SDK imports
 from multicopter.shared.parrot_olympe import ParrotOlympeDrone
-# Olympe SDK import
 from olympe.messages.gimbal import attitude
+
+# Protocol imports
+from steeleagle_sdk.protocol.services import control_service_pb2_grpc
+
+# Utility imports
 from util.config import query_config
 from util.log import setup_logging
 from util.cleanup import register_cleanup_handler
-setup_logging()
 
+setup_logging()
+logger = logging.getLogger("driver/Anafi")
 class Anafi(ParrotOlympeDrone):
 
     def __init__(self, drone_id, **kwargs):
@@ -38,6 +49,7 @@ async def main():
     server.add_insecure_port(query_config("internal.services.driver"))
     await server.start()
     logger.info("Services started!")
+
     try:
         await server.wait_for_termination()
     except (SystemExit, asyncio.exceptions.CancelledError):
