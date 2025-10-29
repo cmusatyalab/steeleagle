@@ -104,12 +104,12 @@ services:
         "-hsv",
         "${HSV_THRESHOLD}",
         "--geofence",
-        "{GEOFENCE_FILE}",
+        "${GEOFENCE_FILE}",
         "--ttl",
-        "{OBJECT_TTL}",
-        "{GEOFENCE_ENABLED}",
+        "${OBJECT_TTL}",
+        "${GEOFENCE_ENABLED}",
         "--radius",
-        "{OBJECT_RADIUS}"
+        "${OBJECT_RADIUS}"
       ]
     runtime: nvidia
     volumes:
