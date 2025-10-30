@@ -15,6 +15,3 @@ dependencies = [
    "Pillow",
    "DateTime"
 ]
-
-[tool.uv.sources]
-steeleagle-sdk = { workspace = true }

@@ -19,6 +19,3 @@ dependencies = [
    "steeleagle-sdk",
    "torch"
 ]
-
-[tool.uv.sources]
-steeleagle-sdk = { workspace = true }
