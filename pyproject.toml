@@ -11,5 +11,6 @@ members = [
     "sdk",
     "vehicle",
     "gcs",
-    "backend"
+    "backend/server/engines/detection",
+    "backend/server/engines/avoidance"
 ]
