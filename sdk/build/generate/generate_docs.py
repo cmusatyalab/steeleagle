@@ -324,7 +324,7 @@ def generate_native_source_docs():
             comment = get_comments((5, i), location_map, docstring=True)
             values = []
             for j, value in enumerate(enum.value):
-                values.append(Arg(value.name, j, get_comments((5, i, 2, j), location_map)))
+                values.append(Arg(value.name, f'`{j}`', get_comments((5, i, 2, j), location_map)))
             types.append(Type(name, values, True, comment))
 
         # Collect messages
@@ -343,6 +343,8 @@ def generate_native_source_docs():
                         md_link = type_name.replace(' ', '-').lower()
                         href = link.replace(f'/{type_name}', f'#{ftype}-{md_link}')
                         ftype = f'<code><Link to="{PB_LINK_PREFIX}{href}">{type_name}</Link></code>'
+                else:
+                    ftype = f'`{ftype}`'
                 fields.append(Arg(field.name, ftype, get_comments((4, i, 2, j), location_map)))
             types.append(Type(name, fields, False, comment))
         
