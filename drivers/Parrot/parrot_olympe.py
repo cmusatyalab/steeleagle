@@ -8,31 +8,31 @@ import numpy as np
 import os
 import grpc
 import zmq
+import zmq.asyncio
 
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
-from olympe.messages.ardrone3.Piloting import TakeOff, Landing
+from olympe.messages.ardrone3.Piloting import Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.move import extended_move_to
 from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state, takeoff_location
 import olympe.enums.rth as rth_state
 from olympe.messages.common.CommonState import BatteryStateChanged
-from olympe.messages.ardrone3.SpeedSettingsState import MaxVerticalSpeedChanged, MaxRotationSpeedChanged
-from olympe.messages.ardrone3.PilotingState import HeadingLockedStateChanged, AttitudeChanged, GpsLocationChanged, GpsFixStateChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged
+from olympe.messages.ardrone3.SpeedSettingsState import MaxRotationSpeedChanged
+from olympe.messages.ardrone3.PilotingState import HeadingLockedStateChanged, AttitudeChanged, GpsLocationChanged, AltitudeChanged, FlyingStateChanged, SpeedChanged, moveToChanged, moveByChanged
+from olympe.messages.ardrone3.GPSSettingsState import GPSFixStateChanged
 from olympe.messages.alarms import alarms
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
-import olympe.enums.gimbal as gimbal_mode
 import olympe.enums.move as move_mode
-from olympe.messages.common.CalibrationState import MagnetoCalibrationRequiredState
 
 # protocol imports
-from proto_build.services.control_service_pb2_grpc import ControlServicer
-from proto_build import common_pb2 as common_protocol
-from proto_build.services import control_service_pb2 as control_protocol
-from proto_build.messages import telemetry_pb2 as telemetry_protocol
-from proto_build.rpc_helpers import generate_response
+import common_pb2 as common_protocol
+from services.control_service_pb2_grpc import ControlServicer
+from services import control_service_pb2 as control_protocol
+from messages import telemetry_pb2 as telemetry_protocol
+from rpc_helpers import generate_response
 import google.protobuf.duration_pb2 as Duration
 
 # Streaming imports
@@ -41,24 +41,20 @@ import cv2
 import queue
 
 # Utility imports
-from ...vehicle.util.sockets import setup_zmq_socket, SocketOperation
 logger = logging.getLogger("Parrot/Olympe")
+
+TELEMETRY_SOCK = 'ipc:///tmp/driver_telem.sock'
+IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
 
 # TODO: Remove get type
 # Remove streaming from SetHome
 # Get streaming threads for telem/imagery to work
 telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
-setup_zmq_socket(
-    telemetry_sock,
-    'internal.streams.driver_telemetry',
-    SocketOperation.BIND
-)
+telemetry_sock.bind(TELEMETRY_SOCK)
+
 cam_sock = zmq.asyncio.Context().socket(zmq.PUB)
-setup_zmq_socket(
-    cam_sock,
-    'internal.streams.imagery',
-    SocketOperation.BIND
-)
+cam_sock.bind(IMAGERY_SOCK)
+
 
 
 class ParrotOlympeDrone(ControlServicer):
@@ -72,6 +68,7 @@ class ParrotOlympeDrone(ControlServicer):
         GUIDED_ENU = 'GUIDED_ENU'
 
     def __init__(self, drone_id, connection_string, **kwargs):
+        logger.info(f"Initializing ParrotOlympe driver")
         self._drone_id = drone_id
         self._connection_string = connection_string
         self._kwargs = kwargs
@@ -84,10 +81,7 @@ class ParrotOlympeDrone(ControlServicer):
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
         self._gimbal_id = 0
-        self._streaming_thread = self.PDRAWImageStreamingThread(self._drone, cam_sock)
-        self._streaming_thread.start()
-        self._telemetry_thread = self.TelemetryStreamingThread(self._drone, telemetry_sock)
-        self._telemetry_thread.start()
+
     ''' Interface methods '''
     async def Connect(self, request, context):
         try:
@@ -98,6 +92,15 @@ class ParrotOlympeDrone(ControlServicer):
                 await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
 
             logger.info("Completed connection to digital drone...")
+
+            self._telemetry_thread = self.TelemetryStreamingThread(self._drone, telemetry_sock)
+            self._telemetry_thread.start()
+            logger.info("Started telemetry streaming thread...")
+
+            self._streaming_thread = self.PDRAWImageStreamingThread(self._drone, cam_sock)
+            self._streaming_thread.start()
+            logger.info("Started image streaming thread...")
+
             return generate_response(
                 resp_type=common_protocol.ResponseStatus.COMPLETED,
                 resp_string="Connected to digital drone",
@@ -643,7 +646,7 @@ class ParrotOlympeDrone(ControlServicer):
         return location
 
     def _get_gps_state(self):
-        state = self._drone.get_state(GpsFixStateChanged)
+        state = self._drone.get_state(GPSFixStateChanged)
         sats = self._drone._get_satellites()
         if not state["fixed"]:
             return telemetry_protocol.GPSWarning.NO_FIX

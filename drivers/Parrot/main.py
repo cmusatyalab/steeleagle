@@ -1,29 +1,31 @@
 from Anafi.Anafi import Anafi
 import asyncio
-from asyncio import futures
+from concurrent import futures
 import grpc
 import logging
 
-# Utility imports
-from ...vehicle.util.log import setup_logging
-from ...vehicle.util.config import query_config
-from ...vehicle.util.cleanup import register_cleanup_handler
-
-# Protocol imports
-from proto_build.services import control_service_pb2_grpc
-
-setup_logging()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger("Parrot/main")
 
+# Protocol imports
+from services import control_service_pb2_grpc
+
+
+DRIVER_SOCK = 'unix:///tmp/driver.sock'
+DRONE_IP = "10.202.0.1"
+
 async def main():
-    register_cleanup_handler()
+    logger.info("Starting driver services...")
     server = grpc.aio.server(
         migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10)
     )
     control_service_pb2_grpc.add_ControlServicer_to_server(
-        Anafi("Anafi"), server
+        Anafi("Anafi", DRONE_IP), server
     )
-    server.add_insecure_port(query_config("internal.services.driver"))
+    server.add_insecure_port(DRIVER_SOCK)
     await server.start()
     logger.info("Services started!")
 
