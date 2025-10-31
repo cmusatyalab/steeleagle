@@ -29,7 +29,7 @@ services:
     container_name: telemetry-engine
     restart: on-failure:3
     privileged: true
-    entrypoint: [ "./telemetry.py", "-a", "${REDIS_AUTH}"]
+    entrypoint: [ "uv", "run", "./telemetry.py", "-a", "${REDIS_AUTH}"]
     depends_on:
       - gabriel-server
     networks:
@@ -37,8 +37,6 @@ services:
       - redis
     volumes:
       - ./steeleagle-vol:/images/
-    environment:
-      - PYTHONPATH=/protocol
     logging:
       driver: "json-file"
       options:

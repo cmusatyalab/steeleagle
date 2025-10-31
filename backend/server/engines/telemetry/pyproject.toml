@@ -1,0 +1,16 @@
+[project]
+name = "steeleagle-backend-telemetry"
+version = "1.0.0"
+description = "Proesses telemetry payloads from vehicles."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+   "redis",
+   "opencv-python-headless>=3, <5",
+   "numpy",
+   "pytz",
+   "Pillow",
+   "gabriel-server>=4.0.1",
+   "gabriel-protocol",
+   "steeleagle-sdk",
+]
