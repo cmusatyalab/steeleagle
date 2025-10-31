@@ -1,0 +1,12 @@
+[project]
+name = "steeleagle-parrot-driver"
+version = "0.1.0"
+description = "Parrot Olympe Driver for SteelEagle"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "grpcio==1.43.0",
+    "grpcio-tools==1.43.0",
+    "parrot-olympe>=7.7.5",
+    "protobuf==3.19.4",
+]

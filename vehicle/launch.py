@@ -6,12 +6,11 @@ import argparse
 from util.cleanup import register_cleanup_handler
 register_cleanup_handler()
 
-def start_services(script, log):
+def start_services(log):
     running = []
     logger = ['python', 'logger/main.py']
     core = [
         ['python', 'mission/main.py'], # Mission
-        ['python', query_config('vehicle.script')], # Driver
         ['python', 'kernel/main.py'] # Kernel
     ]
     if log:
@@ -59,10 +58,9 @@ if __name__ == '__main__':
     os.environ['LAWPATH'] = args.law
     
     from util.config import query_config
-    script = query_config('vehicle.script')
     log = query_config('logging.generate_flight_log')
 
     if args.test:
         test_services(args.test, log)
     else:
-        start_services(script, log)
+        start_services (log)

@@ -59,6 +59,7 @@ _gen_*
 vehicle/config.toml
 vehicle/configs
 vehicle/docker-compose.*
+vehicle/drivers/proto_build/
 
 # Secrets
 secrets.toml

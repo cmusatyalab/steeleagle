@@ -21,5 +21,5 @@ dependencies = [
     "toml>=0.10.2",
     "zmq>=0.0.0",
     "pillow>=11.3.0",
-    "dacite>=1.9.2",
+    "dacite>=1.9.2"
 ]
