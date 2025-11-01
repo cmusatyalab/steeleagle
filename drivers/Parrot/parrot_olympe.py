@@ -29,12 +29,13 @@ import olympe.enums.move as move_mode
 
 # protocol imports
 import common_pb2 as common_protocol
+from common_pb2 import Request, Response
 from services.control_service_pb2_grpc import ControlServicer
 from services import control_service_pb2 as control_protocol
 from messages import telemetry_pb2 as telemetry_protocol
-from rpc_helpers import generate_response
 import google.protobuf.duration_pb2 as Duration
-
+from google.protobuf.timestamp_pb2 import Timestamp
+    
 # Streaming imports
 import threading
 import cv2
@@ -49,13 +50,22 @@ IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
 # TODO: Remove get type
 # Remove streaming from SetHome
 # Get streaming threads for telem/imagery to work
-telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
+telemetry_sock = zmq.Context().socket(zmq.PUB)
 telemetry_sock.bind(TELEMETRY_SOCK)
 
-cam_sock = zmq.asyncio.Context().socket(zmq.PUB)
+cam_sock = zmq.Context().socket(zmq.PUB)
 cam_sock.bind(IMAGERY_SOCK)
 
-
+def generate_response(resp_type, resp_string=""):
+    '''
+    Generates a protobuf response object for an RPC given a
+    response type and optional response string.
+    '''
+    return Response(
+            status=resp_type,
+            response_string=resp_string,
+            timestamp=Timestamp().GetCurrentTime()
+            )
 
 class ParrotOlympeDrone(ControlServicer):
 
@@ -81,6 +91,21 @@ class ParrotOlympeDrone(ControlServicer):
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
         self._gimbal_id = 0
+        
+        self._drone = Drone(self._connection_string)
+        result = self._drone.connect()
+        if not result:
+            self._drone = None
+            raise Exception("Drone connection failed during driver initialization")
+        logger.info("Completed connection to digital drone during driver initialization...")
+        
+        self._telemetry_thread = self.TelemetryStreamingThread(self._drone, telemetry_sock)
+        self._telemetry_thread.start()
+        logger.info("Started telemetry streaming thread...")
+
+        self._streaming_thread = self.PDRAWImageStreamingThread(self._drone, cam_sock)
+        self._streaming_thread.start()
+        logger.info("Started image streaming thread...")
 
     ''' Interface methods '''
     async def Connect(self, request, context):
@@ -90,17 +115,7 @@ class ParrotOlympeDrone(ControlServicer):
             if not result:
                 self._drone = None
                 await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
-
             logger.info("Completed connection to digital drone...")
-
-            self._telemetry_thread = self.TelemetryStreamingThread(self._drone, telemetry_sock)
-            self._telemetry_thread.start()
-            logger.info("Started telemetry streaming thread...")
-
-            self._streaming_thread = self.PDRAWImageStreamingThread(self._drone, cam_sock)
-            self._streaming_thread.start()
-            logger.info("Started image streaming thread...")
-
             return generate_response(
                 resp_type=common_protocol.ResponseStatus.COMPLETED,
                 resp_string="Connected to digital drone",
@@ -1049,9 +1064,11 @@ class ParrotOlympeDrone(ControlServicer):
     class TelemetryStreamingThread(threading.Thread):
     
         def __init__(self, drone, channel):
+            threading.Thread.__init__(self)
             self._drone = drone
             self._channel = channel
             self._frequency = 0
+            
     
     
         def configure(self, config):
@@ -1148,7 +1165,8 @@ class ParrotOlympeDrone(ControlServicer):
         def run(self):
             self.is_running = True
             self._drone.streaming.start()
-    
+            frame_id = 0
+            
             while self.is_running:
                 try:
                     yuv_frame = self._frame_queue.get(timeout=0.1)
@@ -1163,8 +1181,8 @@ class ParrotOlympeDrone(ControlServicer):
                         continue
     
                     cam_message.data = frame
-                    cam_message.height = frame_shape[0]
-                    cam_message.width = frame_shape[1]
+                    cam_message.v_res = frame_shape[0]
+                    cam_message.h_res = frame_shape[1]
                     cam_message.channels = frame_shape[2]
                     cam_message.id = frame_id
                     self._channel.send(cam_message.SerializeToString())
