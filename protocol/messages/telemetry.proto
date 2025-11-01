@@ -69,17 +69,17 @@ message VehicleInfo {
  * Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
  * that the vehicle is currently moving towards. By default, when the vehicle is idle, this
  * setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
- * setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
+ * setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
  * reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.
  */
 message SetpointInfo {
   // the current setpoint for the vehicle
   oneof setpoint {
     steeleagle.protocol.common.Position position_body_sp = 1; // default all zeros idle setpoint
-    steeleagle.protocol.common.Position position_enu_sp = 2; // ENU (North, East, Up) position setpoint
+    steeleagle.protocol.common.Position position_neu_sp = 2; // NEU (North, East, Up) position setpoint
     steeleagle.protocol.common.Location global_sp = 3; // global setpoint
     steeleagle.protocol.common.Velocity velocity_body_sp = 4; // body (forward, right, up) velocity setpoint
-    steeleagle.protocol.common.Velocity velocity_enu_sp = 5; // ENU (North, East, Up) velocity setpoint
+    steeleagle.protocol.common.Velocity velocity_neu_sp = 5; // NEU (North, East, Up) velocity setpoint
   }
 }
 
@@ -94,16 +94,16 @@ message PositionInfo {
   // current global position of the vehicle
   steeleagle.protocol.common.Location global_position = 2;
   /*
-   * current local position of the vehicle in the global ENU
+   * current local position of the vehicle in the global NEU
    * (North, East, Up) coordinate frame, relative to start
    * position
    */
   steeleagle.protocol.common.Position relative_position = 3;
   /*
-   * current velocity of the vehicle in the global ENU
+   * current velocity of the vehicle in the global NEU
    * (North, East, Up) coordinate frame
    */
-  steeleagle.protocol.common.Velocity velocity_enu = 4;
+  steeleagle.protocol.common.Velocity velocity_neu = 4;
   /*
    * current velocity of the vehicle in the body (forward, right, up)
    * coordinate frame
@@ -119,8 +119,8 @@ message GimbalStatus {
   uint32 id = 1;
   // current pose in the body (forward, right, up) reference frame
   steeleagle.protocol.common.Pose pose_body = 2;
-  // current pose in the ENU (North, East, Up) reference frame
-  steeleagle.protocol.common.Pose pose_enu = 3;
+  // current pose in the NEU (North, East, Up) reference frame
+  steeleagle.protocol.common.Pose pose_neu = 3;
 }
 
 // Info of all attached gimbals.
