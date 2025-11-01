@@ -9,11 +9,10 @@ import os
 import grpc
 import zmq
 import zmq.asyncio
-
 # SDK imports (Olympe)
 import olympe
 from olympe import Drone
-from olympe.messages.ardrone3.Piloting import Landing
+from olympe.messages.ardrone3.Piloting import TakeOff, Landing
 from olympe.messages.ardrone3.Piloting import PCMD, moveTo, moveBy
 from olympe.messages.move import extended_move_to
 from olympe.messages.rth import set_custom_location, return_to_home, custom_location, state, takeoff_location
@@ -26,14 +25,13 @@ from olympe.messages.alarms import alarms
 from olympe.messages.ardrone3.GPSState import NumberOfSatelliteChanged
 from olympe.messages.gimbal import set_target, attitude
 import olympe.enums.move as move_mode
-
-# protocol imports
+# Protocol imports
 import common_pb2 as common_protocol
 from common_pb2 import Request, Response
 from services.control_service_pb2_grpc import ControlServicer
 from services import control_service_pb2 as control_protocol
 from messages import telemetry_pb2 as telemetry_protocol
-import google.protobuf.duration_pb2 as Duration
+from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
     
 # Streaming imports
@@ -47,9 +45,6 @@ logger = logging.getLogger("Parrot/Olympe")
 TELEMETRY_SOCK = 'ipc:///tmp/driver_telem.sock'
 IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
 
-# TODO: Remove get type
-# Remove streaming from SetHome
-# Get streaming threads for telem/imagery to work
 telemetry_sock = zmq.Context().socket(zmq.PUB)
 telemetry_sock.bind(TELEMETRY_SOCK)
 
@@ -73,12 +68,11 @@ class ParrotOlympeDrone(ControlServicer):
         LOITER = 'LOITER'
         TAKEOFF_LAND = 'TAKEOFF_LAND'
         VELOCITY_BODY = 'VELOCITY_BODY'
-        VELOCITY_ENU = 'VELOCITY_ENU'
+        VELOCITY_NEU = 'VELOCITY_NEU'
         GUIDED_BODY = 'GUIDED_BODY'
-        GUIDED_ENU = 'GUIDED_ENU'
+        GUIDED_NEU = 'GUIDED_NEU'
 
     def __init__(self, drone_id, connection_string, **kwargs):
-        logger.info(f"Initializing ParrotOlympe driver")
         self._drone_id = drone_id
         self._connection_string = connection_string
         self._kwargs = kwargs
@@ -91,21 +85,9 @@ class ParrotOlympeDrone(ControlServicer):
         self._pid_task = None
         self._mode = ParrotOlympeDrone.FlightMode.LOITER
         self._gimbal_id = 0
-        
-        self._drone = Drone(self._connection_string)
-        result = self._drone.connect()
-        if not result:
-            self._drone = None
-            raise Exception("Drone connection failed during driver initialization")
-        logger.info("Completed connection to digital drone during driver initialization...")
-        
-        self._telemetry_thread = self.TelemetryStreamingThread(self._drone, telemetry_sock)
-        self._telemetry_thread.start()
-        logger.info("Started telemetry streaming thread...")
-
-        self._streaming_thread = self.PDRAWImageStreamingThread(self._drone, cam_sock)
-        self._streaming_thread.start()
-        logger.info("Started image streaming thread...")
+        # Create thread holders
+        self._streaming_thread = None
+        self._telemetry_thread = None
 
     ''' Interface methods '''
     async def Connect(self, request, context):
@@ -166,11 +148,10 @@ class ParrotOlympeDrone(ControlServicer):
             logger.info("Switching to TAKEOFF_LAND mode...")
             await self._switch_mode(ParrotOlympeDrone.FlightMode.TAKEOFF_LAND)
             logger.info("Takeoff command sent to drone...")
-            task_result = self._drone.take_off()
-            logger.info(f"Takeoff command result: {task_result}")
+            self._drone(TakeOff())
 
             # Elevate up to take off altitude 
-            while not self._rel_altitude_reached(request.take_off_altitude) \
+            while not self._is_rel_altitude_reached(request.take_off_altitude) \
                     and not self._get_altitude_rel() >= request.take_off_altitude:
 
                 # Elevate at 30% throttle
@@ -271,7 +252,6 @@ class ParrotOlympeDrone(ControlServicer):
         except Exception as e:
             logger.error(f"Error occurred during hold: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
-
 
     async def Kill(self, request, context):
         await context.abort(
@@ -421,11 +401,23 @@ class ParrotOlympeDrone(ControlServicer):
     async def SetRelativePosition(self, request, context):
         await context.abort(
             grpc.StatusCode.UNIMPLEMENTED,
-            "SetRelativePosition in ENU frame not implemented for digital drone",
+            "SetRelativePosition in NEU frame not implemented for digital drone",
         )
 
     async def Joystick(self, request, context):
-        pass
+        try:
+            # Extract velocity data
+            self._setpoint = request.velocity
+            await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_BODY)
+
+            # Restart PID task if it isn't already running
+            if self._pid_task is None:
+                self._pid_task = asyncio.create_task(self._velocity_pid())
+
+            return generate_response(common_protocol.ResponseStatus.COMPLETED)
+        except Exception as e:
+            logger.error(f"Error occurred during Joystick: {e}")
+            await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def SetVelocity(self, request, context):
         try:
@@ -436,10 +428,8 @@ class ParrotOlympeDrone(ControlServicer):
             
             # Extract velocity data
             self._setpoint = request.velocity
-            if not request.frame: # default reference frame as enu
-                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
-            elif request.frame == control_protocol.ReferenceFrame.NEU:
-                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_ENU)
+            if not request.frame or request.frame == control_protocol.ReferenceFrame.NEU:
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_NEU)
             elif request.frame == control_protocol.ReferenceFrame.BODY:
                 await self._switch_mode(ParrotOlympeDrone.FlightMode.VELOCITY_BODY)
 
@@ -448,8 +438,8 @@ class ParrotOlympeDrone(ControlServicer):
                 self._pid_task = asyncio.create_task(self._velocity_pid())
 
             # Send an IN_PROGRESS stream
-            if self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_ENU:
-                while not self._is_velocity_enu_reached(self._setpoint):
+            if self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_NEU:
+                while not self._is_velocity_neu_reached(self._setpoint):
                     yield generate_response(
                             resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
                             resp_string="Setting velocity...",
@@ -562,7 +552,7 @@ class ParrotOlympeDrone(ControlServicer):
                     roll=roll)
                 ).success()
             elif control_mode == control_protocol.PoseMode.OFFSET:
-                current_gimbal = self._get_gimbal_pose_enu()
+                current_gimbal = self._get_gimbal_pose_neu()
                 if request.frame == control_protocol.ReferenceFrame.BODY:
                     current_gimbal = self._get_gimbal_pose_body()
                 target_yaw = current_gimbal['yaw'] + yaw
@@ -621,11 +611,20 @@ class ParrotOlympeDrone(ControlServicer):
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def ConfigureImagingSensorStream(self, request, context):
-        pass        
+        if not self._streaming_thread:
+            self._streaming_thread = ParrotOlympeDrone.PDRAWImageStreamingThread(self._drone, cam_sock)
+            self._streaming_thread.configure(request)
+            self._streaming_thread.start()
+            logger.info("Started image streaming thread...")
+        return generate_response(common_protocol.ResponseStatus.COMPLETED)
 
     async def ConfigureTelemetryStream(self, request, context):
-        pass
-
+        if not self._telemetry_thread:
+            self._telemetry_thread = ParrotOlympeDrone.TelemetryStreamingThread(self, telemetry_sock)
+            self._telemetry_thread.configure(request)
+            self._telemetry_thread.start()
+            logger.info("Started telemetry streaming thread...")
+        return generate_response(common_protocol.ResponseStatus.COMPLETED)
 
     ''' Telemetry methods '''
     def _get_name(self):
@@ -643,8 +642,9 @@ class ParrotOlympeDrone(ControlServicer):
             return 0 # Motors Off
 
     def _get_home_position(self):
-        loc = self._drone.get_state(custom_location)
-        if not loc:
+        try:
+            loc = self._drone.get_state(custom_location)
+        except:
             loc = self._drone.get_state(takeoff_location)
         location = common_protocol.Location()
         location.latitude = loc["latitude"]
@@ -657,7 +657,7 @@ class ParrotOlympeDrone(ControlServicer):
         location.latitude = loc["latitude"]
         location.longitude = loc["longitude"]
         location.altitude = loc["altitude"]
-        location.heading = self._drone._get_heading()
+        location.heading = self._get_heading()
         return location
 
     def _get_gps_state(self):
@@ -693,7 +693,7 @@ class ParrotOlympeDrone(ControlServicer):
     def _get_heading(self):
         return math.degrees(self._drone.get_state(AttitudeChanged)["yaw"])
 
-    def _get_velocity_enu(self):
+    def _get_velocity_neu(self):
         ned = self._drone.get_state(SpeedChanged)
         velocity = common_protocol.Velocity()
         velocity.x_vel = ned["speedX"]
@@ -702,8 +702,8 @@ class ParrotOlympeDrone(ControlServicer):
         return velocity
 
     def _get_velocity_body(self):
-        enu = self._get_velocity_enu()
-        vec = np.array([enu.x_vel, enu.y_vel], dtype=float)
+        neu = self._get_velocity_neu()
+        vec = np.array([neu.x_vel, neu.y_vel], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
         hd = (self._get_heading()) + 90
@@ -721,7 +721,7 @@ class ParrotOlympeDrone(ControlServicer):
         velocity = common_protocol.Velocity()
         velocity.x_vel = np.dot(vec, vecf) * -1
         velocity.y_vel = np.dot(vec, vecr) * -1
-        velocity.z_vel = enu.z_vel
+        velocity.z_vel = neu.z_vel
         return velocity
 
     def _get_gimbal_info(self):
@@ -739,7 +739,7 @@ class ParrotOlympeDrone(ControlServicer):
             self._drone.get_state(attitude)[gimbal_id]["roll_relative"]
         return pose
     
-    def _get_gimbal_pose_enu(self):
+    def _get_gimbal_pose_neu(self):
         gimbal_id = self._gimbal_id
         pose = common_protocol.Pose()
         pose.yaw = \
@@ -846,12 +846,12 @@ class ParrotOlympeDrone(ControlServicer):
                 return P, I, D
 
             while self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_BODY or \
-                    self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_ENU:
+                    self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_NEU:
                 current = common_protocol.Velocity()
                 if self._mode == ParrotOlympeDrone.FlightMode.VELOCITY_BODY:
                     current = self._get_velocity_body()
                 else:
-                    current = self._get_velocity_enu()
+                    current = self._get_velocity_neu()
 
                 forward_setpoint = self._setpoint.x_vel
                 right_setpoint = self._setpoint.y_vel
@@ -998,12 +998,12 @@ class ParrotOlympeDrone(ControlServicer):
                 return True
         return False
 
-    def _is_velocity_enu_reached(self, velocity):
+    def _is_velocity_neu_reached(self, velocity):
         north_vel = velocity.x_vel
         east_vel = velocity.y_vel
         up_vel = velocity.z_vel
         # Skip angular velocity since we cannot get it
-        vels = self._get_velocity_enu()
+        vels = self._get_velocity_neu()
         return abs(north_vel - vels.x_vel) <= 0.3 and \
                 abs(east_vel - vels.y_vel) <= 0.3 and \
                 abs(up_vel - vels.z_vel) <= 0.3
@@ -1021,7 +1021,7 @@ class ParrotOlympeDrone(ControlServicer):
     def _is_heading_reached(self, heading):
         return self._drone(AttitudeChanged(yaw=heading, _policy="check", _float_tol=(1e-3, 1e-1)))
 
-    def _is_gimbal_pose_enu_reached(self, pose):
+    def _is_gimbal_pose_neu_reached(self, pose):
         return self._drone(attitude(
                 pitch_absolute=pose.pitch,
                 yaw_absolute=pose.yaw, 
@@ -1063,14 +1063,12 @@ class ParrotOlympeDrone(ControlServicer):
     ''' Stream thread classes '''
     class TelemetryStreamingThread(threading.Thread):
     
-        def __init__(self, drone, channel):
+        def __init__(self, drone_wrapper, channel):
             threading.Thread.__init__(self)
-            self._drone = drone
+            self._drone_wrapper = drone_wrapper
             self._channel = channel
             self._frequency = 0
             
-    
-    
         def configure(self, config):
             # Set channel to a new frequency, if it is not zero
             if config.frequency != self._frequency and config.frequency:
@@ -1086,49 +1084,57 @@ class ParrotOlympeDrone(ControlServicer):
                     stream_info = telemetry_protocol.TelemetryStreamInfo()
                     stream_info.current_frequency = self._frequency
                     stream_info.max_frequency = 60 # Hz
-                    stream_info.uptime = Duration(seconds=time.time() - start_time)
-                    tel_message.stream_info = stream_info
+                    stream_info.uptime.seconds = int(time.time() - start_time)
+                    tel_message.telemetry_stream_info.CopyFrom(stream_info)
 
                     # Vehicle Info
                     vehicle_info = telemetry_protocol.VehicleInfo()
-                    vehicle_info.name = self._name
-                    vehicle_info.model = self._model
-                    vehicle_info.manufacturer = self._manufacturer
+                    # TODO: Change this to be passed in
+                    vehicle_info.name = self._drone_wrapper._get_name()
                     vehicle_info.motion_status = \
-                        self._drone._get_flying_state() 
+                        self._drone_wrapper._get_flying_state() 
                     vehicle_info.battery_info.percentage = \
-                        self._drone._get_battery_percentage()
+                        self._drone_wrapper._get_battery_percentage()
                     vehicle_info.gps_info.satellites = \
-                        self._drone._get_satellites()
-                    tel_message.vehicle_info = vehicle_info
+                        self._drone_wrapper._get_satellites()
+                    tel_message.vehicle_info.CopyFrom(vehicle_info)
 
                     # Position Info
                     pos_info = telemetry_protocol.PositionInfo()
-                    pos_info.home = \
-                            self._drone._get_home_position()
-                    pos_info.global_position = \
-                            self._drone._get_global_position()
-                    pos_info.relative_position.up = \
-                        self._drone._get_altitude_rel()
-                    pos_info.velocity_enu = \
-                            self._drone._get_velocity_enu()
-                    pos_info.velocity_body = \
-                            self._drone._get_velocity_body()
-                    pos_info.setpoint_info.setpoint = \
-                        self._setpoint
-                    tel_message.position_info = pos_info
+                    pos_info.home.CopyFrom(
+                        self._drone_wrapper._get_home_position()
+                        )
+                    pos_info.global_position.CopyFrom(
+                        self._drone_wrapper._get_global_position()
+                        )
+                    pos_info.relative_position.z = \
+                        self._drone_wrapper._get_altitude_rel()
+                    pos_info.velocity_enu.CopyFrom(
+                        self._drone_wrapper._get_velocity_neu()
+                        )
+                    pos_info.velocity_body.CopyFrom(
+                        self._drone_wrapper._get_velocity_body()
+                        )
+                    # TODO: Need to multiplex based on what type of setpoint it is
+                    #pos_info.setpoint_info.setpoint.CopyFrom(
+                    #    self._drone_wrapper._setpoint
+                    #    )
+                    tel_message.position_info.CopyFrom(pos_info)
                     
                     # Gimbal Info
-                    tel_message.gimbal_info = \
-                        self._drone._get_gimbal_info()
+                    tel_message.gimbal_info.CopyFrom(
+                        self._drone_wrapper._get_gimbal_info()
+                        )
 
                     # Imaging Sensor Info
-                    tel_message.imaging_sensor_info = \
-                        self._drone._get_imaging_sensor_info()
+                    tel_message.imaging_sensor_info.CopyFrom(
+                        self._drone_wrapper._get_imaging_sensor_info()
+                        )
                     
                     # Alert Info
-                    tel_message.alert_info = \
-                        self._drone._get_alert_info()
+                    #tel_message.alert_info.CopyFrom(
+                    #    self._drone._get_alert_info()
+                    #    )
                     
                     # Send telemetry message over the socket
                     self._channel.send(tel_message.SerializeToString())
@@ -1241,47 +1247,3 @@ class ParrotOlympeDrone(ControlServicer):
             self.is_running = False
             # Properly stop the video stream and disconnect
             self._drone.streaming.stop()
-    
-    
-    class FFMPEGImageStreamingThread(threading.Thread):
-    
-        def __init__(self, ip, channel):
-            threading.Thread.__init__(self)
-    
-            logger.info(f"Using opencv-python version {cv2.__version__}")
-    
-            self._current_frame = None
-            self.ip = ip
-            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
-            self.is_running = False
-    
-        def configure(self, configuration):
-            pass
-    
-        def run(self):
-            while not self.is_running:
-                self._cap = cv2.VideoCapture(f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1))
-                self.is_running = True
-                while self.is_running:
-                    try:
-                        ret, self._current_frame = self._cap.read()
-                        if not ret:
-                            logger.error(f"No frame received from cap, restarting")
-                            self.is_running = False
-                    except Exception as e:
-                        logger.error(f"Frame could not be read, reason: {e}")
-                        self.is_running = False
-                self._cap.release()
-    
-        def grab_frame(self):
-            try:
-                frame = self._current_frame.copy()
-                return frame
-            except Exception as e:
-                logger.error(f"Grab frame failed, reason: {e}")
-                # Send a blank frame
-                return np.zeros((720, 1280, 3), np.uint8)
-    
-        def stop(self):
-            self.is_running = False
-    

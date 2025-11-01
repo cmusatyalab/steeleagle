@@ -15,7 +15,6 @@ class Anafi(ParrotOlympeDrone):
         self._forward_pid_values = {"Kp": 0.3, "Kd": 10.0, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
         self._right_pid_values = {"Kp": 0.3, "Kd": 10.0, "Ki": 0.001, "PrevI": 0.0, "MaxI": 10.0}
         self._up_pid_values = {"Kp": 2.0, "Kd": 10.0, "Ki": 0.0, "PrevI": 0.0, "MaxI": 10.0}
-        self.type = "Parrot Anafi"
 
     ''' ACK methods '''
     def _is_gimbal_pose_reached(self, yaw, pitch, roll):
