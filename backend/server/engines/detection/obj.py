@@ -25,7 +25,6 @@ import logging
 
 from gabriel_server.network_engine import engine_runner
 from openscout_object_engine import OpenScoutObjectEngine
-from util.utils import setup_logging
 
 SOURCE = "openscout"
 
@@ -33,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -77,7 +75,7 @@ def main():
     parser.add_argument(
         "-x",
         "--exclude",
-        help="Comma separated list of classes (ids) to exclude when peforming detection. Consult model/<model_name>/label_map.pbtxt.",
+        help="Comma separated list of classes (ids) to exclude when performing detection. Consult model/<model_name>/label_map.pbtxt.",
     )
 
     parser.add_argument(
@@ -131,24 +129,23 @@ def main():
         help="Whether to use a geofence to decide whether to store detections",
     )
 
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
     args, _ = parser.parse_known_args()
 
-    def object_engine_setup():
-        if args.timing:
-            # engine = TimingObjectEngine(args)
-            raise NotImplementedError
-        else:
-            engine = OpenScoutObjectEngine(args)
-
-        return engine
-
     logger.info("Starting object detection cognitive engine..")
-    engine_runner.run(
-        engine=object_engine_setup(),
-        source_name=args.source,
+    runner = engine_runner.EngineRunner(
+        engine=OpenScoutObjectEngine(args),
+        engine_name=args.source,
         server_address=args.gabriel,
         all_responses_required=True,
     )
+
+    runner.run()
 
 
 if __name__ == "__main__":

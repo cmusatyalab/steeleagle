@@ -46,11 +46,11 @@ services:
   # Obstacle Avoidance Engine
   # Uses Metric3D (or MiDaS) model to estimate depth for vehicles
   obstacle-engine:
-    image: cmusatyalab/steeleagle-vision-engines:${OBSTACLE_IMAGE_TAG}
+    image: cmusatyalab/steeleagle-avoidance-engine:${OBSTACLE_IMAGE_TAG}
     container_name: obstacle-engine
     restart: on-failure:3
     privileged: true
-    entrypoint: ["./depth.py", "--source", "telemetry", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
+    entrypoint: ["uv", "run", "/steeleagle/depth.py", "--source", "telemetry", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
     deploy:
       resources:
         reservations:
@@ -66,8 +66,6 @@ services:
     networks:
       - steeleagle-net
       - redis
-    environment:
-      - PYTHONPATH=/steeleagle/protocol
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=1 #set this if you want to force CPU only
     logging:
@@ -81,13 +79,15 @@ services:
   # stores detections in Redis; also optionally performs HSV filtering
   # on detected objects
   object-engine:
-    image: cmusatyalab/steeleagle-vision-engines:${OBJECT_IMAGE_TAG}
+    image: cmusatyalab/steeleagle-detection-engine:${OBJECT_IMAGE_TAG}
     container_name: object-engine
     restart: on-failure:3
     privileged: true
     entrypoint:
       [
-        "./obj.py",
+        "uv",
+        "run",
+        "/steeleagle/obj.py",
         "--source",
         "telemetry",
         "--model",
@@ -121,7 +121,6 @@ services:
       - redis
     environment:
       - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
-      - PYTHONPATH=/steeleagle/protocol
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=-1 #set this if you want to force CPU only
     logging:
@@ -165,7 +164,7 @@ services:
       - "5004:5004"
       - "6001:6001"
     privileged: true
-    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
+    entrypoint: [ "uv", "run", "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
     volumes:
       - ./steeleagle-vol/compiler/:/compiler
       - ./steeleagle-vol/scripts/:/scripts
@@ -173,8 +172,6 @@ services:
     networks:
       - steeleagle-net
       - redis
-    environment:
-      - PYTHONPATH=/protocol
     logging:
       driver: "json-file"
       options:

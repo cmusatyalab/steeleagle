@@ -23,7 +23,6 @@ import logging
 
 from gabriel_server.network_engine import engine_runner
 from obstacle_avoidance_engine import Metric3DAvoidanceEngine, MidasAvoidanceEngine
-from util.utils import setup_logging
 
 SOURCE = "openscout"
 
@@ -31,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -40,7 +38,7 @@ def main():
 
     parser.add_argument(
         "-m",
-        "--model", 
+        "--model",
         default="DPT_Large",
         help="Depth model. MiDaS: ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small'], Metric3D: ['metric3d_vit_giant2', 'metric3d_vit_large', 'metric3d_vit_small', 'metric3d_convnext_large']",
     )
@@ -77,7 +75,7 @@ def main():
         "--faux",
         action="store_true",
         default=False,
-        help="Generate faux vectors using the file specfied instead of results from MiDaS.",
+        help="Generate faux vectors using the file specified instead of results from MiDaS.",
     )
 
     parser.add_argument(
@@ -101,25 +99,35 @@ def main():
         help="Use Metric3D for avoidance",
     )
 
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
     args, _ = parser.parse_known_args()
 
     def engine_setup():
         if args.metric3d:
             # Set default Metric3D model if MiDaS model is specified
             if args.model in ["DPT_Large", "DPT_Hybrid", "MiDaS_small"]:
-                logger.info(f"Switching from MiDaS model '{args.model}' to default Metric3D model 'metric3d_vit_giant2'")
+                logger.info(
+                    f"Switching from MiDaS model '{args.model}' to default Metric3D model 'metric3d_vit_giant2'"
+                )
                 args.model = "metric3d_vit_giant2"
             engine = Metric3DAvoidanceEngine(args)
         else:
             engine = MidasAvoidanceEngine(args)
         return engine
 
-    engine_runner.run(
+    runner = engine_runner.EngineRunner(
         engine=engine_setup(),
-        source_name=args.source,
+        engine_name=args.source,
         server_address=args.gabriel,
         all_responses_required=True,
     )
+
+    runner.run()
 
 
 if __name__ == "__main__":

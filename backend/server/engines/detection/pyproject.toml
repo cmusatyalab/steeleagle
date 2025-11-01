@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
    "redis",
-   "opencv-python",
+   "opencv-python-headless",
    "numpy",
    "pykml",
    "pygeodesy",
