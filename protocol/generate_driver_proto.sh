@@ -1,17 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+DRIVER_NAME="$1"
+if [ -z "$DRIVER_NAME" ]; then
+    echo "Usage: $0 <driver_name>"
+    exit 1
+fi
+
 PROTOCPATH="python -m grpc_tools.protoc"
+OUT_DIR="../drivers/${DRIVER_NAME}/proto_build"
 
-# Build the message protocols
+mkdir -p "$OUT_DIR"
+
+# Build message protocols
 $PROTOCPATH -I. \
-	--python_out=../drivers/proto_build \
-       	common.proto \
-	messages/telemetry.proto \
-	messages/result.proto
+    --python_out="$OUT_DIR" \
+    common.proto \
+    messages/telemetry.proto \
+    messages/result.proto
 
-# Build the service protocols
+# Build service protocols
 $PROTOCPATH -I. \
-	--python_out=../drivers/proto_build \
-	--grpc_python_out=../drivers/proto_build \
-	services/control_service.proto
-
-
-cp ../sdk/protocol/rpc_helpers.py ../drivers/proto_build/rpc_helpers.py
+    --python_out="$OUT_DIR" \
+    --grpc_python_out="$OUT_DIR" \
+    services/control_service.proto

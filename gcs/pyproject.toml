@@ -2,7 +2,7 @@
 name = "gcs"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "streamlit",
     "grpcio",
@@ -13,8 +13,8 @@ dependencies = [
     "pykml>=0.2.0",
     "streamlit-keypressed",
     "pynput>=1.8.1",
+    "steeleagle-sdk",
 ]
 
 [tool.uv.sources]
-steeleagle-sdk = { workspace = true }
 streamlit-keypressed = { path = "streamlit/streamlit_keypressed-0.1.5-py3-none-any.whl" }
