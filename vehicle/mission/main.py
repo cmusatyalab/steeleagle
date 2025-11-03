@@ -9,7 +9,6 @@ from steeleagle_sdk.protocol.services import report_service_pb2, report_service_
 from steeleagle_sdk.protocol.services import compute_service_pb2, compute_service_pb2_grpc
 from mission.mission_service import MissionService
 
-from mission.stream_handler import StreamHandler
 # Utility import
 from util.log import setup_logging
 setup_logging()
@@ -27,10 +26,6 @@ async def main():
     context['control'] = ctrl_stub
     context['compute'] = compute_stub
     context['report'] = report_stub
-
-    stream_handler = StreamHandler()
-    await stream_handler.start()
-    context['stream_handler'] = stream_handler
 
     # Define the server that will hold our services
     server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))

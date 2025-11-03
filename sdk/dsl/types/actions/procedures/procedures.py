@@ -2,7 +2,7 @@
 import asyncio
 from typing import Optional
 from pydantic import Field
-from ....dsl.compiler.registry import register_action
+from ....compiler.registry import register_action
 from ...base import Action
 from ..primitives.control import SetGimbalPose, SetGlobalPosition, SetVelocity
 from ...datatypes import common as common
@@ -76,7 +76,7 @@ class Patrol(Action):
                     ),
                     altitude_mode=AltitudeMode.RELATIVE,
                     heading_mode=HeadingMode.TO_TARGET,
-                    max_velocity=common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=5.0),
+                    max_velocity=common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0),
                 )
                 await goto.execute()
 

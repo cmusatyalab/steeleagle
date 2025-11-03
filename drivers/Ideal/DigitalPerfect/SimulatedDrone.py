@@ -3,8 +3,8 @@ import logging
 import time
 
 import numpy as np
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
-from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
+from messages import telemetry_pb2 as telemetry_protocol
+from services import control_service_pb2 as control_protocol
 
 logger = logging.getLogger(__name__)
 M_PER_LAT_DEG = 111139

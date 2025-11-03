@@ -101,26 +101,34 @@ def run_flightscript():
         kml = st.session_state.script_file[0].getvalue()
         dsl_script = st.session_state.script_file[1].read()
         compile_req = CompileMissionRequest(dsl_content=dsl_script)
-        responses = []
-        for response in st.session_state.stub.CompileMission(compile_req):
-            responses.append(response)
-        compile_response = responses[-1]
-        data = UploadRequest(request=generate_request())
-        data.mission.map = kml
-        data.mission.content = compile_response.compiled_dsl_content
-        req.method_name = 'Mission.Upload'
-        req.request.Pack(data)
-        responses = []
-        for response in st.session_state.stub.Command(req):
-            responses.append(response)
-        req.method_name = 'Mission.Start'
-        start = StartRequest(request=generate_request())
-        req.request.Pack(start)
-        responses = []
-        for response in st.session_state.stub.Command(req):
-            responses.append(response)
-        
-        
+
+        def compile_and_send_mission(drones, stub):
+            responses = []
+            for response in st.session_state.stub.CompileMission(compile_req):
+                responses.append(response)
+            compile_response = responses[-1]
+            for d in drones:
+                def upload_and_start_thread():
+                    data = UploadRequest(request=generate_request())
+                    data.mission.map = kml
+                    data.mission.content = compile_response.compiled_dsl_content
+                    req.method_name = 'Mission.Upload'
+                    req.request.Pack(data)
+                    responses = []
+                    for response in st.session_state.stub.Command(req):
+                        responses.append(response)
+                    req.method_name = 'Mission.Start'
+                    start = StartRequest(request=generate_request())
+                    req.request.Pack(start)
+                    responses = []
+                    for response in st.session_state.stub.Command(req):
+                        responses.append(response)
+                
+                thread = threading.Thread(target=upload_and_start_thread)
+                thread.start()
+
+        thread = threading.Thread(target=compile_and_send_mission, args=(st.session_state.selected_drones, st.session_state.stub.Command))
+        thread.start()
 
 def get_callback(toast_message):
     def callback(future):
@@ -156,7 +164,7 @@ def rth():
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
     drone_list = []
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]

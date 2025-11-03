@@ -100,7 +100,7 @@ def connect_stub():
 def get_drones():
     l = {}
     red = connect_redis()
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if time.time() - last_seen <  st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
