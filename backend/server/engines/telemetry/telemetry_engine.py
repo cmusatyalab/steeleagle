@@ -75,9 +75,9 @@ class TelemetryEngine(cognitive_engine.Engine):
         rel_pos = extras.position_info.relative_position
         body_vel = extras.position_info.velocity_body
         neu_vel = extras.position_info.velocity_neu
-        gimb_pose = extras.gimbal_info.gimbals[
-            0
-        ].pose_body  # TODO: Change this to check if gimbal exists
+        # gimb_pose = extras.gimbal_info.gimbals[
+        #    0
+        # ].pose_body  # TODO: Change this to check if gimbal exists
         vehicle_info = extras.vehicle_info
         alert_info = extras.alert_info
 
@@ -119,9 +119,9 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "v_neu_up": neu_vel.z_vel,
                 "v_neu_angular": neu_vel.angular_vel,
                 # Gimbal Pose
-                "gimbal_pitch": gimb_pose.pitch,
-                "gimbal_roll": gimb_pose.roll,
-                "gimbal_yaw": gimb_pose.yaw,
+                # "gimbal_pitch": gimb_pose.pitch,
+                # "gimbal_roll": gimb_pose.roll,
+                # "gimbal_yaw": gimb_pose.yaw,
             },
         )
         self.r.expire(f"telemetry:{extras.vehicle_info.name}", self.ttl_secs)
@@ -213,6 +213,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             extras = cognitive_engine.unpack_extras(
                 telemetry.DriverTelemetry, input_frame
             )
+            logger.info(extras.vehicle_info.name)
             if extras.vehicle_info.name != "":
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
@@ -221,7 +222,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
             extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
-            image_np = np.fromstring(extras.data, dtype=np.uint8)
+            image_np = np.frombuffer(extras.data, dtype=np.uint8)
             # have redis publish the latest image
             if self.publish:
                 logger.info(

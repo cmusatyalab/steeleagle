@@ -10,7 +10,7 @@ dependencies = [
    "numpy",
    "pytz",
    "Pillow",
-   "gabriel-server>=4.0.1",
+   "gabriel-server>=4.0.5",
    "gabriel-protocol",
    "steeleagle-sdk",
 ]
