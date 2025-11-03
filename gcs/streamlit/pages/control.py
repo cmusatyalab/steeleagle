@@ -156,7 +156,7 @@ def rth():
 @st.fragment(run_every=f"{1/st.session_state.imagery_framerate}s")
 def update_imagery():
     drone_list = []
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if time.time() - last_seen < st.session_state.inactivity_time * 60: # minutes -> seconds
             drone_name = k.split(":")[-1]
