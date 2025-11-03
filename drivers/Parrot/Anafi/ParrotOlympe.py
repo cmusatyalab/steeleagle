@@ -322,6 +322,7 @@ class ParrotOlympeDrone(ControlServicer):
             lon = location.longitude
             alt = location.altitude
             bearing = location.heading
+            logger.info(f"SetGlobalPosition: lat={lat}, lon={lon}, alt={alt}, bearing={bearing}")
             alt_mode = request.altitude_mode
             hdg_mode = request.heading_mode
             max_velocity = request.max_velocity
@@ -336,20 +337,23 @@ class ParrotOlympeDrone(ControlServicer):
                 altitude = alt
             
             # Set the heading mode and bearing appropriately
-            if hdg_mode == control_protocol.LocationHeadingMode.TO_TARGET:
+            if hdg_mode == control_protocol.HeadingMode.TO_TARGET:
                 heading_mode = move_mode.orientation_mode.to_target
-                bearing = None
-            elif hdg_mode == control_protocol.LocationHeadingMode.HEADING_START:
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED_NEU)
+            elif hdg_mode == control_protocol.HeadingMode.HEADING_START:
                 heading_mode = move_mode.orientation_mode.heading_start
+                await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED_BODY)
 
-            await self._switch_mode(ParrotOlympeDrone.FlightMode.GUIDED)
+            
             
             # Check if max velocities are provided
-            if max_velocity.north_vel or \
-                    max_velocity.east_vel or \
-                    max_velocity.up_vel or \
+            if max_velocity.x_vel or \
+                    max_velocity.y_vel or \
+                    max_velocity.z_vel or \
                     max_velocity.angular_vel:
                 # Set max velocities for transit
+                logger.info(f"Setting max velocities: x={max_velocity.x_vel}, y={max_velocity.y_vel}, z={max_velocity.z_vel}, angular={max_velocity.angular_vel}")
+                logger.info(f"latitude: {altitude}, lon: {lon}, alt: {altitude}, heading_mode: {heading_mode}, bearing: {bearing}")
                 self._drone(
                     extended_move_to(
                         lat,
@@ -357,8 +361,8 @@ class ParrotOlympeDrone(ControlServicer):
                         altitude,
                         heading_mode,
                         bearing,
-                        max(max_velocity.north_vel, max_velocity.east_vel),
-                        max_velocity.up_vel,
+                        max(max_velocity.x_vel, max_velocity.y_vel),
+                        max_velocity.z_vel,
                         max_velocity.angular_vel
                         )
                 ).success()
@@ -987,10 +991,8 @@ class ParrotOlympeDrone(ControlServicer):
         return diff <= 0.5
 
     def _is_global_position_reached(self, location, alt_mode):
-        lat = location.latitude
-        lon = location.longitude
         alt = location.altitude
-        if self._is_at_target(lat, lon):
+        if self._is_at_target(location):
             if alt_mode == control_protocol.AltitudeMode.ABSOLUTE \
                     and self._is_abs_altitude_reached(alt):
                 return True

@@ -14,29 +14,41 @@ import grpc
 import numpy as np
 
 # Interface Imports
-from drivers.multicopter.devices.Ideal.DigitalPerfect.SimulatedDrone import (
-    SimulatedDrone,
-)
+from DigitalPerfect.SimulatedDrone import SimulatedDrone
+
 from PIL import Image
 
 # Protocol 
-from steeleagle_sdk.protocol import common_pb2 as common_protocol
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry_protocol
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
-from steeleagle_sdk.protocol.services import control_service_pb2 as control_protocol
-from steeleagle_sdk.protocol.services import control_service_pb2_grpc
-from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlServicer
+import common_pb2 as common_protocol
+from common_pb2 import Request, Response
+from messages import telemetry_pb2 as telemetry_protocol
+from services import control_service_pb2 as control_protocol
+from services import control_service_pb2_grpc
+from services.control_service_pb2_grpc import ControlServicer
+from google.protobuf.timestamp_pb2 import Timestamp
 
-# Utility imports
-from util.config import query_config
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
-from util.log import setup_logging
-from util.cleanup import register_cleanup_handler
-setup_logging()
-from util.sockets import setup_zmq_socket, SocketOperation
 
 logger = logging.getLogger("driver/DigitalPerfect")
 
+TELEMETRY_SOCK = 'ipc:///tmp/driver_telem.sock'
+# IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
+
+telemetry_sock = zmq.Context().socket(zmq.PUB)
+telemetry_sock.bind(TELEMETRY_SOCK)
+
+# cam_sock = zmq.Context().socket(zmq.PUB)
+# cam_sock.bind(IMAGERY_SOCK)
+
+def generate_response(resp_type, resp_string=""):
+    '''
+    Generates a protobuf response object for an RPC given a
+    response type and optional response string.
+    '''
+    return Response(
+            status=resp_type,
+            response_string=resp_string,
+            timestamp=Timestamp().GetCurrentTime()
+            )
 
 # Flight modes
 class FlightMode(Enum):
@@ -46,7 +58,7 @@ class FlightMode(Enum):
     GUIDED = "GUIDED"
 
 
-class DigitalPerfect(ControlServicer):
+class DigitalPerfectDrone(ControlServicer):
     # Constants
     LATDEG_METERS = 1113195
     ALT_TOLERANCE = 0.5
@@ -64,6 +76,7 @@ class DigitalPerfect(ControlServicer):
         self._mode = FlightMode.LOITER
         self.ip = "127.0.0.1"
         self._drone = SimulatedDrone(self.ip)
+        self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, 5))
 
     async def Connect(self, request, context):
         try:
@@ -73,13 +86,6 @@ class DigitalPerfect(ControlServicer):
                 await context.abort(grpc.StatusCode.INTERNAL, "Drone connection failed")
 
             logger.info("Completed connection to digital drone...")
-            telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
-            setup_zmq_socket(
-                telemetry_sock,
-                'internal.streams.driver_telemetry',
-                SocketOperation.BIND
-            )
-            self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, 5))
             return generate_response(
                 resp_type=common_protocol.ResponseStatus.COMPLETED,
                 resp_string="Connected to digital drone",
@@ -483,13 +489,13 @@ class DigitalPerfect(ControlServicer):
 
                 tel_message.position_info.global_position.heading = self._get_heading()
                 tel_message.position_info.relative_position.z = self._get_altitude_rel()
-                tel_message.position_info.velocity_enu.x_vel = self._get_velocity_enu()[
+                tel_message.position_info.velocity_neu.x_vel = self._get_velocity_neu()[
                     "north"
                 ]
-                tel_message.position_info.velocity_enu.y_vel = self._get_velocity_enu()[
+                tel_message.position_info.velocity_neu.y_vel = self._get_velocity_neu()[
                     "east"
                 ]
-                tel_message.position_info.velocity_enu.z_vel = self._get_velocity_enu()[
+                tel_message.position_info.velocity_neu.z_vel = self._get_velocity_neu()[
                     "up"
                 ]
                 tel_message.position_info.velocity_body.x_vel = (
@@ -621,13 +627,13 @@ class DigitalPerfect(ControlServicer):
     def _get_satellites(self) -> int:
         return self._drone.get_state("satellite_count")
 
-    def _get_velocity_enu(self) -> dict[str, float]:
+    def _get_velocity_neu(self) -> dict[str, float]:
         ned = self._drone.get_state("velocity")
         return {"north": ned["speedX"], "east": ned["speedY"], "up": ned["speedZ"]}
 
     def _get_velocity_body(self) -> dict[str, float]:
-        enu = self._get_velocity_enu()
-        vec = np.array([enu["north"], enu["east"]], dtype=float)
+        neu = self._get_velocity_neu()
+        vec = np.array([neu["north"], neu["east"]], dtype=float)
         vecf = np.array([0.0, 1.0], dtype=float)
 
         hd = (self._get_heading()) + 90
@@ -645,7 +651,7 @@ class DigitalPerfect(ControlServicer):
         res = {
             "forward": np.dot(vec, vecf) * -1,
             "right": np.dot(vec, vecr) * -1,
-            "up": enu["up"],
+            "up": neu["up"],
         }
         return res
 
@@ -832,25 +838,3 @@ class SimulatedStreamingThread(threading.Thread):
 
     def stop(self):
         self.is_running = False
-
-
-async def main():
-    register_cleanup_handler()
-    server = grpc.aio.server(
-        migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10)
-    )
-    control_service_pb2_grpc.add_ControlServicer_to_server(
-        DigitalPerfect("DigitalPerfect"), server
-    )
-    server.add_insecure_port(query_config("internal.services.driver"))
-    await server.start()
-    logger.info("Services started!")
-    try:
-        await server.wait_for_termination()
-    except (SystemExit, asyncio.exceptions.CancelledError):
-        logger.info("Shutting down...")
-        await server.stop(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
