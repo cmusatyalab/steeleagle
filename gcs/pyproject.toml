@@ -18,3 +18,8 @@ dependencies = [
 
 [tool.uv.sources]
 streamlit-keypressed = { path = "streamlit/streamlit_keypressed-0.1.5-py3-none-any.whl" }
+
+[tool.uv.workspace]
+members = [
+    "streamlit",
+]
