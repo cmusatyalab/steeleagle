@@ -155,8 +155,9 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
             try:
-                _, data = await imagery_sock.recv_multipart(flags=zmq.NOBLOCK)
+                _, data = await imagery_sock.recv_multipart()
             except Exception as e:
+                logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
                 return None
             
             encoded_frame = Frame()
@@ -209,8 +210,9 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = payload_type
             try:
-                _, data = await socket.recv_multipart(flags=zmq.NOBLOCK)
+                _, data = await socket.recv_multipart()
             except Exception as e:
+                logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
                 return None
             proto_class.ParseFromString(data)
             input_frame.extras.Pack(proto_class)
