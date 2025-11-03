@@ -3,7 +3,7 @@ name = "steeleagle-backend-avoidance"
 version = "1.0.0"
 description = "Monocular obstacle avoidance using Metric3D (or MiDaS)"
 readme = "README.md"
-requires-python = "==3.11.14"
+requires-python = "==3.11.*"
 dependencies = [
    "redis",
    "torch == 2.0.1",

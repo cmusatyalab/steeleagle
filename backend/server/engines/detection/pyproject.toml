@@ -3,7 +3,7 @@ name = "steeleagle-backend-detection"
 version = "1.0.0"
 description = "Object detection using YOLOv5 models"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.11.*"
 dependencies = [
    "redis",
    "opencv-python-headless",
