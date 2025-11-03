@@ -15,7 +15,7 @@ from services import control_service_pb2_grpc
 
 
 DRIVER_SOCK = 'unix:///tmp/driver.sock'
-DRONE_IP = "10.202.0.1"
+DRONE_IP = "128.2.212.60"
 
 async def main():
     logger.info("Starting driver services...")

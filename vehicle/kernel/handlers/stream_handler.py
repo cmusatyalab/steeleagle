@@ -2,6 +2,8 @@ import asyncio
 import zmq
 import time
 import logging
+import numpy as np
+import cv2
 # Utility import
 from util.config import query_config
 from util.sockets import setup_zmq_socket, SocketOperation
@@ -121,24 +123,6 @@ class StreamHandler:
                 source_name="driver_telemetry"
                 )
 
-    def get_imagery_producer(self):
-        imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        imagery_sock.setsockopt(zmq.SUBSCRIBE, b'')
-        setup_zmq_socket(
-            imagery_sock,
-            'internal.streams.imagery',
-            SocketOperation.CONNECT
-            )
-        return InputProducer(
-                self._base_producer(
-                    imagery_sock,
-                    Frame(),
-                    gabriel_pb2.PayloadType.IMAGE
-                    ),
-                [],
-                source_name="images"
-                )
-
     def get_mission_telemetry_producer(self):
         mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
         mission_sock.setsockopt(zmq.SUBSCRIBE, b'')
@@ -155,6 +139,55 @@ class StreamHandler:
                     ),
                 [],
                 source_name="mission_telemetry"
+                )
+    
+    def get_imagery_producer(self):
+        imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
+        imagery_sock.setsockopt(zmq.SUBSCRIBE, b'')
+        setup_zmq_socket(
+            imagery_sock,
+            'internal.streams.imagery',
+            SocketOperation.CONNECT
+            )
+        
+        # Define a JPG encoding function
+        async def produce_image():
+            input_frame = gabriel_pb2.InputFrame()
+            input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
+            try:
+                _, data = await imagery_sock.recv_multipart()
+            except Exception as e:
+                logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
+                return None
+            
+            encoded_frame = Frame()
+            raw_frame = Frame()
+            raw_frame.ParseFromString(data)
+            frame_bytes = np.frombuffer(raw_frame.data, dtype=np.uint8)
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+            _, encoded_img = cv2.imencode(
+                    '.jpg',
+                    frame_bytes.reshape(
+                        raw_frame.v_res,
+                        raw_frame.h_res,
+                        raw_frame.channels),
+                    encode_param
+                    )
+            encoded_frame.data = encoded_img.tobytes()
+            # TODO: Copy over all of the metadata
+            encoded_frame.timestamp.CopyFrom(raw_frame.timestamp)
+            encoded_frame.id = raw_frame.id
+            encoded_frame.vehicle_info.CopyFrom(raw_frame.vehicle_info)
+            encoded_frame.position_info.CopyFrom(raw_frame.position_info)
+            encoded_frame.gimbal_info.CopyFrom(raw_frame.gimbal_info)
+            encoded_frame.imaging_sensor_info.CopyFrom(raw_frame.imaging_sensor_info)
+            input_frame.extras.Pack(encoded_frame)
+            return input_frame
+
+        return InputProducer(
+                produce_image,
+                [],
+                source_name="images"
                 )
 
     def process(self, result_wrapper):
@@ -179,7 +212,8 @@ class StreamHandler:
             try:
                 _, data = await socket.recv_multipart()
             except Exception as e:
-                return input_frame
+                logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
+                return None
             proto_class.ParseFromString(data)
             input_frame.extras.Pack(proto_class)
             return input_frame

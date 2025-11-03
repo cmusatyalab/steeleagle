@@ -1,7 +1,8 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
 [__BASE__]
-enter = ['Control.Connect', 'Control.ConfigureTelemetryStream|{"frequency": 5.0}', 'Control.ConfigureImagingSensorStream|{"configurations": [{"id": 0, "set_primary": true, "set_fps": 30}]}']
+enter = ['Control.Connect', 'Control.ConfigureTelemetryStream|{"frequency": 5.0}', 'Control.ConfigureImagingSensorStream|{"configurations": [{"id": 0, "set_primary": true, "set_fps": 30}]}', 'Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "location": 0}]}']
+#enter = ['Control.Connect', 'Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "location": 0}]}', 'Control.ConfigureTelemetryStream|{"frequency": 5.0}']
 [__BASE__.rules]
 allowed = ['server.*']
 match = [

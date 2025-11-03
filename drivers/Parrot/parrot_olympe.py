@@ -612,7 +612,7 @@ class ParrotOlympeDrone(ControlServicer):
 
     async def ConfigureImagingSensorStream(self, request, context):
         if not self._streaming_thread:
-            self._streaming_thread = ParrotOlympeDrone.PDRAWImageStreamingThread(self._drone, cam_sock)
+            self._streaming_thread = ParrotOlympeDrone.PDRAWImageStreamingThread(self._drone, self, cam_sock)
             self._streaming_thread.configure(request)
             self._streaming_thread.start()
             logger.info("Started image streaming thread...")
@@ -1109,7 +1109,7 @@ class ParrotOlympeDrone(ControlServicer):
                         )
                     pos_info.relative_position.z = \
                         self._drone_wrapper._get_altitude_rel()
-                    pos_info.velocity_enu.CopyFrom(
+                    pos_info.velocity_neu.CopyFrom(
                         self._drone_wrapper._get_velocity_neu()
                         )
                     pos_info.velocity_body.CopyFrom(
@@ -1137,7 +1137,7 @@ class ParrotOlympeDrone(ControlServicer):
                     #    )
                     
                     # Send telemetry message over the socket
-                    self._channel.send(tel_message.SerializeToString())
+                    self._channel.send_multipart([b'driver_telemetry', tel_message.SerializeToString()])
                 except Exception as e:
                     logger.error(f'Failed to get telemetry, error: {e}')
                 # Sleep to maintain transmit frequency (avoid concurrency issues)
@@ -1150,10 +1150,11 @@ class ParrotOlympeDrone(ControlServicer):
     
     class PDRAWImageStreamingThread(threading.Thread):
     
-        def __init__(self, drone, channel):
+        def __init__(self, drone, drone_wrapper, channel):
             threading.Thread.__init__(self)
             self._channel = channel
             self._drone = drone
+            self._drone_wrapper = drone_wrapper
             self._frame_queue = queue.Queue()
             self._current_frame = np.zeros((720, 1280, 3), np.uint8)
     
@@ -1191,7 +1192,38 @@ class ParrotOlympeDrone(ControlServicer):
                     cam_message.h_res = frame_shape[1]
                     cam_message.channels = frame_shape[2]
                     cam_message.id = frame_id
-                    self._channel.send(cam_message.SerializeToString())
+                    
+                    # Vehicle Info
+                    vehicle_info = telemetry_protocol.VehicleInfo()
+                    # TODO: Change this to be passed in
+                    vehicle_info.name = self._drone_wrapper._get_name()
+                    vehicle_info.motion_status = \
+                        self._drone_wrapper._get_flying_state() 
+                    vehicle_info.battery_info.percentage = \
+                        self._drone_wrapper._get_battery_percentage()
+                    vehicle_info.gps_info.satellites = \
+                        self._drone_wrapper._get_satellites()
+                    cam_message.vehicle_info.CopyFrom(vehicle_info)
+
+                    # Position Info
+                    pos_info = telemetry_protocol.PositionInfo()
+                    pos_info.home.CopyFrom(
+                        self._drone_wrapper._get_home_position()
+                        )
+                    pos_info.global_position.CopyFrom(
+                        self._drone_wrapper._get_global_position()
+                        )
+                    pos_info.relative_position.z = \
+                        self._drone_wrapper._get_altitude_rel()
+                    pos_info.velocity_neu.CopyFrom(
+                        self._drone_wrapper._get_velocity_neu()
+                        )
+                    pos_info.velocity_body.CopyFrom(
+                        self._drone_wrapper._get_velocity_body()
+                        )
+                    cam_message.position_info.CopyFrom(pos_info)
+                    
+                    self._channel.send_multipart([b'driver_imagery', cam_message.SerializeToString()])
                     frame_id = frame_id + 1
                 except Exception as e:
                     logger.error(f'Failed to get video frame, error: {e}')
