@@ -220,7 +220,7 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
             extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
-            image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
+            image_np = np.fromstring(extras.data, dtype=np.uint8)
             # have redis publish the latest image
             if self.publish:
                 logger.info(
