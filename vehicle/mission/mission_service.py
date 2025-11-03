@@ -55,6 +55,7 @@ class MissionService(MissionServicer):
             control_mod.STUB = self.stubs.get("control")
             compute_mod.STUB = self.stubs.get("compute")
             report_mod.STUB  = self.stubs.get("report")
+            # TODO: add stream handler
             map_mod.MISSION_MAP = self.mission_map
             self.mission_routine = await self._start()
             return generate_response(2)
