@@ -73,7 +73,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         global_pos = extras.position_info.global_position
         rel_pos = extras.position_info.relative_position
         body_vel = extras.position_info.velocity_body
-        enu_vel = extras.position_info.velocity_enu
+        neu_vel = extras.position_info.velocity_neu
         gimb_pose = extras.gimbal_info.gimbals[
             0
         ].pose_body  # TODO: Change this to check if gimbal exists
@@ -92,10 +92,10 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "mag": alert_info.magnetometer_warning,
                 "sats": vehicle_info.gps_info.satellites,
                 # Relative Pos (ENU)
-                "enu_east": rel_pos.y,
-                "enu_north": rel_pos.x,
-                "enu_up": rel_pos.z,
-                "enu_angle": rel_pos.angle,
+                "neu_east": rel_pos.y,
+                "neu_north": rel_pos.x,
+                "neu_up": rel_pos.z,
+                "neu_angle": rel_pos.angle,
                 # Velocity Body
                 "v_body_total": np.sqrt(
                     np.sum(
@@ -110,13 +110,13 @@ class TelemetryEngine(cognitive_engine.Engine):
                 "v_body_altitude": body_vel.z_vel,
                 "v_body_angular": body_vel.angular_vel,
                 # Velocity ENU
-                "v_enu_total": np.sqrt(
-                    np.sum(np.power([enu_vel.x_vel, enu_vel.y_vel, enu_vel.z_vel], 2))
+                "v_neu_total": np.sqrt(
+                    np.sum(np.power([neu_vel.x_vel, neu_vel.y_vel, neu_vel.z_vel], 2))
                 ),
-                "v_enu_north": enu_vel.x_vel,
-                "v_enu_east": enu_vel.y_vel,
-                "v_enu_up": enu_vel.z_vel,
-                "v_enu_angular": enu_vel.angular_vel,
+                "v_neu_north": neu_vel.x_vel,
+                "v_neu_east": neu_vel.y_vel,
+                "v_neu_up": neu_vel.z_vel,
+                "v_neu_angular": neu_vel.angular_vel,
                 # Gimbal Pose
                 "gimbal_pitch": gimb_pose.pitch,
                 "gimbal_roll": gimb_pose.roll,
