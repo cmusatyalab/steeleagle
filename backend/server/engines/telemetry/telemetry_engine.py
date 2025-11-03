@@ -11,6 +11,7 @@ import os
 import signal
 import time
 import cv2
+import argparse
 
 # import foxglove
 import numpy as np
@@ -19,7 +20,7 @@ import redis
 
 # from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
+from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
 
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
@@ -265,3 +266,68 @@ class TelemetryEngine(cognitive_engine.Engine):
         if result is not None:
             result_wrapper.results.append(result)
         return result_wrapper
+
+
+def main():
+    """Starts the Gabriel server."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+
+    parser.add_argument(
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint.",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
+    parser.add_argument(
+        "-l", "--publish", action="store_true", help="Publish incoming images via redis"
+    )
+
+    parser.add_argument(
+        "-t",
+        "--ttl",
+        type=int,
+        default=7,
+        help="TTL in days before drones status tables are cleaned up in redis [default: 7]",
+    )
+
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
+
+    args, _ = parser.parse_known_args()
+
+    def engine_factory():
+        return TelemetryEngine(args)
+
+    engine = local_engine.LocalEngine(
+        engine_factory,
+        input_queue_maxsize=60,
+        port=args.port,
+        num_tokens=2,
+        engine_name="telemetry",
+        use_zeromq=True,
+    )
+
+    engine.run()
+
+
+if __name__ == "__main__":
+    main()
