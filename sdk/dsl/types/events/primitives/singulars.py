@@ -3,8 +3,8 @@ import math
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import Field
 # API imports
-from ...dsl.compiler.registry import register_event
-from ..base import Event
+from ....compiler.registry import register_event
+from ...base import Event
 
 ''' General events '''
 @register_event

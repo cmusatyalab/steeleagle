@@ -2,7 +2,7 @@
 import asyncio
 from typing import Optional
 from pydantic import Field
-from ....dsl.compiler.registry import register_action
+from ....compiler.registry import register_action
 from ...base import Action
 from ..primitives.control import SetGimbalPose, SetGlobalPosition, SetVelocity
 from ...datatypes import common as common
