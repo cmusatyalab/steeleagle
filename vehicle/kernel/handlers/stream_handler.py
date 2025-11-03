@@ -83,7 +83,7 @@ class StreamHandler:
     def update_target_engines(self, target_engines):
         '''
         Update the target engines for local/remote producers. Decides which server the
-        engine is on based on the name prexif (remote:____ for a remote engine and 
+        engine is on based on the name prexif (remote:____ for a remote engine and
         local:____ for a local engine).
         '''
         logger.info(f'Updating target engines to {target_engines}')
@@ -95,15 +95,10 @@ class StreamHandler:
             elif 'local:' in engine:
                 local_engines.append(engine.replace('local:', ''))
         for producer in self._remote_producers:
-            if producer.is_running:
-                producer.stop()
-            if len(remote_engines):
-                producer.start(remote_engines)
+            producer.change_target_engines(remote_engines)
         for producer in self._local_producers:
-            if producer.is_running:
-                producer.stop()
             if len(local_engines):
-                producer.start(local_engines)
+                producer.change_target_engines(local_engines)
 
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)
@@ -125,7 +120,7 @@ class StreamHandler:
                 [],
                 source_name="driver_telemetry"
                 )
-    
+
     def get_imagery_producer(self):
         imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
         imagery_sock.setsockopt(zmq.SUBSCRIBE, b'')
@@ -143,7 +138,7 @@ class StreamHandler:
                 [],
                 source_name="images"
                 )
-    
+
     def get_mission_telemetry_producer(self):
         mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
         mission_sock.setsockopt(zmq.SUBSCRIBE, b'')
@@ -172,7 +167,7 @@ class StreamHandler:
             result_wrapper.result_producer_name.value.encode('utf-8'),
             result_wrapper.SerializeToString()
             ])
-    
+
     def _base_producer(self, socket, proto_class, payload_type):
         '''
         Returns a base producer object that builds a given payload type
@@ -182,7 +177,7 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = payload_type
             try:
-                _, data = await socket.recv_multipart()  
+                _, data = await socket.recv_multipart()
             except Exception as e:
                 return input_frame
             proto_class.ParseFromString(data)

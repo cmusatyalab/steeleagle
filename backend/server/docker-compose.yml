@@ -50,7 +50,7 @@ services:
     container_name: obstacle-engine
     restart: on-failure:3
     privileged: true
-    entrypoint: ["uv", "run", "/steeleagle/depth.py", "--source", "telemetry", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
+    entrypoint: ["uv", "run", "/steeleagle/depth.py", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
     deploy:
       resources:
         reservations:
@@ -88,8 +88,6 @@ services:
         "uv",
         "run",
         "/steeleagle/obj.py",
-        "--source",
-        "telemetry",
         "--model",
         "${DNN}",
         "--threshold",

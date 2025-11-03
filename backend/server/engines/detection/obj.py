@@ -26,8 +26,6 @@ import logging
 from gabriel_server.network_engine import engine_runner
 from openscout_object_engine import OpenScoutObjectEngine
 
-SOURCE = "openscout"
-
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +67,7 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--source", default=SOURCE, help="Source for engine to register with."
+        "-src", "--engine_id", default="object-engine", help="Engine identifier."
     )
 
     parser.add_argument(
@@ -140,7 +138,7 @@ def main():
     logger.info("Starting object detection cognitive engine..")
     runner = engine_runner.EngineRunner(
         engine=OpenScoutObjectEngine(args),
-        engine_name=args.source,
+        engine_name=args.engine_id,
         server_address=args.gabriel,
         all_responses_required=True,
     )
