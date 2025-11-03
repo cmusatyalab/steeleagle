@@ -2,7 +2,7 @@
 import logging
 
 # SDK imports
-from parrot_olympe import ParrotOlympeDrone
+from Anafi.ParrotOlympe import ParrotOlympeDrone
 from olympe.messages.gimbal import attitude
 
 logger = logging.getLogger("Parrot/Anafi")

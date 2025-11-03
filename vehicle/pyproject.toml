@@ -17,7 +17,7 @@ dependencies = [
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "pytest-order>=1.3.0",
-    "steeleagle-sdk",
+    "steeleagle-sdk>=1.0.10",
     "toml>=0.10.2",
     "zmq>=0.0.0",
     "pillow>=11.3.0",

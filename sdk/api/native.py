@@ -1,10 +1,6 @@
 import grpc
-from typing import Any, List, Optional
-from enum import Enum
-from dataclasses import is_dataclass, asdict as dc_asdict
+from typing import Any, Optional
 # API imports
-from ..base import Action
-from ..datatypes.common import Response
 from google.protobuf.timestamp_pb2 import Timestamp
 
 def now_ts() -> Timestamp:
@@ -20,22 +16,6 @@ def now_ts() -> Timestamp:
     ts = Timestamp()
     ts.GetCurrentTime()
     return ts
-
-def payload_from_action(action: Action) -> dict:
-    """Get the payload of an Action object as JSON.
-
-    Returns a JSON-ified version of the input Action object. This
-    is usually used to translate from the Python API into the Protobuf
-    API for serialization over the wire.
-
-    Args:
-        action (Action): input Action to be JSON serialized.
-
-    Returns:
-        dict: JSON serialized version of the input action.
-    """
-    data = action.model_dump(exclude_none=True, by_alias=True, mode = "json")  # v2
-    return data
 
 def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     """Get the corresponding Python API Response for an error code.
