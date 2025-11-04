@@ -487,18 +487,18 @@ Information about the current setpoint.
 Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
 that the vehicle is currently moving towards. By default, when the vehicle is idle, this
 setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
-setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
+setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
 reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
 #### Attributes
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> default all zeros idle setpoint    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> ENU (North, East, Up) position setpoint    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_neu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> NEU (North, East, Up) position setpoint    
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;global_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> global setpoint    
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_body_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> body (forward, right, up) velocity setpoint    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_enu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> ENU (North, East, Up) velocity setpoint
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_neu_sp**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> NEU (North, East, Up) velocity setpoint
 
 
 
@@ -512,21 +512,21 @@ class SetpointInfo(Datatype):
     Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
     that the vehicle is currently moving towards. By default, when the vehicle is idle, this
     setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
-    setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
+    setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
     reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
     
     Attributes:
         position_body_sp (common.Position): default all zeros idle setpoint    
-        position_enu_sp (common.Position): ENU (North, East, Up) position setpoint    
+        position_neu_sp (common.Position): NEU (North, East, Up) position setpoint    
         global_sp (common.Location): global setpoint    
         velocity_body_sp (common.Velocity): body (forward, right, up) velocity setpoint    
-        velocity_enu_sp (common.Velocity): ENU (North, East, Up) velocity setpoint    
+        velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint    
     """
     position_body_sp: common.Position
-    position_enu_sp: common.Position
+    position_neu_sp: common.Position
     global_sp: common.Location
     velocity_body_sp: common.Velocity
-    velocity_enu_sp: common.Velocity
+    velocity_neu_sp: common.Velocity
 
 ```
 </details>
@@ -545,11 +545,11 @@ Includes home position, global position (only valid with a GPS fix), relative po
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;global_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-location">Location</Link></code>) <text>&#8212;</text> current global position of the vehicle    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;relative_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;relative_position**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-position">Position</Link></code>) <text>&#8212;</text> current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_neu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;velocity_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-velocity">Velocity</Link></code>) <text>&#8212;</text> current velocity of the vehicle in the body (forward, right, up) coordinate frame    
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;setpoint_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-setpointinfo">SetpointInfo</Link></code>) <text>&#8212;</text> info on the current vehicle setpoint
 
@@ -567,15 +567,15 @@ class PositionInfo(Datatype):
     Attributes:
         home (common.Location): global position that will be used when returning home    
         global_position (common.Location): current global position of the vehicle    
-        relative_position (common.Position): current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
-        velocity_enu (common.Velocity): current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
-        velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
+        relative_position (common.Position): current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position    
+        velocity_neu (common.Velocity): current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame    
+        velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up) coordinate frame    
         setpoint_info (SetpointInfo): info on the current vehicle setpoint    
     """
     home: common.Location
     global_position: common.Location
     relative_position: common.Position
-    velocity_enu: common.Velocity
+    velocity_neu: common.Velocity
     velocity_body: common.Velocity
     setpoint_info: SetpointInfo
 
@@ -594,7 +594,7 @@ Status of a gimbal.
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_body**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the body (forward, right, up) reference frame    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_enu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the ENU (North, East, Up) reference frame
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;pose_neu**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/common#class-pose">Pose</Link></code>) <text>&#8212;</text> current pose in the NEU (North, East, Up) reference frame
 
 
 
@@ -608,11 +608,11 @@ class GimbalStatus(Datatype):
     Attributes:
         id (int): ID of the gimbal    
         pose_body (common.Pose): current pose in the body (forward, right, up) reference frame    
-        pose_enu (common.Pose): current pose in the ENU (North, East, Up) reference frame    
+        pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame    
     """
     id: int
     pose_body: common.Pose
-    pose_enu: common.Pose
+    pose_neu: common.Pose
 
 ```
 </details>
@@ -923,7 +923,15 @@ that is broadcast to attached compute services.
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;channels**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> number of channels    
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> frame ID for future correlation
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(<code>int</code>) <text>&#8212;</text> frame ID for future correlation    
+
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;vehicle_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-vehicleinfo">VehicleInfo</Link></code>) <text>&#8212;</text> the vehicle that this telemetry corresponds to    
+
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;position_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-positioninfo">PositionInfo</Link></code>) <text>&#8212;</text> positional info about the vehicle    
+
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;gimbal_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-gimbalinfo">GimbalInfo</Link></code>) <text>&#8212;</text> status on attached gimbals and their orientations    
+
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;imaging_sensor_info**&nbsp;&nbsp;(<code><Link to="/sdk/python/steeleagle_sdk/api/datatypes/telemetry#class-imagingsensorinfo">ImagingSensorInfo</Link></code>) <text>&#8212;</text> information about the vehicle imaging sensors
 
 
 
@@ -946,6 +954,10 @@ class Frame(Datatype):
         d_res (int): depth resolution in pixels    
         channels (int): number of channels    
         id (int): frame ID for future correlation    
+        vehicle_info (VehicleInfo): the vehicle that this telemetry corresponds to    
+        position_info (PositionInfo): positional info about the vehicle    
+        gimbal_info (GimbalInfo): status on attached gimbals and their orientations    
+        imaging_sensor_info (ImagingSensorInfo): information about the vehicle imaging sensors    
     """
     timestamp: Timestamp
     data: bytes
@@ -954,6 +966,10 @@ class Frame(Datatype):
     d_res: int
     channels: int
     id: int
+    vehicle_info: VehicleInfo
+    position_info: PositionInfo
+    gimbal_info: GimbalInfo
+    imaging_sensor_info: ImagingSensorInfo
 
 ```
 </details>

@@ -9,7 +9,7 @@ primarily built for Python, though it supports all languages via its native Prot
 SteelEagle provides a simulated environment which can end-to-end test missions using virutal kinematic vehicles.
 
 ## Contents
-- [**Developer Guides**](guide/): Step-by-step development walkthroughs for all parts of the SteelEagle ecosystem
+- [**Developer Guides**](guide/): step-by-step development walkthroughs for all parts of the SteelEagle ecosystem
 - [**Python Package**](python/): PyPI package containing SteelEagle SDK sources for Python
 - [**Native Sources**](native/): Protobuf specification for the SteelEagle protocol (useful for non-Python applications)
 

@@ -93,11 +93,12 @@ const config = {
 	    position: 'left',
 	    label: 'Reference',
           },
-          {
-            href: 'https://github.com/cmusatyalab/steeleagle',
-            label: 'GitHub',
-            position: 'right',
-          },
+	  {
+	    href: "https://github.com/cmusatyalab/steeleagle",
+	    position: "right",
+	    className: "header-github-link",
+	    "aria-label": "GitHub repository",
+	  },
         ],
       },
       prism: {

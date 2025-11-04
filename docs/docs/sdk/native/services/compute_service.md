@@ -64,9 +64,9 @@ Takes a list of datasinks and removes them from the current consumer list.
 Denotes where a datasink is located.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;REMOTE** <text>&#8212;</text> remote location (network hop required)
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;REMOTE**&nbsp;&nbsp;(`0`) <text>&#8212;</text> remote location (network hop required)
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;LOCAL**&nbsp;&nbsp;(1) <text>&#8212;</text> local location (IPC)
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;LOCAL**&nbsp;&nbsp;(`1`) <text>&#8212;</text> local location (IPC)
 
 
 ---
@@ -76,7 +76,7 @@ Denotes where a datasink is located.
 Information about a datasink.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(string) <text>&#8212;</text> datasink ID
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(`string`) <text>&#8212;</text> datasink ID
 
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;location**&nbsp;&nbsp;(<code><Link to="/sdk/native/services/compute_service#enum-datasinklocation">DatasinkLocation</Link></code>) <text>&#8212;</text> datasink location
 

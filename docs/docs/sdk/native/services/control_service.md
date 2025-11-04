@@ -338,9 +338,9 @@ Sets the frequency of the telemetry stream.
 Altitude mode switch.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;ABSOLUTE** <text>&#8212;</text> meters above Mean Sea Level
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;ABSOLUTE**&nbsp;&nbsp;(`0`) <text>&#8212;</text> meters above Mean Sea Level
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;RELATIVE**&nbsp;&nbsp;(1) <text>&#8212;</text> meters above takeoff position
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;RELATIVE**&nbsp;&nbsp;(`1`) <text>&#8212;</text> meters above takeoff position
 
 
 ---
@@ -350,9 +350,9 @@ Altitude mode switch.
 Heading mode switch.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;TO_TARGET** <text>&#8212;</text> orient towards the target location
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;TO_TARGET**&nbsp;&nbsp;(`0`) <text>&#8212;</text> orient towards the target location
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;HEADING_START**&nbsp;&nbsp;(1) <text>&#8212;</text> orient towards the given heading
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;HEADING_START**&nbsp;&nbsp;(`1`) <text>&#8212;</text> orient towards the given heading
 
 
 ---
@@ -362,9 +362,9 @@ Heading mode switch.
 Reference frame mode switch.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;BODY** <text>&#8212;</text> vehicle reference frame
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;BODY**&nbsp;&nbsp;(`0`) <text>&#8212;</text> vehicle reference frame
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;NEU**&nbsp;&nbsp;(1) <text>&#8212;</text> NEU (North, East, Up) reference frame
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;NEU**&nbsp;&nbsp;(`1`) <text>&#8212;</text> NEU (North, East, Up) reference frame
 
 
 ---
@@ -374,11 +374,11 @@ Reference frame mode switch.
 Pose mode switch.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;ANGLE** <text>&#8212;</text> absolute angle
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;ANGLE**&nbsp;&nbsp;(`0`) <text>&#8212;</text> absolute angle
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;OFFSET**&nbsp;&nbsp;(1) <text>&#8212;</text> request data // Offset from current
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;OFFSET**&nbsp;&nbsp;(`1`) <text>&#8212;</text> request data // Offset from current
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;VELOCITY**&nbsp;&nbsp;(2) <text>&#8212;</text> rotational velocities
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;VELOCITY**&nbsp;&nbsp;(`2`) <text>&#8212;</text> rotational velocities
 
 
 ---
@@ -432,7 +432,7 @@ Pose mode switch.
 #### Fields
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;request**&nbsp;&nbsp;(<code><Link to="/sdk/native/common#message-request">Request</Link></code>) <text>&#8212;</text> request data
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;take_off_altitude**&nbsp;&nbsp;(float) <text>&#8212;</text> take off height in relative altitude [meters]
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;take_off_altitude**&nbsp;&nbsp;(`float`) <text>&#8212;</text> take off height in relative altitude [meters]
 
 
 ---
@@ -538,7 +538,7 @@ Pose mode switch.
 #### Fields
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;request**&nbsp;&nbsp;(<code><Link to="/sdk/native/common#message-request">Request</Link></code>) <text>&#8212;</text> request data
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(uint32) <text>&#8212;</text> ID of the target gimbal
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;gimbal_id**&nbsp;&nbsp;(`uint32`) <text>&#8212;</text> ID of the target gimbal
 
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;pose**&nbsp;&nbsp;(<code><Link to="/sdk/native/common#message-pose">Pose</Link></code>) <text>&#8212;</text> target pose
 
@@ -554,11 +554,11 @@ Pose mode switch.
 Configuration for an imaging sensor.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(uint32) <text>&#8212;</text> target imaging sensor ID
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;id**&nbsp;&nbsp;(`uint32`) <text>&#8212;</text> target imaging sensor ID
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;set_primary**&nbsp;&nbsp;(bool) <text>&#8212;</text> set this sensor as the primary stream
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;set_primary**&nbsp;&nbsp;(`bool`) <text>&#8212;</text> set this sensor as the primary stream
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;set_fps**&nbsp;&nbsp;(uint32) <text>&#8212;</text> target FPS for stream
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;set_fps**&nbsp;&nbsp;(`uint32`) <text>&#8212;</text> target FPS for stream
 
 
 ---
@@ -578,7 +578,7 @@ Configuration for an imaging sensor.
 #### Fields
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;request**&nbsp;&nbsp;(<code><Link to="/sdk/native/common#message-request">Request</Link></code>) <text>&#8212;</text> request data
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;frequency**&nbsp;&nbsp;(uint32) <text>&#8212;</text> target frequency of telemetry generation, in Hz
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;frequency**&nbsp;&nbsp;(`uint32`) <text>&#8212;</text> target frequency of telemetry generation, in Hz
 
 
 ---
