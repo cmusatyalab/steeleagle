@@ -983,7 +983,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.8"
+version = "1.0.12"
 source = { editable = "." }
 dependencies = [
     { name = "folium" },
