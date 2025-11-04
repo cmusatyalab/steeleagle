@@ -278,7 +278,7 @@ def draw_map():
                     )
                     plane = folium.Icon(
                         icon="plane",
-                        color=ColorHash(drone_name).hex,
+                        icon_color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
                     )
