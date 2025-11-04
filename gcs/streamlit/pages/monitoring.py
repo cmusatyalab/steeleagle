@@ -29,7 +29,7 @@ red = connect_redis()
 def plot_data():
     cols = st.columns(2)
     i = 0
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if (
             time.time() - last_seen < st.session_state.inactivity_time * 60
