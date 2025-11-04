@@ -543,7 +543,7 @@ class SwarmController:
 
                             req = controlplane.Request()
                             req.seq_num = int(time.time())
-                            req.timestampe.GetCurrentTime()
+                            req.timestamp.GetCurrentTime()
                             req.veh.drone_ids.append(drone_id)
                             req.veh.location = loc
 
@@ -564,7 +564,7 @@ class SwarmController:
 
                             req = controlplane.Request()
                             req.seq_num = int(time.time())
-                            req.timestampe.GetCurrentTime()
+                            req.timestamp.GetCurrentTime()
                             req.veh.drone_ids.append(drone_id)
                             req.veh.location = loc
 
