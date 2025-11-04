@@ -545,7 +545,7 @@ class SwarmController:
                             req.seq_num = int(time.time())
                             req.timestamp.GetCurrentTime()
                             req.veh.drone_ids.append(drone_id)
-                            req.veh.location = loc
+                            req.veh.location.CopyFrom(loc)
 
                             # Reroute to center of upper neighbor
                             logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to elevate...")
@@ -566,7 +566,7 @@ class SwarmController:
                             req.seq_num = int(time.time())
                             req.timestamp.GetCurrentTime()
                             req.veh.drone_ids.append(drone_id)
-                            req.veh.location = loc
+                            req.veh.location.CopyFrom(loc)
 
                             # Reroute to center of upper neighbor
                             logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to descend...")

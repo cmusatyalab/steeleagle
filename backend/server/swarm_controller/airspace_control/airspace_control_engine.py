@@ -929,7 +929,7 @@ class AirspaceControlEngine:
             self.reserve_region(drone_id, cand_reg)
             actions_logger.info(f"drone_id: {drone_id} >> Reserve above success, reserved c_id {cand_reg.c_id}")
             return cand_reg
-        actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor already reserved")
+        actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor already reserved by {cand_reg.get_owner()}")
         return None
 
     def reserve_below(self, drone_id, curr_pos) -> Optional[asr.AirspaceRegion]:
@@ -945,5 +945,5 @@ class AirspaceControlEngine:
             self.reserve_region(drone_id, cand_reg)
             actions_logger.info(f"drone_id: {drone_id} >> Reserve below success, reserved c_id {cand_reg.c_id}")
             return cand_reg
-        actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved")
+        actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved by {cand_reg.get_owner()}")
         return None
