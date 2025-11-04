@@ -32,6 +32,7 @@ from steeleagle_sdk.protocol.services.control_service_pb2 import (
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     UploadRequest,
     StartRequest,
+    StopRequest,
 )
 
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
@@ -156,14 +157,19 @@ def get_callback(toast_message):
 
 def enable_manual():
     req = CommandRequest()
+    data = StopRequest(request=generate_request())
+    req.method_name = "Mission.Stop"
+    req.request.Pack(data)
+    for d in st.session_state.selected_drones:
+        req.vehicle_id = d
+        st.session_state.stub.Command(req)
     data = HoldRequest(request=generate_request())
     req.method_name = "Control.Hold"
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
         req.vehicle_id = d
         st.session_state.stub.Command(req)
-
-    st.toast("Instructed vehicle to hold!")
+    st.toast("Instructed vehicle(s) to cancel mission and hold!")
 
 
 def rth():
