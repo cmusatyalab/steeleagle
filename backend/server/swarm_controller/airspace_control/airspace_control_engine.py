@@ -1,6 +1,7 @@
 import airspace_control.airspace_region as asr
 import geohash as pgh
 from typing import Optional
+import numpy as np
 import itertools
 import time
 from functools import wraps
@@ -10,6 +11,8 @@ from airspace_control.logger_config import AirspaceLoggerAdapter
 
 
 BASE_TIMEOUT = 10  # in seconds
+M_PER_LAT_DEG = 111139  # in meters per degree of latitude
+PROJECTION_TIME = 3  # in seconds
 
 logger = logging.getLogger("airspace.engine")
 actions_logger = logging.getLogger("airspace.actions")
@@ -821,7 +824,7 @@ class AirspaceControlEngine:
         )
         return False
 
-    def validate_position(self, drone_id, lat, lon, alt):
+    def validate_position(self, drone_id, lat, lon, alt) -> bool:
         current_region = self.get_region_from_point(lat, lon, alt)
         if (current_region is not None) and (current_region.get_status() == asr.RegionStatus.NOFLY):
             actions_logger.warning(f"c_id: {current_region.c_id} >> Failed to validate occupant {drone_id}")
@@ -848,3 +851,82 @@ class AirspaceControlEngine:
                 actions_logger.warning(f"c_id: None >> Failed to validate occupant {drone_id}, "
                                        f"current location ({lat}, {lon}, {alt}) outside geohashed region")
             return False
+        
+    def reserve_projected_position(self, drone_id, lat, lon, alt) -> bool:
+        proj_region = self.get_region_from_point(lat, lon, alt)
+        if (proj_region is not None) and (proj_region.get_status() == asr.RegionStatus.NOFLY):
+            actions_logger.warning(f"c_id: {proj_region.c_id} >> Failed to validate occupant {drone_id}")
+            return False
+        if (proj_region is not None) and (proj_region.get_owner() == drone_id):
+            actions_logger.debug(f"drone_id: {drone_id} >> Already controls projected region c_id: {proj_region.c_id}")
+            return True
+        if (proj_region is not None) and (proj_region.get_owner() == None):
+            self.reserve_region(drone_id, proj_region)
+            actions_logger.debug(f"drone_id: {drone_id} >> Reserved projected region c_id: {proj_region.c_id}")
+            return True
+        else:
+            if proj_region is not None:
+                actions_logger.warning(f"c_id: {proj_region.c_id} >> Failed to reserve projected region for {drone_id}")
+            else:
+                actions_logger.warning(f"c_id: None >> Failed to reserve projected region for {drone_id}, "
+                                       f"current location ({lat}, {lon}, {alt}) outside geohashed region")
+            return False
+
+    def project_position(self, curr_pos, curr_vel):
+        new_lat = curr_pos[0] + (curr_vel[0] * PROJECTION_TIME / M_PER_LAT_DEG)
+        m_per_deg_lon = np.cos(np.deg2rad(new_lat)) * M_PER_LAT_DEG
+        new_lon = curr_pos[1] + (curr_vel[1] * PROJECTION_TIME / m_per_deg_lon)
+        new_alt = curr_pos[2] + (curr_vel[2] * PROJECTION_TIME)
+        return (new_lat, new_lon, new_alt)
+    
+    def get_directly_above(self, base_region) -> Optional[asr.AirspaceRegion]:
+        if len(base_region.upper_neighbors) == 0:
+            return None
+        for reg_id in base_region.upper_neighbors:
+            cand_region = self.get_region_from_id(reg_id)
+            if base_region.shares_side_with(cand_region):
+                return cand_region
+        logger.warning(f"c_id: {base_region.c_id} >> Failed to match region to a direct upper neighbor from upper neighbor set")
+        return None
+
+    def get_directly_below(self, base_region) -> Optional[asr.AirspaceRegion]:
+        if len(base_region.lower_neighbors) == 0:
+            return None
+        for reg_id in base_region.lower_neighbors:
+            cand_region = self.get_region_from_id(reg_id)
+            if base_region.shares_side_with(cand_region):
+                return cand_region
+        logger.warning(f"c_id: {base_region.c_id} >> Failed to match region to a direct lower neighbor from lower neighbor set")
+        return None
+
+    def reserve_above(self, drone_id, curr_pos) -> Optional[asr.AirspaceRegion]:
+        curr_reg = self.get_region_from_point(curr_pos[0], curr_pos[1], curr_pos[2])
+        cand_reg = self.get_directly_above(curr_reg)
+        if cand_reg is None:
+            actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, current region is on airspace ceiling")
+            return None
+        if cand_reg.get_status() == asr.RegionStatus.NOFLY:
+            actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor is marked NOFLY")
+            return None
+        if (cand_reg.get_owner() is None) or (cand_reg.get_owner == drone_id):
+            self.reserve_region(drone_id, cand_reg)
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve above success, reserved c_id {cand_reg.c_id}")
+            return cand_reg
+        actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor already reserved")
+        return None
+
+    def reserve_below(self, drone_id, curr_pos) -> Optional[asr.AirspaceRegion]:
+        curr_reg = self.get_region_from_point(curr_pos[0], curr_pos[1], curr_pos[2])
+        cand_reg = self.get_directly_below(curr_reg)
+        if cand_reg is None:
+            actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, current region is on airspace floor")
+            return None
+        if cand_reg.get_status() == asr.RegionStatus.NOFLY:
+            actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor is marked NOFLY")
+            return None
+        if (cand_reg.get_owner() is None) or (cand_reg.get_owner == drone_id):
+            self.reserve_region(drone_id, cand_reg)
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve below success, reserved c_id {cand_reg.c_id}")
+            return cand_reg
+        actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved")
+        return None

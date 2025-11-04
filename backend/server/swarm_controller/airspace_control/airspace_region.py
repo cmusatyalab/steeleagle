@@ -1,6 +1,7 @@
 import time
 from enum import Enum
 import logging
+from typing import Optional
 
 # Set up logger for regions
 logger = logging.getLogger("airspace.region")

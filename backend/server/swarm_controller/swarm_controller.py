@@ -508,10 +508,12 @@ class SwarmController:
                 for drone_id in self.red.keys("drone:*"):
                     drone_list.append(drone_id.split("drone:")[-1])
             for drone_id in drone_list:
+                halt_flag = False
                 result = self.red.xrevrange(f"telemetry:{drone_id}", "+", "-", 1)
                 for message_id, message_data in result:
                     curr_pos = (float(message_data['latitude']), float(message_data['longitude']), float(message_data['rel_altitude']))
                     curr_vel = (float(message_data['v_body_forward']), float(message_data['v_body_lateral']), float(message_data['v_body_altitude']))
+                    curr_hdg = (float(message_data['bearing']))
                     if not self.air_control.validate_position(drone_id, curr_pos[0], curr_pos[1], curr_pos[2]):
                         req = controlplane.Request()
                         req.seq_num = int(time.time())
@@ -521,6 +523,67 @@ class SwarmController:
                         logger.info(f"Airspace violation reported. Directing drone {drone_id} to halt...")
                         await self.send_to_drone(req, None, [drone_id])
                         logger.info(f"Airspace violation follow-up. Kill signal sent to drone {drone_id}")
+                        halt_flag = True
+                    if halt_flag:
+                        break
+                    projected_pos = self.air_control.project_position(curr_pos, curr_vel)
+                    # Attempt to grab lease on next region
+                    if not self.air_control.reserve_projected_position(drone_id, projected_pos[0], projected_pos[1], projected_pos[2]):
+                        upper_reroute = self.air_control.reserve_above(drone_id, curr_pos)
+                        # Attempt to elevate first
+                        if upper_reroute is not None:
+                            centroid = upper_reroute.get_centroid()
+                            loc = common.Location()
+                            loc.latitude = centroid[0]
+                            loc.longitude = centroid[1]
+                            loc.altitude = centroid[2]
+                            loc.heading = curr_hdg
+                            loc.altitude_mode = common.LocationAltitudeMode.TAKEOFF_RELATIVE
+                            loc.heading_mode = common.LocationHeadingMode.HEADING_START
+
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestampe.GetCurrentTime()
+                            req.veh.drone_ids.append(drone_id)
+                            req.veh.location = loc
+
+                            # Reroute to center of upper neighbor
+                            logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to elevate...")
+                            await self.send_to_drone(req, None, [drone_id])
+                            logger.info(f"Elevation reroute follow-up. Reroute signal sent to drone {drone_id}")
+                        lower_reroute = self.air_control.reserve_below(drone_id, curr_pos)
+                        if lower_reroute is not None:
+                            centroid = lower_reroute.get_centroid()
+                            loc = common.Location()
+                            loc.latitude = centroid[0]
+                            loc.longitude = centroid[1]
+                            loc.altitude = centroid[2]
+                            loc.heading = curr_hdg
+                            loc.altitude_mode = common.LocationAltitudeMode.TAKEOFF_RELATIVE
+                            loc.heading_mode = common.LocationHeadingMode.HEADING_START
+
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestampe.GetCurrentTime()
+                            req.veh.drone_ids.append(drone_id)
+                            req.veh.location = loc
+
+                            # Reroute to center of upper neighbor
+                            logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to descend...")
+                            await self.send_to_drone(req, None, [drone_id])
+                            logger.info(f"Descend reroute follow-up. Reroute signal sent to drone {drone_id}")
+                            # Attempt to descend if unable to elevate
+                        if upper_reroute is None and lower_reroute is None:
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestamp.GetCurrentTime()
+                            req.msn.drone_ids.append(drone_id)
+                            req.msn.action = controlplane.MissionAction.STOP
+                            logger.info(f"Unable to reserve projected next region and unable to reroute vertically. Directing drone {drone_id} to halt...")
+                            await self.send_to_drone(req, None, [drone_id])
+                            logger.info(f"Projected reservation and reroute failure follow-up. Kill signal sent to drone {drone_id}")
+                            halt_flag = True
+
             await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
 
