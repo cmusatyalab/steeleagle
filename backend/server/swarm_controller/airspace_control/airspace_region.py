@@ -146,6 +146,15 @@ class AirspaceRegion:
     def get_all_neighbor(self) -> set[str]:
         return self.lateral_neighbors | self.upper_neighbors | self.lower_neighbors
 
+    def get_upper_neighbors(self) -> set[str]:
+        return self.upper_neighbors
+    
+    def get_lower_neighbors(self) -> set[str]:
+        return self.lower_neighbors
+    
+    def get_lateral_neighbors(self) -> set[str]:
+        return self.lateral_neighbors
+
     def shares_side_with(self, other: "AirspaceRegion") -> bool:
         if other is None or other.region_id is None:
             return False

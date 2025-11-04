@@ -899,6 +899,10 @@ class AirspaceControlEngine:
         return (new_lat, new_lon, new_alt)
     
     def get_directly_above(self, base_region) -> Optional[asr.AirspaceRegion]:
+        bn = base_region.get_lower_neighbors()
+        ln = base_region.get_lateral_neighbors()
+        un = base_region.get_upper_neighbors()
+        logger.info(f"c_id: {base_region.c_id} >> BN: {len(bn)} | LN: {len(ln)} | UN: {len(un)}")
         if len(base_region.upper_neighbors) == 0:
             return None
         for reg_id in base_region.upper_neighbors:
