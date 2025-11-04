@@ -899,26 +899,20 @@ class AirspaceControlEngine:
         return (new_lat, new_lon, new_alt)
     
     def get_directly_above(self, base_region) -> Optional[asr.AirspaceRegion]:
-        bn = base_region.get_lower_neighbors()
-        ln = base_region.get_lateral_neighbors()
-        un = base_region.get_upper_neighbors()
-        logger.info(f"c_id: {base_region.c_id} >> BN: {len(bn)} | LN: {len(ln)} | UN: {len(un)}")
-        if len(base_region.upper_neighbors) == 0:
-            return None
-        for reg_id in base_region.upper_neighbors:
-            cand_region = self.get_region_from_id(reg_id)
-            if base_region.shares_side_with(cand_region):
-                return cand_region
+        base_centroid = base_region.get_centroid()
+        next_alt = base_region.max_alt + 1
+        cand_region = self.get_region_from_point(base_centroid[0], base_centroid[1], next_alt)
+        if cand_region is not None:
+            return cand_region
         logger.warning(f"c_id: {base_region.c_id} >> Failed to match region to a direct upper neighbor from upper neighbor set")
         return None
 
     def get_directly_below(self, base_region) -> Optional[asr.AirspaceRegion]:
-        if len(base_region.lower_neighbors) == 0:
-            return None
-        for reg_id in base_region.lower_neighbors:
-            cand_region = self.get_region_from_id(reg_id)
-            if base_region.shares_side_with(cand_region):
-                return cand_region
+        base_centroid = base_region.get_centroid()
+        next_alt = base_region.min_alt - 1
+        cand_region = self.get_region_from_point(base_centroid[0], base_centroid[1], next_alt)
+        if cand_region is not None:
+            return cand_region
         logger.warning(f"c_id: {base_region.c_id} >> Failed to match region to a direct lower neighbor from lower neighbor set")
         return None
 
