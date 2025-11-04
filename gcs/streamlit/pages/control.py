@@ -4,6 +4,7 @@
 import threading
 import time
 import folium
+from colorhash import ColorHash
 import streamlit as st
 from streamlit_folium import st_folium
 from folium.plugins import MiniMap
@@ -11,9 +12,8 @@ from util import (
     stream_to_dataframe,
     connect_redis,
     connect_stub,
-    get_drones,
+    get_vehicles,
     menu,
-    COLORS,
     authenticated,
 )
 from st_keypressed import st_keypressed
@@ -210,7 +210,7 @@ def update_imagery():
     )
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
-        st.caption("**:sleuth_or_spy: Object Detection**")
+        st.caption("**:eyes: Object Detection**")
         st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}")
     with col2:
         st.caption("**:checkered_flag: Obstacle Avoidance**")
@@ -277,12 +277,12 @@ def draw_map():
                     text = folium.DivIcon(
                         icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name} [{row["rel_altitude"]:.2f}m]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash({drone_name}).hex};">{drone_name} [{row["rel_altitude"]:.2f}m]',
                         # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
                         icon="plane",
-                        color=COLORS[marker_color],
+                        color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
                     )
@@ -310,7 +310,7 @@ def draw_map():
                 i += 1
 
             if st.session_state.show_gps_tracks:
-                ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
+                ls = folium.PolyLine(locations=coords, color=ColorHash(drone_name).hex)
                 ls.add_to(tracks)
                 marker_color += 1
 
@@ -425,7 +425,7 @@ with options_expander:
     tiles_col[1].selectbox(
         key="tracking_selection",
         label=":dart: **:green[Track Drone]**",
-        options=get_drones(),
+        options=get_vehicles(),
         on_change=change_center(),
         placeholder="Select a drone to track...",
     )
@@ -455,9 +455,9 @@ with options_expander:
         key="trail_length",
     )
     mode = (
-        "**:green-background[:joystick: Manual Control Enabled (armed)]**"
+        "**:green-background[Manual Control Enabled (armed)]**"
         if st.session_state.armed
-        else "**:red-background[:joystick: Manual Control Disabled (disarmed)]**"
+        else "**:red-background[Manual Control Disabled (disarmed)]**"
     )
     tiles_col[4].number_input(
         key="imagery_framerate",
@@ -478,7 +478,7 @@ with col2:
     draw_map()
 
 with st.sidebar:
-    drone_list = get_drones()
+    drone_list = get_vehicles()
     if len(drone_list) > 0:
         st.pills(
             label=":helicopter: **:orange[Swarm Control]** :helicopter:",
@@ -491,7 +491,7 @@ with st.sidebar:
 
     else:
         st.caption("No active drones.")
-    st.toggle(key="armed", label=":safety_vest: Arm Swarm?")
+    st.toggle(key="armed", label=":bangbang: Arm Swarm?")
     st.caption(mode)
 
     st.session_state.script_file = st.file_uploader(
@@ -504,14 +504,14 @@ with st.sidebar:
     )
     st.button(
         key="fly_button",
-        label=":world_map: Fly Mission",
+        label=":scroll: Fly Mission",
         type="primary",
         width="stretch",
         on_click=run_flightscript,
     )
     st.button(
         key="manual_button",
-        label=":octagonal_sign: Halt All",
+        label=":stop_sign: Halt All",
         help="Immediately tell drones to hover.",
         type="primary",
         disabled=False,
