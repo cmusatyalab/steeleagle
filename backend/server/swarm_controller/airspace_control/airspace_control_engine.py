@@ -881,7 +881,7 @@ class AirspaceControlEngine:
             return True
         if (proj_region is not None) and (proj_region.get_owner() == None):
             self.reserve_region(drone_id, proj_region)
-            actions_logger.debug(f"drone_id: {drone_id} >> Reserved projected region c_id: {proj_region.c_id}")
+            actions_logger.info(f"drone_id: {drone_id} >> Reserved projected region c_id: {proj_region.c_id}")
             return True
         else:
             if proj_region is not None:
@@ -922,30 +922,30 @@ class AirspaceControlEngine:
         curr_reg = self.get_region_from_point(curr_pos[0], curr_pos[1], curr_pos[2])
         cand_reg = self.get_directly_above(curr_reg)
         if cand_reg is None:
-            actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, current region is on airspace ceiling")
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, current region is on airspace ceiling")
             return None
         if cand_reg.get_status() == asr.RegionStatus.NOFLY:
-            actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor is marked NOFLY")
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor is marked NOFLY")
             return None
         if (cand_reg.get_owner() is None) or (cand_reg.get_owner == drone_id):
             self.reserve_region(drone_id, cand_reg)
             actions_logger.info(f"drone_id: {drone_id} >> Reserve above success, reserved c_id {cand_reg.c_id}")
             return cand_reg
-        actions_logger.debug(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor already reserved")
+        actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor already reserved")
         return None
 
     def reserve_below(self, drone_id, curr_pos) -> Optional[asr.AirspaceRegion]:
         curr_reg = self.get_region_from_point(curr_pos[0], curr_pos[1], curr_pos[2])
         cand_reg = self.get_directly_below(curr_reg)
         if cand_reg is None:
-            actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, current region is on airspace floor")
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, current region is on airspace floor")
             return None
         if cand_reg.get_status() == asr.RegionStatus.NOFLY:
-            actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor is marked NOFLY")
+            actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor is marked NOFLY")
             return None
         if (cand_reg.get_owner() is None) or (cand_reg.get_owner == drone_id):
             self.reserve_region(drone_id, cand_reg)
             actions_logger.info(f"drone_id: {drone_id} >> Reserve below success, reserved c_id {cand_reg.c_id}")
             return cand_reg
-        actions_logger.debug(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved")
+        actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved")
         return None
