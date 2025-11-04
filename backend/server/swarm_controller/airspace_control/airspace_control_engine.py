@@ -12,7 +12,7 @@ from airspace_control.logger_config import AirspaceLoggerAdapter
 
 BASE_TIMEOUT = 10  # in seconds
 M_PER_LAT_DEG = 111139  # in meters per degree of latitude
-PROJECTION_TIME = 3  # in seconds
+PROJECTION_TIME = 5  # in seconds
 
 logger = logging.getLogger("airspace.engine")
 actions_logger = logging.getLogger("airspace.actions")
@@ -925,7 +925,7 @@ class AirspaceControlEngine:
         if cand_reg.get_status() == asr.RegionStatus.NOFLY:
             actions_logger.info(f"drone_id: {drone_id} >> Reserve above failed, upper neighbor is marked NOFLY")
             return None
-        if (cand_reg.get_owner() is None) or (cand_reg.get_owner == drone_id):
+        if (cand_reg.get_owner() is None) or (cand_reg.get_owner() == drone_id):
             self.reserve_region(drone_id, cand_reg)
             actions_logger.info(f"drone_id: {drone_id} >> Reserve above success, reserved c_id {cand_reg.c_id}")
             return cand_reg
