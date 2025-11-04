@@ -523,9 +523,8 @@ class SwarmController:
                         logger.info(f"Airspace violation reported. Directing drone {drone_id} to halt...")
                         await self.send_to_drone(req, None, [drone_id])
                         logger.info(f"Airspace violation follow-up. Kill signal sent to drone {drone_id}")
-                        halt_flag = True
-                    if halt_flag:
                         break
+
                     projected_pos = self.air_control.project_position(curr_pos, curr_vel)
                     # Attempt to grab lease on next region
                     if not self.air_control.reserve_projected_position(drone_id, projected_pos[0], projected_pos[1], projected_pos[2]):
@@ -551,6 +550,8 @@ class SwarmController:
                             logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to elevate...")
                             await self.send_to_drone(req, None, [drone_id])
                             logger.info(f"Elevation reroute follow-up. Reroute signal sent to drone {drone_id}")
+                            break
+
                         lower_reroute = self.air_control.reserve_below(drone_id, curr_pos)
                         if lower_reroute is not None:
                             centroid = lower_reroute.get_centroid()
@@ -572,6 +573,7 @@ class SwarmController:
                             logger.info(f"Projected airspace region conflict. Directing drone {drone_id} to descend...")
                             await self.send_to_drone(req, None, [drone_id])
                             logger.info(f"Descend reroute follow-up. Reroute signal sent to drone {drone_id}")
+                            break
                             # Attempt to descend if unable to elevate
                         if upper_reroute is None and lower_reroute is None:
                             req = controlplane.Request()
@@ -582,7 +584,7 @@ class SwarmController:
                             logger.info(f"Unable to reserve projected next region and unable to reroute vertically. Directing drone {drone_id} to halt...")
                             await self.send_to_drone(req, None, [drone_id])
                             logger.info(f"Projected reservation and reroute failure follow-up. Kill signal sent to drone {drone_id}")
-                            halt_flag = True
+                            break
 
             await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
