@@ -540,6 +540,13 @@ class SwarmController:
                             loc.altitude_mode = common.LocationAltitudeMode.TAKEOFF_RELATIVE
                             loc.heading_mode = common.LocationHeadingMode.HEADING_START
 
+                            vel = common.VelocityENU()
+                            vel.north_vel = 0
+                            vel.east_vel = 0
+                            vel.up_vel = 10
+                            vel.angular_vel = 90
+                            loc.max_velocity.CopyFrom(vel)
+
                             req = controlplane.Request()
                             req.seq_num = int(time.time())
                             req.timestamp.GetCurrentTime()
@@ -562,6 +569,13 @@ class SwarmController:
                             loc.heading = curr_hdg
                             loc.altitude_mode = common.LocationAltitudeMode.TAKEOFF_RELATIVE
                             loc.heading_mode = common.LocationHeadingMode.HEADING_START
+
+                            vel = common.VelocityENU()
+                            vel.north_vel = 0
+                            vel.east_vel = 0
+                            vel.up_vel = 10
+                            vel.angular_vel = 90
+                            loc.max_velocity.CopyFrom(vel)
 
                             req = controlplane.Request()
                             req.seq_num = int(time.time())
