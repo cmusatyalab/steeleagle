@@ -13,13 +13,13 @@ import Link from '@docusaurus/Link';
 Types of test messages for testing infrastructure
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;CORE_SERVICES**
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;CORE_SERVICES**&nbsp;&nbsp;(`0`)
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;STREAM_SERVICES**&nbsp;&nbsp;(1)
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;STREAM_SERVICES**&nbsp;&nbsp;(`1`)
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;MISSION_SERVICE**&nbsp;&nbsp;(2)
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;MISSION_SERVICE**&nbsp;&nbsp;(`2`)
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;DRIVER_CONTROL_SERVICE**&nbsp;&nbsp;(3)
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;DRIVER_CONTROL_SERVICE**&nbsp;&nbsp;(`3`)
 
 
 ---

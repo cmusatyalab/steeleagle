@@ -19,7 +19,7 @@ _Call Type: normal_
 <summary>View Source</summary>
 ```python
 def add_RemoteServicer_to_server(servicer, server):
-    rpc_method_handlers = {'Command': grpc.unary_stream_rpc_method_handler(servicer.Command, request_deserializer=services_dot_remote__service__pb2.CommandRequest.FromString, response_serializer=common__pb2.Response.SerializeToString), 'CompileMission': grpc.unary_stream_rpc_method_handler(servicer.CompileMission, request_deserializer=services_dot_remote__service__pb2.CompileMissionRequest.FromString, response_serializer=services_dot_remote__service__pb2.CompileMissionResponse.SerializeToString)}
+    rpc_method_handlers = {'Command': grpc.unary_stream_rpc_method_handler(servicer.Command, request_deserializer=services_dot_remote__service__pb2.CommandRequest.FromString, response_serializer=common__pb2.Response.SerializeToString), 'CompileMission': grpc.unary_unary_rpc_method_handler(servicer.CompileMission, request_deserializer=services_dot_remote__service__pb2.CompileMissionRequest.FromString, response_serializer=services_dot_remote__service__pb2.CompileMissionResponse.SerializeToString)}
     generic_handler = grpc.method_handlers_generic_handler('steeleagle.protocol.services.remote_service.Remote', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
     server.add_registered_method_handlers('steeleagle.protocol.services.remote_service.Remote', rpc_method_handlers)
@@ -53,7 +53,7 @@ class RemoteStub(object):
             channel: A grpc.Channel.
         """
         self.Command = channel.unary_stream('/steeleagle.protocol.services.remote_service.Remote/Command', request_serializer=services_dot_remote__service__pb2.CommandRequest.SerializeToString, response_deserializer=common__pb2.Response.FromString, _registered_method=True)
-        self.CompileMission = channel.unary_stream('/steeleagle.protocol.services.remote_service.Remote/CompileMission', request_serializer=services_dot_remote__service__pb2.CompileMissionRequest.SerializeToString, response_deserializer=services_dot_remote__service__pb2.CompileMissionResponse.FromString, _registered_method=True)
+        self.CompileMission = channel.unary_unary('/steeleagle.protocol.services.remote_service.Remote/CompileMission', request_serializer=services_dot_remote__service__pb2.CompileMissionRequest.SerializeToString, response_deserializer=services_dot_remote__service__pb2.CompileMissionResponse.FromString, _registered_method=True)
 
 ```
 </details>
@@ -142,7 +142,7 @@ class Remote(object):
 
     @staticmethod
     def CompileMission(request, target, options=(), channel_credentials=None, call_credentials=None, insecure=False, compression=None, wait_for_ready=None, timeout=None, metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/steeleagle.protocol.services.remote_service.Remote/CompileMission', services_dot_remote__service__pb2.CompileMissionRequest.SerializeToString, services_dot_remote__service__pb2.CompileMissionResponse.FromString, options, channel_credentials, insecure, call_credentials, compression, wait_for_ready, timeout, metadata, _registered_method=True)
+        return grpc.experimental.unary_unary(request, target, '/steeleagle.protocol.services.remote_service.Remote/CompileMission', services_dot_remote__service__pb2.CompileMissionRequest.SerializeToString, services_dot_remote__service__pb2.CompileMissionResponse.FromString, options, channel_credentials, insecure, call_credentials, compression, wait_for_ready, timeout, metadata, _registered_method=True)
 ```
 </details>
 

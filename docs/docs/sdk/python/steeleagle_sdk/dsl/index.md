@@ -13,6 +13,10 @@ import { GoFileSymlinkFile } from "react-icons/go";
 
 
 ---
+## <><code class="docs-submodule">submodule</code></> types <Link to="/sdk/python/steeleagle_sdk/dsl/types"><GoFileSymlinkFile size={25} /></Link>
+
+
+---
 ## <><code class="docs-func">func</code></> build_mission
 
 _Call Type: normal_

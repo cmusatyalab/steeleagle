@@ -31,7 +31,7 @@ Send a report to the server.
 Message container for a report.
 
 #### Fields
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;report_code**&nbsp;&nbsp;(int32) <text>&#8212;</text> integer report code, interpreted by the backend
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;report_code**&nbsp;&nbsp;(`int32`) <text>&#8212;</text> integer report code, interpreted by the backend
 
 
 ---
