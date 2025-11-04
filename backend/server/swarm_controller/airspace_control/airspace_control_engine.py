@@ -560,8 +560,9 @@ class AirspaceControlEngine:
         region_adapter = AirspaceLoggerAdapter(
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
-
-        if not target_region.is_available() or not drone_id in self.drone_priority_map or not target_region.is_available_priority(self.drone_priority_map[drone_id]):
+        if drone_id not in self.drone_priority_map:
+            self.drone_priority_map[drone_id] = 0
+        if not target_region.is_available() or not target_region.is_available_priority(self.drone_priority_map[drone_id]):
         # Renew the lease if already owned by the requesting drone
             curr_owner = target_region.get_owner()
             if curr_owner is not None and curr_owner == drone_id:
@@ -569,6 +570,21 @@ class AirspaceControlEngine:
                 target_region.set_timeout(BASE_TIMEOUT)
                 return True
                 # Fail if owned by another drone
+            if curr_owner is None:
+                if target_region.is_available():
+                    target_region.update_status(asr.RegionStatus.ALLOCATED)
+                    target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
+                    region_adapter.info(
+                        f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
+                    )
+                    return True
+                if target_region.is_available_priority(self.drone_priority_map[drone_id]):
+                    target_region.update_status(asr.RegionStatus.RESTRICTED_ALLOCATED)
+                    target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
+                    region_adapter.info(
+                        f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
+                    )
+                    return True
             actions_logger.warning(
                     f"c_id: {target_region.c_id} >> RESERVATION CONFLICT: Drone {drone_id} attempted to reserve region {target_region.region_id} owned by drone {curr_owner}"
                 )
@@ -691,7 +707,10 @@ class AirspaceControlEngine:
         return neighbor_info
 
     def set_priority(self, drone_id, new_priority: int):
-        old_priority = self.drone_priority_map.get(drone_id)
+        if drone_id in self.drone_priority_map:
+            old_priority = self.drone_priority_map.get(drone_id)
+        else:
+            old_priority = 0
         self.drone_priority_map[drone_id] = new_priority
         logger.info(
             f"Priority updated for drone {drone_id}: {old_priority} -> {new_priority}"
