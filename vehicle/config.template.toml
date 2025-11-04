@@ -1,13 +1,10 @@
 [vehicle]
 name = '<NAME>'
-# Script is relative to the vehicle directory; the launch script
-# will attempt to run this file as a subprocess
-script = 'path/to/executable'
 kwargs = {}
 
 [cloudlet]
-swarm_controller = 'localhost:9005'
-remote_compute_service = 'localhost:9006'
+swarm_controller = '<SWARM_CONTROLLER>:5003'
+remote_compute_service = '<GABRIEL>:9099'
 
 [logging]
 # Whether or not to create an MCAP flight log for mission replay
