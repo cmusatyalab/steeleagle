@@ -32,6 +32,7 @@ from steeleagle_sdk.protocol.services.control_service_pb2 import (
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     UploadRequest,
     StartRequest,
+    StopRequest,
 )
 
 from steeleagle_sdk.protocol.rpc_helpers import generate_request
@@ -116,6 +117,7 @@ def upload_mission():
     else:
         kml = st.session_state.script_file[0].getvalue()
         dsl_script = st.session_state.script_file[1].read()
+        req = CommandRequest()
         for d in st.session_state.selected_drones:
             data = UploadRequest(request=generate_request())
             data.mission.map = kml
@@ -132,6 +134,7 @@ def run_flightscript():
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
+        req = CommandRequest()
         for d in st.session_state.selected_drones:
             req.method_name = "Mission.Start"
             start = StartRequest(request=generate_request())
@@ -154,14 +157,19 @@ def get_callback(toast_message):
 
 def enable_manual():
     req = CommandRequest()
+    data = StopRequest(request=generate_request())
+    req.method_name = "Mission.Stop"
+    req.request.Pack(data)
+    for d in st.session_state.selected_drones:
+        req.vehicle_id = d
+        st.session_state.stub.Command(req)
     data = HoldRequest(request=generate_request())
     req.method_name = "Control.Hold"
     req.request.Pack(data)
     for d in st.session_state.selected_drones:
         req.vehicle_id = d
         st.session_state.stub.Command(req)
-
-    st.toast("Instructed vehicle to hold!")
+    st.toast("Instructed vehicle(s) to cancel mission and hold!")
 
 
 def rth():
@@ -270,7 +278,8 @@ def draw_map():
                     )
                     plane = folium.Icon(
                         icon="plane",
-                        color=ColorHash(drone_name).hex,
+                        color="gray",
+                        icon_color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
                     )
@@ -493,7 +502,7 @@ with st.sidebar:
     c1, c2 = st.columns(spec=2, gap="small")
     c1.button(
         key="upload_button",
-        label=":scroll: Upload Mission",
+        label="::outbox_tray:: Upload",
         type="primary",
         width="stretch",
         on_click=upload_mission,
