@@ -21,7 +21,6 @@ from st_keypressed import st_keypressed
 import grpc
 from steeleagle_sdk.protocol.services.remote_service_pb2 import (
     CommandRequest,
-    CompileMissionRequest,
 )
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     ReturnToHomeRequest,
@@ -111,47 +110,36 @@ def change_center():
             st.session_state.center = {"lat": row["latitude"], "lng": row["longitude"]}
 
 
+def upload_mission():
+    if len(st.session_state.script_file) == 0:
+        st.toast("You haven't uploaded a script yet!", icon="🚨")
+    else:
+        kml = st.session_state.script_file[0].getvalue()
+        dsl_script = st.session_state.script_file[1].read()
+        for d in st.session_state.selected_drones:
+            data = UploadRequest(request=generate_request())
+            data.mission.map = kml
+            data.mission.content = dsl_script
+            req.method_name = "Mission.Upload"
+            req.vehicle_id = d
+            req.request.Pack(data)
+            responses = []
+            for response in st.session_state.stub.Command(req):
+                responses.append(response)
+
+
 def run_flightscript():
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
-        req = CommandRequest()
-        kml = st.session_state.script_file[0].getvalue()
-        dsl_script = st.session_state.script_file[1].read()
-        compile_req = CompileMissionRequest(dsl_content=dsl_script)
-
-        def compile_and_send_mission(drones, stub):
+        for d in st.session_state.selected_drones:
+            req.method_name = "Mission.Start"
+            start = StartRequest(request=generate_request())
+            req.vehicle_id = d
+            req.request.Pack(start)
             responses = []
-            for response in st.session_state.stub.CompileMission(compile_req):
+            for response in st.session_state.stub.Command(req):
                 responses.append(response)
-            compile_response = responses[-1]
-            for d in drones:
-
-                def upload_and_start_thread():
-                    data = UploadRequest(request=generate_request())
-                    data.mission.map = kml
-                    data.mission.content = compile_response.compiled_dsl_content
-                    req.method_name = "Mission.Upload"
-                    req.vehicle_id = d
-                    req.request.Pack(data)
-                    responses = []
-                    for response in st.session_state.stub.Command(req):
-                        responses.append(response)
-                    req.method_name = "Mission.Start"
-                    start = StartRequest(request=generate_request())
-                    req.request.Pack(start)
-                    responses = []
-                    for response in st.session_state.stub.Command(req):
-                        responses.append(response)
-
-                thread = threading.Thread(target=upload_and_start_thread)
-                thread.start()
-
-        thread = threading.Thread(
-            target=compile_and_send_mission,
-            args=(st.session_state.selected_drones, st.session_state.stub.Command),
-        )
-        thread.start()
 
 
 def get_callback(toast_message):
@@ -498,11 +486,19 @@ with st.sidebar:
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["kml", "dsl"],
+        type=["kml", "json"],
         label_visibility="visible",
         accept_multiple_files=True,
     )
-    st.button(
+    c1, c2 = st.columns(spec=2, gap="small")
+    c1.button(
+        key="upload_button",
+        label=":scroll: Upload Mission",
+        type="primary",
+        width="stretch",
+        on_click=upload_mission,
+    )
+    c2.button(
         key="fly_button",
         label=":scroll: Fly Mission",
         type="primary",
