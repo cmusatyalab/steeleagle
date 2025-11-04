@@ -116,6 +116,7 @@ def upload_mission():
     else:
         kml = st.session_state.script_file[0].getvalue()
         dsl_script = st.session_state.script_file[1].read()
+        req = CommandRequest()
         for d in st.session_state.selected_drones:
             data = UploadRequest(request=generate_request())
             data.mission.map = kml
@@ -132,6 +133,7 @@ def run_flightscript():
     if len(st.session_state.script_file) == 0:
         st.toast("You haven't uploaded a script yet!", icon="🚨")
     else:
+        req = CommandRequest()
         for d in st.session_state.selected_drones:
             req.method_name = "Mission.Start"
             start = StartRequest(request=generate_request())
@@ -493,7 +495,7 @@ with st.sidebar:
     c1, c2 = st.columns(spec=2, gap="small")
     c1.button(
         key="upload_button",
-        label=":scroll: Upload Mission",
+        label="::outbox_tray:: Upload",
         type="primary",
         width="stretch",
         on_click=upload_mission,
