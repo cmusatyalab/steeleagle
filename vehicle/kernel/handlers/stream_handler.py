@@ -174,7 +174,6 @@ class StreamHandler:
                     encode_param
                     )
             encoded_frame.data = encoded_img.tobytes()
-            # TODO: Copy over all of the metadata
             encoded_frame.timestamp.CopyFrom(raw_frame.timestamp)
             encoded_frame.id = raw_frame.id
             encoded_frame.vehicle_info.CopyFrom(raw_frame.vehicle_info)

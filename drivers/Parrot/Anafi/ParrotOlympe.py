@@ -616,7 +616,8 @@ class ParrotOlympeDrone(ControlServicer):
 
     async def ConfigureImagingSensorStream(self, request, context):
         if not self._streaming_thread:
-            self._streaming_thread = ParrotOlympeDrone.PDRAWImageStreamingThread(self._drone, self, cam_sock)
+            #self._streaming_thread = ParrotOlympeDrone.PDRAWImageStreamingThread(self._drone, self, cam_sock)
+            self._streaming_thread = ParrotOlympeDrone.FFMPEGImageStreamingThread(self._drone, self, cam_sock, self._connection_string)
             self._streaming_thread.configure(request)
             self._streaming_thread.start()
             logger.info("Started image streaming thread...")
@@ -1158,7 +1159,6 @@ class ParrotOlympeDrone(ControlServicer):
             self._drone = drone
             self._drone_wrapper = drone_wrapper
             self._frame_queue = queue.Queue()
-            self._current_frame = np.zeros((720, 1280, 3), np.uint8)
     
             self._drone.streaming.set_callbacks(
                 raw_cb=self._yuv_frame_callback,
@@ -1183,7 +1183,7 @@ class ParrotOlympeDrone(ControlServicer):
                     continue
                 try:
                     cam_message = telemetry_protocol.Frame()
-                    frame, frame_shape = self.grab_frame().tobytes(), (720, 1280, 3)
+                    frame, frame_shape = self._convert_frame(yuv_frame).tobytes(), (720, 1280, 3)
     
                     if frame is None:
                         logger.error('Failed to get video frame')
@@ -1232,16 +1232,7 @@ class ParrotOlympeDrone(ControlServicer):
                 self._copy_frame(yuv_frame)
                 yuv_frame.unref()
     
-        def grab_frame(self):
-            try:
-                frame = self._current_frame.copy()
-                return frame
-            except Exception as e:
-                logger.error(f"Sending blank frame, encountered exception: {e}")
-                # Send a blank frame
-                return np.zeros((720, 1280, 3), np.uint8)
-    
-        def _copy_frame(self, yuv_frame):
+        def _convert_frame(self, yuv_frame):
             info = yuv_frame.info()
     
             height, width = (  # noqa
@@ -1254,7 +1245,7 @@ class ParrotOlympeDrone(ControlServicer):
                 olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
             }[yuv_frame.format()]
     
-            self._current_frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
+            return cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)
     
         '''Olympe callbacks'''
         def _yuv_frame_callback(self, yuv_frame):
@@ -1281,3 +1272,79 @@ class ParrotOlympeDrone(ControlServicer):
             self.is_running = False
             # Properly stop the video stream and disconnect
             self._drone.streaming.stop()
+
+    class FFMPEGImageStreamingThread(threading.Thread):
+        def __init__(self, drone, drone_wrapper, channel, ip):
+            threading.Thread.__init__(self)
+    
+            logger.info(f"Using opencv-python version {cv2.__version__}")
+            self._drone = drone
+            self._drone_wrapper = drone_wrapper
+            self._channel = channel
+            self.ip = ip
+            
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
+            self.is_running = False
+        
+        def configure(self, configuration):
+            pass
+    
+        def run(self):
+            while not self.is_running:
+                cap = cv2.VideoCapture(
+                    f"rtsp://{self.ip}/live", cv2.CAP_FFMPEG, (cv2.CAP_PROP_N_THREADS, 1)
+                )
+                self.is_running = True
+                frame_id = 0
+                
+                while self.is_running:
+                    try:
+                        ret, cv_frame = cap.read()
+                        cam_message = telemetry_protocol.Frame()
+                        if not ret:
+                            continue
+                        
+                        cam_message.data = cv_frame.tobytes()
+                        cam_message.v_res = cv_frame.shape[0]
+                        cam_message.h_res = cv_frame.shape[1]
+                        cam_message.channels = cv_frame.shape[2]
+                        cam_message.id = frame_id
+                        
+                        # Vehicle Info
+                        vehicle_info = telemetry_protocol.VehicleInfo()
+                        # TODO: Change this to be passed in
+                        vehicle_info.name = self._drone_wrapper._get_name()
+                        vehicle_info.motion_status = \
+                            self._drone_wrapper._get_flying_state() 
+                        vehicle_info.battery_info.percentage = \
+                            self._drone_wrapper._get_battery_percentage()
+                        vehicle_info.gps_info.satellites = \
+                            self._drone_wrapper._get_satellites()
+                        cam_message.vehicle_info.CopyFrom(vehicle_info)
+
+                        # Position Info
+                        pos_info = telemetry_protocol.PositionInfo()
+                        pos_info.home.CopyFrom(
+                            self._drone_wrapper._get_home_position()
+                            )
+                        pos_info.global_position.CopyFrom(
+                            self._drone_wrapper._get_global_position()
+                            )
+                        pos_info.relative_position.z = \
+                            self._drone_wrapper._get_altitude_rel()
+                        pos_info.velocity_neu.CopyFrom(
+                            self._drone_wrapper._get_velocity_neu()
+                            )
+                        pos_info.velocity_body.CopyFrom(
+                            self._drone_wrapper._get_velocity_body()
+                            )
+                        cam_message.position_info.CopyFrom(pos_info)
+                        
+                        self._channel.send_multipart([b'driver_imagery', cam_message.SerializeToString()])
+                        frame_id = frame_id + 1
+                    except Exception as e:
+                        logger.error(f"Frame could not be read, reason: {e}")
+                cap.release()
+    
+        def stop(self):
+            self.is_running = False

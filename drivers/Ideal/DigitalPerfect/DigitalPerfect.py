@@ -33,7 +33,7 @@ logger = logging.getLogger("driver/DigitalPerfect")
 TELEMETRY_SOCK = 'ipc:///tmp/driver_telem.sock'
 # IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
 
-telemetry_sock = zmq.Context().socket(zmq.PUB)
+telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
 telemetry_sock.bind(TELEMETRY_SOCK)
 
 # cam_sock = zmq.Context().socket(zmq.PUB)
@@ -76,7 +76,6 @@ class DigitalPerfectDrone(ControlServicer):
         self._mode = FlightMode.LOITER
         self.ip = "127.0.0.1"
         self._drone = SimulatedDrone(self.ip)
-        self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, 5))
 
     async def Connect(self, request, context):
         try:
@@ -462,6 +461,10 @@ class DigitalPerfectDrone(ControlServicer):
         except Exception as e:
             logger.error(f"Error occurred during SetGimbalPose: {e}")
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
+
+    async def ConfigureTelemetryStream(self, request, context):
+        self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, request.frequency))
+        return generate_response(2)
 
     async def stream_telemetry(self, tel_sock, rate_hz):
         logger.info("Starting telemetry stream")
