@@ -561,7 +561,7 @@ class AirspaceControlEngine:
             logger, {"drone_id": drone_id, "region_id": target_region.region_id}
         )
 
-        if not target_region.is_available() or not target_region.is_available_priority(self.drone_priority_map[drone_id]):
+        if not target_region.is_available() or not drone_id in self.drone_priority_map or not target_region.is_available_priority(self.drone_priority_map[drone_id]):
         # Renew the lease if already owned by the requesting drone
             curr_owner = target_region.get_owner()
             if curr_owner is not None and curr_owner == drone_id:
