@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Centered Text -->
+    <ImageView
+        android:id="@+id/my_image_view"
+        android:layout_width="500px"
+        android:layout_height="300px"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/main_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Left ScrollView -->
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/button_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/back_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Back" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/takeoff_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Takeoff" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/landing_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Landing" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_gimbal_pose"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Gimbal Pose" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/gimbal_v_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gimbal Vertical" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/gimbal_h_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gimbal Horizontal" />
+
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+
+            <Button
+                android:id="@+id/set_home_current_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Home Using Current Location" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_home_coordinates"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Home With Coordinates" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/go_home_height"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Go Home Height" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_go_home_and_land"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Go Home And Land" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_go_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Go Home" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/go_home_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Go Home Status" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/set_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set Waypoint/Global Position" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/pause_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pause Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/resume_go_to_global_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resume Waypoint Mission" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_velocity_movement"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Velocity Movement" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_velocity_movement"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Velocity Movement" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/photo_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Take Photo" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Video" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Video" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/start_image_preview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start Image Preview" />
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/stop_image_preview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop Image Preview" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Middle ScrollView - ACK methods -->
+    <ScrollView
+        android:id="@+id/scrollView_middle"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/main_text"
+        app:layout_constraintEnd_toStartOf="@id/scrollView_right">
+
+        <LinearLayout
+            android:id="@+id/button_layout_middle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Placeholder Button -->
+            <Button
+                android:id="@+id/is_hovering"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Is Hovering" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/is_home_set"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Is Home Set" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/is_heading_calibrated"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Is Heading Calibrated" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Right ScrollView - Telemetry -->
+    <ScrollView
+        android:id="@+id/scrollView_right"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/button_layout_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Right column buttons -->
+            <Button
+                android:id="@+id/name_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Name" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/global_position_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Global Position" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/altitude_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Altitude" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/attitude_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Attitude" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/magnetometer_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Magnetometer" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/battery_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Battery" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/satellite_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Satellites" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/heading_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Heading" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/velocity_enu_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Velocity ENU" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/velocity_body_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Velocity Body" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/gimbal_pose_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gimbal Pose" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+            <Button
+                android:id="@+id/type_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Type" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="16dp" />
+
+
+            <!-- Add more buttons here as needed -->
+
+        </LinearLayout>
+    </ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
