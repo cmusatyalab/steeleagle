@@ -148,6 +148,7 @@ def run_flightscript():
         for response in st.session_state.stub.Command(req):
             responses.append(response)
     st.toast("Sent Mission.Start to selected vehicles.", icon="🚨")
+    st.session_state.armed = False
 
 
 def get_callback(toast_message):
