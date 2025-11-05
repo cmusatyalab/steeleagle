@@ -85,7 +85,7 @@ class StreamHandler:
     def update_target_engines(self, target_engines):
         '''
         Update the target engines for local/remote producers. Decides which server the
-        engine is on based on the name prexif (remote:____ for a remote engine and
+        engine is on based on the name prefix (remote:____ for a remote engine and
         local:____ for a local engine).
         '''
         logger.info(f'Updating target engines to {target_engines}')
@@ -140,7 +140,7 @@ class StreamHandler:
                 [],
                 source_name="mission_telemetry"
                 )
-    
+
     def get_imagery_producer(self):
         imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
         imagery_sock.setsockopt(zmq.SUBSCRIBE, b'')
@@ -149,7 +149,7 @@ class StreamHandler:
             'internal.streams.imagery',
             SocketOperation.CONNECT
             )
-        
+
         # Define a JPG encoding function
         async def produce_image():
             input_frame = gabriel_pb2.InputFrame()
@@ -159,7 +159,7 @@ class StreamHandler:
             except Exception as e:
                 logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
                 return None
-            
+
             encoded_frame = Frame()
             raw_frame = Frame()
             raw_frame.ParseFromString(data)

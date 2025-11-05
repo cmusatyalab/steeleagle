@@ -213,7 +213,7 @@ def update_imagery():
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
         st.caption("**:eyes: Object Detection**")
-        st.image(f"http://{st.secrets.webserver}/detected/latest.jpg?a={time.time()}")
+        st.image(f"http://{st.secrets.webserver}/detected/vehicles/{st.session_state.imagery_key}/latest.jpg?a={time.time()}")
     with col2:
         st.caption("**:checkered_flag: Obstacle Avoidance**")
         st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")

@@ -221,6 +221,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     ):
         if object_name is None:
             object_name = f"{cls}-{os.urandom(2).hex()}"
+        logger.info(f"Adding detection {lon=} {lat=} {object_name=}")
         self.r.geoadd("detections", [lon, lat, object_name])
 
         object_key = f"objects:{object_name}"
@@ -269,7 +270,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             # if the payload is TEXT, say from a CNC client, we ignore
             status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
             result_wrapper = cognitive_engine.create_result_wrapper(status)
-            result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
             result.payload = b"Ignoring TEXT payload."
@@ -279,10 +279,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
 
         self.t0 = time.time()
-        results, image_np = self.process_image(input_frame.payloads[0])
+
+        frame = telemetry.Frame()
+        input_frame.extras.Unpack(frame)
+        results, image_np = self.process_image(frame.data)
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
-        result_wrapper.result_producer_name.value = self.ENGINE_NAME
         if len(results) > 0:
             detections = self.process_results(
                 image_np,
@@ -349,23 +351,26 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
             box = row["box"]
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
-            target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-                box, image_np, position_info, gimbal_info
-            )
+            #target_pitch, target_yaw = self.calculate_target_pitch_yaw(
+            #    box, image_np, position_info, gimbal_info
+            #)
 
-            # Estimate GPS coordinates of detected object
-            global_pos = position_info.global_position
-            rel_pos = position_info.relative_position
-            lat, lon = self.estimate_gps(
-                global_pos.latitude,
-                global_pos.longitude,
-                target_pitch,
-                target_yaw,
-                rel_pos.z,
-            )
+            ## Estimate GPS coordinates of detected object
+            #global_pos = position_info.global_position
+            #rel_pos = position_info.relative_position
+            #lat, lon = self.estimate_gps(
+            #    global_pos.latitude,
+            #    global_pos.longitude,
+            #    target_pitch,
+            #    target_yaw,
+            #    rel_pos.z,
+            #)
 
-            lon = np.clip(lon, -180, 180)
-            lat = np.clip(lat, -85, 85)
+            lon = 42.0
+            lat = 42.0
+
+            lon = float(np.clip(lon, -180, 180))
+            lat = float(np.clip(lat, -85, 85))
             p = LatLon(lat, lon)
 
             hsv_filter_passed = False
@@ -437,7 +442,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             try:
                 im_bgr = results[0].plot()
                 self.store_detections_disk(
-                    im_bgr, filename, vehicle_info.name, df["names"].unique().to_list()
+                    im_bgr, filename, vehicle_info.name, df["name"].unique().to_list()
                 )
             except IndexError:
                 logger.error(
