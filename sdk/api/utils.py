@@ -1,9 +1,8 @@
 import grpc
 from typing import Any, Optional, Iterable, Tuple
 from collections.abc import AsyncIterator, Callable
-
 from google.protobuf.timestamp_pb2 import Timestamp
-from ..protocol.common_pb2 import Response
+from .datatypes.common import Response
 
 
 def now_ts() -> Timestamp:

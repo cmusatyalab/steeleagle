@@ -1,0 +1,57 @@
+from enum import Enum
+from ._base import Datatype
+
+class AltitudeMode(int, Enum):
+    """Altitude mode switch.
+
+    Attributes:
+        ABSOLUTE (0): meters above Mean Sea Level
+        RELATIVE (1): meters above takeoff position
+    """
+    ABSOLUTE = 0 
+    RELATIVE = 1 
+
+class HeadingMode(int, Enum):
+    """Heading mode switch.
+
+    Attributes:
+        TO_TARGET (0): orient towards the target location
+        HEADING_START (1): orient towards the given heading
+    """
+    TO_TARGET = 0 
+    HEADING_START = 1 
+
+class ReferenceFrame(int, Enum):
+    """Reference frame mode switch.
+
+    Attributes:
+        BODY (0): vehicle reference frame
+        NEU (1): NEU (North, East, Up) reference frame
+    """
+    BODY = 0 
+    NEU = 1 
+
+class PoseMode(int, Enum):
+    """Pose mode switch.
+
+    Attributes:
+        ANGLE (0): absolute angle
+        OFFSET (1): request data // Offset from current
+        VELOCITY (2): rotational velocities
+    """
+    ANGLE = 0 
+    OFFSET = 1 
+    VELOCITY = 2 
+
+class ImagingSensorConfiguration(Datatype):
+    """Configuration for an imaging sensor.    
+    
+    Attributes:
+        id (int): target imaging sensor ID    
+        set_primary (bool): set this sensor as the primary stream    
+        set_fps (int): target FPS for stream    
+    """
+    id: int
+    set_primary: bool
+    set_fps: int
+

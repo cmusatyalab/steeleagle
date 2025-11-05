@@ -1,17 +1,11 @@
-import json
 import grpc
-from typing import Optional, List
-from google.protobuf.timestamp_pb2 import Timestamp
-from google.protobuf.duration_pb2 import Duration
-from google.protobuf.json_format import ParseDict
-from enum import Enum
-
+from typing import List
 from .mission_store import MissionStore
 from ..protocol.services.compute_service_pb2_grpc import ComputeStub
-from ..protocol.services.compute_service_pb2 import AddDatasinksRequest, SetDatasinksRequest, RemoveDatasinksRequest, DatasinkInfo
-
-from ..protocol.common_pb2 import Response
-from .helper import run_unary
+from ..protocol.services import compute_service_pb2 as compute_proto
+from .datatypes.common import Response
+from .datatypes.compute import DatasinkInfo
+from .utils import run_unary
 
 class Compute:
     def __init__(self, channel, mission_store: MissionStore):
@@ -24,7 +18,7 @@ class Compute:
         return await self.mission_store.get_latest(source, topic)
 
     async def add_datasinks(self, datasinks:List[DatasinkInfo]) -> Response:
-        req = AddDatasinksRequest()
+        req = compute_proto.AddDatasinksRequest()
         req.datasinks.extend(datasinks)
         return await run_unary(self.compute.AddDatasinks, req)
     
@@ -37,7 +31,7 @@ class Compute:
             datasinks (List[params.DatasinkInfo]): name of target datasinks
         """
         
-        req = SetDatasinksRequest()
+        req = compute_proto.SetDatasinksRequest()
         req.datasinks.extend(datasinks)
         return await run_unary(self.compute.SetDatasinks, req)
 
@@ -50,6 +44,6 @@ class Compute:
             datasinks (List[params.DatasinkInfo]): name of target datasinks
         """
         
-        req = RemoveDatasinksRequest()
+        req = compute_proto.RemoveDatasinksRequest()
         req.datasinks.extend(datasinks)
         return await run_unary(self.compute.RemoveDatasinks, req)
