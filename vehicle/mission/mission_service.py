@@ -6,10 +6,7 @@ from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionSer
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
-from steeleagle_sdk.api.actions.primitives import control as control_mod
-from steeleagle_sdk.api.actions.primitives import compute as compute_mod
-from steeleagle_sdk.api.actions.primitives import report as report_mod
-from steeleagle_sdk.api.datatypes import waypoint as map_mod
+from steeleagle_sdk.dsl.runtime import VEHICLE, COMPUTE, MAP
 from dacite import from_dict
 import logging
 
@@ -52,11 +49,9 @@ class MissionService(MissionServicer):
         elif self.mission_routine is not None and not self.mission_routine.done():
             return generate_response(3, "Mission already running")
         else:
-            control_mod.STUB = self.stubs.get("control")
-            compute_mod.STUB = self.stubs.get("compute")
-            report_mod.STUB  = self.stubs.get("report")
-            # TODO: add stream handler
-            map_mod.MISSION_MAP = self.mission_map
+            VEHICLE = self.stubs.get("control")
+            COMPUTE = self.stubs.get("compute")
+            MAP = self.mission_map
             self.mission_routine = await self._start()
             return generate_response(2)
 
