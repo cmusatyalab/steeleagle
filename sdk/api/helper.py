@@ -1,92 +1,90 @@
 import grpc
-from typing import Any, Optional
-# API imports
+from typing import Any, Optional, Iterable, Tuple
+from collections.abc import AsyncIterator, Callable
+
 from google.protobuf.timestamp_pb2 import Timestamp
-from ..protocol.common_pb2 import common
+from ..protocol.common_pb2 import Response
 
 
 def now_ts() -> Timestamp:
-    """Get the current time as a Google Protobuf Timestamp.
-    
-    Returns the current time as a Google Protobuf Timestamp object.
-    This is useful for setting the timestamp field inside a Request
-    object.
-
-    Returns:
-        Timestamp: current timestamp as a Google Protobuf Timestamp object.
-    """
     ts = Timestamp()
     ts.GetCurrentTime()
     return ts
 
-def error_to_api_response(error: grpc.aio.AioRpcError) -> common.Response:
-    """Get the corresponding Python API Response for an error code.
 
-    Returns a Python API Response for a corresponding gRPC error code.
-    Allows transformation of gRPC exceptions into a unified Response.
+def _grpc_code_int(code_obj: Any) -> int:
+    """
+    Make grpc.StatusCode value robust across versions:
+    sometimes .value is int, sometimes it's a 1-tuple.
+    """
+    val = getattr(code_obj, "value", 0)
+    if isinstance(val, tuple) and val:
+        return int(val[0])
+    return int(val)
 
-    Args:
-        error (grpc.aio.AioRpcError): input gRPC Exception object.
 
-    Returns:
-        Response: Python API Response object.
+def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
+    """
+    Map gRPC error codes (usually 0..16) to your API status space (+2 offset).
     """
     ts = now_ts()
-    # Note: gRPC error codes start from 0, API Response codes start from 2
-    return common.Response(status=error.code().value[0] + 2, response_string=error.details(), timestamp=ts)
+    code_int = _grpc_code_int(error.code())
+    return Response(
+        status=code_int + 2,
+        response_string=error.details(),
+        timestamp=ts,
+    )
 
-async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> common.Response:
-    """Runs a unary gRPC method and returns a Python API Response.
 
-    Runs a unary gRPC method, gets the response (or error), and translates
-    it into a Python API Response.
+def _default_metadata(md: Optional[Iterable[Tuple[str, str]]]) -> Tuple[Tuple[str, str], ...]:
+    return tuple(md) if md is not None else (("identity", "internal"),)
 
-    Args:
-        method_coro (Any): an awaitable stub coroutine `STUB.METHOD` e.g.
-            ControlStub.Connect.
-        request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (Optional[list]): 
-            metadata object for gRPC. The metadata must include an `identity` 
-            parameter to access kernel services. An `identity` set to 
-            `internal` signals to the kernel that the RPC request originates
-            from an onboard client.
-        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
-            no timeout.
+
+async def run_unary(
+    method_coro: Callable[..., Any],
+    request_pb: Any,
+    metadata: Optional[Iterable[Tuple[str, str]]] = None,
+    timeout: Optional[float] = None,
+) -> Response:
+    """
+    Runs a unary RPC and returns the protobuf Response directly.
     """
     ts = now_ts()
     request_pb.request.timestamp.CopyFrom(ts)
+
+    md = _default_metadata(metadata)
     try:
-        resp_pb = await method_coro(request_pb, metadata=metadata, timeout=timeout)
-        return resp_pb
+        resp_pb = await method_coro(request_pb, metadata=md, timeout=timeout)
+        return resp_pb  # expected to be common.Response
     except grpc.aio.AioRpcError as e:
         return error_to_api_response(e)
 
-async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> common.Response:
-    """Runs a streaming gRPC method and returns a Python API Response.
 
-    Runs a streaming gRPC method, gets the response (or error), and translates
-    it into a Python API Response. This method will only return the _last_
-    response it receives from the RPC.
-
-    Args:
-        method_coro (Any): an async generator stub coroutine `STUB.METHOD` e.g.
-            ControlStub.TakeOff.
-        request_pb (Any): Protobuf object input for the method coroutine.
-        metadata (Optional[list]): metadata object for gRPC. The metadata 
-            must include an `identity` parameter to access kernel services. 
-            An `identity` set to `internal` signals to the kernel that the 
-            RPC request originates from an onboard client.
-        timeout (Optional[int]): timeout for the RPC request, `None` indicates 
-            no timeout. It is generally not recommended to add a timeout to a 
-            streaming method, since most have non-deterministic time of completion.
+async def run_streaming(
+    method_coro: Callable[..., Any],
+    request_pb: Any,
+    metadata: Optional[Iterable[Tuple[str, str]]] = None,
+    timeout: Optional[float] = None,
+) -> AsyncIterator[Response]:
+    """
+    Runs a streaming RPC and yields each Response as it arrives.
     """
     ts = now_ts()
     request_pb.request.timestamp.CopyFrom(ts)
-    call = method_coro(request_pb, metadata=metadata, timeout=timeout)
-    last = None
+
+    md = _default_metadata(metadata)
+    call = None
     try:
+        call = method_coro(request_pb, metadata=md, timeout=timeout)
         async for msg in call:
-            last = msg  # Guaranteed at least one response
-        return last
+            yield msg
     except grpc.aio.AioRpcError as e:
-        return error_to_api_response(e)
+        # Surface the error as a single terminal Response
+        yield error_to_api_response(e)
+    finally:
+        # Best-effort cleanup if the stream is still open
+        try:
+            if call is not None:
+                await call.cancel()
+        except Exception:
+            pass

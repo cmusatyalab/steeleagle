@@ -1,22 +1,30 @@
-import json
-
+from typing import AsyncIterator, List, Optional
 import grpc
+from google.protobuf.duration_pb2 import Duration
+
 from .mission_store import MissionStore
-from ..protocol.services import control_service_pb2, control_service_pb2_grpc
-from ..protocol.services import report_service_pb2, report_service_pb2_grpc
-from ..protocol.common_pb2 import common
-from google.protobuf.json_format import ParseDict
+from ..protocol.services.control_service_pb2_grpc import ControlStub
+from ..protocol.services.report_service_pb2_grpc import ReportStub
+
+from ..protocol.services.control_service_pb2 import (
+    ConnectRequest, DisconnectRequest, ArmRequest, DisarmRequest,
+    JoystickRequest, TakeOffRequest, LandRequest, HoldRequest, KillRequest, SetHomeRequest,
+    ReturnToHomeRequest, SetGlobalPositionRequest, SetRelativePositionRequest, SetVelocityRequest,
+    SetHeadingRequest, SetGimbalPoseRequest, ConfigureImagingSensorStreamRequest,
+    ConfigureTelemetryStreamRequest, ImagingSensorConfiguration,
+    HeadingMode, AltitudeMode, ReferenceFrame, PoseMode,
+)
+
+from ..protocol.common_pb2 import Velocity, Location, Position, Response, Pose
 from .helper import run_unary, run_streaming
 
+
 class Vehicle:
-    def __init__(self,
-                 mission_store: MissionStore,
-                 channel, vehicle_id):
-        
+    def __init__(self, mission_store: MissionStore, channel: str, vehicle_id: str):
         self.mission_store = mission_store
         stub_channel = grpc.aio.insecure_channel(channel)
-        self.control = control_service_pb2_grpc.ControlStub(stub_channel)
-        self.report = report_service_pb2_grpc.ReportStub(stub_channel)
+        self.control = ControlStub(stub_channel)
+        self.report = ReportStub(stub_channel)
         self.vehicle_id = vehicle_id
 
     async def get_telemetry(self):
@@ -24,94 +32,142 @@ class Vehicle:
         topic = self.vehicle_id
         return await self.mission_store.get_latest(source, topic)
 
-    async def connect(self, **kwargs) -> common.Response:
-        req = control_service_pb2.ConnectRequest()
-        ParseDict(json.dumps(kwargs), req)
+    async def connect(self) -> Response:
+        req = ConnectRequest()
         return await run_unary(self.control.Connect, req)
-        
-    async def disconnect(self, **kwargs) -> common.Response:
-        req = control_service_pb2.DisconnectRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def disconnect(self) -> Response:
+        req = DisconnectRequest()
         return await run_unary(self.control.Disconnect, req)
-    
-    async def arm(self, **kwargs) -> common.Response:
-        req = control_service_pb2.ArmRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def arm(self) -> Response:
+        req = ArmRequest()
         return await run_unary(self.control.Arm, req)
-    
-    async def disarm(self, **kwargs) -> common.Response:
-        req = control_service_pb2.DisarmRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def disarm(self) -> Response:
+        req = DisarmRequest()
         return await run_unary(self.control.Disarm, req)
 
-    async def joystick(self, **kwargs) -> common.Response:
-        req = control_service_pb2.JoystickRequest()
-        ParseDict(json.dumps(kwargs), req)
+    async def joystick(self, velocity: Velocity, duration: Duration) -> AsyncIterator[Response]:
+        req = JoystickRequest()
+        req.velocity.CopyFrom(velocity)
+        req.duration.CopyFrom(duration)
         return await run_unary(self.control.Joystick, req)
-    
-    async def take_off(self, **kwargs) -> common.Response:
-        req = control_service_pb2.TakeOffRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.TakeOff, req)
-    
-    async def land(self, **kwargs) -> common.Response:
-        req = control_service_pb2.LandRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.Land, req)
-    
-    async def hold(self, **kwargs) -> common.Response:
-        req = control_service_pb2.HoldRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.Hold, req)
-    
-    async def kill(self, **kwargs) -> common.Response:
-        req = control_service_pb2.KillRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.Kill, req)
-    
-    async def set_home(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetHomeRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def take_off(self, take_off_altitude: float) -> AsyncIterator[Response]:
+        req = TakeOffRequest()
+        req.take_off_altitude = float(take_off_altitude)
+        async for msg in run_streaming(self.control.TakeOff, req):
+            yield msg
+
+    async def land(self) -> AsyncIterator[Response]:
+        req = LandRequest()
+        async for msg in run_streaming(self.control.Land, req):
+            yield msg
+
+    async def hold(self) -> AsyncIterator[Response]:
+        req = HoldRequest()
+        async for msg in run_streaming(self.control.Hold, req):
+            yield msg
+
+    async def kill(self) -> AsyncIterator[Response]:
+        req = KillRequest()
+        async for msg in run_streaming(self.control.Kill, req):
+            yield msg
+
+    async def set_home(self, location: Location) -> AsyncIterator[Response]:
+        req = SetHomeRequest()
+        req.location.CopyFrom(location)
         return await run_unary(self.control.SetHome, req)
-    
-    async def return_to_home(self, **kwargs) -> common.Response:
-        req = control_service_pb2.ReturnToHomeRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.ReturnToHome, req)
-    
-    async def set_global_position(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetGlobalPositionRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.SetGlobalPosition, req)
-    
-    async def set_relative_position(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetRelativePositionRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.SetRelativePosition, req)
-    
-    async def set_velocity(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetVelocityRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.SetVelocity, req)
-    
-    async def set_heading(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetHeadingRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.SetHeading, req)
-    
-    async def set_gimbal_pose(self, **kwargs) -> common.Response:
-        req = control_service_pb2.SetGimbalPoseRequest()
-        ParseDict(json.dumps(kwargs), req)
-        return await run_streaming(self.control.SetGimbalPose, req)
-    
-    async def configure_imaging_sensor_stream(self, **kwargs) -> common.Response:
-        req = control_service_pb2.ConfigureImagingSensorStreamRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def return_to_home(self) -> AsyncIterator[Response]:
+        req = ReturnToHomeRequest()
+        async for msg in run_streaming(self.control.ReturnToHome, req):
+            yield msg
+
+    async def set_global_position(
+        self,
+        location: Location,
+        heading_mode: Optional[HeadingMode] = None,
+        altitude_mode: Optional[AltitudeMode] = None,
+        max_velocity: Optional[Velocity] = None,
+    ) -> AsyncIterator[Response]:
+        req = SetGlobalPositionRequest()
+        req.location.CopyFrom(location)
+        if heading_mode is not None:
+            req.heading_mode = heading_mode
+        if altitude_mode is not None:
+            req.altitude_mode = altitude_mode
+        if max_velocity is not None:
+            req.max_velocity.CopyFrom(max_velocity)
+        async for msg in run_streaming(self.control.SetGlobalPosition, req):
+            yield msg
+
+    async def set_relative_position(
+        self,
+        position: Position,
+        max_velocity: Optional[Velocity] = None,
+        frame: Optional[ReferenceFrame] = None,
+    ) -> AsyncIterator[Response]:
+        req = SetRelativePositionRequest()
+        req.position.CopyFrom(position)
+        if max_velocity is not None:
+            req.max_velocity.CopyFrom(max_velocity)
+        if frame is not None:
+            req.frame = frame
+        async for msg in run_streaming(self.control.SetRelativePosition, req):
+            yield msg
+
+    async def set_velocity(
+        self,
+        velocity: Velocity,
+        frame: Optional[ReferenceFrame] = None,
+    ) -> AsyncIterator[Response]:
+        req = SetVelocityRequest()
+        req.velocity.CopyFrom(velocity)
+        if frame is not None:
+            req.frame = frame
+        async for msg in run_streaming(self.control.SetVelocity, req):
+            yield msg
+
+    async def set_heading(
+        self,
+        location: Location,
+        heading_mode: Optional[HeadingMode] = None,
+    ) -> AsyncIterator[Response]:
+        req = SetHeadingRequest()
+        req.location.CopyFrom(location)
+        if heading_mode is not None:
+            req.heading_mode = heading_mode
+        async for msg in run_streaming(self.control.SetHeading, req):
+            yield msg
+
+    async def set_gimbal_pose(
+        self,
+        gimbal_id: int,
+        pose: Pose,
+        pose_mode: Optional[PoseMode] = None,
+        frame: Optional[ReferenceFrame] = None,
+    ) -> AsyncIterator[Response]:
+        req = SetGimbalPoseRequest()
+        req.gimbal_id = int(gimbal_id)
+        req.pose.CopyFrom(pose)
+        if pose_mode is not None:
+            req.pose_mode = pose_mode
+        if frame is not None:
+            req.frame = frame
+        async for msg in run_streaming(self.control.SetGimbalPose, req):
+            yield msg
+
+    async def configure_imaging_sensor_stream(
+        self,
+        configurations: List[ImagingSensorConfiguration],
+    ) -> Response:
+        req = ConfigureImagingSensorStreamRequest()
+        req.configurations.extend(configurations)
         return await run_unary(self.control.ConfigureImagingSensorStream, req)
-    
-    async def configure_telemetry_stream(self, **kwargs) -> common.Response:
-        req = control_service_pb2.ConfigureTelemetryStreamRequest()
-        ParseDict(json.dumps(kwargs), req)
+
+    async def configure_telemetry_stream(self, frequency: int) -> Response:
+        req = ConfigureTelemetryStreamRequest()
+        req.frequency = int(frequency)
         return await run_unary(self.control.ConfigureTelemetryStream, req)
-    
-    
