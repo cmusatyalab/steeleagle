@@ -119,9 +119,9 @@ def upload_mission():
         )
     else:
         for uploaded_file in st.session_state.script_file:
-            if uploaded_file.file.name.endswith(".kml"):
+            if uploaded_file.name.endswith(".kml"):
                 kml = uploaded_file.getvalue()
-            elif uploaded_file.file.name.endswith(".json"):
+            elif uploaded_file.name.endswith(".json"):
                 dsl_script = uploaded_file.getvalue()
         req = CommandRequest()
         for d in st.session_state.selected_drones:
