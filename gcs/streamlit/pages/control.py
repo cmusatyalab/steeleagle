@@ -113,10 +113,16 @@ def change_center():
 
 def upload_mission():
     if len(st.session_state.script_file) == 0:
-        st.toast("You haven't uploaded a script yet!", icon="🚨")
+        st.toast(
+            "Please select a mission (.json) file and optionally a KML (.kml) file!",
+            icon="🚨",
+        )
     else:
-        kml = st.session_state.script_file[0].getvalue()
-        dsl_script = st.session_state.script_file[1].read()
+        for uploaded_file in st.session_state.script_file:
+            if uploaded_file.file.name.endswith(".kml"):
+                kml = uploaded_file.getvalue()
+            elif uploaded_file.file.name.endswith(".json"):
+                dsl_script = uploaded_file.getvalue()
         req = CommandRequest()
         for d in st.session_state.selected_drones:
             data = UploadRequest(request=generate_request())
@@ -128,21 +134,20 @@ def upload_mission():
             responses = []
             for response in st.session_state.stub.Command(req):
                 responses.append(response)
+        st.toast("Sent Mission.Upload to selected vehicles.", icon="🚨")
 
 
 def run_flightscript():
-    if len(st.session_state.script_file) == 0:
-        st.toast("You haven't uploaded a script yet!", icon="🚨")
-    else:
-        req = CommandRequest()
-        for d in st.session_state.selected_drones:
-            req.method_name = "Mission.Start"
-            start = StartRequest(request=generate_request())
-            req.vehicle_id = d
-            req.request.Pack(start)
-            responses = []
-            for response in st.session_state.stub.Command(req):
-                responses.append(response)
+    req = CommandRequest()
+    for d in st.session_state.selected_drones:
+        req.method_name = "Mission.Start"
+        start = StartRequest(request=generate_request())
+        req.vehicle_id = d
+        req.request.Pack(start)
+        responses = []
+        for response in st.session_state.stub.Command(req):
+            responses.append(response)
+    st.toast("Sent Mission.Start to selected vehicles.", icon="🚨")
 
 
 def get_callback(toast_message):
@@ -278,7 +283,7 @@ def draw_map():
                     )
                     plane = folium.Icon(
                         icon="plane",
-                        color="gray",
+                        color="lightgray",
                         icon_color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
                         angle=int(row["bearing"]),
@@ -462,7 +467,7 @@ with options_expander:
         min_value=1,
         max_value=10,
         step=1,
-        value=2,
+        value=1,
         format="%0d",
     )
 
