@@ -29,7 +29,7 @@ if "show_corridors" not in st.session_state:
 
 st.set_page_config(
     page_title="SteelEagle Commander",
-    page_icon=":material/drone:",
+    page_icon=":eagle:",
     layout="wide",
     menu_items={
         "Get help": "https://cmusatyalab.github.io/steeleagle/",
