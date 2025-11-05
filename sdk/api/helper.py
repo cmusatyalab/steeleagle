@@ -2,6 +2,8 @@ import grpc
 from typing import Any, Optional
 # API imports
 from google.protobuf.timestamp_pb2 import Timestamp
+from ..protocol.common_pb2 import common
+
 
 def now_ts() -> Timestamp:
     """Get the current time as a Google Protobuf Timestamp.
@@ -17,7 +19,7 @@ def now_ts() -> Timestamp:
     ts.GetCurrentTime()
     return ts
 
-def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
+def error_to_api_response(error: grpc.aio.AioRpcError) -> common.Response:
     """Get the corresponding Python API Response for an error code.
 
     Returns a Python API Response for a corresponding gRPC error code.
@@ -31,9 +33,9 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     """
     ts = now_ts()
     # Note: gRPC error codes start from 0, API Response codes start from 2
-    return Response(status=error.code().value[0] + 2, response_string=error.details(), timestamp=ts)
+    return common.Response(status=error.code().value[0] + 2, response_string=error.details(), timestamp=ts)
 
-async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> Response:
+async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> common.Response:
     """Runs a unary gRPC method and returns a Python API Response.
 
     Runs a unary gRPC method, gets the response (or error), and translates
@@ -59,7 +61,7 @@ async def run_unary(method_coro: Any, request_pb: Any, metadata: Optional[list]=
     except grpc.aio.AioRpcError as e:
         return error_to_api_response(e)
 
-async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> Response:
+async def run_streaming(method_coro: Any, request_pb: Any, metadata: Optional[list]=[('identity', 'internal')], timeout: Optional[int]=None) -> common.Response:
     """Runs a streaming gRPC method and returns a Python API Response.
 
     Runs a streaming gRPC method, gets the response (or error), and translates
