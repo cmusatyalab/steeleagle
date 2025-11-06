@@ -62,7 +62,6 @@ secrets.toml
 docs/node_modules
 
 # Production
-*/src
 */dist
 docs/build
 

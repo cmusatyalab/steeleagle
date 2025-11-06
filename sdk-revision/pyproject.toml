@@ -1,13 +1,3 @@
-[build-system]
-requires = [
-    "hatchling",
-    "grpcio-tools>=1.71.2",
-    "protobuf>=5.29.5",
-    "protoletariat>=3.3.10",
-    "Jinja2"
-]
-build-backend = "hatchling.build"
-
 [project]
 name = "steeleagle_sdk"
 version = "1.0.14"
@@ -57,21 +47,3 @@ Documentation = "https://cmusatyalab.github.io/steeleagle/"
 Repository = "https://github.com/cmusatyalab/steeleagle"
 Issues = "https://github.com/cmusatyalab/steeleagle/issues"
 Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
-
-[project.scripts]
-compile_dsl = "steeleagle_sdk.dsl:cli_compile_dsl"
-
-[tool.hatch.build.targets.sdist]
-ignore-vcs = true
-
-[tool.hatch.build.targets.wheel]
-ignore-vcs = true
-packages = ["build/src/steeleagle_sdk"]
-
-[dependency-groups]
-dev = [
-    "griffe>=1.14.0",
-]
-
-[tool.hatch.build.targets.sdist.hooks.custom]
-path = "build/prebuild.py"
