@@ -13,6 +13,9 @@ on:
         description: 'Whether to free disk space in the runner'
         type: boolean
         default: false
+      ctx:
+        required: true
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
