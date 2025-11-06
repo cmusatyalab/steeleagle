@@ -60,7 +60,7 @@ jobs:
     - name: Build and push image
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: ${{ inputs.context }}
         file: ${{ inputs.dockerfile }}
         push: true
         tags: cmusatyalab/${{ inputs.name }}:${{ steps.get_tag.outputs.tag }}
