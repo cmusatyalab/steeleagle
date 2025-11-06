@@ -14,5 +14,5 @@ jobs:
     with:
       name: steeleagle-swarm-controller
       dockerfile: backend/server/swarm_controller/Dockerfile
-      context: backend/server/swarm_controller/
+      ctx: backend/server/swarm_controller/
     secrets: inherit
