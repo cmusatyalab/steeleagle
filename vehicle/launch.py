@@ -2,19 +2,40 @@ import os
 import time
 import subprocess
 import argparse
+import requests
+import json
 # Utility imports
 from util.cleanup import register_cleanup_handler
 register_cleanup_handler()
 
-def start_services(log):
+ROOST = 'https://git.cmusatyalab.org/api/v4/projects/85/packages/pypi/simple'
+
+def start_services(log, info):
     running = []
     logger = ['python', 'logger/main.py']
+    if log:
+        task = subprocess.Popen(logger)
+        running.append(task)
+    # Start the driver
+    if info["kwargs"]:
+        driver = ['uvx', 
+                  '--extra-index-url', ROOST,
+                  '--python', info["python"],
+                  info["package"], '--kwargs', json.dumps(info["kwargs"]), info["name"], info["address"], info["telemetry"], info["imagery"]]
+        print(driver)
+    else:
+        driver = ['uvx', 
+                  '--extra-index-url', ROOST,
+                  '--python', info["python"],
+                  info["package"], info["name"], info["address"], info["telemetry"], info["imagery"]]
+    task = subprocess.Popen(driver)
+    running.append(task)
+    time.sleep(5)
+    # Start core services
     core = [
         ['python', 'mission/main.py'], # Mission
         ['python', 'kernel/main.py'] # Kernel
     ]
-    if log:
-        core.insert(0, logger)
     for subp in core:
         task = subprocess.Popen(subp)
         running.append(task)
@@ -59,8 +80,18 @@ if __name__ == '__main__':
     
     from util.config import query_config
     log = query_config('logging.generate_flight_log')
+    kwargs = query_config('vehicle.kwargs')
+    driver_info = {
+            'name': query_config('vehicle.name'),
+            'package': query_config('vehicle.package'),
+            'python': query_config('vehicle.python'),
+            'address': query_config('internal.services.driver'),
+            'telemetry': query_config('internal.streams.driver_telemetry'),
+            'imagery': query_config('internal.streams.imagery'),
+            'kwargs': kwargs if kwargs != {} else None
+    }
 
     if args.test:
         test_services(args.test, log)
     else:
-        start_services (log)
+        start_services(log, driver_info)

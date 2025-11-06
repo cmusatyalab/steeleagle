@@ -1,10 +1,12 @@
 [vehicle]
-name = '<NAME>'
-kwargs = {}
+name = ''
+package = ''
+python = ''
+[vehicle.kwargs]
 
 [cloudlet]
-swarm_controller = '<SWARM_CONTROLLER>:5003'
-remote_compute_service = '<GABRIEL>:9099'
+swarm_controller = 'cloudlet033.elijah.cs.cmu.edu:5003'
+remote_compute_service = 'cloudlet033.elijah.cs.cmu.edu:9099'
 
 [logging]
 # Whether or not to create an MCAP flight log for mission replay
@@ -14,6 +16,6 @@ generate_flight_log = true
 # is provided
 custom_filename = '' 
 # Path to log file
-file_path = 'logger/logs'
+file_path = 'kernel/logs/'
 # Log level
-log_level = 'DEBUG'
+log_level = 'INFO'
