@@ -13,6 +13,9 @@ on:
         description: 'Whether to free disk space in the runner'
         type: boolean
         default: false
+      ctx:
+        required: true
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -60,7 +63,7 @@ jobs:
     - name: Build and push image
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: ${{ inputs.ctx }}
         file: ${{ inputs.dockerfile }}
         push: true
         tags: cmusatyalab/${{ inputs.name }}:${{ steps.get_tag.outputs.tag }}
