@@ -74,13 +74,13 @@ def draw_map():
                         text = folium.DivIcon(
                             icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
                             icon_anchor=(-20, 30),
-                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash({drone_name}).hex};">{drone_name}</div>',
+                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name}</div>',
                             # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                         )
                         plane = folium.Icon(
                             icon="plane",
                             color="lightgray",
-                            icon_color=ColorHash({drone_name}).hex,
+                            icon_color=ColorHash(drone_name).hex,
                             prefix="glyphicon",
                             angle=int(row["bearing"]),
                         )
