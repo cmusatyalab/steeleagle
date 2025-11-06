@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 from enum import Enum
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any
 
 from ...dsl.compiler.ir import MissionIR
 from ...dsl.compiler.registry import get_action, get_event
@@ -14,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 _DONE_EVENT = "done"
 _TERMINATE = "terminate"
+
 
 
 class RacerType(str, Enum):
@@ -92,7 +92,7 @@ class MissionFSM:
 
     async def _race(
         self,
-        racer: Any,                         # has .execute() for ACTION, .check() for EVENT
+        racer: Any,
         racer_type: RacerType,
         racer_id: str,
         q: asyncio.Queue[Tuple[RacerType, Any]],

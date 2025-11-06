@@ -8,9 +8,8 @@ from .datatypes.compute import DatasinkInfo
 from .utils import run_unary
 
 class Compute:
-    def __init__(self, channel, mission_store: MissionStore):
-        self.channel = grpc.aio.insecure_channel(channel)
-        self.compute = ComputeStub(self.channel)
+    def __init__(self, channel: grpc.aio.Channel, mission_store: MissionStore):
+        self.compute = ComputeStub(channel)
         self.mission_store = mission_store
 
     async def get_result(self, topic):

@@ -9,12 +9,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 class MissionStore:
-    def __init__(self,
-                 telemetry_sock="ipc:///tmp/driver_telem.sock",
-                 results_sock="ipc:///tmp/results.sock"):
+    def __init__(self, telemetry_addr, results_addr):
         self.ctx = zmq.asyncio.Context.instance()
-        self.telemetry_addr = telemetry_sock
-        self.results_addr = results_sock
+        self.telemetry_addr = telemetry_addr
+        self.results_addr = results_addr
         self._lock = asyncio.Lock()     # async-safe guard
         self._tasks = []
         self._telemetry = None

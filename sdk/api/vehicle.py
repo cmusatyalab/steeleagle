@@ -10,16 +10,13 @@ from .utils import run_unary, run_streaming
 
 
 class Vehicle:
-    def __init__(self, mission_store: MissionStore, channel: str, vehicle_id: str):
+    def __init__(self, mission_store: MissionStore, channel: grpc.aio.Channel):
         self.mission_store = mission_store
-        stub_channel = grpc.aio.insecure_channel(channel)
-        self.control = ControlStub(stub_channel)
-        self.vehicle_id = vehicle_id
+        self.control = ControlStub(channel)
 
     async def get_telemetry(self):
         source = "telemetry"
-        topic = self.vehicle_id
-        return await self.mission_store.get_latest(source, topic)
+        return await self.mission_store.get_latest(source)
 
     async def connect(self) -> Response:
         req = control_proto.ConnectRequest()
