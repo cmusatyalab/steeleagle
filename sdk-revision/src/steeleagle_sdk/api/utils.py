@@ -3,7 +3,8 @@ from typing import Any, Optional, Iterable, Tuple
 from collections.abc import AsyncIterator, Callable
 from google.protobuf.timestamp_pb2 import Timestamp
 from .datatypes.common import Response
-
+import logging
+logger = logging.getLogger(__name__)
 
 def now_ts() -> Timestamp:
     ts = Timestamp()

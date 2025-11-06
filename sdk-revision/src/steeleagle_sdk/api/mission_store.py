@@ -5,7 +5,6 @@ import time
 import zmq
 import zmq.asyncio
 import logging
-
 logger = logging.getLogger(__name__)
 
 class MissionStore:

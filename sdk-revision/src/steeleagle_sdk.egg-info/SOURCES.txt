@@ -4,6 +4,7 @@ src/steeleagle_sdk/__init__.py
 src/steeleagle_sdk.egg-info/PKG-INFO
 src/steeleagle_sdk.egg-info/SOURCES.txt
 src/steeleagle_sdk.egg-info/dependency_links.txt
+src/steeleagle_sdk.egg-info/entry_points.txt
 src/steeleagle_sdk.egg-info/requires.txt
 src/steeleagle_sdk.egg-info/top_level.txt
 src/steeleagle_sdk/api/__init__.py
@@ -44,9 +45,13 @@ src/steeleagle_sdk/dsl/runtime/__init__.py
 src/steeleagle_sdk/dsl/runtime/fsm.py
 src/steeleagle_sdk/dsl/types/base.py
 src/steeleagle_sdk/dsl/types/utils.py
+src/steeleagle_sdk/dsl/types/actions/__init__.py
+src/steeleagle_sdk/dsl/types/actions/primitives/__init__.py
 src/steeleagle_sdk/dsl/types/actions/primitives/compute.py
 src/steeleagle_sdk/dsl/types/actions/primitives/vehicle.py
+src/steeleagle_sdk/dsl/types/actions/procedures/__init__.py
 src/steeleagle_sdk/dsl/types/actions/procedures/procedures.py
+src/steeleagle_sdk/dsl/types/datatypes/__init__.py
 src/steeleagle_sdk/dsl/types/datatypes/any.py
 src/steeleagle_sdk/dsl/types/datatypes/common.py
 src/steeleagle_sdk/dsl/types/datatypes/compute.py
@@ -56,6 +61,7 @@ src/steeleagle_sdk/dsl/types/datatypes/result.py
 src/steeleagle_sdk/dsl/types/datatypes/telemetry.py
 src/steeleagle_sdk/dsl/types/datatypes/timestamp.py
 src/steeleagle_sdk/dsl/types/datatypes/waypoint.py
+src/steeleagle_sdk/dsl/types/events/__init__.py
 src/steeleagle_sdk/dsl/types/events/singulars/__init__.py
 src/steeleagle_sdk/dsl/types/events/singulars/singulars.py
 src/steeleagle_sdk/protocol/__init__.py

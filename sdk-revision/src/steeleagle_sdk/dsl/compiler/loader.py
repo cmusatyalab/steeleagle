@@ -32,7 +32,6 @@ def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
 
 def load_all(
     *base_pkgs: str,
-    show_trace: bool = False,
 ) -> List[Dict[str, object]]:
     """
     Import every submodule under each base package and REPORT failures.

@@ -7,10 +7,11 @@ from ..protocol.services import control_service_pb2 as control_proto
 from .datatypes.vehicle import (HeadingMode, AltitudeMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration)
 from .datatypes.common import Velocity, Location, Position, Response, Pose
 from .utils import run_unary, run_streaming
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Vehicle:
-    def __init__(self, mission_store: MissionStore, channel: grpc.aio.Channel):
+    def __init__(self, channel: grpc.aio.Channel, mission_store: MissionStore):
         self.mission_store = mission_store
         self.control = ControlStub(channel)
 

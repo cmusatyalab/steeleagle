@@ -23,6 +23,7 @@ Requires-Dist: shapely>=2.1.1
 Requires-Dist: matplotlib>=3.10.6
 Requires-Dist: folium>=0.20.0
 Requires-Dist: pygls
+Requires-Dist: pyzmq>=27.1.0
 
 # SteelEagle SDK: Controller Library for SteelEagle Vehicles
 

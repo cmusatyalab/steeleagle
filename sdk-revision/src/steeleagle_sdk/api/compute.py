@@ -6,6 +6,8 @@ from ..protocol.services import compute_service_pb2 as compute_proto
 from .datatypes.common import Response
 from .datatypes.compute import DatasinkInfo
 from .utils import run_unary
+import logging
+logger = logging.getLogger(__name__)
 
 class Compute:
     def __init__(self, channel: grpc.aio.Channel, mission_store: MissionStore):

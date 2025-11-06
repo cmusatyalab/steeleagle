@@ -4,6 +4,8 @@ from ...api.compute import Compute
 import grpc
 from ...api.mission_store import MissionStore
 from .fsm import MissionFSM
+import logging
+logger = logging.getLogger(__name__)
 
 VEHICLE: Vehicle = None
 COMPUTE: Compute = None

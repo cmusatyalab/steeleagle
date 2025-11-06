@@ -4,6 +4,7 @@ from pathlib import Path
 from lark import Lark
 from .compiler.ir import MissionIR
 from .compiler.transformer import DroneDSLTransformer
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load and prepare the DSL parser
@@ -20,6 +21,7 @@ def build_mission(dsl_code: str) -> MissionIR:
     Returns:
         MissionIR: a mission intermediate representation
     """
+    logger.info("Hi")
     tree = _parser.parse(dsl_code) 
     mission = DroneDSLTransformer().transform(tree)
     logger.info(
@@ -51,10 +53,10 @@ def cli_compile_dsl():
         dsl_content = file.read()
         mission = build_mission(dsl_content)
         mission_json_text = json.dumps(asdict(mission))
-        print("Mission compiled!")
+        logger.info("Mission compiled!")
 
     with open(args.output, 'w') as file:
         file.write(mission_json_text)
-        print(f"Wrote contents to {args.output}.")
+        logger.info(f"Wrote contents to {args.output}.")
 
 __all__ = ["build_mission", "compile"]
