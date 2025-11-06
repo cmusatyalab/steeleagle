@@ -2,46 +2,16 @@ name: Build and push telemetry engine
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
+    tags: [ "v*" ]
     paths:
       - '.github/workflows/build-telemetry-engine.yml'
       - 'backend/server/engines/telemetry/**'
-      - 'protocol/**'
-      - 'vehicle/util/**'
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
-    - name: Download protobuf compiler
-      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
-
-    - name: Unzip protobuf compiler
-      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
-
-    - name: Build protobufs
-      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build and push vehicle image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: backend/server/engines/telemetry/Dockerfile.telemetry
-        push: true
-        tags: cmusatyalab/steeleagle-telemetry-engine:latest
-        cache-from: type=registry,ref=cmusatyalab/steeleagle-telemetry-engine:latest
-        cache-to: type=inline
+    uses: ./.github/workflows/deploy-docker-img.yml
+    with:
+      name: steeleagle-telemetry-engine
+      dockerfile: backend/server/engines/telemetry/Dockerfile
+    secrets: inherit
