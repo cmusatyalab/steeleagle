@@ -24,7 +24,7 @@ class CustomBuildHook(BuildHookInterface):
             os.makedirs(f'build/src/{package}/{source}', exist_ok=True)
         print('>>> Generating code...')
         # This generates and copies the Proto, then generates the API and DSL
-        # os.system('cd build/generate; ./generate.sh; cd ../..')
+        os.system('cd build/generate; ./generate.sh; cd ../..')
         print('>>> Copying sources...')
         for source in sources:
             if os.path.isdir(sources[source]):
