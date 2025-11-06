@@ -5,7 +5,6 @@ import logging
 # Streaming Imports
 import threading
 import time
-from concurrent import futures
 from enum import Enum
 import zmq
 import zmq.asyncio
@@ -18,19 +17,18 @@ from DigitalPerfect.SimulatedDrone import SimulatedDrone
 
 from PIL import Image
 
-# Protocol 
+# Protocol
 import common_pb2 as common_protocol
-from common_pb2 import Request, Response
+from common_pb2 import Response
 from messages import telemetry_pb2 as telemetry_protocol
 from services import control_service_pb2 as control_protocol
-from services import control_service_pb2_grpc
 from services.control_service_pb2_grpc import ControlServicer
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
 logger = logging.getLogger("driver/DigitalPerfect")
 
-TELEMETRY_SOCK = 'ipc:///tmp/driver_telem.sock'
+TELEMETRY_SOCK = "ipc:///tmp/driver_telem.sock"
 # IMAGERY_SOCK = 'ipc:///tmp/imagery.sock'
 
 telemetry_sock = zmq.asyncio.Context().socket(zmq.PUB)
@@ -39,16 +37,18 @@ telemetry_sock.bind(TELEMETRY_SOCK)
 # cam_sock = zmq.Context().socket(zmq.PUB)
 # cam_sock.bind(IMAGERY_SOCK)
 
+
 def generate_response(resp_type, resp_string=""):
-    '''
+    """
     Generates a protobuf response object for an RPC given a
     response type and optional response string.
-    '''
+    """
     return Response(
-            status=resp_type,
-            response_string=resp_string,
-            timestamp=Timestamp().GetCurrentTime()
-            )
+        status=resp_type,
+        response_string=resp_string,
+        timestamp=Timestamp().GetCurrentTime(),
+    )
+
 
 # Flight modes
 class FlightMode(Enum):
@@ -131,7 +131,10 @@ class DigitalPerfectDrone(ControlServicer):
     async def TakeOff(self, request, context):
         logger.info("Initiating takeoff sequence...")
         try:
-            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Initiating takeoff...")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Initiating takeoff...",
+            )
             logger.info("Switching to TAKEOFF_LAND mode...")
             await self._switch_mode(FlightMode.TAKEOFF_LAND)
             logger.info("Takeoff command sent to drone...")
@@ -141,13 +144,22 @@ class DigitalPerfectDrone(ControlServicer):
             logger.info(f"checking if hovering... {self._is_hovering()}")
             while not self._is_hovering():
                 logger.info("Waiting for drone to reach hover state...")
-                yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Taking off...")
+                yield generate_response(
+                    resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                    resp_string="Taking off...",
+                )
                 await asyncio.sleep(0.1)
-                
-            logger.info(f"checking if hovering... {self._is_hovering()}")  
-            yield generate_response(resp_type=common_protocol.ResponseStatus.IN_PROGRESS, resp_string="Hovering...")
+
+            logger.info(f"checking if hovering... {self._is_hovering()}")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.IN_PROGRESS,
+                resp_string="Hovering...",
+            )
             await self._switch_mode(FlightMode.LOITER)
-            yield generate_response(resp_type=common_protocol.ResponseStatus.COMPLETED, resp_string="Takeoff successful")
+            yield generate_response(
+                resp_type=common_protocol.ResponseStatus.COMPLETED,
+                resp_string="Takeoff successful",
+            )
             logger.info("Takeoff sequence completed successfully.")
         except Exception as e:
             logger.error(f"Error occurred during takeoff: {e}")
@@ -255,7 +267,7 @@ class DigitalPerfectDrone(ControlServicer):
 
             if hdg_mode == control_protocol.HeadingMode.TO_TARGET:
                 bearing = request.location.heading
-           
+
             # Convert absolute to relative altitude if required
             # TODO: Correct this - DD e_m_t uses an absolute alt unlike anafi drones
             if alt_mode == control_protocol.AltitudeMode.ABSOLUTE:
@@ -463,7 +475,9 @@ class DigitalPerfectDrone(ControlServicer):
             await context.abort(grpc.StatusCode.UNKNOWN, f"Unexpected error: {str(e)}")
 
     async def ConfigureTelemetryStream(self, request, context):
-        self.telemetry_task = asyncio.create_task(self.stream_telemetry(telemetry_sock, request.frequency))
+        self.telemetry_task = asyncio.create_task(
+            self.stream_telemetry(telemetry_sock, request.frequency)
+        )
         return generate_response(2)
 
     async def stream_telemetry(self, tel_sock, rate_hz):
@@ -514,12 +528,14 @@ class DigitalPerfectDrone(ControlServicer):
                     self._drone.get_angular_velocity()
                 )
                 gimbal = self._get_gimbal_pose_body(0)
-                tel_message.gimbal_info.gimbals.append(telemetry_protocol.GimbalStatus(id=0))
+                tel_message.gimbal_info.gimbals.append(
+                    telemetry_protocol.GimbalStatus(id=0)
+                )
                 tel_message.gimbal_info.gimbals[0].pose_body.pitch = gimbal["g_pitch"]
                 tel_message.gimbal_info.gimbals[0].pose_body.roll = gimbal["g_roll"]
                 tel_message.gimbal_info.gimbals[0].pose_body.yaw = gimbal["g_yaw"]
                 tel_message.gimbal_info.gimbals[0].id = 0
-                #tel_message.status = self._get_current_status()
+                # tel_message.status = self._get_current_status()
                 batt = self._get_battery_percentage()
 
                 # Warnings
@@ -549,7 +565,9 @@ class DigitalPerfectDrone(ControlServicer):
                     tel_message.alert_info.gps_warning = (
                         telemetry_protocol.GPSWarning.WEAK_WEAK
                     )
-                await tel_sock.send_multipart([b'driver_telemetry', tel_message.SerializeToString()])
+                await tel_sock.send_multipart(
+                    [b"driver_telemetry", tel_message.SerializeToString()]
+                )
             except Exception as e:
                 logger.error(f"Failed to get telemetry, error: {e}")
             await asyncio.sleep(1.0 / rate_hz)
@@ -613,7 +631,7 @@ class DigitalPerfectDrone(ControlServicer):
         return self._drone.get_current_position()
 
     def _get_heading(self) -> float:
-        return math.degrees(self._drone.get_state("attitude")["yaw"]) % 360
+        return self._drone.get_state("attitude")["yaw"] % 360
 
     def _get_magnetometer(self) -> int:
         return self._drone.get_state("magnetometer")
@@ -621,7 +639,7 @@ class DigitalPerfectDrone(ControlServicer):
     def _get_type(self) -> str:
         try:
             return self._drone._device_type
-        except:
+        except Exception:
             return "Digital Simulated"
 
     def _get_name(self) -> str:
