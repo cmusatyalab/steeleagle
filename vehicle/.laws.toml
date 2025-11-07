@@ -13,13 +13,13 @@ match = [
 # after any law-specific failsafes
 dc_server = ['Control.Hold']
 dc_driver =  ['Report.SendReport|{"report_code": 1}']
-dc_mission = ['Report.SendReport|{"report_code": 2}'] 
+dc_mission = ['Report.SendReport|{"report_code": 2}']
 dc_local_compute = ['Report.SendReport|{"report_code": 3}']
 dc_remote_compute = ['Report.SendReport|{"report_code": 4}']
 
 # NOTE: State definitions start here!
 [REMOTE]
-enter = ['Mission.Stop']
+enter = []
 [REMOTE.rules]
 allowed = []
 match = [
