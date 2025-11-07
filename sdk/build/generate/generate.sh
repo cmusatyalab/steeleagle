@@ -48,5 +48,5 @@ rm -rf temp
 
 cd build/generate
 
-# Construct the API
-DESCPATH=$_DESCPATH python generate_api.py
+# # Construct the API
+# DESCPATH=$_DESCPATH python generate_api.py

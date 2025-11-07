@@ -10,7 +10,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "steeleagle_sdk"
-version = "1.0.13"
+version = "1.0.14"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
 requires-python = ">=3.11"

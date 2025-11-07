@@ -13,4 +13,6 @@ jobs:
     with:
       name: steeleagle-avoidance-engine
       dockerfile: backend/server/engines/avoidance/Dockerfile
+      ctx: backend/server/engines/avoidance/
+      free_disk_space: true
     secrets: inherit

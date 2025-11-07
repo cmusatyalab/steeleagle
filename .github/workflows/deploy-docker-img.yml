@@ -16,6 +16,7 @@ on:
       ctx:
         required: true
         type: string
+        default: '.'
     secrets:
       DOCKERHUB_USERNAME:
         required: true
