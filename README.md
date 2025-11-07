@@ -1,58 +1,118 @@
 <!--
-SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+SPDX-FileCopyrightText: 2023-2025 Carnegie Mellon University - Satyalab
 
 SPDX-License-Identifier: GPL-2.0-only
 -->
 
-SteelEagle: Edge-Enabled Drone Autonomy
-===========
+![SteelEagle logo](docs/static/img/logo-text.png)
 
-Introduction
-------------
-SteelEagle is a software suite that transforms commercial-off-the-shelf (COTS) drones into fully-autonomous, beyond-visual-line-of-sight (BVLOS) UAVs. This allows users to develop complex autonomous UAV applications without needing to purchase or configure expensive aircraft hardware. SteelEagle drones are easy to deploy and importantly, are drone agnostic. This means that SteelEagle can be adapted to work with any drone control API, as long as it supports control over WiFi. Of particular interest to us are extremely lightweight drones because of the simplified regulatory approval process.
+# SteelEagle: Edge-Enabled Drone Autonomy
 
-[Democratizing Drone Autonomy Via Edge Computing](https://ieeexplore.ieee.org/document/10419264) published in ACM SEC 2023
+## Introduction
 
-[**Quickstart**](https://cmusatyalab.github.io/steeleagle/docs/quickstart)
+SteelEagle is a software suite and edge orchestration system that transforms
+programmable commercial off-the-shelf (COTS) robotics platforms into
+fully-autonomous vehicles. By leveraging COTS economies of scale, SteelEagle
+can emulate the performance of expensive, onboard compute-based platforms on
+light, inexpensive hardware.
 
-[**Documentation**](https://cmusatyalab.github.io/steeleagle/)
+The SteelEagle suite is equipped with a universal API which unifies disparate
+control SDKs under one programming scheme. This API is robot agnostic and can
+be used with any kind of programmable robotics hardware, including custom
+builds. Any drone that is SteelEagle API compatible can plug into the
+SteelEagle unified autonomy development stack which promotes code sharing and
+heterogeneous device collaboration. A visual mission scripting tool is also
+available to give non-programmers an easy way to interact with autonomous
+robots.
 
-License
------
-Unless otherwise stated in the table below, all source code and documentation are under the [GNU Public License, Version 2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
-A copy of this license is reproduced in the [LICENSE](LICENSE) file.
+SteelEagle's edge processing pipelines allow drop-in drop-out configuration of
+AI backends, deployed in widely-used development environments instead of on
+embedded hardware. This makes SteelEagle an ideal testbed for AI robotics
+applications that need to quickly iterate and field deploy.
 
-Portions from the following third party sources have
-been modified and are included in this repository.
-These portions are noted in the source files and are
-copyright their respective authors with
-the licenses listed.
+## Documentation
 
-Project | Modified | License
----|---|---|
-[cmusatyalab/openscout](https://github.com/cmusatyalab/openscout) | Yes | Apache 2.0
-[bytedeco/javacv](https://github.com/bytedeco/javacv) | Yes | Apache 2.0
-[xianglic/droneDSL](https://github.com/xianglic/droneDSL) | Yes | GPL 3.0
+[**Quickstart**][quickstart] | [**Docs**][docs]
 
-Design
-------
-SteelEagle is separated into three distinct parts: the local commander client, the cloudlet server, and the onboard software. The commander client is intended to run on a personal computer close to the RPIC (Remote Pilot-in-Command) with an internet connection. It gives an interface to receive telemetry and upload a mission script to the drone. It also provides tools to assume manual control of the drone while it is in-flight. The cloudlet server is the bridge between the onboard drone software and the commander client. It relays messages between the two and also publicly hosts flight scripts. Additionally, the server runs compute engines for the drone which will be executed on the offloaded sensor data/video stream. Finally, the onboard software consists of an app that runs on the drone-mounted Android or router device. This app relays telemetry and offloads sensor data/video frames to the cloudlet server. In the Android case, it is also responsible for running the mission script and directly sending control commands to the drone. In the router case, the cloudlet runs the mission script and sends control commands over the network to the drone.
+[quickstart]: https://cmusatyalab.github.io/steeleagle/getting_started/overview/
+[docs]: https://cmusatyalab.github.io/steeleagle/
 
-Architecture
-------
-![drawing](https://github.com/cmusatyalab/steeleagle/blob/main/docs/modules/images/system-arch.png)
+## Why Use SteelEagle?
 
-Workflow
---------
-1. A planner utilizes Google MyMaps to define the mission in a graphical UI by creating tasks. A task is created by drawing a polygon/marker, naming it, and defining the actions associated with that task by adding these to the description textbox.
+### :money_with_wings: Low Cost
 
-2. Once defined, the planner exports the mission as a KML file.
+SteelEagle can be used with mass-market consumer robots which are extremely
+cost-optimized. This makes acquisition easier and cheaper than custom-built or
+niche products. It can also make swarm operations more economically feasible
+for constrained budgets.
 
-3. The planner generates a mission script (`.ms` file) from the KML file using the Hermes compiler.
+### :small_airplane: Accessible
 
-4. The pilot powers on the drone, starts the onboard software, connects to the drone through the commander, and sends the `.ms` file.
+SteelEagle robots are designed to abstract away as much low-level control code
+as possible allowing users to focus on developing high-level tasks.
+Non-programmers can use the visual scripting API to design complex mission
+behavior without writing a single line of code. Programmers can use the Task
+Creator SDK to easily build out new functionality, and can use the Backend SDK
+to rapidly deploy new AI models across a robot fleet.
 
-5. The drone executes its mission.
+### :baby_chick: Lightweight
 
+Because SteelEagle robots rely on the edge for intelligence, they don't need to
+carry heavy onboard compute resources. This drives down weight, something which
+is particularly important for UAVs (unmanned aerial vehicles) due to [strict
+weight regulations][faa_weight]. SteelEagle enables autonomy on aircraft
+significantly smaller and lighter than traditional autonomous UAVs.
 
+[faa_weight]: https://www.faa.gov/uas/commercial_operators/operations_over_people
 
+### :minidisc: Portable
+
+SteelEagle is robot agnostic by design, able to accommodate any robot with a
+SDK. It supports heterogeneous collaborative robot swarms, and it gives users
+the ability to easily port code from one platform to another. While SteelEagle
+is unlikely to match the performance of purpose-built autonomous systems, its
+design allows for missions that pair such systems with smaller, cheaper helpers
+which can improve mission outcomes.
+
+### :eyes: BVLOS (Beyond Visual Line-of-Sight)
+
+SteelEagle robots can communicate with an edge backend using any type of
+underlying radio communication, including LTE, without human supervision
+(beyond visual line-of-sight, or BVLOS for short). Operations like this are
+important for remote surveillance, especially in adversarial environments.
+
+### :electric_plug: Access to Powerful Compute
+
+SteelEagle robots have access to much more powerful computation over the
+network than most mobile robots have onboard, due to their access to edge
+servers. Although edge servers are not as powerful as cloud servers, they are
+far more capable than any mobile computer and can deliver high-quality AI
+results with relatively low latency.
+
+## License
+
+Unless otherwise stated in the table below, all source code and documentation
+are under the [GNU Public License, Version 2.0][gpl2]. A copy of this license is
+reproduced in the [LICENSE](LICENSE) file.
+
+Portions from the following third party sources have been modified and are
+included in this repository.  These portions are noted in the source files and
+are copyright their respective authors with the licenses listed.
+
+| Project | Modified | License |
+| ------- | -------- | ------- |
+| [cmusatyalab/openscout][openscout] | Yes | Apache 2.0 |
+
+[gpl2]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+[openscout]: https://github.com/cmusatyalab/openscout
+
+## Related Publications
+
+- M. Bala, T. Eiszler, X. Chen, J. Harkes, J. Blakley, P. Pillai, and M.
+  Satyanarayanan, "Democratizing Drone Autonomy via Edge Computing," *2023
+  IEEE/ACM Symposium on Edge Computing (SEC)*, Wilmington, DE, USA, 2023, pp.
+  40--52, doi: [10.1145/3583740.3626614](https://doi.org/10.1145/3583740.3626614).
+- M. Bala, A. Chanana, X. Chen, Q. Dong, T. Eiszler, J. Xu, P. Pillai, and M.
+  Satyanarayanan, "The OODA Loop of Cloudlet-based Autonomous Drones," *2024
+  IEEE/ACM Symposium on Edge Computing (SEC)*, Rome, Italy, 2024, pp. 178--190,
+  doi: [10.1109/SEC62691.2024.00022](https://doi.org/10.1109/SEC62691.2024.00022).
