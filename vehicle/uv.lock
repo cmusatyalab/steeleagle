@@ -1449,6 +1449,7 @@ dependencies = [
     { name = "protobuf" },
     { name = "pydantic" },
     { name = "pygls" },
+    { name = "pyzmq" },
     { name = "shapely" },
 ]
 
@@ -1461,6 +1462,7 @@ requires-dist = [
     { name = "protobuf", specifier = ">=3.12" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pygls" },
+    { name = "pyzmq", specifier = ">=27.1.0" },
     { name = "shapely", specifier = ">=2.1.1" },
 ]
 

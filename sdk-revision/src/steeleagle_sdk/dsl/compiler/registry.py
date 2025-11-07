@@ -18,7 +18,7 @@ def register_action(cls: Action) -> Action:
     if prev and prev is not cls:
         logger.warning("Overwriting action '%s'", key)
     else:
-        logger.info("Registered action '%s'", key)
+        logger.debug("Registered action '%s'", key)
     return cls
 
 def register_event(cls: Event) -> Event:
@@ -28,7 +28,7 @@ def register_event(cls: Event) -> Event:
     if prev and prev is not cls:
         logger.warning("Overwriting event '%s'", key)
     else:
-        logger.info("Registered event '%s'", key)
+        logger.debug("Registered event '%s'", key)
     return cls
 
 def register_data(cls: Datatype) -> Datatype:
@@ -36,9 +36,9 @@ def register_data(cls: Datatype) -> Datatype:
     prev = _DATA.get(key)
     _DATA[key] = cls
     if prev and prev is not cls:
-        logger.warning("Overwriting message '%s'", key)
+        logger.warning("Overwriting datatype '%s'", key)
     else:
-        logger.info("Registered message '%s'", key)
+        logger.debug("Registered datatype '%s'", key)
     return cls
 
 def get_action(name: str) -> Optional[Action]:

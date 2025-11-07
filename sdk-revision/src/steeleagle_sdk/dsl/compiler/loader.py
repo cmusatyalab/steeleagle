@@ -57,7 +57,7 @@ def load_all(
             logger.warning("Base package not found: %s", base)
             all_summaries.append(summary)
             continue
-        logger.info("Scanning '%s' (%d submodules discovered)", base, len(modules))
+        logger.debug("Scanning '%s' (%d submodules discovered)", base, len(modules))
 
         # import submodules
         imported: List[str] = []
@@ -87,7 +87,7 @@ def print_report(summaries: List[Dict[str, object]]) -> None:
     for s in summaries:
         base = s["base"]
         if s.get("skipped"):
-            logger.info("%s: skipped (already scanned)", base)
+            logger.debug("%s: skipped (already scanned)", base)
             continue
         if s.get("missing_base"):
             logger.warning("%s: MISSING base package", base)
@@ -95,13 +95,13 @@ def print_report(summaries: List[Dict[str, object]]) -> None:
 
         imported = s.get("imported", [])
         failed = s.get("failed", [])
-        logger.info("%s: %d imported, %d failed", base, len(imported), len(failed))
+        logger.debug("%s: %d imported, %d failed", base, len(imported), len(failed))
 
         if imported:
             for name in imported[:10]:
-                logger.info("   ✓ %s", name)
+                logger.debug("   ✓ %s", name)
             if len(imported) > 10:
-                logger.info("   … (+%d more)", len(imported) - 10)
+                logger.debug("   … (+%d more)", len(imported) - 10)
 
         if failed:
             for f in failed:

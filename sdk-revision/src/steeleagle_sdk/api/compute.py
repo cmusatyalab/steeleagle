@@ -6,6 +6,7 @@ from ..protocol.services import compute_service_pb2 as compute_proto
 from .datatypes.common import Response
 from .datatypes.compute import DatasinkInfo
 from .utils import run_unary
+from google.protobuf.json_format import ParseDict
 import logging
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,8 @@ class Compute:
 
     async def add_datasinks(self, datasinks:List[DatasinkInfo]) -> Response:
         req = compute_proto.AddDatasinksRequest()
-        req.datasinks.extend(datasinks)
+        for d in datasinks:
+            ParseDict(d.model_dump(exclude_none=True), req.datasinks.add())
         return await run_unary(self.compute.AddDatasinks, req)
     
     async def set_datasinks(self, datasinks:List[DatasinkInfo]) -> Response:
@@ -33,7 +35,8 @@ class Compute:
         """
         
         req = compute_proto.SetDatasinksRequest()
-        req.datasinks.extend(datasinks)
+        for d in datasinks:
+            ParseDict(d.model_dump(exclude_none=True), req.datasinks.add())
         return await run_unary(self.compute.SetDatasinks, req)
 
     async def remove_datasinks(self, datasinks:List[DatasinkInfo]) -> Response:
@@ -46,5 +49,6 @@ class Compute:
         """
         
         req = compute_proto.RemoveDatasinksRequest()
-        req.datasinks.extend(datasinks)
+        for d in datasinks:
+            ParseDict(d.model_dump(exclude_none=True), req.datasinks.add())
         return await run_unary(self.compute.RemoveDatasinks, req)

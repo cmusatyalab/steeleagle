@@ -71,7 +71,7 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
     data_valid = 0
     actions_valid = 0
     events_valid = 0
-    logger.info(
+    logger.debug(
         "validator: start (data=%d, actions=%d, events=%d)",
         len(getattr(mir, "data", {})),
         len(mir.actions),
@@ -114,7 +114,7 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
                 f"Event '{ename}' of type '{eir.type_name}' failed validation: {e}"
             ) from e
 
-    logger.info(
+    logger.debug(
         "validator: done (data_valid=%d, actions_valid=%d, events_valid=%d)",
         data_valid, actions_valid, events_valid
     )

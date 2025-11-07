@@ -4,13 +4,13 @@ import grpc
 import logging
 # Protocol imports
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc
-
 from mission.mission_service import MissionService
 
 # Utility import
 from util.log import setup_logging
-setup_logging()
 from util.config import query_config
+
+setup_logging()
 
 logger = logging.getLogger("mission/main")
 

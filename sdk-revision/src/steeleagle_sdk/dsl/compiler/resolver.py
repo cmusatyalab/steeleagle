@@ -140,7 +140,7 @@ def resolve_symbols(mir: MissionIR) -> MissionIR:
     in action/event attributes. For Data objects, resolve nested references inside
     their attribute dicts so that later instantiation sees already-resolved values.
     """
-    logger.info(
+    logger.debug(
         "resolve_symbols: start (actions=%d, events=%d, data=%d)",
         len(mir.actions), len(mir.events), len(mir.data)
     )
@@ -181,5 +181,5 @@ def resolve_symbols(mir: MissionIR) -> MissionIR:
                 resolved_attrs[fname] = _resolve_value_for_field(resolved_attrs[fname], ftype, mir.data)
         eir.attributes = resolved_attrs
 
-    logger.info("resolve_symbols: done")
+    logger.debug("resolve_symbols: done")
     return mir

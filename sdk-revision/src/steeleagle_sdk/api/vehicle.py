@@ -1,12 +1,14 @@
 from typing import AsyncIterator, List, Optional
 import grpc
-from google.protobuf.duration_pb2 import Duration
 from .mission_store import MissionStore
 from ..protocol.services.control_service_pb2_grpc import ControlStub
 from ..protocol.services import control_service_pb2 as control_proto
 from .datatypes.vehicle import (HeadingMode, AltitudeMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration)
 from .datatypes.common import Velocity, Location, Position, Response, Pose
+from .datatypes.duration import Duration
 from .utils import run_unary, run_streaming
+from google.protobuf.json_format import ParseDict
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -37,8 +39,8 @@ class Vehicle:
 
     async def joystick(self, velocity: Velocity, duration: Duration) -> AsyncIterator[Response]:
         req = control_proto.JoystickRequest()
-        req.velocity.CopyFrom(velocity)
-        req.duration.CopyFrom(duration)
+        ParseDict(velocity.model_dump(), req.velocity)
+        ParseDict(duration.model_dump(), req.duration)
         return await run_unary(self.control.Joystick, req)
 
     async def take_off(self, take_off_altitude: float) -> AsyncIterator[Response]:
@@ -64,7 +66,7 @@ class Vehicle:
 
     async def set_home(self, location: Location) -> AsyncIterator[Response]:
         req = control_proto.SetHomeRequest()
-        req.location.CopyFrom(location)
+        ParseDict(location.model_dump(), req.location)
         return await run_unary(self.control.SetHome, req)
 
     async def return_to_home(self) -> AsyncIterator[Response]:
@@ -80,13 +82,13 @@ class Vehicle:
         max_velocity: Optional[Velocity] = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetGlobalPositionRequest()
-        req.location.CopyFrom(location)
+        ParseDict(location.model_dump(), req.location)
         if heading_mode is not None:
             req.heading_mode = heading_mode
         if altitude_mode is not None:
             req.altitude_mode = altitude_mode
         if max_velocity is not None:
-            req.max_velocity.CopyFrom(max_velocity)
+            ParseDict(max_velocity.model_dump(), req.max_velocity)
         async for msg in run_streaming(self.control.SetGlobalPosition, req):
             yield msg
 
@@ -97,9 +99,9 @@ class Vehicle:
         frame: Optional[ReferenceFrame] = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetRelativePositionRequest()
-        req.position.CopyFrom(position)
+        ParseDict(position.model_dump(), req.position)
         if max_velocity is not None:
-            req.max_velocity.CopyFrom(max_velocity)
+            ParseDict(max_velocity.model_dump(), req.max_velocity)
         if frame is not None:
             req.frame = frame
         async for msg in run_streaming(self.control.SetRelativePosition, req):
@@ -111,7 +113,7 @@ class Vehicle:
         frame: Optional[ReferenceFrame] = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetVelocityRequest()
-        req.velocity.CopyFrom(velocity)
+        ParseDict(velocity.model_dump(), req.velocity)
         if frame is not None:
             req.frame = frame
         async for msg in run_streaming(self.control.SetVelocity, req):
@@ -123,7 +125,7 @@ class Vehicle:
         heading_mode: Optional[HeadingMode] = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetHeadingRequest()
-        req.location.CopyFrom(location)
+        ParseDict(location.model_dump(), req.location)
         if heading_mode is not None:
             req.heading_mode = heading_mode
         async for msg in run_streaming(self.control.SetHeading, req):
@@ -138,7 +140,7 @@ class Vehicle:
     ) -> AsyncIterator[Response]:
         req = control_proto.SetGimbalPoseRequest()
         req.gimbal_id = int(gimbal_id)
-        req.pose.CopyFrom(pose)
+        ParseDict(pose.model_dump(), req.pose)
         if pose_mode is not None:
             req.pose_mode = pose_mode
         if frame is not None:
@@ -151,7 +153,8 @@ class Vehicle:
         configurations: List[ImagingSensorConfiguration],
     ) -> Response:
         req = control_proto.ConfigureImagingSensorStreamRequest()
-        req.configurations.extend(configurations)
+        for c in configurations:
+            ParseDict(c.model_dump()(exclude_none=True), req.configurations.add())
         return await run_unary(self.control.ConfigureImagingSensorStream, req)
 
     async def configure_telemetry_stream(self, frequency: int) -> Response:

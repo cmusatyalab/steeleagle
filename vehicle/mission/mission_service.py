@@ -9,7 +9,6 @@ from steeleagle_sdk.dsl.runtime import init
 from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
 from dacite import from_dict
 import logging
-
 logger = logging.getLogger(__name__)
 
 class MissionService(MissionServicer):
@@ -30,8 +29,7 @@ class MissionService(MissionServicer):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
         mission_content = request.mission.content
-        mission_ir = self._load(mission_content)
-        self.mission = mission_ir
+        self.mission = self._load(mission_content)
         self.mission_map = request.mission.map
         logger.info(f"Loaded mission and map")
         return generate_response(2, "Mission uploaded")
@@ -41,7 +39,7 @@ class MissionService(MissionServicer):
         tel_address = self.address.get("telemetry")
         results_address = self.address.get("results")
         map = self.mission_map
-        self.fsm = init(vehicle_address, tel_address, results_address, map)
+        self.fsm = init(self.mission, vehicle_address, tel_address, results_address, map)
         self.fsm_routine = asyncio.create_task(self.fsm.run())
 
     async def Start(self, request, context):
