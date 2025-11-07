@@ -16,6 +16,7 @@ MAP: Any = None
 def init(mission: MissionIR, vehicle_address: str, telemetry_address: str, result_address: str, map: Any) -> None:
     channel = grpc.aio.insecure_channel(vehicle_address)
     mission_store = MissionStore(telemetry_address, result_address)
+    mission_store.start()
     vehicle = Vehicle(channel, mission_store)
     compute = Compute(channel, mission_store)
     

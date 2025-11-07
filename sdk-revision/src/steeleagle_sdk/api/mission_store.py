@@ -12,7 +12,7 @@ class MissionStore:
         self.ctx = zmq.asyncio.Context.instance()
         self.telemetry_addr = telemetry_addr
         self.results_addr = results_addr
-        self._lock = asyncio.Lock()     # async-safe guard
+        self._lock = asyncio.Lock()
         self._tasks = []
         self._telemetry = None
         self._results = None
@@ -67,7 +67,6 @@ class MissionStore:
             self._telemetry.close(0)
         if self._results:
             self._results.close(0)
-        # self.ctx.term()  # uncomment if this is the only ZMQ user
 
     async def get_latest(self, source, topic):
         async with self._lock:
