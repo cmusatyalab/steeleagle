@@ -1,7 +1,8 @@
 [vehicle]
+# Name of the vehicle reported through telemetry
 name = ''
+# Vehicle package (see https://git.cmusatyalab.org/steeleagle/roost for list of available vehicles)
 package = ''
-python = ''
 [vehicle.kwargs]
 
 [cloudlet]
