@@ -4,11 +4,14 @@ import subprocess
 import argparse
 import requests
 import json
+import tomllib
 # Utility imports
 from util.cleanup import register_cleanup_handler
 register_cleanup_handler()
 
-ROOST = 'https://git.cmusatyalab.org/api/v4/projects/85/packages/pypi/simple'
+ROOST_REPO = 'https://git.cmusatyalab.org/steeleagle/roost/-/raw/main/drivers/'
+ROOST_PYPI = 'https://git.cmusatyalab.org/api/v4/projects/85/packages/pypi/simple'
+PYTHON_DEFAULT = '3.12' # Default Python used by the vehicle driver
 
 def start_services(log, info):
     running = []
@@ -16,31 +19,58 @@ def start_services(log, info):
     if log:
         task = subprocess.Popen(logger)
         running.append(task)
+    # Get and read the cap file
+    startup = []
+    cap_request = requests.get(f'{ROOST_REPO}/{info["package"]}/cap.toml')
+    if cap_request.status_code == 200:
+        try:
+            # Attempt to load startup commands
+            startup = tomllib.loads(cap_request.text)['startup']
+        except:
+            print('WARNING: Cap could not be read for startup commands, ignoring...')
+    else:
+        print('WARNING: No cap found!')
+    # Get and read the pyproject file
+    python = PYTHON_DEFAULT
+    py_request = requests.get(f'{ROOST_REPO}/{info["package"]}/pyproject.toml')
+    if py_request.status_code == 200:
+        try:
+            # Attempt to get the requires-python string
+            python = tomllib.loads(py_request.text)['project']['requires-python']
+        except Exception as e:
+            print('WARNING: Could not read Python version for driver, ignoring...')
+    else:
+        print('ERROR: Could not find associated pyproject.toml, are you sure the package exists?')
+        return
     # Start the driver
     if info:
         if info["kwargs"]:
             driver = ['uvx', 
-                      '--extra-index-url', ROOST,
-                      '--python', info["python"],
+                      '--extra-index-url', ROOST_PYPI,
+                      '--python', python,
                       info["package"], '--kwargs', json.dumps(info["kwargs"]), info["name"], info["address"], info["telemetry"], info["imagery"]]
-            print(driver)
         else:
             driver = ['uvx', 
-                      '--extra-index-url', ROOST,
-                      '--python', info["python"],
+                      '--extra-index-url', ROOST_PYPI,
+                      '--python', python,
                       info["package"], info["name"], info["address"], info["telemetry"], info["imagery"]]
         task = subprocess.Popen(driver)
         running.append(task)
         time.sleep(5)
-    # Start core services
-    core = [
-        ['python', 'mission/main.py'], # Mission
-        ['python', 'kernel/main.py'] # Kernel
-    ]
-    for subp in core:
-        task = subprocess.Popen(subp)
-        running.append(task)
-        time.sleep(0.1)
+    # Start the mission
+    mission = ['python', 'mission/main.py']
+    task = subprocess.Popen(mission)
+    running.append(task)
+    time.sleep(1)
+    # Start the kernel
+    kernel = ['python', 'kernel/main.py']
+    if len(startup) > 0:
+        kernel.append('--startup')
+        for s in startup:
+            kernel.append(f'{s}')
+    task = subprocess.Popen(kernel)
+    running.append(task)
+    
     running.reverse() # Reverse the processes so the logger dies last
     try:
         for subp in running:
@@ -84,12 +114,11 @@ if __name__ == '__main__':
     log = query_config('logging.generate_flight_log')
     
     driver_info = None
-    if not args.headless:
+    if not args.headless and not args.test:
         kwargs = query_config('vehicle.kwargs')
         driver_info = {
                 'name': query_config('vehicle.name'),
                 'package': query_config('vehicle.package'),
-                'python': query_config('vehicle.python'),
                 'address': query_config('internal.services.driver'),
                 'telemetry': query_config('internal.streams.driver_telemetry'),
                 'imagery': query_config('internal.streams.imagery'),

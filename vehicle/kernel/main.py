@@ -37,7 +37,7 @@ from handlers.stream_handler import StreamHandler
 
 logger = logging.getLogger('kernel/main')
 
-async def main(test=False):
+async def main(args):
     # Create ZeroMQ socket that connects to the Swarm Controller
     command_socket = zmq.asyncio.Context().socket(zmq.DEALER)
     command_socket.setsockopt(
@@ -77,7 +77,7 @@ async def main(test=False):
 
     try:
         # Send opening commands
-        success = await law_authority.start()
+        success = await law_authority.start(args.startup)
         if not success:
             raise SystemExit(1)
         logger.info('Device connected!')
@@ -92,7 +92,7 @@ async def main(test=False):
 
         # If in test mode, notify the test bench that kernel services
         # are ready
-        if test:
+        if args.test:
             from steeleagle_sdk.protocol.testing.testing_pb2 import ServiceReady
             ready = ServiceReady(readied_service=0)
             command_socket.send(ready.SerializeToString())
@@ -108,5 +108,7 @@ async def main(test=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Runs core services and handles permissions.")
     parser.add_argument('--test', action='store_true', help='Report when core services are ready for testing')
+    parser.add_argument("--startup", nargs="+", default=[], help="List of startup commands to run before entering __BASE__ law")
     args = parser.parse_args()
-    asyncio.run(main(args.test))
+    logger.info(args.startup)
+    asyncio.run(main(args))

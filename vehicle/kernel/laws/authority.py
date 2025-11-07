@@ -61,23 +61,30 @@ class LawAuthority:
         # Message class holder to support dynamic instantiation of messages
         self._message_classes = GetMessages(descriptor_set.file)
 
-    async def start(self, retries=3):
+    async def start(self, startup):
         '''
         Call the start calls for the law scheme. Must be called before any 
         other function!
         '''
-        logger.info('Sending startup commands...')
-        completed = False
         try:
-            while not completed and retries:
-                completed = await self.set_law('__BASE__')
-                if not completed:
-                    logger.warning('Startup failed, retrying...')
-                    retries -= 1
-                    await asyncio.sleep(1.0)
-            return completed
+            if len(startup):
+                logger.info('Sending startup commands...')
+                responses = await self._send_commands(startup)
+                if not all(response.status == 2 for response in responses):
+                    return False
         except asyncio.exceptions.CancelledError:
-            return completed
+            logger.error('Startup cancelled!')
+            return False
+
+        try:
+            logger.info('Attempting transition into __BASE__ law')
+            result = await self.set_law('__BASE__')
+            if not result:
+                logger.error('Transition failed!')
+            return result
+        except asyncio.exceptions.CancelledError:
+            logger.error('Transition cancelled!')
+            return False
 
     def check_equal(self, command, request, matcher):
         '''

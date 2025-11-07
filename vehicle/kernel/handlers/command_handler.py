@@ -44,7 +44,6 @@ class CommandHandler:
         # Only get one result back
         result = results[0]
         logger.info('Sending result back to the swarm controller...')
-        logger.proto(result)
         response = CommandResponse()
         response.sequence_number = command.sequence_number
         response.response.ParseFromString(result.SerializeToString())
