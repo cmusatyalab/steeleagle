@@ -6,8 +6,10 @@ package = ''
 [vehicle.kwargs]
 
 [cloudlet]
-swarm_controller = 'cloudlet033.elijah.cs.cmu.edu:5003'
-remote_compute_service = 'cloudlet033.elijah.cs.cmu.edu:9099'
+# Location of the swarm controller (typically runs on port 5003)
+swarm_controller = ''
+# Location of the remote Gabriel server (typically runs on port 9099)
+remote_compute_service = ''
 
 [logging]
 # Whether or not to create an MCAP flight log for mission replay
