@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Optional
+
+from pydantic import Field
 from .timestamp import Timestamp
 from .duration import Duration
 from enum import Enum
@@ -125,9 +127,10 @@ class TelemetryStreamInfo(Datatype):
         max_frequency (int): maximum frequency of telemetry messages [Hz]    
         uptime (Duration): uptime of the stream    
     """
-    current_frequency: int
-    max_frequency: int
-    uptime: Duration
+    current_frequency: Optional[int] = None
+    max_frequency: Optional[int] = None
+    uptime: Optional[Duration] = None
+
 
 class BatteryInfo(Datatype):
     """Information about the vehicle battery.    
@@ -135,7 +138,8 @@ class BatteryInfo(Datatype):
     Attributes:
         percentage (int): battery level [0-100]%    
     """
-    percentage: int
+    percentage: Optional[int] = None
+
 
 class GPSInfo(Datatype):
     """Information about the vehicle GPS fix.    
@@ -143,7 +147,8 @@ class GPSInfo(Datatype):
     Attributes:
         satellites (int): number of satellites used in GPS fix    
     """
-    satellites: int
+    satellites: Optional[int] = None
+
 
 class CommsInfo(Datatype):
     """Future: information about the vehicle's communication links.    
@@ -165,13 +170,14 @@ class VehicleInfo(Datatype):
         gps_info (GPSInfo): GPS sensor info for the vehicle    
         comms_info (CommsInfo): communications info for the vehicle    
     """
-    name: str
-    model: str
-    manufacturer: str
-    motion_status: MotionStatus
-    battery_info: BatteryInfo
-    gps_info: GPSInfo
-    comms_info: CommsInfo
+    name: Optional[str] = None
+    model: Optional[str] = None
+    manufacturer: Optional[str] = None
+    motion_status: Optional[MotionStatus] = None
+    battery_info: Optional[BatteryInfo] = None
+    gps_info: Optional[GPSInfo] = None
+    comms_info: Optional[CommsInfo] = None
+
 
 class SetpointInfo(Datatype):
     """Information about the current setpoint.
@@ -179,21 +185,22 @@ class SetpointInfo(Datatype):
     Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
     that the vehicle is currently moving towards. By default, when the vehicle is idle, this
     setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
-    setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
+    setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
     reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
     
     Attributes:
         position_body_sp (common.Position): default all zeros idle setpoint    
-        position_enu_sp (common.Position): ENU (North, East, Up) position setpoint    
+        position_neu_sp (common.Position): NEU (North, East, Up) position setpoint    
         global_sp (common.Location): global setpoint    
         velocity_body_sp (common.Velocity): body (forward, right, up) velocity setpoint    
-        velocity_enu_sp (common.Velocity): ENU (North, East, Up) velocity setpoint    
+        velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint    
     """
-    position_body_sp: common.Position
-    position_enu_sp: common.Position
-    global_sp: common.Location
-    velocity_body_sp: common.Velocity
-    velocity_enu_sp: common.Velocity
+    position_body_sp: Optional[common.Position] = None
+    position_neu_sp: Optional[common.Position] = None
+    global_sp: Optional[common.Location] = None
+    velocity_body_sp: Optional[common.Velocity] = None
+    velocity_neu_sp: Optional[common.Velocity] = None
+
 
 class PositionInfo(Datatype):
     """Information about the vehicle position.
@@ -203,17 +210,18 @@ class PositionInfo(Datatype):
     Attributes:
         home (common.Location): global position that will be used when returning home    
         global_position (common.Location): current global position of the vehicle    
-        relative_position (common.Position): current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
-        velocity_enu (common.Velocity): current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
+        relative_position (common.Position): current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position    
+        velocity_neu (common.Velocity): current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame    
         velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
         setpoint_info (SetpointInfo): info on the current vehicle setpoint    
     """
-    home: common.Location
-    global_position: common.Location
-    relative_position: common.Position
-    velocity_enu: common.Velocity
-    velocity_body: common.Velocity
-    setpoint_info: SetpointInfo
+    home: Optional[common.Location] = None
+    global_position: Optional[common.Location] = None
+    relative_position: Optional[common.Position] = None
+    velocity_neu: Optional[common.Velocity] = None
+    velocity_body: Optional[common.Velocity] = None
+    setpoint_info: Optional[SetpointInfo] = None
+
 
 class GimbalStatus(Datatype):
     """Status of a gimbal.    
@@ -221,11 +229,12 @@ class GimbalStatus(Datatype):
     Attributes:
         id (int): ID of the gimbal    
         pose_body (common.Pose): current pose in the body (forward, right, up) reference frame    
-        pose_enu (common.Pose): current pose in the ENU (North, East, Up) reference frame    
+        pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame    
     """
-    id: int
-    pose_body: common.Pose
-    pose_enu: common.Pose
+    id: Optional[int] = None
+    pose_body: Optional[common.Pose] = None
+    pose_neu: Optional[common.Pose] = None
+
 
 class GimbalInfo(Datatype):
     """Info of all attached gimbals.    
@@ -234,8 +243,9 @@ class GimbalInfo(Datatype):
         num_gimbals (int): number of connected gimbals    
         gimbals (List[GimbalStatus]): list of connected gimbals    
     """
-    num_gimbals: int
-    gimbals: List[GimbalStatus]
+    num_gimbals: Optional[int] = None
+    gimbals: List[GimbalStatus] = Field(default_factory=list)
+
 
 class ImagingSensorStatus(Datatype):
     """Status of an imaging sensor.
@@ -257,19 +267,20 @@ class ImagingSensorStatus(Datatype):
         gimbal_mounted (bool): indicates if imaging sensor is gimbal mounted    
         gimbal_id (int): indicates which gimbal the imaging sensor is mounted on    
     """
-    id: int
-    type: ImagingSensorType
-    active: bool
-    supports_secondary: bool
-    current_fps: int
-    max_fps: int
-    h_res: int
-    v_res: int
-    channels: int
-    h_fov: int
-    v_fov: int
-    gimbal_mounted: bool
-    gimbal_id: int
+    id: Optional[int] = None
+    type: Optional[ImagingSensorType] = None
+    active: Optional[bool] = None
+    supports_secondary: Optional[bool] = None
+    current_fps: Optional[int] = None
+    max_fps: Optional[int] = None
+    h_res: Optional[int] = None
+    v_res: Optional[int] = None
+    channels: Optional[int] = None
+    h_fov: Optional[int] = None
+    v_fov: Optional[int] = None
+    gimbal_mounted: Optional[bool] = None
+    gimbal_id: Optional[int] = None
+
 
 class ImagingSensorStreamStatus(Datatype):
     """Information about all imaging sensor streams.    
@@ -280,10 +291,11 @@ class ImagingSensorStreamStatus(Datatype):
         primary_cam (int): ID of the primary camera    
         secondary_cams (List[int]): IDs of the secondary active cameras    
     """
-    stream_capacity: int
-    num_streams: int
-    primary_cam: int
-    secondary_cams: List[int]
+    stream_capacity: Optional[int] = None
+    num_streams: Optional[int] = None
+    primary_cam: Optional[int] = None
+    secondary_cams: List[int] = Field(default_factory=list)
+
 
 class ImagingSensorInfo(Datatype):
     """Information about all attached imaging sensors.    
@@ -292,8 +304,9 @@ class ImagingSensorInfo(Datatype):
         stream_status (ImagingSensorStreamStatus): status of current imaging sensor streams    
         sensors (List[ImagingSensorStatus]): list of connected imaging sensors    
     """
-    stream_status: ImagingSensorStreamStatus
-    sensors: List[ImagingSensorStatus]
+    stream_status: Optional[ImagingSensorStreamStatus] = None
+    sensors: List[ImagingSensorStatus] = Field(default_factory=list)
+
 
 class AlertInfo(Datatype):
     """Information about all vehicle warning and alerts.    
@@ -305,11 +318,12 @@ class AlertInfo(Datatype):
         connection_warning (ConnectionWarning): connection warnings    
         compass_warning (CompassWarning): compass warnings    
     """
-    battery_warning: BatteryWarning
-    gps_warning: GPSWarning
-    magnetometer_warning: MagnetometerWarning
-    connection_warning: ConnectionWarning
-    compass_warning: CompassWarning
+    battery_warning: Optional[BatteryWarning] = None
+    gps_warning: Optional[GPSWarning] = None
+    magnetometer_warning: Optional[MagnetometerWarning] = None
+    connection_warning: Optional[ConnectionWarning] = None
+    compass_warning: Optional[CompassWarning] = None
+
 
 class DriverTelemetry(Datatype):
     """Telemetry message for the vehicle, originating from the driver module.
@@ -327,13 +341,14 @@ class DriverTelemetry(Datatype):
         imaging_sensor_info (ImagingSensorInfo): information about the vehicle imaging sensors    
         alert_info (AlertInfo): enumeration of vehicle warnings    
     """
-    timestamp: Timestamp
-    telemetry_stream_info: TelemetryStreamInfo
-    vehicle_info: VehicleInfo
-    position_info: PositionInfo
-    gimbal_info: GimbalInfo
-    imaging_sensor_info: ImagingSensorInfo
-    alert_info: AlertInfo
+    timestamp: Optional[Timestamp] = None
+    telemetry_stream_info: Optional[TelemetryStreamInfo] = None
+    vehicle_info: Optional[VehicleInfo] = None
+    position_info: Optional[PositionInfo] = None
+    gimbal_info: Optional[GimbalInfo] = None
+    imaging_sensor_info: Optional[ImagingSensorInfo] = None
+    alert_info: Optional[AlertInfo] = None
+
 
 class Frame(Datatype):
     """Imaging sensor frames, originating from the driver module.
@@ -351,13 +366,14 @@ class Frame(Datatype):
         channels (int): number of channels    
         id (int): frame ID for future correlation    
     """
-    timestamp: Timestamp
-    data: bytes
-    h_res: int
-    v_res: int
-    d_res: int
-    channels: int
-    id: int
+    timestamp: Optional[Timestamp] = None
+    data: Optional[bytes] = None
+    h_res: Optional[int] = None
+    v_res: Optional[int] = None
+    d_res: Optional[int] = None
+    channels: Optional[int] = None
+    id: Optional[int] = None
+
 
 class MissionInfo(Datatype):
     """Information about the current mission.    
@@ -369,11 +385,12 @@ class MissionInfo(Datatype):
         exec_state (MissionExecState): execution state of the mission    
         task_state (str): task state of the mission (plaintext), if active    
     """
-    name: str
-    hash: int
-    age: Timestamp
-    exec_state: MissionExecState
-    task_state: str
+    name: Optional[str] = None
+    hash: Optional[int] = None
+    age: Optional[Timestamp] = None
+    exec_state: Optional[MissionExecState] = None
+    task_state: Optional[str] = None
+
 
 class MissionTelemetry(Datatype):
     """Telemetry message for the mission, originating from the mission module.
@@ -387,7 +404,6 @@ class MissionTelemetry(Datatype):
         telemetry_stream_info (TelemetryStreamInfo): info about the current telemetry stream    
         mission_info (List[MissionInfo]): info about the current mission states    
     """
-    timestamp: Timestamp
-    telemetry_stream_info: TelemetryStreamInfo
-    mission_info: List[MissionInfo]
-
+    timestamp: Optional[Timestamp] = None
+    telemetry_stream_info: Optional[TelemetryStreamInfo] = None
+    mission_info: List[MissionInfo] = Field(default_factory=list)

@@ -191,21 +191,21 @@ class SetpointInfo(Datatype):
     Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
     that the vehicle is currently moving towards. By default, when the vehicle is idle, this
     setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
-    setpoint is implied by the name; e.g. velocity_enu_sp uses the ENU (North, East, Up)
+    setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
     reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
     
     Attributes:
         position_body_sp (common.Position): default all zeros idle setpoint    
-        position_enu_sp (common.Position): ENU (North, East, Up) position setpoint    
+        position_neu_sp (common.Position): NEU (North, East, Up) position setpoint    
         global_sp (common.Location): global setpoint    
         velocity_body_sp (common.Velocity): body (forward, right, up) velocity setpoint    
-        velocity_enu_sp (common.Velocity): ENU (North, East, Up) velocity setpoint    
+        velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint    
     """
     position_body_sp: common.Position
-    position_enu_sp: common.Position
+    position_neu_sp: common.Position
     global_sp: common.Location
     velocity_body_sp: common.Velocity
-    velocity_enu_sp: common.Velocity
+    velocity_neu_sp: common.Velocity
 
 @register_data
 class PositionInfo(Datatype):
@@ -216,15 +216,15 @@ class PositionInfo(Datatype):
     Attributes:
         home (common.Location): global position that will be used when returning home    
         global_position (common.Location): current global position of the vehicle    
-        relative_position (common.Position): current local position of the vehicle in the global ENU (North, East, Up) coordinate frame, relative to start position    
-        velocity_enu (common.Velocity): current velocity of the vehicle in the global ENU (North, East, Up) coordinate frame    
+        relative_position (common.Position): current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position    
+        velocity_neu (common.Velocity): current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame    
         velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
         setpoint_info (SetpointInfo): info on the current vehicle setpoint    
     """
     home: common.Location
     global_position: common.Location
     relative_position: common.Position
-    velocity_enu: common.Velocity
+    velocity_neu: common.Velocity
     velocity_body: common.Velocity
     setpoint_info: SetpointInfo
 
@@ -235,11 +235,11 @@ class GimbalStatus(Datatype):
     Attributes:
         id (int): ID of the gimbal    
         pose_body (common.Pose): current pose in the body (forward, right, up) reference frame    
-        pose_enu (common.Pose): current pose in the ENU (North, East, Up) reference frame    
+        pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame    
     """
     id: int
     pose_body: common.Pose
-    pose_enu: common.Pose
+    pose_neu: common.Pose
 
 @register_data
 class GimbalInfo(Datatype):

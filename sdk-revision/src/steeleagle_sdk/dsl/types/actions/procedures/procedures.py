@@ -11,8 +11,7 @@ from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceF
 import logging
 logger = logging.getLogger(__name__)
 
-from .....api.vehicle import Vehicle
-VEHICLE: Vehicle = None
+from ....runtime import VEHICLE
 
 @register_action
 class ElevateToAltitude(Action):
@@ -25,8 +24,8 @@ class ElevateToAltitude(Action):
     async def execute(self):
         start = asyncio.get_event_loop().time()
         while True:
-            tel = VEHICLE.get_telemetry()
-            rel_alt = tel['global_position']['relative_altitude']
+            tel = await VEHICLE.get_telemetry()
+            rel_alt = tel.position_info.relative_position.z
 
             if rel_alt + self.tolerance >= self.target_altitude:
                 break

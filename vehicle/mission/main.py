@@ -17,8 +17,10 @@ logger = logging.getLogger("mission/main")
 async def main():
     address = {}
     address['vehicle'] = query_config('internal.services.kernel')
-    address['telemetry'] = query_config('internal.streams.driver_telemetry')
-    address['compute'] = query_config('internal.streams.results')
+    # address['telemetry'] = query_config('internal.streams.driver_telemetry')
+    address['telemetry'] = 'ipc:///tmp/driver_telem.sock'
+    address['results'] = 'ipc:///tmp/results.sock'
+    # address['results'] = query_config('internal.streams.results')
 
     # Define the server that will hold our services
     server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))

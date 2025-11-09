@@ -4,6 +4,13 @@ import json
 import time
 import zmq
 import zmq.asyncio
+from .datatypes.telemetry import DriverTelemetry
+from .datatypes.result import FrameResult
+from ..protocol.messages import telemetry_pb2 as telem_proto
+from ..protocol.messages import result_pb2 as result_proto
+from google.protobuf.json_format import MessageToDict
+from .datatypes._base import Datatype
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -17,31 +24,36 @@ class MissionStore:
         self._telemetry = None
         self._results = None
         self._store = {}
-
-    @staticmethod
-    def _decode_payload(b: bytes):
+        
+    def _parse_payload(self, source, topic, payload):
+        result = None
         try:
-            s = b.decode()
-            try:
-                return json.loads(s)
-            except json.JSONDecodeError:
-                return s
-        except UnicodeDecodeError:
-            return b
-
-    def _parse_frames(self, frames):
-        if len(frames) == 1:
-            return "__raw__", self._decode_payload(frames[0])
-        topic = frames[0].decode(errors="ignore")
-        payload = self._decode_payload(frames[-1])
-        return topic, payload
+            if source == 'telemetry':
+                msg  = telem_proto.DriverTelemetry()
+                msg.ParseFromString(payload)
+                data = MessageToDict(msg, preserving_proto_field_name=True)
+                result = DriverTelemetry.model_validate(data)
+            # elif source == 'results':
+            #     msg  = result_proto.FrameResult()
+            #     msg.ParseFromString(payload)
+            #     # logger.info(f"msg: {msg}")
+            #     data = MessageToDict(msg, preserving_proto_field_name=True)
+            #     # logger.info(f"data: {data}")
+            #     result = FrameResult.model_validate(data)
+        except Exception as e:
+            logger.info(f"error: {e}")
+        # logger.info(f'topic: {topic}, result: {result}')
+        return result
 
     async def _consume(self, source, sock):
         while True:
             frames = await sock.recv_multipart()
-            topic, payload = self._parse_frames(frames)
+            topic, payload = frames
+            if topic == 'telemetry':
+                continue # ignore the telemetry engine output
+            parsed_res = self._parse_payload(source, topic, payload)
             async with self._lock:
-                self._store[(source, topic)] = {"payload": payload, "timestamp": time.time()}
+                self._store[(source, topic)] = {"content": parsed_res}
 
     async def start(self):
         logger.info("Starting MissionStore")
@@ -68,7 +80,7 @@ class MissionStore:
         if self._results:
             self._results.close(0)
 
-    async def get_latest(self, source, topic):
+    async def get_latest(self, source, topic) -> Datatype:
         async with self._lock:
             logger.info(f"Getting latest for {source}, {topic}")
             return self._store.get((source, topic))

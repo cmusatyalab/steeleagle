@@ -28,13 +28,13 @@ class MissionFSM:
         self.transition: Dict[str, Dict[str, str]] = mission.transitions
         self.start_action_id: str = mission.start_action_id
         summaries = load_all()  # ensure registries are loaded
-        logger.info("Loaded SDK registries: %s", summaries)
+        logger.info("[FSM] Loaded SDK registries: %s", summaries)
         
-    async def run(self):
+    async def start(self):
         state = self.start_action_id
         while state != _TERMINATE:
             state = await self.run_state(state)
-        logger.info("[FSM] Mission complete")
+        logger.info("[FSM] Mission ended")
 
     async def run_state(self, curr_action_id: str) -> str:
         action_ir = self.mission.actions[curr_action_id]

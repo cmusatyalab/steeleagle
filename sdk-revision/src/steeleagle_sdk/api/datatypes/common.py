@@ -95,7 +95,7 @@ class Velocity(Datatype):
     x_vel: Optional[float]
     y_vel: Optional[float]
     z_vel: Optional[float]
-    angular_vel: Optional[float]
+    angular_vel: Optional[float] = None
 
 class Position(Datatype):
     """Position offset relative to home or current location.    
@@ -106,10 +106,10 @@ class Position(Datatype):
         z (Optional[float]): up offset [meters]    
         angle (Optional[float]): angular offset [degrees]    
     """
-    x: Optional[float]
-    y: Optional[float]
-    z: Optional[float]
-    angle: Optional[float]
+    x: Optional[float] = None
+    y: Optional[float] = None
+    z: Optional[float] = None
+    angle: Optional[float] = None
 
 class Location(Datatype):
     """Location in global coordinates.    
@@ -122,6 +122,6 @@ class Location(Datatype):
     """
     latitude: Optional[float]
     longitude: Optional[float]
-    altitude: Optional[float]
-    heading: Optional[float]
+    altitude: Optional[float] = None
+    heading: Optional[float] = None
 

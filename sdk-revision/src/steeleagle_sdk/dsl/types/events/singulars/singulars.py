@@ -6,12 +6,15 @@ from pydantic import Field
 from ....compiler.registry import register_event
 from ...base import Event
 
+from ....runtime import VEHICLE
+from ....runtime import COMPUTE
+
 ''' General events '''
 @register_event
 class TimeReached(Event):
     duration: float = Field(..., ge=0.0, description="Seconds to wait before event triggers")
 
-    async def check(self, context):
+    async def check(self):
         """Wait for a fixed duration; return True once reached."""
         await asyncio.sleep(self.duration)
         return True
@@ -47,7 +50,7 @@ def _pose_components(tel: Dict[str, Any]) -> Dict[str, Optional[float]]:
     return out
 
 def _speed_mag(tel: Dict[str, Any], frame: Literal["enu", "body"]) -> Optional[float]:
-    node = "velocity_enu" if frame == "enu" else "velocity_body"
+    node = "velocity_neu" if frame == "enu" else "velocity_body"
     vx = _get(tel, node, "x")
     vy = _get(tel, node, "y")
     vz = _get(tel, node, "z")
@@ -76,8 +79,8 @@ class BatteryReached(Event):
     consecutive: int = Field(1, ge=1)
     _streak: int = 0  # internal
 
-    async def check(self, context) -> bool:
-        tel = await context["data"].get_telemetry()
+    async def check(self) -> bool:
+        tel = await VEHICLE.get_telemetry()
         bat = _get(tel, "battery")
         if not isinstance(bat, (int, float)):
             self._streak = 0
@@ -100,8 +103,8 @@ class SatellitesReached(Event):
     consecutive: int = Field(1, ge=1)
     _streak: int = 0
 
-    async def check(self, context) -> bool:
-        tel = await context["data"].get_telemetry()
+    async def check(self) -> bool:
+        tel = await VEHICLE.get_telemetry()
         sats = _get(tel, "satellites")
         if not isinstance(sats, (int, float)):
             self._streak = 0
@@ -142,9 +145,9 @@ class GimbalPoseReached(Event):
         t = tol if tol is not None else self.tolerance
         return abs(cur - tgt) <= t
 
-    async def check(self, context) -> bool:
-        tel = await context["data"].get_telemetry()
-        pose = _pose_components(tel)
+    async def check(self) -> bool:
+        tel = await VEHICLE.get_telemetry()
+        pose = _get('pose', tel)
         return (
             self._within(pose["roll"], self.roll, self.roll_tol) and
             self._within(pose["pitch"], self.pitch, self.pitch_tol) and
@@ -168,8 +171,8 @@ class VelocityReached(Event):
     threshold: float = Field(..., gt=0.0)
     relation: Literal["at_least", "at_most"] = "at_least"
 
-    async def check(self, context) -> bool:
-        tel = await context["data"].get_telemetry()
+    async def check(self) -> bool:
+        tel = await VEHICLE.get_telemetry()
         spd = _speed_mag(tel, self.frame)
         if spd is None:
             return False
@@ -184,8 +187,8 @@ class HomeReached(Event):
     """
     radius_m: float = Field(..., gt=0.0)
 
-    async def check(self, context) -> bool:
-        tel = await context["data"].get_telemetry()
+    async def check(self) -> bool:
+        tel = await VEHICLE.get_telemetry()
         lat = _get(tel, "global_position", "latitude")
         lon = _get(tel, "global_position", "longitude")
         hlat = _get(tel, "home", "latitude")
@@ -200,97 +203,97 @@ class HomeReached(Event):
 # ---------------- Compute events ----------------
 # ---------------- helpers ----------------
 
-def _extract_detections(results: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-    """
-    Normalizes various shapes to a flat list of detection dicts.
-    Supports:
-      - `{'detection_result': {'detections': [ ... ]}}`
-      - `{'detections': [ ... ]}`
-      - direct detection dicts (best-effort)
-    """
-    out: List[Dict[str, Any]] = []
-    if not results:
-        return out
-    for r in results:
-        if not isinstance(r, dict):
-            continue
-        if "detection_result" in r and isinstance(r["detection_result"], dict):
-            dets = r["detection_result"].get("detections", [])
-            if isinstance(dets, list):
-                out.extend(d for d in dets if isinstance(d, dict))
-            continue
-        if "detections" in r and isinstance(r["detections"], list):
-            out.extend(d for d in r["detections"] if isinstance(d, dict))
-            continue
-        # best-effort: if it looks like a detection on its own
-        if "score" in r or "class_name" in r or "bbox" in r:
-            out.append(r)
-    return out
+# def _extract_detections(results: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+#     """
+#     Normalizes various shapes to a flat list of detection dicts.
+#     Supports:
+#       - `{'detection_result': {'detections': [ ... ]}}`
+#       - `{'detections': [ ... ]}`
+#       - direct detection dicts (best-effort)
+#     """
+#     out: List[Dict[str, Any]] = []
+#     if not results:
+#         return out
+#     for r in results:
+#         if not isinstance(r, dict):
+#             continue
+#         if "detection_result" in r and isinstance(r["detection_result"], dict):
+#             dets = r["detection_result"].get("detections", [])
+#             if isinstance(dets, list):
+#                 out.extend(d for d in dets if isinstance(d, dict))
+#             continue
+#         if "detections" in r and isinstance(r["detections"], list):
+#             out.extend(d for d in r["detections"] if isinstance(d, dict))
+#             continue
+#         # best-effort: if it looks like a detection on its own
+#         if "score" in r or "class_name" in r or "bbox" in r:
+#             out.append(r)
+#     return out
 
-# ---------------- events ----------------
-@register_event
-class DetectionFound(Event):
-    """
-    Fires when any detection matches optional filters:
-      - `class_name` (case-insensitive) if provided
-      - `min_score` greater than of equal to threshold if provided
-    """
-    compute_type: str = Field(..., min_length=1)
-    target: Optional[str] = Field(None)
-    min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+# # ---------------- events ----------------
+# @register_event
+# class DetectionFound(Event):
+#     """
+#     Fires when any detection matches optional filters:
+#       - `class_name` (case-insensitive) if provided
+#       - `min_score` greater than of equal to threshold if provided
+#     """
+#     compute_type: str = Field(..., min_length=1)
+#     target: Optional[str] = Field(None)
+#     min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
 
-    async def check(self, context) -> bool:
-        results = await context["data"].get_compute_result(self.compute_type)
-        dets = _extract_detections(results)
-        if not dets:
-            return False
+#     async def check(self) -> bool:
+#         results = await context["data"].get_compute_result(self.compute_type)
+#         dets = _extract_detections(results)
+#         if not dets:
+#             return False
 
-        want_class = self.class_name.lower() if isinstance(self.class_name, str) else None
-        for d in dets:
-            cls = d.get("class_name")
-            scr = d.get("score")
-            if want_class is not None and (not isinstance(cls, str) or cls.lower() != want_class):
-                continue
-            if self.min_score is not None:
-                try:
-                    if float(scr) < float(self.min_score):
-                        continue
-                except Exception:
-                    continue
-            return True
-        return False
+#         want_class = self.class_name.lower() if isinstance(self.class_name, str) else None
+#         for d in dets:
+#             cls = d.get("class_name")
+#             scr = d.get("score")
+#             if want_class is not None and (not isinstance(cls, str) or cls.lower() != want_class):
+#                 continue
+#             if self.min_score is not None:
+#                 try:
+#                     if float(scr) < float(self.min_score):
+#                         continue
+#                 except Exception:
+#                     continue
+#             return True
+#         return False
 
 
-@register_event
-class HSVReached(Event):
-    """
-    Fires when any detection indicates HSV filter passed (boolean flag).
-    Optional filters: `class_name`, `min_score`.
-    Assumes detection dicts may have `hsv_filter_passed`: bool.
-    """
-    compute_type: str = Field(..., min_length=1)
-    class_name: Optional[str] = Field(None)
-    min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+# @register_event
+# class HSVReached(Event):
+#     """
+#     Fires when any detection indicates HSV filter passed (boolean flag).
+#     Optional filters: `class_name`, `min_score`.
+#     Assumes detection dicts may have `hsv_filter_passed`: bool.
+#     """
+#     compute_type: str = Field(..., min_length=1)
+#     class_name: Optional[str] = Field(None)
+#     min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
 
-    async def check(self, context) -> bool:
-        results = await context["data"].get_compute_result(self.compute_type)
-        dets = _extract_detections(results)
-        if not dets:
-            return False
+#     async def check(self) -> bool:
+#         results = await context["data"].get_compute_result(self.compute_type)
+#         dets = _extract_detections(results)
+#         if not dets:
+#             return False
 
-        want_class = self.class_name.lower() if isinstance(self.class_name, str) else None
-        for d in dets:
-            if not d.get("hsv_filter_passed", False):
-                continue
-            cls = d.get("class_name")
-            scr = d.get("score")
-            if want_class is not None and (not isinstance(cls, str) or cls.lower() != want_class):
-                continue
-            if self.min_score is not None:
-                try:
-                    if float(scr) < float(self.min_score):
-                        continue
-                except Exception:
-                    continue
-            return True
-        return False
+#         want_class = self.class_name.lower() if isinstance(self.class_name, str) else None
+#         for d in dets:
+#             if not d.get("hsv_filter_passed", False):
+#                 continue
+#             cls = d.get("class_name")
+#             scr = d.get("score")
+#             if want_class is not None and (not isinstance(cls, str) or cls.lower() != want_class):
+#                 continue
+#             if self.min_score is not None:
+#                 try:
+#                     if float(scr) < float(self.min_score):
+#                         continue
+#                 except Exception:
+#                     continue
+#             return True
+#         return False

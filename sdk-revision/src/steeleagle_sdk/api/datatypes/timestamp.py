@@ -1,3 +1,5 @@
+import datetime
+from pydantic import model_validator
 from ._base import Datatype
 
 class Timestamp(Datatype):
@@ -9,3 +11,11 @@ class Timestamp(Datatype):
     nanos: int
     '''Non-negative fractions of a second at nanosecond resolution. Negative second values with fractions must still have non-negative nanos values that count forward in time. Must be from 0 to 999,999,999 inclusive.'''
 
+    @model_validator(mode='before')
+    @classmethod
+    def parse_wkt_timestamp(cls, v):
+        # Accept RFC3339 strings or nested dicts
+        if isinstance(v, str):
+            dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            return {"seconds": int(dt.timestamp()), "nanos": dt.microsecond * 1000}
+        return v

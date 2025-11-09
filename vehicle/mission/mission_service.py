@@ -5,8 +5,7 @@ from typing import Optional
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
-from steeleagle_sdk.dsl.runtime import init
-from steeleagle_sdk.dsl.runtime.fsm import MissionFSM
+from steeleagle_sdk.dsl import runtime as dsl_msn_runtime
 from dacite import from_dict
 import logging
 logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ class MissionService(MissionServicer):
         self.mission: MissionIR = None
         self.mission_map = None
         self.address = address
-        self.fsm: MissionFSM = None
+        self.fsm = None
         self.fsm_routine: asyncio.Task = None
 
     def _load(self, mission_content):
@@ -39,8 +38,7 @@ class MissionService(MissionServicer):
         tel_address = self.address.get("telemetry")
         results_address = self.address.get("results")
         map = self.mission_map
-        self.fsm = init(self.mission, vehicle_address, tel_address, results_address, map)
-        self.fsm_routine = asyncio.create_task(self.fsm.run())
+        await dsl_msn_runtime.init(self.mission, vehicle_address, tel_address, results_address, map)
 
     async def Start(self, request, context):
         """Start an uploaded mission"""
@@ -54,11 +52,7 @@ class MissionService(MissionServicer):
             return generate_response(2)
 
     async def _stop(self):
-        if self.fsm_routine and not self.fsm_routine.done():
-            self.fsm_routine.cancel()
-        if self.fsm_routine:
-            with contextlib.suppress(asyncio.CancelledError):
-                await self.fsm_routine
+        await dsl_msn_runtime.term()
 
     async def Stop(self, request, context):
         """Stop the current mission"""

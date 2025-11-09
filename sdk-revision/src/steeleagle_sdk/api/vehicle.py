@@ -8,6 +8,7 @@ from .datatypes.common import Velocity, Location, Position, Response, Pose
 from .datatypes.duration import Duration
 from .utils import run_unary, run_streaming
 from google.protobuf.json_format import ParseDict
+from .datatypes.telemetry import DriverTelemetry
 
 import logging
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class Vehicle:
         self.mission_store = mission_store
         self.control = ControlStub(channel)
 
-    async def get_telemetry(self):
+    async def get_telemetry(self)-> DriverTelemetry:
         source = "telemetry"
         return await self.mission_store.get_latest(source)
 
