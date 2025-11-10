@@ -44,6 +44,9 @@ backend/server/engines/slam/images/*
 *.log
 *.mcap
 sdk/build/src/
+*.db
+*.db-shm
+*.db-wal
 
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
@@ -56,6 +59,7 @@ vehicle/config.toml
 vehicle/configs
 vehicle/docker-compose.*
 vehicle/drivers/proto_build/
+
 
 # Secrets
 secrets.toml

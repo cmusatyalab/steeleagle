@@ -35,6 +35,8 @@ class MissionFSM:
         while state != _TERMINATE:
             state = await self.run_state(state)
         logger.info("[FSM] Mission ended")
+        from .. import runtime as _rt
+        await _rt.term()
 
     async def run_state(self, curr_action_id: str) -> str:
         action_ir = self.mission.actions[curr_action_id]

@@ -24,6 +24,7 @@ Requires-Dist: matplotlib>=3.10.6
 Requires-Dist: folium>=0.20.0
 Requires-Dist: pygls
 Requires-Dist: pyzmq>=27.1.0
+Requires-Dist: aiosqlite>=0.21.0
 
 # SteelEagle SDK: Controller Library for SteelEagle Vehicles
 

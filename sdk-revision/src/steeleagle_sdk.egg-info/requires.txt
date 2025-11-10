@@ -7,3 +7,4 @@ matplotlib>=3.10.6
 folium>=0.20.0
 pygls
 pyzmq>=27.1.0
+aiosqlite>=0.21.0

@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncIterator, List, Optional
 import grpc
 from .mission_store import MissionStore
@@ -20,7 +21,7 @@ class Vehicle:
 
     async def get_telemetry(self)-> DriverTelemetry:
         source = 'telemetry'
-        topic = b'driver_telemetry'
+        topic = 'driver_telemetry'
         return await self.mission_store.get_latest(source, topic)
 
     async def connect(self) -> Response:
