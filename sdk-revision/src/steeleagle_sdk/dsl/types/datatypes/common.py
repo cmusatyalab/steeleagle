@@ -62,7 +62,6 @@ class ResponseStatus(int, Enum):
     DATA_LOSS = 17 
     UNAUTHENTICATED = 18 
 
-@register_data
 class Response(Datatype):
     """Global response message returned by all core services.    
     
@@ -72,7 +71,7 @@ class Response(Datatype):
         timestamp (Timestamp): response timestamp    
     """
     status: ResponseStatus
-    response_string: Optional[str]
+    response_string: Optional[str] = None
     timestamp: Timestamp
 
 @register_data
@@ -84,9 +83,9 @@ class Pose(Datatype):
         roll (Optional[float]): roll [degrees]    
         yaw (Optional[float]): yaw [degrees]    
     """
-    pitch: Optional[float]
-    roll: Optional[float]
-    yaw: Optional[float]
+    pitch: Optional[float] = None
+    roll: Optional[float] = None
+    yaw: Optional[float] = None
 
 @register_data
 class Velocity(Datatype):
@@ -98,10 +97,10 @@ class Velocity(Datatype):
         z_vel (Optional[float]): up velocity [meters/s]    
         angular_vel (Optional[float]): angular velocity [degrees/s]    
     """
-    x_vel: Optional[float]
-    y_vel: Optional[float]
-    z_vel: Optional[float]
-    angular_vel: Optional[float]
+    x_vel: Optional[float] = None
+    y_vel: Optional[float] = None
+    z_vel: Optional[float] = None
+    angular_vel: Optional[float] = None
 
 @register_data
 class Position(Datatype):
@@ -113,10 +112,10 @@ class Position(Datatype):
         z (Optional[float]): up offset [meters]    
         angle (Optional[float]): angular offset [degrees]    
     """
-    x: Optional[float]
-    y: Optional[float]
-    z: Optional[float]
-    angle: Optional[float]
+    x: Optional[float] = None
+    y: Optional[float] = None
+    z: Optional[float] = None
+    angle: Optional[float] = None
 
 @register_data
 class Location(Datatype):
@@ -128,8 +127,8 @@ class Location(Datatype):
         altitude (Optional[float]): altitude above MSL or takeoff [meters]    
         heading (Optional[float]): global heading [degrees]    
     """
-    latitude: Optional[float]
-    longitude: Optional[float]
-    altitude: Optional[float]
-    heading: Optional[float]
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    altitude: Optional[float] = None
+    heading: Optional[float] = None
 

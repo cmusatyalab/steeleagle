@@ -1,181 +1,245 @@
 import asyncio
+import json
 import math
-from typing import Any, Dict, List, Literal, Optional
+from typing import Optional
 from pydantic import Field
-# API imports
+
 from ....compiler.registry import register_event
 from ...base import Event
-
 from .....dsl import runtime
+from ...datatypes.control import ReferenceFrame
+from ...datatypes.telemetry import DriverTelemetry
+from ...datatypes.result import FrameResult, ComputeResult, DetectionResult, Detection, HSV
+from ...datatypes.common import Pose, Velocity, Location, Position
 
-''' General events '''
+
+# ---- events ----
 @register_event
 class TimeReached(Event):
-    duration: float = Field(..., ge=0.0, description="Seconds to wait before event triggers")
+    duration: float = Field(..., ge=0.0, description="Seconds to wait")
 
-    async def check(self):
-        """Wait for a fixed duration; return True once reached."""
+    async def check(self) -> bool:
         await asyncio.sleep(self.duration)
         return True
-    
-''' Telemetry events and helpers '''
-def _get(t: Dict[str, Any], *path, default=None):
-    cur = t
-    for p in path:
-        if not isinstance(cur, dict) or p not in cur:
-            return default
-        cur = cur[p]
-    return cur
+
 
 @register_event
 class BatteryReached(Event):
-    '''
-    Fires when battery percentage satisfies relation to threshold for N consecutive polls.
-    relation: `at_least` (greater than or equal to threshold) or `at_most` (less than or
-    equal to threshold).
-    '''
+    """True when battery <= threshold."""
     threshold: int = Field(..., ge=0, le=100)
-    relation: Literal["at_least", "at_most"] = "at_most"
-    consecutive: int = Field(1, ge=1)
-    _streak: int = 0  # internal
 
     async def check(self) -> bool:
         tel = await runtime.VEHICLE.get_telemetry()
-        bat = _get(tel, "battery")
-        if not isinstance(bat, (int, float)):
-            self._streak = 0
+        if not tel or not tel.vehicle_info or not tel.vehicle_info.battery_info:
             return False
-        ok = (bat >= self.threshold) if self.relation == "at_least" else (bat <= self.threshold)
-        self._streak = (self._streak + 1) if ok else 0
-        return self._streak >= self.consecutive
+        pct = tel.vehicle_info.battery_info.percentage
+        return pct is not None and pct <= self.threshold
 
 
 @register_event
 class SatellitesReached(Event):
-    """
-    Fires when satellites count satisfies relation to threshold for N consecutive polls.
-
-    Attributes:
-        relation: `at_least` (greater than or equal to) or `at_most` (less than or equal to).
-    """
+    """True when satellites >= threshold."""
     threshold: int = Field(..., ge=0)
-    relation: Literal["at_least", "at_most"] = "at_least"
-    consecutive: int = Field(1, ge=1)
-    _streak: int = 0
 
     async def check(self) -> bool:
         tel = await runtime.VEHICLE.get_telemetry()
-        sats = _get(tel, "satellites")
-        if not isinstance(sats, (int, float)):
-            self._streak = 0
+        if not tel or not tel.vehicle_info or not tel.vehicle_info.gps_info:
             return False
-        ok = (sats >= self.threshold) if self.relation == "at_least" else (sats <= self.threshold)
-        self._streak = (self._streak + 1) if ok else 0
-        return self._streak >= self.consecutive
+        sats = tel.vehicle_info.gps_info.satellites
+        return sats is not None and sats >= self.threshold
 
 
 @register_event
 class GimbalPoseReached(Event):
-    """
-    Fires when gimbal pose matches target within tolerances.
-    You can specify any subset of `{roll, pitch, yaw}` (or x,y,z if your pose encodes axes).
-    """
-    # target angles/axes (degrees or units your telemetry uses)
-    roll: Optional[float] = None
-    pitch: Optional[float] = None
-    yaw: Optional[float] = None
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-
-    # tolerances for each (defaults used when specific *_tol is None)
-    tolerance: float = Field(1.0, ge=0.0)
-    roll_tol: Optional[float] = None
-    pitch_tol: Optional[float] = None
-    yaw_tol: Optional[float] = None
-    x_tol: Optional[float] = None
-    y_tol: Optional[float] = None
-    z_tol: Optional[float] = None
-
-    def _within(self, cur: Optional[float], tgt: Optional[float], tol: Optional[float]) -> bool:
-        if tgt is None:
-            return True
-        if cur is None:
-            return False
-        t = tol if tol is not None else self.tolerance
-        return abs(cur - tgt) <= t
+    """Checks provided axes only; abs error <= tol_deg."""
+    target: Pose
+    tol_deg: float = Field(3.0, gt=0.0)
 
     async def check(self) -> bool:
         tel = await runtime.VEHICLE.get_telemetry()
-        pose = _get('pose', tel)
-        return (
-            self._within(pose["roll"], self.roll, self.roll_tol) and
-            self._within(pose["pitch"], self.pitch, self.pitch_tol) and
-            self._within(pose["yaw"], self.yaw, self.yaw_tol) and
-            self._within(pose["x"], self.x, self.x_tol) and
-            self._within(pose["y"], self.y, self.y_tol) and
-            self._within(pose["z"], self.z, self.z_tol)
-        )
+        if not tel or not tel.gimbal_info or not tel.gimbal_info.gimbals:
+            return False
+
+        for g in (tel.gimbal_info.gimbals or []):
+            actual = g.pose_body or g.pose_neu
+            if not actual:
+                continue
+
+            # Compare only components that are specified on target
+            if self.target.roll is not None:
+                if actual.roll is None or abs(actual.roll - self.target.roll) > self.tol_deg:
+                    continue
+            if self.target.pitch is not None:
+                if actual.pitch is None or abs(actual.pitch - self.target.pitch) > self.tol_deg:
+                    continue
+            if self.target.yaw is not None:
+                if actual.yaw is None or abs(actual.yaw - self.target.yaw) > self.tol_deg:
+                    continue
+
+            return True
+        return False
 
 
 @register_event
 class VelocityReached(Event):
-    """
-    Fires when speed magnitude in selected frame satisfies relation to threshold.
-
-    Attributes:
-        frame: `enu` or `body`
-        relation: `at_least` or `at_most`
-    """
-    frame: Literal["enu", "body"] = "enu"
-    threshold: float = Field(..., gt=0.0)
-    relation: Literal["at_least", "at_most"] = "at_least"
+    """True when the selected frame's velocity matches the target (per-component) within tolerance."""
+    frame: ReferenceFrame
+    target: Velocity
+    tol: Optional[float] = Field(0, ge=0.0, description="Allowed absolute error per component")
 
     async def check(self) -> bool:
         tel = await runtime.VEHICLE.get_telemetry()
-        pass
+        if not tel or not tel.position_info:
+            return False
+
+        if self.frame == ReferenceFrame.BODY:
+            v = tel.position_info.velocity_body
+        elif self.frame == ReferenceFrame.NEU:
+            v = tel.position_info.velocity_neu
+        else:
+            return False
+
+        if v is None:
+            return False
+
+        if self.target.x_vel is not None:
+            if v.x_vel is None or abs(v.x_vel - self.target.x_vel) > self.tol:
+                return False
+        if self.target.y_vel is not None:
+            if v.y_vel is None or abs(v.y_vel - self.target.y_vel) > self.tol:
+                return False
+        if self.target.z_vel is not None:
+            if v.z_vel is None or abs(v.z_vel - self.target.z_vel) > self.tol:
+                return False
+        if self.target.angular_vel is not None:
+            if v.angular_vel is None or abs(v.angular_vel - self.target.angular_vel) > self.tol:
+                return False
+
+        return True
 
 
 @register_event
-class HomeReached(Event):
+class RelativePositionReached(Event):
     """
-    Fires when distance from current `global_position` to home less than or equal to `radius_m` (meters).
-    Requires `global_position.{latitude, longitude}` and `home.{latitude, longitude}`.
+    True when the current relative_position matches the target within tolerance.
+    Compares only fields provided on `target`.
     """
-    radius_m: float = Field(..., gt=0.0)
+    target: Position
+    tol_m: Optional[float] = Field(0.20, ge=0.0, description="Tolerance for x/y/z (meters)")
+    tol_deg: Optional[float] = Field(0.0, ge=0.0, description="Tolerance for angle (degrees)")
+
+    @staticmethod
+    def _deg_diff(a: float, b: float) -> float:
+        d = abs((a - b) % 360.0)
+        return d if d <= 180.0 else 360.0 - d
 
     async def check(self) -> bool:
-        tel = await runtime.VEHICLE.get_telemetry()
-        pass
+        if self.target is None:
+            return False
+
+        tel: Optional[DriverTelemetry] = await runtime.VEHICLE.get_telemetry()
+        if not tel or not tel.position_info:
+            return False
+        cur = tel.position_info.relative_position
+        if not cur:
+            return False
+
+        # Compare only the components specified on target
+        if self.target.x is not None:
+            if cur.x is None or abs(cur.x - self.target.x) > self.tol_m:
+                return False
+        if self.target.y is not None:
+            if cur.y is None or abs(cur.y - self.target.y) > self.tol_m:
+                return False
+        if self.target.z is not None:
+            if cur.z is None or abs(cur.z - self.target.z) > self.tol_m:
+                return False
+        if self.target.angle is not None:
+            if cur.angle is None or self._deg_diff(cur.angle, self.target.angle) > self.tol_deg:
+                return False
+
+        return True
 
 
-# ---------------- Compute events ----------------
-# ---------------- events ----------------
+@register_event
+class GlobalPositionReached(Event):
+    """
+    True when the current global_position matches the target within tolerance.
+    Uses great-circle distance for lat/lon, and optional checks for altitude and heading.
+    Compares only fields provided on `target`.
+    """
+    target: Location = None
+    tol_m: Optional[float] = Field(0.50, ge=0.0, description="Lat/Lon distance tolerance (meters)")
+    tol_alt_m: Optional[float] = Field(0.50, ge=0.0, description="Altitude tolerance (meters)")
+    tol_deg: Optional[float] = Field(3.0, ge=0.0, description="Heading tolerance (degrees)")
+
+    @staticmethod
+    def _haversine_m(a: Optional[Location], b: Optional[Location]) -> Optional[float]:
+        if (
+            not a or not b or
+            a.latitude is None or a.longitude is None or
+            b.latitude is None or b.longitude is None
+        ):
+            return None
+        R = 6371000.0
+        lat1, lon1, lat2, lon2 = map(math.radians, [a.latitude, a.longitude, b.latitude, b.longitude])
+        dlat, dlon = lat2 - lat1, lon2 - lon1
+        h = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+        return 2 * R * math.asin(math.sqrt(h))
+
+    @staticmethod
+    def _deg_diff(a: float, b: float) -> float:
+        d = abs((a - b) % 360.0)
+        return d if d <= 180.0 else 360.0 - d
+
+    async def check(self) -> bool:
+        if self.target is None:
+            return False
+
+        tel: Optional[DriverTelemetry] = await runtime.VEHICLE.get_telemetry()
+        if not tel or not tel.position_info:
+            return False
+        cur = tel.position_info.global_position
+        if not cur:
+            return False
+
+        # If latitude & longitude specified, require distance within tol_m
+        if self.target.latitude is not None and self.target.longitude is not None:
+            d = self._haversine_m(cur, self.target)
+            if d is None or d > self.tol_m:
+                return False
+
+        # Altitude (optional)
+        if self.target.altitude is not None:
+            if cur.altitude is None or abs(cur.altitude - self.target.altitude) > self.tol_alt_m:
+                return False
+
+        # Heading (optional)
+        if self.target.heading is not None:
+            if cur.heading is None or self._deg_diff(cur.heading, self.target.heading) > self.tol_deg:
+                return False
+
+        return True
+
+
+# ---- compute events ----
+
 @register_event
 class DetectionFound(Event):
-    """
-    Fires when any detection matches optional filters:
-      - `class_name` (case-insensitive) if provided
-      - `min_score` greater than of equal to threshold if provided
-    """
-    compute_type: str = Field(..., min_length=1)
-    target: Optional[str] = Field(None)
-    min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+    """True if any detection matches optional class_name and min score."""
+    target: Detection  # use class_name/score if provided
 
     async def check(self) -> bool:
         pass
-
 
 @register_event
 class HSVReached(Event):
     """
-    Fires when any detection indicates HSV filter passed (boolean flag).
-    Optional filters: `class_name`, `min_score`.
-    Assumes detection dicts may have `hsv_filter_passed`: bool.
+    True if any result reports HSV close to target, or 'hsv_pass': true.
+    Looks only in ComputeResult.generic_result (JSON).
     """
-    compute_type: str = Field(..., min_length=1)
-    class_name: Optional[str] = Field(None)
-    min_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+    target: HSV
+    tol: int = Field(15, ge=0)
 
     async def check(self) -> bool:
         pass
