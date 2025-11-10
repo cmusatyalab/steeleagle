@@ -12,6 +12,8 @@ from ...datatypes.telemetry import DriverTelemetry
 from ...datatypes.result import FrameResult, ComputeResult, DetectionResult, Detection, HSV
 from ...datatypes.common import Pose, Velocity, Location, Position
 
+import logging
+logger = logging.getLogger(__name__)
 
 # ---- events ----
 @register_event
@@ -29,11 +31,16 @@ class BatteryReached(Event):
     threshold: int = Field(..., ge=0, le=100)
 
     async def check(self) -> bool:
-        tel = await runtime.VEHICLE.get_telemetry()
-        if not tel or not tel.vehicle_info or not tel.vehicle_info.battery_info:
-            return False
-        pct = tel.vehicle_info.battery_info.percentage
-        return pct is not None and pct <= self.threshold
+        while True:
+            await asyncio.sleep(0.1)
+            tel = await runtime.VEHICLE.get_telemetry()
+            logger.info(f'tel: {tel}')
+            if not tel or not tel.vehicle_info or not tel.vehicle_info.battery_info:
+                continue
+            pct = tel.vehicle_info.battery_info.percentage
+            logger.info(f'battery_pct: {pct}')
+            if pct is not None and pct <= self.threshold:
+                return True
 
 
 @register_event

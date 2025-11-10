@@ -19,8 +19,9 @@ class Vehicle:
         self.control = ControlStub(channel)
 
     async def get_telemetry(self)-> DriverTelemetry:
-        source = "telemetry"
-        return await self.mission_store.get_latest(source)
+        source = 'telemetry'
+        topic = b'driver_telemetry'
+        return await self.mission_store.get_latest(source, topic)
 
     async def connect(self) -> Response:
         req = control_proto.ConnectRequest()

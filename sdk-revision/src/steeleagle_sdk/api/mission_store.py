@@ -25,7 +25,7 @@ class MissionStore:
         self._results = None
         self._store = {}
         
-    def _parse_payload(self, source, topic, payload):
+    def _parse_payload(self, source, payload):
         result = None
         try:
             if source == 'telemetry':
@@ -42,18 +42,17 @@ class MissionStore:
             #     result = FrameResult.model_validate(data)
         except Exception as e:
             logger.info(f"error: {e}")
-        # logger.info(f'topic: {topic}, result: {result}')
         return result
 
     async def _consume(self, source, sock):
         while True:
             frames = await sock.recv_multipart()
             topic, payload = frames
-            if topic == 'telemetry':
+            if topic == b'telemetry':
                 continue # ignore the telemetry engine output
-            parsed_res = self._parse_payload(source, topic, payload)
+            parsed_res = self._parse_payload(source, payload)
             async with self._lock:
-                self._store[(source, topic)] = {"content": parsed_res}
+                self._store[(source, topic)] = parsed_res
 
     async def start(self):
         logger.info("Starting MissionStore")
@@ -82,7 +81,6 @@ class MissionStore:
 
     async def get_latest(self, source, topic) -> Datatype:
         async with self._lock:
-            logger.info(f"Getting latest for {source}, {topic}")
             return self._store.get((source, topic))
 
     async def snapshot(self):
