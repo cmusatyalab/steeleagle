@@ -15,8 +15,8 @@ services:
     image: cmusatyalab/gabriel-server:${GABRIEL_IMAGE_TAG}
     container_name: gabriel-server
     ports:
+      - "8000:8000"
       - "9099:9099"
-      - "5555:5555"
     entrypoint: [ "./main.py", "-t", "${GABRIEL_TOKENS}", "-z"]
     restart: unless-stopped
     networks:
@@ -197,13 +197,38 @@ services:
     restart: unless-stopped
     privileged: true
     ports:
-      - 6379:6379
+      - ${REDIS_HOST}:6379:6379
       - ${REDIS_HOST}:8001:8001
     networks:
       - redis
     volumes:
       - ./redis:/data
       - ./redis/redis.conf:/redis-stack.conf
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - steeleagle-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - steeleagle-net
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PWD}
+
 
 networks:
   steeleagle-net:
