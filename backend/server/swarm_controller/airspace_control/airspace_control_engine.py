@@ -14,10 +14,6 @@ BASE_TIMEOUT = 10  # in seconds
 M_PER_LAT_DEG = 111139  # in meters per degree of latitude
 PROJECTION_TIME = 5  # in seconds
 
-logger = logging.getLogger("airspace.engine")
-actions_logger = logging.getLogger("airspace.actions")
-
-
 class AirspaceControlEngine:
     def __init__(
         self,
@@ -28,6 +24,9 @@ class AirspaceControlEngine:
         min_alt,
         max_alt,
     ):
+        logger = logging.getLogger("airspace.engine")
+        actions_logger = logging.getLogger("airspace.actions")
+
         self.next_common_id = 0
         self.drone_region_map = {}  # drone_id -> region
         self.drone_priority_map = {}  # drone_id -> priority
