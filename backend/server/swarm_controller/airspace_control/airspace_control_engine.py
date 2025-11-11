@@ -8,11 +8,16 @@ from functools import wraps
 
 import logging
 from airspace_control.logger_config import AirspaceLoggerAdapter
+from utils.utils import setup_logging
 
 
 BASE_TIMEOUT = 10  # in seconds
 M_PER_LAT_DEG = 111139  # in meters per degree of latitude
 PROJECTION_TIME = 5  # in seconds
+
+logger = logging.getLogger("airspace.engine")
+actions_logger = logging.getLogger("airspace.actions")
+logger.basicConfig(filename="airspace_engine.log", level=logging.DEBUG)
 
 class AirspaceControlEngine:
     def __init__(
@@ -24,9 +29,6 @@ class AirspaceControlEngine:
         min_alt,
         max_alt,
     ):
-        logger = logging.getLogger("airspace.engine")
-        actions_logger = logging.getLogger("airspace.actions")
-
         self.next_common_id = 0
         self.drone_region_map = {}  # drone_id -> region
         self.drone_priority_map = {}  # drone_id -> priority
