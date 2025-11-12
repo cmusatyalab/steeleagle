@@ -1456,6 +1456,7 @@ source = { editable = "../sdk-revision" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "folium" },
+    { name = "gabriel-protocol" },
     { name = "grpcio" },
     { name = "lark" },
     { name = "matplotlib" },
@@ -1470,6 +1471,7 @@ dependencies = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "folium", specifier = ">=0.20.0" },
+    { name = "gabriel-protocol", specifier = ">=4.0" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "lark", specifier = ">=1.2.2" },
     { name = "matplotlib", specifier = ">=3.10.6" },
