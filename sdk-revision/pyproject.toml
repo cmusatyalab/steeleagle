@@ -44,7 +44,9 @@ dependencies = [
     "gabriel-protocol>=4.0",
 ]
 [project.scripts]
-compile_dsl = "steeleagle_sdk.dsl:cli_compile_dsl"
+dsl_compile_service = "steeleagle_sdk.dsl:cli_compile_dsl"
+command_service = "steeleagle_sdk.sim.command_service.main:main"
+dsl_runtime_service = "steeleagle_sdk.sim.dsl_service.main:main"
 
 [project.urls]
 Homepage = "https://cmusatyalab.github.io/steeleagle/"
