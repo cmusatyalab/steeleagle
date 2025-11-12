@@ -104,7 +104,7 @@ class MissionStore:
                 if not frames:
                     continue
                 topic = self._norm_topic(frames[0])
-                if topic == b'telemetry':
+                if topic == 'telemetry':
                     continue # ignore telmetry engine
                 payload = frames[-1]
 

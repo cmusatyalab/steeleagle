@@ -11,7 +11,7 @@ from ...datatypes.control import ReferenceFrame
 from ...datatypes.telemetry import DriverTelemetry
 from ...datatypes.result import FrameResult, ComputeResult, DetectionResult, Detection, HSV
 from ...datatypes.common import Pose, Velocity, Location, Position
-
+from ...utils import fetch_results, fetch_telemetry
 import logging
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class BatteryReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel = await runtime.VEHICLE.get_telemetry()
+            tel = await fetch_telemetry()
             if not tel or not tel.vehicle_info or not tel.vehicle_info.battery_info:
                 continue
             pct = tel.vehicle_info.battery_info.percentage
@@ -47,7 +47,7 @@ class SatellitesReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel = await runtime.VEHICLE.get_telemetry()
+            tel = await fetch_telemetry()
             if not tel or not tel.vehicle_info or not tel.vehicle_info.gps_info:
                 continue
             sats = tel.vehicle_info.gps_info.satellites
@@ -63,7 +63,7 @@ class GimbalPoseReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel = await runtime.VEHICLE.get_telemetry()
+            tel = await fetch_telemetry()
             if not tel or not tel.gimbal_info or not tel.gimbal_info.gimbals:
                 continue
 
@@ -96,7 +96,7 @@ class VelocityReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel = await runtime.VEHICLE.get_telemetry()
+            tel = await fetch_telemetry()
             if not tel or not tel.position_info:
                 continue
 
@@ -143,7 +143,7 @@ class RelativePositionReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel: Optional[DriverTelemetry] = await runtime.VEHICLE.get_telemetry()
+            tel: Optional[DriverTelemetry] = await fetch_telemetry()
             if not tel or not tel.position_info:
                 continue
             cur = tel.position_info.relative_position
@@ -202,7 +202,7 @@ class GlobalPositionReached(Event):
             if self.target is None:
                 continue
 
-            tel: Optional[DriverTelemetry] = await runtime.VEHICLE.get_telemetry()
+            tel: Optional[DriverTelemetry] = await fetch_telemetry()
             if not tel or not tel.position_info:
                 continue
             cur = tel.position_info.global_position
@@ -236,7 +236,9 @@ class DetectionFound(Event):
     target: Detection  # use class_name/score if provided
 
     async def check(self) -> bool:
-        pass
+        while True:
+            res = await fetch_results('object-engine')
+            logger.info(f'res: {res}')
 
 
 @register_event
@@ -249,4 +251,4 @@ class HSVReached(Event):
     tol: int = Field(15, ge=0)
 
     async def check(self) -> bool:
-        pass
+        await fetch_results('object-engine')

@@ -1,7 +1,7 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
 [__BASE__]
-enter = ['Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "location": 0}, {"id": "object-engine"}]}']
+enter = ['Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "location": 0}, {"id": "object-engine"}, {"id": "obstacle-engine"}]}']
 [__BASE__.rules]
 allowed = ['server.*']
 match = [
