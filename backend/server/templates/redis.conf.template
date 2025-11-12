@@ -871,7 +871,7 @@ replica-priority 100
 # For more information about ACL configuration please refer to
 # the Redis web site at https://redis.io/topics/acl
 user default reset
-user steeleagle on allcommands allkeys allchannels >(use secure password here)
+user steeleagle on allcommands allkeys allchannels >{{redis_pw}}
 # ACL LOG
 #
 # The ACL Log tracks failed commands and authentication events associated
