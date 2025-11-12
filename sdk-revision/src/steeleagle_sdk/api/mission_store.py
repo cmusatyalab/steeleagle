@@ -11,6 +11,7 @@ from .datatypes.telemetry import DriverTelemetry
 from .datatypes.result import FrameResult
 from ..protocol.messages import telemetry_pb2 as telem_proto
 from ..protocol.messages import result_pb2 as result_proto
+from gabriel_protocol import gabriel_pb2
 
 logger = logging.getLogger(__name__)
 
@@ -85,10 +86,13 @@ class MissionStore:
                 msg = telem_proto.DriverTelemetry(); msg.ParseFromString(payload)
                 data = MessageToDict(msg, preserving_proto_field_name=True)
                 return DriverTelemetry.model_validate(data)
-            # elif source == "results":
-                # msg = result_proto.FrameResult(); msg.ParseFromString(payload)
-                # data = MessageToDict(msg, preserving_proto_field_name=True)
-                # return FrameResult.model_validate(data)
+            elif source == "results":
+                msg = gabriel_pb2.ResultWrapper(); msg.ParseFromString(payload)
+                logger.info(f'payload:  {msg}')
+                frame_result  = msg.extras
+                logger.info(f'frame_result:  {frame_result}')
+                data = MessageToDict(frame_result, preserving_proto_field_name=True)
+                return FrameResult.model_validate(data)
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
@@ -147,7 +151,7 @@ class MissionStore:
 
         self._tasks = [
             asyncio.create_task(self._receive_and_store("telemetry", self._telemetry)),
-            # asyncio.create_task(self._receive_and_store("results", self._results)),
+            asyncio.create_task(self._receive_and_store("results", self._results)),
         ]
 
     async def stop(self):
