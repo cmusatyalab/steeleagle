@@ -8,10 +8,10 @@ import select
 import contextlib
 
 # Protocol imports
-from ...protocol.services.mission_service_pb2_grpc import MissionStub
-from ...protocol.services.control_service_pb2_grpc import ControlStub
-from ...protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
-from ...protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
+from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
+from steeleagle_sdk.protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
+from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
 
 
 # --------- raw TTY helpers (WSL-friendly) ---------
@@ -65,7 +65,7 @@ async def consume_keys(key_queue, driver_stub: ControlStub, msn_stub: MissionStu
     while True:
         key = await key_queue.get()
 
-        # Quit on ESC
+        # Quit on ESCd = "steeleagle_sdk
         if key == '\x1b':  # ESC
             break
 
