@@ -27,4 +27,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-steeleagle-sdk={path="../sdk-revision", editable = true }
+steeleagle-sdk={path="../sdk", editable = true }
