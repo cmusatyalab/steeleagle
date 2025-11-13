@@ -229,16 +229,43 @@ class GlobalPositionReached(Event):
 
 
 # ---- compute events ----
-
 @register_event
 class DetectionFound(Event):
     """True if any detection matches optional class_name and min score."""
     target: Detection  # use class_name/score if provided
 
     async def check(self) -> bool:
+        # Keep consuming FrameResult messages until a matching detection appears.
         while True:
-            res = await fetch_results('object-engine')
-            logger.info(f'res: {res}')
+            res: FrameResult = await fetch_results("object-engine")
+
+            if not res.result:
+                continue  # no ComputeResult entries
+
+            for compute in res.result:
+                det_result = compute.detection_result
+                if not det_result or not det_result.detections:
+                    continue
+
+                for det in det_result.detections:
+                    if det is None:
+                        continue
+                    if self._matches_target(det):
+                        return True
+
+    def _matches_target(self, det: Detection) -> bool:
+        # Filter on class_name if provided
+        if self.target.class_name is not None:
+            if det.class_name != self.target.class_name:
+                return False
+
+        # Filter on minimum score if provided
+        if self.target.score is not None:
+            if det.score is None or det.score < self.target.score:
+                return False
+
+        # If we got here, all provided constraints passed
+        return True
 
 
 @register_event
@@ -251,4 +278,63 @@ class HSVReached(Event):
     tol: int = Field(15, ge=0)
 
     async def check(self) -> bool:
-        await fetch_results('object-engine')
+        # Continuously read FrameResult messages and inspect generic_result JSON.
+        while True:
+            res: FrameResult = await fetch_results("object-engine")
+
+            if not res.result:
+                continue
+
+            for compute in res.result:
+                if not compute.generic_result:
+                    continue
+
+                try:
+                    payload = json.loads(compute.generic_result)
+                except Exception:
+                    # Ignore malformed JSON
+                    continue
+
+                # Shortcut: explicit pass flag
+                if payload.get("hsv_pass") is True:
+                    return True
+
+                # Try to read HSV values from JSON; adjust to whatever structure you use
+                h = payload.get("h")
+                s = payload.get("s")
+                v = payload.get("v")
+
+                if self._matches_hsv(h, s, v):
+                    return True
+
+    def _matches_hsv(
+        self,
+        h: Optional[int],
+        s: Optional[int],
+        v: Optional[int],
+    ) -> bool:
+        def close(a: Optional[int], b: Optional[int]) -> bool:
+            if a is None or b is None:
+                return False
+            return abs(a - b) <= self.tol
+
+        tgt = self.target
+        checked_any = False
+
+        if tgt.h is not None:
+            checked_any = True
+            if not close(h, tgt.h):
+                return False
+
+        if tgt.s is not None:
+            checked_any = True
+            if not close(s, tgt.s):
+                return False
+
+        if tgt.v is not None:
+            checked_any = True
+            if not close(v, tgt.v):
+                return False
+
+        # If no components were specified on target, don't treat it as a match
+        return checked_any
