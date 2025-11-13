@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: steeleagle_sdk
+Name: steeleagle-sdk
 Version: 1.0.14
 Summary: SDK for interacting with SteelEagle vehicles.
 Author-email: Mihir Bala <mbala@andrew.cmu.edu>, Thomas Eiszler <teiszler@andrew.cmu.edu>, Anthony Chen <xianglic@andrew.cmu.edu>, Aditya Chanana <achanana@andrew.cmu.edu>

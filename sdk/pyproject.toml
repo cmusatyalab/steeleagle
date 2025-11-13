@@ -1,5 +1,5 @@
 [project]
-name = "steeleagle_sdk"
+name = "steeleagle-sdk"
 version = "1.0.14"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
@@ -44,9 +44,7 @@ dependencies = [
     "gabriel-protocol>=4.0",
 ]
 [project.scripts]
-dsl_compile_service = "steeleagle_sdk.dsl:cli_compile_dsl"
-command_service = "steeleagle_sdk.sim.command_service.main:main"
-dsl_runtime_service = "steeleagle_sdk.sim.dsl_service.main:main"
+dsl_compile = "steeleagle_sdk.dsl:cli_compile_dsl"
 
 [project.urls]
 Homepage = "https://cmusatyalab.github.io/steeleagle/"
