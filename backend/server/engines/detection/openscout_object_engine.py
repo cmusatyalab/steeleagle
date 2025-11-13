@@ -294,18 +294,22 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 extras.gimbal_info,
             )
 
-        if detections is not None:
-            result_wrapper.results.append(detections)
+        compute_result = result_pb2.ComputeResult()
+        compute_result.timestamp.GetCurrentTime()
+        compute_result.engine_name = self.ENGINE_NAME
 
-        response = result_pb2.ComputeResult()
-        response.timestamp.GetCurrentTime()
-        response.engine_name = self.ENGINE_NAME
+        if detections is not None:
+            compute_result.generic_result = detections
+
+        frame_result = result_pb2.FrameResult()
+        frame_result.type = 'object-detection'
+        frame_result.result.pack(compute_result)
         # TODO: if we want to use the Detections message in
         # telemetry.proto, then we need to add some fields
         # such as lat/lon/passes_hsv_filter
         # if detections is not None:
         #    response.detection_result = detections
-        result_wrapper.extras.Pack(response)
+        result_wrapper.extras.Pack(frame_result)
 
         self.count += 1
 
@@ -326,9 +330,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             df = df.filter(
                 df["confidence"] > self.threshold, ~df["class"].is_in(exclusions)
             )
-
-        gabriel_result = gabriel_pb2.ResultWrapper.Result()
-        gabriel_result.payload_type = gabriel_pb2.PayloadType.TEXT
 
         detections = []
         timestamp_millis = int(time.time() * 1000)
@@ -431,7 +432,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return None
 
         logger.info(json.dumps(detections, sort_keys=True, indent=4))
-        gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
 
         if run_hsv_filter and not self.unittest:
             logger.info("TODO: need to get hsv bounds")
@@ -449,7 +449,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     f"IndexError while getting bounding boxes [{traceback.format_exc()}]"
                 )
 
-        return gabriel_result if not df.is_empty() else None
+        return detections if not df.is_empty() else None
 
     def store_detections_disk(self, im_bgr, filename, vehicle_id, uniq_classes):
         vehicle_dir = os.path.join(self.vehicle_storage_path, vehicle_id)
