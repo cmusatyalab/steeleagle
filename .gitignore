@@ -18,10 +18,10 @@ venv/
 *swp
 
 # Protocol
-*_pb2.py
-*_pb2_grpc.py
-*.pyi
-*.desc
+# *_pb2.py
+# *_pb2_grpc.py
+# *.pyi
+# *.desc
 # keep everything under this protocol directory
 !sdk-revision/src/steeleagle_sdk/protocol/
 !sdk-revision/src/steeleagle_sdk/protocol/**
