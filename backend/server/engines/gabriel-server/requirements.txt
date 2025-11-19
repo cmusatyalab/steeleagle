@@ -1,2 +1,3 @@
-gabriel-server<4
+gabriel-server>=4.0.3
+prometheus-client
 pyyaml

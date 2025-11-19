@@ -1,16 +1,16 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-import datetime
-import json
-import time
-
 import folium
 import streamlit as st
-from folium.plugins import MiniMap
-from pykml import parser
 from streamlit_folium import st_folium
-from util import COLORS, authenticated, connect_redis, menu, stream_to_dataframe
+from folium.plugins import MiniMap
+from util import connect_redis, menu, authenticated, stream_to_dataframe
+import datetime
+from pykml import parser
+import json
+import time
+from colorhash import ColorHash
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -23,13 +23,13 @@ if "show_drone_markers" not in st.session_state:
 if "show_geofence" not in st.session_state:
     st.session_state.show_geofence = True
 if "show_objects" not in st.session_state:
-    st.session_state.show_objects = False
+    st.session_state.show_objects = True
 if "show_corridors" not in st.session_state:
     st.session_state.show_corridors = False
 
 st.set_page_config(
-    page_title="Commander",
-    page_icon=":military_helmet:",
+    page_title="SteelEagle Commander",
+    page_icon=":eagle:",
     layout="wide",
     menu_items={
         "Get help": "https://cmusatyalab.github.io/steeleagle/",
@@ -61,7 +61,6 @@ def draw_map():
     # Draw(export=True).add_to(m)
     lc = folium.LayerControl()
     if st.session_state.show_drone_markers:
-        marker_color = 0
         for k in red.keys("telemetry:*"):
             df = stream_to_dataframe(red.xrevrange(f"{k}", "+", "-", 1))
             last_update = int(df.index[0].split("-")[0]) / 1000
@@ -69,20 +68,19 @@ def draw_map():
                 coords = []
                 i = 0
                 drone_name = k.split(":")[-1]
-                current_task = red.hget(f"drone:{drone_name}", "current_task")
-                if current_task == "":
-                    current_task = "idle"
                 for index, row in df.iterrows():
                     if i == 0:
                         coords.append([row["latitude"], row["longitude"]])
                         text = folium.DivIcon(
                             icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
                             icon_anchor=(-20, 30),
-                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{drone_name}  [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
+                            html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name}</div>',
+                            # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                         )
                         plane = folium.Icon(
                             icon="plane",
-                            color=COLORS[marker_color],
+                            color="lightgray",
+                            icon_color=ColorHash(drone_name).hex,
                             prefix="glyphicon",
                             angle=int(row["bearing"]),
                         )
@@ -106,12 +104,11 @@ def draw_map():
                                 icon=text,
                             )
                         )
-            marker_color += 1
 
     if st.session_state.show_corridors:
         try:
             partition = []
-            with open(f"{st.secrets.waypoints}", encoding="utf-8") as f:
+            with open(f"{st.secrets.waypoints}", "r", encoding="utf-8") as f:
                 j = json.load(f)
                 for k, v in j.items():
                     for k2, v2 in v.items():  # for each corridor
@@ -127,7 +124,7 @@ def draw_map():
     if st.session_state.show_geofence:
         try:
             fence_coords = []
-            with open(f"{st.secrets.geofence_path}", encoding="utf-8") as f:
+            with open(f"{st.secrets.geofence_path}", "r", encoding="utf-8") as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():
@@ -140,13 +137,12 @@ def draw_map():
             st.toast(f"Error loading geofence from {st.secrets.geofence_path}.")
 
     if st.session_state.show_objects:
-        marker_color = 0
         for obj in red.zrange("detections", 0, -1):
             if len(red.keys(f"objects:{obj}")) > 0:
                 fields = red.hgetall(f"objects:{obj}")
                 img_ref = f'<img src="{fields["link"]}" height="360px" width="480px"/>'
                 div_content = f"""
-                        <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">
+                        <div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash({obj}).hex};">
                             {obj}&nbsp;({float(fields["confidence"]):.2f})&nbsp;[{fields["drone_id"]}]<br/>
                             {datetime.datetime.fromtimestamp(float(fields["last_seen"])).strftime("%Y-%m-%d %H:%M:%S")}
                         </div>
@@ -159,7 +155,7 @@ def draw_map():
                 )
                 object_icon = folium.Icon(
                     icon="object-group",
-                    color=COLORS[marker_color],
+                    color=ColorHash({obj}).hex,
                     prefix="fa",
                 )
 
@@ -191,7 +187,7 @@ def draw_map():
     st_folium(
         m,
         key="overview_map",
-        use_container_width=True,
+        width="stretch",
         feature_group_to_add=[fg, fence_fg, partitions, drone_positions],
         layer_control=lc,
         center=st.session_state.center,

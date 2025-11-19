@@ -1,127 +1,56 @@
-# SPDX-FileCopyrightText: 2023 Carnegie Mellon University - Satyalab
+# SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-License-Identifier: GPL-2.0-only
 
-# The environment variables such as
-# ${FACE_THRESHOLD} and ${API_KEY} should
+# Environment variables (e.g. ${GABRIEL_IMAGE_TAG}) should
 # reside in a .env file along side docker-compose.yaml
+# Copy/move template.env -> .env
 
 services:
+  # Core Gabriel Server
+  # Handles incoming data connections from vehicles and
+  # routes data to cognitive engines for processing
   gabriel-server:
-    image: cmusatyalab/gabriel-server
+    image: cmusatyalab/gabriel-server:${GABRIEL_IMAGE_TAG}
     container_name: gabriel-server
     ports:
+      - "8000:8000"
       - "9099:9099"
-      - "5555:5555"
-    entrypoint: [ "./main.py", "-t", "30", "-z"]
+    entrypoint: [ "./main.py", "-t", "${GABRIEL_TOKENS}", "-z"]
     restart: unless-stopped
     networks:
-      - cnc-net
+      - steeleagle-net
 
+  # Telemetry Engine
+  # Writes telemetry data to Redis and imagery to disk
   telemetry-engine:
-    image: cmusatyalab/steeleagle-telemetry-engine:${TAG}
+    image: cmusatyalab/steeleagle-telemetry-engine:${TELEMETRY_IMAGE_TAG}
     container_name: telemetry-engine
-    restart: unless-stopped
+    restart: on-failure:3
     privileged: true
-    entrypoint: [ "./telemetry.py", "-a", "${REDIS_AUTH}"]
+    entrypoint: [ "uv", "run", "./telemetry.py", "-a", "${REDIS_AUTH}"]
     depends_on:
       - gabriel-server
     networks:
-      - cnc-net
+      - steeleagle-net
       - redis
     volumes:
-      - ./steeleagle-vol:/images/
-    environment:
-      - PYTHONPATH=/protocol
-
-  swarm-controller:
-    image: cmusatyalab/steeleagle-swarm-controller:${TAG}
-    container_name: swarm-controller
-    restart: unless-stopped
-    ports:
-      - "5003:5003"
-      - "6001:6001"
-    privileged: true
-    entrypoint: [ "./swarm_controller.py", "-a", "${REDIS_AUTH}", "--altitude", "${ALTITUDE_BASE}", "--spacing", "${CORRIDOR_SPACING}", "--angle", "${CORRIDOR_ANGLE}"]
-    volumes:
-      - ./steeleagle-vol/compiler/:/compiler
-      - ./steeleagle-vol/scripts/:/scripts
-      - ./steeleagle-dsl:/dsl
-    networks:
-      - cnc-net
-      - redis
-    environment:
-      - PYTHONPATH=/protocol
-
-  # test-clients:
-  #   image: cmusatyalab/steeleagle:${TAG}
-  #   container_name: test-clients
-  #   restart: unless-stopped
-  #   privileged: true
-  #   entrypoint:
-  #     [
-  #       "../python_client/drone_client.py",
-  #       "--s",
-  #       "gabriel-server"
-  #     ]
-  #   depends_on:
-  #     - command-engine
-  #   networks:
-  #     - cnc-net
-
-  http-server:
-    image: httpd:2.4
-    container_name: http-server
-    ports:
-      - "${HTTP_PORT}:80"
-    restart: unless-stopped
+      - ./steeleagle-vol:/steeleagle/images/
     logging:
-      driver: none
-    networks:
-      - cnc-net
-    volumes:
-      - ./steeleagle-vol:/usr/local/apache2/htdocs
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-        #openscout-face-engine:
-        #  image: cmusatyalab/openscout:${OPENSCOUT_TAG}
-        #  container_name: openscout-face-engine
-        #  restart: unless-stopped
-        #  privileged: true
-        #  entrypoint:
-        #    [
-        #      "./face.py",
-        #      "--source",
-        #      "telemetry",
-        #      "--endpoint",
-        #      "http://openface-service:5000",
-        #      "--threshold",
-        #      "${FACE_THRESHOLD}",
-        #      "${STORE}"
-        #    ]
-        #  #to use MS Face Cognitive Service, make this the entrypoint instead and use the ms-face-server container...
-        #  #entrypoint: ["./face.py", "--msface", "--endpoint", "http://ms-face-service:5000","--apikey", "${API_KEY}", "--threshold", "${FACE_THRESHOLD}"]
-        #  volumes:
-        #    - ./steeleagle-vol:/openscout/server/images/
-        #    - training-vol:/openscout/server/training/
-        #  depends_on:
-        #    - gabriel-server
-        #    - openface-service
-        #    #- ms-face-service
-        #  networks:
-        #    - cnc-net
-        #    - redis
-        #  environment:
-        #    - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
-
+  # Obstacle Avoidance Engine
+  # Uses Metric3D (or MiDaS) model to estimate depth for vehicles
   obstacle-engine:
-    image: cmusatyalab/steeleagle-vision-engines:${TAG}
+    image: cmusatyalab/steeleagle-avoidance-engine:${OBSTACLE_IMAGE_TAG}
     container_name: obstacle-engine
-    restart: unless-stopped
+    restart: on-failure:3
     privileged: true
-    entrypoint: ["./depth.py", "--source", "telemetry", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
-    # for NVIDIA GPUs
-    #gpus: all     # not yet supported by docker-compose
+    entrypoint: ["uv", "run", "/steeleagle/depth.py", "--model", "${DEPTH_MODEL}", "--threshold", "${DEPTH_THRESHOLD}", "${STORE}", "-a", "${REDIS_AUTH}", "${USE_METRIC3D}"]
     deploy:
       resources:
         reservations:
@@ -135,24 +64,30 @@ services:
     depends_on:
       - gabriel-server
     networks:
-      - cnc-net
+      - steeleagle-net
       - redis
-    environment:
-      - PYTHONPATH=/steeleagle/protocol
-    #environment:
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=1 #set this if you want to force CPU only
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  # Object Detection Engine
+  # Performs object detection, returns bounding boxes to vehicles and
+  # stores detections in Redis; also optionally performs HSV filtering
+  # on detected objects
   object-engine:
-    image: cmusatyalab/steeleagle-vision-engines:${TAG}
+    image: cmusatyalab/steeleagle-detection-engine:${OBJECT_IMAGE_TAG}
     container_name: object-engine
-    restart: unless-stopped
+    restart: on-failure:3
     privileged: true
     entrypoint:
       [
-        "./obj.py",
-        "--source",
-        "telemetry",
+        "uv",
+        "run",
+        "/steeleagle/obj.py",
         "--model",
         "${DNN}",
         "--threshold",
@@ -165,12 +100,13 @@ services:
         "-hsv",
         "${HSV_THRESHOLD}",
         "--geofence",
-        "geofence.kml",
+        "${GEOFENCE_FILE}",
         "--ttl",
-        "30"
+        "${OBJECT_TTL}",
+        "${GEOFENCE_ENABLED}",
+        "--radius",
+        "${OBJECT_RADIUS}"
       ]
-    # for NVIDIA GPUs
-    # gpus: all     # not yet supported by docker-compose
     runtime: nvidia
     volumes:
       - ./models:/steeleagle/model/
@@ -179,84 +115,89 @@ services:
     depends_on:
       - gabriel-server
     networks:
-      - cnc-net
+      - steeleagle-net
       - redis
     environment:
       - WEBSERVER=${WEBSERVER_URL}:${HTTP_PORT}
-      - PYTHONPATH=/steeleagle/protocol
     #  - TF_FORCE_GPU_ALLOW_GROWTH=true #the following environment variable may be necessary if your GPU only has a modest (~2GB) amount of RAM
     #  - CUDA_VISIBLE_DEVICES=-1 #set this if you want to force CPU only
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  # SLAM Engine
+  # Routes images to TerraSLAM backend for localization and mapping
   slam-engine:
-    # image: xujingao/steeleagle-slam-engine
-    image: cmusatyalab/steeleagle-slam-engine
+    image: cmusatyalab/steeleagle-slam-engine:${SLAM_IMAGE_TAG}
     container_name: slam-engine
-    restart: unless-stopped
+    restart: on-failure:3
     privileged: true
-    # entrypoint: ["python3","./slam.py", "-s", "128.2.208.19", "-t", "transform.json", "-a", "${REDIS_AUTH}", "-g", "tcp://gabriel-server:5555", "-src", "telemetry"]
-    entrypoint: ["python3","./slam.py", "-s", "lambda2.elijah.cs.cmu.edu", "-a", "${REDIS_AUTH}",  "--source", "telemetry"]
+    entrypoint: ["python3","./slam.py", "-s", "{TERRASLAM_HOST}", "-a", "${REDIS_AUTH}",  "--source", "telemetry"]
     depends_on:
       - gabriel-server
       - redis
     networks:
-      - cnc-net
+      - steeleagle-net
       - redis
     environment:
       - PYTHONPATH=/steeleagle/protocol
     volumes:
       - ./steeleagle-vol:/steeleagle/images/
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # OpenFace is the default for face recognition
-  #openface-service:
-  #  image: cmusatyalab/openface
-  #  container_name: openface-service
-  #  ports:
-  #    - "5000:5000"
-  #  restart: unless-stopped
-  #  privileged: true
-  #  entrypoint:
-  #    [
-  #      "python",
-  #      "/root/openface-rest.py",
-  #      "/openscout/server/training/"
-  #    ]
-  #  volumes:
-  #    - training-vol:/openscout/server/training/
-  #  networks:
-  #    - cnc-net
-
-  # or the MS Face Cognitive Server can be used (Azure Account Required)
-  # ms-face-service:
-  #   image: containerpreview.azurecr.io/microsoft/cognitive-services-face
-  #   container_name: ms-face-service
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5000:5000"
-  #   networks:
-  #     - cnc-net
-  #   cpus: '1.0'
-  #   mem_reservation: 4gb
-  #   environment:
-  #     - Eula=accept
-  #     - Billing=${BILLING_ENDPOINT}
-  #     - ApiKey=${API_KEY}
-  go2rtc:
-    image: alexxit/go2rtc
-    network_mode: host       # important for WebRTC, HomeKit, UDP cameras
-    privileged: true         # only for FFmpeg hardware transcoding
-    restart: unless-stopped  # autorestart on fail or config change from WebUI
-    environment:
-      - TZ=Atlantic/Bermuda  # timezone in logs
+  # Swarm Controller
+  # Centralized processing of control plane for all vehicles
+  swarm-controller:
+    image: cmusatyalab/steeleagle-swarm-controller:${SC_IMAGE_TAG}
+    container_name: swarm-controller
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+      - "5004:5004"
+      - "6001:6001"
+    privileged: true
+    entrypoint: [ "uv", "run", "./swarm_controller.py", "-a", "${REDIS_AUTH}"]
     volumes:
-      - "~/go2rtc:/config"   # folder for go2rtc.yaml file (edit from WebUI)
-      - ./steeleagle-vol:/tmp
+      - ./steeleagle-vol/compiler/:/compiler
+      - ./steeleagle-vol/scripts/:/scripts
+      - ./steeleagle-dsl:/dsl
+    networks:
+      - steeleagle-net
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Webserver
+  # Hosts vehicles imagery (raw, detections, obstacle avoidance) for GCS
+  http-server:
+    image: httpd:2.4
+    container_name: http-server
+    ports:
+      - "${HTTP_PORT}:80"
+    restart: unless-stopped
+    logging:
+      driver: none
+    networks:
+      - steeleagle-net
+    volumes:
+      - ./steeleagle-vol:/usr/local/apache2/htdocs
+
   redis:
     image: redis/redis-stack:${REDIS_VERSION}
     container_name: redis
     restart: unless-stopped
     privileged: true
     ports:
-      - 6379:6379
+      - ${REDIS_HOST}:6379:6379
       - ${REDIS_HOST}:8001:8001
     networks:
       - redis
@@ -264,9 +205,34 @@ services:
       - ./redis:/data
       - ./redis/redis.conf:/redis-stack.conf
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - steeleagle-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - steeleagle-net
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PWD}
+
+
 networks:
-  cnc-net:
-    name: cnc-net
+  steeleagle-net:
+    name: steeleagle-net
     ipam:
       driver: default
       config:
@@ -276,5 +242,3 @@ networks:
       driver: default
       config:
         - subnet: 12.12.0.0/24
-volumes:
-  training-vol:

@@ -1,0 +1,24 @@
+[vehicle]
+# Name of the vehicle reported through telemetry
+name = ''
+# Vehicle package (see https://git.cmusatyalab.org/steeleagle/roost for list of available vehicles)
+package = ''
+[vehicle.kwargs]
+
+[cloudlet]
+# Location of the swarm controller (typically runs on port 5003)
+swarm_controller = ''
+# Location of the remote Gabriel server (typically runs on port 9099)
+remote_compute_service = ''
+
+[logging]
+# Whether or not to create an MCAP flight log for mission replay
+generate_flight_log = true
+# Log to a custom filename; otherwise will autogenerate
+# a name based on name, date, and time if empty string
+# is provided
+custom_filename = '' 
+# Path to log file
+file_path = 'kernel/logs/'
+# Log level
+log_level = 'INFO'

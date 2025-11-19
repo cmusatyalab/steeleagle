@@ -6,15 +6,13 @@ on:
     tags: [ "v*" ]
     paths:
       - '.github/workflows/build-telemetry-engine.yml'
-      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/engines/telemetry/**'
-      - 'protocol/**'
-      - 'vehicle/util/**'
 
 jobs:
   build-and-push:
     uses: ./.github/workflows/deploy-docker-img.yml
     with:
       name: steeleagle-telemetry-engine
-      dockerfile: backend/server/engines/telemetry/Dockerfile.telemetry
+      dockerfile: backend/server/engines/telemetry/Dockerfile
+      ctx: backend/server/engines/telemetry/
     secrets: inherit

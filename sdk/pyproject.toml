@@ -1,0 +1,58 @@
+[project]
+name = "steeleagle-sdk"
+version = "1.0.14"
+description = "SDK for interacting with SteelEagle vehicles."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Mihir Bala", email = "mbala@andrew.cmu.edu" },
+    { name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu" },
+    { name = "Anthony Chen", email = "xianglic@andrew.cmu.edu" },
+    { name = "Aditya Chanana", email = "achanana@andrew.cmu.edu" }
+]
+maintainers = [
+  {name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu"}
+]
+keywords = [
+    "autonomous",
+    "robots",
+    "edge",
+    "vision",
+    "drone",
+    "uav",
+    "uas",
+    "ugv"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "protobuf>=3.12",
+    "grpcio>=1.74.0",
+    "pydantic>=2.11.7",
+    "lark>=1.2.2",
+    "shapely>=2.1.1",
+    "matplotlib>=3.10.6",
+    "folium>=0.20.0",
+    "pygls",
+    "pyzmq>=27.1.0",
+    "aiosqlite>=0.21.0",
+    "gabriel-protocol>=4.0",
+]
+[project.scripts]
+dsl_compile = "steeleagle_sdk.dsl:cli_compile_dsl"
+
+[project.urls]
+Homepage = "https://cmusatyalab.github.io/steeleagle/"
+Documentation = "https://cmusatyalab.github.io/steeleagle/"
+Repository = "https://github.com/cmusatyalab/steeleagle"
+Issues = "https://github.com/cmusatyalab/steeleagle/issues"
+Changelog = "https://github.com/cmusatyalab/steeleagle/releases"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

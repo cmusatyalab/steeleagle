@@ -10,24 +10,22 @@ import logging
 import os
 import signal
 import time
-
 import cv2
-import foxglove
-import google.protobuf.json_format as json_format
+import argparse
+
+# import foxglove
 import numpy as np
 import pytz
 import redis
-from foxglove.schemas import CompressedImage, LocationFix
+
+# from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
+from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
 
-import protocol.common_pb2 as common
-import protocol.gabriel_extras_pb2 as gabriel_extras
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
-log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-logger.setLevel(getattr(logging, log_level, logging.INFO))
 
 
 class TelemetryEngine(cognitive_engine.Engine):
@@ -36,7 +34,6 @@ class TelemetryEngine(cognitive_engine.Engine):
     def __init__(self, args):
         logger.info("Telemetry engine initializing...")
         signal.signal(signal.SIGTERM, self.cleanup)
-
         # Connect to Redis database
         self.r = redis.Redis(
             host="redis",
@@ -57,185 +54,194 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        now = datetime.datetime.now(pytz.timezone("America/New_York"))
-        self.mcap = foxglove.open_mcap(
-            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
-        )
-        self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+        # now = datetime.datetime.now(pytz.timezone("America/New_York"))
+        # self.mcap = foxglove.open_mcap(
+        #    f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
+        # )
+        # self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
     def cleanup(self, signum, frame):
         logger.info("Stopping WS server and flushing MCAP file...")
-        self.fg_server.stop()
-        self.mcap.close()
+        # self.fg_server.stop()
+        # self.mcap.close()
 
-    def updateDroneStatus(self, extras):
-        telemetry = extras.telemetry
-        global_pos = telemetry.global_position
-        rel_pos = telemetry.relative_position
-        body_vel = telemetry.velocity_body
-        enu_vel = telemetry.velocity_enu
-        gimb_pose = telemetry.gimbal_pose
+    """
+    Stores vehicle data in Redis. Less volatile data is stored in a HASH set, while
+    frequently updated data is stored in a STREAM.
+    """
+
+    def updateVehicle(self, extras):
+        global_pos = extras.position_info.global_position
+        rel_pos = extras.position_info.relative_position
+        body_vel = extras.position_info.velocity_body
+        neu_vel = extras.position_info.velocity_neu
+        # gimb_pose = extras.gimbal_info.gimbals[
+        #    0
+        # ].pose_body  # TODO: Change this to check if gimbal exists
+        vehicle_info = extras.vehicle_info
+        alert_info = extras.alert_info
+
         key = self.r.xadd(
-            f"telemetry:{telemetry.drone_name}",
+            f"telemetry:{extras.vehicle_info.name}",
             {
                 "latitude": global_pos.latitude,
                 "longitude": global_pos.longitude,
                 "abs_altitude": global_pos.altitude,
-                "rel_altitude": rel_pos.up,
+                "rel_altitude": rel_pos.z,
                 "bearing": int(global_pos.heading),
-                "battery": telemetry.battery,
-                "mag": common.MagnetometerWarning.Name(
-                    telemetry.alerts.magnetometer_warning
-                ),
-                "sats": telemetry.satellites,
+                "battery": vehicle_info.battery_info.percentage,
+                "mag": alert_info.magnetometer_warning,
+                "sats": vehicle_info.gps_info.satellites,
                 # Relative Pos (ENU)
-                "enu_east": rel_pos.east,
-                "enu_north": rel_pos.north,
-                "enu_up": rel_pos.up,
-                "enu_angle": rel_pos.angle,
+                "neu_east": rel_pos.y,
+                "neu_north": rel_pos.x,
+                "neu_up": rel_pos.z,
+                "neu_angle": rel_pos.angle,
                 # Velocity Body
                 "v_body_total": np.sqrt(
                     np.sum(
                         np.power(
-                            [body_vel.forward_vel, body_vel.right_vel, body_vel.up_vel],
+                            [body_vel.x_vel, body_vel.y_vel, body_vel.z_vel],
                             2,
                         )
                     )
                 ),
-                "v_body_forward": body_vel.forward_vel,
-                "v_body_lateral": body_vel.right_vel,
-                "v_body_altitude": body_vel.up_vel,
+                "v_body_forward": body_vel.x_vel,
+                "v_body_lateral": body_vel.y_vel,
+                "v_body_altitude": body_vel.z_vel,
                 "v_body_angular": body_vel.angular_vel,
                 # Velocity ENU
-                "v_enu_total": np.sqrt(
-                    np.sum(
-                        np.power(
-                            [enu_vel.north_vel, enu_vel.east_vel, enu_vel.up_vel], 2
-                        )
-                    )
+                "v_neu_total": np.sqrt(
+                    np.sum(np.power([neu_vel.x_vel, neu_vel.y_vel, neu_vel.z_vel], 2))
                 ),
-                "v_enu_north": enu_vel.north_vel,
-                "v_enu_east": enu_vel.east_vel,
-                "v_enu_up": enu_vel.up_vel,
-                "v_enu_angular": enu_vel.angular_vel,
+                "v_neu_north": neu_vel.x_vel,
+                "v_neu_east": neu_vel.y_vel,
+                "v_neu_up": neu_vel.z_vel,
+                "v_neu_angular": neu_vel.angular_vel,
                 # Gimbal Pose
-                "gimbal_pitch": gimb_pose.pitch,
-                "gimbal_roll": gimb_pose.roll,
-                "gimbal_yaw": gimb_pose.yaw,
+                # "gimbal_pitch": gimb_pose.pitch,
+                # "gimbal_roll": gimb_pose.roll,
+                # "gimbal_yaw": gimb_pose.yaw,
             },
         )
-        self.r.expire(f"telemetry:{telemetry.drone_name}", 60 * 60 * 24)
+        self.r.expire(f"telemetry:{extras.vehicle_info.name}", self.ttl_secs)
         logger.debug(
-            f"Updated status of {telemetry.drone_name} in redis under stream telemetry at key {key}"
+            f"Updated status of {extras.vehicle_info.name} in redis under stream telemetry at key {key}"
         )
 
-        drone_key = f"drone:{telemetry.drone_name}"
-        self.r.hset(drone_key, "last_seen", f"{time.time()}")
-        self.r.hset(drone_key, "battery", f"{telemetry.alerts.battery_warning}")
-        self.r.hset(drone_key, "mag", f"{telemetry.alerts.magnetometer_warning}")
-        self.r.hset(drone_key, "sats", f"{telemetry.alerts.gps_warning}")
-        self.r.hset(drone_key, "connection", f"{telemetry.alerts.connection_warning}")
-        self.r.hset(drone_key, "status", f"{telemetry.status}")
-        self.r.hset(drone_key, "current_task", f"{telemetry.current_task}")
-        self.r.hset(drone_key, "model", f"{telemetry.drone_model}")
+        vehicle_key = f"vehicle:{extras.vehicle_info.name}"
+        self.r.hset(vehicle_key, "last_seen", f"{time.time()}")
+        self.r.hset(vehicle_key, "battery", f"{extras.alert_info.battery_warning}")
+        self.r.hset(vehicle_key, "mag", f"{extras.alert_info.magnetometer_warning}")
+        self.r.hset(vehicle_key, "sats", f"{extras.alert_info.gps_warning}")
+        self.r.hset(
+            vehicle_key, "connection", f"{extras.alert_info.connection_warning}"
+        )
+        self.r.hset(vehicle_key, "model", f"{extras.vehicle_info.model}")
         # Home Location
-        self.r.hset(drone_key, "home_lat", f"{telemetry.home.latitude}")
-        self.r.hset(drone_key, "home_long", f"{telemetry.home.longitude}")
-        self.r.hset(drone_key, "home_alt", f"{telemetry.home.altitude}")
+        self.r.hset(
+            vehicle_key,
+            "position_info.home_lat",
+            f"{extras.position_info.home.latitude}",
+        )
+        self.r.hset(
+            vehicle_key,
+            "position_info.home_long",
+            f"{extras.position_info.home.longitude}",
+        )
+        self.r.hset(
+            vehicle_key,
+            "position_info.home_alt",
+            f"{extras.position_info.home.altitude}",
+        )
         # Camera Information
         self.r.hset(
-            drone_key,
+            vehicle_key,
             "streams_allowed",
-            f"{telemetry.cameras.stream_status.total_streams}",
+            f"{extras.imaging_sensor_info.stream_status.stream_capacity}",
         )
         self.r.hset(
-            drone_key,
+            vehicle_key,
             "streams_active",
-            f"{telemetry.cameras.stream_status.num_streams}",
+            f"{extras.imaging_sensor_info.stream_status.num_streams}",
         )
         self.r.hset(
-            drone_key,
+            vehicle_key,
             "primary_cam_id",
-            f"{telemetry.cameras.stream_status.primary_cam}",
+            f"{extras.imaging_sensor_info.stream_status.primary_cam}",
         )
-        for i in range(len(telemetry.cameras.stream_status.secondary_cams)):
-            self.r.hset(drone_key, f"cam_{i}_id", f"{telemetry.cameras.sensors[i].id}")
+        for i in range(len(extras.imaging_sensor_info.stream_status.secondary_cams)):
             self.r.hset(
-                drone_key,
+                vehicle_key,
+                f"cam_{i}_id",
+                f"{extras.imaging_sensor_info.sensors[i].id}",
+            )
+            self.r.hset(
+                vehicle_key,
                 f"cam_{i}_type",
-                f"{common.ImagingSensorType.Name(telemetry.cameras.sensors[i].type)}",
+                f"{extras.imaging_sensor_info.sensors[i].type}",
             )
             self.r.hset(
-                drone_key, f"cam_{i}_active", f"{telemetry.cameras.sensors[i].active}"
+                vehicle_key,
+                f"cam_{i}_active",
+                f"{extras.imaging_sensor_info.sensors[i].active}",
             )
             self.r.hset(
-                drone_key,
+                vehicle_key,
                 f"cam_{i}_support_sec",
-                f"{telemetry.cameras.sensors[i].supports_secondary}",
+                f"{extras.imaging_sensor_info.sensors[i].supports_secondary}",
             )
 
-        self.r.expire(drone_key, self.ttl_secs)
-        logger.debug(f"Updating {drone_key} status: last_seen: {time.time()}")
+        self.r.expire(vehicle_key, self.ttl_secs)
+        logger.debug(f"Updating {vehicle_key} status: last_seen: {time.time()}")
+
+    """
+    Processes an input frame from Gabriel. For telemetry payloads,
+    it updates the vehicle's tables in Redis. For imagery payloads,
+    it writes the images to disk.
+    """
 
     def handle(self, input_frame):
-        extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
-
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
         result_wrapper.result_producer_name.value = self.ENGINE_NAME
-
         result = None
 
+        logger.info("Processing incoming input frame from Gabriel...")
+
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            if extras.telemetry.drone_name != "":
+            extras = cognitive_engine.unpack_extras(
+                telemetry.DriverTelemetry, input_frame
+            )
+            logger.info(extras.vehicle_info.name)
+            if extras.vehicle_info.name != "":
                 result = gabriel_pb2.ResultWrapper.Result()
                 result.payload_type = gabriel_pb2.PayloadType.TEXT
                 result.payload = b"Telemetry updated."
-                self.updateDroneStatus(extras)
-                foxglove.log(
-                    f"/{extras.telemetry.drone_name}/location",
-                    LocationFix(
-                        latitude=extras.telemetry.global_position.latitude,
-                        longitude=extras.telemetry.global_position.longitude,
-                        altitude=extras.telemetry.global_position.altitude,
-                    ),
-                    log_time=time.time_ns(),
-                )
-                foxglove.log(
-                    f"/{extras.telemetry.drone_name}/telemetry",
-                    json_format.MessageToJson(
-                        extras.telemetry,
-                        always_print_fields_with_no_presence=True,
-                    ),
-                    log_time=time.time_ns(),
-                )
+                self.updateVehicle(extras)
 
         elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
-            image_np = np.fromstring(input_frame.payloads[0], dtype=np.uint8)
+            extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
+            image_np = np.frombuffer(extras.data, dtype=np.uint8)
             # have redis publish the latest image
             if self.publish:
                 logger.info(
-                    f"Publishing image to redis under imagery.{extras.telemetry.drone_name} topic."
+                    f"Publishing image to redis under imagery.{extras.vehicle_info.name} topic."
                 )
                 self.r.publish(
-                    f"imagery.{extras.telemetry.drone_name}", input_frame.payloads[0]
+                    f"imagery.{extras.vehicle_info.name}", input_frame.payloads[0]
                 )
             # store images in the shared volume
             try:
-                foxglove.log(
-                    f"/{extras.telemetry.drone_name}/imagery",
-                    CompressedImage(data=input_frame.payloads[0], format="jpeg"),
-                    log_time=time.time_ns(),
-                )
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
-                if not os.path.exists(drone_raw_dir):
-                    os.mkdir(drone_raw_dir)
+                vehicle_raw_dir = f"{self.storage_path}/raw/{extras.vehicle_info.name}"
+                if not os.path.exists(vehicle_raw_dir):
+                    os.mkdir(vehicle_raw_dir)
                 now = datetime.datetime.now(pytz.timezone("America/New_York"))
-                current_path = f"{drone_raw_dir}/{now.strftime('%d-%b-%Y')}"
+                current_path = f"{vehicle_raw_dir}/{now.strftime('%d-%b-%Y')}"
                 try:
                     os.mkdir(current_path)
                 except FileExistsError:
@@ -246,11 +252,13 @@ class TelemetryEngine(cognitive_engine.Engine):
                     f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
                 )
 
-                drone_raw_dir = f"{self.storage_path}/raw/{extras.telemetry.drone_name}"
-                img.save(f"{drone_raw_dir}/temp.jpg", format="JPEG")
-                os.rename(f"{drone_raw_dir}/temp.jpg", f"{drone_raw_dir}/latest.jpg")
+                vehicle_raw_dir = f"{self.storage_path}/raw/{extras.vehicle_info.name}"
+                img.save(f"{vehicle_raw_dir}/temp.jpg", format="JPEG")
+                os.rename(
+                    f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg"
+                )
 
-                logger.debug(f"Updated latest image for {extras.telemetry.drone_name}")
+                logger.debug(f"Updated latest image for {extras.vehicle_info.name}")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
 
@@ -259,3 +267,68 @@ class TelemetryEngine(cognitive_engine.Engine):
         if result is not None:
             result_wrapper.results.append(result)
         return result_wrapper
+
+
+def main():
+    """Starts the Gabriel server."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+
+    parser.add_argument(
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint.",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
+    parser.add_argument(
+        "-l", "--publish", action="store_true", help="Publish incoming images via redis"
+    )
+
+    parser.add_argument(
+        "-t",
+        "--ttl",
+        type=int,
+        default=7,
+        help="TTL in days before drones status tables are cleaned up in redis [default: 7]",
+    )
+
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
+
+    args, _ = parser.parse_known_args()
+
+    def engine_factory():
+        return TelemetryEngine(args)
+
+    engine = local_engine.LocalEngine(
+        engine_factory,
+        input_queue_maxsize=60,
+        port=args.port,
+        num_tokens=2,
+        engine_name="telemetry",
+        use_zeromq=True,
+    )
+
+    engine.run()
+
+
+if __name__ == "__main__":
+    main()

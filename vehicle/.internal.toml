@@ -1,0 +1,21 @@
+[timeouts]
+#server = 30
+driver = 5
+mission = 5
+remote_compute = 5
+local_compute = 5
+
+[services]
+kernel = 'unix:///tmp/kernel.sock'
+driver = 'unix:///tmp/driver.sock'
+mission = 'unix:///tmp/mission.sock'
+flight_log = 'unix:///tmp/log.sock'
+
+[streams]
+driver_telemetry = 'unix:///tmp/driver_telem.sock'
+mission_telemetry = 'unix:///tmp/mission_telem.sock'
+imagery = 'unix:///tmp/imagery.sock'
+# NOTE: Uncomment the local compute socket if you are
+# using a local compute server.
+#local_compute = 'unix:///tmp/local_compute.sock'
+results = 'unix:///tmp/results.sock'

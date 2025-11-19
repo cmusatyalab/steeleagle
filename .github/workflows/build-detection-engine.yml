@@ -1,0 +1,18 @@
+name: Build and push detection engine
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+    tags: [ "v*" ]
+    paths:
+      - '.github/workflows/build-detection-engine.yml'
+      - 'backend/server/engines/detection/**'
+jobs:
+  build-and-push:
+    uses: ./.github/workflows/deploy-docker-img.yml
+    with:
+      name: steeleagle-detection-engine
+      dockerfile: backend/server/engines/detection/Dockerfile
+      free_disk_space: true
+      ctx: backend/server/engines/detection/
+    secrets: inherit

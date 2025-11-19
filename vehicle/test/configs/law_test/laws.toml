@@ -1,0 +1,47 @@
+# NOTE: Do not change these unless you *really* know
+# what you are doing!
+[__BASE__]
+enter = ['Control.Connect']
+[__BASE__.rules]
+allowed = ['server.*']
+match = [
+  ['server.Control.*', 'REMOTE'],
+  ['server.Mission.Start', 'LOCAL']
+]
+[__BASE__.failsafes]
+# These are the base failsafe conditions which will be run
+# after any law-specific failsafes
+dc_server = ['Control.Hold']
+dc_driver =  ['Report.SendReport|{"report_code": 1}']
+dc_mission = ['Report.SendReport|{"report_code": 2}'] 
+dc_compute_local = ['Report.SendReport|{"report_code": 3}']
+dc_compute_remote = ['Report.SendReport|{"report_code": 4}']
+
+# NOTE: State definitions start here!
+[REMOTE]
+enter = []
+[REMOTE.rules]
+allowed = []
+match = [
+  ['server.Mission.Start', 'LOCAL'],
+  ['server.Control.ReturnToHome', 'LOCAL']
+]
+
+[LOCAL]
+enter = []
+[LOCAL.rules]
+allowed = [
+  'internal.Control.*',
+  'internal.Compute.*',
+  'internal.Report.*',
+  'external.Mission.Notify'
+]
+match = [
+  ['server.Mission.Stop', 'REMOTE'],
+  # Create two fake match statements to test law logic
+  ['internal.Control.TakeOff|{"take_off_altitude": 10.0}', 'REMOTE'],
+  ['internal.Control.SetGlobalPosition|{"location": {"latitude": 10.0}}', 'REMOTE']
+]
+[LOCAL.failsafes]
+dc_server = ['Control.ReturnToHome']
+dc_mission = ['Control.Hold', 'REMOTE']

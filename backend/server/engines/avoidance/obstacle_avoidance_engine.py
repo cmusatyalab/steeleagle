@@ -18,7 +18,7 @@
 #
 #
 
-import json
+import argparse
 import logging
 import os
 import time
@@ -29,17 +29,16 @@ import numpy as np
 import redis
 import torch
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
+from gabriel_server import cognitive_engine, local_engine
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
 
-import protocol.common_pb2 as common
-import protocol.controlplane_pb2 as control_plane
-import protocol.gabriel_extras_pb2 as gabriel_extras
+from steeleagle_sdk.protocol.messages import result_pb2
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class AvoidanceEngine(ABC):
@@ -49,32 +48,23 @@ class AvoidanceEngine(ABC):
         self.threshold = args.threshold  # default should be 190
         self.store_detections = args.store
         self.model = args.model
-
-        self.r = redis.Redis(
-            host="redis",
-            port=args.redis,
-            username="steeleagle",
-            password=f"{args.auth}",
-            decode_responses=True,
-        )
-        self.r.ping()
-        logger.info(f"Connected to redis on port {args.redis}...")
+        self.unittest = args.unittest
+        if not self.unittest:
+            self.r = redis.Redis(
+                host="redis",
+                port=args.redis,
+                username="steeleagle",
+                password=f"{args.auth}",
+                decode_responses=True,
+            )
+            self.r.ping()
+            logger.info(f"Connected to redis on port {args.redis}...")
 
         # timing vars
         self.count = 0
         self.lasttime = time.time()
         self.lastcount = 0
         self.lastprint = self.lasttime
-        self.faux = args.faux
-
-        if self.faux:
-            self.storage_path = os.getcwd() + "/images/"
-            logger.info(
-                "Generating faux actutations from  {}".format(
-                    self.storage_path + "/actuations.txt"
-                )
-            )
-            self.actuations_fd = open(self.storage_path + "/actuations.txt")
 
         if self.store_detections:
             self.watermark = Image.open(os.getcwd() + "/watermark.png")
@@ -103,7 +93,7 @@ class AvoidanceEngine(ABC):
 
     def process_image(self, image):
         self.t0 = time.time()
-        np_data = np.fromstring(image, dtype=np.uint8)
+        np_data = np.frombuffer(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -158,47 +148,27 @@ class AvoidanceEngine(ABC):
             else:
                 self.load_model(model)
 
-    def construct_result(self, vector, drone_id):
-        result = gabriel_pb2.ResultWrapper.Result()
-        result.payload_type = gabriel_pb2.PayloadType.TEXT
-        r = []
-        r.append({"vector": vector})
-        logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
-        self.store_vector(drone_id, vector)
-        result.payload = json.dumps(r).encode(encoding="utf-8")
-        return result
-
     def handle_helper(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             return self.text_payload_reply()
 
-        extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
-
-        if not extras.cpt_request.HasField("cpt"):
-            logger.error("Compute configuration not found")
-            status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
-            result_wrapper = self.get_result_wrapper(status)
-            result = gabriel_pb2.ResultWrapper.Result()
-            result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = b"Expected compute configuration to be specified"
-            result_wrapper.results.append(result)
-            return result_wrapper
-
-        cpt_config = extras.cpt_request.cpt
-
-        self.maybe_load_model(cpt_config.model)
+        extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
 
         vector, depth_img = self.process_image(input_frame.payloads[0])
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
 
-        result = self.construct_result(vector, extras.telemetry.drone_name)
+        result = gabriel_pb2.ResultWrapper.Result()
+        result.payload_type = gabriel_pb2.PayloadType.TEXT
         result_wrapper.results.append(result)
 
-        response = control_plane.Response()
-        response.seq_num = extras.cpt_request.seq_num
+        response = result_pb2.ComputeResult()
         response.timestamp.GetCurrentTime()
-        response.resp = common.ResponseStatus.OK
+        response.engine_name = self.ENGINE_NAME
+        response.avoidance_result.actuation_vector = vector
+        logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
+        if not self.unittest:
+            self.store_vector(extras.vehicle_info.name, vector)
         result_wrapper.extras.Pack(response)
 
         if self.store_detections:
@@ -314,35 +284,25 @@ class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
         # find contours in the binary image
         contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         # full_depth_map = cv2.merge(thresh, full_depth_map)
-
-        c = max(contours, key=cv2.contourArea)
-        # calculate moments for each contour
-        M = cv2.moments(c)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-        cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
-        actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / (
-            full_depth_map.shape[1] / 2 - scrapX
-        )
-        cv2.putText(
-            full_depth_map,
-            f"{actuation_vector:.4f}",
-            (scrapX + cX, scrapY + cY - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0, 255, 0),
-            2,
-        )
-
-        if self.faux:
-            actuation_vector = self.actuations_fd.readline()
-            # if we have reached the end of the fd, seek back to the top
-            if actuation_vector == "":
-                self.actuations_fd.seek(0)
-                actuation_vector = self.actuations_fd.readline()
-            actuation_vector = float(actuation_vector.split("\n")[0])
-            if actuation_vector == 999:
-                time.sleep(5)
+        if contours != ():
+            c = max(contours, key=cv2.contourArea)
+            # calculate moments for each contour
+            M = cv2.moments(c)
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            cv2.circle(full_depth_map, (scrapX + cX, scrapY + cY), 5, (0, 255, 0), -1)
+            actuation_vector = (scrapX + cX - (full_depth_map.shape[1] / 2) + 1) / (
+                full_depth_map.shape[1] / 2 - scrapX
+            )
+            cv2.putText(
+                full_depth_map,
+                f"{actuation_vector:.4f}",
+                (scrapX + cX, scrapY + cY - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
         return actuation_vector, full_depth_map
 
@@ -479,14 +439,108 @@ class Metric3DAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
             logger.error(f"Error in obstacle detection: {e}")
             actuation_vector = 0
 
-        # Handle faux mode for testing
-        if self.faux:
-            actuation_vector = self.actuations_fd.readline()
-            if actuation_vector == "":
-                self.actuations_fd.seek(0)
-                actuation_vector = self.actuations_fd.readline()
-            actuation_vector = float(actuation_vector.split("\n")[0])
-            if actuation_vector == 999:
-                time.sleep(5)
-
         return actuation_vector, full_depth_map
+
+
+def main():
+    """Starts the Gabriel server."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+
+    parser.add_argument(
+        "-m",
+        "--model",
+        default="DPT_Large",
+        help="Depth model. MiDaS: ['DPT_Large', 'DPT_Hybrid', 'MiDaS_small'], Metric3D: ['metric3d_vit_giant2', 'metric3d_vit_large', 'metric3d_vit_small', 'metric3d_convnext_large']",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--threshold",
+        type=int,
+        default=190,
+        help="Depth threshold for filtering.",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--store",
+        action="store_true",
+        default=False,
+        help="Store images with heatmap",
+    )
+
+    parser.add_argument(
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint.",
+    )
+
+    parser.add_argument(
+        "-src",
+        "--source",
+        default="telemetry",
+        help="Source for engine to register with.",
+    )
+
+    parser.add_argument(
+        "-R",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
+    parser.add_argument(
+        "-i", "--roi", type=int, default=190, help="Depth threshold for filtering."
+    )
+
+    parser.add_argument(
+        "--metric3d",
+        action="store_true",
+        default=False,
+        help="Use Metric3D for avoidance",
+    )
+
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
+
+    args, _ = parser.parse_known_args()
+
+    def engine_factory():
+        if args.metric3d:
+            # Set default Metric3D model if MiDaS model is specified
+            if args.model in ["DPT_Large", "DPT_Hybrid", "MiDaS_small"]:
+                logger.info(
+                    f"Switching from MiDaS model '{args.model}' to default Metric3D model 'metric3d_vit_giant2'"
+                )
+                args.model = "metric3d_vit_giant2"
+            engine = Metric3DAvoidanceEngine(args)
+        else:
+            engine = MidasAvoidanceEngine(args)
+        return engine
+
+    engine = local_engine.LocalEngine(
+        engine_factory,
+        input_queue_maxsize=60,
+        port=args.port,
+        num_tokens=2,
+        engine_name=AvoidanceEngine.ENGINE_NAME,
+        use_zeromq=True,
+    )
+
+    engine.run()
+
+
+if __name__ == "__main__":
+    main()

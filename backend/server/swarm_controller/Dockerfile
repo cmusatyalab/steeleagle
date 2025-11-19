@@ -2,46 +2,28 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-FROM python:3.9-bookworm
+FROM python:3.11-bookworm
 
 LABEL org.opencontainers.image.vendor="CMU Satyalab" \
       org.opencontainers.image.authors=satya-group@lists.andrew.cmu.edu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install build and runtime dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    clinfo \
-    curl \
-    libgtk-3-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    python3-opencv \
-    python3-pip \
-    wget \
-    # compiler requirement
-    openjdk-17-jdk\
-    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Install uv from the distroless container image
+COPY --from=ghcr.io/astral-sh/uv:0.9.7 /uv /uvx /bin/
+WORKDIR /steeleagle
 
-#upgrade pip, otherwise tensorflow 1.15.0 will not be found
-RUN pip3 install --upgrade pip
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
-RUN python3 -m pip install --no-cache-dir \
-    py-cpuinfo \
-    'setuptools' \
-    'websockets==8.0.0'
+# Copy the project into the image
+ADD . /steeleagle
 
-# You can speed up build slightly by reducing build context with
-#     git archive --format=tgz HEAD | docker build -t cnc -
-COPY backend/server/swarm_controller/requirements.txt requirements.txt
-
-# Install Tensorflow and Gabriel's external dependencies
-RUN python3 -m pip install --no-cache-dir -r requirements.txt
-
-COPY backend/server/swarm_controller/swarm_controller.py swarm_controller.py
-COPY vehicle/util util
-COPY protocol protocol
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 EXPOSE 5555 9099

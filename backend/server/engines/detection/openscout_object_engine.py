@@ -23,29 +23,28 @@ import logging
 import os
 import time
 import traceback
-
+import argparse
 import cv2
 import numpy as np
 import redis
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
+from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
 from ultralytics import YOLO
 
-import protocol.common_pb2 as common
-import protocol.controlplane_pb2 as control_plane
-import protocol.gabriel_extras_pb2 as gabriel_extras
+from steeleagle_sdk.protocol.messages import result_pb2
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class PytorchPredictor:
     def __init__(self, model, threshold):
-        path_prefix = "./model/"
-        model_path = path_prefix + model + ".pt"
+        model_path = os.path.join("model", f"{model}.pt")
         logger.info(f"Loading new model {model} at {model_path}...")
         self.detection_model = self.load_model(model_path)
         self.detection_model.conf = threshold
@@ -68,16 +67,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.threshold = args.threshold
         self.store_detections = args.store
         self.model = args.model
-        self.drone_type = args.drone
-        self.r = redis.Redis(
-            host="redis",
-            port=args.redis,
-            username="steeleagle",
-            password=f"{args.auth}",
-            decode_responses=True,
-        )
-        self.r.ping()
-        logger.info(f"Connected to redis on port {args.redis}...")
+        self.unittest = args.unittest
+        if not self.unittest:
+            self.r = redis.Redis(
+                host="redis",
+                port=args.redis,
+                username="steeleagle",
+                password=f"{args.auth}",
+                decode_responses=True,
+            )
+            self.r.ping()
+            logger.info(f"Connected to redis on port {args.redis}...")
         # timing vars
         self.count = 0
         self.lasttime = time.time()
@@ -127,14 +127,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 logger.info("Images directory already exists.")
             logger.info(f"Storing detection images at {self.storage_path}")
 
-            self.drone_storage_path = os.path.join(
-                self.storage_path, "detected", "drones"
+            self.vehicle_storage_path = os.path.join(
+                self.storage_path, "detected", "vehicles"
             )
             self.class_storage_path = os.path.join(
                 self.storage_path, "detected", "classes"
             )
             try:
-                os.makedirs(self.drone_storage_path)
+                os.makedirs(self.vehicle_storage_path)
                 os.makedirs(self.class_storage_path)
             except FileExistsError:
                 pass
@@ -155,14 +155,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         )
         return target_insct + (t * target_dir)
 
-    def calculate_target_pitch_yaw(self, box, image_np, telemetry):
+    def calculate_target_pitch_yaw(self, box, image_np, position_info, gimbal_info):
         img_width = image_np.shape[1]
         img_height = image_np.shape[0]
         pixel_center = (img_width / 2, img_height / 2)
         logger.info(
             f"Image Width: {img_width}px, Image Height: {img_height}px, Center {pixel_center}"
         )
-        # eventually these should come from something like a drone .cap file
+        # TODO: eventually these should come from something like a vehicle .cap file
         HFOV = 69  # Horizontal FOV An.
         VFOV = 43  # Vertical FOV.
 
@@ -173,10 +173,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         target_yaw_angle = (target_x_pix / img_width) * HFOV
         target_bottom_pitch_angle = (target_y_pix / img_height) * VFOV
 
-        gimbal_pitch = telemetry.gimbal_pose.pitch
-        object_heading = telemetry.global_position.heading + target_yaw_angle
+        gimbal_pitch = gimbal_info.gimbals[
+            0
+        ].pose_body.pitch  # TODO: don't assume a single gimbal
+        object_heading = position_info.global_position.heading + target_yaw_angle
         logger.info(
-            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {telemetry.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
+            f"BBox: {box}\nTargetXPix: {target_x_pix}\nTargetYPix: {target_y_pix}\nGimbal Pitch: {gimbal_pitch}\nBottom Angle {target_bottom_pitch_angle}\nHeading: {position_info.global_position.heading}\nTarget Yaw Offset {target_yaw_angle}\n"
         )
         return (
             gimbal_pitch + target_bottom_pitch_angle,
@@ -214,14 +216,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return
         self.r.zadd("detections", objects)
 
-    def store_detection_db(self, drone, lat, lon, cls, conf, link="", object_name=None):
+    def store_detection_db(
+        self, vehicle, lat, lon, cls, conf, link="", object_name=None
+    ):
         if object_name is None:
             object_name = f"{cls}-{os.urandom(2).hex()}"
+        logger.info(f"Adding detection {lon=} {lat=} {object_name=}")
         self.r.geoadd("detections", [lon, lat, object_name])
 
         object_key = f"objects:{object_name}"
         self.r.hset(object_key, "last_seen", f"{time.time()}")
-        self.r.hset(object_key, "drone_id", f"{drone}")
+        self.r.hset(object_key, "id", f"{vehicle}")
         self.r.hset(object_key, "cls", f"{cls}")
         self.r.hset(object_key, "confidence", f"{conf}")
         self.r.hset(object_key, "link", f"{link}")
@@ -265,54 +270,46 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             # if the payload is TEXT, say from a CNC client, we ignore
             status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
             result_wrapper = cognitive_engine.create_result_wrapper(status)
-            result_wrapper.result_producer_name.value = self.ENGINE_NAME
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
             result.payload = b"Ignoring TEXT payload."
             result_wrapper.results.append(result)
             return result_wrapper
 
-        extras = cognitive_engine.unpack_extras(gabriel_extras.Extras, input_frame)
-
-        if not extras.cpt_request.HasField("cpt"):
-            logger.error("Compute configuration not found")
-            status = gabriel_pb2.ResultWrapper.Status.UNSPECIFIED_ERROR
-            result_wrapper = cognitive_engine.create_result_wrapper(status)
-            result_wrapper.result_producer_name.value = self.ENGINE_NAME
-            result = gabriel_pb2.ResultWrapper.Result()
-            result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = b"Expected compute configuration to be specified"
-            result_wrapper.results.append(result)
-            return result_wrapper
-
-        cpt_config = extras.cpt_request.cpt
-
-        if cpt_config.model != "" and cpt_config.model != self.model:
-            self.load_model(cpt_config.model)
+        extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
 
         self.t0 = time.time()
-        results, image_np = self.process_image(input_frame.payloads[0])
+
+        frame = telemetry.Frame()
+        input_frame.extras.Unpack(frame)
+        results, image_np = self.process_image(frame.data)
         status = gabriel_pb2.ResultWrapper.Status.SUCCESS
         result_wrapper = cognitive_engine.create_result_wrapper(status)
-        result_wrapper.result_producer_name.value = self.ENGINE_NAME
-
         if len(results) > 0:
-            gabriel_result = self.process_results(
+            detections = self.process_results(
                 image_np,
                 results,
-                cpt_config,
-                extras.telemetry,
-                extras.telemetry.drone_name,
+                extras.vehicle_info,
+                extras.position_info,
+                extras.gimbal_info,
             )
 
-            if gabriel_result is not None:
-                result_wrapper.results.append(gabriel_result)
+        compute_result = result_pb2.ComputeResult()
+        compute_result.timestamp.GetCurrentTime()
+        compute_result.engine_name = self.ENGINE_NAME
 
-        response = control_plane.Response()
-        response.seq_num = extras.cpt_request.seq_num
-        response.timestamp.GetCurrentTime()
-        response.resp = common.ResponseStatus.OK
-        result_wrapper.extras.Pack(response)
+        if detections is not None:
+            compute_result.generic_result = detections
+
+        frame_result = result_pb2.FrameResult()
+        frame_result.type = 'object-detection'
+        frame_result.result.pack(compute_result)
+        # TODO: if we want to use the Detections message in
+        # telemetry.proto, then we need to add some fields
+        # such as lat/lon/passes_hsv_filter
+        # if detections is not None:
+        #    response.detection_result = detections
+        result_wrapper.extras.Pack(frame_result)
 
         self.count += 1
 
@@ -323,103 +320,110 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         return result_wrapper
 
-    def process_results(self, image_np, results, cpt_config, telemetry, drone_id):
-        df = results[0].to_df()  # pandas dataframe
-        # convert dataframe to python lists
-        if df.size > 0:
-            classes = df["class"].values.tolist()
-            scores = df["confidence"].values.tolist()
-            names = df["name"].values.tolist()
-        else:
-            classes = []
-            scores = []
-            names = []
+    def process_results(
+        self, image_np, results, vehicle_info, position_info, gimbal_info
+    ):
+        df = results[0].to_df()  # polars dataframe
 
-        gabriel_result = gabriel_pb2.ResultWrapper.Result()
-        gabriel_result.payload_type = gabriel_pb2.PayloadType.TEXT
+        exclusions = self.exclusions or []
+        if not df.is_empty():
+            df = df.filter(
+                df["confidence"] > self.threshold, ~df["class"].is_in(exclusions)
+            )
 
-        detections_above_threshold = False
         detections = []
         timestamp_millis = int(time.time() * 1000)
         filename = str(timestamp_millis) + ".jpg"
         if self.store_detections:
             detection_url = os.path.join(
-                os.environ["WEBSERVER"], "detected", "drones", drone_id, filename
+                os.environ["WEBSERVER"],
+                "detected",
+                "vehicles",
+                vehicle_info.name,
+                filename,
             )
         else:
             detection_url = ""
 
-        run_hsv_filter = cpt_config.HasField("lower_bound")
+        run_hsv_filter = False
 
-        for i in range(0, len(classes)):
-            if self.exclusions is not None and classes[i] in self.exclusions:
+        for row in df.iter_rows(named=True):
+            logger.info(row)
+            logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
+            box = row["box"]
+            box = [box["y1"], box["x1"], box["y2"], box["x2"]]
+            #target_pitch, target_yaw = self.calculate_target_pitch_yaw(
+            #    box, image_np, position_info, gimbal_info
+            #)
+
+            ## Estimate GPS coordinates of detected object
+            #global_pos = position_info.global_position
+            #rel_pos = position_info.relative_position
+            #lat, lon = self.estimate_gps(
+            #    global_pos.latitude,
+            #    global_pos.longitude,
+            #    target_pitch,
+            #    target_yaw,
+            #    rel_pos.z,
+            #)
+
+            lon = 42.0
+            lat = 42.0
+
+            lon = float(np.clip(lon, -180, 180))
+            lat = float(np.clip(lat, -85, 85))
+            p = LatLon(lat, lon)
+
+            hsv_filter_passed = False
+            if run_hsv_filter:
+                logger.info("TODO: need to get hsv bounds")
+                # lower_bound = cpt_config.lower_bound
+                # upper_bound = cpt_config.upper_bound
+                # lower_bound = [lower_bound.h, lower_bound.s, lower_bound.v]
+                # upper_bound = [upper_bound.h, upper_bound.s, upper_bound.v]
+                # hsv_filter_passed = self.passes_hsv_filter(
+                #     image_np,
+                #     box,
+                #     lower_bound,
+                #     upper_bound,
+                #     threshold=self.hsv_threshold,
+                # )
+
+            detection = {
+                "id": vehicle_info.name,
+                "class": row["name"],
+                "score": row["confidence"],
+                "lat": lat,
+                "lon": lon,
+                "box": box,
+                "hsv_filter": hsv_filter_passed,
+            }
+
+            if not self.geofence_enabled:
+                detections.append(detection)
+                if not self.unittest:
+                    self.store_detection_db(
+                        vehicle_info.name,
+                        lat,
+                        lon,
+                        row["name"],
+                        row["confidence"],
+                        detection_url,
+                    )
                 continue
 
-            if scores[i] > self.threshold:
-                detections_above_threshold = True
-                logger.info(f"Detected : {names[i]} - Score: {scores[i]:.3f}")
-                box = df["box"][i]
-                box = [box["y1"], box["x1"], box["y2"], box["x2"]]
-                target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-                    box, image_np, telemetry
-                )
-
-                # Estimate GPS coordinates of detected object
-                position = telemetry.global_position
-                lat, lon = self.estimate_gps(
-                    position.latitude,
-                    position.longitude,
-                    target_pitch,
-                    target_yaw,
-                    telemetry.relative_position.up,
-                )
-
-                lon = np.clip(lon, -180, 180)
-                lat = np.clip(lat, -85, 85)
-                p = LatLon(lat, lon)
-
-                hsv_filter_passed = False
-                if run_hsv_filter:
-                    lower_bound = cpt_config.lower_bound
-                    upper_bound = cpt_config.upper_bound
-                    lower_bound = [lower_bound.h, lower_bound.s, lower_bound.v]
-                    upper_bound = [upper_bound.h, upper_bound.s, upper_bound.v]
-                    hsv_filter_passed = self.passes_hsv_filter(
-                        image_np,
-                        box,
-                        lower_bound,
-                        upper_bound,
-                        threshold=self.hsv_threshold,
-                    )
-
-                detection = {
-                    "id": drone_id,
-                    "class": names[i],
-                    "score": scores[i],
-                    "lat": lat,
-                    "lon": lon,
-                    "box": box,
-                    "hsv_filter": hsv_filter_passed,
-                }
-
-                if not self.geofence_enabled:
+            # if there is no geofence, or the estimated object location is within the geofence...
+            if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
+                passed, prev_obj = self.geofilter_passed(detection)
+                if passed:
                     detections.append(detection)
-                    self.store_detection_db(
-                        drone_id, lat, lon, names[i], scores[i], detection_url
-                    )
-                    continue
-
-                # if there is no geofence, or the estimated object location is within the geofence...
-                if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                    passed, prev_obj = self.geofilter_passed(detection)
-                    if passed:
-                        detections.append(detection)
+                    if not self.unittest:
                         self.store_detection_db(
-                            drone_id,
+                            vehicle_info.name,
                             lat,
                             lon,
-                            names[i],
-                            scores[i],
+                            row["name"],
+                            row["confidence"],
                             detection_url,
                             prev_obj,
                         )
@@ -428,39 +432,38 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return None
 
         logger.info(json.dumps(detections, sort_keys=True, indent=4))
-        gabriel_result.payload = json.dumps(detections).encode(encoding="utf-8")
 
-        if not self.store_detections:
-            return gabriel_result if detections_above_threshold else None
-
-        if run_hsv_filter:
-            self.store_hsv_image(image_np, cpt_config, drone_id)
+        if run_hsv_filter and not self.unittest:
+            logger.info("TODO: need to get hsv bounds")
+            # self.store_hsv_image(image_np, cpt_config, vehicle_info.name)
 
         # Store detection image
-        if detections_above_threshold:
+        if self.store_detections and not df.is_empty() and not self.unittest:
             try:
                 im_bgr = results[0].plot()
-                self.store_detections_disk(im_bgr, filename, drone_id, set(names))
+                self.store_detections_disk(
+                    im_bgr, filename, vehicle_info.name, df["name"].unique().to_list()
+                )
             except IndexError:
                 logger.error(
                     f"IndexError while getting bounding boxes [{traceback.format_exc()}]"
                 )
 
-        return gabriel_result if detections_above_threshold else None
+        return detections if not df.is_empty() else None
 
-    def store_detections_disk(self, im_bgr, filename, drone_id, uniq_classes):
-        drone_dir = os.path.join(self.drone_storage_path, drone_id)
+    def store_detections_disk(self, im_bgr, filename, vehicle_id, uniq_classes):
+        vehicle_dir = os.path.join(self.vehicle_storage_path, vehicle_id)
 
-        if not os.path.exists(drone_dir):
-            os.makedirs(drone_dir)
+        if not os.path.exists(vehicle_dir):
+            os.makedirs(vehicle_dir)
 
-        # Save to drone dir
-        drone_dir_path = os.path.join(drone_dir, filename)
+        # Save to vehicle dir
+        vehicle_dir_path = os.path.join(vehicle_dir, filename)
         im_rgb = Image.fromarray(im_bgr[..., ::-1])  # RGB-order PIL image
-        im_rgb.save(drone_dir_path)
-        logger.debug(f"Stored image: {drone_dir_path}")
+        im_rgb.save(vehicle_dir_path)
+        logger.debug(f"Stored image: {vehicle_dir_path}")
 
-        path = os.path.join(drone_dir, "latest.jpg")
+        path = os.path.join(vehicle_dir, "latest.jpg")
         im_rgb.save(path)
         logger.debug(f"Stored image: {path}")
 
@@ -472,12 +475,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             path = os.path.join(class_dir, filename)
             logger.debug(f"Stored image: {path}")
 
-            os.symlink(os.path.join("..", "..", "drones", drone_id, filename), path)
+            os.symlink(os.path.join("..", "..", "vehicles", vehicle_id, filename), path)
 
-    def store_hsv_image(self, image_np, cpt_config, drone_id):
+    def store_hsv_image(self, image_np, cpt_config, vehicle_id):
         img = self.run_hsv_filter(image_np, cpt_config)
 
-        path = os.path.join(self.drone_storage_path, drone_id, "hsv.jpg")
+        path = os.path.join(self.vehicle_storage_path, vehicle_id, "hsv.jpg")
         img.save(path, format="JPEG")
 
     def run_hsv_filter(self, image_np, cpt_config):
@@ -503,7 +506,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def process_image(self, image):
         self.t0 = time.time()
-        np_data = np.fromstring(image, dtype=np.uint8)
+        np_data = np.frombuffer(image, dtype=np.uint8)
         img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -513,7 +516,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def geofilter_passed(self, detection):
         cls = detection["class"]
-        drone_id = detection["id"]
+        vehicle_id = detection["id"]
 
         now_secs = time.time()
         if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
@@ -530,7 +533,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         )
         if len(objects) == 0:
             logger.info(
-                f"Adding detection for {cls} for drone {drone_id} for the first time"
+                f"Adding detection for {cls} for vehicle {vehicle_id} for the first time"
             )
             return (True, None)
 
@@ -539,14 +542,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         for obj in objects:
             d = self.r.hgetall(f"objects:{obj}")
             if d and d["cls"] == cls:
-                if d["drone_id"] == drone_id:
+                if d["id"] == vehicle_id:
                     logger.debug(
-                        f"Drone {d['drone_id']} detected {obj} in same area, updating obj location"
+                        f"Vehicle {d['vehicle_id']} detected {obj} in same area, updating obj location"
                     )
                     return (True, obj)
                 else:
                     logger.info(
-                        f"Ignoring detection, {obj} already found by drone {d['drone_id']}"
+                        f"Ignoring detection, {obj} already found by {d['vehicle_id']}"
                     )
                     return (False, None)
         return (True, None)
@@ -566,3 +569,127 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return self.detector.detection_model.predict(
             img, conf=self.threshold, verbose=False
         )
+
+
+def main():
+    """Starts the Gabriel server."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "--timing", action="store_true", help="Print timing information"
+    )
+
+    parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
+
+    parser.add_argument(
+        "-m",
+        "--model",
+        default="coco",
+        help="(OBJECT DETECTION) Subdirectory under /openscout/server/model/ which contains Tensorflow model to load initially.",
+    )
+
+    parser.add_argument(
+        "-r", "--threshold", type=float, default=0.85, help="Confidence threshold"
+    )
+
+    parser.add_argument(
+        "-s",
+        "--store",
+        action="store_true",
+        default=False,
+        help="Store images with bounding boxes",
+    )
+
+    parser.add_argument(
+        "-g",
+        "--gabriel",
+        default="tcp://gabriel-server:5555",
+        help="Gabriel server endpoint.",
+    )
+
+    parser.add_argument(
+        "-src",
+        "--source",
+        default="telemetry",
+        help="Source for engine to register with.",
+    )
+
+    parser.add_argument(
+        "-x",
+        "--exclude",
+        help="Comma separated list of classes (ids) to exclude when performing detection. Consult model/<model_name>/label_map.pbtxt.",
+    )
+
+    parser.add_argument(
+        "-R",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
+    parser.add_argument(
+        "-hsv",
+        "--hsv_threshold",
+        type=float,
+        default=5.0,
+        help="HSV filter threshold [0.0-100.0]",
+    )
+
+    parser.add_argument(
+        "--radius",
+        type=float,
+        default=5.0,
+        help="Radius in meters to consider when looking for previously found objects.",
+    )
+
+    parser.add_argument(
+        "--ttl",
+        type=int,
+        default=1200,
+        help="TTL in seconds before objects are cleaned up in redis [default: 1200]",
+    )
+
+    parser.add_argument(
+        "--geofence",
+        default="geofence.kml",
+        help="Path to KML file on the shared volume that specified the geofence. [default: geofence.kml]",
+    )
+
+    parser.add_argument(
+        "--geofence_enabled",
+        action="store_true",
+        default=False,
+        help="Whether to use a geofence to decide whether to store detections",
+    )
+
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
+
+    args, _ = parser.parse_known_args()
+
+    def engine_factory():
+        return OpenScoutObjectEngine(args)
+
+    engine = local_engine.LocalEngine(
+        engine_factory,
+        input_queue_maxsize=60,
+        port=args.port,
+        num_tokens=2,
+        engine_name="openscout-object",
+        use_zeromq=True,
+    )
+
+    engine.run()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,0 @@
-requests
-zmq
-protobuf
-aenum
-numpy
-gabriel-protocol==3.0 # required by track task for now but will be removed in the future
-scipy

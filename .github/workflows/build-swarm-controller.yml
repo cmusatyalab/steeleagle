@@ -6,10 +6,7 @@ on:
     tags: [ "v*" ]
     paths:
       - '.github/workflows/build-swarm-controller.yml'
-      - '.github/workflows/deploy-docker-img.yml'
       - 'backend/server/swarm_controller/**'
-      - 'protocols/**'
-      - 'vehicle/util/**'
 
 jobs:
   build-and-push:
@@ -17,4 +14,5 @@ jobs:
     with:
       name: steeleagle-swarm-controller
       dockerfile: backend/server/swarm_controller/Dockerfile
+      ctx: backend/server/swarm_controller/
     secrets: inherit

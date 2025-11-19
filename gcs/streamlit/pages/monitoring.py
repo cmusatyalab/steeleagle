@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 import time
-
 import streamlit as st
-from util import authenticated, connect_redis, connect_zmq, menu, stream_to_dataframe
+from util import stream_to_dataframe, connect_redis, menu, authenticated
 
 st.set_page_config(
     page_title="Commander",
@@ -17,12 +16,8 @@ st.set_page_config(
     },
 )
 
-if "zmq" not in st.session_state:
-    st.session_state.zmq = connect_zmq()
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1  # min
-if "refresh_rate" not in st.session_state:
-    st.session_state.refresh_rate = 2  # sec
 
 if not authenticated():
     st.stop()  # Do not continue if not authenticated
@@ -30,11 +25,11 @@ if not authenticated():
 red = connect_redis()
 
 
-@st.fragment(run_every=st.session_state.refresh_rate)
+@st.fragment(run_every="1s")
 def plot_data():
     cols = st.columns(2)
     i = 0
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if (
             time.time() - last_seen < st.session_state.inactivity_time * 60
@@ -79,8 +74,6 @@ def plot_data():
                     ":red-badge[:material/globe_location_pin: SLAM Not Localized]"
                 )
 
-            current_task = red.hget(k, "current_task")
-            task_status = f":blue-badge[:material/format_list_numbered: {current_task}]"
             df = stream_to_dataframe(
                 red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
             )
@@ -121,10 +114,10 @@ def plot_data():
             cols[i % 2].markdown(f"### **{drone_name} ({drone_model})**")
             cols[i % 2].image(
                 f"http://{st.secrets.webserver}/raw/{drone_name}/latest.jpg?a={time.time()}",
-                use_container_width=True,
+                width="stretch",
             )
             cols[i % 2].markdown(
-                f"**{task_status}{bat_status}{mag_status}{sat_status}{slam_status}**"
+                f"**{bat_status}{mag_status}{sat_status}{slam_status}**"
             )
             cols[i % 2].dataframe(df, column_config=column_config)
             # cols[i%2].map(df, latitude="Lat", longitude="Lon", size="5", use_container_width=False, width=100)
@@ -139,13 +132,6 @@ with st.sidebar:
         min_value=1,
         key="inactivity_time",
         max_value=10,
-    )
-    st.number_input(
-        ":stopwatch: **:green[Refresh Rate (sec)]**",
-        step=1,
-        min_value=1,
-        key="refresh_rate",
-        max_value=5,
     )
 st.header(
     f":helicopter: **:orange[Active Drones]** (last {st.session_state.inactivity_time} mins)"

@@ -13,6 +13,10 @@ on:
         description: 'Whether to free disk space in the runner'
         type: boolean
         default: false
+      ctx:
+        required: true
+        type: string
+        default: '.'
     secrets:
       DOCKERHUB_USERNAME:
         required: true
@@ -39,15 +43,6 @@ jobs:
       with:
         submodules: 'true'
 
-    - name: Download protobuf compiler
-      run: wget https://github.com/protocolbuffers/protobuf/releases/download/v29.4/protoc-29.4-linux-x86_64.zip
-
-    - name: Unzip protobuf compiler
-      run: unzip -d protobuf protoc-29.4-linux-x86_64.zip
-
-    - name: Build protobufs
-      run: cd protocol && PROTOC_PATH=../protobuf/bin/protoc ./build.sh
-
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -69,9 +64,9 @@ jobs:
     - name: Build and push image
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: ${{ inputs.ctx }}
         file: ${{ inputs.dockerfile }}
         push: true
         tags: cmusatyalab/${{ inputs.name }}:${{ steps.get_tag.outputs.tag }}
-        cache-from: type=registry,ref=cmusatyalab/${{ inputs.name }}:latest
-        cache-to: type=inline
+        #cache-from: type=registry,ref=cmusatyalab/${{ inputs.name }}:latest
+        #cache-to: type=inline

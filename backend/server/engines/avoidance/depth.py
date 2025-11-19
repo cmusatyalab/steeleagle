@@ -23,15 +23,11 @@ import logging
 
 from gabriel_server.network_engine import engine_runner
 from obstacle_avoidance_engine import Metric3DAvoidanceEngine, MidasAvoidanceEngine
-from util.utils import setup_logging
-
-SOURCE = "openscout"
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-    setup_logging(logger)
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -69,7 +65,7 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--source", default=SOURCE, help="Source for engine to register with."
+        "-id", "--engine_id", default="obstacle-engine", help="Engine identifier."
     )
 
     parser.add_argument(
@@ -101,6 +97,12 @@ def main():
         help="Use Metric3D for avoidance",
     )
 
+    parser.add_argument(
+        "--unittest",
+        action="store_true",
+        default=False,
+        help="When enabled, will not connect to redis nor store images to disk.",
+    )
     args, _ = parser.parse_known_args()
 
     def engine_setup():
@@ -116,12 +118,14 @@ def main():
             engine = MidasAvoidanceEngine(args)
         return engine
 
-    engine_runner.run(
+    runner = engine_runner.EngineRunner(
         engine=engine_setup(),
-        source_name=args.source,
+        engine_name=args.engine_id,
         server_address=args.gabriel,
         all_responses_required=True,
     )
+
+    runner.run()
 
 
 if __name__ == "__main__":

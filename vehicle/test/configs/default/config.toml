@@ -1,0 +1,22 @@
+[vehicle]
+name = 'test'
+# Each test specifies its own driver to run (whether that be the
+# DigitalPerfect driver or a mock driver)
+script = ''
+kwargs = {}
+
+[cloudlet]
+swarm_controller = 'localhost:9005'
+remote_compute_service = 'localhost:9006'
+
+[logging]
+# Whether or not to create an MCAP flight log for mission replay
+generate_flight_log = true
+# Log to a custom filename; otherwise will autogenerate
+# a name based on name, date, and time if empty string
+# is provided
+custom_filename = '' 
+# Path to log file
+file_path = 'logger/logs'
+# Log level
+log_level = 'DEBUG'

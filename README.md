@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2023-2025 Carnegie Mellon University - Satyalab
 SPDX-License-Identifier: GPL-2.0-only
 -->
 
-![SteelEagle logo](docs/assets/logo-text.png)
+![SteelEagle logo](docs/static/img/logo-text.png)
 
 # SteelEagle: Edge-Enabled Drone Autonomy
 

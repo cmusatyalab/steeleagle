@@ -39,7 +39,7 @@ def main():
     parser.add_argument("-p", "--port", type=int, default=9099, help="Set port number")
 
     parser.add_argument(
-        "-s", "--server", default="128.2.208.19", help="SLAM container IP address"
+        "-s", "--server", default="localhost", help="SLAM container IP address"
     )
 
     # parser.add_argument(

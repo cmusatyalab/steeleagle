@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import hmac
+import streamlit as st
+import redis
+import pandas as pd
 import json
 import time
+import hmac
 
-import pandas as pd
-import redis
-import streamlit as st
-import zmq
+import grpc
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 DATA_TYPES = {
     "latitude": "float",
@@ -20,33 +21,10 @@ DATA_TYPES = {
     # "sats": int,
 }
 
-COLORS = [
-    "red",
-    "blue",
-    "green",
-    "purple",
-    "orange",
-    "darkred",
-    "darkblue",
-    "darkgreen",
-    "pink",
-    "beige",
-    "lightred",
-    "lightblue",
-    "lightgreen",
-    "darkpurple",
-    "gray",
-    "cadetblue",
-    "lightgray",
-    "black",
-]
-
 if "control_pressed" not in st.session_state:
     st.session_state.control_pressed = False
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1  # min
-if "password" not in st.session_state:
-    st.session_state.password = ""
 
 
 def authenticated():
@@ -102,17 +80,14 @@ def connect_redis_publisher():
 
 
 @st.cache_resource
-def connect_zmq():
-    ctx = zmq.Context()
-    z = ctx.socket(zmq.REQ)
-    z.connect(f"tcp://{st.secrets.zmq}:{st.secrets.zmq_port}")
-    return z
+def connect_stub():
+    return RemoteStub(grpc.insecure_channel(f"{st.secrets.grpc}"))
 
 
-def get_drones():
-    l = {}
+def get_vehicles():
+    vehicles = {}
     red = connect_redis()
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if (
             time.time() - last_seen < st.session_state.inactivity_time * 60
@@ -121,9 +96,9 @@ def get_drones():
             drone_model = red.hget(k, "model")
             if drone_model == "":
                 drone_model = "unknown"
-            l[drone_name] = f"**{drone_name} ({drone_model})**"
+            vehicles[drone_name] = f"**{drone_name} ({drone_model})**"
 
-    return l
+    return vehicles
 
 
 def stream_to_dataframe(results, types=DATA_TYPES) -> pd.DataFrame:
@@ -148,6 +123,6 @@ def control_drone(drone):
 
 def menu(with_control=True):
     st.sidebar.page_link("overview.py", label=":earth_americas: Tactical Overview")
-    st.sidebar.page_link("pages/monitoring.py", label=":tv: Telemetry")
+    st.sidebar.page_link("pages/monitoring.py", label=":tv: Imagery and Telemetry")
     st.sidebar.page_link("pages/control.py", label=":video_game: Control")
     # st.sidebar.page_link("pages/plan.py", label=":ledger: Mission Planning")

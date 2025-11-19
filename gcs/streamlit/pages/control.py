@@ -1,27 +1,42 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
+import threading
 import time
-import uuid
-from zipfile import ZipFile
-
 import folium
+from colorhash import ColorHash
 import streamlit as st
-from folium.plugins import MiniMap
-from st_keypressed import st_keypressed
 from streamlit_folium import st_folium
+from folium.plugins import MiniMap
 from util import (
-    COLORS,
-    authenticated,
-    connect_redis,
-    connect_zmq,
-    get_drones,
-    menu,
     stream_to_dataframe,
+    connect_redis,
+    connect_stub,
+    get_vehicles,
+    menu,
+    authenticated,
+)
+from st_keypressed import st_keypressed
+
+import grpc
+from steeleagle_sdk.protocol.services.remote_service_pb2 import (
+    CommandRequest,
+)
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    ReturnToHomeRequest,
+    HoldRequest,
+    JoystickRequest,
+    TakeOffRequest,
+    LandRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    UploadRequest,
+    StartRequest,
+    StopRequest,
 )
 
-import protocol.common_pb2 as common
-import protocol.controlplane_pb2 as controlplane
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
+
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -36,7 +51,7 @@ if "script_file" not in st.session_state:
 if "inactivity_time" not in st.session_state:
     st.session_state.inactivity_time = 1  # min
 if "trail_length" not in st.session_state:
-    st.session_state.trail_length = 100
+    st.session_state.trail_length = 500
 if "armed" not in st.session_state:
     st.session_state.armed = False
 if "roll_speed" not in st.session_state:
@@ -47,8 +62,12 @@ if "thrust_speed" not in st.session_state:
     st.session_state.thrust_speed = 1.0
 if "pitch_speed" not in st.session_state:
     st.session_state.pitch_speed = 1.0
+if "gimbal_rel" not in st.session_state:
+    st.session_state.gimbal_rel = 15
 if "gimbal_abs" not in st.session_state:
-    st.session_state.gimbal_abs = 0
+    st.session_state.gimbal_abs = 45
+if "gimbal_relative_mode" not in st.session_state:
+    st.session_state.gimbal_relative_mode = True
 if "imagery_framerate" not in st.session_state:
     st.session_state.imagery_framerate = 2
 if "show_drone_markers" not in st.session_state:
@@ -72,8 +91,8 @@ st.set_page_config(
     },
 )
 
-if "zmq" not in st.session_state:
-    st.session_state.zmq = connect_zmq()
+if "stub" not in st.session_state:
+    st.session_state.stub = connect_stub()
 
 if not authenticated():
     st.stop()  # Do not continue if not authenticated
@@ -92,60 +111,88 @@ def change_center():
             st.session_state.center = {"lat": row["latitude"], "lng": row["longitude"]}
 
 
-def run_flightscript():
+def upload_mission():
     if len(st.session_state.script_file) == 0:
-        st.toast("You haven't uploaded a script yet!", icon="🚨")
-    else:
-        filename = f"{time.time_ns()}.ms"
-        path = f"{st.secrets.scripts_path}/{filename}"
-        with ZipFile(path, "w") as z:
-            for file in st.session_state.script_file:
-                z.writestr(file.name, file.read())
-
-        req = controlplane.Request()
-        req.seq_num = int(time.time())
-        req.timestamp.GetCurrentTime()
-        for d in st.session_state.selected_drones:
-            req.msn.drone_ids.append(d)
-        req.msn.uuid = str(uuid.uuid4())
-        req.msn.url = f"http://{st.secrets.webserver}/scripts/{filename}"
-        req.msn.action = controlplane.MissionAction.DOWNLOAD
-        st.session_state.zmq.send(req.SerializeToString())
-        rep = st.session_state.zmq.recv()
         st.toast(
-            f"Instructed {req.msn.drone_ids} to fly autonomous script.",
-            icon="\u2601",
+            "Please select a mission (.json) file and optionally a KML (.kml) file!",
+            icon="🚨",
         )
+    else:
+        for uploaded_file in st.session_state.script_file:
+            if uploaded_file.name.endswith(".kml"):
+                kml = uploaded_file.getvalue()
+            elif uploaded_file.name.endswith(".json"):
+                dsl_script = uploaded_file.getvalue()
+        req = CommandRequest()
+        for d in st.session_state.selected_drones:
+            data = UploadRequest(request=generate_request())
+            data.mission.map = kml
+            data.mission.content = dsl_script
+            req.method_name = "Mission.Upload"
+            req.vehicle_id = d
+            req.request.Pack(data)
+            responses = []
+            for response in st.session_state.stub.Command(req):
+                responses.append(response)
+        st.toast("Sent Mission.Upload to selected vehicles.", icon="🚨")
+
+
+def run_flightscript():
+    req = CommandRequest()
+    for d in st.session_state.selected_drones:
+        req.method_name = "Mission.Start"
+        start = StartRequest(request=generate_request())
+        req.vehicle_id = d
+        req.request.Pack(start)
+        responses = []
+        for response in st.session_state.stub.Command(req):
+            responses.append(response)
+    st.toast("Sent Mission.Start to selected vehicles.", icon="🚨")
+    st.session_state.armed = False
+
+
+def get_callback(toast_message):
+    def callback(future):
+        try:
+            st.toast(toast_message + f" Status code: {future.result().status}")
+        except grpc.RpcError:
+            st.toast("Error running command!")
+
+    return callback
 
 
 def enable_manual():
-    req = controlplane.Request()
-    req.seq_num = int(time.time())
-    req.timestamp.GetCurrentTime()
+    req = CommandRequest()
+    data = StopRequest(request=generate_request())
+    req.method_name = "Mission.Stop"
+    req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        req.msn.drone_ids.append(d)
-    req.msn.action = controlplane.MissionAction.STOP
-    st.session_state.zmq.send(req.SerializeToString())
-    rep = st.session_state.zmq.recv()
-    st.toast(f"Telling drone {req.veh.drone_ids} to halt! Kill signal sent.")
+        req.vehicle_id = d
+        st.session_state.stub.Command(req)
+    data = HoldRequest(request=generate_request())
+    req.method_name = "Control.Hold"
+    req.request.Pack(data)
+    for d in st.session_state.selected_drones:
+        req.vehicle_id = d
+        st.session_state.stub.Command(req)
+    st.toast("Instructed vehicle(s) to cancel mission and hold!")
 
 
 def rth():
-    req = controlplane.Request()
-    req.seq_num = int(time.time())
-    req.timestamp.GetCurrentTime()
+    req = CommandRequest()
+    data = ReturnToHomeRequest(request=generate_request())
+    req.method_name = "Control.ReturnToHome"
+    req.request.Pack(data)
     for d in st.session_state.selected_drones:
-        req.veh.drone_ids.append(d)
-    req.veh.action = controlplane.VehicleAction.RTH
-    st.session_state.zmq.send(req.SerializeToString())
-    rep = st.session_state.zmq.recv()
-    st.toast(f"Instructed {req.veh.drone_ids} to return to home!")
+        req.vehicle_id = d
+        st.session_state.stub.Command(req)
+    st.toast("Instructed vehicle to return to home!")
 
 
 @st.fragment(run_every=f"{1 / st.session_state.imagery_framerate}s")
 def update_imagery():
     drone_list = []
-    for k in red.keys("drone:*"):
+    for k in red.keys("vehicle:*"):
         last_seen = float(red.hget(k, "last_seen"))
         if (
             time.time() - last_seen < st.session_state.inactivity_time * 60
@@ -161,22 +208,18 @@ def update_imagery():
     )
     st.image(
         f"http://{st.secrets.webserver}/raw/{st.session_state.imagery_key}/latest.jpg?a={time.time()}",
-        use_container_width=True,
+        width="stretch",
     )
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
         st.caption("**:eyes: Object Detection**")
-        st.image(
-            f"http://{st.secrets.webserver}/detected/drones/{st.session_state.imagery_key}/latest.jpg?a={time.time()}"
-        )
+        st.image(f"http://{st.secrets.webserver}/detected/vehicles/{st.session_state.imagery_key}/latest.jpg?a={time.time()}")
     with col2:
         st.caption("**:checkered_flag: Obstacle Avoidance**")
         st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")
     with col3:
         st.caption("**:traffic_light: HSV Filtering**")
-        st.image(
-            f"http://{st.secrets.webserver}/detected/drones/{st.session_state.imagery_key}/hsv.jpg?a={time.time()}"
-        )
+        st.image(f"http://{st.secrets.webserver}/detected/hsv.jpg?a={time.time()}")
 
 
 @st.fragment(run_every="1s")
@@ -215,68 +258,64 @@ def draw_map():
     slam_track = folium.FeatureGroup(name="SLAM Track")
     landing_spot = folium.FeatureGroup(name="Landing Spot")
     # Draw(export=True).add_to(m)
-    lc = folium.LayerControl()
+    _ = folium.LayerControl()
 
     marker_color = 0
-    drone_list = []
-    for k in red.keys("drone:*"):
-        last_seen = float(red.hget(k, "last_seen"))
-        if (
-            time.time() - last_seen < st.session_state.inactivity_time * 60
-        ):  # minutes -> seconds
-            drone_name = k.split(":")[-1]
-            drone_list.append(drone_name)
-    for d in drone_list:
+    for k in red.keys("telemetry:*"):
         df = stream_to_dataframe(
-            red.xrevrange(f"telemetry:{d}", "+", "-", st.session_state.trail_length)
+            red.xrevrange(f"{k}", "+", "-", st.session_state.trail_length)
         )
-        coords = []
-        i = 0
-        current_task = red.hget(f"drone:{d}", "current_task")
-        if current_task == "":
-            current_task = "idle"
-        for index, row in df.iterrows():
-            if i % 10 == 0:
-                coords.append([row["latitude"], row["longitude"]])
-            if st.session_state.show_drone_markers and i == 0:
-                text = folium.DivIcon(
-                    icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
-                    icon_anchor=(-20, 30),
-                    html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{COLORS[marker_color]};">{d} [{row["rel_altitude"]:.2f}m]<br/>{current_task}</div>',
-                )
-                plane = folium.Icon(
-                    icon="plane",
-                    color=COLORS[marker_color],
-                    prefix="glyphicon",
-                    angle=int(row["bearing"]),
-                )
-
-                fg.add_child(
-                    folium.Marker(
-                        location=[
-                            row["latitude"],
-                            row["longitude"],
-                        ],
-                        icon=plane,
+        last_update = int(df.index[0].split("-")[0]) / 1000
+        if (
+            time.time() - last_update < st.session_state.inactivity_time * 60
+        ):  # minutes -> seconds
+            coords = []
+            i = 0
+            drone_name = k.split(":")[-1]
+            for index, row in df.iterrows():
+                if i % 10 == 0:
+                    coords.append([row["latitude"], row["longitude"]])
+                if st.session_state.show_drone_markers and i == 0:
+                    text = folium.DivIcon(
+                        icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
+                        icon_anchor=(-20, 30),
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name} [{row["rel_altitude"]:.2f}m]',
+                        # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
-                )
-
-                fg.add_child(
-                    folium.Marker(
-                        location=[
-                            row["latitude"],
-                            row["longitude"],
-                        ],
-                        icon=text,
+                    plane = folium.Icon(
+                        icon="plane",
+                        color="lightgray",
+                        icon_color=ColorHash(drone_name).hex,
+                        prefix="glyphicon",
+                        angle=int(row["bearing"]),
                     )
-                )
 
-            i += 1
+                    fg.add_child(
+                        folium.Marker(
+                            location=[
+                                row["latitude"],
+                                row["longitude"],
+                            ],
+                            icon=plane,
+                        )
+                    )
 
-        if st.session_state.show_gps_tracks:
-            ls = folium.PolyLine(locations=coords, color=COLORS[marker_color])
-            ls.add_to(tracks)
-            marker_color += 1
+                    fg.add_child(
+                        folium.Marker(
+                            location=[
+                                row["latitude"],
+                                row["longitude"],
+                            ],
+                            icon=text,
+                        )
+                    )
+
+                i += 1
+
+            if st.session_state.show_gps_tracks:
+                ls = folium.PolyLine(locations=coords, color=ColorHash(drone_name).hex)
+                ls.add_to(tracks)
+                marker_color += 1
 
     if st.session_state.show_slam_track:
         TYPES = {
@@ -361,32 +400,16 @@ def draw_map():
         st.session_state.center = st.session_state["overview_map"]["center"]
         st.session_state.zoom_level = st.session_state["overview_map"]["zoom"]
 
-    output = st_folium(
+    _ = st_folium(
         m,
         key="overview_map",
-        use_container_width=True,
+        width="stretch",
         feature_group_to_add=[fg, tracks, slam_track, landing_spot],
         # layer_control=lc,
         center=st.session_state.center,
         height=500,
         on_change=update_map_props,
     )
-
-
-def send_manual_command(req: controlplane.Request):
-    st.session_state.zmq.send(req.SerializeToString())
-    rep = st.session_state.zmq.recv()
-
-
-def adjust_gimbal():
-    req = controlplane.Request()
-    req.seq_num = int(time.time())
-    req.timestamp.GetCurrentTime()
-    for d in st.session_state.selected_drones:
-        req.veh.drone_ids.append(d)
-    req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
-    req.veh.gimbal_pose.control_mode = common.PoseControlMode.POSITION_ABSOLUTE
-    send_manual_command(req)
 
 
 menu()
@@ -405,7 +428,7 @@ with options_expander:
     tiles_col[1].selectbox(
         key="tracking_selection",
         label=":dart: **:green[Track Drone]**",
-        options=get_drones(),
+        options=get_vehicles(),
         on_change=change_center(),
         placeholder="Select a drone to track...",
     )
@@ -429,9 +452,9 @@ with options_expander:
 
     tiles_col[3].number_input(
         ":straight_ruler: **:gray[Trail Length]**",
-        step=25,
-        min_value=25,
-        max_value=200,
+        step=500,
+        min_value=500,
+        max_value=2500,
         key="trail_length",
     )
     mode = (
@@ -445,7 +468,7 @@ with options_expander:
         min_value=1,
         max_value=10,
         step=1,
-        value=2,
+        value=1,
         format="%0d",
     )
 
@@ -458,7 +481,7 @@ with col2:
     draw_map()
 
 with st.sidebar:
-    drone_list = get_drones()
+    drone_list = get_vehicles()
     if len(drone_list) > 0:
         st.pills(
             label=":helicopter: **:orange[Swarm Control]** :helicopter:",
@@ -471,22 +494,30 @@ with st.sidebar:
 
     else:
         st.caption("No active drones.")
-    st.toggle(key="armed", label=":bangbang: Arm Swarm?", value=st.session_state.armed)
+    st.toggle(key="armed", label=":bangbang: Arm Swarm?")
     st.caption(mode)
 
     st.session_state.script_file = st.file_uploader(
         key="flight_uploader",
         label="**:violet[Upload Autonomous Mission Script]**",
         help="Upload a flight script.",
-        type=["kml", "dsl"],
+        type=["kml", "json"],
         label_visibility="visible",
         accept_multiple_files=True,
     )
-    st.button(
-        key="autonomous_button",
-        label=":scroll: Fly Script",
+    c1, c2 = st.columns(spec=2, gap="small")
+    c1.button(
+        key="upload_button",
+        label="::outbox_tray:: Upload",
         type="primary",
-        use_container_width=True,
+        width="stretch",
+        on_click=upload_mission,
+    )
+    c2.button(
+        key="fly_button",
+        label=":scroll: Fly Mission",
+        type="primary",
+        width="stretch",
         on_click=run_flightscript,
     )
     st.button(
@@ -495,7 +526,7 @@ with st.sidebar:
         help="Immediately tell drones to hover.",
         type="primary",
         disabled=False,
-        use_container_width=True,
+        width="stretch",
         on_click=enable_manual,
     )
     st.button(
@@ -503,7 +534,7 @@ with st.sidebar:
         label=":dart: Return Home",
         help="Return to last known home.",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         on_click=rth,
     )
 
@@ -547,32 +578,48 @@ with st.sidebar:
             format="%f",
         )
         c5, c6 = st.columns(spec=2, gap="small")
-        c5.slider(
-            key="gimbal_abs",
-            label="Gimbal Pitch (deg)",
-            min_value=-90,
-            max_value=90,
-            step=15,
-            value=0,
-            format="%d",
-            on_change=adjust_gimbal,
+        mode = (
+            "**Gimbal Relative**"
+            if st.session_state.gimbal_relative_mode
+            else "**Gimbal Absolute**"
         )
+        on = c5.toggle(key="gimbal_relative_mode", label=mode, value=True)
+        if on:
+            c5.number_input(
+                key="gimbal_rel",
+                label="Gimbal Pitch (deg/s)",
+                min_value=0,
+                max_value=30,
+                step=5,
+                value=15,
+                format="%d",
+            )
+        else:
+            c5.slider(
+                key="gimbal_abs",
+                label="Gimbal Pitch (deg)",
+                min_value=-90,
+                max_value=90,
+                step=15,
+                value=45,
+                format="%d",
+            )
 
         key_pressed = st_keypressed()
-        req = controlplane.Request()
-        req.seq_num = int(time.time())
-        req.timestamp.GetCurrentTime()
-        for d in st.session_state.selected_drones:
-            req.veh.drone_ids.append(d)
 
         # req.cmd.manual = True
+        req = CommandRequest()
         st.caption(f"keypressed={key_pressed}")
         if key_pressed == "t":
-            req.veh.action = controlplane.VehicleAction.TAKEOFF
-            st.info(f"Instructed {req.veh.drone_ids} to takeoff.")
+            data = TakeOffRequest(request=generate_request(), take_off_altitude=5.0)
+            req.method_name = "Control.TakeOff"
+            req.request.Pack(data)
+            st.info("Instructed vehicle to takeoff.")
         elif key_pressed == "g":
-            req.veh.action = controlplane.VehicleAction.LAND
-            st.info(f"Instructed {req.veh.drone_ids} to land.")
+            data = LandRequest(request=generate_request())
+            req.method_name = "Control.Land"
+            req.request.Pack(data)
+            st.info("Instructed vehicle to land.")
         else:
             pitch = roll = yaw = thrust = gimbal_pitch = 0
             if key_pressed == "w":
@@ -591,14 +638,40 @@ with st.sidebar:
                 yaw = 1 * st.session_state.yaw_speed
             elif key_pressed == "j":
                 yaw = -1 * st.session_state.yaw_speed
+            # elif key_pressed == "r":
+            #    gimbal_pitch = 1 * st.session_state.gimbal_rel
+            # elif key_pressed == "f":
+            #    gimbal_pitch = -1 * st.session_state.gimbal_rel
 
-            if yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
-                req.veh.action = controlplane.VehicleAction.HOVER
-            else:
-                req.veh.velocity_body.angular_vel = yaw
-                req.veh.velocity_body.forward_vel = pitch
-                req.veh.velocity_body.right_vel = roll
-                req.veh.velocity_body.up_vel = thrust
+            # if gimbal_pitch != 0 and st.session_state.gimbal_relative_mode:
+            #    req.veh.gimbal_pose.pitch = gimbal_pitch
+            #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
+            # yaw == 0 and pitch == 0 and roll == 0 and thrust == 0:
+            # data = HoldRequest(request=generate_request())
+            # req.method_name = 'Control.Hold'
+            # req.request.Pack(data)
 
+            data = JoystickRequest(request=generate_request())
+            data.velocity.angular_vel = yaw
+            data.velocity.x_vel = pitch
+            data.velocity.y_vel = roll
+            data.velocity.z_vel = thrust
+            req.method_name = "Control.Joystick"
+            req.request.Pack(data)
+            # if not st.session_state.gimbal_relative_mode:
+            #    req.veh.gimbal_pose.pitch = st.session_state.gimbal_abs
+            #    #req.veh.gimbal_pose.control_mode = common.posebody.mode
             st.caption(req)
-        send_manual_command(req)
+        key_pressed = None
+        for d in st.session_state.selected_drones:
+            # STUB SEND MANUAL
+            req.vehicle_id = d
+
+            def send_command_thread(stub, req):
+                for resp in stub(req):
+                    pass
+
+            thread = threading.Thread(
+                target=send_command_thread, args=(st.session_state.stub.Command, req)
+            )
+            thread.start()

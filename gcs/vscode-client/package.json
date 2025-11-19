@@ -1,0 +1,22 @@
+{
+  "name": "steeleagle-dsl-lsp-client",
+  "displayName": "Steeleagle DSL Tools",
+  "description": "Language client for the Steeleagle DSL LSP",
+  "version": "0.1.0",
+  "publisher": "you",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:dsl"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      { "id": "dsl", "aliases": ["DSL"], "extensions": [".dsl"] }
+    ],
+    "grammars": [
+      { "language": "dsl", "scopeName": "source.dsl", "path": "./syntaxes/dsl.tmLanguage.json" }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

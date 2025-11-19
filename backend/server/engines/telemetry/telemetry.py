@@ -8,17 +8,15 @@
 import argparse
 import logging
 
-from gabriel_server.network_engine import engine_runner
+from gabriel_server.network_engine.engine_runner import EngineRunner
 from telemetry_engine import TelemetryEngine
-from util.utils import setup_logging
-
+import logging
 SOURCE = "telemetry"
-
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
-    setup_logging(logger)
+    
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -60,12 +58,13 @@ def main():
         return TelemetryEngine(args)
 
     logger.info("Starting telemetry cognitive engine..")
-    engine_runner.run(
+    engine_runner = EngineRunner(
         engine=engine_setup(),
-        source_name=SOURCE,
+        engine_name=SOURCE,
         server_address=args.gabriel,
         all_responses_required=True,
     )
+    engine_runner.run()
 
 
 if __name__ == "__main__":

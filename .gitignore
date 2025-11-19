@@ -2,16 +2,32 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
+# Environments
+__pycache__/
 *.code-workspace
 *.vimrc
-__pycache__/
 .gradle/
 *.dex
 *.class
 *.pyc
-*_pb2.py
 .env
 .vscode/
+venv/
+.venv
+*.jar
+*swp
+
+# Protocol
+# *_pb2.py
+# *_pb2_grpc.py
+# *.pyi
+# *.desc
+# keep everything under this protocol directory
+!sdk-revision/src/steeleagle_sdk/protocol/
+!sdk-revision/src/steeleagle_sdk/protocol/**
+sdk-revision/src/steeleagle_sdk/protocol/**/__pycache__/
+
+# Backend
 backend/server/models/
 backend/server/steeleagle-vol/
 backend/server/redis/*
@@ -19,31 +35,78 @@ backend/server/redis/*
 !backend/server/redis/redis.conf.template
 backend/streamlit/.streamlit/secrets.toml
 backend/server/engines/slam/images/*
-venv/
-*.jar
+
+# Mission
 *.dsl
 *.ms
 *.kml
-.venv
 *~
 *.log
+*.mcap
+sdk/build/src/
+*.db
+*.db-shm
+*.db-wal
 
+# But do NOT ignore __init__.py
+!sdk/api/actions/primitives/__init__.py
 
-vehicle/env.sh
-# driver
+# Generated
+_gen_*
 
-# kernel
-vehicle/kernel/log/
-
-# user space implementation
-vehicle/mission/project/
-
-*swp
-
-vehicle/config.yaml
-vehicle/config.yml
-
+# Vehicle
+vehicle/config.toml
 vehicle/configs
-vehicle/docker-compose.yaml
+vehicle/docker-compose.*
+vehicle/drivers/proto_build/
 
+
+# Secrets
 secrets.toml
+
+# Docs
+
+# Dependencies
+docs/node_modules
+
+# Production
+*/dist
+docs/build
+
+# Generated files
+docs/.docusaurus
+docs/.cache-loader
+
+# Misc
+docs/.env.local
+docs/.env.development.local
+docs/.env.test.local
+docs/.env.production.local
+
+docs/npm-debug.log*
+docs/yarn-debug.log*
+docs/yarn-error.log*
+
+# React
+
+# Dependencies
+*/node_modules
+*/.pnp
+*/.pnp.js
+
+# Testing
+*/coverage
+
+# Production
+*/build
+
+# Misc
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+*/npm-debug.log*
+*/yarn-debug.log*
+*/yarn-error.log*
+
+gcs/vscode-client/node_modules/*

@@ -1,215 +1,94 @@
-
 // SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
 //
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package protocol.common;
+package steeleagle.protocol.common;
 
+import "google/protobuf/timestamp.proto";
+
+// Request object for additional request info.
+message Request {
+  google.protobuf.Timestamp timestamp = 1; // request timestamp
+}
+
+/*
+ * Response types for RPC functions.
+ *
+ * Values 0-2 (`OK`, `IN_PROGRESS`, `COMPLETED`) are specific to the SteelEagle protocol.
+ * They determine what phase an RPC call is in:
+ * - `OK` -> ack
+ * - `IN_PROGRESS` -> in progress
+ * - `COMPLETED` -> completed
+ *
+ * These intermediate phases are generally not exposed to user-facing code and are only used 
+ * for streaming methods. In contrast to normal gRPC procedure, a call is only considered complete
+ * on a response of `COMPLETED` instead of `OK`. If an error occurs, SteelEagle defers to gRPC error 
+ * codes, 3-18. More details on these codes can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html).
+ * Note that the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
+ * Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
+ * 2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
+ */
 enum ResponseStatus {
-  UNKNOWN_RESPONSE = 0;
-  OK = 1;
-  FAILED = 2;
-  NOTSUPPORTED = 3;
-  COMPLETED = 4;
-  DENIED = 5;
-  WARNING = 6;
+  OK = 0; // command acknowledged
+  IN_PROGRESS = 1; // command in progress
+  COMPLETED = 2; // command finished without error
+  CANCELLED = 3; // the operation was cancelled, typically by the caller
+  UNKNOWN = 4; // unknown error
+  INVALID_ARGUMENT = 5; // the client specified an invalid argument
+  DEADLINE_EXCEEDED = 6; // the deadline expired before the operation could complete
+  NOT_FOUND = 7; // some requested entity was not found
+  ALREADY_EXISTS = 8; // an entity the client attempted to create already exists
+  PERMISSION_DENIED = 9; // the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
+  RESOURCE_EXHAUSTED = 10; // some resource has been exhausted
+  FAILED_PRECONDITION = 11; // the operation was rejected because the system is not in a state required for the operation's execution
+  ABORTED = 12; // the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
+  OUT_OF_RANGE = 13; // the operation was attempted past the valid range
+  UNIMPLEMENTED = 14; // the operation is not implemented/supported by the service
+  INTERNAL = 15; // an internal error occured while executing the operation
+  UNAVAILABLE = 16; // the service is currently unavailable
+  DATA_LOSS = 17; // unrecoverable data loss or corruption
+  UNAUTHENTICATED = 18; // the client failed to provide an identity (unique to SteelEagle)
 }
 
-/*
-* Angular offsets or poses in 3 dimensions in body coordinates [degrees]
-*/
-enum PoseControlMode {
-  POSITION_ABSOLUTE = 0;
-  POSITION_RELATIVE = 1;
-  VELOCITY = 2;
+
+// Global response message returned by all core services.
+message Response {
+  ResponseStatus status = 1; // response status
+  optional string response_string = 2; // detailed message on reason for response
+  google.protobuf.Timestamp timestamp = 3; // response timestamp
 }
 
-message PoseBody {
-  double pitch = 1;
-  double roll = 2;
-  double yaw = 3;
-  PoseControlMode control_mode = 4;
-  int32 actuator_id = 5;
+
+// Angular offsets or poses in 3 dimensions.
+message Pose {
+  optional double pitch = 1; // pitch [degrees]
+  optional double roll = 2; // roll [degrees]
+  optional double yaw = 3; // yaw [degrees]
 }
 
-/*
-* Representation of the speed in 4-dimensions in ENU coordinates [m/s]
-*/
-message VelocityENU {
-  double north_vel = 1; // Pitch
-  double east_vel = 2; // Roll
-  double up_vel = 3; // Thrust
-  double angular_vel = 4; // Yaw (deg/s)
+
+// Representation of velocity in 3-dimensions.
+message Velocity {
+  optional double x_vel = 1; // forward/north velocity [meters/s]
+  optional double y_vel = 2; // right/east velocity [meters/s]
+  optional double z_vel = 3; // up velocity [meters/s]
+  optional double angular_vel = 4; // angular velocity [degrees/s]
 }
 
-/*
-* Representation of the speed in 4-dimensions in body coordinates [m/s]
-*/
-message VelocityBody {
-  double forward_vel = 1; // Pitch
-  double right_vel = 2; // Roll
-  double up_vel = 3; // Thrust
-  double angular_vel = 4; // Yaw (deg/s)
+
+// Position offset relative to home or current location.
+message Position {
+  optional double x = 1; // forward/north offset [meters]
+  optional double y = 2; // right/east offset [meters]
+  optional double z = 3; // up offset [meters]
+  optional double angle = 4; // angular offset [degrees]
 }
 
-/*
-* Position relative to home location in ENU coordinates
-*/
-message PositionENU {
-  double north = 1;
-  double east = 2;
-  double up = 3;
-  double angle = 4;
-  VelocityENU max_velocity = 5;
-}
-
-/*
-* Position relative to current location in body coordinates
-*/
-message PositionBody {
-  double forward = 1;
-  double right = 2;
-  double up = 3;
-  double angle = 4;
-  VelocityBody max_velocity = 5;
-}
-
-/*
-* Location
-*/
-enum LocationAltitudeMode {
-  ABSOLUTE = 0;
-  TAKEOFF_RELATIVE = 1;
-}
-
-enum LocationHeadingMode {
-  TO_TARGET = 0;
-  HEADING_START = 1;
-}
-
+// Location in global coordinates.
 message Location {
-  double latitude = 1;
-  double longitude = 2;
-  double altitude = 3; // In meters above MSL or above takeoff
-  double heading = 4;
-  LocationAltitudeMode altitude_mode = 5;
-  LocationHeadingMode heading_mode = 6;
-  VelocityENU max_velocity = 7;
-}
-
-/*
-* List of camera sensors from the drone
-*/
-message Cameras {
-  StreamStatus stream_status = 1;
-  repeated ImagingSensor sensors = 2;
-}
-
-message ImagingSensor {
-  uint32 id = 1;
-  ImagingSensorType type = 2;
-  bool active = 3; // Specifies whether a camera is currently streaming
-  bool supports_secondary = 4; // Denotes whether a camera supports background streaming
-}
-
-enum ImagingSensorType {
-  UNKNOWN_IMAGING_SENSOR_TYPE = 0;
-  RGB = 1;
-  STEREO = 2;
-  THERMAL = 3;
-  NIGHT = 4;
-  LIDAR = 5;
-  RGBD = 6;
-  TOF = 7;
-}
-
-message StreamStatus {
-  uint32 total_streams = 1; // The total number of allowed simultaneously streaming cameras
-  uint32 num_streams = 2; // The total number of currently streaming cameras
-  uint32 primary_cam = 3; // ID of the primary camera
-  repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
-}
-
-/*
-* Alert states of the drone
-*/
-message Alerts {
-  BatteryWarning battery_warning = 1; // Battery warnings
-  GPSWarning gps_warning = 2; // GPS warnings
-  MagnetometerWarning magnetometer_warning = 3; // Magnetometer warnings
-  ConnectionWarning connection_warning = 4; // Connection to drone warnings (mostly used for thin client drones)
-}
-
-enum BatteryWarning {
-  NONE = 0;
-  LOW = 1;
-  CRITICAL = 2;
-}
-
-enum GPSWarning {
-  NO_GPS_WARNING = 0;
-  WEAK = 1;
-  NO_SIGNAL = 2;
-}
-
-enum MagnetometerWarning {
-  NO_MAGNETOMETER_WARNING = 0;
-  RECOMMENDED = 1; // Calibration recommended
-  REQUIRED = 2; // Calibration required
-  PERTURBATION = 3; // Experiencing magnetic perturbations
-}
-
-enum ConnectionWarning {
-  NO_CONNECTION_WARNING = 0;
-  DISCONNECTED = 1;
-  WEAK_CONNECTION = 2;
-}
-
-enum FlightStatus {
-  LANDED = 0;
-  TAKING_OFF = 1;
-  HOVERING = 2;
-  MOVING = 3;
-  LANDING = 4;
-  EMERGENCY = 5;
-  GROUNDED = 6; // Equivalent to awaiting take-off command
-  IDLE = 7;
-}
-
-/*
-* Defines the upper left and lower right corners of a detected object
-* in an image frame. Origin (0,0) is the top left corner of the input image.
-* (image_height, image_width) is the bottom right corner.
-* Also the class and confidence threshold associated with the box.
-*/
-message BoundingBox {
-  double y_min = 1; // wrt to image size
-  double x_min = 2; // wrt to image size
-  double y_max = 3; // wrt to image size
-  double x_max = 4; // wrt to image size
-  string class_name = 5;
-  float confidence = 6;
-}
-
-/*
-* Color filter represented by hue, saturation, and value
-* Uses OpenCV ranges: https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
-*/
-message HSV {
-  uint32 h = 1; // hue range is [0,179]
-  uint32 s = 2; // saturation range is [0,255]
-  uint32 v = 3; // value range is [0,255]
-}
-
-message PatrolArea {
-  PatrolStatus status = 1;
-  repeated string areas = 2;
-  float altitude = 3;
-}
-
-enum PatrolStatus {
-  UNKNOWN_PATROL_STATUS = 0;
-  FINISH = 1;
-  CONTINUE = 2;
+  optional double latitude = 1; // global latitude [degrees]
+  optional double longitude = 2; // global longitude [degrees]
+  optional double altitude = 3; // altitude above MSL or takeoff [meters]
+  optional double heading = 4; // global heading [degrees]
 }
