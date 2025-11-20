@@ -2,46 +2,30 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# SteelEagle Architecture
 
-Let's discover **Docusaurus in less than 5 minutes**.
+<div style={{textAlign: 'center'}}>
+![SteelEagle Architecture](/img/ref/steeleaglev3.0-arch.png)
+</div>
 
-## Getting Started
+SteelEagle is comprised of two large systems each with a number of specific components.
 
-Get started by **creating a new site**.
+## SteelEagle OS
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+The SteelEagle OS is the entity that interacts with vehicle hardware, runs the autonomous mission logic, and interfaces with the backend server. Depending on the vehicle hardware, its payload capacity, and the communication protocols it uses, the SteelEagle OS may run onboard the vehicle, on the remote controller that is connected to the vehicle, or on the backend, however, logically this entity can be thought of as running 'on board'. Below is a short description of the components of the SteelEagle OS:
 
-### What you'll need
+* Drone Driver - Communicates with the vehicle autopilot software using whatever proprietary method is required to receive telemetry/imagery and to transform SteelEagle commands into their vehicle-specific counterparts.
+* Local Compute Driver - Interfaces with any compute engines that may be on board the vehicle to get local results.
+* Kernel - Handles the core GRPC services for communication between components and the backend.
+* Mission Logic - Executes the autonomous mission and is responsible for managing state transitions that are triggered by events.
+* Remote Compute Driver - Using the [Gabriel](https://github.com/cmusatyalab/gabriel) protocol, the remote compute driver sends compute requests to the cogntive engines that are running on the backend. Results from those engines are then sent back to the kernel.
 
-- [Node.js](https://nodejs.org/en/download/) version 18.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+## Backend Server (Cloudlet)
 
-## Generate a new site
+The backend entity in SteelEagle provides command and control functionality for all connected vehicles and also provides various AI capabilities through the cogntivie engines that are running there. For example, the engines may provide object detection results or depth information to all connected vehicles for them to act upon. Below is a short description of the backend components:
 
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
-```
-
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
-
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+* Gabriel Server - Token-based flow control of incoming sensor data from all connected vehicles. Relays frames to cogntive engines for processing and returns results to vehicles
+* Cognitive Engines - Performs AI functions on incoming sensor data such as object detection, monocular obstacle avoidance, SLAM, et cetera
+* Swarm Controller (Control Plane Module) - Interfaces with the GRPC services running in each vehicle's SteelEagle OS to relay control plane information such as manual flight control, autonomous mission upload/start/stop,  et cetera
+* Redis - Telemetry data cache for GCS and historical analytics
+* GCS - Streamlit-based control service to manage and control connected vehicles
