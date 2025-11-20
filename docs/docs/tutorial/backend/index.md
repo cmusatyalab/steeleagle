@@ -1,6 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
+
+# Backend Setup
 
 To begin, download the SteelEagle repository from GitHub:
 
