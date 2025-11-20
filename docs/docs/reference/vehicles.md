@@ -34,15 +34,17 @@ French [manufacturer](https://www.parrot.com) of ISR drones, based in Paris.
 ![Flight Tested](https://img.shields.io/badge/Flight%20Tested-ffffff?style=for-the-badge&color=00b100) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45) ![Android Client](https://img.shields.io/badge/Android%20Client-ffffff?style=for-the-badge&color=287f85)
 
 Discontinued sub-$500 photography drone. Weighs 350g. Monocular camera.
-
-<img src="/img/ref/anafi.png" width="25%"/>
+<div style={{width: '25%'}}>
+![ANAFI](/img/ref/anafi.png)
+</div>
 
 #### ANAFI USA/GOV
 ![Flight Tested](https://img.shields.io/badge/Flight%20Tested-ffffff?style=for-the-badge&color=00b100) ![Blue UAS](https://img.shields.io/badge/Blue%20UAS-ffffff?style=for-the-badge&color=005db1) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45) ![Android Client](https://img.shields.io/badge/Android%20Client-ffffff?style=for-the-badge&color=287f85)
 
 500g. Thermal and RGB cameras. Blue UAS compliant.
-
-<img src="/img/ref/anafi_usa.png" width="25%"/>
+<div style={{width: '25%'}}>
+![ANAFI USA](/img/ref/anafi_usa.png)
+</div>
 
 #### ANAFI USA MIL
 ![Theoretical Support](https://img.shields.io/badge/Theoretical%20Support-ffffff?style=for-the-badge&color=f57000) ![Blue UAS](https://img.shields.io/badge/Blue%20UAS-ffffff?style=for-the-badge&color=005db1)
@@ -56,8 +58,9 @@ Microhard version of the ANAFI USA.
 ![Theoretical Support](https://img.shields.io/badge/Theoretical%20Support-ffffff?style=for-the-badge&color=f57000)
 
 Integrated LTE. Stereo and RGB cameras.
-
-<img src="/img/ref/anafi_ai.png" width="25%"/>
+<div style={{width: '25%'}}>
+![ANAFI Ai](/img/ref/anafi_ai.png)
+</div>
 
 ### Modal AI
 [Manufacturer](https://www.modalai.com) of development drones and autopilot/compute boards.
@@ -66,8 +69,9 @@ Integrated LTE. Stereo and RGB cameras.
 ![Simulation Tested](https://img.shields.io/badge/Simulation%20Tested-ffffff?style=for-the-badge&color=f5e800) ![Onboard Client](https://img.shields.io/badge/Onboard%20Client-ffffff?style=for-the-badge&color=999999) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45)
 
 Onboard compute from VOXL board. Optional LTE/5G module.
-
-<img src="/img/ref/starling.png" width="25%"/>
+<div style={{width: '25%'}}>
+![Starling 2 MAX](/img/ref/starling.png)
+</div>
 
 ### Sky Rocket
 
@@ -75,8 +79,9 @@ Onboard compute from VOXL board. Optional LTE/5G module.
 ![Flight Tested](https://img.shields.io/badge/Flight%20Tested-ffffff?style=for-the-badge&color=00b100) ![Linux Client](https://img.shields.io/badge/Linux%20Client-ffffff?style=for-the-badge&color=812d45)
 
 Discontinued photography drone with Ardupilot and GPS.
-
-<img src="/img/ref/skyviper.webp" width="25%"/>
+<div style={{width: '25%'}}>
+![SkyViper](/img/ref/skyviper.webp)
+</div>
 
 ### Ascent Aerosystems
 
@@ -85,7 +90,9 @@ Discontinued photography drone with Ardupilot and GPS.
 
 Modular coaxial copter capable of carrying various payloads.
 
-<img src="/img/ref/spirit.webp" width="25%"/>
+<div style={{width: '25%'}}>
+![Spirit](/img/ref/spirit.webp)
+</div>
 
 ### DJI
 
