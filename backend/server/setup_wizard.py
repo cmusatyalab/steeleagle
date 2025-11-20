@@ -98,7 +98,10 @@ def main():
             ]
         )
         context["one_tag"] = input_dialog(
-            title="Universal Docker Image Tag", text=txt, style=style
+            title="Universal Docker Image Tag",
+            text=txt,
+            style=style,
+            default="latest",
         ).run()
 
     def is_valid_num_tokens(text):
@@ -152,65 +155,86 @@ def main():
     # Obstacle
     txt = FormattedText(
         [
-            ("#111111", "Do you wish to use Metric3D for obstacle avoidance? "),
-            ("", "\n\n"),
+            (
+                "#111111",
+                "Do you wish to use the following set of default values for the obstacle avoidanace engine?\n\n",
+            ),
+            (
+                "#333333 italic",
+                "Use Metric3D\nDepth Threshold: 150 layers\nModel: metric3d_vit_large\n",
+            ),
             (
                 "#111111 bold",
-                "NOTE: Metric3D requires a GPU with much VRAM (>8GB). If you do not have a GPU that large, select no to use the lighter MiDaS network.",
+                "\nNOTE: If not, you will be asked to enter the above values that configure the behavior of the obstacle avoidance engine.",
             ),
         ]
     )
-    context["use_metric3d"] = yes_no_dialog(
-        title="Avoidance - Metric3D or MiDaS", text=txt, style=style
+    context["use_defaults_avoidance"] = yes_no_dialog(
+        title="Avoidance - Use Defaults", text=txt, style=style
     ).run()
 
-    def is_valid_depth_threshold(text):
-        try:
-            a = int(text)
-        except ValueError:
-            return False
-
-        return a > 0 and a < 255
-
-    context["depth_threshold"] = int(
-        input_dialog(
-            title="Avoidance - Depth Threshold",
-            text="Enter the number of layers in the depth map to consider when making the avoidance calculation:",
-            default="150",
-            validator=Validator.from_callable(
-                is_valid_depth_threshold,
-                error_message="The number of Gabriel tokens must be a positive integer between 1 and 255.",
-            ),
-            style=style,
+    if not context["use_defaults_avoidance"]:
+        txt = FormattedText(
+            [
+                ("#111111", "Do you wish to use Metric3D for obstacle avoidance? "),
+                ("", "\n\n"),
+                (
+                    "#111111 bold",
+                    "NOTE: Metric3D requires a GPU with much VRAM (>8GB). If you do not have a GPU that large, select no to use the lighter MiDaS network.",
+                ),
+            ]
+        )
+        context["use_metric3d"] = yes_no_dialog(
+            title="Avoidance - Metric3D or MiDaS", text=txt, style=style
         ).run()
-    )
 
-    if context["use_metric3d"]:
-        context["depth_model"] = radiolist_dialog(
-            title="Avoidance - Metric3D Model ",
-            text="Which Metric3D model should be loaded?",
-            values=[
-                ("metric3d_vit_small", "VIT backbone, small"),
-                ("metric3d_vit_large", "VIT backbone, large"),
-                ("metric3d_vit_giant2", "VIT backbone, giant"),
-                ("metric3d_convnext_large", "ConvNeXt backbone, large"),
-            ],
-            default="metric3d_vit_large",
-            style=style,
-        ).run()
-    else:  # select MiDaS model
-        context["depth_model"] = radiolist_dialog(
-            title="Avoidance - MiDaS Model ",
-            text="Which MiDaS model should be loaded?",
-            values=[
-                ("MiDaS_small", "convolutional model, small"),
-                ("MiDaS", "convolutional model, large"),
-                ("DPT_Hybrid", "DPT transformer, hybrid"),
-                ("DPT_Large", "DPT transformer, large"),
-            ],
-            default="DPT_Hybrid",
-            style=style,
-        ).run()
+        def is_valid_depth_threshold(text):
+            try:
+                a = int(text)
+            except ValueError:
+                return False
+
+            return a > 0 and a < 255
+
+        context["depth_threshold"] = int(
+            input_dialog(
+                title="Avoidance - Depth Threshold",
+                text="Enter the number of layers in the depth map to consider when making the avoidance calculation:",
+                default="150",
+                validator=Validator.from_callable(
+                    is_valid_depth_threshold,
+                    error_message="The number of Gabriel tokens must be a positive integer between 1 and 255.",
+                ),
+                style=style,
+            ).run()
+        )
+
+        if context["use_metric3d"]:
+            context["depth_model"] = radiolist_dialog(
+                title="Avoidance - Metric3D Model ",
+                text="Which Metric3D model should be loaded?",
+                values=[
+                    ("metric3d_vit_small", "VIT backbone, small"),
+                    ("metric3d_vit_large", "VIT backbone, large"),
+                    ("metric3d_vit_giant2", "VIT backbone, giant"),
+                    ("metric3d_convnext_large", "ConvNeXt backbone, large"),
+                ],
+                default="metric3d_vit_large",
+                style=style,
+            ).run()
+        else:  # select MiDaS model
+            context["depth_model"] = radiolist_dialog(
+                title="Avoidance - MiDaS Model ",
+                text="Which MiDaS model should be loaded?",
+                values=[
+                    ("MiDaS_small", "convolutional model, small"),
+                    ("MiDaS", "convolutional model, large"),
+                    ("DPT_Hybrid", "DPT transformer, hybrid"),
+                    ("DPT_Large", "DPT transformer, large"),
+                ],
+                default="DPT_Hybrid",
+                style=style,
+            ).run()
 
     # Detection
     txt = FormattedText(
@@ -310,6 +334,72 @@ def main():
                 style=style,
             ).run()
         )
+
+        context["hsv_threshold"] = float(
+            input_dialog(
+                title="Detection - HSV Filter Threshold",
+                text="Enter the HSV filter threshold:",
+                default="0.5",
+                validator=Validator.from_callable(
+                    is_valid_conf_threshold,
+                    error_message="The threshold must be a floating point number between 0.0 and 1.0.",
+                ),
+                style=style,
+            ).run()
+        )
+
+        context["geofence"] = yes_no_dialog(
+            title="Detection - Use Geofence", text=txt, style=style
+        ).run()
+
+        if context["geofence"]:
+            context["geofence_file"] = input_dialog(
+                title="Detection - Geofence Filename",
+                text="Enter the filename for the geofence (this should reside in the backend/server/geofence directory):",
+                default="geofence.json",
+                style=style,
+            ).run()
+
+        def is_valid_ttl(text):
+            try:
+                a = int(text)
+            except ValueError:
+                return False
+
+            return a > 0
+
+        context["object_ttl"] = int(
+            input_dialog(
+                title="Detection - Object TTL",
+                text="Enter the object TTL (sec):",
+                default="300",
+                validator=Validator.from_callable(
+                    is_valid_ttl,
+                    error_message="The object TTL must be a positive integer.",
+                ),
+                style=style,
+            ).run()
+        )
+
+        context["object_diff_radius"] = int(
+            input_dialog(
+                title="Detection - Object Diff Radius",
+                text="Enter the object diff radius (m):",
+                default="5",
+                validator=Validator.from_callable(
+                    is_valid_ttl,
+                    error_message="The object diff radius must be a positive integer.",
+                ),
+                style=style,
+            ).run()
+        )
+
+        context["exclusions"] = input_dialog(
+            title="Detection - Class Exclusions",
+            text="Enter a comma-separated list of class ids to exclude from detection:",
+            default="0,2,4",
+            style=style,
+        ).run()
 
     # SLAM
     context["terraslam_host"] = input_dialog(
