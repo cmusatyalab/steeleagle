@@ -34,7 +34,7 @@ applications that need to quickly iterate and field deploy.
 
 [**Quickstart**][quickstart] | [**Docs**][docs]
 
-[quickstart]: https://cmusatyalab.github.io/steeleagle/getting_started/overview/
+[quickstart]: https://cmusatyalab.github.io/steeleagle/tutorial/quickstart
 [docs]: https://cmusatyalab.github.io/steeleagle/
 
 ## Why Use SteelEagle?
