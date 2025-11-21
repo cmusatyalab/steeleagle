@@ -19,31 +19,31 @@ def start_services(log, info):
     if log:
         task = subprocess.Popen(logger)
         running.append(task)
-    # Get and read the cap file
-    startup = []
-    cap_request = requests.get(f'{ROOST_REPO}/{info["package"]}/cap.toml')
-    if cap_request.status_code == 200:
-        try:
-            # Attempt to load startup commands
-            startup = tomllib.loads(cap_request.text)['startup']
-        except:
-            print('WARNING: Cap could not be read for startup commands, ignoring...')
-    else:
-        print('WARNING: No cap found!')
-    # Get and read the pyproject file
-    python = PYTHON_DEFAULT
-    py_request = requests.get(f'{ROOST_REPO}/{info["package"]}/pyproject.toml')
-    if py_request.status_code == 200:
-        try:
-            # Attempt to get the requires-python string
-            python = tomllib.loads(py_request.text)['project']['requires-python']
-        except Exception as e:
-            print('WARNING: Could not read Python version for driver, ignoring...')
-    else:
-        print('ERROR: Could not find associated pyproject.toml, are you sure the package exists?')
-        return
     # Start the driver
+    startup = []
     if info:
+        # Get and read the cap file
+        cap_request = requests.get(f'{ROOST_REPO}/{info["package"]}/cap.toml')
+        if cap_request.status_code == 200:
+            try:
+                # Attempt to load startup commands
+                startup = tomllib.loads(cap_request.text)['startup']
+            except:
+                print('WARNING: Cap could not be read for startup commands, ignoring...')
+        else:
+            print('WARNING: No cap found!')
+        # Get and read the pyproject file
+        python = PYTHON_DEFAULT
+        py_request = requests.get(f'{ROOST_REPO}/{info["package"]}/pyproject.toml')
+        if py_request.status_code == 200:
+            try:
+                # Attempt to get the requires-python string
+                python = tomllib.loads(py_request.text)['project']['requires-python']
+            except Exception as e:
+                print('WARNING: Could not read Python version for driver, ignoring...')
+        else:
+            print('ERROR: Could not find associated pyproject.toml, are you sure the package exists?')
+            return
         if info["kwargs"]:
             driver = ['uvx', 
                       '--extra-index-url', ROOST_PYPI,
