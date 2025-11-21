@@ -9,5 +9,5 @@ primarily built for Python, though it supports all languages via its native Prot
 SteelEagle provides a simulated environment which can end-to-end test missions using virtual kinematic vehicles.
 
 ## Contents
-- [**Backend Setup**](backend/): how to configure and run the SteelEagle backend using Docker
-- [**Vehicle Installation**](vehicle/): instructions on how to install and run SteelEagle OS on vehicles
+- [**Quickstart**](quickstart/): how to configure and run the SteelEagle as fast as possible
+- In depth guides to come...
