@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Vehicles Supported
 
-The following is a list of vehicles that have been (or plan to be) tested with SteelEagle.
+The following is a list of vehicles that have been (or plan to be) tested with SteelEagle. Vehicle drivers can be pulled from the SteelEagle artifact repository called 'roost'. For more information on roost and how to pull artifacts from it, please see the [vehicle tutorial](/tutorial/vehicle).
 
 ## Legend
 ![Flight Tested](https://img.shields.io/badge/Flight%20Tested-ffffff?style=for-the-badge&color=00b100) Field tested in multiple real-world environments.

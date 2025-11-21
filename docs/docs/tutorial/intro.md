@@ -10,5 +10,4 @@ SteelEagle provides a simulated environment which can end-to-end test missions u
 
 ## Contents
 - [**Backend Setup**](backend/): how to configure and run the SteelEagle backend using Docker
-- [**Streamlit GCS Configuration**](gcs/): configuration and launch of the Streamlit GCS
-- **Vehicle Installation**: under development
+- [**Vehicle Installation**](vehicle/): instructions on how to install and run SteelEagle OS on vehicles
