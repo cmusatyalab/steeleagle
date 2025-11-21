@@ -583,7 +583,7 @@ class DigitalPerfect(ControlServicer):
         return self._drone.get_current_position()
 
     def _get_heading(self) -> float:
-        return math.degrees(self._drone.get_state("attitude")["yaw"]) % 360
+        return self._drone.get_state("attitude")["yaw"] % 360
 
     def _get_magnetometer(self) -> int:
         return self._drone.get_state("magnetometer")

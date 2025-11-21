@@ -129,6 +129,9 @@ class PatrolArea:
                 except StopIteration:
                     continue
         return None
+    
+    def prepend_to_partition(self, drone_idx, new_points):
+        pass
 
     @staticmethod
     async def load_from_file(filename):
@@ -249,6 +252,9 @@ class StaticPatrolMission(Mission):
         num_drones = len(self.state.drone_list)
         self.state.current_patrol_area.create_partitioning(num_drones)
 
+    def update_drone_altitude(self, drone_id, new_alt):
+        drone_idx = self.state.drone_list.index(drone_id)
+        self.state.drone_altitudes[drone_idx] = new_alt
 
 class MissionSupervisor:
     def __init__(self, router_sock):
@@ -531,6 +537,15 @@ class SwarmController:
                         upper_reroute = self.air_control.reserve_above(drone_id, curr_pos)
                         # Attempt to elevate first
                         if upper_reroute is not None:
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestamp.GetCurrentTime()
+                            req.msn.drone_ids.append(drone_id)
+                            req.msn.action = controlplane.MissionAction.STOP
+                            logger.info(f"Projected airspace violation reported, halting and elevating {drone_id}...")
+                            await self.send_to_drone(req, None, [drone_id])
+                            logger.info(f"{drone_id} halted, proceeding to elevate...")
+                            
                             centroid = upper_reroute.get_centroid()
                             loc = common.Location()
                             loc.latitude = centroid[0]
@@ -561,6 +576,15 @@ class SwarmController:
 
                         lower_reroute = self.air_control.reserve_below(drone_id, curr_pos)
                         if lower_reroute is not None:
+                            req = controlplane.Request()
+                            req.seq_num = int(time.time())
+                            req.timestamp.GetCurrentTime()
+                            req.msn.drone_ids.append(drone_id)
+                            req.msn.action = controlplane.MissionAction.STOP
+                            logger.info(f"Projected airspace violation reported, halting and descending {drone_id}...")
+                            await self.send_to_drone(req, None, [drone_id])
+                            logger.info(f"{drone_id} halted, proceeding to descend...")
+
                             centroid = lower_reroute.get_centroid()
                             loc = common.Location()
                             loc.latitude = centroid[0]
@@ -600,6 +624,7 @@ class SwarmController:
                             logger.info(f"Projected reservation and reroute failure follow-up. Kill signal sent to drone {drone_id}")
                             break
 
+            self.air_control.check_timeouts_for_revocation()
             await asyncio.sleep(max(0.01, update_rate - (time.time() - start_t)))
 
 

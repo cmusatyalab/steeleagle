@@ -8,7 +8,7 @@ from functools import wraps
 
 import logging
 from airspace_control.logger_config import AirspaceLoggerAdapter
-from utils.utils import setup_logging
+from airspace_control.logger_config import setup_airspace_logging
 
 
 BASE_TIMEOUT = 10  # in seconds
@@ -17,7 +17,8 @@ PROJECTION_TIME = 5  # in seconds
 
 logger = logging.getLogger("airspace.engine")
 actions_logger = logging.getLogger("airspace.actions")
-logger.basicConfig(filename="airspace_engine.log", level=logging.DEBUG)
+#logging.basicConfig(filename="airspace_engine.log", level=logging.DEBUG)
+setup_airspace_logging(log_level=logging.DEBUG)
 
 class AirspaceControlEngine:
     def __init__(
@@ -33,6 +34,7 @@ class AirspaceControlEngine:
         self.drone_region_map = {}  # drone_id -> region
         self.drone_priority_map = {}  # drone_id -> priority
         self.region_map : dict[str, asr.AirspaceRegion] = {} # region_id (geohash) -> region object
+        self.timeout_map = {} # regiod_id -> reservation time
 
         # Geohash precision and altitude descretization (can be adjusted based on expected region sizes)
         self.geohash_precision = 10
@@ -569,6 +571,7 @@ class AirspaceControlEngine:
             if curr_owner is not None and curr_owner == drone_id:
                 region_adapter.info(f"c_id: {target_region.c_id} >> Renewed lease for existing reservation")
                 target_region.set_timeout(BASE_TIMEOUT)
+                self.timeout_map[target_region.c_id] = target_region
                 return True
                 # Fail if owned by another drone
             if curr_owner is None:
@@ -578,6 +581,8 @@ class AirspaceControlEngine:
                     region_adapter.info(
                         f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
                     )
+                    target_region.set_timeout(BASE_TIMEOUT)
+                    self.timeout_map[target_region.c_id] = target_region
                     return True
                 if target_region.is_available_priority(self.drone_priority_map[drone_id]):
                     target_region.update_status(asr.RegionStatus.RESTRICTED_ALLOCATED)
@@ -585,6 +590,8 @@ class AirspaceControlEngine:
                     region_adapter.info(
                         f"c_id: {target_region.c_id} >> Region reserved successfully (priority: {self.drone_priority_map.get(drone_id, 'unknown')})"
                     )
+                    target_region.set_timeout(BASE_TIMEOUT)
+                    self.timeout_map[target_region.c_id] = target_region
                     return True
             actions_logger.warning(
                     f"c_id: {target_region.c_id} >> RESERVATION CONFLICT: Drone {drone_id} attempted to reserve region {target_region.region_id} owned by drone {curr_owner}"
@@ -605,6 +612,8 @@ class AirspaceControlEngine:
         #    self.set_priority(drone_id, 0)
         # target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
         target_region.update_owner(drone_id, self.drone_priority_map[drone_id])
+        target_region.set_timeout(BASE_TIMEOUT)
+        self.timeout_map[target_region.c_id] = target_region
         return True
 
     def renew_region(self, drone_id, target_region: asr.AirspaceRegion) -> bool:
@@ -648,7 +657,7 @@ class AirspaceControlEngine:
             target_region.update_status(asr.RegionStatus.RESTRICTED_AVAILABLE)
         elif target_region.get_status is asr.RegionStatus.ALLOCATED:
             target_region.update_status(asr.RegionStatus.FREE)
-            
+        del self.timeout_map[target_region.c_id]    
         actions_logger.warning(
             f"c_id: {target_region.c_id} >> REGION REVOCATION: {target_region.region_id} revoked from drone {target_region.get_owner()}"
         )
@@ -856,12 +865,15 @@ class AirspaceControlEngine:
                 last_region = None
             if last_region is not None and last_region.c_id != current_region.c_id:
                 self.remove_occupant(drone_id, last_region)
+                del self.timeout_map[last_region.c_id]
                 self.add_occupant(drone_id, current_region)
             actions_logger.debug(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt})")
+            self.renew_region(drone_id, current_region)
             return True
         if (current_region is not None) and (current_region.get_owner() == None):
             self.reserve_region(drone_id, current_region)
             self.add_occupant(drone_id, current_region)
+            self.renew_region(drone_id, current_region)
             actions_logger.debug(f"drone_id: {drone_id} >> Current location ({lat}, {lon}, {alt}")
             return True
         else:
@@ -879,6 +891,7 @@ class AirspaceControlEngine:
             return False
         if (proj_region is not None) and (proj_region.get_owner() == drone_id):
             actions_logger.debug(f"drone_id: {drone_id} >> Already controls projected region c_id: {proj_region.c_id}")
+            self.renew_region(drone_id, proj_region)
             return True
         if (proj_region is not None) and (proj_region.get_owner() == None):
             self.reserve_region(drone_id, proj_region)
@@ -948,3 +961,19 @@ class AirspaceControlEngine:
             return cand_reg
         actions_logger.info(f"drone_id: {drone_id} >> Reserve below failed, lower neighbor already reserved by {cand_reg.get_owner()}")
         return None
+    
+    def check_timeouts_for_revocation(self):
+        for cid in self.timeout_map:
+            curr_reg = self.timeout_map[cid]
+            if (curr_reg.check_timeout()):
+                self.release_region(curr_reg)
+    
+    def release_region(self, target_region):
+        target_region.clear_timeout()
+        target_region.update_owner(None, None)
+        curr_status = target_region.get_status()
+        if (curr_status is asr.RegionStatus.RESTRICTED_ALLOCATED or curr_status is asr.RegionStatus.RESTRICTED_OCCUPIED):
+            target_region.set_status(asr.RegionStatus.RESTRICTED_AVAILABLE)
+        if (curr_status is asr.RegionStatus.ALLOCATED or curr_status is asr.RegionStatus.OCCUPIED):
+            target_region.set_status(asr.RegionStatus.FREE)
+        del self.timeout_map[target_region.c_id]
