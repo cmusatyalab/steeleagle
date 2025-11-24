@@ -79,6 +79,30 @@ def write_files(CONTEXT):
                 outf.write(template.render(CONTEXT))
 
 
+def download_coco_model():
+    # download yolov5 coco model
+    try:
+        mkdir("models")
+        print_formatted_text(
+            HTML("<note>Created models directory.</note>"),
+            style=FORMATTED_TEXT_STYLE,
+        )
+    except FileExistsError:
+        print_formatted_text(
+            HTML("<error>Models directory already exists.</error>"),
+            style=FORMATTED_TEXT_STYLE,
+        )
+    path, _ = urlretrieve(
+        "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m.pt",
+        "./models/coco.pt",
+    )
+    CONTEXT["detection_model"] = "coco"
+    print_formatted_text(
+        HTML("<note>Downloaded YOLOv5m model to ./models/coco.pt!</note>"),
+        style=FORMATTED_TEXT_STYLE,
+    )
+
+
 def main():
     message_dialog(
         title="SteelEagle Backend Setup Wizard",
@@ -294,27 +318,7 @@ def main():
         ).run()
 
         if not CONTEXT["use_custom_model"]:
-            # download yolov5 coco model
-            try:
-                mkdir("models")
-                print_formatted_text(
-                    HTML("<note>Created models directory.</note>"),
-                    style=FORMATTED_TEXT_STYLE,
-                )
-            except FileExistsError:
-                print_formatted_text(
-                    HTML("<error>Models directory already exists.</error>"),
-                    style=FORMATTED_TEXT_STYLE,
-                )
-            path, _ = urlretrieve(
-                "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m.pt",
-                "./models/coco.pt",
-            )
-            CONTEXT["detection_model"] = "coco"
-            print_formatted_text(
-                HTML("<note>Downloaded YOLOv5m model to ./models/coco.pt!</note>"),
-                style=FORMATTED_TEXT_STYLE,
-            )
+            download_coco_model()
         else:
             # enter custom model name
             txt = FormattedText(
@@ -479,6 +483,8 @@ def main():
                 style=GLOBAL_STYLE,
             ).run()
         )
+    else:
+        download_coco_model()
 
     # Always prompt for passwords, even if using default for everything else
     CONTEXT["redis_pw"] = input_dialog(
