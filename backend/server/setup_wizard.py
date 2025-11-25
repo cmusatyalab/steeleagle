@@ -66,6 +66,7 @@ FORMATTED_TEXT_STYLE = Style.from_dict(
 
 
 def write_files(CONTEXT):
+    mkdir("redis")
     env = Environment(
         loader=PackageLoader("setup_wizard"),
     )
