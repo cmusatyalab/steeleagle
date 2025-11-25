@@ -31,7 +31,9 @@ sdk-revision/src/steeleagle_sdk/protocol/**/__pycache__/
 backend/server/models/
 backend/server/steeleagle-vol/
 backend/server/redis/*
+backend/server/uv.lock
 !backend/server/redis/
+!backend/server/redis/redis.conf
 !backend/server/redis/redis.conf.template
 backend/streamlit/.streamlit/secrets.toml
 backend/server/engines/slam/images/*
