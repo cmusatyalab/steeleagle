@@ -38,8 +38,12 @@ from ultralytics import YOLO
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 class PytorchPredictor:

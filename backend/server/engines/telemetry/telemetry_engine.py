@@ -202,34 +202,41 @@ class TelemetryEngine(cognitive_engine.Engine):
     """
 
     def handle(self, input_frame):
-        status = gabriel_pb2.ResultWrapper.Status.SUCCESS
-        result_wrapper = cognitive_engine.create_result_wrapper(status)
-        result_wrapper.result_producer_name.value = self.ENGINE_NAME
-        result = None
-
         logger.info("Processing incoming input frame from Gabriel...")
 
-        if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
-            extras = cognitive_engine.unpack_extras(
-                telemetry.DriverTelemetry, input_frame
-            )
-            logger.info(extras.vehicle_info.name)
-            if extras.vehicle_info.name != "":
-                result = gabriel_pb2.ResultWrapper.Result()
-                result.payload_type = gabriel_pb2.PayloadType.TEXT
-                result.payload = b"Telemetry updated."
-                self.updateVehicle(extras)
+        status = gabriel_pb2.Status()
 
-        elif input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
-            extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
-            image_np = np.frombuffer(extras.data, dtype=np.uint8)
+        if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
+            tel = telemetry.DriverTelemetry()
+            assert input_frame.WhichOneof("payload") == "any_payload"
+            assert input_frame.any_payload.Is(
+                telemetry.DriverTelemetry.DESCRIPTOR
+            )
+            input_frame.any_payload.Unpack(tel)
+
+            logger.info(tel.vehicle_info.name)
+            if tel.vehicle_info.name == "":
+                status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
+                status.message = "Vehicle name is an empty string"
+                return cognitive_engine.Result(status, None)
+
+            self.updateVehicle(tel)
+            return cognitive_engine.Result(status, "Telemetry updated")
+
+        if input_frame.payload_type == gabriel_pb2.PayloadType.IMAGE:
+            frame = telemetry.Frame()
+            assert input_frame.WhichOneof("payload") == "any_payload"
+            assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+            input_frame.any_payload.Unpack(frame)
+            image_np = np.frombuffer(frame.data, dtype=np.uint8)
+
             # have redis publish the latest image
             if self.publish:
                 logger.info(
-                    f"Publishing image to redis under imagery.{extras.vehicle_info.name} topic."
+                    f"Publishing image to redis under imagery.{tel.vehicle_info.name} topic."
                 )
                 self.r.publish(
-                    f"imagery.{extras.vehicle_info.name}", input_frame.payloads[0]
+                    f"imagery.{tel.vehicle_info.name}", input_frame.payloads[0]
                 )
             # store images in the shared volume
             try:
@@ -237,7 +244,7 @@ class TelemetryEngine(cognitive_engine.Engine):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
-                vehicle_raw_dir = f"{self.storage_path}/raw/{extras.vehicle_info.name}"
+                vehicle_raw_dir = f"{self.storage_path}/raw/{frame.vehicle_info.name}"
                 if not os.path.exists(vehicle_raw_dir):
                     os.mkdir(vehicle_raw_dir)
                 now = datetime.datetime.now(pytz.timezone("America/New_York"))
@@ -252,22 +259,24 @@ class TelemetryEngine(cognitive_engine.Engine):
                     f"{current_path}/{now.strftime('%H%M.%S%f')}.jpg", format="JPEG"
                 )
 
-                vehicle_raw_dir = f"{self.storage_path}/raw/{extras.vehicle_info.name}"
+                vehicle_raw_dir = f"{self.storage_path}/raw/{frame.vehicle_info.name}"
                 img.save(f"{vehicle_raw_dir}/temp.jpg", format="JPEG")
                 os.rename(
                     f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg"
                 )
 
-                logger.debug(f"Updated latest image for {extras.vehicle_info.name}")
+                logger.debug(f"Updated latest image for {frame.vehicle_info.name}")
+                return cognitive_engine.Result(status, "Telemetry updated")
             except Exception as e:
                 logger.error(f"Exception trying to store imagery: {e}")
+                status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
+                status.message = str(e)
+                return cognitive_engine.Result(status, None)
 
-        # only append the result if it has a payload
-        # e.g. in the elif block where we received an image from the streaming thread, we don't add a payload
-        if result is not None:
-            result_wrapper.results.append(result)
-        return result_wrapper
-
+        logger.error(f"Engine received wrong input format: {input_frame.payload_type}")
+        status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
+        status.message = f"Engine received wrong input format: {input_frame.payload_type}"
+        return cognitive_engine.Result(status, None)
 
 def main():
     """Starts the Gabriel server."""

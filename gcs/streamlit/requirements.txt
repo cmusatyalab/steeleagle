@@ -4,3 +4,6 @@ streamlit-folium
 redis
 zmq
 pykml
+steeleagle-sdk
+colorhash
+./streamlit_keypressed-0.1.5-py3-none-any.whl

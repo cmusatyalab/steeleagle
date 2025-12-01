@@ -402,43 +402,44 @@ wheels = [
 
 [[package]]
 name = "gabriel-client"
-version = "4.0.5"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
     { name = "opencv-python" },
     { name = "prometheus-client" },
+    { name = "protobuf" },
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/64/77c6aeb88b5d4d59826926b12717b9020afd1eb4c82f303a63e2e32bbfa5/gabriel_client-4.0.5.tar.gz", hash = "sha256:1fc1826c39cd733c6a253a02944338778f4f79e0affba564deee0ad74fb3c398", size = 17670, upload-time = "2025-11-03T21:42:51.746Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/44/e06ec6bf7163f959f2ecce076bc083c199fe3b9a4f5e29364a5cc0e760ed/gabriel_client-4.1.tar.gz", hash = "sha256:c0cce8f233f9e5dfcb7182f8f593c6d1a1a8758a3a856d6b40284249a4c2dae3", size = 15206, upload-time = "2025-12-01T03:40:51.027Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/35/8ad40b5ec66977e6f81aca4695b91e60221e7df68481d463d09a1f44efd5/gabriel_client-4.0.5-py3-none-any.whl", hash = "sha256:110a37693e8a01ec103e333af702f10798bfa776b2c4e1335daeee27aceeebe8", size = 18539, upload-time = "2025-11-03T21:42:50.904Z" },
+    { url = "https://files.pythonhosted.org/packages/23/de/ecd223d6ed2d5ab7b345f9549384714cdf9ead38341b04a9483c5e2b9971/gabriel_client-4.1-py3-none-any.whl", hash = "sha256:5ffadb46d94892d8080e2ce78fb8c57aa2c673b5cd13158d34bf82e13362b525", size = 17265, upload-time = "2025-12-01T03:40:50.235Z" },
 ]
 
 [[package]]
 name = "gabriel-protocol"
-version = "4.0"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/cd1d16e85967b76842f64d349dc6af4e7e717676d423d25c7b5428999def/gabriel_protocol-4.0-py3-none-any.whl", hash = "sha256:5c5f37a5531699bfe51d54ae6327b6c9375a28f32c4bba129fe948ffabc569df", size = 7592, upload-time = "2025-09-23T13:12:25.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
 ]
 
 [[package]]
 name = "gabriel-server"
-version = "4.0.6"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
+    { name = "prometheus-client" },
+    { name = "protobuf" },
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/a3/10c74e205f3ea28f83495c0aacf4b7cab0af26dcc6b8695394caed522821/gabriel_server-4.0.6.tar.gz", hash = "sha256:66b057f547249d39ff060955213ced83689e920bb8b55d757566a7bb16cdcf80", size = 21079, upload-time = "2025-11-03T21:29:52.75Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/29/6b63e4fb5f721f12d2d4d67c3fb05e4621de9258289debc0b22be6d29934/gabriel_server-4.1.tar.gz", hash = "sha256:e6989c5d2041dc413bd2673f4289ac78793c7e7acccedf15eb327abe0d8dff7e", size = 18949, upload-time = "2025-12-01T03:39:44.32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/58/deca66285f7145a474e9288a68b461af9f8a38b94a7adf4b42c7e36234aa/gabriel_server-4.0.6-py3-none-any.whl", hash = "sha256:721dc6872750e427478b1ebf96698f67a84d0ca1739f5bd3fc6bf2a3b8ead948", size = 23183, upload-time = "2025-11-03T21:29:51.599Z" },
+    { url = "https://files.pythonhosted.org/packages/62/63/96aff5f7ac7bca4655026606ccce14b46f506076083195a038c9d24f1e06/gabriel_server-4.1-py3-none-any.whl", hash = "sha256:8a048ffc1ba305fec99a9429f803e862455d9713fefbd36dbcc9cc27f880c4d8", size = 22589, upload-time = "2025-12-01T03:39:43.191Z" },
 ]
 
 [[package]]
@@ -1512,8 +1513,8 @@ dependencies = [
 requires-dist = [
     { name = "aiorwlock", specifier = ">=1.5.0" },
     { name = "dacite", specifier = ">=1.9.2" },
-    { name = "gabriel-client", specifier = ">=4.0.4" },
-    { name = "gabriel-server", specifier = ">=4.0.1" },
+    { name = "gabriel-client", specifier = ">=4.1" },
+    { name = "gabriel-server", specifier = ">=4.1" },
     { name = "grpc-interceptor", specifier = ">=0.15.4" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
