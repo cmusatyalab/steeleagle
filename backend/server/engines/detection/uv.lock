@@ -207,44 +207,28 @@ wheels = [
 ]
 
 [[package]]
-name = "gabriel-client"
-version = "4.0.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "gabriel-protocol" },
-    { name = "opencv-python" },
-    { name = "prometheus-client" },
-    { name = "pyzmq" },
-    { name = "websockets" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/64/61/af9595d4a397ac5540cf8dc65837469aa2247ea7d6ed80e244e2840c03f6/gabriel_client-4.0.3.tar.gz", hash = "sha256:da5b823daaab00c4385ceea86682974977369bfd1e59d36e09b682be2e3fd0c9", size = 17679, upload-time = "2025-11-02T23:05:21.696Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/23/6f/d4d5b2c35af2bb6e79be2ff6a01e274d14c06e63b3893d7560a9cf29a8cb/gabriel_client-4.0.3-py3-none-any.whl", hash = "sha256:04757760fe5fa4e9dc2b39978c03b9186caffd9e77f412a31a70e36b871e4f34", size = 18545, upload-time = "2025-11-02T23:05:20.492Z" },
-]
-
-[[package]]
 name = "gabriel-protocol"
-version = "4.0"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/cd1d16e85967b76842f64d349dc6af4e7e717676d423d25c7b5428999def/gabriel_protocol-4.0-py3-none-any.whl", hash = "sha256:5c5f37a5531699bfe51d54ae6327b6c9375a28f32c4bba129fe948ffabc569df", size = 7592, upload-time = "2025-09-23T13:12:25.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
 ]
 
 [[package]]
 name = "gabriel-server"
-version = "4.0.3"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
+    { name = "prometheus-client" },
+    { name = "protobuf" },
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/7d/3258f2c4e2c94a8f41606595424eacb6ca053f2ba1d649cd58cdb7e7b2ed/gabriel_server-4.0.3.tar.gz", hash = "sha256:25b2610ba28ea32114df75908b719af02740c41c3ea25f4cd2ee830a101b35ef", size = 21186, upload-time = "2025-11-02T23:04:38.082Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/29/6b63e4fb5f721f12d2d4d67c3fb05e4621de9258289debc0b22be6d29934/gabriel_server-4.1.tar.gz", hash = "sha256:e6989c5d2041dc413bd2673f4289ac78793c7e7acccedf15eb327abe0d8dff7e", size = 18949, upload-time = "2025-12-01T03:39:44.32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/2c/708d4d44860e34048f8bde7cba2d539ad760d820f148db6390c1e3cc2605/gabriel_server-4.0.3-py3-none-any.whl", hash = "sha256:50b599809f3782d7aa69d01ac3e13b5c8977d8d46a9959163fba19b6e159e0b3", size = 23368, upload-time = "2025-11-02T23:04:36.93Z" },
+    { url = "https://files.pythonhosted.org/packages/62/63/96aff5f7ac7bca4655026606ccce14b46f506076083195a038c9d24f1e06/gabriel_server-4.1-py3-none-any.whl", hash = "sha256:8a048ffc1ba305fec99a9429f803e862455d9713fefbd36dbcc9cc27f880c4d8", size = 22589, upload-time = "2025-12-01T03:39:43.191Z" },
 ]
 
 [[package]]
@@ -1006,8 +990,6 @@ name = "steeleagle-backend-detection"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "gabriel-client" },
-    { name = "gabriel-protocol" },
     { name = "gabriel-server" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
@@ -1024,9 +1006,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gabriel-client" },
-    { name = "gabriel-protocol" },
-    { name = "gabriel-server" },
+    { name = "gabriel-server", specifier = ">=4.1" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
     { name = "pillow" },

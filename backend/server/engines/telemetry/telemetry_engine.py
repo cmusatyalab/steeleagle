@@ -332,7 +332,7 @@ def main():
         input_queue_maxsize=60,
         port=args.port,
         num_tokens=2,
-        engine_name="telemetry",
+        engine_id="telemetry",
         use_zeromq=True,
     )
 

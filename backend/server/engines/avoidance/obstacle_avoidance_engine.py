@@ -33,6 +33,7 @@ from gabriel_server import cognitive_engine, local_engine
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
+from google.protobuf.any_pb2 import Any
 
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
@@ -127,19 +128,10 @@ class AvoidanceEngine(ABC):
 
     def text_payload_reply(self):
         # if the payload is TEXT, say from a CNC client, we ignore
-        status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
-        result_wrapper = self.get_result_wrapper(status)
-
-        result = gabriel_pb2.ResultWrapper.Result()
-        result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result.payload = b"Ignoring TEXT payload."
-        result_wrapper.results.append(result)
-        return result_wrapper
-
-    def get_result_wrapper(self, status):
-        result_wrapper = cognitive_engine.create_result_wrapper(status)
-        result_wrapper.result_producer_name.value = self.ENGINE_NAME
-        return result_wrapper
+        status = gabriel_pb2.Status()
+        status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
+        status.message = "Ignoring text payload"
+        return cognitive_engine.Result(status, None)
 
     def maybe_load_model(self, model):
         if model != "" and model != self.model:
@@ -152,15 +144,13 @@ class AvoidanceEngine(ABC):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             return self.text_payload_reply()
 
-        extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
+        frame = telemetry.Frame()
+        assert input_frame.WhichOneof("payload") == "any_payload"
+        assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+        input_frame.any_payload.Unpack(frame)
 
-        vector, depth_img = self.process_image(input_frame.payloads[0])
-        status = gabriel_pb2.ResultWrapper.Status.SUCCESS
-        result_wrapper = cognitive_engine.create_result_wrapper(status)
-
-        result = gabriel_pb2.ResultWrapper.Result()
-        result.payload_type = gabriel_pb2.PayloadType.TEXT
-        result_wrapper.results.append(result)
+        vector, depth_img = self.process_image(frame.data)
+        status = gabriel_pb2.Status()
 
         response = result_pb2.ComputeResult()
         response.timestamp.GetCurrentTime()
@@ -168,8 +158,7 @@ class AvoidanceEngine(ABC):
         response.avoidance_result.actuation_vector = vector
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
         if not self.unittest:
-            self.store_vector(extras.vehicle_info.name, vector)
-        result_wrapper.extras.Pack(response)
+            self.store_vector(frame.vehicle_info.name, vector)
 
         if self.store_detections:
             self.store_detection(depth_img)
@@ -180,7 +169,9 @@ class AvoidanceEngine(ABC):
 
         self.lasttime = self.t1
 
-        return result_wrapper
+        any_payload = Any()
+        any_payload.Pack(response)
+        return cognitive_engine.Result(status, any_payload)
 
 
 class MidasAvoidanceEngine(cognitive_engine.Engine, AvoidanceEngine):
@@ -535,7 +526,7 @@ def main():
         input_queue_maxsize=60,
         port=args.port,
         num_tokens=2,
-        engine_name=AvoidanceEngine.ENGINE_NAME,
+        engine_id=AvoidanceEngine.ENGINE_NAME,
         use_zeromq=True,
     )
 

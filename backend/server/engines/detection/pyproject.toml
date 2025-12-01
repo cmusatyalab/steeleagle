@@ -13,9 +13,7 @@ dependencies = [
    "ultralytics",
    "scipy",
    "Pillow",
-   "gabriel-server",
-   "gabriel-protocol",
-   "gabriel-client",
+   "gabriel-server>=4.1",
    "steeleagle-sdk",
    "torch"
 ]

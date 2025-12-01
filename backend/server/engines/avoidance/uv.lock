@@ -278,27 +278,27 @@ wheels = [
 
 [[package]]
 name = "gabriel-protocol"
-version = "4.0"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/cd1d16e85967b76842f64d349dc6af4e7e717676d423d25c7b5428999def/gabriel_protocol-4.0-py3-none-any.whl", hash = "sha256:5c5f37a5531699bfe51d54ae6327b6c9375a28f32c4bba129fe948ffabc569df", size = 7592, upload-time = "2025-09-23T13:12:25.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
 ]
 
 [[package]]
 name = "gabriel-server"
-version = "4.0.3"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
+    { name = "prometheus-client" },
+    { name = "protobuf" },
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/7d/3258f2c4e2c94a8f41606595424eacb6ca053f2ba1d649cd58cdb7e7b2ed/gabriel_server-4.0.3.tar.gz", hash = "sha256:25b2610ba28ea32114df75908b719af02740c41c3ea25f4cd2ee830a101b35ef", size = 21186, upload-time = "2025-11-02T23:04:38.082Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/29/6b63e4fb5f721f12d2d4d67c3fb05e4621de9258289debc0b22be6d29934/gabriel_server-4.1.tar.gz", hash = "sha256:e6989c5d2041dc413bd2673f4289ac78793c7e7acccedf15eb327abe0d8dff7e", size = 18949, upload-time = "2025-12-01T03:39:44.32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/2c/708d4d44860e34048f8bde7cba2d539ad760d820f148db6390c1e3cc2605/gabriel_server-4.0.3-py3-none-any.whl", hash = "sha256:50b599809f3782d7aa69d01ac3e13b5c8977d8d46a9959163fba19b6e159e0b3", size = 23368, upload-time = "2025-11-02T23:04:36.93Z" },
+    { url = "https://files.pythonhosted.org/packages/62/63/96aff5f7ac7bca4655026606ccce14b46f506076083195a038c9d24f1e06/gabriel_server-4.1-py3-none-any.whl", hash = "sha256:8a048ffc1ba305fec99a9429f803e862455d9713fefbd36dbcc9cc27f880c4d8", size = 22589, upload-time = "2025-12-01T03:39:43.191Z" },
 ]
 
 [[package]]
@@ -611,8 +611,8 @@ name = "nvidia-cublas-cu11"
 version = "11.10.3.66"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ce/41/fdeb62b5437996e841d83d7d2714ca75b886547ee8017ee2fe6ea409d983/nvidia_cublas_cu11-11.10.3.66-py3-none-manylinux1_x86_64.whl", hash = "sha256:d32e4d75f94ddfb93ea0a5dda08389bcc65d8916a25cb9f37ac89edaeed3bded", size = 317097917, upload-time = "2022-08-11T17:32:30.789Z" },
@@ -623,8 +623,8 @@ name = "nvidia-cuda-cupti-cu11"
 version = "11.7.101"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e6/9d/dd0cdcd800e642e3c82ee3b5987c751afd4f3fb9cc2752517f42c3bc6e49/nvidia_cuda_cupti_cu11-11.7.101-py3-none-manylinux1_x86_64.whl", hash = "sha256:e0cfd9854e1f2edaa36ca20d21cd0bdd5dcfca4e3b9e130a082e05b33b6c5895", size = 11845698, upload-time = "2022-08-03T20:58:36.733Z" },
@@ -644,8 +644,8 @@ name = "nvidia-cuda-runtime-cu11"
 version = "11.7.99"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/36/92/89cf558b514125d2ebd8344dd2f0533404b416486ff681d5434a5832a019/nvidia_cuda_runtime_cu11-11.7.99-py3-none-manylinux1_x86_64.whl", hash = "sha256:cc768314ae58d2641f07eac350f40f99dcb35719c4faff4bc458a7cd2b119e31", size = 849253, upload-time = "2022-08-03T20:58:27.979Z" },
@@ -656,7 +656,7 @@ name = "nvidia-cudnn-cu11"
 version = "8.5.0.96"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu11" },
+    { name = "nvidia-cublas-cu11", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/30/66d4347d6e864334da5bb1c7571305e501dcb11b9155971421bb7bb5315f/nvidia_cudnn_cu11-8.5.0.96-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:402f40adfc6f418f9dae9ab402e773cfed9beae52333f6d86ae3107a1b9527e7", size = 557141533, upload-time = "2022-09-21T21:55:09.845Z" },
@@ -677,8 +677,8 @@ name = "nvidia-curand-cu11"
 version = "10.2.10.91"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/11/af78d54b2420e64a4dd19e704f5bb69dcb5a6a3138b4465d6a48cdf59a21/nvidia_curand_cu11-10.2.10.91-py3-none-manylinux1_x86_64.whl", hash = "sha256:eecb269c970fa599a2660c9232fa46aaccbf90d9170b96c462e13bcb4d129e2c", size = 54628716, upload-time = "2022-08-03T21:13:08.944Z" },
@@ -689,7 +689,7 @@ name = "nvidia-cusolver-cu11"
 version = "11.4.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu11" },
+    { name = "nvidia-cublas-cu11", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/77/66149e3153b19312fb782ea367f3f950123b93916a45538b573fe373570a/nvidia_cusolver_cu11-11.4.0.1-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:72fa7261d755ed55c0074960df5904b65e2326f7adce364cbe4945063c1be412", size = 102594907, upload-time = "2022-09-21T23:13:22.001Z" },
@@ -701,8 +701,8 @@ name = "nvidia-cusparse-cu11"
 version = "11.7.4.91"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ea/6f/6d032cc1bb7db88a989ddce3f4968419a7edeafda362847f42f614b1f845/nvidia_cusparse_cu11-11.7.4.91-py3-none-manylinux1_x86_64.whl", hash = "sha256:a3389de714db63321aa11fbec3919271f415ef19fda58aed7f2ede488c32733d", size = 173182291, upload-time = "2022-08-03T21:13:55.407Z" },
@@ -721,8 +721,8 @@ name = "nvidia-nvtx-cu11"
 version = "11.7.91"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "setuptools" },
-    { name = "wheel" },
+    { name = "setuptools", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "wheel", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/23/d5/09493ff0e64fd77523afbbb075108f27a13790479efe86b9ffb4587671b5/nvidia_nvtx_cu11-11.7.91-py3-none-manylinux1_x86_64.whl", hash = "sha256:b22c64eee426a62fc00952b507d6d29cf62b4c9df7a480fcc417e540e05fd5ac", size = 98579, upload-time = "2022-08-03T20:59:22.605Z" },
@@ -787,6 +787,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/61/33/9611380c2bdb1225fdef633e2a9610622310fed35ab11dac9620972ee088/platformdirs-4.5.0.tar.gz", hash = "sha256:70ddccdd7c99fc5942e9fc25636a8b34d04c24b335100223152c2803e4063312", size = 21632, upload-time = "2025-10-08T17:44:48.791Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/73/cb/ac7874b3e5d58441674fb70742e6c374b28b0c7cb988d37d991cde47166c/platformdirs-4.5.0-py3-none-any.whl", hash = "sha256:e578a81bb873cbb89a41fcc904c7ef523cc18284b7e3b3ccf06aca1403b7ebd3", size = 18651, upload-time = "2025-10-08T17:44:47.223Z" },
+]
+
+[[package]]
+name = "prometheus-client"
+version = "0.23.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/53/3edb5d68ecf6b38fcbcc1ad28391117d2a322d9a1a3eff04bfdb184d8c3b/prometheus_client-0.23.1.tar.gz", hash = "sha256:6ae8f9081eaaaf153a2e959d2e6c4f4fb57b12ef76c8c7980202f1e57b48b2ce", size = 80481, upload-time = "2025-09-18T20:47:25.043Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/db/14bafcb4af2139e046d03fd00dea7873e48eafe18b7d2797e73d6681f210/prometheus_client-0.23.1-py3-none-any.whl", hash = "sha256:dd1913e6e76b59cfe44e7a4b83e01afc9873c1bdfd2ed8739f1e76aeca115f99", size = 61145, upload-time = "2025-09-18T20:47:23.875Z" },
 ]
 
 [[package]]
@@ -1105,7 +1114,6 @@ version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "datetime" },
-    { name = "gabriel-protocol" },
     { name = "gabriel-server" },
     { name = "matplotlib" },
     { name = "mmcv-lite" },
@@ -1122,8 +1130,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "datetime" },
-    { name = "gabriel-protocol" },
-    { name = "gabriel-server" },
+    { name = "gabriel-server", specifier = ">=4.1" },
     { name = "matplotlib" },
     { name = "mmcv-lite" },
     { name = "numpy", specifier = "==1.23.1" },
@@ -1258,10 +1265,10 @@ name = "triton"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cmake" },
-    { name = "filelock" },
-    { name = "lit" },
-    { name = "torch" },
+    { name = "cmake", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "filelock", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "lit", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
+    { name = "torch", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/cd/4aa0179919306f9c2e3e5308f269d20c094b2a4e2963b656e9405172763f/triton-2.0.0-1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:226941c7b8595219ddef59a1fdb821e8c744289a132415ddd584facedeb475b1", size = 63278135, upload-time = "2023-03-20T17:32:25.22Z" },

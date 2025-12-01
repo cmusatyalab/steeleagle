@@ -14,8 +14,7 @@ dependencies = [
    "mmcv-lite",
    "Pillow",
    "DateTime",
-   "gabriel-server",
-   "gabriel-protocol",
+   "gabriel-server>=4.1",
    "steeleagle-sdk",
    "timm",
 ]
