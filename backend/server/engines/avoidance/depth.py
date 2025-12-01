@@ -120,7 +120,7 @@ def main():
 
     runner = engine_runner.EngineRunner(
         engine=engine_setup(),
-        engine_name=args.engine_id,
+        engine_id=args.engine_id,
         server_address=args.gabriel,
         all_responses_required=True,
     )

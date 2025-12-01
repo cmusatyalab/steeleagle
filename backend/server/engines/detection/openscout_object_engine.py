@@ -34,6 +34,7 @@ from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
 from ultralytics import YOLO
+from google.protobuf.any_pb2 import Any
 
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
@@ -272,30 +273,28 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def handle(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             # if the payload is TEXT, say from a CNC client, we ignore
-            status = gabriel_pb2.ResultWrapper.Status.WRONG_INPUT_FORMAT
-            result_wrapper = cognitive_engine.create_result_wrapper(status)
-            result = gabriel_pb2.ResultWrapper.Result()
-            result.payload_type = gabriel_pb2.PayloadType.TEXT
-            result.payload = b"Ignoring TEXT payload."
-            result_wrapper.results.append(result)
-            return result_wrapper
+            status = gabriel_pb2.Status()
+            status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
+            status.message = "Ignoring text payload"
+            return cognitive_engine.Result(status, None)
 
-        extras = cognitive_engine.unpack_extras(telemetry.Frame, input_frame)
+        frame = telemetry.Frame()
+        assert input_frame.WhichOneof("payload") == "any_payload"
+        assert input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)
+        input_frame.any_payload.Unpack(frame)
 
         self.t0 = time.time()
 
         frame = telemetry.Frame()
-        input_frame.extras.Unpack(frame)
+        input_frame.any_payload.Unpack(frame)
         results, image_np = self.process_image(frame.data)
-        status = gabriel_pb2.ResultWrapper.Status.SUCCESS
-        result_wrapper = cognitive_engine.create_result_wrapper(status)
         if len(results) > 0:
             detections = self.process_results(
                 image_np,
                 results,
-                extras.vehicle_info,
-                extras.position_info,
-                extras.gimbal_info,
+                frame.vehicle_info,
+                frame.position_info,
+                frame.gimbal_info,
             )
 
         compute_result = result_pb2.ComputeResult()
@@ -307,13 +306,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         frame_result = result_pb2.FrameResult()
         frame_result.type = 'object-detection'
-        frame_result.result.pack(compute_result)
+        frame_result.result.append(compute_result)
         # TODO: if we want to use the Detections message in
         # telemetry.proto, then we need to add some fields
         # such as lat/lon/passes_hsv_filter
         # if detections is not None:
         #    response.detection_result = detections
-        result_wrapper.extras.Pack(frame_result)
+        any_payload = Any()
+        any_payload.Pack(frame_result)
 
         self.count += 1
 
@@ -322,7 +322,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         self.lasttime = self.t1
 
-        return result_wrapper
+        status = gabriel_pb2.Status()
+        return cognitive_engine.Result(status, any_payload)
 
     def process_results(
         self, image_np, results, vehicle_info, position_info, gimbal_info
@@ -688,7 +689,7 @@ def main():
         input_queue_maxsize=60,
         port=args.port,
         num_tokens=2,
-        engine_name="openscout-object",
+        engine_id="openscout-object",
         use_zeromq=True,
     )
 

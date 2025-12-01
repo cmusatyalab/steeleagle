@@ -138,7 +138,7 @@ def main():
     logger.info("Starting object detection cognitive engine..")
     runner = engine_runner.EngineRunner(
         engine=OpenScoutObjectEngine(args),
-        engine_name=args.engine_id,
+        engine_id=args.engine_id,
         server_address=args.gabriel,
         all_responses_required=True,
     )
