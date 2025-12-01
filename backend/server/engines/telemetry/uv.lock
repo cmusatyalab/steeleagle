@@ -188,27 +188,27 @@ wheels = [
 
 [[package]]
 name = "gabriel-protocol"
-version = "4.0"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/cd1d16e85967b76842f64d349dc6af4e7e717676d423d25c7b5428999def/gabriel_protocol-4.0-py3-none-any.whl", hash = "sha256:5c5f37a5531699bfe51d54ae6327b6c9375a28f32c4bba129fe948ffabc569df", size = 7592, upload-time = "2025-09-23T13:12:25.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
 ]
 
 [[package]]
 name = "gabriel-server"
-version = "4.0.5"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
+    { name = "prometheus-client" },
+    { name = "protobuf" },
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/5a/d5b49a4c74926dd659becbe38ef469f88b400a56eff4775e37c9b903c643/gabriel_server-4.0.5.tar.gz", hash = "sha256:1764ff1099ad8453c024ad96ef8cdb468a4356c90223392eedc821a91334b83c", size = 21062, upload-time = "2025-11-03T18:09:33.74Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/29/6b63e4fb5f721f12d2d4d67c3fb05e4621de9258289debc0b22be6d29934/gabriel_server-4.1.tar.gz", hash = "sha256:e6989c5d2041dc413bd2673f4289ac78793c7e7acccedf15eb327abe0d8dff7e", size = 18949, upload-time = "2025-12-01T03:39:44.32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/e9/7d86a33250cdf76855bbe69ef9b54fb66cfc9d9e0b3a67c3275ffb5d92ca/gabriel_server-4.0.5-py3-none-any.whl", hash = "sha256:e9b4ef1c6882aa609f315e474ab3745ad942fd429a20aab9b62cb7209b699877", size = 23179, upload-time = "2025-11-03T18:09:32.21Z" },
+    { url = "https://files.pythonhosted.org/packages/62/63/96aff5f7ac7bca4655026606ccce14b46f506076083195a038c9d24f1e06/gabriel_server-4.1-py3-none-any.whl", hash = "sha256:8a048ffc1ba305fec99a9429f803e862455d9713fefbd36dbcc9cc27f880c4d8", size = 22589, upload-time = "2025-12-01T03:39:43.191Z" },
 ]
 
 [[package]]
@@ -428,6 +428,15 @@ wheels = [
 ]
 
 [[package]]
+name = "prometheus-client"
+version = "0.23.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/53/3edb5d68ecf6b38fcbcc1ad28391117d2a322d9a1a3eff04bfdb184d8c3b/prometheus_client-0.23.1.tar.gz", hash = "sha256:6ae8f9081eaaaf153a2e959d2e6c4f4fb57b12ef76c8c7980202f1e57b48b2ce", size = 80481, upload-time = "2025-09-18T20:47:25.043Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/db/14bafcb4af2139e046d03fd00dea7873e48eafe18b7d2797e73d6681f210/prometheus_client-0.23.1-py3-none-any.whl", hash = "sha256:dd1913e6e76b59cfe44e7a4b83e01afc9873c1bdfd2ed8739f1e76aeca115f99", size = 61145, upload-time = "2025-09-18T20:47:23.875Z" },
+]
+
+[[package]]
 name = "protobuf"
 version = "6.33.0"
 source = { registry = "https://pypi.org/simple" }
@@ -643,7 +652,6 @@ name = "steeleagle-backend-telemetry"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "gabriel-protocol" },
     { name = "gabriel-server" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
@@ -655,8 +663,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gabriel-protocol" },
-    { name = "gabriel-server", specifier = ">=4.0.5" },
+    { name = "gabriel-server", specifier = ">=4.1" },
     { name = "numpy" },
     { name = "opencv-python-headless", specifier = ">=3,<5" },
     { name = "pillow" },

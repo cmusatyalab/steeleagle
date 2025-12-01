@@ -14,9 +14,13 @@ DEFAULT_PORT = 9099
 DEFAULT_NUM_TOKENS = 2
 INPUT_QUEUE_MAXSIZE = 60
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
+logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(

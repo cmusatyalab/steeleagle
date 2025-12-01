@@ -46,7 +46,8 @@ class StreamHandler:
             lc_server = \
                 query_config('internal.streams.local_compute').replace('unix', 'ipc')
             self._local_compute_handler = ZeroMQClient(lc_server, self._local_producers, self.process)
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             logger.warning('No valid configuration found for local compute handler, not running it')
             self._local_producers = []
             self._local_compute_handler = None
@@ -63,7 +64,8 @@ class StreamHandler:
             rc_server = \
                 query_config('cloudlet.remote_compute_service')
             self._remote_compute_handler = ZeroMQClient(f'tcp://{rc_server}', self._remote_producers, self.process)
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             logger.warning('No valid configuration found for remote compute handler, not running it')
             self._remote_producers = []
             self._remote_compute_handler = None
@@ -120,7 +122,7 @@ class StreamHandler:
                     gabriel_pb2.PayloadType.TEXT
                     ),
                 [],
-                source_name="driver_telemetry"
+                producer_name="driver_telemetry"
                 )
 
     def get_mission_telemetry_producer(self):
@@ -138,7 +140,7 @@ class StreamHandler:
                     gabriel_pb2.PayloadType.TEXT
                     ),
                 [],
-                source_name="mission_telemetry"
+                producer_name="mission_telemetry"
                 )
 
     def get_imagery_producer(self):
@@ -180,24 +182,22 @@ class StreamHandler:
             encoded_frame.position_info.CopyFrom(raw_frame.position_info)
             encoded_frame.gimbal_info.CopyFrom(raw_frame.gimbal_info)
             encoded_frame.imaging_sensor_info.CopyFrom(raw_frame.imaging_sensor_info)
-            input_frame.extras.Pack(encoded_frame)
+            input_frame.any_payload.Pack(encoded_frame)
             return input_frame
 
         return InputProducer(
                 produce_image,
                 [],
-                source_name="images"
+                producer_name="images"
                 )
 
-    def process(self, result_wrapper):
+    def process(self, result):
         '''
         Send results from Gabriel over the result socket.
         '''
-        if len(result_wrapper.results) != 1:
-            return
         self._result_sock.send_multipart([
-            result_wrapper.result_producer_name.value.encode('utf-8'),
-            result_wrapper.SerializeToString()
+            result.target_engine_id.encode('utf-8'),
+            result.SerializeToString()
             ])
 
     def _base_producer(self, socket, proto_class, payload_type):
@@ -214,6 +214,6 @@ class StreamHandler:
                 logger.error(f'Exception when reading from producer {type(proto_class)}, {e}')
                 return None
             proto_class.ParseFromString(data)
-            input_frame.extras.Pack(proto_class)
+            input_frame.any_payload.Pack(proto_class)
             return input_frame
         return producer
