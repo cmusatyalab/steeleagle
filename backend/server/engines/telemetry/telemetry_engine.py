@@ -233,10 +233,10 @@ class TelemetryEngine(cognitive_engine.Engine):
             # have redis publish the latest image
             if self.publish:
                 logger.info(
-                    f"Publishing image to redis under imagery.{tel.vehicle_info.name} topic."
+                    f"Publishing image to redis under imagery.{frame.vehicle_info.name} topic."
                 )
                 self.r.publish(
-                    f"imagery.{tel.vehicle_info.name}", input_frame.payloads[0]
+                    f"imagery.{frame.vehicle_info.name}", input_frame.payloads[0]
                 )
             # store images in the shared volume
             try:
