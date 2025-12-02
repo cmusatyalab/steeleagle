@@ -24,6 +24,11 @@ import logging
 from gabriel_server.network_engine import engine_runner
 from obstacle_avoidance_engine import Metric3DAvoidanceEngine, MidasAvoidanceEngine
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 
