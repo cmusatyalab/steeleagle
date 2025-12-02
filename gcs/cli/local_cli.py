@@ -2,16 +2,25 @@
 import asyncio
 import grpc
 import threading
+import argparse
 import os
 import sys
 import select
 import contextlib
 
 # Protocol imports
-from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
-from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
 from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
+from steeleagle_sdk.protocol.sercices.mission_service_pb2_grpc import MissionStub
+from steeleagle_sdk.dsl import build_mission
+
+CHANNEL = grpc.aio.insecure_channel('unix:///tmp/kernel.sock')
+CSTUB = ControlStub(CHANNEL)
+MSTUB = MissionStub(CHANNEL)
+
+
+
 
 
 # --------- raw TTY helpers (WSL-friendly) ---------
@@ -59,15 +68,22 @@ def listen_for_keys(key_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop,
 
 
 # --------- main consumer ---------
-async def consume_keys(key_queue, driver_stub: ControlStub, msn_stub: MissionStub, tty: TTYMode, paused: threading.Event):
-    print("Controls: w/a/s/d (XY), i/k (Z), j/l (yaw), t=TakeOff, g=Land, ' ' (Hold), m=Start, n=Stop, u=Upload, Esc to quit")
+async def consume_keys(key_queue, vehicle, tty: TTYMode, paused: threading.Event):
+    print("Controls: w/a/s/d (XY), i/k (Z), j/l (yaw), t=TakeOff, g=Land, ' ' (Hold), m=Start, n=Stop, c=Compile+Upload, Esc to quit")
 
     while True:
         key = await key_queue.get()
 
-        # Quit on ESCd = "steeleagle_sdk
+        # Quit on ESC
         if key == '\x1b':  # ESC
             break
+
+        async def send_command(cmd_func, command_name):
+            try:
+                async for response in cmd_func:
+                    print(f'Response for {command_name}: {response.status}')
+            except grpc.aio.AioRpcError as e:
+                print(f'Error: {e}')
 
         # Joystick
         if key in ['w', 'a', 's', 'd', 'j', 'i', 'k', 'l']:
@@ -81,50 +97,55 @@ async def consume_keys(key_queue, driver_stub: ControlStub, msn_stub: MissionStu
             elif key == 'l': joystick.velocity.angular_vel =  20.0
             elif key == 'i': joystick.velocity.z_vel =  1.0
             elif key == 'k': joystick.velocity.z_vel = -1.0
-            asyncio.create_task(driver_stub.Joystick(joystick))
-
+            asyncio.create_task(CSTUB.Joystick(joystick))
+        
         elif key == 't':  # TakeOff
             print('Sending TakeOff')
             takeoff = TakeOffRequest()
             takeoff.take_off_altitude = 10.0
-            asyncio.create_task(driver_stub.TakeOff(takeoff))
+            asyncio.create_task(send_command(CSTUB.TakeOff(takeoff), 'takeoff'))
 
         elif key == 'g':  # Land
             print('Sending Land')
             land = LandRequest()
-            asyncio.create_task(driver_stub.Land(land))
+            asyncio.create_task(send_command(CSTUB.Land(land), 'land'))
 
         elif key == ' ':  # Hold (space)
             print('Sending Hold')
             hold = HoldRequest()
-            asyncio.create_task(driver_stub.Hold(hold))
+            asyncio.create_task(send_command(CSTUB.Hold(hold), 'hold'))
 
-        elif key == 'u':
+        elif key == 'c':  # Compile Mission (use input() in cooked mode)
+            # Pause reader + switch to cooked so you can type
             paused.set()
             tty.cooked()
             try:
                 kml_path = input('Choose a KML file: ').strip()
-                compiled_msn_path = input('Choose a compiled mission JSON file: ').strip()
+                dsl_path = input('Choose a DSL file: ').strip()
 
                 try:
                     kml = open(kml_path, "rb").read()
                 except Exception as e:
-                    print(f"[Upload] Failed to read KML: {e}")
+                    print(f"[Compile] Failed to read KML: {e}")
                     kml = None
                 try:
-                    compiled_msn = open(compiled_msn_path, "r", encoding="utf-8").read()
+                    dsl = open(dsl_path, "r", encoding="utf-8").read()
                 except Exception as e:
-                    print(f"[Upload] Failed to read mission: {e}")
-                    compiled_msn = None
+                    print(f"[Compile] Failed to read DSL: {e}")
+                    dsl = None
 
-                if kml is None or compiled_msn is None:
+                if kml is None or dsl is None:
                     pass
                 else:
-                    print("[Upload] Uploading Mission…")
-                    upload = UploadRequest()
-                    upload.mission.content = compiled_msn
-                    upload.mission.map = kml
-                    asyncio.create_task(msn_stub.Upload(upload))
+                    print("[Compile] Compiling DSL…")
+                    mission_json = build_mission(dsl)
+                    if not mission_json:
+                        print("[Compile] No responses.")
+                    else:
+                        upload = UploadRequest()
+                        upload.mission.content = mission_json 
+                        upload.mission.map = kml
+                        asyncio.create_task(MSTUB.Upload(upload))
             finally:
                 # Drain any buffered keys typed during prompts
                 while not key_queue.empty():
@@ -137,11 +158,11 @@ async def consume_keys(key_queue, driver_stub: ControlStub, msn_stub: MissionStu
 
         elif key == 'm':  # Start Mission
             start = StartRequest()
-            asyncio.create_task(msn_stub.Start(start))
+            asyncio.create_task(MSTUB.Start(start))
 
         elif key == 'n':  # Stop Mission
             stop = StopRequest()
-            asyncio.create_task(msn_stub.Stop(stop))
+            asyncio.create_task(MSTUB.Stop(stop))
 
         else:
             if key not in ('\n', '\r'):
@@ -151,20 +172,17 @@ async def consume_keys(key_queue, driver_stub: ControlStub, msn_stub: MissionStu
     asyncio.get_event_loop().stop()
 
 
-async def async_main():
+async def main(args):
     key_queue = asyncio.Queue()
     loop = asyncio.get_running_loop()
-    driver_channel = grpc.aio.insecure_channel('unix:///tmp/driver.sock')
-    msn_channel = grpc.aio.insecure_channel('unix:///tmp/mission.sock')
+
+    # gRPC channel (wait until ready so first key doesn't race)
+    channel = grpc.aio.insecure_channel(args.addr)
     try:
-        await asyncio.wait_for(driver_channel.channel_ready(), timeout=5.0)
-        await asyncio.wait_for(msn_channel.channel_ready(), timeout=5.0)
+        await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
     except Exception as e:
-        print(f"Could not connect to gRPC{e}")
+        print(f"Could not connect to gRPC at {args.addr}: {e}")
         return
-    
-    driver_stub = ControlStub(driver_channel)
-    msn_stub = MissionStub(msn_channel)
 
     # Raw TTY + reader thread
     tty = TTYMode()
@@ -180,15 +198,20 @@ async def async_main():
     listener_thread.start()
 
     try:
-        await consume_keys(key_queue, driver_stub, msn_stub, tty, paused)
+        await consume_keys(key_queue, args.vehicle, tty, paused)
     finally:
         stop_evt.set()
         tty.cooked()
-        await driver_channel.close()
-        await msn_channel.close()
+        await channel.close()
 
-def main():
-    asyncio.run(async_main())
-    
+
 if __name__ == "__main__":
-    asyncio.run(async_main())
+    parser = argparse.ArgumentParser(
+        prog='CLI Commander',
+        description='Gives a CLI interface to control a vehicle (WSL-friendly)'
+    )
+    parser.add_argument('vehicle', help='name of the controlled vehicle')
+    parser.add_argument('-a', '--addr', default='localhost:5004', help='address of the swarm controller')
+    args = parser.parse_args()
+
+    asyncio.run(main(args))
