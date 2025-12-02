@@ -128,5 +128,3 @@ src/steeleagle_sdk/protocol/services/report_service_pb2_grpc.py
 src/steeleagle_sdk/protocol/testing/__init__.py
 src/steeleagle_sdk/protocol/testing/__init__.pyi
 src/steeleagle_sdk/protocol/testing/testing_pb2.py
-src/steeleagle_sdk/sim/command_service/main.py
-src/steeleagle_sdk/sim/dsl_service/main.py
