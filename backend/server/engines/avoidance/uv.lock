@@ -287,7 +287,7 @@ wheels = [
 
 [[package]]
 name = "gabriel-server"
-version = "4.1"
+version = "4.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
@@ -296,9 +296,9 @@ dependencies = [
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ff/29/6b63e4fb5f721f12d2d4d67c3fb05e4621de9258289debc0b22be6d29934/gabriel_server-4.1.tar.gz", hash = "sha256:e6989c5d2041dc413bd2673f4289ac78793c7e7acccedf15eb327abe0d8dff7e", size = 18949, upload-time = "2025-12-01T03:39:44.32Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/86/17e1d57189d990347b872a1ebcc9c3856244a58af9af9450c4d7fc92a57c/gabriel_server-4.1.1.tar.gz", hash = "sha256:2b9fcaa2b10cd336ef4159bbc974f83620ea46dcbc0b329b3cf735d9b3d70eb5", size = 19292, upload-time = "2025-12-02T18:49:57.235Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/63/96aff5f7ac7bca4655026606ccce14b46f506076083195a038c9d24f1e06/gabriel_server-4.1-py3-none-any.whl", hash = "sha256:8a048ffc1ba305fec99a9429f803e862455d9713fefbd36dbcc9cc27f880c4d8", size = 22589, upload-time = "2025-12-01T03:39:43.191Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/b8/82d0455ecd0684ede31520bbf65ae8a851d692ff721718f865eab2d49dc8/gabriel_server-4.1.1-py3-none-any.whl", hash = "sha256:e533afb2c1c742e33935876825ce031637ed1e0d0f48390cfd513ae78a07a856", size = 22712, upload-time = "2025-12-02T18:49:56.103Z" },
 ]
 
 [[package]]
@@ -1130,7 +1130,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "datetime" },
-    { name = "gabriel-server", specifier = ">=4.1" },
+    { name = "gabriel-server", specifier = ">=4.1.1" },
     { name = "matplotlib" },
     { name = "mmcv-lite" },
     { name = "numpy", specifier = "==1.23.1" },

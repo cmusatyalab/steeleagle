@@ -26,6 +26,11 @@ import logging
 from gabriel_server.network_engine import engine_runner
 from openscout_object_engine import OpenScoutObjectEngine
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 

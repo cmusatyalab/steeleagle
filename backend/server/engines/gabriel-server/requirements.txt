@@ -1,2 +1,2 @@
-gabriel-server>=4.1
+gabriel-server>=4.1.1
 pyyaml
