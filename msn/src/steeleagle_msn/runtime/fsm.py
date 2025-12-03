@@ -5,9 +5,9 @@ import logging
 from enum import Enum
 from typing import Dict, List, Tuple, Any
 
-from ...dsl.compiler.ir import MissionIR
-from ...dsl.compiler.registry import get_action, get_event
-from ...dsl.compiler.loader import load_all
+from steeleagle_sdk.dsl.compiler.ir import MissionIR
+from steeleagle_sdk.dsl.compiler.registry import get_action, get_event
+from steeleagle_sdk.dsl.compiler.loader import load_all
 
 logger = logging.getLogger(__name__)
 

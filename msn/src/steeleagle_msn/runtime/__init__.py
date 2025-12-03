@@ -6,11 +6,11 @@ from typing import Optional
 
 import grpc
 
-from ...api.vehicle import Vehicle
-from ...api.compute import Compute
-from ...api.mission_store import MissionStore
+from steeleagle_sdk.api.vehicle import Vehicle
+from steeleagle_sdk.api.compute import Compute
+from steeleagle_sdk.api.mission_store import MissionStore
 from .fsm import MissionFSM
-from ..compiler.ir import MissionIR
+from steeleagle_sdk.dsl.compiler.ir import MissionIR
 
 logger = logging.getLogger(__name__)
 

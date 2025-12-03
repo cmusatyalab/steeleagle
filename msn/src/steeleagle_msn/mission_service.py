@@ -1,11 +1,10 @@
 import asyncio
-import contextlib
 import json
-from typing import Optional
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
-from steeleagle_sdk.dsl import runtime as dsl_msn_runtime
+from .runtime import init as fsm_init
+from .runtime import term as fsm_term
 from dacite import from_dict
 import logging
 logger = logging.getLogger(__name__)
@@ -38,7 +37,7 @@ class MissionService(MissionServicer):
         tel_address = self.address.get("telemetry")
         results_address = self.address.get("results")
         map = self.mission_map
-        await dsl_msn_runtime.init(self.mission, vehicle_address, tel_address, results_address, map)
+        await fsm_init(self.mission, vehicle_address, tel_address, results_address, map)
 
     async def Start(self, request, context):
         """Start an uploaded mission"""
@@ -52,7 +51,7 @@ class MissionService(MissionServicer):
             return generate_response(2)
 
     async def _stop(self):
-        await dsl_msn_runtime.term()
+        await fsm_term()
 
     async def Stop(self, request, context):
         """Stop the current mission"""
