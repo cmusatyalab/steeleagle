@@ -12,7 +12,7 @@ import contextlib
 from steeleagle_sdk.protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
 from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
-from steeleagle_sdk.protocol.sercices.mission_service_pb2_grpc import MissionStub
+from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 from steeleagle_sdk.dsl import build_mission
 
 CHANNEL = grpc.aio.insecure_channel('unix:///tmp/kernel.sock')
@@ -68,7 +68,7 @@ def listen_for_keys(key_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop,
 
 
 # --------- main consumer ---------
-async def consume_keys(key_queue, vehicle, tty: TTYMode, paused: threading.Event):
+async def consume_keys(key_queue, tty: TTYMode, paused: threading.Event):
     print("Controls: w/a/s/d (XY), i/k (Z), j/l (yaw), t=TakeOff, g=Land, ' ' (Hold), m=Start, n=Stop, c=Compile+Upload, Esc to quit")
 
     while True:
@@ -198,7 +198,7 @@ async def main(args):
     listener_thread.start()
 
     try:
-        await consume_keys(key_queue, args.vehicle, tty, paused)
+        await consume_keys(key_queue, tty, paused)
     finally:
         stop_evt.set()
         tty.cooked()
@@ -210,8 +210,7 @@ if __name__ == "__main__":
         prog='CLI Commander',
         description='Gives a CLI interface to control a vehicle (WSL-friendly)'
     )
-    parser.add_argument('vehicle', help='name of the controlled vehicle')
-    parser.add_argument('-a', '--addr', default='localhost:5004', help='address of the swarm controller')
+    parser.add_argument('-a', '--addr', default='unix:///tmp/kernel.sock', help='address of the kernel service')
     args = parser.parse_args()
 
     asyncio.run(main(args))
