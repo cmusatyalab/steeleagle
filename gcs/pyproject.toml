@@ -14,10 +14,13 @@ dependencies = [
     "streamlit-keypressed",
     "pynput>=1.8.1",
     "steeleagle-sdk",
+    "opencv-python>=4.12.0.88",
+    "zmq>=0.0.0",
 ]
 
 [tool.uv.sources]
 streamlit-keypressed = { path = "streamlit/streamlit_keypressed-0.1.5-py3-none-any.whl" }
+steeleagle-sdk={path="../sdk", editable = true }
 
 [tool.uv.workspace]
 members = [

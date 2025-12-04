@@ -9,19 +9,22 @@ import select
 import contextlib
 
 # Protocol imports
-from steeleagle_sdk.protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
-from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    JoystickRequest,
+    TakeOffRequest,
+    LandRequest,
+    HoldRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    UploadRequest,
+    StartRequest,
+    StopRequest,
+)
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 from steeleagle_sdk.dsl import build_mission
 
-CHANNEL = grpc.aio.insecure_channel('unix:///tmp/kernel.sock')
-CSTUB = ControlStub(CHANNEL)
-MSTUB = MissionStub(CHANNEL)
-
-
-
-
+IDENTITY_MD = (("identity", "server"),)
 
 # --------- raw TTY helpers (WSL-friendly) ---------
 class TTYMode:
@@ -45,10 +48,15 @@ class TTYMode:
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self._orig)
 
 
-def listen_for_keys(key_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop,
-                    paused: threading.Event, stop_evt: threading.Event):
+def listen_for_keys(
+    key_queue: asyncio.Queue,
+    loop: asyncio.AbstractEventLoop,
+    paused: threading.Event,
+    stop_evt: threading.Event,
+):
     """
     Read single characters from stdin in raw mode and push to the asyncio queue.
+    This runs in a background thread.
     """
     fd = sys.stdin.fileno()
     while not stop_evt.is_set():
@@ -60,68 +68,97 @@ def listen_for_keys(key_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop,
         if not r:
             continue
         try:
-            ch = os.read(fd, 1).decode(errors='ignore')
+            ch = os.read(fd, 1).decode(errors="ignore")
         except Exception:
-            ch = ''
+            ch = ""
         if ch:
             loop.call_soon_threadsafe(key_queue.put_nowait, ch)
 
 
 # --------- main consumer ---------
-async def consume_keys(key_queue, tty: TTYMode, paused: threading.Event):
-    print("Controls: w/a/s/d (XY), i/k (Z), j/l (yaw), t=TakeOff, g=Land, ' ' (Hold), m=Start, n=Stop, c=Compile+Upload, Esc to quit")
+async def consume_keys(
+    key_queue: asyncio.Queue,
+    tty: TTYMode,
+    paused: threading.Event,
+    cstub: ControlStub,
+    mstub: MissionStub,
+):
+    print(
+        "Controls: w/a/s/d (XY), i/k (Z), j/l (yaw), t=TakeOff, g=Land, "
+        "' ' (Hold), m=Start, n=Stop, c=Compile+Upload, Esc to quit"
+    )
 
     while True:
         key = await key_queue.get()
 
         # Quit on ESC
-        if key == '\x1b':  # ESC
+        if key == "\x1b":  # ESC
             break
 
-        async def send_command(cmd_func, command_name):
+        async def _send_stream(call, command_name: str):
             try:
-                async for response in cmd_func:
-                    print(f'Response for {command_name}: {response.status}')
+                # For server-streaming RPCs
+                async for response in call:
+                    print(f"Response for {command_name}: {response.status}")
             except grpc.aio.AioRpcError as e:
-                print(f'Error: {e}')
-
-        # Joystick
-        if key in ['w', 'a', 's', 'd', 'j', 'i', 'k', 'l']:
-            print('Sending Joystick')
-            joystick = JoystickRequest()
-            if   key == 'a': joystick.velocity.y_vel = -1.0
-            elif key == 'd': joystick.velocity.y_vel =  1.0
-            elif key == 'w': joystick.velocity.x_vel =  1.0
-            elif key == 's': joystick.velocity.x_vel = -1.0
-            elif key == 'j': joystick.velocity.angular_vel = -20.0
-            elif key == 'l': joystick.velocity.angular_vel =  20.0
-            elif key == 'i': joystick.velocity.z_vel =  1.0
-            elif key == 'k': joystick.velocity.z_vel = -1.0
-            asyncio.create_task(CSTUB.Joystick(joystick))
+                print(f"Error during {command_name}: {e}")
         
-        elif key == 't':  # TakeOff
-            print('Sending TakeOff')
+        async def _send_unary(call, command_name: str):
+                try:
+                    # assuming unary RPC that just acks
+                    await call
+                except grpc.aio.AioRpcError as e:
+                    print(f"Error during {command_name}: {e}")
+        # Joystick
+        if key in ["w", "a", "s", "d", "j", "i", "k", "l"]:
+            print("Sending Joystick")
+            joystick = JoystickRequest()
+            if key == "a":
+                joystick.velocity.y_vel = -1.0
+            elif key == "d":
+                joystick.velocity.y_vel = 1.0
+            elif key == "w":
+                joystick.velocity.x_vel = 1.0
+            elif key == "s":
+                joystick.velocity.x_vel = -1.0
+            elif key == "j":
+                joystick.velocity.angular_vel = -20.0
+            elif key == "l":
+                joystick.velocity.angular_vel = 20.0
+            elif key == "i":
+                joystick.velocity.z_vel = 1.0
+            elif key == "k":
+                joystick.velocity.z_vel = -1.0
+
+            call = cstub.Joystick(joystick, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_unary(call, "joystick"))
+
+        elif key == "t":  # TakeOff
+            print("Sending TakeOff")
             takeoff = TakeOffRequest()
             takeoff.take_off_altitude = 10.0
-            asyncio.create_task(send_command(CSTUB.TakeOff(takeoff), 'takeoff'))
+            call = cstub.TakeOff(takeoff, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_stream(call, "takeoff"))
 
-        elif key == 'g':  # Land
-            print('Sending Land')
+        elif key == "g":  # Land
+            print("Sending Land")
             land = LandRequest()
-            asyncio.create_task(send_command(CSTUB.Land(land), 'land'))
+            call = cstub.Land(land, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_stream(call, "land"))
 
-        elif key == ' ':  # Hold (space)
-            print('Sending Hold')
+        elif key == " ":  # Hold (space)
+            print("Sending Hold")
             hold = HoldRequest()
-            asyncio.create_task(send_command(CSTUB.Hold(hold), 'hold'))
+            call = cstub.Hold(hold, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_stream(call, "hold"))
 
-        elif key == 'c':  # Compile Mission (use input() in cooked mode)
+        elif key == "c":  # Compile Mission (use input() in cooked mode)
             # Pause reader + switch to cooked so you can type
             paused.set()
             tty.cooked()
             try:
-                kml_path = input('Choose a KML file: ').strip()
-                dsl_path = input('Choose a DSL file: ').strip()
+                kml_path = input("Choose a KML file: ").strip()
+                dsl_path = input("Choose a DSL file: ").strip()
 
                 try:
                     kml = open(kml_path, "rb").read()
@@ -143,9 +180,11 @@ async def consume_keys(key_queue, tty: TTYMode, paused: threading.Event):
                         print("[Compile] No responses.")
                     else:
                         upload = UploadRequest()
-                        upload.mission.content = mission_json 
+                        upload.mission.content = mission_json
                         upload.mission.map = kml
-                        asyncio.create_task(MSTUB.Upload(upload))
+                        # Assuming Upload is unary or server-streaming:
+                        call = mstub.Upload(upload, metadata=IDENTITY_MD)
+                        asyncio.create_task(_send_stream(call, "upload"))
             finally:
                 # Drain any buffered keys typed during prompts
                 while not key_queue.empty():
@@ -156,61 +195,70 @@ async def consume_keys(key_queue, tty: TTYMode, paused: threading.Event):
                 tty.raw()
                 paused.clear()
 
-        elif key == 'm':  # Start Mission
+        elif key == "m":  # Start Mission
+            print("Sending Start")
             start = StartRequest()
-            asyncio.create_task(MSTUB.Start(start))
+            call = mstub.Start(start, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_stream(call, "start"))
 
-        elif key == 'n':  # Stop Mission
+        elif key == "n":  # Stop Mission
+            print("Sending Stop")
             stop = StopRequest()
-            asyncio.create_task(MSTUB.Stop(stop))
+            call = mstub.Stop(stop, metadata=IDENTITY_MD)
+            asyncio.create_task(_send_stream(call, "stop"))
 
         else:
-            if key not in ('\n', '\r'):
-                print(f'Key not recognized: {repr(key)}')
-
-    # exit
-    asyncio.get_event_loop().stop()
+            if key not in ("\n", "\r"):
+                print(f"Key not recognized: {repr(key)}")
 
 
 async def main(args):
-    key_queue = asyncio.Queue()
+    key_queue: asyncio.Queue[str] = asyncio.Queue()
     loop = asyncio.get_running_loop()
 
-    # gRPC channel (wait until ready so first key doesn't race)
-    channel = grpc.aio.insecure_channel(args.addr)
-    try:
-        await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
-    except Exception as e:
-        print(f"Could not connect to gRPC at {args.addr}: {e}")
-        return
-
-    # Raw TTY + reader thread
     tty = TTYMode()
     tty.raw()
 
     paused = threading.Event()
     stop_evt = threading.Event()
-    listener_thread = threading.Thread(
-        target=listen_for_keys,
-        args=(key_queue, loop, paused, stop_evt),
-        daemon=True
-    )
-    listener_thread.start()
 
-    try:
-        await consume_keys(key_queue, tty, paused)
-    finally:
-        stop_evt.set()
-        tty.cooked()
-        await channel.close()
+    # Create channel & stubs *inside* the running loop
+    async with grpc.aio.insecure_channel(args.addr) as channel:
+        try:
+            await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
+        except Exception as e:
+            print(f"Could not connect to gRPC at {args.addr}: {e}")
+            tty.cooked()
+            return
+
+        cstub = ControlStub(channel)
+        mstub = MissionStub(channel)
+
+        listener_thread = threading.Thread(
+            target=listen_for_keys,
+            args=(key_queue, loop, paused, stop_evt),
+            daemon=True,
+        )
+        listener_thread.start()
+
+        try:
+            await consume_keys(key_queue, tty, paused, cstub, mstub)
+        finally:
+            stop_evt.set()
+            tty.cooked()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog='CLI Commander',
-        description='Gives a CLI interface to control a vehicle (WSL-friendly)'
+        prog="CLI Commander",
+        description="Gives a CLI interface to control a vehicle (WSL-friendly)",
     )
-    parser.add_argument('-a', '--addr', default='unix:///tmp/kernel.sock', help='address of the kernel service')
+    parser.add_argument(
+        "-a",
+        "--addr",
+        default="unix:///tmp/kernel.sock",
+        help="address of the kernel service",
+    )
     args = parser.parse_args()
 
     asyncio.run(main(args))
