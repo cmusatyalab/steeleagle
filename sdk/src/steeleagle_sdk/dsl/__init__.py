@@ -22,8 +22,8 @@ def build_mission(dsl_code: str) -> MissionIR:
     tree = _parser.parse(dsl_code) 
     mission = DroneDSLTransformer().transform(tree)
     print(
-        "Compiled DSL: start=%s, actions=%d, events=%d",
-        mission.start_action_id, len(mission.actions), len(mission.events),
+        f"Compiled DSL: start={mission.start_action_id}, "
+        f"actions={len(mission.actions)}, events={len(mission.events)}"
     )
     return mission
 

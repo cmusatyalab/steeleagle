@@ -11,13 +11,11 @@ from steeleagle_sdk.api.compute import Compute
 from steeleagle_sdk.api.mission_store import MissionStore
 from .fsm import MissionFSM
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
+from steeleagle_sdk.dsl import types
 
 logger = logging.getLogger(__name__)
 
 # ---- Module-scoped runtime state ----
-VEHICLE: Optional[Vehicle] = None
-COMPUTE: Optional[Compute] = None
-MAP = None
 _CHANNEL: Optional[grpc.aio.Channel] = None
 _STORE: Optional[MissionStore] = None
 _FSM: Optional[MissionFSM] = None
@@ -37,7 +35,7 @@ async def init(
     Initialize runtime singletons and start the MissionFSM loop.
     Safe to call multiple times — subsequent calls are ignored.
     """
-    global VEHICLE, COMPUTE, MAP, _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
+    global _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
 
     async with _LOCK:
         if _STARTED:
@@ -53,9 +51,12 @@ async def init(
             logger.info("MissionStore started (telemetry=%s, results=%s).",
                         telemetry_address, result_address)
 
-            VEHICLE = Vehicle(_CHANNEL, _STORE)
-            COMPUTE = Compute(_CHANNEL, _STORE)
-            MAP = map_obj
+            veh = Vehicle(_CHANNEL, _STORE)
+            cpt = Compute(_CHANNEL, _STORE)
+            
+            types.VEHICLE = veh
+            types.COMPUTE = cpt
+            types.MAP = map_obj
 
             _FSM = MissionFSM(mission)
             _FSM_TASK = asyncio.create_task(_FSM.start(), name="mission_fsm")
@@ -72,7 +73,6 @@ async def init(
                 if _CHANNEL:
                     await _CHANNEL.close()
 
-            VEHICLE = COMPUTE = MAP = None
             _CHANNEL = _STORE = _FSM = _FSM_TASK = None
             _STARTED = False
             raise
@@ -83,7 +83,7 @@ async def term() -> None:
     Stop the FSM task, shut down streams, and close the gRPC channel.
     Safe to call multiple times.
     """
-    global VEHICLE, COMPUTE, MAP, _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
+    global _CHANNEL, _STORE, _FSM, _FSM_TASK, _STARTED
 
     async with _LOCK:
         if not _STARTED:
@@ -113,7 +113,6 @@ async def term() -> None:
                 logger.exception("Error closing gRPC channel")
         _CHANNEL = None
 
-        VEHICLE = COMPUTE = MAP = None
         _STARTED = False
 
         logger.info("Runtime stopped cleanly.")

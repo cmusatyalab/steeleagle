@@ -5,13 +5,18 @@ import logging
 # Protocol imports
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc
 from .mission_service import MissionService
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger("mission/main")
 
 async def main():
     address = {}
-    address['vehicle'] = 'unix:///tmp/kernel.sock' 
-    address['telemetry'] = 'unix:///tmp/driver_telem.sock'
-    address['results'] = 'unix:///tmp/results.sock'
+    address['vehicle'] = 'ipc:///tmp/kernel.sock' 
+    address['telemetry'] = 'ipc:///tmp/driver_telem.sock'
+    address['results'] = 'ipc:///tmp/results.sock'
 
     # Define the server that will hold our services
     server = grpc.aio.server(migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10))

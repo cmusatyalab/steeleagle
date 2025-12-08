@@ -7,6 +7,8 @@ import os
 import sys
 import select
 import contextlib
+import json
+from dataclasses import asdict
 
 # Protocol imports
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
@@ -175,7 +177,9 @@ async def consume_keys(
                     pass
                 else:
                     print("[Compile] Compiling DSL…")
-                    mission_json = build_mission(dsl)
+                    mission = build_mission(dsl)
+                    mission_json = json.dumps(asdict(mission))
+                    print(mission_json)
                     if not mission_json:
                         print("[Compile] No responses.")
                     else:
@@ -184,7 +188,7 @@ async def consume_keys(
                         upload.mission.map = kml
                         # Assuming Upload is unary or server-streaming:
                         call = mstub.Upload(upload, metadata=IDENTITY_MD)
-                        asyncio.create_task(_send_stream(call, "upload"))
+                        asyncio.create_task(_send_unary(call, "upload"))
             finally:
                 # Drain any buffered keys typed during prompts
                 while not key_queue.empty():
@@ -199,13 +203,13 @@ async def consume_keys(
             print("Sending Start")
             start = StartRequest()
             call = mstub.Start(start, metadata=IDENTITY_MD)
-            asyncio.create_task(_send_stream(call, "start"))
+            asyncio.create_task(_send_unary(call, "start"))
 
         elif key == "n":  # Stop Mission
             print("Sending Stop")
             stop = StopRequest()
             call = mstub.Stop(stop, metadata=IDENTITY_MD)
-            asyncio.create_task(_send_stream(call, "stop"))
+            asyncio.create_task(_send_unary(call, "stop"))
 
         else:
             if key not in ("\n", "\r"):

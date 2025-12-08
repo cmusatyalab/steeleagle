@@ -6,7 +6,6 @@ from pydantic import Field
 
 from ....compiler.registry import register_event
 from ...base import Event
-from .....dsl import runtime
 from ...datatypes.control import ReferenceFrame
 from ...datatypes.telemetry import DriverTelemetry
 from ...datatypes.result import FrameResult, ComputeResult, DetectionResult, Detection, HSV

@@ -41,8 +41,6 @@ src/steeleagle_sdk/dsl/compiler/registry.py
 src/steeleagle_sdk/dsl/compiler/resolver.py
 src/steeleagle_sdk/dsl/compiler/transformer.py
 src/steeleagle_sdk/dsl/compiler/validator.py
-src/steeleagle_sdk/dsl/runtime/__init__.py
-src/steeleagle_sdk/dsl/runtime/fsm.py
 src/steeleagle_sdk/dsl/tools/__init__.py
 src/steeleagle_sdk/dsl/tools/language_server/__init__.py
 src/steeleagle_sdk/dsl/tools/language_server/main.py
