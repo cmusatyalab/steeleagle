@@ -14,7 +14,7 @@ logger = logging.getLogger("mission/main")
 
 async def main():
     address = {}
-    address['vehicle'] = 'ipc:///tmp/kernel.sock' 
+    address['vehicle'] = 'unix:///tmp/kernel.sock' 
     address['telemetry'] = 'ipc:///tmp/driver_telem.sock'
     address['results'] = 'ipc:///tmp/results.sock'
 

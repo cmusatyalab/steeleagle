@@ -11,6 +11,7 @@ from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceF
 import logging
 logger = logging.getLogger(__name__)
 from ...utils import fetch_telemetry
+from ... import VEHICLE
 
 @register_action
 class ElevateToAltitude(Action):
@@ -68,6 +69,7 @@ class Patrol(Action):
         for area_name, points in map.items():
             logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
             for p in points:
+                logger.info(f"Patrol: goto {p}")
                 goto = SetGlobalPosition(
                     location=common.Location(
                         latitude=float(p["lat"]),

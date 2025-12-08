@@ -43,10 +43,15 @@ class MissionService(MissionServicer):
         """Start an uploaded mission"""
         logger.info("Starting mission")
         if self.mission is None:
-            return generate_response(3, "No mission uploaded")
+            msg = "No mission uploaded"
+            logger.info(msg)
+            return generate_response(3, msg)
         elif self.fsm_routine is not None and not self.fsm_routine.done():
-            return generate_response(3, "Mission already running")
+            msg = "Mission already running"
+            logger.info(msg)
+            return generate_response(3, msg)
         else:
+            logger.info("star2")
             await self._start()
             return generate_response(2)
 

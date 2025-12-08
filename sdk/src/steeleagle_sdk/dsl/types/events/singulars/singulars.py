@@ -238,7 +238,7 @@ class DetectionFound(Event):
         while True:
             res: FrameResult = await fetch_results("object-engine")
 
-            if not res.result:
+            if not res or not res.result:
                 continue  # no ComputeResult entries
 
             for compute in res.result:
@@ -281,7 +281,7 @@ class HSVReached(Event):
         while True:
             res: FrameResult = await fetch_results("object-engine")
 
-            if not res.result:
+            if not res or not res.result:
                 continue
 
             for compute in res.result:

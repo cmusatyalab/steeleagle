@@ -84,14 +84,14 @@ class MissionStore:
         try:
             if source == "telemetry":
                 msg = telem_proto.DriverTelemetry(); msg.ParseFromString(payload)
-                data = MessageToDict(msg, preserving_proto_field_name=True)
+                data = MessageToDict(msg, preserving_proto_field_name=True, use_integers_for_enums=True)
                 return DriverTelemetry.model_validate(data)
             elif source == "results":
                 msg = gabriel_pb2.ResultWrapper(); msg.ParseFromString(payload)
                 logger.info(f'payload:  {msg}')
                 frame_result  = msg.extras
                 logger.info(f'frame_result:  {frame_result}')
-                data = MessageToDict(frame_result, preserving_proto_field_name=True)
+                data = MessageToDict(frame_result, preserving_proto_field_name=True, use_integers_for_enums=True)
                 return FrameResult.model_validate(data)
         except Exception:
             logger.exception("Parse failed for %s payload", source)
