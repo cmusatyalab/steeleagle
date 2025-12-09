@@ -1,0 +1,3 @@
+export const MAPBOX_TOKEN = '';
+export const BASE_URL = "http://<ip or dns>";
+export const WEBSERVER_PORT = 8080;
