@@ -16,6 +16,8 @@ dependencies = [
     "steeleagle-sdk",
     "opencv-python>=4.12.0.88",
     "zmq>=0.0.0",
+    "fastapi>=0.124.0",
+    "uvicorn>=0.38.0",
 ]
 
 [tool.uv.sources]
