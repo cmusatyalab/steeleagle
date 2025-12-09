@@ -1,0 +1,250 @@
+import { useRef, useEffect, useState } from 'react'
+import './App.css'
+import React from 'react'
+import { Menubar } from 'primereact/menubar';
+import { Divider } from 'primereact/divider';
+import { Badge } from 'primereact/badge';
+import { Button } from 'primereact/button';
+import { ToggleButton } from 'primereact/togglebutton';
+import { FloatLabel } from 'primereact/floatlabel';
+import { Toast } from 'primereact/toast';
+import { Sidebar } from 'primereact/sidebar';
+import { Splitter, SplitterPanel } from 'primereact/splitter';
+import { Toolbar } from 'primereact/toolbar';
+import { Dropdown } from 'primereact/dropdown';
+import { SelectButton } from 'primereact/selectbutton';
+import { FileUpload } from 'primereact/fileupload';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Image } from 'primereact/image';
+import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
+import 'primeicons/primeicons.css';                     // Icons
+import 'primeflex/primeflex.css';                       // PrimeFlex utilities
+import { classNames } from 'primereact/utils';
+import { useEventListener } from 'primereact/hooks';
+import GameControls from './GameControls.jsx'
+import Mapbox from './Mapbox.jsx'
+import Status from './Status.jsx'
+import { BASE_URL, WEBSERVER_PORT } from './config.js';
+
+function MainContent({ selectedMenu }) {
+  switch (selectedMenu) {
+    case 0:
+      return;
+      break;
+    case 1:
+      return;
+      break;
+    case 2:
+      return;
+      break;
+  }
+}
+
+function App() {
+  const appName = "Talon";
+  const [vehicles, setVehicles] = useState([]);
+  const toast = useRef(null);
+  const [debugBarVisible, setDebugBarVisible] = useState(false);
+  const [selectedMenu, setSeletectedMenu] = useState('Control');
+  const [mapPanelSize, setMapPanelSize] = useState(0);
+  const [armed, setArmed] = useState(false);
+  const [keyPressed, setKeyPressed] = useState(false);
+  const [key, setKey] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [error, setError] = useState(null);
+  const tracking_opts = ["Tracking Off", "On"];
+  const [tracking, setTracking] = useState(tracking_opts[0]);
+  const webServerUrl = `${BASE_URL}:${WEBSERVER_PORT}`
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://128.2.212.60:8000/api/vehicles');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        setVehicles(result);
+      } catch (error) {
+        setError(error);
+      }
+    };
+
+    fetchData();
+
+    const intervalId = setInterval(fetchData, 1000);
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array means this runs once on mount
+
+  const onKeyDown = (e) => {
+    setKeyPressed(true);
+    if (e.code === 'Space') {
+      setKey('space');
+
+      return;
+    }
+    //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
+    setKey(e.key);
+
+  };
+
+  const [bindKeyDown, unbindKeyDown] = useEventListener({
+    type: 'keydown',
+    listener: (e) => {
+      onKeyDown(e);
+    }
+  });
+
+  const [bindKeyUp, unbindKeyUp] = useEventListener({
+    type: 'keyup',
+    listener: (e) => {
+      setKeyPressed(false);
+      toast.current.show({ severity: 'info', summary: 'Key Released', detail: `Released ${e.code}. This is where we would make some GRPC call to hover.` });
+    }
+  });
+
+  useEffect(() => {
+    bindKeyDown();
+    bindKeyUp();
+
+    return () => {
+      unbindKeyDown();
+      unbindKeyUp();
+    };
+  }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp]);
+
+  const onProgress = () => {
+    toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
+  };
+
+  const onUploadComplete = () => {
+    toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
+  };
+
+  const itemRenderer = (item) => (
+    <a className="flex align-items-center p-menuitem-link">
+      <span className={item.icon}></span>
+      <span className="mx-2 p-overlay-badge">{item.label}</span>
+      {item.label == selectedMenu && <Badge className="mr-2" severity="info" />}
+      {item.shortcut && <span className="ml-auto border-1 surface-border border-round surface-100 text-xs p-1">{item.shortcut}</span>}
+    </a>
+  );
+  const items = [
+    {
+      label: 'Surveil',
+      icon: 'pi pi-eye',
+      command: () => {
+        setSeletectedMenu('Surveil');
+      },
+      template: itemRenderer,
+    },
+    {
+      label: 'Control',
+      icon: 'pi pi-sliders-v',
+      command: () => {
+        setSeletectedMenu('Control');
+      },
+      template: itemRenderer,
+    },
+    {
+      label: 'Plan',
+      icon: 'pi pi-pencil',
+      command: () => {
+        setSeletectedMenu('Plan');
+      },
+      template: itemRenderer,
+    },
+
+  ];
+
+
+
+  const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
+  const menuBarEnd = (
+    <div className="flex align-items-center gap-2">
+      <SelectButton id="tracking" value={tracking} onChange={(e) => setTracking(e.value)} options={tracking_opts} />
+      <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
+        placeholder="Select a Vehicle" className="w-full md:w-14rem" />
+      <Button label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
+    </div>
+  );
+
+  const endContent = (
+    <>
+      <FileUpload className="m-2" mode="basic" name="mission[]" chooseLabel="Select Mission Files..." url={'/api/upload'} multiple accept="*.kml,*.json" maxFileSize={10000} onProgress={onProgress} onUpload={onUploadComplete} />
+      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2" onClick={() => toast.current.show({ severity: 'info', summary: 'Start Mission', detail: 'GRPC call to start mission.' })} />
+    </>
+  );
+
+  const centerContent = (
+    <>
+      <Status selectedVehicle={selectedVehicle} vehicles={vehicles} />
+    </>
+  );
+
+  const startContent = (
+    <>
+      <ToggleButton onLabel="Armed" offLabel="Disarmed" onIcon="pi pi-times pi-spin" offIcon="pi pi-ban"
+        checked={armed} onChange={(e) => setArmed(e.value)} className="w-9rem mr-2" />
+      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => toast.current.show({ severity: 'warn', summary: 'RTH', detail: 'Return to Home initiated.' })} />
+      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => toast.current.show({ severity: 'success', summary: 'Hover', detail: 'Velocities zero!' })} />
+    </>
+  );
+
+  return (
+    <>
+      <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
+      <Divider />
+      <Splitter style={{ height: '720px' }} layout="vertical" onResizeEnd={(event) => setMapPanelSize(event.sizes[0])}>
+        <SplitterPanel className="flex align-items-center justify-content-center" size={80} minSize={60}>
+          <Splitter style={{ height: '100%' }} className="flex align-items-center justify-content-center" onResizeEnd={(event) => setMapPanelSize(event.sizes[0])}>
+            <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
+              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
+            </SplitterPanel>
+            <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
+              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg`} preview downloadable="true"></Image>
+            </SplitterPanel>
+          </Splitter>
+        </SplitterPanel>
+        <SplitterPanel className="flex align-items-center justify-content-center m-2" size={20} minSize={20}>
+          <Toolbar style={{ width: '100%' }} start={startContent} center={centerContent} end={endContent} />
+        </SplitterPanel>
+      </Splitter>
+      <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
+        <h2>Debug</h2>
+        <div className="card flex flex-column align-items-center">
+          <button
+            className={classNames('card border-1 surface-border border-round-sm py-3 px-4 text-color font-semibold text-sm transition-all transition-duration-150', { 'shadow-1': keyPressed, 'shadow-5': !keyPressed })}
+            style={{
+              background: '-webkit-linear-gradient(top, var(--surface-ground) 0%, var(--surface-card) 100%)',
+              transform: keyPressed ? 'translateY(5px)' : 'translateY(0)'
+            }}>
+            {key.toUpperCase() || 'Press a Key'}
+          </button>
+          <GameControls />
+          <div style={{ width: "100%" }} className="card">
+            <DataTable value={vehicles} scrollable stripedRows size="small">
+              <Column field="name" frozen sortable header="Name"></Column>
+              <Column field="type" sortable header="Type"></Column>
+              <Column field="model" sortable header="Model"></Column>
+              <Column field="battery" header="Battery Alert"></Column>
+              <Column field="mag" header="Mag Alert"></Column>
+              <Column field="sats" header="Sats Alert"></Column>
+              <Column field="current.lat" header="Current (Lat)"></Column>
+              <Column field="current.long" header="Current (Lon)"></Column>
+              <Column field="current.alt" header="Current (Alt)"></Column>
+              <Column field="home.lat" header="Home (Lat)"></Column>
+              <Column field="home.long" header="Home (Lon)"></Column>
+              <Column field="home.alt" header="Home (Alt)"></Column>
+            </DataTable>
+          </div>
+        </div>
+      </Sidebar>
+
+      <Toast ref={toast} />
+    </>
+  );
+}
+
+export default App;
