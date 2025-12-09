@@ -82,7 +82,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name) })
+      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map'})
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(new mapboxgl.Popup().setHTML(`<p style="color:black">${v.name}</p>`)) // add popup
         .addTo(mapRef.current);
