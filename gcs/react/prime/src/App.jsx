@@ -122,6 +122,13 @@ function App() {
     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
   };
 
+  const onTakeOff = async () => {
+            const response = await fetch('http://128.2.212.60:8000/api/command');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+  }
   const itemRenderer = (item) => (
     <a className="flex align-items-center p-menuitem-link">
       <span className={item.icon}></span>
@@ -132,10 +139,10 @@ function App() {
   );
   const items = [
     {
-      label: 'Surveil',
+      label: 'Monitor',
       icon: 'pi pi-eye',
       command: () => {
-        setSeletectedMenu('Surveil');
+        setSeletectedMenu('Monitor');
       },
       template: itemRenderer,
     },
@@ -203,7 +210,7 @@ function App() {
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg`} preview downloadable="true"></Image>
+              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${new Date()}`} preview downloadable="true"></Image>
             </SplitterPanel>
           </Splitter>
         </SplitterPanel>
@@ -239,6 +246,7 @@ function App() {
               <Column field="home.alt" header="Home (Alt)"></Column>
             </DataTable>
           </div>
+      <Button icon="pi pi-stop-circle" label="Takeoff" onClick={onTakeOff} />
         </div>
       </Sidebar>
 

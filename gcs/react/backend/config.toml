@@ -1,7 +1,0 @@
-[redis]
-host = "cloudlet033.elijah.cs.cmu.edu"
-port = 6379
-username = "steeleagle"
-password = "steeleagle25"
-
-[grpc]

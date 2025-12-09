@@ -5,3 +5,4 @@ username = "steeleagle"
 password = ""
 
 [grpc]
+endpoint = "unix:///tmp/kernel.sock"
