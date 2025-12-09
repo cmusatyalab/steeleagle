@@ -4,7 +4,7 @@ from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionSer
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from .runtime import init as fsm_init
-from .runtime import term as fsm_term
+from .runtime import term as fsm_stop
 from dacite import from_dict
 import logging
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class MissionService(MissionServicer):
             return generate_response(2)
 
     async def _stop(self):
-        await fsm_term()
+        await fsm_stop()
 
     async def Stop(self, request, context):
         """Stop the current mission"""

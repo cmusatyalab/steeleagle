@@ -116,21 +116,21 @@ async def consume_keys(
             print("Sending Joystick")
             joystick = JoystickRequest()
             if key == "a":
-                joystick.velocity.y_vel = -1.0
+                joystick.velocity.y_vel = -5.0
             elif key == "d":
-                joystick.velocity.y_vel = 1.0
+                joystick.velocity.y_vel = 5.0
             elif key == "w":
-                joystick.velocity.x_vel = 1.0
+                joystick.velocity.x_vel = 5.0
             elif key == "s":
-                joystick.velocity.x_vel = -1.0
+                joystick.velocity.x_vel = -5.0
             elif key == "j":
                 joystick.velocity.angular_vel = -20.0
             elif key == "l":
                 joystick.velocity.angular_vel = 20.0
             elif key == "i":
-                joystick.velocity.z_vel = 1.0
+                joystick.velocity.z_vel = 5.0
             elif key == "k":
-                joystick.velocity.z_vel = -1.0
+                joystick.velocity.z_vel = -5.0
 
             call = cstub.Joystick(joystick, metadata=IDENTITY_MD)
             asyncio.create_task(_send_unary(call, "joystick"))

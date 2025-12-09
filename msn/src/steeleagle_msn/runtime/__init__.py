@@ -87,10 +87,10 @@ async def term() -> None:
 
     async with _LOCK:
         if not _STARTED:
-            logger.info("Runtime not started; nothing to stop.")
+            logger.info("Runtime not started; nothing to terminate.")
             return
 
-        logger.info("Stopping runtime...")
+        logger.info("terminating runtime...")
 
         if _FSM_TASK and not _FSM_TASK.done():
             _FSM_TASK.cancel()
@@ -106,13 +106,11 @@ async def term() -> None:
                 logger.exception("Error stopping MissionStore")
         _STORE = None
 
-        if _CHANNEL:
-            try:
-                await _CHANNEL.close()
-            except Exception:
-                logger.exception("Error closing gRPC channel")
-        _CHANNEL = None
+        types.VEHICLE = None
+        types.COMPUTE = None
+        types.MAP = None
 
+        _CHANNEL = None
         _STARTED = False
 
-        logger.info("Runtime stopped cleanly.")
+        logger.info("Runtime terminated cleanly.")

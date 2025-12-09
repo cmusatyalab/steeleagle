@@ -11,7 +11,6 @@ from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceF
 import logging
 logger = logging.getLogger(__name__)
 from ...utils import fetch_telemetry
-from ... import VEHICLE
 
 @register_action
 class ElevateToAltitude(Action):
