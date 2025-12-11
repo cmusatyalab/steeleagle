@@ -11,20 +11,14 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
   const [currentLoc, setCurrentLoc] = useState(null);
   const markerRefs = useRef([]); // To store references to all markers
   var colorHash = new ColorHash();
-  if (tracking === "On") {
-    tracking = true;
-  }
-  else {
-    tracking = false;
-  }
   useEffect(() => {
     mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/standard',
-      center: [-79.94299, 40.44353], // Center the map on longitude 0, latitude 0
-      zoom: 13.03, // Set an appropriate zoom level to see the whole globe
+      center: [-79.94299, 40.44353],
+      zoom: 13.03,
       config: {
         basemap: {
           lightPreset: "dusk",
@@ -82,10 +76,15 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
     markerRefs.current.forEach(marker => marker.remove());
     markerRefs.current = [];
     vehicles.forEach(v => {
-      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map'})
+      let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
-        .setPopup(new mapboxgl.Popup().setHTML(`<p style="color:black">${v.name}</p>`)) // add popup
+        .setPopup(new mapboxgl.Popup().setHTML(`<strong style="color:black">${v.name}</strong><p style="color:black">${v.current.alt.toFixed(2)} m</p>`)) // add popup
         .addTo(mapRef.current);
+      const markerDiv = marker.getElement();
+
+      markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
+      markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
+
       if (tracking && v.name === selectedVehicle) {
         mapRef.current.flyTo({
           center: [v.current.long, v.current.lat],
