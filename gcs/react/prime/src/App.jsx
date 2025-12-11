@@ -53,8 +53,7 @@ function App() {
   const [key, setKey] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
-  const tracking_opts = ["Tracking Off", "On"];
-  const [tracking, setTracking] = useState(tracking_opts[0]);
+  const [tracking, setTracking] = useState(false);
   const webServerUrl = `${BASE_URL}:${WEBSERVER_PORT}`
 
   useEffect(() => {
@@ -170,7 +169,8 @@ function App() {
   const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
-      <SelectButton id="tracking" value={tracking} onChange={(e) => setTracking(e.value)} options={tracking_opts} />
+        <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
+    checked={tracking} onChange={(e) => setTracking(e.value)} />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
         placeholder="Select a Vehicle" className="w-full md:w-14rem" />
       <Button label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
