@@ -17,8 +17,8 @@
     "primeicons": "^7.0.0",
     "primereact": "^10.9.7",
     "quill": "^2.0.3",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-gamepad-tl": "^1.0.1"
   },
   "devDependencies": {
