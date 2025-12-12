@@ -92,6 +92,30 @@ function App() {
     else if (e.code === 'Home') {
       onCommand({rth: true});
     }
+    else if (e.code === 'KeyW') {
+      onJoystick({xvel: 1.0, duration: 1});
+    }
+    else if (e.code === 'KeyS') {
+      onJoystick({xvel: -1.0, duration: 1});
+    }
+    else if (e.code === 'KeyD') {
+      onJoystick({yvel: 1.0, duration: 1});
+    }
+    else if (e.code === 'KeyA') {
+      onJoystick({yvel: -1.0, duration: 1});
+    }
+    else if (e.code === 'KeyL') {
+      onJoystick({angularvel: 1.0, duration: 1});
+    }
+    else if (e.code === 'KeyJ') {
+      onJoystick({angularvel: -1.0, duration: 1});
+    }
+    else if (e.code === 'KeyI') {
+      onJoystick({zvel: 1.0, duration: 1});
+    }
+    else if (e.code === 'KeyK') {
+      onJoystick({zvel: -1.0, duration: 1});
+    }
     //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
     setKey(e.key);
 
@@ -129,6 +153,26 @@ function App() {
   const onUploadComplete = () => {
     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
   };
+
+  const onJoystick = async (body) => {
+    //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    };
+    const response = await fetch('http://128.2.212.60:8000/api/joystick', requestOptions);
+    if (!response.ok) {
+       const result = await response.json();
+      toast.current.show({severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}`});
+    }
+    else {
+      const result = await response.json();
+     // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
+
+    }
+
+  }
 
   const onCommand = async (body) => {
     toast.current.show({severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}`});
