@@ -121,13 +121,26 @@ function App() {
     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
   };
 
-  const onTakeOff = async () => {
-            const response = await fetch('http://128.2.212.60:8000/api/command');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
+  const onCommand = async (body) => {
+    toast.current.show({severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}`});
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    };
+    const response = await fetch('http://128.2.212.60:8000/api/command', requestOptions);
+    if (!response.ok) {
+       const result = await response.json();
+      toast.current.show({severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}`});
+    }
+    else {
+      const result = await response.json();
+      toast.current.show({severity: 'success', summary: 'Command Success', detail: `${result}`});
+
+    }
+
   }
+
   const itemRenderer = (item) => (
     <a className="flex align-items-center p-menuitem-link">
       <span className={item.icon}></span>
@@ -169,8 +182,8 @@ function App() {
   const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
-        <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
-    checked={tracking} onChange={(e) => setTracking(e.value)} />
+      <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
+        checked={tracking} onChange={(e) => setTracking(e.value)} />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
         placeholder="Select a Vehicle" className="w-full md:w-14rem" />
       <Button label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
@@ -194,8 +207,8 @@ function App() {
     <>
       <ToggleButton onLabel="Armed" offLabel="Disarmed" onIcon="pi pi-times pi-spin" offIcon="pi pi-ban"
         checked={armed} onChange={(e) => setArmed(e.value)} className="w-9rem mr-2" />
-      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => toast.current.show({ severity: 'warn', summary: 'RTH', detail: 'Return to Home initiated.' })} />
-      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => toast.current.show({ severity: 'success', summary: 'Hover', detail: 'Velocities zero!' })} />
+      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => onCommand({rth: true})} />
+      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => onCommand({hold: true})} />
     </>
   );
 
@@ -210,7 +223,7 @@ function App() {
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${new Date()}`} preview downloadable="true"></Image>
+              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"></Image>
             </SplitterPanel>
           </Splitter>
         </SplitterPanel>
@@ -246,7 +259,8 @@ function App() {
               <Column field="home.alt" header="Home (Alt)"></Column>
             </DataTable>
           </div>
-      <Button icon="pi pi-stop-circle" label="Takeoff" onClick={onTakeOff} />
+          <Button icon="pi pi-arrow-up" className="m-2" label="Takeoff" onClick={() => onCommand({takeoff: true})} />
+          <Button icon="pi pi-arrow-down" className="m-2" label="Land" onClick={() => onCommand({land: true})} />
         </div>
       </Sidebar>
 

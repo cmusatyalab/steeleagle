@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import zmq
 import zmq.asyncio
@@ -13,12 +13,26 @@ from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     TakeOffRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    HoldRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StopRequest,
 )
 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 
 app = FastAPI()
+
+
+class CommandRequest(BaseModel):
+    takeoff: bool | None = None
+    land: bool | None = None
+    rth: bool | None = None
+    hold: bool | None = None
+    stop_mission: bool | None = None
 
 
 class Location(BaseModel):
@@ -191,20 +205,44 @@ async def stream_zmq():
     )
 
 
-@app.get("/api/command")
-async def command():
+@app.post("/api/command")
+async def command(req: CommandRequest, name: str = None) -> JSONResponse:
     try:
-        takeoff = TakeOffRequest()
-        takeoff.take_off_altitude = 10.0
-        call = control_stub.TakeOff
-        async for response in call(takeoff, metadata=(("identity", "server"),)):
-            print(f"Response for takeoff: {response.status}")
-        print(response)
+        if req.takeoff:
+            takeoff = TakeOffRequest()
+            takeoff.take_off_altitude = 10.0
+            call = control_stub.TakeOff
+            async for response in call(takeoff, metadata=(("identity", "server"),)):
+                print(f"Response for takeoff: {response.status}")
 
-        return {
-            response,
-        }
+            return JSONResponse(status_code=200, content="Takeoff complete!")
+        elif req.land:
+            land = LandRequest()
+            call = control_stub.Land
+            async for response in call(land, metadata=(("identity", "server"),)):
+                print(f"Response for land: {response.status}")
 
+            return JSONResponse(status_code=200, content="Landing complete!")
+        elif req.rth:
+            rth = ReturnToHomeRequest()
+            call = control_stub.ReturnToHome
+            async for response in call(rth, metadata=(("identity", "server"),)):
+                print(f"Response for rth: {response.status}")
+
+            return JSONResponse(status_code=200, content="Return to Home command sent.")
+        elif req.hold:
+            stop = StopRequest()
+            call = mission_stub.Stop
+            call(stop, metadata=(("identity", "server"),))
+            hold = HoldRequest()
+            call = control_stub.Hold
+            async for response in call(hold, metadata=(("identity", "server"),)):
+                print(f"Response for hold: {response.status}")
+
+            return JSONResponse(
+                status_code=200,
+                content="Mission canceled and vehicle instructed to hold.",
+            )
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
@@ -212,7 +250,8 @@ async def command():
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
 # Serve Vite static files
