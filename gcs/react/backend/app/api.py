@@ -207,6 +207,9 @@ async def stream_zmq():
 
 @app.post("/api/command")
 async def command(req: CommandRequest, name: str = None) -> JSONResponse:
+    _ = grpc_channel.get_state(
+        try_to_connect=True
+    )  # attempt to reconnect to grpc endpoint
     try:
         if req.takeoff:
             takeoff = TakeOffRequest()

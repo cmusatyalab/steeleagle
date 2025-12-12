@@ -83,6 +83,15 @@ function App() {
 
       return;
     }
+    else if (e.code === 'KeyT') {
+      onCommand({takeoff: true});
+    }
+    else if (e.code === 'KeyG') {
+      onCommand({land: true});
+    }
+    else if (e.code === 'Home') {
+      onCommand({rth: true});
+    }
     //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
     setKey(e.key);
 
@@ -99,7 +108,7 @@ function App() {
     type: 'keyup',
     listener: (e) => {
       setKeyPressed(false);
-      toast.current.show({ severity: 'info', summary: 'Key Released', detail: `Released ${e.code}. This is where we would make some GRPC call to hover.` });
+      //toast.current.show({ severity: 'info', summary: 'Key Released', detail: `Released ${e.code}. This is where we would make some GRPC call to hover.` });
     }
   });
 
