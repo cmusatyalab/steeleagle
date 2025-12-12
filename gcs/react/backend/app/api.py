@@ -16,6 +16,7 @@ from steeleagle_sdk.protocol.services.control_service_pb2 import (
     LandRequest,
     ReturnToHomeRequest,
     HoldRequest,
+    JoystickRequest,
 )
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     StopRequest,
@@ -25,6 +26,14 @@ from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStu
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 
 app = FastAPI()
+
+
+class Joystick(BaseModel):
+    xvel: float = Field(default=0.0)
+    yvel: float = Field(default=0.0)
+    zvel: float = Field(default=0.0)
+    angularvel: float = Field(default=0.0)
+    duration: int = Field(default=1)
 
 
 class CommandRequest(BaseModel):
@@ -203,6 +212,34 @@ async def stream_zmq():
             "X-Accel-Buffering": "no",  # Disable buffering in nginx
         },
     )
+
+
+@app.post("/api/joystick")
+async def joystick(req: Joystick, name: str = None) -> JSONResponse:
+    _ = grpc_channel.get_state(
+        try_to_connect=True
+    )  # attempt to reconnect to grpc endpoint
+
+    try:
+        joy = JoystickRequest()
+        joy.velocity.x_vel = req.xvel
+        joy.velocity.y_vel = req.yvel
+        joy.velocity.z_vel = req.zvel
+        joy.velocity.angular_vel = req.angularvel
+        joy.duration.seconds = req.duration
+        call = control_stub.Joystick
+        call(joy, metadata=(("identity", "server"),))
+
+        return JSONResponse(status_code=200, content="Joystick movement complete!")
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        )
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
 @app.post("/api/command")
