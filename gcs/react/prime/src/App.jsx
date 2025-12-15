@@ -12,7 +12,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { Splitter, SplitterPanel } from 'primereact/splitter';
 import { Toolbar } from 'primereact/toolbar';
 import { Dropdown } from 'primereact/dropdown';
-import { SelectButton } from 'primereact/selectbutton';
+import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
@@ -52,7 +52,7 @@ function App() {
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
   const [gamePadButton, setGamePadButton] = useState(-99);
-  const [gamePadAxis, setGamePadAxis] = useState({'index': -99, 'value': -99});
+  const [gamePadAxis, setGamePadAxis] = useState({ 'index': -99, 'value': -99 });
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -86,37 +86,37 @@ function App() {
       return;
     }
     else if (e.code === 'KeyT') {
-      onCommand({takeoff: true});
+      onCommand({ takeoff: true });
     }
     else if (e.code === 'KeyG') {
-      onCommand({land: true});
+      onCommand({ land: true });
     }
     else if (e.code === 'Home') {
-      onCommand({rth: true});
+      onCommand({ rth: true });
     }
     else if (e.code === 'KeyW') {
-      onJoystick({xvel: 1.0, duration: 1});
+      onJoystick({ xvel: 1.0, duration: 1 });
     }
     else if (e.code === 'KeyS') {
-      onJoystick({xvel: -1.0, duration: 1});
+      onJoystick({ xvel: -1.0, duration: 1 });
     }
     else if (e.code === 'KeyD') {
-      onJoystick({yvel: 1.0, duration: 1});
+      onJoystick({ yvel: 1.0, duration: 1 });
     }
     else if (e.code === 'KeyA') {
-      onJoystick({yvel: -1.0, duration: 1});
+      onJoystick({ yvel: -1.0, duration: 1 });
     }
     else if (e.code === 'KeyL') {
-      onJoystick({angularvel: 1.0, duration: 1});
+      onJoystick({ angularvel: 1.0, duration: 1 });
     }
     else if (e.code === 'KeyJ') {
-      onJoystick({angularvel: -1.0, duration: 1});
+      onJoystick({ angularvel: -1.0, duration: 1 });
     }
     else if (e.code === 'KeyI') {
-      onJoystick({zvel: 1.0, duration: 1});
+      onJoystick({ zvel: 1.0, duration: 1 });
     }
     else if (e.code === 'KeyK') {
-      onJoystick({zvel: -1.0, duration: 1});
+      onJoystick({ zvel: -1.0, duration: 1 });
     }
     //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
     setKey(e.key);
@@ -140,29 +140,29 @@ function App() {
 
   useEffect(() => {
     if (gamePadButton == 3) {
-      onCommand({takeoff: true});
+      onCommand({ takeoff: true });
     }
     else if (gamePadButton == 0) {
-      onCommand({land: true});
+      onCommand({ land: true });
     }
     else if (gamePadButton == 4) {
-      onCommand({rth: true});
+      onCommand({ rth: true });
     }
   }, [gamePadButton]);
 
   useEffect(() => {
     //pitch
     if (parseInt(gamePadAxis.index, 10) == 1) {
-      onJoystick({xvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+      onJoystick({ xvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
     }//yaw
     else if (parseInt(gamePadAxis.index, 10) == 0) {
-      onJoystick({angularvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+      onJoystick({ angularvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
     }//thrust
     else if (parseInt(gamePadAxis.index, 10) == 3) {
-      onJoystick({zvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+      onJoystick({ zvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
     }//roll
     else if (parseInt(gamePadAxis.index, 10) == 2) {
-      onJoystick({yvel:  parseFloat(gamePadAxis.value), duration: 1});
+      onJoystick({ yvel: parseFloat(gamePadAxis.value), duration: 1 });
     }
   }, [gamePadAxis]);
 
@@ -180,6 +180,21 @@ function App() {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
 
+  const uploadHandler = async (event) => {
+    for (const file of event.files) {
+      const reader = new FileReader();
+      let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
+      reader.readAsDataURL(blob);
+
+      reader.onloadend = function () {
+        const base64 = reader.result.split(',').pop();
+        console.log(atob(base64));
+      };
+
+    }
+  };
+
+
   const onUploadComplete = () => {
     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
   };
@@ -193,19 +208,19 @@ function App() {
     };
     const response = await fetch('http://128.2.212.60:8000/api/joystick', requestOptions);
     if (!response.ok) {
-       const result = await response.json();
-      toast.current.show({severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}`});
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
     }
     else {
       const result = await response.json();
-     // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
+      // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
 
     }
 
   }
 
   const onCommand = async (body) => {
-    toast.current.show({severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}`});
+    toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,12 +228,12 @@ function App() {
     };
     const response = await fetch('http://128.2.212.60:8000/api/command', requestOptions);
     if (!response.ok) {
-       const result = await response.json();
-      toast.current.show({severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}`});
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
     }
     else {
       const result = await response.json();
-      toast.current.show({severity: 'success', summary: 'Command Success', detail: `${result}`});
+      toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
 
     }
 
@@ -265,7 +280,7 @@ function App() {
   const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
-      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton}/>
+      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} />
       <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
         checked={tracking} onChange={(e) => setTracking(e.value)} />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
@@ -274,10 +289,24 @@ function App() {
     </div>
   );
 
+  const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
+  const chooseOptions = { icon: 'pi pi-fw pi-file', iconOnly: true, className: 'custom-choose-btn p-button-primary' };
+  const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
+  const itemTemplate = (file, props) => {
+    return (
+      <span className="text-left ml-3">
+        {file.name}
+      </span>
+
+    );
+  };
   const endContent = (
     <>
-      <FileUpload className="m-2" mode="basic" name="mission[]" chooseLabel="Select Mission Files..." url={'/api/upload'} multiple accept="*.kml,*.json" maxFileSize={10000} onProgress={onProgress} onUpload={onUploadComplete} />
-      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2" onClick={() => toast.current.show({ severity: 'info', summary: 'Start Mission', detail: 'GRPC call to start mission.' })} />
+      <Tooltip target=".custom-choose-btn" content="Select Mission Files" position="bottom" />
+      <Tooltip target=".custom-upload-btn" content="Upload Mission" position="bottom" />
+      <Tooltip target=".custom-cancel-btn" content="Clear Selected Files" position="bottom" />
+      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" chooseLabel="Select Mission Files..." url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
+      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={() => toast.current.show({ severity: 'info', summary: 'Start Mission', detail: 'GRPC call to start mission.' })} />
     </>
   );
 
@@ -291,8 +320,8 @@ function App() {
     <>
       <ToggleButton onLabel="Armed" offLabel="Disarmed" onIcon="pi pi-times pi-spin" offIcon="pi pi-ban"
         checked={armed} onChange={(e) => setArmed(e.value)} className="w-9rem mr-2" />
-      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => onCommand({rth: true})} />
-      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => onCommand({hold: true})} />
+      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => onCommand({ rth: true })} />
+      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => onCommand({ hold: true })} />
     </>
   );
 
@@ -342,8 +371,8 @@ function App() {
               <Column field="home.alt" header="Home (Alt)"></Column>
             </DataTable>
           </div>
-          <Button icon="pi pi-arrow-up" className="m-2" label="Takeoff" onClick={() => onCommand({takeoff: true})} />
-          <Button icon="pi pi-arrow-down" className="m-2" label="Land" onClick={() => onCommand({land: true})} />
+          <Button icon="pi pi-arrow-up" className="m-2" label="Takeoff" onClick={() => onCommand({ takeoff: true })} />
+          <Button icon="pi pi-arrow-down" className="m-2" label="Land" onClick={() => onCommand({ land: true })} />
         </div>
       </Sidebar>
 
