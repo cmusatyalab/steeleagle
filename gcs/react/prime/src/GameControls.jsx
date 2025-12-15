@@ -3,7 +3,7 @@ import { useGamepad, BUTTON_LABELS, AXIS_LABELS } from "react-gamepad-tl";
 import { Fieldset } from 'primereact/fieldset';
 import { Divider } from 'primereact/divider';
 
-function GameControls() {
+function GameControls({setAxis, setButton}) {
   const [log, setLog] = useState([]);
   const { isGamepadConnected, gamepads, buttonStates, axisStates } = useGamepad(
     { deadzone: 0.1 }
@@ -23,6 +23,7 @@ function GameControls() {
           messages.push(
             `${label} (${buttonIndex}) (${state.value.toFixed(2)})`
           );
+          setButton(buttonIndex);
         }
       });
     });
@@ -33,6 +34,10 @@ function GameControls() {
         if (value !== 0) {
           const label = AXIS_LABELS[axisIndex] || `Axis ${axisIndex}`;
           messages.push(`${label} (${value.toFixed(2)})`);
+          let a = {}
+          a.index = axisIndex;
+          a.value = value.toFixed(2);
+          setAxis(a);
         }
       });
     });

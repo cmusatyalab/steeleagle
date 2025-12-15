@@ -51,6 +51,8 @@ function App() {
   const [armed, setArmed] = useState(false);
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
+  const [gamePadButton, setGamePadButton] = useState(-99);
+  const [gamePadAxis, setGamePadAxis] = useState({'index': -99, 'value': -99});
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -135,6 +137,34 @@ function App() {
       //toast.current.show({ severity: 'info', summary: 'Key Released', detail: `Released ${e.code}. This is where we would make some GRPC call to hover.` });
     }
   });
+
+  useEffect(() => {
+    if (gamePadButton == 3) {
+      onCommand({takeoff: true});
+    }
+    else if (gamePadButton == 0) {
+      onCommand({land: true});
+    }
+    else if (gamePadButton == 4) {
+      onCommand({rth: true});
+    }
+  }, [gamePadButton]);
+
+  useEffect(() => {
+    //pitch
+    if (parseInt(gamePadAxis.index, 10) == 1) {
+      onJoystick({xvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+    }//yaw
+    else if (parseInt(gamePadAxis.index, 10) == 0) {
+      onJoystick({angularvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+    }//thrust
+    else if (parseInt(gamePadAxis.index, 10) == 3) {
+      onJoystick({zvel: -1 * parseFloat(gamePadAxis.value), duration: 1});
+    }//roll
+    else if (parseInt(gamePadAxis.index, 10) == 2) {
+      onJoystick({yvel:  parseFloat(gamePadAxis.value), duration: 1});
+    }
+  }, [gamePadAxis]);
 
   useEffect(() => {
     bindKeyDown();
@@ -235,6 +265,7 @@ function App() {
   const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
+      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton}/>
       <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
         checked={tracking} onChange={(e) => setTracking(e.value)} />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
@@ -295,7 +326,6 @@ function App() {
             }}>
             {key.toUpperCase() || 'Press a Key'}
           </button>
-          <GameControls />
           <div style={{ width: "100%" }} className="card">
             <DataTable value={vehicles} scrollable stripedRows size="small">
               <Column field="name" frozen sortable header="Name"></Column>
