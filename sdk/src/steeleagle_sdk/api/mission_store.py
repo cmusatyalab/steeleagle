@@ -87,9 +87,10 @@ class MissionStore:
                 data = MessageToDict(msg, preserving_proto_field_name=True, use_integers_for_enums=True)
                 return DriverTelemetry.model_validate(data)
             elif source == "results":
-                msg = gabriel_pb2.ResultWrapper(); msg.ParseFromString(payload)
+                msg = gabriel_pb2.Result(); msg.ParseFromString(payload)
                 logger.info(f'payload:  {msg}')
-                frame_result  = msg.extras
+                frame_result  = result_proto.FrameResult()
+                msg.any_result.Unpack(frame_result)
                 logger.info(f'frame_result:  {frame_result}')
                 data = MessageToDict(frame_result, preserving_proto_field_name=True, use_integers_for_enums=True)
                 return FrameResult.model_validate(data)
