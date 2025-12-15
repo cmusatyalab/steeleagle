@@ -45,6 +45,7 @@ src/steeleagle_sdk/dsl/tools/__init__.py
 src/steeleagle_sdk/dsl/tools/language_server/__init__.py
 src/steeleagle_sdk/dsl/tools/language_server/main.py
 src/steeleagle_sdk/dsl/tools/language_server/registry_completions.py
+src/steeleagle_sdk/dsl/types/__init__.py
 src/steeleagle_sdk/dsl/types/base.py
 src/steeleagle_sdk/dsl/types/utils.py
 src/steeleagle_sdk/dsl/types/actions/__init__.py

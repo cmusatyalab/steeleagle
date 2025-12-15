@@ -26,6 +26,7 @@ Requires-Dist: pygls
 Requires-Dist: pyzmq>=27.1.0
 Requires-Dist: aiosqlite>=0.21.0
 Requires-Dist: gabriel-protocol>=4.0
+Requires-Dist: scipy>=1.16.3
 
 # SteelEagle SDK: Controller Library for SteelEagle Vehicles
 
