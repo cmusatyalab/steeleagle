@@ -49,7 +49,7 @@ async def main(args):
         'cloudlet.swarm_controller',
         SocketOperation.CONNECT
         )
-    
+
     # Create the global law handler
     law_authority = LawAuthority()
     # Set up the law interceptor
@@ -57,13 +57,14 @@ async def main(args):
     # Create the remote control and stream handler
     rc_handler = CommandHandler(law_authority, command_socket)
     stream_handler = StreamHandler(law_authority)
-    
+
     # Define the server that will hold our services
     server = grpc.aio.server(
             migration_thread_pool=futures.ThreadPoolExecutor(max_workers=10),
             interceptors=law_interceptor
             )
     # Create and assign the services to the server
+    logger.info("Registering control servicer with server")
     control_service_pb2_grpc.add_ControlServicer_to_server(ControlProxy(), server)
     mission_service_pb2_grpc.add_MissionServicer_to_server(MissionProxy(), server)
     report_service_pb2_grpc.add_ReportServicer_to_server(ReportService(command_socket), server)
@@ -104,7 +105,7 @@ async def main(args):
                 )
     except (SystemExit, asyncio.exceptions.CancelledError):
         await server.stop(1)
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Runs core services and handles permissions.")
     parser.add_argument('--test', action='store_true', help='Report when core services are ready for testing')

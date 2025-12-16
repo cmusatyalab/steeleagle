@@ -1,0 +1,348 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.protocol.messages.telemetry;
+
+import "steeleagle_sdk/protocol/common.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// Information about the telemetry stream.
+message TelemetryStreamInfo {
+  // current frequency of telemetry messages [Hz]
+  uint32 current_frequency = 1;
+  // maximum frequency of telemetry messages [Hz]
+  uint32 max_frequency = 2;
+  // uptime of the stream
+  google.protobuf.Duration uptime = 3;
+}
+
+// Information about the motion of the vehicle.
+enum MotionStatus {
+  MOTORS_OFF = 0; // motors of the vehicle are off
+  RAMPING_UP = 1; // motors of the vehicle are ramping
+  IDLE = 2; // the vehicle is on but idle
+  IN_TRANSIT = 3; // the vehicle is in motion
+  RAMPING_DOWN = 4; // motors of the vehicle are ramping down
+}
+
+// Information about the vehicle battery.
+message BatteryInfo {
+  uint32 percentage = 1; // battery level [0-100]%
+}
+
+// Information about the vehicle GPS fix.
+message GPSInfo {
+  uint32 satellites = 1; // number of satellites used in GPS fix
+}
+
+// Future: information about the vehicle's communication links.
+message CommsInfo {}
+
+/*
+ * Information about the vehicle.
+ *
+ * This includes the name, make, model and its current status (battery, GPS, comms, motion).
+ */
+message VehicleInfo {
+  // the vehicle that this telemetry corresponds to
+  string name = 1;
+  // model of the vehicle
+  string model = 2;
+  // manufacturer of the vehicle
+  string manufacturer = 3;
+  // current status of the vehicle
+  MotionStatus motion_status = 4;
+  // battery info for the vehicle
+  BatteryInfo battery_info = 5;
+  // GPS sensor info for the vehicle
+  GPSInfo gps_info = 6;
+  // communications info for the vehicle
+  CommsInfo comms_info = 7;
+}
+
+/*
+ * Information about the current setpoint.
+ *
+ * Provides the current setpoint for the vehicle. A setpoint is a position or velocity target
+ * that the vehicle is currently moving towards. By default, when the vehicle is idle, this
+ * setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
+ * setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
+ * reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.
+ */
+message SetpointInfo {
+  // the current setpoint for the vehicle
+  oneof setpoint {
+    steeleagle.protocol.common.Position position_body_sp = 1; // default all zeros idle setpoint
+    steeleagle.protocol.common.Position position_neu_sp = 2; // NEU (North, East, Up) position setpoint
+    steeleagle.protocol.common.Location global_sp = 3; // global setpoint
+    steeleagle.protocol.common.Velocity velocity_body_sp = 4; // body (forward, right, up) velocity setpoint
+    steeleagle.protocol.common.Velocity velocity_neu_sp = 5; // NEU (North, East, Up) velocity setpoint
+  }
+}
+
+/*
+ * Information about the vehicle position.
+ *
+ * Includes home position, global position (only valid with a GPS fix), relative position (only available on some vehicles), current velocity, and the current setpoint.
+ */
+message PositionInfo {
+  // global position that will be used when returning home
+  steeleagle.protocol.common.Location home = 1;
+  // current global position of the vehicle
+  steeleagle.protocol.common.Location global_position = 2;
+  /*
+   * current local position of the vehicle in the global NEU
+   * (North, East, Up) coordinate frame, relative to start
+   * position
+   */
+  steeleagle.protocol.common.Position relative_position = 3;
+  /*
+   * current velocity of the vehicle in the global NEU
+   * (North, East, Up) coordinate frame
+   */
+  steeleagle.protocol.common.Velocity velocity_neu = 4;
+  /*
+   * current velocity of the vehicle in the body (forward, right, up)
+   * coordinate frame
+   */
+  steeleagle.protocol.common.Velocity velocity_body = 5;
+  // info on the current vehicle setpoint
+  SetpointInfo setpoint_info = 6;
+}
+
+// Status of a gimbal.
+message GimbalStatus {
+  // ID of the gimbal
+  uint32 id = 1;
+  // current pose in the body (forward, right, up) reference frame
+  steeleagle.protocol.common.Pose pose_body = 2;
+  // current pose in the NEU (North, East, Up) reference frame
+  steeleagle.protocol.common.Pose pose_neu = 3;
+}
+
+// Info of all attached gimbals.
+message GimbalInfo {
+  // number of connected gimbals
+  uint32 num_gimbals = 1;
+  // list of connected gimbals
+  repeated GimbalStatus gimbals = 2;
+}
+
+// Imaging sensor types.
+enum ImagingSensorType {
+  RGB = 0; // RGB camera
+  STEREO = 1; // stereo camera
+  THERMAL = 2; // thermal camera
+  NIGHT = 3; // night vision camera
+  LIDAR = 4; // LIDAR sensor
+  RGBD = 5; // RGB-Depth camera
+  TOF = 6; // ToF (time of flight) camera
+  RADAR = 7; // RADAR sensor
+}
+
+/*
+ * Status of an imaging sensor.
+ *
+ * Includes information about its type and resolution/stream settings.
+ */
+message ImagingSensorStatus {
+  uint32 id = 1; // ID of the imaging sensor
+  ImagingSensorType type = 2; // type of the imaging sensor
+  // indicates whether the imaging sensor is currently streaming
+  bool active = 3;
+  // indicates whether the imaging sensor supports background streaming
+  bool supports_secondary = 4;
+  uint32 current_fps = 5; // current streaming frames per second
+  uint32 max_fps = 6; // maximum streaming frames per second
+  uint32 h_res = 7; // horizontal resolution
+  uint32 v_res = 8; // vertical resolution
+  uint32 channels = 9; // number of image channels
+  uint32 h_fov = 10; // horizontal FOV
+  uint32 v_fov = 11; // vertical FOV
+  bool gimbal_mounted = 12; // indicates if imaging sensor is gimbal mounted
+  // indicates which gimbal the imaging sensor is mounted on
+  uint32 gimbal_id = 13;
+}
+
+// Information about all imaging sensor streams.
+message ImagingSensorStreamStatus {
+  // the total number of allowed simultaneously streaming cameras
+  uint32 stream_capacity = 1;
+  uint32 num_streams = 2; // the total number of currently streaming cameras
+  uint32 primary_cam = 3; // ID of the primary camera
+  repeated uint32 secondary_cams = 4; // IDs of the secondary active cameras
+}
+
+// Information about all attached imaging sensors.
+message ImagingSensorInfo {
+  // status of current imaging sensor streams
+  ImagingSensorStreamStatus stream_status = 1;
+  // list of connected imaging sensors
+  repeated ImagingSensorStatus sensors = 2;
+}
+
+// Battery warnings and alerts.
+enum BatteryWarning {
+  // the vehicle is above 30% battery
+  NONE = 0;
+  // the vehicle is below 30% battery
+  LOW = 1;
+  // the vehicle is below 15% battery
+  CRITICAL = 2;
+}
+
+// GPS fix warnings and alerts.
+enum GPSWarning {
+  // GPS readings are nominal and a fix has been achieved
+  NO_GPS_WARNING = 0;
+  // weak GPS fix, expect errant global position data
+  WEAK_SIGNAL = 1;
+  // no GPS fix
+  NO_FIX = 2;
+}
+
+// Magnetometer warnings and alerts.
+enum MagnetometerWarning {
+  // magnetometer readings are nominal
+  NO_MAGNETOMETER_WARNING = 0;
+  // the vehicle is experiencing magnetic perturbations
+  PERTURBATION = 1;
+}
+
+// Connection warnings and alerts.
+enum ConnectionWarning {
+  // connection to remote server is nominal
+  NO_CONNECTION_WARNING = 0;
+  // contact has been lost with the remote server
+  DISCONNECTED = 1;
+  // connection is experiencing interference or is weak
+  WEAK_CONNECTION = 2;
+}
+
+// Compass warnings and alerts.
+enum CompassWarning {
+  // absolute heading is nominal
+  NO_COMPASS_WARNING = 0;
+  // absolute heading is available but may be incorrect
+  WEAK_HEADING_LOCK = 1;
+  // no absolute heading available from the vehicle
+  NO_HEADING_LOCK = 2;
+}
+
+// Information about all vehicle warning and alerts.
+message AlertInfo {
+  // battery warnings
+  BatteryWarning battery_warning = 1;
+  // GPS warnings
+  GPSWarning gps_warning = 2;
+  // magnetometer warnings
+  MagnetometerWarning magnetometer_warning = 3;
+  // connection warnings
+  ConnectionWarning connection_warning = 4;
+  // compass warnings
+  CompassWarning compass_warning = 5;
+}
+
+
+/*
+ * Telemetry message for the vehicle, originating from the driver module.
+ *
+ * This message outlines all the current information about the vehicle. It
+ * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
+ * that is broadcast to attached compute services.
+ */
+message DriverTelemetry {
+  // timestamp of message
+  google.protobuf.Timestamp timestamp = 1;
+  // info about current telemetry stream
+  TelemetryStreamInfo telemetry_stream_info = 2;
+  // the vehicle that this telemetry corresponds to
+  VehicleInfo vehicle_info = 3;
+  // positional info about the vehicle
+  PositionInfo position_info = 4;
+  // status on attached gimbals and their orientations
+  GimbalInfo gimbal_info = 5;
+  // information about the vehicle imaging sensors
+  ImagingSensorInfo imaging_sensor_info = 6;
+  // enumeration of vehicle warnings
+  AlertInfo alert_info = 7;
+}
+
+/*
+ * Imaging sensor frames, originating from the driver module.
+ *
+ * This message provides frame data from currently streaming imaging sensors. It
+ * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
+ * that is broadcast to attached compute services.
+ */
+message Frame {
+  // capture timestamp of the frame
+  google.protobuf.Timestamp timestamp = 1;
+  // raw bytes representing the frame
+  bytes data = 2;
+  // horizontal frame resolution in pixels
+  uint64 h_res = 3;
+  // vertical frame resolution in pixels
+  uint64 v_res = 4;
+  // depth resolution in pixels
+  uint64 d_res = 5;
+  // number of channels
+  uint64 channels = 6;
+  // frame ID for future correlation
+  uint64 id = 7;
+  // the vehicle that this telemetry corresponds to
+  VehicleInfo vehicle_info = 8;
+  // positional info about the vehicle
+  PositionInfo position_info = 9;
+  // status on attached gimbals and their orientations
+  GimbalInfo gimbal_info = 10;
+  // information about the vehicle imaging sensors
+  ImagingSensorInfo imaging_sensor_info = 11;
+}
+
+// Execution state of the current mission.
+enum MissionExecState {
+  // mission is ready to be executed
+  READY = 0;
+  // mission is in progress
+  IN_PROGRESS = 1;
+  // mission is paused
+  PAUSED = 3;
+  // mission has been completed
+  COMPLETED = 4;
+  // mission was cancelled
+  CANCELED = 5;
+}
+
+// Information about the current mission.
+message MissionInfo {
+  // mission name
+  string name = 1;
+  // mission hash to establish version uniqueness
+  int64 hash = 2;
+  // timestamp of upload
+  google.protobuf.Timestamp age = 3;
+  // execution state of the mission
+  MissionExecState exec_state = 4;
+  // task state of the mission (plaintext), if active
+  string task_state = 5;
+}
+
+/*
+ * Telemetry message for the mission, originating from the mission module.
+ *
+ * This message outlines all current information about the mission. It
+ * is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
+ * that is broadcast to attached compute services.
+ */
+message MissionTelemetry {
+  // timestamp of message
+  google.protobuf.Timestamp timestamp = 1;
+  // info about the current telemetry stream
+  TelemetryStreamInfo telemetry_stream_info = 2;
+  // info about the current mission states
+  repeated MissionInfo mission_info = 3;
+}

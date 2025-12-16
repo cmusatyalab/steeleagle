@@ -24,10 +24,10 @@ def generate_proxy(service_name, service_filename, channel_addr):
         'service_filename': service_filename,
         'channel': channel_addr
     }
-    # Populat methods from descriptor file
+    # Populate methods from descriptor file
     fds = get_descriptors()
     for file in fds.file:
-        if file.name != f'services/{service_filename}.proto':
+        if file.name != f'steeleagle_sdk/protocol/services/{service_filename}.proto':
             continue
         for service in file.service:
             if service.name != service_name:
@@ -41,7 +41,7 @@ def generate_proxy(service_name, service_filename, channel_addr):
                     raise NotImplemented("No proxy generation method for method type: client stream!")
                 rpc = RPCMethod(method.name, method.server_streaming)
                 context['methods'].append(rpc)
-    
+
     # Get the Jinja template
     template_path = Path(__file__).parent / 'templates/'
     environment = Environment(loader=FileSystemLoader(str(template_path)))

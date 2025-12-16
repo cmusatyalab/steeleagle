@@ -403,7 +403,7 @@ wheels = [
 [[package]]
 name = "gabriel-client"
 version = "4.1.1"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../../gabriel/python-client" }
 dependencies = [
     { name = "gabriel-protocol" },
     { name = "opencv-python" },
@@ -412,9 +412,15 @@ dependencies = [
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/97/1e/53da46e13421aa518d2f746f03b8bfd3fdbe90aa9a9f4acbf39532632871/gabriel_client-4.1.1.tar.gz", hash = "sha256:ae902f02e7c0669ee072003bb6c3338294175eac6b48515763edda9345e359c0", size = 15258, upload-time = "2025-12-08T20:03:35.055Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/19/8b6756ddbb053b3411b6f61d86a797f976b0d7910ffe7dc435977b1862ab/gabriel_client-4.1.1-py3-none-any.whl", hash = "sha256:1f5cf4c0706e672661a42278145a68c1496e0fe372fc08d337282c8553c3f9ff", size = 17330, upload-time = "2025-12-08T20:03:33.902Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "gabriel-protocol", specifier = "==4.1" },
+    { name = "opencv-python" },
+    { name = "prometheus-client" },
+    { name = "protobuf", specifier = ">=6.0.0,<7.0.0" },
+    { name = "pyzmq" },
+    { name = "websockets" },
 ]
 
 [[package]]
@@ -1436,7 +1442,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.14"
+version = "1.0.15"
 source = { editable = "../sdk" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1456,7 +1462,7 @@ dependencies = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "folium", specifier = ">=0.20.0" },
-    { name = "gabriel-protocol", specifier = ">=4.0" },
+    { name = "gabriel-protocol", specifier = ">=4.1" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "lark", specifier = ">=1.2.2" },
     { name = "matplotlib", specifier = ">=3.10.6" },
@@ -1496,7 +1502,7 @@ dependencies = [
 requires-dist = [
     { name = "aiorwlock", specifier = ">=1.5.0" },
     { name = "dacite", specifier = ">=1.9.2" },
-    { name = "gabriel-client", specifier = ">=4.1.1" },
+    { name = "gabriel-client", editable = "../../gabriel/python-client" },
     { name = "grpc-interceptor", specifier = ">=0.15.4" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "jinja2", specifier = ">=3.1.6" },

@@ -12,11 +12,13 @@ from ...dsl.compiler.registry import register_data
 from ..datatypes import common as common
 
 @register_data
-class ReportMessage(Datatype):
-    """Message container for a report.    
+class MissionData(Datatype):
+    """MissionData Datatype.    
     
     Attributes:
-        report_code (int): integer report code, interpreted by the backend    
+        content (str): URI, either local or remote, of a mission file    
+        map (bytes): kml object    
     """
-    report_code: int
+    content: str
+    map: bytes
 

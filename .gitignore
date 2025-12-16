@@ -18,14 +18,10 @@ venv/
 *swp
 
 # Protocol
-# *_pb2.py
-# *_pb2_grpc.py
-# *.pyi
-# *.desc
-# keep everything under this protocol directory
-!sdk-revision/src/steeleagle_sdk/protocol/
-!sdk-revision/src/steeleagle_sdk/protocol/**
-sdk-revision/src/steeleagle_sdk/protocol/**/__pycache__/
+*_pb2.py
+*_pb2_grpc.py
+*.pyi
+*.desc
 
 # Backend
 backend/server/models/
@@ -69,8 +65,16 @@ secrets.toml
 # Dependencies
 docs/node_modules
 
-# Production
-*/dist
+# Python packaging artifacts
+*.egg-info/
+build/
+dist/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+
+# Documentation
 docs/build
 
 # Generated files

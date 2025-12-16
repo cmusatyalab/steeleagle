@@ -47,7 +47,7 @@ class LawAuthority:
         self._state = None
         self._law = None
         self._lock = aiorwlock.RWLock()
-        # Open a channel to connect to kernel services 
+        # Open a channel to connect to kernel services
         self._channel = grpc.aio.insecure_channel(query_config('internal.services.kernel'))
         # Create a descriptor pool which can look up services by name from
         # generated .desc file
@@ -63,7 +63,7 @@ class LawAuthority:
 
     async def start(self, startup):
         '''
-        Call the start calls for the law scheme. Must be called before any 
+        Call the start calls for the law scheme. Must be called before any
         other function!
         '''
         try:
@@ -114,7 +114,7 @@ class LawAuthority:
             except Exception as e:
                 logger.error(f'Encountered error {e} while matching, ignoring...')
                 return False
-    
+
     async def allows(self, command, request):
         '''
         Perform name matching against law to see if command is
@@ -196,7 +196,7 @@ class LawAuthority:
         Gets the current law.
         '''
         async with self._lock.reader_lock:
-            return self._state, self._law 
+            return self._state, self._law
 
     async def _send_commands(self, command_list, identity='authority'):
         '''
@@ -205,6 +205,7 @@ class LawAuthority:
         '''
         results = []
         for command in command_list:
+            logger.info(f"{command=}")
             try:
                 # Check if we are calling a JSON command or a proto object
                 # command from a remote controller
@@ -219,6 +220,7 @@ class LawAuthority:
                     service, method = full_name.rsplit('.', 1)
                 else:
                     full_name = command.method_name
+                    logger.info(f"{full_name=}")
                     service, method = full_name.rsplit('.', 1)
                 # Fully qualify the name
                 service = self._name_table[service]
