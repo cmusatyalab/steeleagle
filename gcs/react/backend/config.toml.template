@@ -1,0 +1,8 @@
+[redis]
+host = ""
+port = 6379
+username = "steeleagle"
+password = ""
+
+[grpc]
+endpoint = "unix:///tmp/kernel.sock"
