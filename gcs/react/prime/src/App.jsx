@@ -25,7 +25,7 @@ import { useEventListener } from 'primereact/hooks';
 import GameControls from './GameControls.jsx'
 import Mapbox from './Mapbox.jsx'
 import Status from './Status.jsx'
-import { BASE_URL, WEBSERVER_PORT } from './config.js';
+import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
 
 function MainContent({ selectedMenu }) {
   switch (selectedMenu) {
@@ -61,7 +61,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://128.2.212.60:8000/api/vehicles');
+        const response = await fetch(`${FASTAPI_URL}/api/vehicles`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -180,7 +180,11 @@ function App() {
     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
   };
 
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
   const uploadHandler = async (event) => {
+    const body = {};
     for (const file of event.files) {
       const reader = new FileReader();
       let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
@@ -188,16 +192,57 @@ function App() {
 
       reader.onloadend = function () {
         const base64 = reader.result.split(',').pop();
-        console.log(atob(base64));
+
+        if (file.name.endsWith(".kml")) {
+          body.kml = base64;
+          console.log("Adding kml file");
+        }
+        else if (file.name.endsWith(".json")) {
+          console.log("Adding json file");
+          body.dsl = base64;
+        }
       };
 
     }
+    await sleep(2000);
+    console.log(body);
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    };
+    const response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+    if (!response.ok) {
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
+    }
+    else {
+      const result = await response.json();
+      toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
+    }
+
   };
 
 
   const onUploadComplete = () => {
     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
   };
+
+  const onMissionStart = async () => {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    };
+    const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+    if (!response.ok) {
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
+    }
+    else {
+      const result = await response.json();
+      toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
+    }
+  }
 
   const onJoystick = async (body) => {
     //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
@@ -206,7 +251,7 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     };
-    const response = await fetch('http://128.2.212.60:8000/api/joystick', requestOptions);
+    const response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
     if (!response.ok) {
       const result = await response.json();
       toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
@@ -226,7 +271,7 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     };
-    const response = await fetch('http://128.2.212.60:8000/api/command', requestOptions);
+    const response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
     if (!response.ok) {
       const result = await response.json();
       toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
@@ -306,7 +351,7 @@ function App() {
       <Tooltip target=".custom-upload-btn" content="Upload Mission" position="bottom" />
       <Tooltip target=".custom-cancel-btn" content="Clear Selected Files" position="bottom" />
       <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" chooseLabel="Select Mission Files..." url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
-      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={() => toast.current.show({ severity: 'info', summary: 'Start Mission', detail: 'GRPC call to start mission.' })} />
+      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={() => onMissionStart()} />
     </>
   );
 

@@ -9,6 +9,7 @@ import grpc
 import redis
 import toml
 import time
+import base64
 from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
@@ -20,12 +21,19 @@ from steeleagle_sdk.protocol.services.control_service_pb2 import (
 )
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     StopRequest,
+    StartRequest,
+    UploadRequest,
 )
 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 
 app = FastAPI()
+
+
+class Upload(BaseModel):
+    kml: str
+    dsl: str
 
 
 class Joystick(BaseModel):
@@ -212,6 +220,54 @@ async def stream_zmq():
             "X-Accel-Buffering": "no",  # Disable buffering in nginx
         },
     )
+
+
+@app.post("/api/start")
+async def start(name: str = None) -> JSONResponse:
+    _ = grpc_channel.get_state(
+        try_to_connect=True
+    )  # attempt to reconnect to grpc endpoint
+
+    try:
+        start = StartRequest()
+        call = mission_stub.Start
+        call(start, metadata=(("identity", "server"),))
+
+        return JSONResponse(status_code=200, content="Mission start sent!")
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        )
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
+
+
+@app.post("/api/upload")
+async def upload(req: Upload, name: str = None) -> JSONResponse:
+    _ = grpc_channel.get_state(
+        try_to_connect=True
+    )  # attempt to reconnect to grpc endpoint
+
+    try:
+        up = UploadRequest()
+        up.mission.map = base64.b64decode(req.kml)
+        up.mission.content = base64.b64decode(req.dsl)
+        call = mission_stub.Upload
+        call(up, metadata=(("identity", "server"),))
+
+        return JSONResponse(status_code=200, content="Mission upload complete!")
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        )
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
 @app.post("/api/joystick")

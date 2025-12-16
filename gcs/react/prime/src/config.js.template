@@ -1,3 +1,4 @@
 export const MAPBOX_TOKEN = '';
 export const BASE_URL = "http://<ip or dns>";
 export const WEBSERVER_PORT = 8080;
+export const FASTAPI_URL = "http://<ip or dns>:<port>"
