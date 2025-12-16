@@ -25,6 +25,7 @@ import { useEventListener } from 'primereact/hooks';
 import GameControls from './GameControls.jsx'
 import Mapbox from './Mapbox.jsx'
 import Status from './Status.jsx'
+import Cli from './Cli.jsx'
 import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
 
 function MainContent({ selectedMenu }) {
@@ -335,7 +336,7 @@ function App() {
   );
 
   const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
-  const chooseOptions = { icon: 'pi pi-fw pi-file', iconOnly: true, className: 'custom-choose-btn p-button-primary' };
+  const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
   const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
   const itemTemplate = (file, props) => {
     return (
@@ -350,7 +351,7 @@ function App() {
       <Tooltip target=".custom-choose-btn" content="Select Mission Files" position="bottom" />
       <Tooltip target=".custom-upload-btn" content="Upload Mission" position="bottom" />
       <Tooltip target=".custom-cancel-btn" content="Clear Selected Files" position="bottom" />
-      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" chooseLabel="Select Mission Files..." url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
+      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]"  url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
       <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={() => onMissionStart()} />
     </>
   );
@@ -418,6 +419,7 @@ function App() {
           </div>
           <Button icon="pi pi-arrow-up" className="m-2" label="Takeoff" onClick={() => onCommand({ takeoff: true })} />
           <Button icon="pi pi-arrow-down" className="m-2" label="Land" onClick={() => onCommand({ land: true })} />
+          <Cli vehicle={selectedVehicle}/>
         </div>
       </Sidebar>
 

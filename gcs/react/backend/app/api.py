@@ -50,6 +50,7 @@ class CommandRequest(BaseModel):
     rth: bool | None = None
     hold: bool | None = None
     stop_mission: bool | None = None
+    arm: bool | None = None
 
 
 class Location(BaseModel):
@@ -77,7 +78,7 @@ zmq_context = zmq.asyncio.Context()
 
 # gRPC client setup - persistent channel and stub
 grpc_channel = None
-control_tub = mission_stub = None
+control_stub = mission_stub = None
 red = None
 
 origins = [
@@ -231,7 +232,7 @@ async def start(name: str = None) -> JSONResponse:
     try:
         start = StartRequest()
         call = mission_stub.Start
-        call(start, metadata=(("identity", "server"),))
+        await call(start, metadata=(("identity", "server"),))
 
         return JSONResponse(status_code=200, content="Mission start sent!")
     except grpc.aio.AioRpcError as e:
@@ -256,7 +257,7 @@ async def upload(req: Upload, name: str = None) -> JSONResponse:
         up.mission.map = base64.b64decode(req.kml)
         up.mission.content = base64.b64decode(req.dsl)
         call = mission_stub.Upload
-        call(up, metadata=(("identity", "server"),))
+        await call(up, metadata=(("identity", "server"),))
 
         return JSONResponse(status_code=200, content="Mission upload complete!")
     except grpc.aio.AioRpcError as e:
@@ -284,7 +285,7 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
         joy.velocity.angular_vel = req.angularvel
         joy.duration.seconds = req.duration
         call = control_stub.Joystick
-        call(joy, metadata=(("identity", "server"),))
+        await call(joy, metadata=(("identity", "server"),))
 
         return JSONResponse(status_code=200, content="Joystick movement complete!")
     except grpc.aio.AioRpcError as e:
@@ -329,7 +330,7 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
         elif req.hold:
             stop = StopRequest()
             call = mission_stub.Stop
-            call(stop, metadata=(("identity", "server"),))
+            await call(stop, metadata=(("identity", "server"),))
             hold = HoldRequest()
             call = control_stub.Hold
             async for response in call(hold, metadata=(("identity", "server"),)):
