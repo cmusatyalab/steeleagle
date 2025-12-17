@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
+
 @dataclass
 class ActionIR:
     type_name: str
     action_id: str
     attributes: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class EventIR:
@@ -13,11 +15,13 @@ class EventIR:
     event_id: str
     attributes: Dict[str, Any] = field(default_factory=dict)
 
+
 @dataclass
 class DatumIR:
     type_name: str
     datum_id: str
     attributes: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class MissionIR:

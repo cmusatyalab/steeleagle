@@ -4,7 +4,12 @@ from typing import List, Tuple
 from shapely.geometry import Point, LineString, Polygon
 from ..partition import Partition
 from ..geopoints import GeoPoints
-from ..utils import rotated_infinite_transects, line_polygon_intersection_points, round_xy
+from ..utils import (
+    rotated_infinite_transects,
+    line_polygon_intersection_points,
+    round_xy,
+)
+
 
 @dataclass
 class SurveyPartition(Partition):
@@ -14,7 +19,9 @@ class SurveyPartition(Partition):
 
     def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
         results: List[GeoPoints] = []
-        for line in rotated_infinite_transects(polygon, self.spacing, self.angle_degrees):
+        for line in rotated_infinite_transects(
+            polygon, self.spacing, self.angle_degrees
+        ):
             pts = line_polygon_intersection_points(line, polygon)
             if len(pts) >= 2:
                 for a, b in zip(pts[0::2], pts[1::2]):

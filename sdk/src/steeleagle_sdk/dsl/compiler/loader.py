@@ -15,6 +15,7 @@ _SKIP_RULES = [
     lambda short: short == "native",
 ]
 
+
 def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
     try:
         pkg: ModuleType = importlib.import_module(base)
@@ -36,11 +37,11 @@ def load_all(
     """
     Import every submodule under each base package and REPORT failures.
     """
-    if not base_pkgs: base_pkgs = _DEFAULT_BASES
+    if not base_pkgs:
+        base_pkgs = _DEFAULT_BASES
     all_summaries: List[Dict[str, object]] = []
 
     for base in base_pkgs:
-
         # init summary
         summary: Dict[str, object] = {
             "base": base,
@@ -75,7 +76,9 @@ def load_all(
                     "message": str(e),
                 }
                 failed.append(fail_rec)
-                logger.error("   -> FAIL importing %s: %s: %s", module, type(e).__name__, e)
+                logger.error(
+                    "   -> FAIL importing %s: %s: %s", module, type(e).__name__, e
+                )
         summary["imported"] = imported
         summary["failed"] = failed
         all_summaries.append(summary)
@@ -105,4 +108,6 @@ def print_report(summaries: List[Dict[str, object]]) -> None:
 
         if failed:
             for f in failed:
-                logger.error("   ✗ %s — %s: %s", f["module"], f["exc_type"], f["message"])
+                logger.error(
+                    "   ✗ %s — %s: %s", f["module"], f["exc_type"], f["message"]
+                )

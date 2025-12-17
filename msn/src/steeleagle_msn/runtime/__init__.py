@@ -48,12 +48,15 @@ async def init(
 
             _STORE = MissionStore(telemetry_address, result_address)
             await _STORE.start()
-            logger.info("MissionStore started (telemetry=%s, results=%s).",
-                        telemetry_address, result_address)
+            logger.info(
+                "MissionStore started (telemetry=%s, results=%s).",
+                telemetry_address,
+                result_address,
+            )
 
             veh = Vehicle(_CHANNEL, _STORE)
             cpt = Compute(_CHANNEL, _STORE)
-            
+
             types.VEHICLE = veh
             types.COMPUTE = cpt
             types.MAP = map_obj

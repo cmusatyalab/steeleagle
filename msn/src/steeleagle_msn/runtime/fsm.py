@@ -15,11 +15,10 @@ _DONE_EVENT = "done"
 _TERMINATE = "terminate"
 
 
-
 class RacerType(str, Enum):
     ACTION = "action"
-    EVENT  = "event"
-    ERROR  = "error"
+    EVENT = "event"
+    ERROR = "error"
 
 
 class MissionFSM:
@@ -29,13 +28,14 @@ class MissionFSM:
         self.start_action_id: str = mission.start_action_id
         summaries = load_all()  # ensure registries are loaded
         logger.info("[FSM] Loaded SDK registries: %s", summaries)
-        
+
     async def start(self):
         state = self.start_action_id
         while state != _TERMINATE:
             state = await self.run_state(state)
         logger.info("[FSM] Mission ended")
         from .. import runtime as _rt
+
         await _rt.term()
 
     async def run_state(self, curr_action_id: str) -> str:
@@ -55,8 +55,10 @@ class MissionFSM:
 
             # Action
             members.append(
-                tg.create_task(self._race(action, RacerType.ACTION, curr_action_id, q),
-                               name=f"action:{curr_action_id}")
+                tg.create_task(
+                    self._race(action, RacerType.ACTION, curr_action_id, q),
+                    name=f"action:{curr_action_id}",
+                )
             )
 
             # Events
@@ -65,8 +67,9 @@ class MissionFSM:
                 ev_cls = get_event(ev_ir.type_name)
                 ev = ev_cls(**ev_ir.attributes)
                 members.append(
-                    tg.create_task(self._race(ev, RacerType.EVENT, ev_id, q),
-                                   name=f"event:{ev_id}")
+                    tg.create_task(
+                        self._race(ev, RacerType.EVENT, ev_id, q), name=f"event:{ev_id}"
+                    )
                 )
 
             # First finisher places a result into q
@@ -78,7 +81,9 @@ class MissionFSM:
 
         kind, payload = winner
         if kind is RacerType.ERROR:
-            logger.exception("[FSM] Winner failed in state %s", curr_action_id, exc_info=payload)
+            logger.exception(
+                "[FSM] Winner failed in state %s", curr_action_id, exc_info=payload
+            )
             return _TERMINATE
 
         if kind is RacerType.ACTION:
@@ -111,7 +116,9 @@ class MissionFSM:
                 pass
 
         except Exception as e:
-            logger.exception("[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e)
+            logger.exception(
+                "[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e
+            )
             try:
                 q.put_nowait((RacerType.ERROR, e))
             except asyncio.QueueFull:

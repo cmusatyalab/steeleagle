@@ -3,6 +3,7 @@ import math
 from typing import Iterable, Tuple
 from shapely.geometry import Polygon, LineString
 
+
 class GeoPoints(list):
     """List[(x, y)] with helpers; (lon,lat) for WGS84 by convention."""
 
@@ -29,7 +30,9 @@ class GeoPoints(list):
 
     # --- Simple local equirectangular projection around origin (lon0, lat0) ---
     @staticmethod
-    def _project_to_meters(origin_wgs: Tuple[float, float], wgs: Tuple[float, float]) -> Tuple[float, float]:
+    def _project_to_meters(
+        origin_wgs: Tuple[float, float], wgs: Tuple[float, float]
+    ) -> Tuple[float, float]:
         lon0, lat0 = origin_wgs
         lon, lat = wgs
         lat_rad = math.radians(lat0)
@@ -38,7 +41,9 @@ class GeoPoints(list):
         return (x, y)
 
     @staticmethod
-    def _inverse_project(origin_wgs: Tuple[float, float], xy: Tuple[float, float]) -> Tuple[float, float]:
+    def _inverse_project(
+        origin_wgs: Tuple[float, float], xy: Tuple[float, float]
+    ) -> Tuple[float, float]:
         lon0, lat0 = origin_wgs
         x, y = xy
         lat_rad = math.radians(lat0)

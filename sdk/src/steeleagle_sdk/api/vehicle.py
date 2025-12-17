@@ -3,7 +3,13 @@ import grpc
 from .mission_store import MissionStore
 from ..protocol.services.control_service_pb2_grpc import ControlStub
 from ..protocol.services import control_service_pb2 as control_proto
-from .datatypes.vehicle import (HeadingMode, AltitudeMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration)
+from .datatypes.vehicle import (
+    HeadingMode,
+    AltitudeMode,
+    ReferenceFrame,
+    PoseMode,
+    ImagingSensorConfiguration,
+)
 from .datatypes.common import Velocity, Location, Position, Response, Pose
 from .datatypes.duration import Duration
 from .utils import run_unary, run_streaming
@@ -11,16 +17,18 @@ from google.protobuf.json_format import ParseDict
 from .datatypes.telemetry import DriverTelemetry
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class Vehicle:
     def __init__(self, channel: grpc.aio.Channel, mission_store: MissionStore):
         self.mission_store = mission_store
         self.control = ControlStub(channel)
 
-    async def get_telemetry(self)-> DriverTelemetry:
-        source = 'telemetry'
-        topic = 'driver_telemetry'
+    async def get_telemetry(self) -> DriverTelemetry:
+        source = "telemetry"
+        topic = "driver_telemetry"
         return await self.mission_store.get_latest(source, topic)
 
     async def connect(self) -> Response:
@@ -39,7 +47,9 @@ class Vehicle:
         req = control_proto.DisarmRequest()
         return await run_unary(self.control.Disarm, req)
 
-    async def joystick(self, velocity: Velocity, duration: Duration) -> AsyncIterator[Response]:
+    async def joystick(
+        self, velocity: Velocity, duration: Duration
+    ) -> AsyncIterator[Response]:
         req = control_proto.JoystickRequest()
         ParseDict(velocity.model_dump(), req.velocity)
         ParseDict(duration.model_dump(), req.duration)

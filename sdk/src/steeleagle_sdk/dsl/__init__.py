@@ -9,22 +9,24 @@ _GRAMMAR_PATH = Path(__file__).resolve().parent / "grammar" / "dronedsl.lark"
 _grammar = _GRAMMAR_PATH.read_text(encoding="utf-8")
 _parser = Lark(_grammar, parser="lalr", start="start")
 
+
 def build_mission(dsl_code: str) -> MissionIR:
     """Compile DSL source text into a MissionIR object.
-    
+
     Args:
         dsl_code (str): string representation of a DSL file
 
     Returns:
         MissionIR: a mission intermediate representation
     """
-    tree = _parser.parse(dsl_code) 
+    tree = _parser.parse(dsl_code)
     mission = DroneDSLTransformer().transform(tree)
     print(
         f"Compiled DSL: start={mission.start_action_id}, "
         f"actions={len(mission.actions)}, events={len(mission.events)}"
     )
     return mission
+
 
 def cli_compile_dsl():
     """Command line utility for compiling DSL scripts.
@@ -39,20 +41,28 @@ def cli_compile_dsl():
     import argparse
     from dataclasses import asdict
     import json
+
     parser = argparse.ArgumentParser(description="SteelEagle DSL compiler.")
     parser.add_argument("dsl_file", help="Path to DSL file")
-    parser.add_argument("-o", "--output", type=str, default="mission.json", help="Name of the output file (type: JSON)")
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="mission.json",
+        help="Name of the output file (type: JSON)",
+    )
     args = parser.parse_args()
 
-    mission_json_text = ''
-    with open(args.dsl_file, 'r') as file:
+    mission_json_text = ""
+    with open(args.dsl_file, "r") as file:
         dsl_content = file.read()
         mission = build_mission(dsl_content)
         mission_json_text = json.dumps(asdict(mission))
         print("Mission compiled!")
 
-    with open(args.output, 'w') as file:
+    with open(args.output, "w") as file:
         file.write(mission_json_text)
         print(f"Wrote contents to {args.output}.")
+
 
 __all__ = ["build_mission", "compile"]

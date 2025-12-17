@@ -305,7 +305,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             compute_result.generic_result = detections
 
         frame_result = result_pb2.FrameResult()
-        frame_result.type = 'object-detection'
+        frame_result.type = "object-detection"
         frame_result.result.append(compute_result)
         # TODO: if we want to use the Detections message in
         # telemetry.proto, then we need to add some fields
@@ -357,20 +357,20 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
             box = row["box"]
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
-            #target_pitch, target_yaw = self.calculate_target_pitch_yaw(
+            # target_pitch, target_yaw = self.calculate_target_pitch_yaw(
             #    box, image_np, position_info, gimbal_info
-            #)
+            # )
 
             ## Estimate GPS coordinates of detected object
-            #global_pos = position_info.global_position
-            #rel_pos = position_info.relative_position
-            #lat, lon = self.estimate_gps(
+            # global_pos = position_info.global_position
+            # rel_pos = position_info.relative_position
+            # lat, lon = self.estimate_gps(
             #    global_pos.latitude,
             #    global_pos.longitude,
             #    target_pitch,
             #    target_yaw,
             #    rel_pos.z,
-            #)
+            # )
 
             lon = 42.0
             lat = 42.0

@@ -1,4 +1,5 @@
 from typing import List
+
 # API imports
 from ...base import Action
 from ....compiler.registry import register_action
@@ -9,6 +10,7 @@ from ...datatypes import compute as params
 from ...datatypes import common as common
 from .... import types
 
+
 @register_action
 class AddDatasinks(Action):
     """Add datasinks to consumer list.
@@ -18,6 +20,7 @@ class AddDatasinks(Action):
     Attributes:
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
+
     datasinks: List[params.DatasinkInfo]
 
     async def execute(self) -> Response:
@@ -29,6 +32,7 @@ class AddDatasinks(Action):
         # TODO: convert the common response from grpc to dataypes.common.Response
         return await types.COMPUTE.add_datasinks(**self.model_dump())
 
+
 @register_action
 class SetDatasinks(Action):
     """Set the datasink consumer list.
@@ -38,6 +42,7 @@ class SetDatasinks(Action):
     Attributes:
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
+
     datasinks: List[params.DatasinkInfo]
 
     async def execute(self) -> Response:
@@ -48,6 +53,7 @@ class SetDatasinks(Action):
         """
         return await types.COMPUTE.set_datasinks(**self.model_dump())
 
+
 @register_action
 class RemoveDatasinks(Action):
     """Remove datasinks from consumer list.
@@ -57,6 +63,7 @@ class RemoveDatasinks(Action):
     Attributes:
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
+
     datasinks: List[params.DatasinkInfo]
 
     async def execute(self) -> Response:

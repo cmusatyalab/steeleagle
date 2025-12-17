@@ -5,11 +5,14 @@ from typing import Optional, List
 from .timestamp import Timestamp
 from .duration import Duration
 from enum import Enum
+
 # API imports
 from ..base import Datatype
-from ...compiler.registry import register_data 
+from ...compiler.registry import register_data
+
 # Type imports
 from ..datatypes import common as common
+
 
 class MotionStatus(int, Enum):
     """Information about the motion of the vehicle.
@@ -21,11 +24,13 @@ class MotionStatus(int, Enum):
         IN_TRANSIT (3): the vehicle is in motion
         RAMPING_DOWN (4): motors of the vehicle are ramping down
     """
-    MOTORS_OFF = 0 
-    RAMPING_UP = 1 
-    IDLE = 2 
-    IN_TRANSIT = 3 
-    RAMPING_DOWN = 4 
+
+    MOTORS_OFF = 0
+    RAMPING_UP = 1
+    IDLE = 2
+    IN_TRANSIT = 3
+    RAMPING_DOWN = 4
+
 
 class ImagingSensorType(int, Enum):
     """Imaging sensor types.
@@ -40,14 +45,16 @@ class ImagingSensorType(int, Enum):
         TOF (6): ToF (time of flight) camera
         RADAR (7): RADAR sensor
     """
-    RGB = 0 
-    STEREO = 1 
-    THERMAL = 2 
-    NIGHT = 3 
-    LIDAR = 4 
-    RGBD = 5 
-    TOF = 6 
-    RADAR = 7 
+
+    RGB = 0
+    STEREO = 1
+    THERMAL = 2
+    NIGHT = 3
+    LIDAR = 4
+    RGBD = 5
+    TOF = 6
+    RADAR = 7
+
 
 class BatteryWarning(int, Enum):
     """Battery warnings and alerts.
@@ -57,9 +64,11 @@ class BatteryWarning(int, Enum):
         LOW (1): the vehicle is below 30% battery
         CRITICAL (2): the vehicle is below 15% battery
     """
-    NONE = 0 
-    LOW = 1 
-    CRITICAL = 2 
+
+    NONE = 0
+    LOW = 1
+    CRITICAL = 2
+
 
 class GPSWarning(int, Enum):
     """GPS fix warnings and alerts.
@@ -69,9 +78,11 @@ class GPSWarning(int, Enum):
         WEAK_SIGNAL (1): weak GPS fix, expect errant global position data
         NO_FIX (2): no GPS fix
     """
-    NO_GPS_WARNING = 0 
-    WEAK_SIGNAL = 1 
-    NO_FIX = 2 
+
+    NO_GPS_WARNING = 0
+    WEAK_SIGNAL = 1
+    NO_FIX = 2
+
 
 class MagnetometerWarning(int, Enum):
     """Magnetometer warnings and alerts.
@@ -80,8 +91,10 @@ class MagnetometerWarning(int, Enum):
         NO_MAGNETOMETER_WARNING (0): magnetometer readings are nominal
         PERTURBATION (1): the vehicle is experiencing magnetic perturbations
     """
-    NO_MAGNETOMETER_WARNING = 0 
-    PERTURBATION = 1 
+
+    NO_MAGNETOMETER_WARNING = 0
+    PERTURBATION = 1
+
 
 class ConnectionWarning(int, Enum):
     """Connection warnings and alerts.
@@ -91,9 +104,11 @@ class ConnectionWarning(int, Enum):
         DISCONNECTED (1): contact has been lost with the remote server
         WEAK_CONNECTION (2): connection is experiencing interference or is weak
     """
-    NO_CONNECTION_WARNING = 0 
-    DISCONNECTED = 1 
-    WEAK_CONNECTION = 2 
+
+    NO_CONNECTION_WARNING = 0
+    DISCONNECTED = 1
+    WEAK_CONNECTION = 2
+
 
 class CompassWarning(int, Enum):
     """Compass warnings and alerts.
@@ -103,9 +118,11 @@ class CompassWarning(int, Enum):
         WEAK_HEADING_LOCK (1): absolute heading is available but may be incorrect
         NO_HEADING_LOCK (2): no absolute heading available from the vehicle
     """
-    NO_COMPASS_WARNING = 0 
-    WEAK_HEADING_LOCK = 1 
-    NO_HEADING_LOCK = 2 
+
+    NO_COMPASS_WARNING = 0
+    WEAK_HEADING_LOCK = 1
+    NO_HEADING_LOCK = 2
+
 
 class MissionExecState(int, Enum):
     """Execution state of the current mission.
@@ -117,64 +134,74 @@ class MissionExecState(int, Enum):
         COMPLETED (3): mission has been completed
         CANCELED (4): mission was cancelled
     """
-    READY = 0 
-    IN_PROGRESS = 1 
-    PAUSED = 2 
-    COMPLETED = 3 
-    CANCELED = 4 
+
+    READY = 0
+    IN_PROGRESS = 1
+    PAUSED = 2
+    COMPLETED = 3
+    CANCELED = 4
+
 
 @register_data
 class TelemetryStreamInfo(Datatype):
-    """Information about the telemetry stream.    
-    
+    """Information about the telemetry stream.
+
     Attributes:
-        current_frequency (int): current frequency of telemetry messages [Hz]    
-        max_frequency (int): maximum frequency of telemetry messages [Hz]    
-        uptime (Duration): uptime of the stream    
+        current_frequency (int): current frequency of telemetry messages [Hz]
+        max_frequency (int): maximum frequency of telemetry messages [Hz]
+        uptime (Duration): uptime of the stream
     """
+
     current_frequency: Optional[int] = None
     max_frequency: Optional[int] = None
     uptime: Optional[Duration] = None
 
+
 @register_data
 class BatteryInfo(Datatype):
-    """Information about the vehicle battery.    
-    
+    """Information about the vehicle battery.
+
     Attributes:
-        percentage (int): battery level [0-100]%    
+        percentage (int): battery level [0-100]%
     """
+
     percentage: Optional[int] = None
+
 
 @register_data
 class GPSInfo(Datatype):
-    """Information about the vehicle GPS fix.    
-    
+    """Information about the vehicle GPS fix.
+
     Attributes:
-        satellites (int): number of satellites used in GPS fix    
+        satellites (int): number of satellites used in GPS fix
     """
+
     satellites: Optional[int] = None
+
 
 @register_data
 class CommsInfo(Datatype):
-    """Future: information about the vehicle's communication links.    
-    """    
+    """Future: information about the vehicle's communication links."""
+
     pass
+
 
 @register_data
 class VehicleInfo(Datatype):
     """Information about the vehicle.
 
-    This includes the name, make, model and its current status (battery, GPS, comms, motion).    
-    
+    This includes the name, make, model and its current status (battery, GPS, comms, motion).
+
     Attributes:
-        name (str): the vehicle that this telemetry corresponds to    
-        model (str): model of the vehicle    
-        manufacturer (str): manufacturer of the vehicle    
-        motion_status (MotionStatus): current status of the vehicle    
-        battery_info (BatteryInfo): battery info for the vehicle    
-        gps_info (GPSInfo): GPS sensor info for the vehicle    
-        comms_info (CommsInfo): communications info for the vehicle    
+        name (str): the vehicle that this telemetry corresponds to
+        model (str): model of the vehicle
+        manufacturer (str): manufacturer of the vehicle
+        motion_status (MotionStatus): current status of the vehicle
+        battery_info (BatteryInfo): battery info for the vehicle
+        gps_info (GPSInfo): GPS sensor info for the vehicle
+        comms_info (CommsInfo): communications info for the vehicle
     """
+
     name: Optional[str] = None
     model: Optional[str] = None
     manufacturer: Optional[str] = None
@@ -182,6 +209,7 @@ class VehicleInfo(Datatype):
     battery_info: Optional[BatteryInfo] = None
     gps_info: Optional[GPSInfo] = None
     comms_info: Optional[CommsInfo] = None
+
 
 @register_data
 class SetpointInfo(Datatype):
@@ -191,35 +219,38 @@ class SetpointInfo(Datatype):
     that the vehicle is currently moving towards. By default, when the vehicle is idle, this
     setpoint is a `position_body_sp` object set to all zeros. The frame of reference for each
     setpoint is implied by the name; e.g. velocity_neu_sp uses the NEU (North, East, Up)
-    reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.    
-    
+    reference frame and velocity_body_sp uses the body (forward, right, up) reference frame.
+
     Attributes:
-        position_body_sp (common.Position): default all zeros idle setpoint    
-        position_neu_sp (common.Position): NEU (North, East, Up) position setpoint    
-        global_sp (common.Location): global setpoint    
-        velocity_body_sp (common.Velocity): body (forward, right, up) velocity setpoint    
-        velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint    
+        position_body_sp (common.Position): default all zeros idle setpoint
+        position_neu_sp (common.Position): NEU (North, East, Up) position setpoint
+        global_sp (common.Location): global setpoint
+        velocity_body_sp (common.Velocity): body (forward, right, up) velocity setpoint
+        velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint
     """
+
     position_body_sp: Optional[common.Position] = None
     position_neu_sp: Optional[common.Position] = None
     global_sp: Optional[common.Location] = None
     velocity_body_sp: Optional[common.Velocity] = None
     velocity_neu_sp: Optional[common.Velocity] = None
 
+
 @register_data
 class PositionInfo(Datatype):
     """Information about the vehicle position.
 
-    Includes home position, global position (only valid with a GPS fix), relative position (only available on some vehicles), current velocity, and the current setpoint.    
-    
+    Includes home position, global position (only valid with a GPS fix), relative position (only available on some vehicles), current velocity, and the current setpoint.
+
     Attributes:
-        home (common.Location): global position that will be used when returning home    
-        global_position (common.Location): current global position of the vehicle    
-        relative_position (common.Position): current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position    
-        velocity_neu (common.Velocity): current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame    
-        velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up)  coordinate frame    
-        setpoint_info (SetpointInfo): info on the current vehicle setpoint    
+        home (common.Location): global position that will be used when returning home
+        global_position (common.Location): current global position of the vehicle
+        relative_position (common.Position): current local position of the vehicle in the global NEU (North, East, Up) coordinate frame, relative to start position
+        velocity_neu (common.Velocity): current velocity of the vehicle in the global NEU (North, East, Up) coordinate frame
+        velocity_body (common.Velocity): current velocity of the vehicle in the body (forward, right, up)  coordinate frame
+        setpoint_info (SetpointInfo): info on the current vehicle setpoint
     """
+
     home: Optional[common.Location] = None
     global_position: Optional[common.Location] = None
     relative_position: Optional[common.Position] = None
@@ -227,51 +258,57 @@ class PositionInfo(Datatype):
     velocity_body: Optional[common.Velocity] = None
     setpoint_info: Optional[SetpointInfo] = None
 
+
 @register_data
 class GimbalStatus(Datatype):
-    """Status of a gimbal.    
-    
+    """Status of a gimbal.
+
     Attributes:
-        id (int): ID of the gimbal    
-        pose_body (common.Pose): current pose in the body (forward, right, up) reference frame    
-        pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame    
+        id (int): ID of the gimbal
+        pose_body (common.Pose): current pose in the body (forward, right, up) reference frame
+        pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame
     """
+
     id: Optional[int] = None
     pose_body: Optional[common.Pose] = None
     pose_neu: Optional[common.Pose] = None
 
+
 @register_data
 class GimbalInfo(Datatype):
-    """Info of all attached gimbals.    
-    
+    """Info of all attached gimbals.
+
     Attributes:
-        num_gimbals (int): number of connected gimbals    
-        gimbals (List[GimbalStatus]): list of connected gimbals    
+        num_gimbals (int): number of connected gimbals
+        gimbals (List[GimbalStatus]): list of connected gimbals
     """
+
     num_gimbals: Optional[int] = None
     gimbals: Optional[List[GimbalStatus]] = None
+
 
 @register_data
 class ImagingSensorStatus(Datatype):
     """Status of an imaging sensor.
 
-    Includes information about its type and resolution/stream settings.    
-    
+    Includes information about its type and resolution/stream settings.
+
     Attributes:
-        id (int): ID of the imaging sensor    
-        type (ImagingSensorType): type of the imaging sensor    
-        active (bool): indicates whether the imaging sensor is currently streaming    
-        supports_secondary (bool): indicates whether the imaging sensor supports background streaming    
-        current_fps (int): current streaming frames per second    
-        max_fps (int): maximum streaming frames per second    
-        h_res (int): horizontal resolution    
-        v_res (int): vertical resolution    
-        channels (int): number of image channels    
-        h_fov (int): horizontal FOV    
-        v_fov (int): vertical FOV    
-        gimbal_mounted (bool): indicates if imaging sensor is gimbal mounted    
-        gimbal_id (int): indicates which gimbal the imaging sensor is mounted on    
+        id (int): ID of the imaging sensor
+        type (ImagingSensorType): type of the imaging sensor
+        active (bool): indicates whether the imaging sensor is currently streaming
+        supports_secondary (bool): indicates whether the imaging sensor supports background streaming
+        current_fps (int): current streaming frames per second
+        max_fps (int): maximum streaming frames per second
+        h_res (int): horizontal resolution
+        v_res (int): vertical resolution
+        channels (int): number of image channels
+        h_fov (int): horizontal FOV
+        v_fov (int): vertical FOV
+        gimbal_mounted (bool): indicates if imaging sensor is gimbal mounted
+        gimbal_id (int): indicates which gimbal the imaging sensor is mounted on
     """
+
     id: Optional[int] = None
     type: Optional[ImagingSensorType] = None
     active: Optional[bool] = None
@@ -286,48 +323,55 @@ class ImagingSensorStatus(Datatype):
     gimbal_mounted: Optional[bool] = None
     gimbal_id: Optional[int] = None
 
+
 @register_data
 class ImagingSensorStreamStatus(Datatype):
-    """Information about all imaging sensor streams.    
-    
+    """Information about all imaging sensor streams.
+
     Attributes:
-        stream_capacity (int): the total number of allowed simultaneously streaming cameras    
-        num_streams (int): the total number of currently streaming cameras    
-        primary_cam (int): ID of the primary camera    
-        secondary_cams (List[int]): IDs of the secondary active cameras    
+        stream_capacity (int): the total number of allowed simultaneously streaming cameras
+        num_streams (int): the total number of currently streaming cameras
+        primary_cam (int): ID of the primary camera
+        secondary_cams (List[int]): IDs of the secondary active cameras
     """
+
     stream_capacity: Optional[int] = None
     num_streams: Optional[int] = None
     primary_cam: Optional[int] = None
     secondary_cams: Optional[List[int]] = None
 
+
 @register_data
 class ImagingSensorInfo(Datatype):
-    """Information about all attached imaging sensors.    
-    
+    """Information about all attached imaging sensors.
+
     Attributes:
-        stream_status (ImagingSensorStreamStatus): status of current imaging sensor streams    
-        sensors (List[ImagingSensorStatus]): list of connected imaging sensors    
+        stream_status (ImagingSensorStreamStatus): status of current imaging sensor streams
+        sensors (List[ImagingSensorStatus]): list of connected imaging sensors
     """
+
     stream_status: Optional[ImagingSensorStreamStatus] = None
     sensors: Optional[List[ImagingSensorStatus]] = None
 
+
 @register_data
 class AlertInfo(Datatype):
-    """Information about all vehicle warning and alerts.    
-    
+    """Information about all vehicle warning and alerts.
+
     Attributes:
-        battery_warning (BatteryWarning): battery warnings    
-        gps_warning (GPSWarning): GPS warnings    
-        magnetometer_warning (MagnetometerWarning): magnetometer warnings    
-        connection_warning (ConnectionWarning): connection warnings    
-        compass_warning (CompassWarning): compass warnings    
+        battery_warning (BatteryWarning): battery warnings
+        gps_warning (GPSWarning): GPS warnings
+        magnetometer_warning (MagnetometerWarning): magnetometer warnings
+        connection_warning (ConnectionWarning): connection warnings
+        compass_warning (CompassWarning): compass warnings
     """
+
     battery_warning: Optional[BatteryWarning] = None
     gps_warning: Optional[GPSWarning] = None
     magnetometer_warning: Optional[MagnetometerWarning] = None
     connection_warning: Optional[ConnectionWarning] = None
     compass_warning: Optional[CompassWarning] = None
+
 
 @register_data
 class DriverTelemetry(Datatype):
@@ -335,17 +379,18 @@ class DriverTelemetry(Datatype):
 
     This message outlines all the current information about the vehicle. It
     is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
-    that is broadcast to attached compute services.    
-    
+    that is broadcast to attached compute services.
+
     Attributes:
-        timestamp (Timestamp): timestamp of message    
-        telemetry_stream_info (TelemetryStreamInfo): info about current telemetry stream    
-        vehicle_info (VehicleInfo): the vehicle that this telemetry corresponds to    
-        position_info (PositionInfo): positional info about the vehicle    
-        gimbal_info (GimbalInfo): status on attached gimbals and their orientations    
-        imaging_sensor_info (ImagingSensorInfo): information about the vehicle imaging sensors    
-        alert_info (AlertInfo): enumeration of vehicle warnings    
+        timestamp (Timestamp): timestamp of message
+        telemetry_stream_info (TelemetryStreamInfo): info about current telemetry stream
+        vehicle_info (VehicleInfo): the vehicle that this telemetry corresponds to
+        position_info (PositionInfo): positional info about the vehicle
+        gimbal_info (GimbalInfo): status on attached gimbals and their orientations
+        imaging_sensor_info (ImagingSensorInfo): information about the vehicle imaging sensors
+        alert_info (AlertInfo): enumeration of vehicle warnings
     """
+
     timestamp: Optional[Timestamp] = None
     telemetry_stream_info: Optional[TelemetryStreamInfo] = None
     vehicle_info: Optional[VehicleInfo] = None
@@ -354,23 +399,25 @@ class DriverTelemetry(Datatype):
     imaging_sensor_info: Optional[ImagingSensorInfo] = None
     alert_info: Optional[AlertInfo] = None
 
+
 @register_data
 class Frame(Datatype):
     """Imaging sensor frames, originating from the driver module.
 
     This message provides frame data from currently streaming imaging sensors. It
     is one of three messages (`DriverTelemetry`, `Frame`, `MissionTelemetry`)
-    that is broadcast to attached compute services.    
-    
+    that is broadcast to attached compute services.
+
     Attributes:
-        timestamp (Timestamp): capture timestamp of the frame    
-        data (bytes): raw bytes representing the frame    
-        h_res (int): horizontal frame resolution in pixels    
-        v_res (int): vertical frame resolution in pixels    
-        d_res (int): depth resolution in pixels    
-        channels (int): number of channels    
-        id (int): frame ID for future correlation    
+        timestamp (Timestamp): capture timestamp of the frame
+        data (bytes): raw bytes representing the frame
+        h_res (int): horizontal frame resolution in pixels
+        v_res (int): vertical frame resolution in pixels
+        d_res (int): depth resolution in pixels
+        channels (int): number of channels
+        id (int): frame ID for future correlation
     """
+
     timestamp: Optional[Timestamp] = None
     data: Optional[bytes] = None
     h_res: Optional[int] = None
@@ -379,6 +426,7 @@ class Frame(Datatype):
     channels: Optional[int] = None
     id: Optional[int] = None
 
+
 @register_data
 class MissionInfo(Datatype):
     name: Optional[str] = None
@@ -386,6 +434,7 @@ class MissionInfo(Datatype):
     age: Optional[Timestamp] = None
     exec_state: Optional[MissionExecState] = None
     task_state: Optional[str] = None
+
 
 @register_data
 class MissionTelemetry(Datatype):

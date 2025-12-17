@@ -39,89 +39,99 @@ class ResponseStatus(int, Enum):
         DATA_LOSS (17): unrecoverable data loss or corruption
         UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)
     """
-    OK = 0 
-    IN_PROGRESS = 1 
-    COMPLETED = 2 
-    CANCELLED = 3 
-    UNKNOWN = 4 
-    INVALID_ARGUMENT = 5 
-    DEADLINE_EXCEEDED = 6 
-    NOT_FOUND = 7 
-    ALREADY_EXISTS = 8 
-    PERMISSION_DENIED = 9 
-    RESOURCE_EXHAUSTED = 10 
-    FAILED_PRECONDITION = 11 
-    ABORTED = 12 
-    OUT_OF_RANGE = 13 
-    UNIMPLEMENTED = 14 
-    INTERNAL = 15 
-    UNAVAILABLE = 16 
-    DATA_LOSS = 17 
-    UNAUTHENTICATED = 18 
+
+    OK = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    CANCELLED = 3
+    UNKNOWN = 4
+    INVALID_ARGUMENT = 5
+    DEADLINE_EXCEEDED = 6
+    NOT_FOUND = 7
+    ALREADY_EXISTS = 8
+    PERMISSION_DENIED = 9
+    RESOURCE_EXHAUSTED = 10
+    FAILED_PRECONDITION = 11
+    ABORTED = 12
+    OUT_OF_RANGE = 13
+    UNIMPLEMENTED = 14
+    INTERNAL = 15
+    UNAVAILABLE = 16
+    DATA_LOSS = 17
+    UNAUTHENTICATED = 18
+
 
 class Response(Datatype):
-    """Global response message returned by all core services.    
-    
+    """Global response message returned by all core services.
+
     Attributes:
-        status (ResponseStatus): response status    
-        response_string (Optional[str]): detailed message on reason for response    
-        timestamp (Timestamp): response timestamp    
+        status (ResponseStatus): response status
+        response_string (Optional[str]): detailed message on reason for response
+        timestamp (Timestamp): response timestamp
     """
+
     status: ResponseStatus
     response_string: Optional[str]
     timestamp: Timestamp
 
+
 class Pose(Datatype):
-    """Angular offsets or poses in 3 dimensions.    
-    
+    """Angular offsets or poses in 3 dimensions.
+
     Attributes:
-        pitch (Optional[float]): pitch [degrees]    
-        roll (Optional[float]): roll [degrees]    
-        yaw (Optional[float]): yaw [degrees]    
+        pitch (Optional[float]): pitch [degrees]
+        roll (Optional[float]): roll [degrees]
+        yaw (Optional[float]): yaw [degrees]
     """
+
     pitch: Optional[float]
     roll: Optional[float]
     yaw: Optional[float]
 
+
 class Velocity(Datatype):
-    """Representation of velocity in 3-dimensions.    
-    
+    """Representation of velocity in 3-dimensions.
+
     Attributes:
-        x_vel (Optional[float]): forward/north velocity [meters/s]    
-        y_vel (Optional[float]): right/east velocity [meters/s]    
-        z_vel (Optional[float]): up velocity [meters/s]    
-        angular_vel (Optional[float]): angular velocity [degrees/s]    
+        x_vel (Optional[float]): forward/north velocity [meters/s]
+        y_vel (Optional[float]): right/east velocity [meters/s]
+        z_vel (Optional[float]): up velocity [meters/s]
+        angular_vel (Optional[float]): angular velocity [degrees/s]
     """
+
     x_vel: Optional[float]
     y_vel: Optional[float]
     z_vel: Optional[float]
     angular_vel: Optional[float] = None
 
+
 class Position(Datatype):
-    """Position offset relative to home or current location.    
-    
+    """Position offset relative to home or current location.
+
     Attributes:
-        x (Optional[float]): forward/north offset [meters]    
-        y (Optional[float]): right/east offset [meters]    
-        z (Optional[float]): up offset [meters]    
-        angle (Optional[float]): angular offset [degrees]    
+        x (Optional[float]): forward/north offset [meters]
+        y (Optional[float]): right/east offset [meters]
+        z (Optional[float]): up offset [meters]
+        angle (Optional[float]): angular offset [degrees]
     """
+
     x: Optional[float] = None
     y: Optional[float] = None
     z: Optional[float] = None
     angle: Optional[float] = None
 
+
 class Location(Datatype):
-    """Location in global coordinates.    
-    
+    """Location in global coordinates.
+
     Attributes:
-        latitude (Optional[float]): global latitude [degrees]    
-        longitude (Optional[float]): global longitude [degrees]    
-        altitude (Optional[float]): altitude above MSL or takeoff [meters]    
-        heading (Optional[float]): global heading [degrees]    
+        latitude (Optional[float]): global latitude [degrees]
+        longitude (Optional[float]): global longitude [degrees]
+        altitude (Optional[float]): altitude above MSL or takeoff [meters]
+        heading (Optional[float]): global heading [degrees]
     """
+
     latitude: Optional[float]
     longitude: Optional[float]
     altitude: Optional[float] = None
     heading: Optional[float] = None
-

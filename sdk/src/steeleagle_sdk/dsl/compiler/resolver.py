@@ -2,7 +2,17 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Tuple, Union, Annotated, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    Dict,
+    List,
+    Tuple,
+    Union,
+    Annotated,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 from pydantic import BaseModel
 
 from ...dsl.compiler.ir import MissionIR, DatumIR
@@ -11,11 +21,11 @@ from ...dsl.compiler.registry import get_action, get_event, get_data
 logger = logging.getLogger(__name__)
 
 
-class ResolverException(Exception):
-    ...
+class ResolverException(Exception): ...
 
 
 # ---------- Type utilities ----------
+
 
 def _unwrap_type(tp: Any) -> Any:
     origin = get_origin(tp)
@@ -54,6 +64,7 @@ def _iter_model_fields(model_cls: type[BaseModel]) -> List[Tuple[str, Any]]:
 
 # ---------- Data instantiation helpers ----------
 
+
 def _instantiate_data_from_ir(did: str, data: Dict[str, DatumIR]) -> BaseModel | None:
     dir_ = data.get(did)
     if not dir_:
@@ -61,7 +72,9 @@ def _instantiate_data_from_ir(did: str, data: Dict[str, DatumIR]) -> BaseModel |
 
     cls = get_data(dir_.type_name)
     if not cls:
-        logger.warning("instantiate data: unregistered type '%s' (id '%s')", dir_.type_name, did)
+        logger.warning(
+            "instantiate data: unregistered type '%s' (id '%s')", dir_.type_name, did
+        )
         raise ResolverException(
             f"instantiate data: unregistered type '{dir_.type_name}' (id '{did}')"
         )
@@ -70,7 +83,9 @@ def _instantiate_data_from_ir(did: str, data: Dict[str, DatumIR]) -> BaseModel |
 
 
 def _is_inline_literal(v: Any) -> bool:
-    return isinstance(v, dict) and v.get("__inline__") and isinstance(v.get("type"), str)
+    return (
+        isinstance(v, dict) and v.get("__inline__") and isinstance(v.get("type"), str)
+    )
 
 
 def _instantiate_inline_data(v: Dict[str, Any], data: Dict[str, DatumIR]) -> BaseModel:
@@ -95,6 +110,7 @@ def _instantiate_inline_data(v: Dict[str, Any], data: Dict[str, DatumIR]) -> Bas
 
 
 # ---------- Core resolver ----------
+
 
 def _resolve_value_for_field(
     value: Any,
@@ -142,43 +158,69 @@ def resolve_symbols(mir: MissionIR) -> MissionIR:
     """
     logger.debug(
         "resolve_symbols: start (actions=%d, events=%d, data=%d)",
-        len(mir.actions), len(mir.events), len(mir.data)
+        len(mir.actions),
+        len(mir.events),
+        len(mir.data),
     )
 
     # 1) DATA — resolve references inside DatumIR.attributes (but keep as dict)
     for did, dir_ in mir.data.items():
         data_cls = get_data(dir_.type_name)
         if not data_cls:
-            logger.warning("resolve_symbols: data '%s' type '%s' not registered", did, dir_.type_name)
-            raise ResolverException(f"Data '{did}' type '{dir_.type_name}' not registered")
+            logger.warning(
+                "resolve_symbols: data '%s' type '%s' not registered",
+                did,
+                dir_.type_name,
+            )
+            raise ResolverException(
+                f"Data '{did}' type '{dir_.type_name}' not registered"
+            )
         resolved_attrs = dict(dir_.attributes)
         for fname, ftype in _iter_model_fields(data_cls):
             if fname in resolved_attrs:
-                resolved_attrs[fname] = _resolve_value_for_field(resolved_attrs[fname], ftype, mir.data)
+                resolved_attrs[fname] = _resolve_value_for_field(
+                    resolved_attrs[fname], ftype, mir.data
+                )
         dir_.attributes = resolved_attrs
 
     # 2) ACTIONS — resolve to instances/inline models where appropriate
     for aid, air in mir.actions.items():
         action_cls = get_action(air.type_name)
         if not action_cls:
-            logger.warning("resolve_symbols: action '%s' type '%s' not registered", aid, air.type_name)
-            raise ResolverException(f"Action '{aid}' type '{air.type_name}' not registered")
+            logger.warning(
+                "resolve_symbols: action '%s' type '%s' not registered",
+                aid,
+                air.type_name,
+            )
+            raise ResolverException(
+                f"Action '{aid}' type '{air.type_name}' not registered"
+            )
         resolved_attrs = dict(air.attributes)
         for fname, ftype in _iter_model_fields(action_cls):
             if fname in resolved_attrs:
-                resolved_attrs[fname] = _resolve_value_for_field(resolved_attrs[fname], ftype, mir.data)
+                resolved_attrs[fname] = _resolve_value_for_field(
+                    resolved_attrs[fname], ftype, mir.data
+                )
         air.attributes = resolved_attrs
 
     # 3) EVENTS — same treatment as actions
     for ename, eir in mir.events.items():
         event_cls = get_event(eir.type_name)
         if not event_cls:
-            logger.warning("resolve_symbols: event '%s' type '%s' not registered", ename, eir.type_name)
-            raise ResolverException(f"Event '{ename}' type '{eir.type_name}' not registered")
+            logger.warning(
+                "resolve_symbols: event '%s' type '%s' not registered",
+                ename,
+                eir.type_name,
+            )
+            raise ResolverException(
+                f"Event '{ename}' type '{eir.type_name}' not registered"
+            )
         resolved_attrs = dict(eir.attributes)
         for fname, ftype in _iter_model_fields(event_cls):
             if fname in resolved_attrs:
-                resolved_attrs[fname] = _resolve_value_for_field(resolved_attrs[fname], ftype, mir.data)
+                resolved_attrs[fname] = _resolve_value_for_field(
+                    resolved_attrs[fname], ftype, mir.data
+                )
         eir.attributes = resolved_attrs
 
     logger.debug("resolve_symbols: done")

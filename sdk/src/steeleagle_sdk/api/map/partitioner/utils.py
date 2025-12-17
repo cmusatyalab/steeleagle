@@ -5,11 +5,15 @@ from typing import Dict, Tuple, List
 from xml.dom import minidom
 from .geopoints import GeoPoints
 
+
 def round_xy(x: float, y: float, decimals: int = 3) -> Tuple[float, float]:
-    k = 10 ** decimals
+    k = 10**decimals
     return (round(x * k) / k, round(y * k) / k)
 
-def line_polygon_intersection_points(line: LineString, polygon: Polygon) -> List[Tuple[float, float]]:
+
+def line_polygon_intersection_points(
+    line: LineString, polygon: Polygon
+) -> List[Tuple[float, float]]:
     inter = line.intersection(polygon.boundary)
     pts: List[Tuple[float, float]] = []
 
@@ -52,7 +56,10 @@ def line_polygon_intersection_points(line: LineString, polygon: Polygon) -> List
     out.sort(key=tparam)
     return out
 
-def rotated_infinite_transects(polygon: Polygon, spacing: float, angle_deg: float) -> List[LineString]:
+
+def rotated_infinite_transects(
+    polygon: Polygon, spacing: float, angle_deg: float
+) -> List[LineString]:
     minx, miny, maxx, maxy = polygon.envelope.bounds
     width = maxx - minx
     height = maxy - miny
@@ -69,7 +76,6 @@ def rotated_infinite_transects(polygon: Polygon, spacing: float, angle_deg: floa
         x += spacing
 
     return [rotate(v, angle_deg, origin=(cx, cy), use_radians=False) for v in verticals]
-
 
 
 def parse_kml_file(kmlstr: str) -> Dict[str, GeoPoints]:

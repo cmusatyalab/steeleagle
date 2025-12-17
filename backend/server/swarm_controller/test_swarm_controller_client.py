@@ -6,16 +6,18 @@ from steeleagle_sdk.protocol.services import remote_service_pb2_grpc as remote_g
 from google.protobuf import text_format
 
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class SwarmControllerClient:
     def __init__(self):
-        target  = "localhost:5004"
+        target = "localhost:5004"
         self._channel = grpc.aio.insecure_channel(target)
         self._stub = remote_grpc.RemoteStub(self._channel)
-        self._md = [('identity', 'sc_client')]
-    
+        self._md = [("identity", "sc_client")]
+
     async def CompileMission(self, path: str):
         dsl = open(path, "r", encoding="utf-8").read()
         logger.info(f"Uploading: {dsl}")
@@ -46,6 +48,7 @@ async def main():
                 logger.warning("Unknown command")
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

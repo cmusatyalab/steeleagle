@@ -17,6 +17,7 @@ _TERMINATE_AID = "terminate"
 
 # ---------- Helpers ----------
 
+
 def _pairs_to_dict(attrs: Optional[Iterable[Any]]) -> Dict[str, Any]:
     if attrs is None:
         return {}
@@ -38,6 +39,7 @@ class DroneDSLTransformer(Transformer):
       - Inline data constructors inside Actions and Events
       - Implicit 'done' -> terminate transitions
     """
+
     def __init__(self):
         super().__init__()
         self._actions: Dict[str, ActionIR] = {}
@@ -47,32 +49,44 @@ class DroneDSLTransformer(Transformer):
         self._during: Dict[str, Dict[str, str]] = {}
 
     # ===== Data =====
-    def datum_decl(self, type_name: Token, datum_id: Token, attrs: Optional[List] = None):
+    def datum_decl(
+        self, type_name: Token, datum_id: Token, attrs: Optional[List] = None
+    ):
         type_str = str(type_name)
         did = str(datum_id)
         attrs_dict = _pairs_to_dict(attrs)
-        self._data[did] = DatumIR(type_name=type_str, datum_id=did, attributes=attrs_dict)
+        self._data[did] = DatumIR(
+            type_name=type_str, datum_id=did, attributes=attrs_dict
+        )
 
     def datum_body(self, *items):
         # filter for attr tuples
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ===== Actions =====
-    def action_decl(self, type_name: Token, action_id: Token, attrs: Optional[List] = None):
+    def action_decl(
+        self, type_name: Token, action_id: Token, attrs: Optional[List] = None
+    ):
         type_str = str(type_name)
         aid = str(action_id)
         attrs_dict = _pairs_to_dict(attrs)
-        self._actions[aid] = ActionIR(type_name=type_str, action_id=aid, attributes=attrs_dict)
+        self._actions[aid] = ActionIR(
+            type_name=type_str, action_id=aid, attributes=attrs_dict
+        )
 
     def action_body(self, *items):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ===== Events =====
-    def event_decl(self, type_name: Token, event_id: Token, attrs: Optional[List] = None):
+    def event_decl(
+        self, type_name: Token, event_id: Token, attrs: Optional[List] = None
+    ):
         type_str = str(type_name)
         eid = str(event_id)
         attrs_dict = _pairs_to_dict(attrs)
-        self._events[eid] = EventIR(type_name=type_str, event_id=eid, attributes=attrs_dict)
+        self._events[eid] = EventIR(
+            type_name=type_str, event_id=eid, attributes=attrs_dict
+        )
 
     def event_body(self, *items):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
@@ -103,11 +117,11 @@ class DroneDSLTransformer(Transformer):
     # ===== Attributes / Values =====
     def attr(self, k: Token, _sep, v):
         return (str(k), v)
-    
+
     def value(self, v):
-        if isinstance(v, Dict):      # from datum_inline()
+        if isinstance(v, Dict):  # from datum_inline()
             return v
-        if isinstance(v, list):      # from array()
+        if isinstance(v, list):  # from array()
             return v
         if isinstance(v, Token):
             t = v.type
@@ -120,7 +134,7 @@ class DroneDSLTransformer(Transformer):
                 return None
         return v
 
-    def array(self, *items):        
+    def array(self, *items):
         return [it for it in items if not isinstance(it, Token)]
 
     def datum_args(self, *items):
@@ -130,8 +144,6 @@ class DroneDSLTransformer(Transformer):
         tname = str(type_name)
         args_list = next((c for c in args if isinstance(c, list)), [])
         return {"__inline__": True, "type": tname, "args": args_list}
-
-
 
     # ===== Top-level =====
     def print_mir(self, mir: MissionIR):
@@ -157,11 +169,12 @@ class DroneDSLTransformer(Transformer):
                 nxt = evmap[ev]
                 logger.info("    %s + %s -> %s", state, ev, nxt)
 
-
     def start(self, *children):
         logger.info(
             "transform: building MissionIR (actions=%d, events=%d, data=%d)",
-            len(self._actions), len(self._events), len(self._data)
+            len(self._actions),
+            len(self._events),
+            len(self._data),
         )
 
         transitions: Dict[str, Dict[str, str]] = {}
@@ -180,14 +193,14 @@ class DroneDSLTransformer(Transformer):
             events=self._events,
             data=self._data,
             start_action_id=self._start_aid,
-            transitions=transitions
+            transitions=transitions,
         )
 
-       # Import API so @register_* hooks populate registries
+        # Import API so @register_* hooks populate registries
         logger.info("loader: loading SDK registries")
         load_summaries = loader.load_all()
         loader.print_report(load_summaries)
-        
+
         logger.info("resolver: resolving symbol references")
         mir = resolver.resolve_symbols(mir)
 
@@ -195,7 +208,7 @@ class DroneDSLTransformer(Transformer):
         mir = validator.validate_mission_ir(mir)
 
         logger.info("transform: done (transitions=%d)", len(transitions))
-        
+
         # print the final IR nicely, from data to actions to events
         self.print_mir(mir)
         return mir

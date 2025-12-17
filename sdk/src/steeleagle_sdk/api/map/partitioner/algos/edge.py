@@ -4,8 +4,8 @@ from shapely.geometry import Polygon
 from ..partition import Partition
 from ..geopoints import GeoPoints
 
+
 class EdgePartition(Partition):
-    
     def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
         coords = list(polygon.exterior.coords)
         pairs = []

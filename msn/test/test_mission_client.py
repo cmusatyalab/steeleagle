@@ -11,18 +11,20 @@ from dataclasses import asdict
 from google.protobuf import text_format
 
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
 
 class MissionClient:
     def __init__(self):
         # Initialize once and keep it around
-        target = query_config('internal.services.kernel')
+        target = query_config("internal.services.kernel")
         self._channel = grpc.aio.insecure_channel(target)
         self._stub = mission_grpc.MissionStub(self._channel)
-        self._md = [('identity', 'server')]  
-    
-    async def close(self):               
+        self._md = [("identity", "server")]
+
+    async def close(self):
         await self._channel.close()
 
     # --- API helpers ---
@@ -38,9 +40,10 @@ class MissionClient:
         logger.info(f"Uploading: {dsl}")
         mission_json_text = self.compile_dsl(dsl)
         logger.info(f"Compiled JSON -> {mission_json_text}")
-        req = mission_pb.UploadRequest(mission=mission_pb.MissionData(content=mission_json_text))
+        req = mission_pb.UploadRequest(
+            mission=mission_pb.MissionData(content=mission_json_text)
+        )
         return await self._stub.Upload(req, metadata=self._md)
-  
 
     async def Start(self):
         return await self._stub.Start(mission_pb.StartRequest(), metadata=self._md)
@@ -73,6 +76,7 @@ async def main():
                 logger.warning("Unknown command")
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -16,7 +16,9 @@ class ValidatorException(Exception):
 
 
 def _instantiate(cls: type[BaseModel], attrs: Dict[str, Any]) -> BaseModel:
-    logger.debug("instantiate: %s with attrs=%s", getattr(cls, "__name__", str(cls)), attrs)
+    logger.debug(
+        "instantiate: %s with attrs=%s", getattr(cls, "__name__", str(cls)), attrs
+    )
     try:
         model = cls(**attrs)
         logger.debug("instantiate: %s OK", getattr(cls, "__name__", str(cls)))
@@ -25,15 +27,20 @@ def _instantiate(cls: type[BaseModel], attrs: Dict[str, Any]) -> BaseModel:
         msgs = "; ".join(err["msg"] for err in e.errors())
         logger.error(
             "instantiate: %s failed pydantic validation: %s",
-            getattr(cls, "__name__", str(cls)), msgs
+            getattr(cls, "__name__", str(cls)),
+            msgs,
         )
         raise ValidatorException(msgs) from e
     except Exception as e:
-        logger.error("instantiate: %s failed: %s", getattr(cls, "__name__", str(cls)), e)
+        logger.error(
+            "instantiate: %s failed: %s", getattr(cls, "__name__", str(cls)), e
+        )
         raise ValidatorException(str(e)) from e
 
 
-def validate_action(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseModel], Dict[str, Any]]:
+def validate_action(
+    type_name: str, attrs: Dict[str, Any]
+) -> Tuple[type[BaseModel], Dict[str, Any]]:
     logger.debug("validate_action: type=%s", type_name)
     cls = get_action(type_name)
     if cls is None:
@@ -43,7 +50,9 @@ def validate_action(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseMod
     return cls, model.model_dump()
 
 
-def validate_event(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseModel], Dict[str, Any]]:
+def validate_event(
+    type_name: str, attrs: Dict[str, Any]
+) -> Tuple[type[BaseModel], Dict[str, Any]]:
     logger.debug("validate_event: type=%s", type_name)
     cls = get_event(type_name)
     if cls is None:
@@ -53,7 +62,9 @@ def validate_event(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseMode
     return cls, model.model_dump()
 
 
-def validate_data(type_name: str, attrs: Dict[str, Any]) -> Tuple[type[BaseModel], Dict[str, Any]]:
+def validate_data(
+    type_name: str, attrs: Dict[str, Any]
+) -> Tuple[type[BaseModel], Dict[str, Any]]:
     logger.debug("validate_data: type=%s", type_name)
     cls = get_data(type_name)
     if cls is None:
@@ -85,7 +96,9 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
             dir_.attributes = normalized
             data_valid += 1
         except ValidatorException as e:
-            logger.error("validator: data '%s' (%s) invalid: %s", did, dir_.type_name, e)
+            logger.error(
+                "validator: data '%s' (%s) invalid: %s", did, dir_.type_name, e
+            )
             raise ValueError(
                 f"Data '{did}' of type '{dir_.type_name}' failed validation: {e}"
             ) from e
@@ -97,7 +110,9 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
             air.attributes = normalized
             actions_valid += 1
         except ValidatorException as e:
-            logger.error("validator: action '%s' (%s) invalid: %s", aid, air.type_name, e)
+            logger.error(
+                "validator: action '%s' (%s) invalid: %s", aid, air.type_name, e
+            )
             raise ValueError(
                 f"Action '{aid}' of type '{air.type_name}' failed validation: {e}"
             ) from e
@@ -109,13 +124,17 @@ def validate_mission_ir(mir: MissionIR) -> MissionIR:
             eir.attributes = normalized
             events_valid += 1
         except ValidatorException as e:
-            logger.error("validator: event '%s' (%s) invalid: %s", ename, eir.type_name, e)
+            logger.error(
+                "validator: event '%s' (%s) invalid: %s", ename, eir.type_name, e
+            )
             raise ValueError(
                 f"Event '{ename}' of type '{eir.type_name}' failed validation: {e}"
             ) from e
 
     logger.debug(
         "validator: done (data_valid=%d, actions_valid=%d, events_valid=%d)",
-        data_valid, actions_valid, events_valid
+        data_valid,
+        actions_valid,
+        events_valid,
     )
     return mir

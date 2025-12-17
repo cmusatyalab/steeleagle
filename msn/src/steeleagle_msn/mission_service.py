@@ -7,7 +7,9 @@ from .runtime import init as fsm_init
 from .runtime import term as fsm_stop
 from dacite import from_dict
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class MissionService(MissionServicer):
     def __init__(self, address: dict):
@@ -22,7 +24,7 @@ class MissionService(MissionServicer):
         json_data = json.loads(mission_content)
         mission_ir = from_dict(MissionIR, json_data)
         return mission_ir
-    
+
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
@@ -66,7 +68,6 @@ class MissionService(MissionServicer):
             await self._stop()
             logger.info("Mission stopped")
             return generate_response(2)
-        
 
     async def Notify(self, request, context):
         """Send a notification to the current mission"""
@@ -75,5 +76,3 @@ class MissionService(MissionServicer):
     async def ConfigureTelemetryStream(self, request, context):
         """Set the mission telemetry stream parameters"""
         pass
-
-

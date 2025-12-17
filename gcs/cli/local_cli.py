@@ -28,6 +28,7 @@ from steeleagle_sdk.dsl import build_mission
 
 IDENTITY_MD = (("identity", "server"),)
 
+
 # --------- raw TTY helpers (WSL-friendly) ---------
 class TTYMode:
     def __init__(self):
@@ -40,6 +41,7 @@ class TTYMode:
             return
         import termios
         import tty
+
         if self._orig is None:
             self._orig = termios.tcgetattr(self.fd)
         tty.setcbreak(self.fd)
@@ -48,6 +50,7 @@ class TTYMode:
         if not self._supported or self._orig is None:
             return
         import termios
+
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self._orig)
 
 
@@ -105,13 +108,14 @@ async def consume_keys(
                     print(f"Response for {command_name}: {response.status}")
             except grpc.aio.AioRpcError as e:
                 print(f"Error during {command_name}: {e}")
-        
+
         async def _send_unary(call, command_name: str):
-                try:
-                    # assuming unary RPC that just acks
-                    await call
-                except grpc.aio.AioRpcError as e:
-                    print(f"Error during {command_name}: {e}")
+            try:
+                # assuming unary RPC that just acks
+                await call
+            except grpc.aio.AioRpcError as e:
+                print(f"Error during {command_name}: {e}")
+
         # Joystick
         if key in ["w", "a", "s", "d", "j", "i", "k", "l"]:
             print("Sending Joystick")

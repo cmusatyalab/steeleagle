@@ -28,7 +28,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SIMPLE_KEYWORDS = ["->", "Start", "During", "done", "Data", "Actions", "Events", "Mission"]
+SIMPLE_KEYWORDS = [
+    "->",
+    "Start",
+    "During",
+    "done",
+    "Data",
+    "Actions",
+    "Events",
+    "Mission",
+]
 
 SECTION_SNIPPETS = [
     ("Data:", "Data:\n    ${1}"),
@@ -122,8 +131,12 @@ def on_init(ls, _):
     reg.ensure_registry_initialized()
     return InitializeResult(
         capabilities=ServerCapabilities(
-            text_document_sync=TextDocumentSyncOptions(open_close=True, change=TextDocumentSyncKind.Incremental),
-            completion_provider=CompletionOptions(trigger_characters=[":", ">", "-", " ", "_", "(", ")", ",", "="]),
+            text_document_sync=TextDocumentSyncOptions(
+                open_close=True, change=TextDocumentSyncKind.Incremental
+            ),
+            completion_provider=CompletionOptions(
+                trigger_characters=[":", ">", "-", " ", "_", "(", ")", ",", "="]
+            ),
         )
     )
 
@@ -138,7 +151,9 @@ def on_complete(ls, params: CompletionParams):
     )
     try:
         doc = ls.workspace.get_document(params.text_document.uri)
-        line_pref = get_line_prefix(doc, params.position.line, params.position.character)
+        line_pref = get_line_prefix(
+            doc, params.position.line, params.position.character
+        )
         pfx = ident_prefix(line_pref)
         section = detect_section(doc, params.position.line)
         value_ctx = is_value_position(line_pref, pfx)

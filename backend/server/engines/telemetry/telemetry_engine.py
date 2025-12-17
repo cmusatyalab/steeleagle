@@ -209,9 +209,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             tel = telemetry.DriverTelemetry()
             assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(
-                telemetry.DriverTelemetry.DESCRIPTOR
-            )
+            assert input_frame.any_payload.Is(telemetry.DriverTelemetry.DESCRIPTOR)
             input_frame.any_payload.Unpack(tel)
 
             logger.info(tel.vehicle_info.name)
@@ -275,8 +273,11 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         logger.error(f"Engine received wrong input format: {input_frame.payload_type}")
         status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-        status.message = f"Engine received wrong input format: {input_frame.payload_type}"
+        status.message = (
+            f"Engine received wrong input format: {input_frame.payload_type}"
+        )
         return cognitive_engine.Result(status, None)
+
 
 def main():
     """Starts the Gabriel server."""
