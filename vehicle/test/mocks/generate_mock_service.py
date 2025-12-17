@@ -45,7 +45,7 @@ def generate_mock_service(service_name, service_filename):
     # Get the Jinja template
     template_path = Path(__file__).parent / 'templates/'
     environment = Environment(loader=FileSystemLoader(str(template_path)))
-    template = environment.get_template('mock_service.py')
+    template = environment.get_template('mock_service.py.jinja')
     output_path = Path(__file__).parent / f'mock_services/_gen_mock_{service_filename}.py'
     with open(str(output_path), 'w') as f:
         f.write(template.render(context))

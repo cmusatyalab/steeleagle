@@ -45,7 +45,7 @@ def generate_proxy(service_name, service_filename, channel_addr):
     # Get the Jinja template
     template_path = Path(__file__).parent / 'templates/'
     environment = Environment(loader=FileSystemLoader(str(template_path)))
-    template = environment.get_template('proxy_service.py')
+    template = environment.get_template('proxy_service.py.jinja')
     output_path = Path(__file__).parent / f'_gen_{service_filename}_proxy.py'
     with open(str(output_path), 'w') as f:
         f.write(template.render(context))
