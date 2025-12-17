@@ -23,7 +23,7 @@ from google.protobuf.duration_pb2 import Duration
 from google.protobuf.json_format import ParseDict
 from enum import Enum
 # API imports
-from ...base import Action, Datatype
+from .....datatypes._base import Action, Datatype
 from ....dsl.compiler.registry import register_action
 from ..native import run_unary, run_streaming, payload_from_action
 # Protobuf imports

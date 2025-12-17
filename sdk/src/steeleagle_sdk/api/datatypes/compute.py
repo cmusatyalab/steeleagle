@@ -6,8 +6,8 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.duration_pb2 import Duration
 from enum import Enum
 # API imports
-from ..base import Datatype
-from ...dsl.compiler.registry import register_data 
+from ._base import Datatype
+from ...dsl.compiler.registry import register_data
 # Type imports
 from ..datatypes import common as common
 
@@ -18,8 +18,8 @@ class DatasinkLocation(int, Enum):
         REMOTE (0): remote location (network hop required)
         LOCAL (1): local location (IPC)
     """
-    REMOTE = 0 
-    LOCAL = 1 
+    REMOTE = 0
+    LOCAL = 1
 
 class InputSource(int, Enum):
     """InputSource Enum.
@@ -30,19 +30,19 @@ class InputSource(int, Enum):
         MISSION_TELEMETRY (2): telemetry from the mission service
         IMAGERY (3): imagery from the vehicle
     """
-    SOURCE_UNSPECIFIED = 0 
-    DRIVER_TELEMETRY = 1 
-    MISSION_TELEMETRY = 2 
-    IMAGERY = 3 
+    SOURCE_UNSPECIFIED = 0
+    DRIVER_TELEMETRY = 1
+    MISSION_TELEMETRY = 2
+    IMAGERY = 3
 
 @register_data
 class DatasinkInfo(Datatype):
-    """Information about a datasink.    
-    
+    """Information about a datasink.
+
     Attributes:
-        id (str): datasink ID    
-        location (DatasinkLocation): datasink location    
-        sources (List[InputSource]): input sources for this datasink    
+        id (str): datasink ID
+        location (DatasinkLocation): datasink location
+        sources (List[InputSource]): input sources for this datasink
     """
     id: str
     location: DatasinkLocation
