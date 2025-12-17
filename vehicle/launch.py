@@ -31,7 +31,7 @@ def start_services(log, info):
             try:
                 # Attempt to load startup commands
                 startup = tomllib.loads(cap_request.text)["startup"]
-            except:
+            except Exception:
                 print(
                     "WARNING: Cap could not be read for startup commands, ignoring..."
                 )
