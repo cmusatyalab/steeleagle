@@ -3,10 +3,8 @@ import asyncio
 import grpc
 import json
 from google.protobuf.descriptor_pool import DescriptorPool
-from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from google.protobuf.message_factory import GetMessages
 from google.protobuf.json_format import ParseDict, MessageToDict
-from google.protobuf import any_pb2
 import toml
 import os
 from fnmatch import fnmatch

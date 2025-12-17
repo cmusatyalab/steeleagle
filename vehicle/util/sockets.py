@@ -1,5 +1,4 @@
 from enum import Enum
-import zmq
 # Utility import
 from util.config import query_config
 

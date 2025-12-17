@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-import asyncio, time, json, logging
+import asyncio
+import time
+import json
+import logging
 from typing import Optional, Any
 import aiosqlite
-import zmq, zmq.asyncio
+import zmq
+import zmq.asyncio
 from google.protobuf.json_format import MessageToDict
 
 # --- your types/protos ---

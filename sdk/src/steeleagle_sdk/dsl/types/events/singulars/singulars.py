@@ -8,7 +8,7 @@ from ....compiler.registry import register_event
 from ...base import Event
 from ...datatypes.control import ReferenceFrame
 from ...datatypes.telemetry import DriverTelemetry
-from ...datatypes.result import FrameResult, ComputeResult, DetectionResult, Detection, HSV
+from ...datatypes.result import FrameResult, Detection, HSV
 from ...datatypes.common import Pose, Velocity, Location, Position
 from ...utils import fetch_results, fetch_telemetry
 import logging

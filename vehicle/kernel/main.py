@@ -1,4 +1,3 @@
-import os
 import asyncio
 import zmq
 import zmq.asyncio
@@ -6,7 +5,6 @@ import grpc
 import argparse
 import logging
 from concurrent import futures
-from multiprocessing import Process
 # Law handler import
 from kernel.laws.authority import LawAuthority
 from kernel.laws.interceptor import LawInterceptor

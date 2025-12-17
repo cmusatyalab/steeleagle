@@ -10,7 +10,6 @@ import logging
 
 from gabriel_server.network_engine.engine_runner import EngineRunner
 from telemetry_engine import TelemetryEngine
-import logging
 
 SOURCE = "telemetry"
 logging.basicConfig(

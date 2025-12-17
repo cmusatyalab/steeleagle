@@ -1,5 +1,4 @@
 from __future__ import annotations
-import math
 from shapely.geometry import Point, LineString, Polygon
 from shapely.affinity import rotate
 from typing import Dict, Tuple, List

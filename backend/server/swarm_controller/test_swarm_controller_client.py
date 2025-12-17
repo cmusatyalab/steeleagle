@@ -3,7 +3,6 @@ import grpc
 
 from steeleagle_sdk.protocol.services import remote_service_pb2 as remote_pb
 from steeleagle_sdk.protocol.services import remote_service_pb2_grpc as remote_grpc
-from dataclasses import asdict
 from google.protobuf import text_format
 
 import logging

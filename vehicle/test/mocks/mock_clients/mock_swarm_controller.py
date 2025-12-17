@@ -1,10 +1,6 @@
-import asyncio
-import zmq
-import zmq.asyncio
 import logging
 from google.protobuf.json_format import MessageToDict
 # Utility import
-from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from util.config import query_config
 # Protocol import
 from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto

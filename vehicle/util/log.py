@@ -1,5 +1,4 @@
 import grpc
-import asyncio
 import logging
 # Utility import
 from steeleagle_sdk.protocol.rpc_helpers import generate_request

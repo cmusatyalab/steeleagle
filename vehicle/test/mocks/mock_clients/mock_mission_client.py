@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import grpc
 # Utility import
@@ -10,7 +9,6 @@ from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStu
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportStub
 from steeleagle_sdk.protocol.services.compute_service_pb2_grpc import ComputeStub
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
-from google.protobuf import any_pb2
 
 logger = logging.getLogger('test/mock_mission')
 

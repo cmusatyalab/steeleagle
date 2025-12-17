@@ -1,4 +1,4 @@
-from typing import Type, Dict, Optional
+from typing import Dict, Optional
 from ..types.base import Action, Event, Datatype
 import logging
 

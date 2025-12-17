@@ -1,9 +1,7 @@
 import dearpygui.dearpygui as dpg
-import dearpygui_extend as dpge
 
 import yaml
 import redis
-import pandas as pd
 import zmq
 import time
 import webbrowser

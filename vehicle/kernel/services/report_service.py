@@ -1,7 +1,6 @@
 import logging
 # Protocol import
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportServicer
-from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
 # Utility import
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 

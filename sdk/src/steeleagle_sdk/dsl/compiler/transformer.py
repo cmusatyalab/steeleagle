@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Tuple, Optional, Any, Iterable
-from lark import Transformer, Tree, v_args, Token
+from typing import Dict, List, Optional, Any, Iterable
+from lark import Transformer, v_args, Token
 
 from ...dsl.compiler import validator
 from ...dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR

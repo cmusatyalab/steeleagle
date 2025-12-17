@@ -1,7 +1,4 @@
-import os
 import time
-import logging
-from concurrent import futures
 # MCAP import
 from mcap_protobuf.writer import Writer
 # Utility import
@@ -9,7 +6,6 @@ from util.config import query_config
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
 # Protocol import
 from steeleagle_sdk.protocol.services.flight_log_service_pb2_grpc import FlightLogServicer
-from steeleagle_sdk.protocol.services import flight_log_service_pb2 as log_proto
 
 class FlightLogService(FlightLogServicer):
     '''

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import math
-from typing import Iterable, Tuple, List
+from typing import Iterable, Tuple
 from shapely.geometry import Polygon, LineString
 
 class GeoPoints(list):

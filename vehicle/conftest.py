@@ -163,7 +163,7 @@ async def results():
 
 @pytest_asyncio.fixture(scope='function')
 async def gabriel():
-    from gabriel_protocol.gabriel_pb2 import PayloadType, ResultWrapper
+    from gabriel_protocol.gabriel_pb2 import ResultWrapper
     from gabriel_server.local_engine import LocalEngine
     from gabriel_server.cognitive_engine import create_result_wrapper, Engine
     from util.config import query_config

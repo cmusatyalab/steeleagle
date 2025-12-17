@@ -1,6 +1,5 @@
 import asyncio
 import zmq
-import time
 import logging
 import numpy as np
 import cv2
@@ -11,10 +10,8 @@ from util.sockets import setup_zmq_socket, SocketOperation
 from gabriel_client.zeromq_client import ZeroMQClient
 from gabriel_client.gabriel_client import InputProducer
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
 # Protocol import
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
-from steeleagle_sdk.protocol.messages.result_pb2 import ComputeResult
 
 logger = logging.getLogger('kernel/handlers/stream_handler')
 

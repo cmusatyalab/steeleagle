@@ -1,16 +1,11 @@
 import pytest
 import asyncio
-from enum import Enum
-import zmq
 import logging
 # Helper import
 from test.helpers import send_requests, Request
 # Protocol import
 import steeleagle_sdk.protocol.services.compute_service_pb2 as compute_proto
 import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
-from gabriel_protocol.gabriel_pb2 import ResultWrapper, PayloadType
-# Sequencer import
-from test.message_sequencer import Topic
 
 logger = logging.getLogger(__name__)
 

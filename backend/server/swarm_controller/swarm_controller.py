@@ -9,7 +9,6 @@ import argparse
 import asyncio
 import json
 import redis
-import os
 import zmq
 import zmq.asyncio
 import grpc

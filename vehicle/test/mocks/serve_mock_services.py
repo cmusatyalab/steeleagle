@@ -4,7 +4,6 @@ from concurrent import futures
 import zmq
 import zmq.asyncio
 import logging
-import os
 # Mock import
 from test.message_sequencer import Topic, MessageSequencer
 from test.mocks.generate_mock_service import generate_mock_service
@@ -15,7 +14,6 @@ from test.mocks.mock_services._gen_mock_mission_service import MockMissionServic
 # Utility import
 from util.sockets import setup_zmq_socket, SocketOperation
 from util.config import query_config
-from util.cleanup import register_cleanup_handler
 # Protocol import
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import add_ControlServicer_to_server
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import add_MissionServicer_to_server

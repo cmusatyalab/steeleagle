@@ -38,7 +38,8 @@ class TTYMode:
     def raw(self):
         if not self._supported:
             return
-        import termios, tty
+        import termios
+        import tty
         if self._orig is None:
             self._orig = termios.tcgetattr(self.fd)
         tty.setcbreak(self.fd)

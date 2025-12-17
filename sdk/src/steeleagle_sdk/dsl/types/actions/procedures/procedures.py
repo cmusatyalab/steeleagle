@@ -1,6 +1,6 @@
 # tasks/actions/procedures.py
 import asyncio
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 from pydantic import Field
 from ....compiler.registry import register_action
 from ...base import Action
@@ -8,7 +8,7 @@ from ..primitives.vehicle import SetGimbalPose, SetGlobalPosition, SetVelocity, 
 from ...datatypes import common as common
 from ...datatypes.result import Detection, BoundingBox, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceFrame
+from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame
 import logging
 logger = logging.getLogger(__name__)
 from ...utils import fetch_telemetry, fetch_results
