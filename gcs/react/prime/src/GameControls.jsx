@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useGamepad, BUTTON_LABELS, AXIS_LABELS } from "react-gamepad-tl";
 import { Fieldset } from 'primereact/fieldset';
-import { Divider } from 'primereact/divider';
+import { Toast } from 'primereact/toast';
 
-function GameControls({setAxis, setButton}) {
+function GameControls({ setAxis, setButton }) {
   const [log, setLog] = useState([]);
+  const gamePadToast = useRef(null);
   const { isGamepadConnected, gamepads, buttonStates, axisStates } = useGamepad(
     { deadzone: 0.1 }
   );
@@ -47,26 +48,18 @@ function GameControls({setAxis, setButton}) {
     }
   }, [buttonStates, axisStates, isGamepadConnected]);
 
+  useEffect(() => {
+    if(Object.keys(gamepads).length > 0) {
+      gamePadToast.current.replace({ severity: 'success', summary: 'Gamepad', detail: `Gamepad connected.`, sticky: true });
+    }
+    else {
+      gamePadToast.current.replace({ severity: 'warn', summary: 'Gamepad', detail: 'No gamepad detected. Please connect a controller.', sticky: true });
+    }
+  }, [gamepads]);
 
-  /*
-                {Object.values(gamepads).map((gamepad) => (
-                <div key={gamepad.index}>
-                  {gamepad.id}
-                </div>
-              ))}
-              <Divider />
-  */
   return (
     <>
-          {!isGamepadConnected ? (
-            <p>No gamepad detected. Please connect a controller.</p>
-          ) : (
-            <>
-              {log.map((message, index) => (
-                <p key={index}>{message}</p>
-              ))}
-            </>
-          )}
+      <Toast ref={gamePadToast} position="bottom-left"/>
     </>
   );
 }
