@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from pydantic import Field
 from ....compiler.registry import register_action
 from ...base import Action
-from ..primitives.vehicle import SetGimbalPose, SetGlobalPosition, SetVelocity
+from ..primitives.vehicle import SetGimbalPose, SetGlobalPosition, SetVelocity, Joystick
 from ...datatypes import common as common
 from ...datatypes.result import Detection, BoundingBox, FrameResult
 from ...datatypes.waypoint import Waypoints
@@ -104,7 +104,6 @@ class Track(Action):
     
     # --- Compute / detection configuration ---
     target: Detection
-    altitude: float = Field(10.0, gt=0.0, description="Altitude threshold (meters, AGL/relative) to consider 'descended'")
     leash_distance: float = Field(10, gt = 0.0, description='leashing distance towards the tracked target' )
     target_lost_duration: float = Field(10.0, gt=0.0, description="Seconds without detection before exiting")
 
@@ -112,7 +111,6 @@ class Track(Action):
     follow_speed: float = Field(1.0, ge=0.0, description="Max forward speed (m/s)")
     yaw_speed: float = Field(10.0, ge=0.0, description="Max yaw rate (deg/s)")
     orbit_speed: float = Field(0.0, ge=0.0, description="Lateral (orbit) speed (m/s)")
-    descent_speed: float = Field(0.5, ge=0.0, description="Descent speed (m/s) before reaching altitude")
     yaw_gain: float = Field(2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU")
 
     # --- private ---
@@ -182,22 +180,19 @@ class Track(Action):
         yaw_vel_deg: float,
         gimbal_error_deg: float,
         orbit_speed: float,
-        descent_speed: float,
         telemetry,
     ) -> None:
         prev_gimbal_pitch = telemetry.gimbal_info.gimbals[0].pose_body.pitch
 
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
-        set_vel = SetVelocity(
+        set_joystick = Joystick(
             velocity=common.Velocity(
                 x_vel=follow_vel,
                 y_vel=orbit_speed,
-                z_vel=-1.0 * descent_speed,      # negative to descend
                 angular_vel=yaw_vel_deg * self.yaw_gain,
-            ),
-            frame=ReferenceFrame.BODY,
+            )
         )
-        await set_vel.execute()
+        await set_joystick.execute()
 
         # Gimbal pitch command
         desired_pitch = (gimbal_error_deg * 0.5) + prev_gimbal_pitch
@@ -206,7 +201,6 @@ class Track(Action):
 
     async def execute(self):
         last_seen: Optional[float] = None
-        descended = False
         while True:
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
@@ -222,9 +216,6 @@ class Track(Action):
             
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
-            rel_alt = telemetry.position_info.relative_position.z
-            if rel_alt <= self.altitude:
-                descended = True
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
@@ -262,36 +253,22 @@ class Track(Action):
                     continue
 
                 logger.info(
-                    "Track: forward=%.3f, yaw=%.3f, gimbal=%.3f, orbit=%.3f, descent=%.3f, descended=%s",
+                    "Track: forward=%.3f, yaw=%.3f, gimbal=%.3f, orbit=%.3f",
                     follow_vel,
                     yaw_vel,
                     gimbal_err,
                     self.orbit_speed,
-                    self.descent_speed,
-                    descended,
                 )
 
                 try:
-                    if not descended:
-                        # Still descending: no forward/orbit motion, only yaw + descent
-                        await self._actuate(
-                            follow_vel=0.0,
-                            yaw_vel_deg=yaw_vel,
-                            gimbal_error_deg=gimbal_err,
-                            orbit_speed=0.0,
-                            descent_speed=self.descent_speed,
-                            telemetry=telemetry,
-                        )
-                    else:
-                        # At/above desired altitude: follow + orbit, no more descent
-                        await self._actuate(
-                            follow_vel=follow_vel,
-                            yaw_vel_deg=yaw_vel,
-                            gimbal_error_deg=gimbal_err,
-                            orbit_speed=self.orbit_speed,
-                            descent_speed=0.0,
-                            telemetry=telemetry,
-                        )
+                    # At/above desired altitude: follow + orbit
+                    await self._actuate(
+                        follow_vel=follow_vel,
+                        yaw_vel_deg=yaw_vel,
+                        gimbal_error_deg=gimbal_err,
+                        orbit_speed=self.orbit_speed,
+                        telemetry=telemetry,
+                    )
                 except Exception as e:
                     logger.error("Track: actuation failed: %s", e)
 

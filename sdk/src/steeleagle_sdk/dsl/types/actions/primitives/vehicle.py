@@ -98,7 +98,7 @@ class Joystick(Action):
         duration (Duration): time of actuation after which the vehicle will Hold
     """
     velocity: common.Velocity
-    duration: Duration
+    duration: Optional[Duration] = None
 
     async def execute(self) -> Response:
         """Execute the Joystick action.
