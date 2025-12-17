@@ -52,7 +52,7 @@ class Waypoints(Datatype):
         raw = None  # Raw geopoints
 
         # Check to see if a KML map has been sent or if Locations have been provided
-        if MAP is None and type(self.area) == str:
+        if MAP is None and isinstance(self.area, str):
             raise ValueError(
                 "MAP is not set. Set map_mod.MAP to a fastkml.kml.KML before calling calculate()."
             )

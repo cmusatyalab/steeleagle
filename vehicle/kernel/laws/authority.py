@@ -216,7 +216,7 @@ class LawAuthority:
             try:
                 # Check if we are calling a JSON command or a proto object
                 # command from a remote controller
-                is_json_command = True if type(command) == str else False
+                is_json_command = True if isinstance(command, str) else False
                 if is_json_command:
                     splits = command.split("|")
                     if len(splits) > 1:
