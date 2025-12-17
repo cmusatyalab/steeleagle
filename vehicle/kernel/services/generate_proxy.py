@@ -36,11 +36,11 @@ def generate_proxy(service_name, service_filename, channel_addr):
             for method in service.method:
                 rpc_name = method.name
                 if method.client_streaming and method.server_streaming:
-                    raise NotImplemented(
+                    raise NotImplementedError(
                         "No proxy generation method for method type: bidirectional stream!"
                     )
                 elif method.client_streaming:
-                    raise NotImplemented(
+                    raise NotImplementedError(
                         "No proxy generation method for method type: client stream!"
                     )
                 rpc = RPCMethod(method.name, method.server_streaming)

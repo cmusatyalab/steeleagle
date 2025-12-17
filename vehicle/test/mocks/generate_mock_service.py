@@ -36,11 +36,11 @@ def generate_mock_service(service_name, service_filename):
             # Generate mock methods for each of the methods in the service
             for method in service.method:
                 if method.client_streaming and method.server_streaming:
-                    raise NotImplemented(
+                    raise NotImplementedError(
                         "No mock generation method for method type: bidirectional stream!"
                     )
                 elif method.client_streaming:
-                    raise NotImplemented(
+                    raise NotImplementedError(
                         "No mock generation method for method type: client stream!"
                     )
                 rpc = RPCMethod(method.name, method.server_streaming)
