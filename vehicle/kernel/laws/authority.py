@@ -205,7 +205,6 @@ class LawAuthority:
         '''
         results = []
         for command in command_list:
-            logger.info(f"{command=}")
             try:
                 # Check if we are calling a JSON command or a proto object
                 # command from a remote controller
@@ -220,7 +219,6 @@ class LawAuthority:
                     service, method = full_name.rsplit('.', 1)
                 else:
                     full_name = command.method_name
-                    logger.info(f"{full_name=}")
                     service, method = full_name.rsplit('.', 1)
                 # Fully qualify the name
                 service = self._name_table[service]
