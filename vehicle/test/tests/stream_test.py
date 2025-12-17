@@ -76,7 +76,7 @@ class Test_Stream:
                     await results.recv_multipart()
                 )  # This will timeout after half a second if nothing is received
                 received[topic.decode("utf-8")] += 1
-            except Exception as e:
+            except Exception:
                 pass
         assert expected == received
 
@@ -123,7 +123,7 @@ class Test_Stream:
                     await results.recv_multipart()
                 )  # This will timeout after half a second if nothing is received
                 received[topic.decode("utf-8")] += 1
-            except Exception as e:
+            except Exception:
                 pass
         assert expected == received
 
@@ -170,6 +170,6 @@ class Test_Stream:
                     await results.recv_multipart()
                 )  # This will timeout after half a second if nothing is received
                 received[topic.decode("utf-8")] += 1
-            except Exception as e:
+            except Exception:
                 pass
         assert expected == received

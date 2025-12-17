@@ -47,7 +47,7 @@ async def serve_mock_services(messages):
     try:
         await server.start()
     except Exception as e:
-        logger.error("Mock services failed to start, reason: {e}")
+        logger.error(f"Mock services failed to start, reason: {e}")
         return
     # Create ZeroMQ socket that connects to the test apparatus
     command_socket = zmq.asyncio.Context().socket(zmq.DEALER)

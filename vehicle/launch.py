@@ -44,7 +44,7 @@ def start_services(log, info):
             try:
                 # Attempt to get the requires-python string
                 python = tomllib.loads(py_request.text)["project"]["requires-python"]
-            except Exception as e:
+            except Exception:
                 print("WARNING: Could not read Python version for driver, ignoring...")
         else:
             print(
