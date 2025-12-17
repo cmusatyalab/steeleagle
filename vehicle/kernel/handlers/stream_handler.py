@@ -168,7 +168,7 @@ class StreamHandler:
                 _, data = await imagery_sock.recv_multipart()
             except Exception as e:
                 logger.error(
-                    f"Exception when reading from producer {type(proto_class)}, {e}"
+                    f"Exception when reading from producer {type(Frame())}, {e}"
                 )
                 return None
 
