@@ -43,7 +43,7 @@ async def wait_for_services(required, command_socket, timeout=5.0):
         except (KeyboardInterrupt, asyncio.exceptions.CancelledError):
             return
     if len(required):
-        raise TimeoutError(f"Services did not report in!")
+        raise TimeoutError("Services did not report in!")
 
 
 async def send_requests(requests, swarm_controller, mission):

@@ -245,7 +245,7 @@ class LawAuthority:
                 # an INVALID_ARGUMENT response
                 results.append(
                     generate_response(
-                        5, resp_string=f"Command does not exist in descriptor table"
+                        5, resp_string="Command does not exist in descriptor table"
                     )
                 )
                 continue

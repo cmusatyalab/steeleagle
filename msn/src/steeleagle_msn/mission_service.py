@@ -31,7 +31,7 @@ class MissionService(MissionServicer):
         mission_content = request.mission.content
         self.mission = self._load(mission_content)
         self.mission_map = request.mission.map
-        logger.info(f"Loaded mission and map")
+        logger.info("Loaded mission and map")
         return generate_response(2, "Mission uploaded")
 
     async def _start(self):

@@ -185,17 +185,17 @@ def update_imagery():
         width, height, channels, data = dpg.load_image(
             f"{SECRETS['image_vol']}/detected/latest.jpg"
         )
-        dpg.set_value(f"texture_detection", data)
+        dpg.set_value("texture_detection", data)
     elif dpg.get_item_alias(dpg.get_value("imagery_tabbar")) == "avoidance_tab":
         width, height, channels, data = dpg.load_image(
             f"{SECRETS['image_vol']}/moa/latest.jpg"
         )
-        dpg.set_value(f"texture_moa", data)
+        dpg.set_value("texture_moa", data)
     elif dpg.get_item_alias(dpg.get_value("imagery_tabbar")) == "hsv_tab":
         width, height, channels, data = dpg.load_image(
             f"{SECRETS['image_vol']}/detected/hsv.jpg"
         )
-        dpg.set_value(f"texture_hsv", data)
+        dpg.set_value("texture_hsv", data)
     else:
         for d in get_drones():
             if dpg.get_item_alias(dpg.get_value("imagery_tabbar")) == f"{d}_tab":
@@ -210,10 +210,10 @@ def update_imagery():
 def arm_disarm(sender, app_data, user_data):
     _log_interaction(sender, app_data, user_data)
     if app_data:
-        dpg.set_value("manual_control_label", f"Manual Control Enabled")
+        dpg.set_value("manual_control_label", "Manual Control Enabled")
         dpg.configure_item("manual_control_label", color=(0, 255, 0))
     else:
-        dpg.set_value("manual_control_label", f"Manual Control Disabled")
+        dpg.set_value("manual_control_label", "Manual Control Disabled")
         dpg.configure_item("manual_control_label", color=(255, 0, 0))
 
 
