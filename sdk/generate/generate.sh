@@ -41,4 +41,4 @@ $PROTOCPATH -I. \
 	steeleagle_sdk/protocol/services/compute_service.proto \
 
 # Construct the API
-DESCPATH=$_DESCPATH python ../generate/generate_api.py
+#DESCPATH=$_DESCPATH python ../generate/generate_api.py
