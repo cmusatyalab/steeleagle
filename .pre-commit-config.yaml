@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Carnegie Mellon University
 # SPDX-License-Identifier: 0BSD
 
-exclude: '^(.*_pb2.pyi?|docs/.*\.(html|js))$'
+exclude: '^(.*_pb2(_grpc)?.pyi?|docs/.*\.(html|js))$'
 
 repos:
   - repo: meta
