@@ -244,8 +244,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self,
         image,
         bbox,
-        hsv_min=[30, 100, 100],
-        hsv_max=[50, 255, 255],
+        hsv_min=(30, 100, 100),
+        hsv_max=(50, 255, 255),
         threshold=5.0,
     ) -> bool:
         cropped = image[
