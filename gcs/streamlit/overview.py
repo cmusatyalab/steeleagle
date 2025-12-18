@@ -69,7 +69,7 @@ def draw_map():
                 coords = []
                 i = 0
                 drone_name = k.split(":")[-1]
-                for index, row in df.iterrows():
+                for _index, row in df.iterrows():
                     if i == 0:
                         coords.append([row["latitude"], row["longitude"]])
                         text = folium.DivIcon(
@@ -111,8 +111,8 @@ def draw_map():
             partition = []
             with open(f"{st.secrets.waypoints}", encoding="utf-8") as f:
                 j = json.load(f)
-                for k, v in j.items():
-                    for k2, v2 in v.items():  # for each corridor
+                for _k, v in j.items():
+                    for _k2, v2 in v.items():  # for each corridor
                         for c in v2:
                             lon = c[0]
                             lat = c[1]

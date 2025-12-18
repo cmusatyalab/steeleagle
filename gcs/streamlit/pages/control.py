@@ -105,7 +105,7 @@ def change_center():
                 f"telemetry:{st.session_state.tracking_selection}", "+", "-", 1
             )
         )
-        for index, row in df.iterrows():
+        for _index, row in df.iterrows():
             st.session_state.center = {"lat": row["latitude"], "lng": row["longitude"]}
 
 
@@ -272,7 +272,7 @@ def draw_map():
             coords = []
             i = 0
             drone_name = k.split(":")[-1]
-            for index, row in df.iterrows():
+            for _index, row in df.iterrows():
                 if i % 10 == 0:
                     coords.append([row["latitude"], row["longitude"]])
                 if st.session_state.show_drone_markers and i == 0:
@@ -332,7 +332,7 @@ def draw_map():
             df = stream_to_dataframe(ret, types=TYPES)
             slam_coords = []
             i = 0
-            for index, row in df.iterrows():
+            for _index, row in df.iterrows():
                 slam_coords.append([row["lat"], row["lon"]])
                 if i == 0:
                     text = folium.DivIcon(
@@ -380,7 +380,7 @@ def draw_map():
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             landing_coords = []
-            for index, row in df.iterrows():
+            for _index, row in df.iterrows():
                 landing_coords = [row["lat"], row["lon"]]
 
             circle = folium.Circle(
@@ -668,7 +668,7 @@ with st.sidebar:
             req.vehicle_id = d
 
             def send_command_thread(stub, req):
-                for resp in stub(req):
+                for _resp in stub(req):
                     pass
 
             thread = threading.Thread(

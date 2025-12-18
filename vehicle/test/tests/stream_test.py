@@ -68,7 +68,7 @@ class Test_Stream:
         )
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
-        for i in range(6):
+        for _i in range(6):
             try:
                 (
                     topic,
@@ -115,7 +115,7 @@ class Test_Stream:
         )
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
-        for i in range(6):
+        for _i in range(6):
             try:
                 (
                     topic,
@@ -162,7 +162,7 @@ class Test_Stream:
         )
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
-        for i in range(6):
+        for _i in range(6):
             try:
                 (
                     topic,
