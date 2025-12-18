@@ -64,7 +64,6 @@ async def main(args):
             interceptors=law_interceptor
             )
     # Create and assign the services to the server
-    logger.info("Registering control servicer with server")
     control_service_pb2_grpc.add_ControlServicer_to_server(ControlProxy(), server)
     mission_service_pb2_grpc.add_MissionServicer_to_server(MissionProxy(), server)
     report_service_pb2_grpc.add_ReportServicer_to_server(ReportService(command_socket), server)
