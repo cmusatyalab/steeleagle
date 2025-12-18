@@ -11,10 +11,10 @@ from util.sockets import setup_zmq_socket, SocketOperation
 from gabriel_client.zeromq_client import ZeroMQClient
 from gabriel_client.gabriel_client import InputProducer
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
 # Protocol import
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
 from steeleagle_sdk.protocol.messages.result_pb2 import ComputeResult
+from steeleagle_sdk.protocol.services.compute_service_pb2 import InputSource
 
 logger = logging.getLogger('kernel/handlers/stream_handler')
 
@@ -38,14 +38,14 @@ class StreamHandler:
         self._lch_task = None
         try:
             # Create producers
-            self._local_producers = [
-                self.get_driver_telemetry_producer(),
-                self.get_imagery_producer(),
-                self.get_mission_telemetry_producer()
-            ]
+            self._local_producers = {
+                InputSource.DRIVER_TELEMETRY: self.get_driver_telemetry_producer(),
+                InputSource.IMAGERY: self.get_imagery_producer(),
+                InputSource.MISSION_TELEMETRY: self.get_mission_telemetry_producer(),
+            }
             lc_server = \
                 query_config('internal.streams.local_compute').replace('unix', 'ipc')
-            self._local_compute_handler = ZeroMQClient(lc_server, self._local_producers, self.process)
+            self._local_compute_handler = ZeroMQClient(lc_server, self._local_producers.values(), self.process)
         except Exception as e:
             logger.error(e)
             logger.warning('No valid configuration found for local compute handler, not running it')
@@ -56,14 +56,14 @@ class StreamHandler:
         self._rch_task = None
         try:
             # Create producers
-            self._remote_producers = [
-                self.get_driver_telemetry_producer(),
-                self.get_imagery_producer(),
-                self.get_mission_telemetry_producer()
-            ]
+            self._remote_producers = {
+                InputSource.DRIVER_TELEMETRY: self.get_driver_telemetry_producer(),
+                InputSource.IMAGERY: self.get_imagery_producer(),
+                InputSource.MISSION_TELEMETRY: self.get_mission_telemetry_producer(),
+            }
             rc_server = \
                 query_config('cloudlet.remote_compute_service')
-            self._remote_compute_handler = ZeroMQClient(f'tcp://{rc_server}', self._remote_producers, self.process)
+            self._remote_compute_handler = ZeroMQClient(f'tcp://{rc_server}', self._remote_producers.values(), self.process)
         except Exception as e:
             logger.error(e)
             logger.warning('No valid configuration found for remote compute handler, not running it')
@@ -76,10 +76,17 @@ class StreamHandler:
         must be started separately using `update_target_engines`.
         '''
         if self._local_compute_handler:
+            for producer in list(self._local_compute_handler.input_producers):
+                if not producer.get_target_engines():
+                    self._local_compute_handler.remove_input_producer(producer)
             self._lch_task = asyncio.create_task(self._local_compute_handler.launch_async())
         else:
             self._lch_task = asyncio.sleep(0) # Default task so gather does not cause an exception
+
         if self._remote_compute_handler:
+            for producer in list(self._remote_compute_handler.input_producers):
+                if not producer.get_target_engines():
+                    self._remote_compute_handler.remove_input_producer(producer)
             self._rch_task = asyncio.create_task(self._remote_compute_handler.launch_async())
         else:
             self._rch_task = asyncio.sleep(0)
@@ -91,18 +98,21 @@ class StreamHandler:
         local:____ for a local engine).
         '''
         logger.info(f'Updating target engines to {target_engines}')
-        remote_engines = []
-        local_engines = []
-        for engine in target_engines:
-            if 'remote:' in engine:
-                remote_engines.append(engine.replace('remote:', ''))
-            elif 'local:' in engine:
-                local_engines.append(engine.replace('local:', ''))
-        for producer in self._remote_producers:
-            producer.change_target_engines(remote_engines)
-        for producer in self._local_producers:
-            if len(local_engines):
-                producer.change_target_engines(local_engines)
+        for source, engines in target_engines.items():
+            remote_engines = []
+            local_engines = []
+            for engine in engines:
+                if 'remote:' in engine:
+                    remote_engines.append(engine.replace('remote:', ''))
+                elif 'local:' in engine:
+                    local_engines.append(engine.replace('local:', ''))
+            try:
+                self._remote_producers[source].change_target_engines(remote_engines)
+                if local_engines:
+                    self._local_producers[source].change_target_engines(local_engines)
+            except KeyError:
+                logger.error(f"Did not find {InputSource.Name(source)} producer")
+                raise
 
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)

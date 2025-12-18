@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "syncer>=2.0.0",
     "aiorwlock>=1.5.0",
-    "gabriel-client>=4.1.1",
+    "gabriel-client>=4.1.2",
     "grpc-interceptor>=0.15.4",
     "grpcio>=1.74.0",
     "jinja2>=3.1.6",
@@ -26,4 +26,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-steeleagle-sdk={path="../sdk", editable = true }
+steeleagle-sdk = { path="../sdk", editable = true }

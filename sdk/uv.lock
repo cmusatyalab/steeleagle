@@ -367,13 +367,11 @@ wheels = [
 
 [[package]]
 name = "gabriel-protocol"
-version = "4.0"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/2e/cd1d16e85967b76842f64d349dc6af4e7e717676d423d25c7b5428999def/gabriel_protocol-4.0-py3-none-any.whl", hash = "sha256:5c5f37a5531699bfe51d54ae6327b6c9375a28f32c4bba129fe948ffabc569df", size = 7592, upload-time = "2025-09-23T13:12:25.53Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
 ]
 
 [[package]]
@@ -1189,7 +1187,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.14"
+version = "1.0.15"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
@@ -1209,7 +1207,7 @@ dependencies = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "folium", specifier = ">=0.20.0" },
-    { name = "gabriel-protocol", specifier = ">=4.0" },
+    { name = "gabriel-protocol", specifier = ">=4.1" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "lark", specifier = ">=1.2.2" },
     { name = "matplotlib", specifier = ">=3.10.6" },

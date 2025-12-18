@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.protocol.services.report_service;
+
+import "steeleagle_sdk/protocol/common.proto";
+
+/*
+ * Used to report messages to the Swarm Controller server.
+ */
+service Report {
+  // Send a report to the server.
+  rpc SendReport (SendReportRequest)
+	returns (steeleagle.protocol.common.Response) {}
+}
+
+// Message container for a report.
+message ReportMessage {
+  int32 report_code = 1; // integer report code, interpreted by the backend
+}
+
+message SendReportRequest {
+  steeleagle.protocol.common.Request request = 1; // request data
+  ReportMessage report = 2; // report data
+}
