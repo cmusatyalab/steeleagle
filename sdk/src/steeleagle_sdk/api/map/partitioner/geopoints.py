@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Iterable, Tuple
+from collections.abc import Iterable
 
 from shapely.geometry import LineString, Polygon
 
@@ -9,10 +9,10 @@ from shapely.geometry import LineString, Polygon
 class GeoPoints(list):
     """List[(x, y)] with helpers; (lon,lat) for WGS84 by convention."""
 
-    def __init__(self, coords: Iterable[Tuple[float, float]] = ()):
+    def __init__(self, coords: Iterable[tuple[float, float]] = ()):
         super().__init__((float(x), float(y)) for x, y in coords)
 
-    def centroid(self) -> Tuple[float, float]:
+    def centroid(self) -> tuple[float, float]:
         poly = self.to_polygon()
         c = poly.centroid
         return (c.x, c.y)
@@ -33,8 +33,8 @@ class GeoPoints(list):
     # --- Simple local equirectangular projection around origin (lon0, lat0) ---
     @staticmethod
     def _project_to_meters(
-        origin_wgs: Tuple[float, float], wgs: Tuple[float, float]
-    ) -> Tuple[float, float]:
+        origin_wgs: tuple[float, float], wgs: tuple[float, float]
+    ) -> tuple[float, float]:
         lon0, lat0 = origin_wgs
         lon, lat = wgs
         lat_rad = math.radians(lat0)
@@ -44,8 +44,8 @@ class GeoPoints(list):
 
     @staticmethod
     def _inverse_project(
-        origin_wgs: Tuple[float, float], xy: Tuple[float, float]
-    ) -> Tuple[float, float]:
+        origin_wgs: tuple[float, float], xy: tuple[float, float]
+    ) -> tuple[float, float]:
         lon0, lat0 = origin_wgs
         x, y = xy
         lat_rad = math.radians(lat0)
@@ -57,5 +57,5 @@ class GeoPoints(list):
         origin = self.centroid()
         return GeoPoints([self._project_to_meters(origin, p) for p in self])
 
-    def inverse_project_from(self, origin_wgs: Tuple[float, float]) -> GeoPoints:
+    def inverse_project_from(self, origin_wgs: tuple[float, float]) -> GeoPoints:
         return GeoPoints([self._inverse_project(origin_wgs, p) for p in self])

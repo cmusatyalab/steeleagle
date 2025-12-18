@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 from shapely.geometry import LineString, Point, Polygon
 
@@ -20,8 +19,8 @@ class SurveyPartition(Partition):
     angle_degrees: float
     trigger_distance: float
 
-    def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
-        results: List[GeoPoints] = []
+    def generate_partitioned_geopoints(self, polygon: Polygon) -> list[GeoPoints]:
+        results: list[GeoPoints] = []
         for line in rotated_infinite_transects(
             polygon, self.spacing, self.angle_degrees
         ):
@@ -36,7 +35,7 @@ class SurveyPartition(Partition):
                         continue
                     ux, uy = (bx - ax) / length, (by - ay) / length
                     npts = max(1, int(length // self.trigger_distance))
-                    line_points: List[Tuple[float, float]] = []
+                    line_points: list[tuple[float, float]] = []
                     for i in range(npts + 1):
                         d = i * self.trigger_distance
                         px = ax + d * ux

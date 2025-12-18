@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import Field
 
@@ -146,9 +145,9 @@ class TelemetryStreamInfo(Datatype):
         uptime (Duration): uptime of the stream
     """
 
-    current_frequency: Optional[int] = None
-    max_frequency: Optional[int] = None
-    uptime: Optional[Duration] = None
+    current_frequency: int | None = None
+    max_frequency: int | None = None
+    uptime: Duration | None = None
 
 
 class BatteryInfo(Datatype):
@@ -158,7 +157,7 @@ class BatteryInfo(Datatype):
         percentage (int): battery level [0-100]%
     """
 
-    percentage: Optional[int] = None
+    percentage: int | None = None
 
 
 class GPSInfo(Datatype):
@@ -168,7 +167,7 @@ class GPSInfo(Datatype):
         satellites (int): number of satellites used in GPS fix
     """
 
-    satellites: Optional[int] = None
+    satellites: int | None = None
 
 
 class CommsInfo(Datatype):
@@ -192,13 +191,13 @@ class VehicleInfo(Datatype):
         comms_info (CommsInfo): communications info for the vehicle
     """
 
-    name: Optional[str] = None
-    model: Optional[str] = None
-    manufacturer: Optional[str] = None
-    motion_status: Optional[MotionStatus] = None
-    battery_info: Optional[BatteryInfo] = None
-    gps_info: Optional[GPSInfo] = None
-    comms_info: Optional[CommsInfo] = None
+    name: str | None = None
+    model: str | None = None
+    manufacturer: str | None = None
+    motion_status: MotionStatus | None = None
+    battery_info: BatteryInfo | None = None
+    gps_info: GPSInfo | None = None
+    comms_info: CommsInfo | None = None
 
 
 class SetpointInfo(Datatype):
@@ -218,11 +217,11 @@ class SetpointInfo(Datatype):
         velocity_neu_sp (common.Velocity): NEU (North, East, Up) velocity setpoint
     """
 
-    position_body_sp: Optional[common.Position] = None
-    position_neu_sp: Optional[common.Position] = None
-    global_sp: Optional[common.Location] = None
-    velocity_body_sp: Optional[common.Velocity] = None
-    velocity_neu_sp: Optional[common.Velocity] = None
+    position_body_sp: common.Position | None = None
+    position_neu_sp: common.Position | None = None
+    global_sp: common.Location | None = None
+    velocity_body_sp: common.Velocity | None = None
+    velocity_neu_sp: common.Velocity | None = None
 
 
 class PositionInfo(Datatype):
@@ -239,12 +238,12 @@ class PositionInfo(Datatype):
         setpoint_info (SetpointInfo): info on the current vehicle setpoint
     """
 
-    home: Optional[common.Location] = None
-    global_position: Optional[common.Location] = None
-    relative_position: Optional[common.Position] = None
-    velocity_neu: Optional[common.Velocity] = None
-    velocity_body: Optional[common.Velocity] = None
-    setpoint_info: Optional[SetpointInfo] = None
+    home: common.Location | None = None
+    global_position: common.Location | None = None
+    relative_position: common.Position | None = None
+    velocity_neu: common.Velocity | None = None
+    velocity_body: common.Velocity | None = None
+    setpoint_info: SetpointInfo | None = None
 
 
 class GimbalStatus(Datatype):
@@ -256,9 +255,9 @@ class GimbalStatus(Datatype):
         pose_neu (common.Pose): current pose in the NEU (North, East, Up) reference frame
     """
 
-    id: Optional[int] = None
-    pose_body: Optional[common.Pose] = None
-    pose_neu: Optional[common.Pose] = None
+    id: int | None = None
+    pose_body: common.Pose | None = None
+    pose_neu: common.Pose | None = None
 
 
 class GimbalInfo(Datatype):
@@ -269,8 +268,8 @@ class GimbalInfo(Datatype):
         gimbals (List[GimbalStatus]): list of connected gimbals
     """
 
-    num_gimbals: Optional[int] = None
-    gimbals: List[GimbalStatus] = Field(default_factory=list)
+    num_gimbals: int | None = None
+    gimbals: list[GimbalStatus] = Field(default_factory=list)
 
 
 class ImagingSensorStatus(Datatype):
@@ -294,19 +293,19 @@ class ImagingSensorStatus(Datatype):
         gimbal_id (int): indicates which gimbal the imaging sensor is mounted on
     """
 
-    id: Optional[int] = None
-    type: Optional[ImagingSensorType] = None
-    active: Optional[bool] = None
-    supports_secondary: Optional[bool] = None
-    current_fps: Optional[int] = None
-    max_fps: Optional[int] = None
-    h_res: Optional[int] = None
-    v_res: Optional[int] = None
-    channels: Optional[int] = None
-    h_fov: Optional[int] = None
-    v_fov: Optional[int] = None
-    gimbal_mounted: Optional[bool] = None
-    gimbal_id: Optional[int] = None
+    id: int | None = None
+    type: ImagingSensorType | None = None
+    active: bool | None = None
+    supports_secondary: bool | None = None
+    current_fps: int | None = None
+    max_fps: int | None = None
+    h_res: int | None = None
+    v_res: int | None = None
+    channels: int | None = None
+    h_fov: int | None = None
+    v_fov: int | None = None
+    gimbal_mounted: bool | None = None
+    gimbal_id: int | None = None
 
 
 class ImagingSensorStreamStatus(Datatype):
@@ -319,10 +318,10 @@ class ImagingSensorStreamStatus(Datatype):
         secondary_cams (List[int]): IDs of the secondary active cameras
     """
 
-    stream_capacity: Optional[int] = None
-    num_streams: Optional[int] = None
-    primary_cam: Optional[int] = None
-    secondary_cams: List[int] = Field(default_factory=list)
+    stream_capacity: int | None = None
+    num_streams: int | None = None
+    primary_cam: int | None = None
+    secondary_cams: list[int] = Field(default_factory=list)
 
 
 class ImagingSensorInfo(Datatype):
@@ -333,8 +332,8 @@ class ImagingSensorInfo(Datatype):
         sensors (List[ImagingSensorStatus]): list of connected imaging sensors
     """
 
-    stream_status: Optional[ImagingSensorStreamStatus] = None
-    sensors: List[ImagingSensorStatus] = Field(default_factory=list)
+    stream_status: ImagingSensorStreamStatus | None = None
+    sensors: list[ImagingSensorStatus] = Field(default_factory=list)
 
 
 class AlertInfo(Datatype):
@@ -348,11 +347,11 @@ class AlertInfo(Datatype):
         compass_warning (CompassWarning): compass warnings
     """
 
-    battery_warning: Optional[BatteryWarning] = None
-    gps_warning: Optional[GPSWarning] = None
-    magnetometer_warning: Optional[MagnetometerWarning] = None
-    connection_warning: Optional[ConnectionWarning] = None
-    compass_warning: Optional[CompassWarning] = None
+    battery_warning: BatteryWarning | None = None
+    gps_warning: GPSWarning | None = None
+    magnetometer_warning: MagnetometerWarning | None = None
+    connection_warning: ConnectionWarning | None = None
+    compass_warning: CompassWarning | None = None
 
 
 class DriverTelemetry(Datatype):
@@ -372,13 +371,13 @@ class DriverTelemetry(Datatype):
         alert_info (AlertInfo): enumeration of vehicle warnings
     """
 
-    timestamp: Optional[Timestamp] = None
-    telemetry_stream_info: Optional[TelemetryStreamInfo] = None
-    vehicle_info: Optional[VehicleInfo] = None
-    position_info: Optional[PositionInfo] = None
-    gimbal_info: Optional[GimbalInfo] = None
-    imaging_sensor_info: Optional[ImagingSensorInfo] = None
-    alert_info: Optional[AlertInfo] = None
+    timestamp: Timestamp | None = None
+    telemetry_stream_info: TelemetryStreamInfo | None = None
+    vehicle_info: VehicleInfo | None = None
+    position_info: PositionInfo | None = None
+    gimbal_info: GimbalInfo | None = None
+    imaging_sensor_info: ImagingSensorInfo | None = None
+    alert_info: AlertInfo | None = None
 
 
 class Frame(Datatype):
@@ -398,13 +397,13 @@ class Frame(Datatype):
         id (int): frame ID for future correlation
     """
 
-    timestamp: Optional[Timestamp] = None
-    data: Optional[bytes] = None
-    h_res: Optional[int] = None
-    v_res: Optional[int] = None
-    d_res: Optional[int] = None
-    channels: Optional[int] = None
-    id: Optional[int] = None
+    timestamp: Timestamp | None = None
+    data: bytes | None = None
+    h_res: int | None = None
+    v_res: int | None = None
+    d_res: int | None = None
+    channels: int | None = None
+    id: int | None = None
 
 
 class MissionInfo(Datatype):
@@ -418,11 +417,11 @@ class MissionInfo(Datatype):
         task_state (str): task state of the mission (plaintext), if active
     """
 
-    name: Optional[str] = None
-    hash: Optional[int] = None
-    age: Optional[Timestamp] = None
-    exec_state: Optional[MissionExecState] = None
-    task_state: Optional[str] = None
+    name: str | None = None
+    hash: int | None = None
+    age: Timestamp | None = None
+    exec_state: MissionExecState | None = None
+    task_state: str | None = None
 
 
 class MissionTelemetry(Datatype):
@@ -438,6 +437,6 @@ class MissionTelemetry(Datatype):
         mission_info (List[MissionInfo]): info about the current mission states
     """
 
-    timestamp: Optional[Timestamp] = None
-    telemetry_stream_info: Optional[TelemetryStreamInfo] = None
-    mission_info: List[MissionInfo] = Field(default_factory=list)
+    timestamp: Timestamp | None = None
+    telemetry_stream_info: TelemetryStreamInfo | None = None
+    mission_info: list[MissionInfo] = Field(default_factory=list)

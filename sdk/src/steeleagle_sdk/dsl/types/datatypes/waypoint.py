@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Literal, Optional, Union
+from typing import Literal
 
 from ....api.datatypes.common import Location
 from ....api.map.partitioner.algos.corridor import CorridorPartition
@@ -41,14 +41,14 @@ class Waypoints(Datatype):
         trigger_distance (Optional[float]): must be set for `survey`, ignored otherwise; the distance before a snapshot is triggered
     """
 
-    area: Union[str, List[Location]]
+    area: str | list[Location]
     alt: float
-    algo: Optional[Literal["edge", "corridor", "survey"]] = "edge"
-    spacing: Optional[float] = None
-    angle_degrees: Optional[float] = None
-    trigger_distance: Optional[float] = None
+    algo: Literal["edge", "corridor", "survey"] | None = "edge"
+    spacing: float | None = None
+    angle_degrees: float | None = None
+    trigger_distance: float | None = None
 
-    def calculate(self) -> Dict[str, List[Dict[str, float]]]:
+    def calculate(self) -> dict[str, list[dict[str, float]]]:
         raw = None  # Raw geopoints
 
         # Check to see if a KML map has been sent or if Locations have been provided
@@ -57,7 +57,7 @@ class Waypoints(Datatype):
                 "MAP is not set. Set map_mod.MAP to a fastkml.kml.KML before calling calculate()."
             )
         elif MAP:
-            raw_map: Dict[str, GeoPoints] = parse_kml_file(MAP)
+            raw_map: dict[str, GeoPoints] = parse_kml_file(MAP)
             if not raw_map:
                 logger.warning("No valid areas found in mission map (KML).")
                 return {}
@@ -115,7 +115,7 @@ class Waypoints(Datatype):
         parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
 
         # Flatten segments to per-point waypoints
-        waypoints: List[Dict[str, float]] = []
+        waypoints: list[dict[str, float]] = []
         for gp in parts_wgs:
             for lon, lat in gp:
                 waypoints.append(

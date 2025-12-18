@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 from lsprotocol.types import (
     INITIALIZE,
@@ -54,7 +53,7 @@ def get_line_prefix(doc: Document, line: int, ch: int) -> str:
     return lines[line][:ch] if 0 <= line < len(lines) else ""
 
 
-def detect_section(doc: Document, line: int) -> Optional[str]:
+def detect_section(doc: Document, line: int) -> str | None:
     lines = doc.source.splitlines()
     i = min(line, len(lines) - 1)
     while i >= 0:
@@ -89,9 +88,9 @@ def ident_prefix(s: str) -> str:
     return s[i:]
 
 
-def items_section_snippets(pfx: str) -> List[CompletionItem]:
+def items_section_snippets(pfx: str) -> list[CompletionItem]:
     p = pfx.lower()
-    items: List[CompletionItem] = []
+    items: list[CompletionItem] = []
     for label, snippet in SECTION_SNIPPETS:
         if p in label.lower():
             items.append(
@@ -107,7 +106,7 @@ def items_section_snippets(pfx: str) -> List[CompletionItem]:
     return items
 
 
-def items_simple_keywords(pfx: str) -> List[CompletionItem]:
+def items_simple_keywords(pfx: str) -> list[CompletionItem]:
     p = pfx.lower()
     return [
         CompletionItem(
@@ -158,7 +157,7 @@ def on_complete(ls, params: CompletionParams):
         section = detect_section(doc, params.position.line)
         value_ctx = is_value_position(line_pref, pfx)
 
-        items: List[CompletionItem] = []
+        items: list[CompletionItem] = []
         items += reg.registry_items_for_section(section, pfx)
         if value_ctx:
             items += reg.inline_data_items(pfx)

@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import math
-from typing import Optional
 
 from pydantic import Field
 
@@ -107,7 +106,7 @@ class VelocityReached(Event):
 
     frame: ReferenceFrame
     target: Velocity
-    tol: Optional[float] = Field(
+    tol: float | None = Field(
         0, ge=0.0, description="Allowed absolute error per component"
     )
 
@@ -154,10 +153,10 @@ class RelativePositionReached(Event):
     """
 
     target: Position
-    tol_m: Optional[float] = Field(
+    tol_m: float | None = Field(
         0.20, ge=0.0, description="Tolerance for x/y/z (meters)"
     )
-    tol_deg: Optional[float] = Field(
+    tol_deg: float | None = Field(
         0.0, ge=0.0, description="Tolerance for angle (degrees)"
     )
 
@@ -168,7 +167,7 @@ class RelativePositionReached(Event):
 
     async def check(self) -> bool:
         while True:
-            tel: Optional[DriverTelemetry] = await fetch_telemetry()
+            tel: DriverTelemetry | None = await fetch_telemetry()
             if not tel or not tel.position_info:
                 continue
             cur = tel.position_info.relative_position
@@ -203,18 +202,18 @@ class GlobalPositionReached(Event):
     """
 
     target: Location = None
-    tol_m: Optional[float] = Field(
+    tol_m: float | None = Field(
         0.50, ge=0.0, description="Lat/Lon distance tolerance (meters)"
     )
-    tol_alt_m: Optional[float] = Field(
+    tol_alt_m: float | None = Field(
         0.50, ge=0.0, description="Altitude tolerance (meters)"
     )
-    tol_deg: Optional[float] = Field(
+    tol_deg: float | None = Field(
         3.0, ge=0.0, description="Heading tolerance (degrees)"
     )
 
     @staticmethod
-    def _haversine_m(a: Optional[Location], b: Optional[Location]) -> Optional[float]:
+    def _haversine_m(a: Location | None, b: Location | None) -> float | None:
         if (
             not a
             or not b
@@ -245,7 +244,7 @@ class GlobalPositionReached(Event):
             if self.target is None:
                 continue
 
-            tel: Optional[DriverTelemetry] = await fetch_telemetry()
+            tel: DriverTelemetry | None = await fetch_telemetry()
             if not tel or not tel.position_info:
                 continue
             cur = tel.position_info.global_position
@@ -360,11 +359,11 @@ class HSVReached(Event):
 
     def _matches_hsv(
         self,
-        h: Optional[int],
-        s: Optional[int],
-        v: Optional[int],
+        h: int | None,
+        s: int | None,
+        v: int | None,
     ) -> bool:
-        def close(a: Optional[int], b: Optional[int]) -> bool:
+        def close(a: int | None, b: int | None) -> bool:
             if a is None or b is None:
                 return False
             return abs(a - b) <= self.tol

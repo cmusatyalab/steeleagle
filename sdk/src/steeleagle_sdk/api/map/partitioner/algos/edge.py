@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from shapely.geometry import Polygon
 
 from ..geopoints import GeoPoints
@@ -9,7 +7,7 @@ from ..partition import Partition
 
 
 class EdgePartition(Partition):
-    def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
+    def generate_partitioned_geopoints(self, polygon: Polygon) -> list[GeoPoints]:
         coords = list(polygon.exterior.coords)
         pairs = []
         for i in range(len(coords) - 1):

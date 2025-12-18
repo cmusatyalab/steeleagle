@@ -1,6 +1,6 @@
 import logging
-from collections.abc import AsyncIterator, Callable
-from typing import Any, Iterable, Optional, Tuple
+from collections.abc import AsyncIterator, Callable, Iterable
+from typing import Any
 
 import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -43,16 +43,16 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
 
 
 def _default_metadata(
-    md: Optional[Iterable[Tuple[str, str]]],
-) -> Tuple[Tuple[str, str], ...]:
+    md: Iterable[tuple[str, str]] | None,
+) -> tuple[tuple[str, str], ...]:
     return tuple(md) if md is not None else (("identity", "internal"),)
 
 
 async def run_unary(
     method_coro: Callable[..., Any],
     request_pb: Any,
-    metadata: Optional[Iterable[Tuple[str, str]]] = None,
-    timeout: Optional[float] = None,
+    metadata: Iterable[tuple[str, str]] | None = None,
+    timeout: float | None = None,
 ) -> Response:
     """
     Runs a unary RPC and returns the protobuf Response directly.
@@ -71,8 +71,8 @@ async def run_unary(
 async def run_streaming(
     method_coro: Callable[..., Any],
     request_pb: Any,
-    metadata: Optional[Iterable[Tuple[str, str]]] = None,
-    timeout: Optional[float] = None,
+    metadata: Iterable[tuple[str, str]] | None = None,
+    timeout: float | None = None,
 ) -> AsyncIterator[Response]:
     """
     Runs a streaming RPC and yields each Response as it arrives.

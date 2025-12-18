@@ -5,7 +5,6 @@ import importlib
 import logging
 import pkgutil
 from types import ModuleType
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +15,12 @@ _SKIP_RULES = [
 ]
 
 
-def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
+def _walk_package(base: str) -> tuple[ModuleType | None, list[str]]:
     try:
         pkg: ModuleType = importlib.import_module(base)
     except ModuleNotFoundError:
         return None, []
-    modules: List[str] = []
+    modules: list[str] = []
     for m in pkgutil.walk_packages(pkg.__path__, pkg.__name__ + "."):
         mod_name = m.name.rsplit(".", 1)[-1]
         if any(rule(mod_name) for rule in _SKIP_RULES):
@@ -33,17 +32,17 @@ def _walk_package(base: str) -> Tuple[Optional[ModuleType], List[str]]:
 
 def load_all(
     *base_pkgs: str,
-) -> List[Dict[str, object]]:
+) -> list[dict[str, object]]:
     """
     Import every submodule under each base package and REPORT failures.
     """
     if not base_pkgs:
         base_pkgs = _DEFAULT_BASES
-    all_summaries: List[Dict[str, object]] = []
+    all_summaries: list[dict[str, object]] = []
 
     for base in base_pkgs:
         # init summary
-        summary: Dict[str, object] = {
+        summary: dict[str, object] = {
             "base": base,
             "imported": [],
             "failed": [],
@@ -61,8 +60,8 @@ def load_all(
         logger.debug("Scanning '%s' (%d submodules discovered)", base, len(modules))
 
         # import submodules
-        imported: List[str] = []
-        failed: List[Dict[str, str]] = []
+        imported: list[str] = []
+        failed: list[dict[str, str]] = []
         for module in modules:
             try:
                 logger.debug(" importing %s ...", module)
@@ -85,7 +84,7 @@ def load_all(
     return all_summaries
 
 
-def print_report(summaries: List[Dict[str, object]]) -> None:
+def print_report(summaries: list[dict[str, object]]) -> None:
     """Pretty-print the summaries returned by load_all()."""
     for s in summaries:
         base = s["base"]

@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 import aiosqlite
 import zmq
@@ -81,7 +81,7 @@ class MissionStore:
         self.results_addr = results_addr
         self.db_path = db_path
 
-        self.db: Optional[aiosqlite.Connection] = None
+        self.db: aiosqlite.Connection | None = None
         self.ctx = zmq.asyncio.Context(io_threads=2)
 
         self._telemetry = None

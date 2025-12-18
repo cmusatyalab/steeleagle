@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -16,7 +16,7 @@ class ValidatorException(Exception):
     """Compact error used at the DSL surface."""
 
 
-def _instantiate(cls: type[BaseModel], attrs: Dict[str, Any]) -> BaseModel:
+def _instantiate(cls: type[BaseModel], attrs: dict[str, Any]) -> BaseModel:
     logger.debug(
         "instantiate: %s with attrs=%s", getattr(cls, "__name__", str(cls)), attrs
     )
@@ -40,8 +40,8 @@ def _instantiate(cls: type[BaseModel], attrs: Dict[str, Any]) -> BaseModel:
 
 
 def validate_action(
-    type_name: str, attrs: Dict[str, Any]
-) -> Tuple[type[BaseModel], Dict[str, Any]]:
+    type_name: str, attrs: dict[str, Any]
+) -> tuple[type[BaseModel], dict[str, Any]]:
     logger.debug("validate_action: type=%s", type_name)
     cls = get_action(type_name)
     if cls is None:
@@ -52,8 +52,8 @@ def validate_action(
 
 
 def validate_event(
-    type_name: str, attrs: Dict[str, Any]
-) -> Tuple[type[BaseModel], Dict[str, Any]]:
+    type_name: str, attrs: dict[str, Any]
+) -> tuple[type[BaseModel], dict[str, Any]]:
     logger.debug("validate_event: type=%s", type_name)
     cls = get_event(type_name)
     if cls is None:
@@ -64,8 +64,8 @@ def validate_event(
 
 
 def validate_data(
-    type_name: str, attrs: Dict[str, Any]
-) -> Tuple[type[BaseModel], Dict[str, Any]]:
+    type_name: str, attrs: dict[str, Any]
+) -> tuple[type[BaseModel], dict[str, Any]]:
     logger.debug("validate_data: type=%s", type_name)
     cls = get_data(type_name)
     if cls is None:

@@ -5,9 +5,6 @@ import logging
 from typing import (
     Annotated,
     Any,
-    Dict,
-    List,
-    Tuple,
     Union,
     get_args,
     get_origin,
@@ -55,8 +52,8 @@ def _is_model_type(tp: Any) -> bool:
         return False
 
 
-def _iter_model_fields(model_cls: type[BaseModel]) -> List[Tuple[str, Any]]:
-    out: List[Tuple[str, Any]] = []
+def _iter_model_fields(model_cls: type[BaseModel]) -> list[tuple[str, Any]]:
+    out: list[tuple[str, Any]] = []
     hints = get_type_hints(model_cls, include_extras=True)
     for name, finfo in getattr(model_cls, "model_fields", {}).items():
         out.append((name, hints.get(name, finfo.annotation)))
@@ -66,7 +63,7 @@ def _iter_model_fields(model_cls: type[BaseModel]) -> List[Tuple[str, Any]]:
 # ---------- Data instantiation helpers ----------
 
 
-def _instantiate_data_from_ir(did: str, data: Dict[str, DatumIR]) -> BaseModel | None:
+def _instantiate_data_from_ir(did: str, data: dict[str, DatumIR]) -> BaseModel | None:
     dir_ = data.get(did)
     if not dir_:
         return None
@@ -89,13 +86,13 @@ def _is_inline_literal(v: Any) -> bool:
     )
 
 
-def _instantiate_inline_data(v: Dict[str, Any], data: Dict[str, DatumIR]) -> BaseModel:
+def _instantiate_inline_data(v: dict[str, Any], data: dict[str, DatumIR]) -> BaseModel:
     cls = get_data(v["type"])
     if not cls:
         logger.warning("inline data: unregistered type '%s'", v.get("type"))
         raise ResolverException(f"inline data: unregistered type '{v.get('type')}'")
 
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
     args = list(v.get("args", []))
     fields = _iter_model_fields(cls)
 
@@ -116,7 +113,7 @@ def _instantiate_inline_data(v: Dict[str, Any], data: Dict[str, DatumIR]) -> Bas
 def _resolve_value_for_field(
     value: Any,
     field_type: Any,
-    data: Dict[str, DatumIR],
+    data: dict[str, DatumIR],
 ) -> Any:
     # Explicit None: keep it
     if value is None:
@@ -140,7 +137,7 @@ def _resolve_value_for_field(
         return value
 
     # Lists (also handles Optional[List[T]], Annotated[List[T], ...])
-    if origin in (list, List):
+    if origin in (list, list):
         inner = args[0] if args else Any
         if isinstance(value, list):
             return [_resolve_value_for_field(v, inner, data) for v in value]

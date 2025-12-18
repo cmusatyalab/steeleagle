@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from lark import Token, Transformer, v_args
 
@@ -17,7 +18,7 @@ _TERMINATE_AID = "terminate"
 # ---------- Helpers ----------
 
 
-def _pairs_to_dict(attrs: Optional[Iterable[Any]]) -> Dict[str, Any]:
+def _pairs_to_dict(attrs: Iterable[Any] | None) -> dict[str, Any]:
     if attrs is None:
         return {}
     if isinstance(attrs, dict):
@@ -41,16 +42,14 @@ class DroneDSLTransformer(Transformer):
 
     def __init__(self):
         super().__init__()
-        self._actions: Dict[str, ActionIR] = {}
-        self._events: Dict[str, EventIR] = {}
-        self._data: Dict[str, DatumIR] = {}
-        self._start_aid: Optional[str] = None
-        self._during: Dict[str, Dict[str, str]] = {}
+        self._actions: dict[str, ActionIR] = {}
+        self._events: dict[str, EventIR] = {}
+        self._data: dict[str, DatumIR] = {}
+        self._start_aid: str | None = None
+        self._during: dict[str, dict[str, str]] = {}
 
     # ===== Data =====
-    def datum_decl(
-        self, type_name: Token, datum_id: Token, attrs: Optional[List] = None
-    ):
+    def datum_decl(self, type_name: Token, datum_id: Token, attrs: list | None = None):
         type_str = str(type_name)
         did = str(datum_id)
         attrs_dict = _pairs_to_dict(attrs)
@@ -64,7 +63,7 @@ class DroneDSLTransformer(Transformer):
 
     # ===== Actions =====
     def action_decl(
-        self, type_name: Token, action_id: Token, attrs: Optional[List] = None
+        self, type_name: Token, action_id: Token, attrs: list | None = None
     ):
         type_str = str(type_name)
         aid = str(action_id)
@@ -77,9 +76,7 @@ class DroneDSLTransformer(Transformer):
         return [it for it in items if isinstance(it, tuple) and len(it) == 2]
 
     # ===== Events =====
-    def event_decl(
-        self, type_name: Token, event_id: Token, attrs: Optional[List] = None
-    ):
+    def event_decl(self, type_name: Token, event_id: Token, attrs: list | None = None):
         type_str = str(type_name)
         eid = str(event_id)
         attrs_dict = _pairs_to_dict(attrs)
@@ -118,7 +115,7 @@ class DroneDSLTransformer(Transformer):
         return (str(k), v)
 
     def value(self, v):
-        if isinstance(v, Dict):  # from datum_inline()
+        if isinstance(v, dict):  # from datum_inline()
             return v
         if isinstance(v, list):  # from array()
             return v
@@ -176,7 +173,7 @@ class DroneDSLTransformer(Transformer):
             len(self._data),
         )
 
-        transitions: Dict[str, Dict[str, str]] = {}
+        transitions: dict[str, dict[str, str]] = {}
         for aid, evmap in self._during.items():
             am = transitions.setdefault(aid, {})
             am.update(evmap)

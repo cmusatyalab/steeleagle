@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 from shapely.geometry import Polygon
 
@@ -19,8 +18,8 @@ class CorridorPartition(Partition):
     spacing: float
     angle_degrees: float
 
-    def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
-        results: List[GeoPoints] = []
+    def generate_partitioned_geopoints(self, polygon: Polygon) -> list[GeoPoints]:
+        results: list[GeoPoints] = []
         for line in rotated_infinite_transects(
             polygon, self.spacing, self.angle_degrees
         ):

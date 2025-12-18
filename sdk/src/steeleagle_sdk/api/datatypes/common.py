@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from ._base import Datatype
 from .timestamp import Timestamp
@@ -72,7 +71,7 @@ class Response(Datatype):
     """
 
     status: ResponseStatus
-    response_string: Optional[str]
+    response_string: str | None
     timestamp: Timestamp
 
 
@@ -85,9 +84,9 @@ class Pose(Datatype):
         yaw (Optional[float]): yaw [degrees]
     """
 
-    pitch: Optional[float]
-    roll: Optional[float]
-    yaw: Optional[float]
+    pitch: float | None
+    roll: float | None
+    yaw: float | None
 
 
 class Velocity(Datatype):
@@ -100,10 +99,10 @@ class Velocity(Datatype):
         angular_vel (Optional[float]): angular velocity [degrees/s]
     """
 
-    x_vel: Optional[float]
-    y_vel: Optional[float]
-    z_vel: Optional[float]
-    angular_vel: Optional[float] = None
+    x_vel: float | None
+    y_vel: float | None
+    z_vel: float | None
+    angular_vel: float | None = None
 
 
 class Position(Datatype):
@@ -116,10 +115,10 @@ class Position(Datatype):
         angle (Optional[float]): angular offset [degrees]
     """
 
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    angle: Optional[float] = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
+    angle: float | None = None
 
 
 class Location(Datatype):
@@ -132,7 +131,7 @@ class Location(Datatype):
         heading (Optional[float]): global heading [degrees]
     """
 
-    latitude: Optional[float]
-    longitude: Optional[float]
-    altitude: Optional[float] = None
-    heading: Optional[float] = None
+    latitude: float | None
+    longitude: float | None
+    altitude: float | None = None
+    heading: float | None = None

@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 import grpc
 from google.protobuf.json_format import ParseDict
@@ -23,13 +22,13 @@ class Compute:
         source = "results"
         return await self.mission_store.get_latest(source, topic)
 
-    async def add_datasinks(self, datasinks: List[DatasinkInfo]) -> Response:
+    async def add_datasinks(self, datasinks: list[DatasinkInfo]) -> Response:
         req = compute_proto.AddDatasinksRequest()
         for d in datasinks:
             ParseDict(d.model_dump(exclude_none=True), req.datasinks.add())
         return await run_unary(self.compute.AddDatasinks, req)
 
-    async def set_datasinks(self, datasinks: List[DatasinkInfo]) -> Response:
+    async def set_datasinks(self, datasinks: list[DatasinkInfo]) -> Response:
         """Set the datasink consumer list.
 
         Takes a list of datasinks and replaces the current consumer list with them.
@@ -43,7 +42,7 @@ class Compute:
             ParseDict(d.model_dump(exclude_none=True), req.datasinks.add())
         return await run_unary(self.compute.SetDatasinks, req)
 
-    async def remove_datasinks(self, datasinks: List[DatasinkInfo]) -> Response:
+    async def remove_datasinks(self, datasinks: list[DatasinkInfo]) -> Response:
         """Remove datasinks from consumer list.
 
         Takes a list of datasinks and removes them from the current consumer list.

@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from google.protobuf.duration_pb2 import Duration
 
 from .... import types
@@ -104,7 +102,7 @@ class Joystick(Action):
     """
 
     velocity: common.Velocity
-    duration: Optional[Duration] = None
+    duration: Duration | None = None
 
     async def execute(self) -> Response:
         """Execute the Joystick action.
@@ -268,9 +266,9 @@ class SetGlobalPosition(Action):
     """
 
     location: common.Location
-    heading_mode: Optional[params.HeadingMode]
-    altitude_mode: Optional[params.AltitudeMode]
-    max_velocity: Optional[common.Velocity]
+    heading_mode: params.HeadingMode | None
+    altitude_mode: params.AltitudeMode | None
+    max_velocity: common.Velocity | None
 
     async def execute(self) -> Response:
         """Execute the SetGlobalPosition action.
@@ -307,8 +305,8 @@ class SetRelativePosition(Action):
     """
 
     position: common.Position
-    max_velocity: Optional[common.Velocity]
-    frame: Optional[params.ReferenceFrame]
+    max_velocity: common.Velocity | None
+    frame: params.ReferenceFrame | None
 
     async def execute(self) -> Response:
         """Execute the SetRelativePosition action.
@@ -335,7 +333,7 @@ class SetVelocity(Action):
     """
 
     velocity: common.Velocity
-    frame: Optional[params.ReferenceFrame]
+    frame: params.ReferenceFrame | None
 
     async def execute(self) -> Response:
         """Execute the SetVelocity action.
@@ -361,7 +359,7 @@ class SetHeading(Action):
     """
 
     location: common.Location
-    heading_mode: Optional[params.HeadingMode]
+    heading_mode: params.HeadingMode | None
 
     async def execute(self) -> Response:
         """Execute the SetHeading action.
@@ -396,8 +394,8 @@ class SetGimbalPose(Action):
 
     gimbal_id: int
     pose: common.Pose
-    pose_mode: Optional[params.PoseMode]
-    frame: Optional[params.ReferenceFrame]
+    pose_mode: params.PoseMode | None
+    frame: params.ReferenceFrame | None
 
     async def execute(self) -> Response:
         """Execute the SetGimbalPose action.
@@ -419,7 +417,7 @@ class ConfigureImagingSensorStream(Action):
         configurations (List[params.ImagingSensorConfiguration]): list of configurations to be updated
     """
 
-    configurations: List[params.ImagingSensorConfiguration]
+    configurations: list[params.ImagingSensorConfiguration]
 
     async def execute(self) -> Response:
         """Execute the ConfigureImagingSensorStream action.

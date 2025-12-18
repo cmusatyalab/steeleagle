@@ -1,7 +1,6 @@
 # tasks/actions/procedures.py
 import asyncio
 import logging
-from typing import Optional, Tuple
 
 from pydantic import Field
 
@@ -30,7 +29,7 @@ class ElevateToAltitude(Action):
     climb_speed: float = Field(
         1.0, description="m/s (adjust sign for your FCU if needed)"
     )
-    max_duration: Optional[float] = Field(
+    max_duration: float | None = Field(
         None, gt=0.0, description="seconds; None = no limit"
     )
 
@@ -138,7 +137,7 @@ class Track(Action):
     _poll_period: float = 0.05
 
     @property
-    def _pixel_center(self) -> Tuple[float, float]:
+    def _pixel_center(self) -> tuple[float, float]:
         return (self.image_width / 2.0, self.image_height / 2.0)
 
     @staticmethod
@@ -147,7 +146,7 @@ class Track(Action):
 
     def _find_intersection(
         self, target_dir: np.ndarray, target_insct: np.ndarray
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
@@ -182,7 +181,7 @@ class Track(Action):
 
     async def _compute_error(
         self, box: BoundingBox, telemetry
-    ) -> Tuple[float, float, float]:
+    ) -> tuple[float, float, float]:
         img_w, img_h = self.image_width, self.image_height
         cx, cy = self._pixel_center
         y_min_pix = box.y_min * img_h
@@ -233,7 +232,7 @@ class Track(Action):
         await set_gimbal.execute()
 
     async def execute(self):
-        last_seen: Optional[float] = None
+        last_seen: float | None = None
         while True:
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
@@ -252,7 +251,7 @@ class Track(Action):
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            box: Optional[BoundingBox] = None
+            box: BoundingBox | None = None
             if not res or not res.result:
                 continue  # no ComputeResult entries
             for compute in res.result:

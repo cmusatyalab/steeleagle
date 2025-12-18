@@ -1,13 +1,12 @@
 import logging
-from typing import Dict, Optional
 
 from ..types.base import Action, Datatype, Event
 
 logger = logging.getLogger(__name__)
 
-_ACTIONS: Dict[str, Action] = {}
-_EVENTS: Dict[str, Event] = {}
-_DATA: Dict[str, Datatype] = {}
+_ACTIONS: dict[str, Action] = {}
+_EVENTS: dict[str, Event] = {}
+_DATA: dict[str, Datatype] = {}
 
 
 def _norm(name: str) -> str:
@@ -47,13 +46,13 @@ def register_data(cls: Datatype) -> Datatype:
     return cls
 
 
-def get_action(name: str) -> Optional[Action]:
+def get_action(name: str) -> Action | None:
     return _ACTIONS.get(_norm(name))
 
 
-def get_event(name: str) -> Optional[Event]:
+def get_event(name: str) -> Event | None:
     return _EVENTS.get(_norm(name))
 
 
-def get_data(name: str) -> Optional[Datatype]:
+def get_data(name: str) -> Datatype | None:
     return _DATA.get(_norm(name))

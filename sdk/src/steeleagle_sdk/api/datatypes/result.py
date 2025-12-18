@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from . import common
 from ._base import Datatype
 from .timestamp import Timestamp
@@ -52,7 +50,7 @@ class Detection(Datatype):
         bbox (BoundingBox): bounding box
     """
 
-    detection_id: Optional[int] = None
+    detection_id: int | None = None
     class_name: str
     score: float
     bbox: BoundingBox
@@ -66,8 +64,8 @@ class DetectionResult(Datatype):
         frame_id (int): frame corresponding to these detections
     """
 
-    detections: List[Detection]
-    frame_id: Optional[int] = None
+    detections: list[Detection]
+    frame_id: int | None = None
 
 
 class AvoidanceResult(Datatype):
@@ -106,10 +104,10 @@ class ComputeResult(Datatype):
 
     timestamp: Timestamp
     engine_name: str
-    detection_result: Optional[DetectionResult] = None
-    avoidance_result: Optional[AvoidanceResult] = None
-    slam_result: Optional[SLAMResult] = None
-    generic_result: Optional[str] = None
+    detection_result: DetectionResult | None = None
+    avoidance_result: AvoidanceResult | None = None
+    slam_result: SLAMResult | None = None
+    generic_result: str | None = None
 
 
 class FrameResult(Datatype):
@@ -121,6 +119,6 @@ class FrameResult(Datatype):
         result (List[ComputeResult])
     """
 
-    type: Optional[str] = None
-    frame_id: Optional[int] = None
-    result: List[ComputeResult]
+    type: str | None = None
+    frame_id: int | None = None
+    result: list[ComputeResult]

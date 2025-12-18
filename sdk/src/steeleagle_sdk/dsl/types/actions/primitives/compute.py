@@ -1,5 +1,3 @@
-from typing import List
-
 from .... import types
 from ....compiler.registry import register_action
 
@@ -22,7 +20,7 @@ class AddDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: List[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo]
 
     async def execute(self) -> Response:
         """Execute the AddDatasinks action.
@@ -44,7 +42,7 @@ class SetDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: List[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo]
 
     async def execute(self) -> Response:
         """Execute the SetDatasinks action.
@@ -65,7 +63,7 @@ class RemoveDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: List[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo]
 
     async def execute(self) -> Response:
         """Execute the RemoveDatasinks action.

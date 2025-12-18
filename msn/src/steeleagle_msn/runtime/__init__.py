@@ -2,7 +2,6 @@
 import asyncio
 import contextlib
 import logging
-from typing import Optional
 
 import grpc
 from steeleagle_sdk.api.compute import Compute
@@ -16,10 +15,10 @@ from .fsm import MissionFSM
 logger = logging.getLogger(__name__)
 
 # ---- Module-scoped runtime state ----
-_CHANNEL: Optional[grpc.aio.Channel] = None
-_STORE: Optional[MissionStore] = None
-_FSM: Optional[MissionFSM] = None
-_FSM_TASK: Optional[asyncio.Task] = None
+_CHANNEL: grpc.aio.Channel | None = None
+_STORE: MissionStore | None = None
+_FSM: MissionFSM | None = None
+_FSM_TASK: asyncio.Task | None = None
 _STARTED: bool = False
 _LOCK = asyncio.Lock()
 

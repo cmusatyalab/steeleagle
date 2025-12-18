@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
 from steeleagle_sdk.dsl.compiler.loader import load_all
@@ -24,7 +24,7 @@ class RacerType(str, Enum):
 class MissionFSM:
     def __init__(self, mission: MissionIR):
         self.mission = mission
-        self.transition: Dict[str, Dict[str, str]] = mission.transitions
+        self.transition: dict[str, dict[str, str]] = mission.transitions
         self.start_action_id: str = mission.start_action_id
         summaries = load_all()  # ensure registries are loaded
         logger.info("[FSM] Loaded SDK registries: %s", summaries)
@@ -47,11 +47,11 @@ class MissionFSM:
         event_ids = [e for e in self._gather_events(curr_action_id) if e != _DONE_EVENT]
         logger.info("[FSM] events: %s", event_ids)
 
-        q: asyncio.Queue[Tuple[RacerType, Any]] = asyncio.Queue(maxsize=1)
-        winner: Tuple[RacerType, Any]
+        q: asyncio.Queue[tuple[RacerType, Any]] = asyncio.Queue(maxsize=1)
+        winner: tuple[RacerType, Any]
 
         async with asyncio.TaskGroup() as tg:
-            members: List[asyncio.Task] = []
+            members: list[asyncio.Task] = []
 
             # Action
             members.append(
@@ -102,7 +102,7 @@ class MissionFSM:
         racer: Any,
         racer_type: RacerType,
         racer_id: str,
-        q: asyncio.Queue[Tuple[RacerType, Any]],
+        q: asyncio.Queue[tuple[RacerType, Any]],
     ) -> None:
         try:
             if racer_type is RacerType.ACTION:
@@ -125,7 +125,7 @@ class MissionFSM:
                 pass
             raise
 
-    def _gather_events(self, curr_action_id: str) -> List[str]:
+    def _gather_events(self, curr_action_id: str) -> list[str]:
         return list(self.transition.get(curr_action_id, {}).keys())
 
     def _next_state(self, curr_action_id: str, ev_id: str) -> str:
