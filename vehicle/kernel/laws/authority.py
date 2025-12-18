@@ -239,7 +239,7 @@ class LawAuthority:
                     command.request.Unpack(request)
                 logger.proto(request)
             except KeyError:
-                # Response failed due to incorrect descriptor lookup, so we reutrn
+                # Response failed due to incorrect descriptor lookup, so we return
                 # an INVALID_ARGUMENT response
                 results.append(
                     generate_response(

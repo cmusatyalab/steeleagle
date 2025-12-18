@@ -68,7 +68,7 @@ class CommandHandler:
                 poll = dict(await poller.poll(timeout=0.5))
 
                 # Skip our checks if no messages were delivered. However, if no
-                # commands were recieved and we are in __REMOTE__ law, go into
+                # commands were received and we are in __REMOTE__ law, go into
                 # failsafe
                 if not len(poll):
                     if (

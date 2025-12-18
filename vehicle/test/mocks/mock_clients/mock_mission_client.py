@@ -63,7 +63,7 @@ class MockMissionClient:
             else:
                 response = await call
         except grpc.aio.AioRpcError as e:
-            logger.error(f"Exception occured for {req_obj.method_name}, {e}")
+            logger.error(f"Exception occurred for {req_obj.method_name}, {e}")
             response = generate_response(e.code().value[0] + 2)
 
         self.sequencer.write(response)
