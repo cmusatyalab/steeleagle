@@ -77,24 +77,21 @@ class GimbalPoseReached(Event):
                     continue
 
                 ok = True
-                if self.target.roll is not None:
-                    if (
-                        actual.roll is None
-                        or abs(actual.roll - self.target.roll) > self.tol_deg
-                    ):
-                        ok = False
-                if self.target.pitch is not None:
-                    if (
-                        actual.pitch is None
-                        or abs(actual.pitch - self.target.pitch) > self.tol_deg
-                    ):
-                        ok = False
-                if self.target.yaw is not None:
-                    if (
-                        actual.yaw is None
-                        or abs(actual.yaw - self.target.yaw) > self.tol_deg
-                    ):
-                        ok = False
+                if self.target.roll is not None and (
+                    actual.roll is None
+                    or abs(actual.roll - self.target.roll) > self.tol_deg
+                ):
+                    ok = False
+                if self.target.pitch is not None and (
+                    actual.pitch is None
+                    or abs(actual.pitch - self.target.pitch) > self.tol_deg
+                ):
+                    ok = False
+                if self.target.yaw is not None and (
+                    actual.yaw is None
+                    or abs(actual.yaw - self.target.yaw) > self.tol_deg
+                ):
+                    ok = False
 
                 if ok:
                     return True
@@ -126,21 +123,23 @@ class VelocityReached(Event):
             if v is None:
                 continue
 
-            if self.target.x_vel is not None:
-                if v.x_vel is None or abs(v.x_vel - self.target.x_vel) > self.tol:
-                    continue
-            if self.target.y_vel is not None:
-                if v.y_vel is None or abs(v.y_vel - self.target.y_vel) > self.tol:
-                    continue
-            if self.target.z_vel is not None:
-                if v.z_vel is None or abs(v.z_vel - self.target.z_vel) > self.tol:
-                    continue
-            if self.target.angular_vel is not None:
-                if (
-                    v.angular_vel is None
-                    or abs(v.angular_vel - self.target.angular_vel) > self.tol
-                ):
-                    continue
+            if self.target.x_vel is not None and (
+                v.x_vel is None or abs(v.x_vel - self.target.x_vel) > self.tol
+            ):
+                continue
+            if self.target.y_vel is not None and (
+                v.y_vel is None or abs(v.y_vel - self.target.y_vel) > self.tol
+            ):
+                continue
+            if self.target.z_vel is not None and (
+                v.z_vel is None or abs(v.z_vel - self.target.z_vel) > self.tol
+            ):
+                continue
+            if self.target.angular_vel is not None and (
+                v.angular_vel is None
+                or abs(v.angular_vel - self.target.angular_vel) > self.tol
+            ):
+                continue
 
             return True
 
@@ -174,21 +173,23 @@ class RelativePositionReached(Event):
             if not cur:
                 continue
 
-            if self.target.x is not None:
-                if cur.x is None or abs(cur.x - self.target.x) > self.tol_m:
-                    continue
-            if self.target.y is not None:
-                if cur.y is None or abs(cur.y - self.target.y) > self.tol_m:
-                    continue
-            if self.target.z is not None:
-                if cur.z is None or abs(cur.z - self.target.z) > self.tol_m:
-                    continue
-            if self.target.angle is not None:
-                if (
-                    cur.angle is None
-                    or self._deg_diff(cur.angle, self.target.angle) > self.tol_deg
-                ):
-                    continue
+            if self.target.x is not None and (
+                cur.x is None or abs(cur.x - self.target.x) > self.tol_m
+            ):
+                continue
+            if self.target.y is not None and (
+                cur.y is None or abs(cur.y - self.target.y) > self.tol_m
+            ):
+                continue
+            if self.target.z is not None and (
+                cur.z is None or abs(cur.z - self.target.z) > self.tol_m
+            ):
+                continue
+            if self.target.angle is not None and (
+                cur.angle is None
+                or self._deg_diff(cur.angle, self.target.angle) > self.tol_deg
+            ):
+                continue
 
             return True
 
@@ -258,20 +259,18 @@ class GlobalPositionReached(Event):
                     continue
 
             # Altitude (optional)
-            if self.target.altitude is not None:
-                if (
-                    cur.altitude is None
-                    or abs(cur.altitude - self.target.altitude) > self.tol_alt_m
-                ):
-                    continue
+            if self.target.altitude is not None and (
+                cur.altitude is None
+                or abs(cur.altitude - self.target.altitude) > self.tol_alt_m
+            ):
+                continue
 
             # Heading (optional)
-            if self.target.heading is not None:
-                if (
-                    cur.heading is None
-                    or self._deg_diff(cur.heading, self.target.heading) > self.tol_deg
-                ):
-                    continue
+            if self.target.heading is not None and (
+                cur.heading is None
+                or self._deg_diff(cur.heading, self.target.heading) > self.tol_deg
+            ):
+                continue
 
             return True
 
@@ -304,14 +303,16 @@ class DetectionFound(Event):
 
     def _matches_target(self, det: Detection) -> bool:
         # Filter on class_name if provided
-        if self.target.class_name is not None:
-            if det.class_name != self.target.class_name:
-                return False
+        if self.target.class_name is not None and (
+            det.class_name != self.target.class_name
+        ):
+            return False
 
         # Filter on minimum score if provided
-        if self.target.score is not None:
-            if det.score is None or det.score < self.target.score:
-                return False
+        if self.target.score is not None and (
+            det.score is None or det.score < self.target.score
+        ):
+            return False
 
         # If we got here, all provided constraints passed
         return True

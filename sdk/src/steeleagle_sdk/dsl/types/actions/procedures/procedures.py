@@ -53,12 +53,13 @@ class ElevateToAltitude(Action):
             )
             await set_vel.execute()
 
-            if self.max_duration is not None:
-                if asyncio.get_event_loop().time() - start > self.max_duration:
-                    raise TimeoutError(
-                        f"ElevateToAltitude timed out after {self.max_duration}s "
-                        f"(current={rel_alt}, target={self.target_altitude})"
-                    )
+            if self.max_duration is not None and (
+                asyncio.get_event_loop().time() - start > self.max_duration
+            ):
+                raise TimeoutError(
+                    f"ElevateToAltitude timed out after {self.max_duration}s "
+                    f"(current={rel_alt}, target={self.target_altitude})"
+                )
             await asyncio.sleep(self.poll_period)
 
 
@@ -261,11 +262,12 @@ class Track(Action):
                 for det in det_result.detections:
                     if det is None:
                         continue
-                    if self.target.class_name is not None:
-                        if det.class_name == self.target.class_name:
-                            box = det.bbox
-                            last_seen = now
-                            break
+                    if self.target.class_name is not None and (
+                        det.class_name == self.target.class_name
+                    ):
+                        box = det.bbox
+                        last_seen = now
+                        break
 
             # --- Track ---
             if box is not None:
