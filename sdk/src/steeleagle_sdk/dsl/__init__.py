@@ -57,7 +57,7 @@ def cli_compile_dsl():
     args = parser.parse_args()
 
     mission_json_text = ""
-    with open(args.dsl_file, "r") as file:
+    with open(args.dsl_file) as file:
         dsl_content = file.read()
         mission = build_mission(dsl_content)
         mission_json_text = json.dumps(asdict(mission))

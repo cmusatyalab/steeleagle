@@ -185,13 +185,11 @@ class GabrielCompute(ComputeInterface):
                     logger.info("Gabriel compute Frame producer: frame is None")
                     input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
                     input_frame.payloads.append(
-                        "Streaming not started, no frame to show.".encode("utf-8")
+                        b"Streaming not started, no frame to show."
                     )
             except Exception as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append(
-                    "Unable to produce a frame!".encode("utf-8")
-                )
+                input_frame.payloads.append(b"Unable to produce a frame!")
                 logger.info(
                     f"Gabriel compute Frame producer: unable to produce a frame: {e}"
                 )
@@ -209,7 +207,7 @@ class GabrielCompute(ComputeInterface):
             logger.debug(f"tel producer: starting time {time.time()}")
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-            input_frame.payloads.append("heartbeart".encode("utf8"))
+            input_frame.payloads.append(b"heartbeart")
             tel_data = data_protocol.Telemetry()
             ret = self.data_store.get_raw_data(tel_data)
 

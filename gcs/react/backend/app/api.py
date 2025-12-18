@@ -102,7 +102,7 @@ async def startup_event():
     """Read TOML config and initialize connections on startup"""
     global grpc_channel, grpc_stub, red, control_stub, mission_stub
 
-    with open("config.toml", "r") as file:
+    with open("config.toml") as file:
         cfg = toml.load(file)
     # Create persistent channel with connection pooling
     grpc_channel = grpc.aio.insecure_channel(cfg["grpc"]["endpoint"])

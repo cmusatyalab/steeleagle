@@ -85,7 +85,7 @@ async def consume_keys(key_queue, vehicle, stub):
             kml_path = input("Choose a KML file: ")
             dsl_path = input("Choose a DSL file: ")
             kml = open(kml_path, "rb").read()
-            dsl = open(dsl_path, "r", encoding="utf-8").read()
+            dsl = open(dsl_path, encoding="utf-8").read()
             req = CompileMissionRequest(dsl_content=dsl)
             responses = []
             async for response in stub.CompileMission(req):

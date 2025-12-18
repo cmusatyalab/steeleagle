@@ -52,7 +52,7 @@ async def serve_mock_services(messages):
         return
     # Create ZeroMQ socket that connects to the test apparatus
     command_socket = zmq.asyncio.Context().socket(zmq.DEALER)
-    command_socket.setsockopt(zmq.IDENTITY, "mock_services".encode("utf-8"))
+    command_socket.setsockopt(zmq.IDENTITY, b"mock_services")
     setup_zmq_socket(
         command_socket, "cloudlet.swarm_controller", SocketOperation.CONNECT
     )

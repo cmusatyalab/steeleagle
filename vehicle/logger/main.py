@@ -1,6 +1,6 @@
 import asyncio
 from concurrent import futures
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import grpc
@@ -22,7 +22,7 @@ async def main():
     if query_config("logging.custom_filename") != "":
         filepath = filepath / query_config("logging.custom_filename")
     else:
-        date_time = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H:%M:%S")
+        date_time = datetime.now(UTC).strftime("%Y-%m-%d-%H:%M:%S")
         name = query_config("vehicle.name")
         filename = name + "_" + date_time + ".mcap"
         filepath = filepath / filename

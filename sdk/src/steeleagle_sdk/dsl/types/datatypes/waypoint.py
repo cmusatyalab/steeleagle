@@ -102,10 +102,8 @@ class Waypoints(Datatype):
                 angle_degrees=self.angle_degrees,
             )
         else:
-            raise ValueError(
-                "Unknown algo '%s'. Expected one of: 'edge', 'survey', 'corridor'."
-                % self.algo
-            )
+            msg = f"Unknown algo '{self.algo}'. Expected one of: 'edge', 'survey', 'corridor'."
+            raise ValueError(msg)
 
         origin_wgs = raw.centroid()
         projected = raw.convert_to_projected()

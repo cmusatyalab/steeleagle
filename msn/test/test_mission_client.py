@@ -35,7 +35,7 @@ class MissionClient:
         return mission_json_text
 
     async def Upload(self, path: str):
-        dsl = open(path, "r", encoding="utf-8").read()
+        dsl = open(path, encoding="utf-8").read()
         logger.info(f"Uploading: {dsl}")
         mission_json_text = self.compile_dsl(dsl)
         logger.info(f"Compiled JSON -> {mission_json_text}")

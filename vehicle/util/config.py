@@ -7,7 +7,7 @@ def import_config(path):
     """
     Import configuration file from environment variable.
     """
-    with open(path, "r") as file:
+    with open(path) as file:
         cfg = toml.load(file)
         return cfg
 

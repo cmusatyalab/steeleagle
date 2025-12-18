@@ -49,7 +49,7 @@ class LawAuthority:
         path = os.getenv("LAWPATH")
         if not path:
             path = ".laws.toml"
-        with open(path, "r") as laws:
+        with open(path) as laws:
             self._spec = toml.load(laws)
             self._base = self._spec["__BASE__"]
         self._state = None

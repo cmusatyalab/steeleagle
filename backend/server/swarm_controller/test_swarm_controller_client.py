@@ -18,7 +18,7 @@ class SwarmControllerClient:
         self._md = [("identity", "sc_client")]
 
     async def CompileMission(self, path: str):
-        dsl = open(path, "r", encoding="utf-8").read()
+        dsl = open(path, encoding="utf-8").read()
         logger.info(f"Uploading: {dsl}")
         req = remote_pb.CompileMissionRequest(dsl_content=dsl)
         return await self._stub.CompileMission(req, metadata=self._md)

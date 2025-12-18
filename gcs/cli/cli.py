@@ -161,7 +161,7 @@ async def consume_keys(key_queue, vehicle, stub, tty: TTYMode, paused: threading
                     print(f"[Compile] Failed to read KML: {e}")
                     kml = None
                 try:
-                    dsl = open(dsl_path, "r", encoding="utf-8").read()
+                    dsl = open(dsl_path, encoding="utf-8").read()
                 except Exception as e:
                     print(f"[Compile] Failed to read DSL: {e}")
                     dsl = None
