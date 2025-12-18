@@ -75,11 +75,7 @@ class SwarmController(RemoteServicer):
         Check to see if a response has been received for a RemoteControl request.
         """
         async with self._response_map_lock.reader_lock:
-            return (
-                self._response_map[sequence_number]
-                if sequence_number in self._response_map
-                else None
-            )
+            return self._response_map.get(sequence_number, None)
 
     async def Command(self, request, context):
         """

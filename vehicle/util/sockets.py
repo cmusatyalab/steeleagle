@@ -19,14 +19,14 @@ def setup_zmq_socket(socket, access_token, sock_opt):
     if not isinstance(host, str):
         raise ValueError("Access token did not yield expected type string")
     if sock_opt == SocketOperation.CONNECT:
-        if "unix" in host:
-            addr = host.replace("unix", "ipc")
+        if "unix://" in host:
+            addr = host.replace("unix://", "ipc://")
         else:
             addr = f"tcp://{host}"
         socket.connect(addr)
     elif sock_opt == SocketOperation.BIND:
-        if "unix" in host:
-            addr = host.replace("unix", "ipc")
+        if "unix://" in host:
+            addr = host.replace("unix://", "ipc://")
         else:
             port = host.split(":")[-1]
             addr = f"tcp://*:{port}"

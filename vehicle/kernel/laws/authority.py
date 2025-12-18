@@ -107,10 +107,7 @@ class LawAuthority:
         splits = matcher.split("|")
         if len(splits) < 2:  # No payload match
             root = splits[0]
-            if fnmatch(command, root):
-                return True
-            else:
-                return False
+            return fnmatch(command, root)
         else:  # Payload match
             try:
                 root, payload = splits
@@ -217,7 +214,7 @@ class LawAuthority:
             try:
                 # Check if we are calling a JSON command or a proto object
                 # command from a remote controller
-                is_json_command = True if isinstance(command, str) else False
+                is_json_command = isinstance(command, str)
                 if is_json_command:
                     splits = command.split("|")
                     if len(splits) > 1:

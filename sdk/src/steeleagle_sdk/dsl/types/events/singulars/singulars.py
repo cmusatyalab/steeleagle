@@ -309,7 +309,7 @@ class DetectionFound(Event):
             return False
 
         # Filter on minimum score if provided
-        if self.target.score is not None and (
+        if self.target.score is not None and (  # noqa: SIM103
             det.score is None or det.score < self.target.score
         ):
             return False

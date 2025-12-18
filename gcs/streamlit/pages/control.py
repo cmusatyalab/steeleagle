@@ -270,16 +270,15 @@ def draw_map():
             time.time() - last_update < st.session_state.inactivity_time * 60
         ):  # minutes -> seconds
             coords = []
-            i = 0
             drone_name = k.split(":")[-1]
-            for _index, row in df.iterrows():
+            for i, row in enumerate(df.itertuples(index=False)):
                 if i % 10 == 0:
-                    coords.append([row["latitude"], row["longitude"]])
+                    coords.append([row.latitude, row.longitude])
                 if st.session_state.show_drone_markers and i == 0:
                     text = folium.DivIcon(
                         icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name} [{row["rel_altitude"]:.2f}m]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name} [{row.rel_altitude:.2f}m]',
                         # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
@@ -287,14 +286,14 @@ def draw_map():
                         color="lightgray",
                         icon_color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
-                        angle=int(row["bearing"]),
+                        angle=int(row.bearing),
                     )
 
                     fg.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row.latitude,
+                                row.longitude,
                             ],
                             icon=plane,
                         )
@@ -303,14 +302,12 @@ def draw_map():
                     fg.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row.latitude,
+                                row.longitude,
                             ],
                             icon=text,
                         )
                     )
-
-                i += 1
 
             if st.session_state.show_gps_tracks:
                 ls = folium.PolyLine(locations=coords, color=ColorHash(drone_name).hex)

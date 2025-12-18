@@ -179,7 +179,7 @@ class DroneDSLTransformer(Transformer):
             am.update(evmap)
 
         # Ensure every defined action has a default 'done' edge to terminate
-        for aid in self._actions.keys():
+        for aid in self._actions:
             logger.info("ensuring action %s has 'done' transition", aid)
             am = transitions.setdefault(aid, {})
             am.setdefault(_DONE_EVENT, _TERMINATE_AID)

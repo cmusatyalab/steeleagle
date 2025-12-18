@@ -48,7 +48,7 @@ def query_config(access_token):
     else:
         result = CONFIG
     for i in indices:
-        if i not in result.keys():
+        if i not in result:
             raise ValueError(f"Malformed access token: {access_token}")
         result = result[i]  # Access the corresponding field
     return result
