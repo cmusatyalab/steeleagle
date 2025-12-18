@@ -1,2 +1,22 @@
 target-version = "py311"
 exclude = ["*_pb2.py", "*_pb2_grpc.py", "*.pyi"]
+
+[lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I",   # isort
+]
+ignore = [
+    "B905", # new 'strict' argument for zip in python3.10
+    "E501", # ignore line length errors for now
+    "E701", # multiple statements on one line, will be fixed by format
+    "E722", # do not use bare except
+    "E741", # ambiguous variable name (seems to trigger on l, I, and such)
+    "F841", # unused local variable
+    "SIM105", # contextlib.suppress is 3x slower than try-except
+    "SIM115", # use context manager to open files (only works in some places)
+]
