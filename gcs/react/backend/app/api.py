@@ -27,7 +27,12 @@ from steeleagle_sdk.protocol.services.mission_service_pb2 import (
 
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
+from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry
+from google.protobuf.message import DecodeError
+import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 
@@ -68,7 +73,7 @@ class Vehicle(BaseModel):
     last_updated: float
     type: str = Field(default="UAV")
     selected: bool = Field(default=False)
-    home: Location
+    home: Location | None = None
     current: Location
     bearing: NonNegativeInt
 
@@ -80,6 +85,7 @@ zmq_context = zmq.asyncio.Context()
 grpc_channel = None
 control_stub = mission_stub = None
 red = None
+tel_sock = image_sock = None
 
 origins = [
     "http://localhost:5173",
@@ -100,7 +106,14 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Read TOML config and initialize connections on startup"""
-    global grpc_channel, grpc_stub, red, control_stub, mission_stub
+    global \
+        grpc_channel, \
+        grpc_stub, \
+        red, \
+        control_stub, \
+        mission_stub, \
+        tel_sock, \
+        zmq_context
 
     with open("config.toml", "r") as file:
         cfg = toml.load(file)
@@ -111,7 +124,7 @@ async def startup_event():
     control_stub = ControlStub(grpc_channel)
     mission_stub = MissionStub(grpc_channel)
 
-    print("gRPC channel initialized")
+    logger.info("gRPC channel initialized")
     red = redis.Redis(
         host=cfg["redis"]["host"],
         port=cfg["redis"]["port"],
@@ -119,6 +132,11 @@ async def startup_event():
         password=cfg["redis"]["password"],
         decode_responses=True,
     )
+
+    # Create ZeroMQ subscriber socket
+    tel_sock = zmq_context.socket(zmq.SUB)
+    tel_sock.connect(cfg["zmq"]["driver_telemetry"])  # Adjust to your ZMQ address
+    tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
 
 # API Routes
@@ -186,31 +204,49 @@ async def get_location(name: str = None) -> Location:
         raise HTTPException(status_code=404, detail="Vehicle name not specified.")
 
 
-@app.get("/api/stream")
+@app.get("/api/local/vehicle")
 async def stream_zmq():
     """Stream ZeroMQ messages to the client via SSE"""
 
     async def event_generator():
-        # Create ZeroMQ subscriber socket
-        socket = zmq_context.socket(zmq.SUB)
-        socket.connect("tcp://localhost:5555")  # Adjust to your ZMQ address
-        socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
-
         try:
             while True:
-                # Receive message from ZeroMQ (non-blocking)
                 try:
-                    message = await socket.recv_string(flags=zmq.NOBLOCK)
+                    # Receive message from ZeroMQ (non-blocking)
+                    message = await tel_sock.recv_multipart(flags=zmq.NOBLOCK)
+                    tel = DriverTelemetry()
+                    tel.ParseFromString(message[1])
+                    current = Location(
+                        lat=tel.position_info.global_position.latitude,
+                        long=tel.position_info.global_position.longitude,
+                        alt=max(0, float(tel.position_info.global_position.altitude)),
+                    )
+
+                    v = Vehicle(
+                        name=tel.vehicle_info.name,
+                        model=tel.vehicle_info.model,
+                        battery=tel.alert_info.battery_warning,
+                        sats=tel.alert_info.gps_warning,
+                        mag=tel.alert_info.magnetometer_warning,
+                        last_updated=0,
+                        current=current,
+                        bearing=tel.position_info.global_position.heading,
+                    )
+
                     # Format as SSE
-                    yield f"data: {json.dumps({'message': message})}\n\n"
+                    event_str = "event: driver_telemetry"
+                    data_str = f"data: {json.dumps(v.dict())}"
+                    yield f"{event_str}\n{data_str}\n\n"
                 except zmq.Again:
                     # No message available, wait a bit
                     await asyncio.sleep(0.1)
                     # Send keep-alive comment
                     yield ": keep-alive\n\n"
+                except DecodeError as de:
+                    logger.error(f"{de} {message}!")
+                    yield ": keep-alive\n\n"
         except asyncio.CancelledError:
-            socket.close()
-            raise
+            logging.error("Client canceled SSE.")
 
     return StreamingResponse(
         event_generator(),
@@ -242,7 +278,7 @@ async def start(name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -267,7 +303,7 @@ async def upload(req: Upload, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -295,7 +331,7 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -310,21 +346,21 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
             takeoff.take_off_altitude = 10.0
             call = control_stub.TakeOff
             async for response in call(takeoff, metadata=(("identity", "server"),)):
-                print(f"Response for takeoff: {response.status}")
+                logger.info(f"Response for takeoff: {response.status}")
 
             return JSONResponse(status_code=200, content="Takeoff complete!")
         elif req.land:
             land = LandRequest()
             call = control_stub.Land
             async for response in call(land, metadata=(("identity", "server"),)):
-                print(f"Response for land: {response.status}")
+                logger.info(f"Response for land: {response.status}")
 
             return JSONResponse(status_code=200, content="Landing complete!")
         elif req.rth:
             rth = ReturnToHomeRequest()
             call = control_stub.ReturnToHome
             async for response in call(rth, metadata=(("identity", "server"),)):
-                print(f"Response for rth: {response.status}")
+                logger.info(f"Response for rth: {response.status}")
 
             return JSONResponse(status_code=200, content="Return to Home command sent.")
         elif req.hold:
@@ -334,7 +370,7 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
             hold = HoldRequest()
             call = control_stub.Hold
             async for response in call(hold, metadata=(("identity", "server"),)):
-                print(f"Response for hold: {response.status}")
+                logger.info(f"Response for hold: {response.status}")
 
             return JSONResponse(
                 status_code=200,
@@ -347,7 +383,7 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -367,4 +403,5 @@ async def serve_spa(full_path: str):
 # Cleanup on shutdown
 @app.on_event("shutdown")
 async def shutdown_event():
+    tel_sock.close()
     zmq_context.term()

@@ -14,14 +14,13 @@ import { FileUpload } from 'primereact/fileupload';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Image } from 'primereact/image';
-import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
+import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
 function ControlPage({vehicles, selectedVehicle, tracking, toast, onCommand}) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
-  const webServerUrl = `${BASE_URL}:${WEBSERVER_PORT}`
 
    const onProgress = () => {
      toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
@@ -136,7 +135,7 @@ function ControlPage({vehicles, selectedVehicle, tracking, toast, onCommand}) {
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"></Image>
+              <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"></Image>
             </SplitterPanel>
           </Splitter>
         </SplitterPanel>

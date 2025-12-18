@@ -6,7 +6,6 @@ import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Button } from 'primereact/button';
 import { ToggleButton } from 'primereact/togglebutton';
-import { FloatLabel } from 'primereact/floatlabel';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
@@ -22,7 +21,8 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
-import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
+import { FASTAPI_URL } from './config.js';
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 function App() {
   const appName = "Talon";
@@ -37,18 +37,21 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
+  const [useLocalVehicle, setUseLocalVehicle] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await fetch(`${FASTAPI_URL}/api/vehicles`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      if (!useLocalVehicle) {
+        try {
+          const response = await fetch(`${FASTAPI_URL}/api/vehicles`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const result = await response.json();
+          setVehicles(result);
+        } catch (error) {
+          setError(error);
         }
-        const result = await response.json();
-        setVehicles(result);
-      } catch (error) {
-        setError(error);
       }
     };
 
@@ -56,7 +59,35 @@ function App() {
 
     const intervalId = setInterval(fetchData, 1000);
     return () => clearInterval(intervalId);
-  }, []); // Empty dependency array means this runs once on mount
+  }, [useLocalVehicle]); // Empty dependency array means this runs once on mount
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+    const sse = async () => {
+      if (useLocalVehicle) {
+        await fetchEventSource(`${FASTAPI_URL}/api/local/vehicle`, {
+          onmessage(ev) {
+            if (ev.event == "driver_telemetry") {
+              const v = [];
+              console.log(ev.data);
+              try {
+                v.push(JSON.parse(ev.data));
+              }
+              catch (error) {
+                console.log(error);
+              }
+              setVehicles(v);
+            }
+          },
+        });
+      };
+    }
+    sse();
+    return () => {
+      abortController.abort();
+    };
+  }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
     setKeyPressed(true);
@@ -253,10 +284,12 @@ function App() {
       <Divider />
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
-      {selectedMenu == "Plan" && <PlanPage/>}
+      {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
         <h2>Debug</h2>
         <div className="card flex flex-column align-items-center">
+          <ToggleButton className="m-2" onLabel="Use Local Vehicle" offLabel="Use Swarm Controller" onIcon="pi pi-desktop" offIcon="pi pi-cloud"
+            checked={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} />
           <button
             className={classNames('card border-1 surface-border border-round-sm py-3 px-4 text-color font-semibold text-sm transition-all transition-duration-150', { 'shadow-1': keyPressed, 'shadow-5': !keyPressed })}
             style={{
