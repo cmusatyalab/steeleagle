@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from google.protobuf import descriptor_pb2
 
 

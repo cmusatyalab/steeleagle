@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import inspect
 import logging
 import re
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
-from typing import get_args, get_origin
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    get_args,
+    get_origin,
+)
 
 from lsprotocol.types import (
     CompletionItem,

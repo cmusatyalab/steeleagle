@@ -1,6 +1,7 @@
 import re
 
 from pydantic import model_validator
+
 from ._base import Datatype
 
 _DUR_RE = re.compile(r"^(-?\d+)(?:\.(\d{1,9}))?s$")

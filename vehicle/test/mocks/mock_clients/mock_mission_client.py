@@ -1,17 +1,18 @@
 import logging
+
 import grpc
-
-# Utility import
-from util.config import query_config
-
-# Sequencer import
-from test.message_sequencer import Topic, MessageSequencer
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
+from steeleagle_sdk.protocol.services.compute_service_pb2_grpc import ComputeStub
 
 # Protocol import
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportStub
-from steeleagle_sdk.protocol.services.compute_service_pb2_grpc import ComputeStub
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
+
+# Sequencer import
+from test.message_sequencer import MessageSequencer, Topic
+
+# Utility import
+from util.config import query_config
 
 logger = logging.getLogger("test/mock_mission")
 

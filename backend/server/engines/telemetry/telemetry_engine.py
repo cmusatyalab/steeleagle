@@ -5,13 +5,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import datetime
 import logging
 import os
 import signal
 import time
+
 import cv2
-import argparse
 
 # import foxglove
 import numpy as np
@@ -22,7 +23,6 @@ import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)

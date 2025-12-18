@@ -1,17 +1,18 @@
 import asyncio
+import logging
+import time
+
 import zmq
 import zmq.asyncio
-import time
-import logging
+
+# Law import
+from kernel.laws.authority import Failsafe
 
 # Protocol import
 from steeleagle_sdk.protocol.services.remote_service_pb2 import (
     CommandRequest,
     CommandResponse,
 )
-
-# Law import
-from kernel.laws.authority import Failsafe
 
 logger = logging.getLogger("kernel/handlers/command_handler")
 

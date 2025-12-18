@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 import asyncio
-import time
 import json
 import logging
-from typing import Optional, Any
+import time
+from typing import Any, Optional
+
 import aiosqlite
 import zmq
 import zmq.asyncio
+from gabriel_protocol import gabriel_pb2
 from google.protobuf.json_format import MessageToDict
+
+from ..protocol.messages import result_pb2 as result_proto
+from ..protocol.messages import telemetry_pb2 as telem_proto
 
 # --- your types/protos ---
 from .datatypes._base import Datatype
-from .datatypes.telemetry import DriverTelemetry
 from .datatypes.result import FrameResult
-from ..protocol.messages import telemetry_pb2 as telem_proto
-from ..protocol.messages import result_pb2 as result_proto
-from gabriel_protocol import gabriel_pb2
+from .datatypes.telemetry import DriverTelemetry
 
 logger = logging.getLogger(__name__)
 

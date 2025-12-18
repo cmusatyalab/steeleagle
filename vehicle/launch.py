@@ -1,10 +1,11 @@
-import os
-import time
-import subprocess
 import argparse
-import requests
 import json
+import os
+import subprocess
+import time
 import tomllib
+
+import requests
 
 # Utility imports
 from util.cleanup import register_cleanup_handler

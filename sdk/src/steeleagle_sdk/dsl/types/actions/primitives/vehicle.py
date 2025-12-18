@@ -1,15 +1,17 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from google.protobuf.duration_pb2 import Duration
+
+from .... import types
+from ....compiler.registry import register_action
 
 # API imports
 from ...base import Action
-from ....compiler.registry import register_action
+from ...datatypes import common as common
+from ...datatypes import control as params
 
 # Type imports
 from ...datatypes.common import Response
-from ...datatypes import control as params
-from ...datatypes import common as common
-from .... import types
 from ...utils import consume_last
 
 

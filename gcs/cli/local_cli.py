@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
-import asyncio
-import grpc
-import threading
 import argparse
-import os
-import sys
-import select
+import asyncio
 import contextlib
 import json
+import os
+import select
+import sys
+import threading
 from dataclasses import asdict
+
+import grpc
+from steeleagle_sdk.dsl import build_mission
 
 # Protocol imports
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
     HoldRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
+    JoystickRequest,
+    LandRequest,
+    TakeOffRequest,
 )
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
-from steeleagle_sdk.dsl import build_mission
 
 IDENTITY_MD = (("identity", "server"),)
 

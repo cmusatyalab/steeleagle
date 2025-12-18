@@ -1,12 +1,14 @@
 import asyncio
 import json
-from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
+import logging
+
+from dacite import from_dict
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
+from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
+
 from .runtime import init as fsm_init
 from .runtime import term as fsm_stop
-from dacite import from_dict
-import logging
 
 logger = logging.getLogger(__name__)
 

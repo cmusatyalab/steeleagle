@@ -7,12 +7,12 @@ import os
 import time
 
 import cv2
-from steeleagle_sdk.protocol.messages import result_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from google.protobuf import text_format
+from steeleagle_sdk.protocol.messages import result_pb2
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

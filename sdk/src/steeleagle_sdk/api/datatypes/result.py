@@ -1,8 +1,8 @@
 from typing import List, Optional
-from .timestamp import Timestamp
 
-from ._base import Datatype
 from . import common
+from ._base import Datatype
+from .timestamp import Timestamp
 
 
 class BoundingBox(Datatype):

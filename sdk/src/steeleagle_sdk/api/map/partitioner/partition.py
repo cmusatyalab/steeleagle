@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from typing import List
+
 from shapely.geometry import Polygon
+
 from .geopoints import GeoPoints
 
 

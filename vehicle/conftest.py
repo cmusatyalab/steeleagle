@@ -1,14 +1,14 @@
 import asyncio
+import logging
+
 import pytest
 import pytest_asyncio
-
-# Helper import
-from test.helpers import wait_for_services
 
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 
-import logging
+# Helper import
+from test.helpers import wait_for_services
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,9 @@ def messages():
 
 @pytest.fixture(scope="function")
 def command_socket():
-    from util.sockets import setup_zmq_socket, SocketOperation
     import zmq
     import zmq.asyncio
+    from util.sockets import SocketOperation, setup_zmq_socket
 
     # Set up command_socket to connect to the kernel
     command_socket = zmq.asyncio.Context().socket(zmq.ROUTER)
@@ -111,9 +111,9 @@ async def kernel(mock_services, command_socket):
 
 @pytest_asyncio.fixture(scope="function")
 async def imagery():
-    from util.sockets import setup_zmq_socket, SocketOperation
     import zmq
     import zmq.asyncio
+    from util.sockets import SocketOperation, setup_zmq_socket
 
     # Set up command_socket to connect to the imagery stream
     imagery_socket = zmq.asyncio.Context().socket(zmq.PUB)
@@ -124,9 +124,9 @@ async def imagery():
 
 @pytest_asyncio.fixture(scope="function")
 async def driver_telemetry():
-    from util.sockets import setup_zmq_socket, SocketOperation
     import zmq
     import zmq.asyncio
+    from util.sockets import SocketOperation, setup_zmq_socket
 
     # Set up command_socket to connect to the driver telemetry stream
     driver_telemetry_socket = zmq.asyncio.Context().socket(zmq.PUB)
@@ -141,9 +141,9 @@ async def driver_telemetry():
 
 @pytest_asyncio.fixture(scope="function")
 async def mission_telemetry():
-    from util.sockets import setup_zmq_socket, SocketOperation
     import zmq
     import zmq.asyncio
+    from util.sockets import SocketOperation, setup_zmq_socket
 
     # Set up command_socket to connect to the mission_telemetry stream
     mission_telemetry_socket = zmq.asyncio.Context().socket(zmq.PUB)
@@ -158,9 +158,9 @@ async def mission_telemetry():
 
 @pytest_asyncio.fixture(scope="function")
 async def results():
-    from util.sockets import setup_zmq_socket, SocketOperation
     import zmq
     import zmq.asyncio
+    from util.sockets import SocketOperation, setup_zmq_socket
 
     # Set up command_socket to connect to the result stream
     result_socket = zmq.asyncio.Context().socket(zmq.SUB)
@@ -174,8 +174,8 @@ async def results():
 @pytest_asyncio.fixture(scope="function")
 async def gabriel():
     from gabriel_protocol.gabriel_pb2 import ResultWrapper
+    from gabriel_server.cognitive_engine import Engine, create_result_wrapper
     from gabriel_server.local_engine import LocalEngine
-    from gabriel_server.cognitive_engine import create_result_wrapper, Engine
     from util.config import query_config
 
     # Sequencer cognitive engine for writing what we see

@@ -8,26 +8,27 @@
 import argparse
 import asyncio
 import json
+import logging
+from concurrent import futures
+from dataclasses import asdict
+
+import aiorwlock
+import grpc
 import redis
 import zmq
 import zmq.asyncio
-import grpc
-from concurrent import futures
-import aiorwlock
+from steeleagle_sdk.dsl import build_mission
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
 
 # Protocol imports
 from steeleagle_sdk.protocol.services.remote_service_pb2 import (
-    CompileMissionResponse,
     CommandResponse,
+    CompileMissionResponse,
 )
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import (
     RemoteServicer,
     add_RemoteServicer_to_server,
 )
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
-from steeleagle_sdk.dsl import build_mission
-from dataclasses import asdict
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -1,23 +1,11 @@
 import asyncio
-import grpc
+import logging
 from concurrent import futures
+
+import grpc
+import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
 import zmq
 import zmq.asyncio
-import logging
-
-# Mock import
-from test.message_sequencer import Topic, MessageSequencer
-from test.mocks.generate_mock_service import generate_mock_service
-
-generate_mock_service("Control", "control_service")
-from test.mocks.mock_services._gen_mock_control_service import MockControlService
-
-generate_mock_service("Mission", "mission_service")
-from test.mocks.mock_services._gen_mock_mission_service import MockMissionService
-
-# Utility import
-from util.sockets import setup_zmq_socket, SocketOperation
-from util.config import query_config
 
 # Protocol import
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import (
@@ -26,9 +14,22 @@ from steeleagle_sdk.protocol.services.control_service_pb2_grpc import (
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import (
     add_MissionServicer_to_server,
 )
-import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
+
+# Mock import
+from test.message_sequencer import MessageSequencer, Topic
+from test.mocks.generate_mock_service import generate_mock_service
+
+# Utility import
+from util.config import query_config
+from util.sockets import SocketOperation, setup_zmq_socket
 
 logger = logging.getLogger(__name__)
+
+generate_mock_service("Control", "control_service")
+from test.mocks.mock_services._gen_mock_control_service import MockControlService
+
+generate_mock_service("Mission", "mission_service")
+from test.mocks.mock_services._gen_mock_mission_service import MockMissionService
 
 
 async def serve_mock_services(messages):

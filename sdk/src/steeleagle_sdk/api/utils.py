@@ -1,10 +1,12 @@
-import grpc
-from typing import Any, Optional, Iterable, Tuple
-from collections.abc import AsyncIterator, Callable
-from google.protobuf.timestamp_pb2 import Timestamp
-from .datatypes.timestamp import Timestamp as RealTimestamp
-from .datatypes.common import Response
 import logging
+from collections.abc import AsyncIterator, Callable
+from typing import Any, Iterable, Optional, Tuple
+
+import grpc
+from google.protobuf.timestamp_pb2 import Timestamp
+
+from .datatypes.common import Response
+from .datatypes.timestamp import Timestamp as RealTimestamp
 
 logger = logging.getLogger(__name__)
 

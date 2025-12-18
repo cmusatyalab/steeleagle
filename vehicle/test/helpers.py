@@ -1,12 +1,12 @@
-import zmq
 import asyncio
+import logging
 import time
 from dataclasses import dataclass
 from typing import Any
-import logging
 
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
+import zmq
 
 # Sequencer import
 from test.message_sequencer import Topic

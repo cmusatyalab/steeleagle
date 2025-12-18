@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
-import asyncio
-import grpc
-import threading
 import argparse
-import os
-import sys
-import select
+import asyncio
 import contextlib
+import os
+import select
+import sys
+import threading
 
-# Protocol imports
-from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
+import grpc
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    HoldRequest,
+    JoystickRequest,
+    LandRequest,
+    TakeOffRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
 from steeleagle_sdk.protocol.services.remote_service_pb2 import (
     CommandRequest,
     CompileMissionRequest,
 )
-from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
-    HoldRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
-)
+
+# Protocol imports
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 
 # --------- raw TTY helpers (WSL-friendly) ---------

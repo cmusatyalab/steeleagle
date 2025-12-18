@@ -1,18 +1,19 @@
-import grpc
 import logging
 
-# Utility import
-from steeleagle_sdk.protocol.rpc_helpers import generate_request
-from util.config import query_config
+import grpc
 
 # Protocol import
 from google.protobuf.json_format import MessageToDict
+
+# Utility import
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
 from steeleagle_sdk.protocol.services.flight_log_service_pb2 import (
-    LogRequest,
     LogMessage,
+    LogRequest,
     LogType,
 )
 from steeleagle_sdk.protocol.services.flight_log_service_pb2_grpc import FlightLogStub
+from util.config import query_config
 
 # Log level for protos, between info and warning
 PROTO_LEVEL = logging.INFO + 5

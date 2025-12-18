@@ -1,12 +1,13 @@
-import pytest
 import asyncio
 import logging
 
-# Helper import
-from test.helpers import send_requests, Request
+import pytest
 
 # Protocol import
 import steeleagle_sdk.protocol.services.control_service_pb2 as control_proto
+
+# Helper import
+from test.helpers import Request, send_requests
 
 # Sequencer import
 from test.message_sequencer import Topic

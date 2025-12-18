@@ -1,26 +1,27 @@
-from enum import Enum
 import asyncio
-import grpc
 import json
-from google.protobuf.descriptor_pool import DescriptorPool
-from google.protobuf.message_factory import GetMessages
-from google.protobuf.json_format import ParseDict, MessageToDict
-import toml
-import os
-from fnmatch import fnmatch
 import logging
-import aiorwlock
+import os
+from enum import Enum
+from fnmatch import fnmatch
 
-# Utility import
-from util.config import query_config
-from steeleagle_sdk.protocol.rpc_helpers import (
-    native_grpc_call,
-    generate_response,
-    generate_request,
-)
+import aiorwlock
+import grpc
+import toml
+from google.protobuf.descriptor_pool import DescriptorPool
+from google.protobuf.json_format import MessageToDict, ParseDict
+from google.protobuf.message_factory import GetMessages
 
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors
+from steeleagle_sdk.protocol.rpc_helpers import (
+    generate_request,
+    generate_response,
+    native_grpc_call,
+)
+
+# Utility import
+from util.config import query_config
 
 logger = logging.getLogger("kernel/laws/authority")
 

@@ -1,11 +1,11 @@
 # compiler/loader.py
 from __future__ import annotations
+
 import importlib
-import pkgutil
 import logging
+import pkgutil
 from types import ModuleType
 from typing import Dict, List, Optional, Tuple
-
 
 logger = logging.getLogger(__name__)
 

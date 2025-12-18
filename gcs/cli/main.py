@@ -1,26 +1,27 @@
-import asyncio
-import grpc
-import threading
 import argparse
-from pynput import keyboard
+import asyncio
+import threading
 
-# Protocol imports
-from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
+import grpc
+from pynput import keyboard
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    HoldRequest,
+    JoystickRequest,
+    LandRequest,
+    TakeOffRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
 from steeleagle_sdk.protocol.services.remote_service_pb2 import (
     CommandRequest,
     CompileMissionRequest,
 )
-from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
-    HoldRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
-)
+
+# Protocol imports
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 
 async def consume_keys(key_queue, vehicle, stub):

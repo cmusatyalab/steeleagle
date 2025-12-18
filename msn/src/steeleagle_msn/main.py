@@ -1,10 +1,12 @@
 import asyncio
-from concurrent import futures
-import grpc
 import logging
+from concurrent import futures
+
+import grpc
 
 # Protocol imports
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc
+
 from .mission_service import MissionService
 
 logging.basicConfig(

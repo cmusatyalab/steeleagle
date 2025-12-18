@@ -1,18 +1,19 @@
 import asyncio
-import grpc
 from concurrent import futures
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
-# Utility import
-from util.config import query_config
-from util.cleanup import register_cleanup_handler
+import grpc
+
+# Service import
+from flight_log_service import FlightLogService
 
 # Protocol import
 from steeleagle_sdk.protocol.services import flight_log_service_pb2_grpc
 
-# Service import
-from flight_log_service import FlightLogService
+# Utility import
+from util.cleanup import register_cleanup_handler
+from util.config import query_config
 
 
 async def main():

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import sys
+
 import cv2
-import zmq
 import numpy as np
+import zmq
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import Frame
 
 

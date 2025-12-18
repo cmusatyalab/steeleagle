@@ -3,20 +3,21 @@ from __future__ import annotations
 
 import logging
 from typing import (
+    Annotated,
     Any,
     Dict,
     List,
     Tuple,
     Union,
-    Annotated,
     get_args,
     get_origin,
     get_type_hints,
 )
+
 from pydantic import BaseModel
 
-from ...dsl.compiler.ir import MissionIR, DatumIR
-from ...dsl.compiler.registry import get_action, get_event, get_data
+from ...dsl.compiler.ir import DatumIR, MissionIR
+from ...dsl.compiler.registry import get_action, get_data, get_event
 
 logger = logging.getLogger(__name__)
 

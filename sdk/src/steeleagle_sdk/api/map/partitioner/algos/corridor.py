@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List
+
 from shapely.geometry import Polygon
-from ..partition import Partition
+
 from ..geopoints import GeoPoints
+from ..partition import Partition
 from ..utils import (
-    rotated_infinite_transects,
     line_polygon_intersection_points,
+    rotated_infinite_transects,
     round_xy,
 )
 

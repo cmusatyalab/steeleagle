@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any, Iterable
-from lark import Transformer, v_args, Token
+from typing import Any, Dict, Iterable, List, Optional
 
-from ...dsl.compiler import validator
-from ...dsl.compiler.ir import MissionIR, ActionIR, EventIR, DatumIR
-from ...dsl.compiler import resolver
-from ...dsl.compiler import loader
+from lark import Token, Transformer, v_args
+
+from ...dsl.compiler import loader, resolver, validator
+from ...dsl.compiler.ir import ActionIR, DatumIR, EventIR, MissionIR
 
 logger = logging.getLogger(__name__)
 

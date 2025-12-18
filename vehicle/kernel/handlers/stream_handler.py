@@ -1,16 +1,13 @@
 import asyncio
-import zmq
 import logging
-import numpy as np
-import cv2
 
-# Utility import
-from util.config import query_config
-from util.sockets import setup_zmq_socket, SocketOperation
+import cv2
+import numpy as np
+import zmq
+from gabriel_client.gabriel_client import InputProducer
 
 # Gabriel import
 from gabriel_client.zeromq_client import ZeroMQClient
-from gabriel_client.gabriel_client import InputProducer
 from gabriel_protocol import gabriel_pb2
 
 # Protocol import
@@ -19,6 +16,10 @@ from steeleagle_sdk.protocol.messages.telemetry_pb2 import (
     Frame,
     MissionTelemetry,
 )
+
+# Utility import
+from util.config import query_config
+from util.sockets import SocketOperation, setup_zmq_socket
 
 logger = logging.getLogger("kernel/handlers/stream_handler")
 

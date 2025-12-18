@@ -3,21 +3,21 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
-from pygls.server import LanguageServer
-from pygls.workspace import Document
 from lsprotocol.types import (
     INITIALIZE,
     TEXT_DOCUMENT_COMPLETION,
-    InitializeResult,
-    CompletionParams,
     CompletionItem,
     CompletionItemKind,
-    TextDocumentSyncKind,
-    CompletionOptions,
     CompletionList,
+    CompletionOptions,
+    CompletionParams,
+    InitializeResult,
     ServerCapabilities,
+    TextDocumentSyncKind,
     TextDocumentSyncOptions,
 )
+from pygls.server import LanguageServer
+from pygls.workspace import Document
 
 from . import registry_completions as reg
 

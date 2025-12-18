@@ -1,10 +1,11 @@
-import asyncio
-import zmq
-import zmq.asyncio
-import grpc
 import argparse
+import asyncio
 import logging
 from concurrent import futures
+
+import grpc
+import zmq
+import zmq.asyncio
 
 # Law handler import
 from kernel.laws.authority import LawAuthority
@@ -15,8 +16,8 @@ from util.cleanup import register_cleanup_handler
 
 register_cleanup_handler()  # Cleanup handler for SIGTERM
 from util.config import query_config
-from util.sockets import setup_zmq_socket, SocketOperation
 from util.log import setup_logging
+from util.sockets import SocketOperation, setup_zmq_socket
 
 setup_logging()
 # Generate proxy files
@@ -26,21 +27,22 @@ generate_proxy("Control", "control_service", query_config("internal.services.dri
 from kernel.services._gen_control_service_proxy import ControlProxy
 
 generate_proxy("Mission", "mission_service", query_config("internal.services.mission"))
-from kernel.services._gen_mission_service_proxy import MissionProxy
-
-# Service imports
-from kernel.services.report_service import ReportService
-from kernel.services.compute_service import ComputeService
-
-# Proto binding imports
-from steeleagle_sdk.protocol.services import control_service_pb2_grpc
-from steeleagle_sdk.protocol.services import mission_service_pb2_grpc
-from steeleagle_sdk.protocol.services import report_service_pb2_grpc
-from steeleagle_sdk.protocol.services import compute_service_pb2_grpc
-
 # Remote control handler import
 from handlers.command_handler import CommandHandler
 from handlers.stream_handler import StreamHandler
+from kernel.services._gen_mission_service_proxy import MissionProxy
+from kernel.services.compute_service import ComputeService
+
+# Service imports
+from kernel.services.report_service import ReportService
+
+# Proto binding imports
+from steeleagle_sdk.protocol.services import (
+    compute_service_pb2_grpc,
+    control_service_pb2_grpc,
+    mission_service_pb2_grpc,
+    report_service_pb2_grpc,
+)
 
 logger = logging.getLogger("kernel/main")
 

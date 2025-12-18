@@ -1,6 +1,7 @@
-from jinja2 import Environment, FileSystemLoader
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
 
 # Protocol import
 from steeleagle_sdk.protocol.descriptors import get_descriptors

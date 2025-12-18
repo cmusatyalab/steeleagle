@@ -1,8 +1,11 @@
 from __future__ import annotations
-from shapely.geometry import Point, LineString, Polygon
-from shapely.affinity import rotate
-from typing import Dict, Tuple, List
+
+from typing import Dict, List, Tuple
 from xml.dom import minidom
+
+from shapely.affinity import rotate
+from shapely.geometry import LineString, Point, Polygon
+
 from .geopoints import GeoPoints
 
 

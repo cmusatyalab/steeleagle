@@ -1,13 +1,13 @@
-from typing import Dict, List, Literal, Optional, Union
 import logging
+from typing import Dict, List, Literal, Optional, Union
 
 from ....api.datatypes.common import Location
-from ...compiler.registry import register_data
 from ....api.map.partitioner.algos.corridor import CorridorPartition
 from ....api.map.partitioner.algos.edge import EdgePartition
 from ....api.map.partitioner.algos.survey import SurveyPartition
 from ....api.map.partitioner.geopoints import GeoPoints
 from ....api.map.partitioner.utils import parse_kml_file
+from ...compiler.registry import register_data
 from ..base import Datatype
 
 logger = logging.getLogger(__name__)

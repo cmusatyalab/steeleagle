@@ -1,6 +1,7 @@
-from typing import Dict, Optional
-from ..types.base import Action, Event, Datatype
 import logging
+from typing import Dict, Optional
+
+from ..types.base import Action, Datatype, Event
 
 logger = logging.getLogger(__name__)
 

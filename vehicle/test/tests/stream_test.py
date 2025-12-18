@@ -1,13 +1,14 @@
-import pytest
 import asyncio
 import logging
 
-# Helper import
-from test.helpers import send_requests, Request
+import pytest
+import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
 
 # Protocol import
 import steeleagle_sdk.protocol.services.compute_service_pb2 as compute_proto
-import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
+
+# Helper import
+from test.helpers import Request, send_requests
 
 logger = logging.getLogger(__name__)
 

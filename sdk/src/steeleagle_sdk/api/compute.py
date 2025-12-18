@@ -1,13 +1,15 @@
-import grpc
+import logging
 from typing import List
-from .mission_store import MissionStore
-from ..protocol.services.compute_service_pb2_grpc import ComputeStub
+
+import grpc
+from google.protobuf.json_format import ParseDict
+
 from ..protocol.services import compute_service_pb2 as compute_proto
+from ..protocol.services.compute_service_pb2_grpc import ComputeStub
 from .datatypes.common import Response
 from .datatypes.compute import DatasinkInfo
+from .mission_store import MissionStore
 from .utils import run_unary
-from google.protobuf.json_format import ParseDict
-import logging
 
 logger = logging.getLogger(__name__)
 

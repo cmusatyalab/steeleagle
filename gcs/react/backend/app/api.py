@@ -1,31 +1,31 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-import zmq
-import zmq.asyncio
 import asyncio
+import base64
 import json
+import time
+
 import grpc
 import redis
 import toml
-import time
-import base64
-from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
+import zmq
+import zmq.asyncio
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    TakeOffRequest,
-    LandRequest,
-    ReturnToHomeRequest,
     HoldRequest,
     JoystickRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    TakeOffRequest,
 )
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    StopRequest,
     StartRequest,
+    StopRequest,
     UploadRequest,
 )
-
-from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 
 app = FastAPI()

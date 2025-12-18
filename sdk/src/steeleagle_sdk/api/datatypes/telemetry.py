@@ -1,11 +1,12 @@
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import Field
-from .timestamp import Timestamp
-from .duration import Duration
-from enum import Enum
-from ._base import Datatype
+
 from . import common
+from ._base import Datatype
+from .duration import Duration
+from .timestamp import Timestamp
 
 
 class MotionStatus(int, Enum):

@@ -1,16 +1,15 @@
 # persistent_mission_client.py
 import asyncio
 import json
-import grpc
+import logging
+from dataclasses import asdict
 
-from util.config import query_config
+import grpc
+from google.protobuf import text_format
+from steeleagle_sdk.dsl import build_mission
 from steeleagle_sdk.protocol.services import mission_service_pb2 as mission_pb
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc as mission_grpc
-from steeleagle_sdk.dsl import build_mission
-from dataclasses import asdict
-from google.protobuf import text_format
-
-import logging
+from util.config import query_config
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

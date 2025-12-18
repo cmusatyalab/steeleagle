@@ -1,10 +1,10 @@
 import logging
 
-# Protocol import
-from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportServicer
-
 # Utility import
 from steeleagle_sdk.protocol.rpc_helpers import generate_response
+
+# Protocol import
+from steeleagle_sdk.protocol.services.report_service_pb2_grpc import ReportServicer
 
 logger = logging.getLogger("kernel/services/report_service")
 

@@ -1,8 +1,8 @@
 # only for task developer
 
 from .. import types
-from .datatypes.telemetry import DriverTelemetry
 from .datatypes.result import FrameResult
+from .datatypes.telemetry import DriverTelemetry
 
 
 async def fetch_results(topic) -> FrameResult:

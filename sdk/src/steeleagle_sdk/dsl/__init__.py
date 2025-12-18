@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 from lark import Lark
+
 from .compiler.ir import MissionIR
 from .compiler.transformer import DroneDSLTransformer
 
@@ -39,8 +42,8 @@ def cli_compile_dsl():
         output (str): output mission JSON path (`--output` or `-o`, default: `./mission.json`)
     """
     import argparse
-    from dataclasses import asdict
     import json
+    from dataclasses import asdict
 
     parser = argparse.ArgumentParser(description="SteelEagle DSL compiler.")
     parser.add_argument("dsl_file", help="Path to DSL file")

@@ -18,26 +18,26 @@
 #
 #
 
+import argparse
 import json
 import logging
 import os
 import time
 import traceback
-import argparse
+
 import cv2
 import numpy as np
 import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
+from google.protobuf.any_pb2 import Any
 from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
-from ultralytics import YOLO
-from google.protobuf.any_pb2 import Any
-
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from ultralytics import YOLO
 
 logging.basicConfig(
     level=logging.DEBUG,

@@ -1,15 +1,18 @@
-from prompt_toolkit.shortcuts import message_dialog, input_dialog, yes_no_dialog
-from prompt_toolkit.validation import Validator
-from prompt_toolkit.styles import Style
-from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.shortcuts import radiolist_dialog
-from prompt_toolkit.shortcuts import ProgressBar
-from prompt_toolkit import print_formatted_text, HTML
+from os import mkdir
+from urllib.request import urlretrieve
 
 from jinja2 import Environment, PackageLoader
-
-from urllib.request import urlretrieve
-from os import mkdir
+from prompt_toolkit import HTML, print_formatted_text
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.shortcuts import (
+    ProgressBar,
+    input_dialog,
+    message_dialog,
+    radiolist_dialog,
+    yes_no_dialog,
+)
+from prompt_toolkit.styles import Style
+from prompt_toolkit.validation import Validator
 
 CONTAINERS = {
     "gabriel": "Gabriel Server",

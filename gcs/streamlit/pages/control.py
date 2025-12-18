@@ -3,40 +3,38 @@
 # SPDX-License-Identifier: GPL-2.0-only
 import threading
 import time
+
 import folium
-from colorhash import ColorHash
+import grpc
 import streamlit as st
-from streamlit_folium import st_folium
+from colorhash import ColorHash
 from folium.plugins import MiniMap
+from st_keypressed import st_keypressed
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    HoldRequest,
+    JoystickRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    TakeOffRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
+from steeleagle_sdk.protocol.services.remote_service_pb2 import (
+    CommandRequest,
+)
+from streamlit_folium import st_folium
 from util import (
-    stream_to_dataframe,
+    authenticated,
     connect_redis,
     connect_stub,
     get_vehicles,
     menu,
-    authenticated,
+    stream_to_dataframe,
 )
-from st_keypressed import st_keypressed
-
-import grpc
-from steeleagle_sdk.protocol.services.remote_service_pb2 import (
-    CommandRequest,
-)
-from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    ReturnToHomeRequest,
-    HoldRequest,
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
-)
-
-from steeleagle_sdk.protocol.rpc_helpers import generate_request
-
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"

@@ -1,16 +1,17 @@
 import logging
-from google.protobuf.json_format import MessageToDict
 
-# Utility import
-from util.config import query_config
+from google.protobuf import any_pb2
+from google.protobuf.json_format import MessageToDict
 
 # Protocol import
 from steeleagle_sdk.protocol.services import remote_service_pb2 as command_proto
 from steeleagle_sdk.protocol.services import report_service_pb2 as report_proto
-from google.protobuf import any_pb2
 
 # Sequencer import
 from test.message_sequencer import MessageSequencer, Topic
+
+# Utility import
+from util.config import query_config
 
 logger = logging.getLogger("test/mock_swarm_controller")
 

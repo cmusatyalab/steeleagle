@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from typing import List
+
 from shapely.geometry import Polygon
-from ..partition import Partition
+
 from ..geopoints import GeoPoints
+from ..partition import Partition
 
 
 class EdgePartition(Partition):

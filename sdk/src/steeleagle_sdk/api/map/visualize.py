@@ -1,6 +1,7 @@
 import logging
+
 import folium
-from folium.plugins import MousePosition, MeasureControl, Fullscreen
+from folium.plugins import Fullscreen, MeasureControl, MousePosition
 
 logger = logging.getLogger(__name__)
 

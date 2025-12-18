@@ -1,7 +1,8 @@
-from typing import Optional
-from .timestamp import Timestamp
 from enum import Enum
+from typing import Optional
+
 from ._base import Datatype
+from .timestamp import Timestamp
 
 
 class ResponseStatus(int, Enum):
