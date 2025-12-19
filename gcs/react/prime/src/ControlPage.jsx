@@ -14,82 +14,81 @@ import { FileUpload } from 'primereact/fileupload';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Image } from 'primereact/image';
-import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
+import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
-function ControlPage({vehicles, selectedVehicle, tracking, toast, onCommand}) {
+function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, imagerySrc }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
-  const webServerUrl = `${BASE_URL}:${WEBSERVER_PORT}`
 
-   const onProgress = () => {
-     toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
-   };
+  const onProgress = () => {
+    toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
+  };
 
-   function sleep(ms) {
-     return new Promise(resolve => setTimeout(resolve, ms));
-   }
-   const uploadHandler = async (event) => {
-     const body = {};
-     for (const file of event.files) {
-       const reader = new FileReader();
-       let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
-       reader.readAsDataURL(blob);
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  const uploadHandler = async (event) => {
+    const body = {};
+    for (const file of event.files) {
+      const reader = new FileReader();
+      let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
+      reader.readAsDataURL(blob);
 
-       reader.onloadend = function () {
-         const base64 = reader.result.split(',').pop();
+      reader.onloadend = function () {
+        const base64 = reader.result.split(',').pop();
 
-         if (file.name.endsWith(".kml")) {
-           body.kml = base64;
-           console.log("Adding kml file");
-         }
-         else if (file.name.endsWith(".json")) {
-           console.log("Adding json file");
-           body.dsl = base64;
-         }
-       };
+        if (file.name.endsWith(".kml")) {
+          body.kml = base64;
+          console.log("Adding kml file");
+        }
+        else if (file.name.endsWith(".json")) {
+          console.log("Adding json file");
+          body.dsl = base64;
+        }
+      };
 
-     }
-     await sleep(2000);
-     console.log(body);
-     const requestOptions = {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify(body)
-     };
-     const response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
-     if (!response.ok) {
-       const result = await response.json();
-       toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
-     }
-     else {
-       const result = await response.json();
-       toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
-     }
+    }
+    await sleep(2000);
+    console.log(body);
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    };
+    const response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+    if (!response.ok) {
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
+    }
+    else {
+      const result = await response.json();
+      toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
+    }
 
-   };
+  };
 
 
-   const onUploadComplete = () => {
-     toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
-   };
+  const onUploadComplete = () => {
+    toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
+  };
 
-   const onMissionStart = async () => {
-     const requestOptions = {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-     };
-     const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
-     if (!response.ok) {
-       const result = await response.json();
-       toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
-     }
-     else {
-       const result = await response.json();
-       toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
-     }
-   }
+  const onMissionStart = async () => {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    };
+    const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+    if (!response.ok) {
+      const result = await response.json();
+      toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
+    }
+    else {
+      const result = await response.json();
+      toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
+    }
+  }
 
   const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
   const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -136,7 +135,11 @@ function ControlPage({vehicles, selectedVehicle, tracking, toast, onCommand}) {
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"></Image>
+              { useLocalVehicle ?
+                <Image height="90%" width="90%" src={`${FASTAPI_URL}/driver_imagery?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"/>
+                :
+                <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"/>
+              }
             </SplitterPanel>
           </Splitter>
         </SplitterPanel>
