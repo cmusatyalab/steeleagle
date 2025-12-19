@@ -1,0 +1,4 @@
+export const MAPBOX_TOKEN = '';
+export const WEBSERVER_URL = "http://<ip or dns>:<port>";
+export const FASTAPI_URL = "http://<ip or dns>:<port>";
+export const USE_LOCAL_VEHICLE = true;

@@ -1,4 +1,2 @@
 [console_scripts]
-command_service = steeleagle_sdk.sim.command_service.main:main
-dsl_compile_service = steeleagle_sdk.dsl:cli_compile_dsl
-dsl_runtime_service = steeleagle_sdk.sim.dsl_service.main:main
+dsl_compile = steeleagle_sdk.dsl:cli_compile_dsl

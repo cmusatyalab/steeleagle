@@ -1,0 +1,20 @@
+
+[cors]
+origins = [
+    "http://localhost:5173",
+    "localhost:5173",
+]
+
+[redis]
+host = ""
+port = 6379
+username = "steeleagle"
+password = ""
+
+[grpc]
+endpoint = "unix:///tmp/kernel.sock"
+
+[zmq]
+driver_telemetry = 'ipc:///tmp/driver_telem.sock'
+mission_telemetry = 'ipc:///tmp/mission_telem.sock'
+imagery = 'ipc:///tmp/imagery.sock'

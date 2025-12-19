@@ -42,6 +42,7 @@ dependencies = [
     "pyzmq>=27.1.0",
     "aiosqlite>=0.21.0",
     "gabriel-protocol>=4.0",
+    "scipy>=1.16.3",
 ]
 [project.scripts]
 dsl_compile = "steeleagle_sdk.dsl:cli_compile_dsl"

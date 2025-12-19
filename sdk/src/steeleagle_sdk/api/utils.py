@@ -2,6 +2,7 @@ import grpc
 from typing import Any, Optional, Iterable, Tuple
 from collections.abc import AsyncIterator, Callable
 from google.protobuf.timestamp_pb2 import Timestamp
+from .datatypes.timestamp import Timestamp as RealTimestamp
 from .datatypes.common import Response
 import logging
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     Map gRPC error codes (usually 0..16) to your API status space (+2 offset).
     """
     ts = now_ts()
+    ts = RealTimestamp(seconds = ts.seconds, nanos = ts.nanos)
     code_int = _grpc_code_int(error.code())
     return Response(
         status=code_int + 2,

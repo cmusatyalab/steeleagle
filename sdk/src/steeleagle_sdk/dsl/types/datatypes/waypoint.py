@@ -12,7 +12,7 @@ from ..base import Datatype
 
 logger = logging.getLogger(__name__)
 
-from ...runtime import MAP
+from .. import MAP
 
 class RelativeWaypoints(Datatype):
     pass 

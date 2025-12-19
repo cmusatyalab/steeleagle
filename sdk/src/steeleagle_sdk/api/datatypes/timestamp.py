@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from pydantic import model_validator
 from ._base import Datatype
 

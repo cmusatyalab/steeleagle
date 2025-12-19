@@ -58,10 +58,10 @@ def start_services(log, info):
         running.append(task)
         time.sleep(5)
     # Start the mission
-    mission = ['python', 'mission/main.py']
-    task = subprocess.Popen(mission)
-    running.append(task)
-    time.sleep(1)
+    # mission = ['python', 'mission/main.py']
+    # task = subprocess.Popen(mission)
+    # running.append(task)
+    # time.sleep(1)
     # Start the kernel
     kernel = ['python', 'kernel/main.py']
     if len(startup) > 0:
