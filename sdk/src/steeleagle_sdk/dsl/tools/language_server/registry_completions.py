@@ -1,13 +1,24 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import inspect
 import logging
 import re
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
-from typing import get_args, get_origin
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Union,
+    get_args,
+    get_origin,
+)
 
-from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextFormat, MarkupContent, MarkupKind
+from lsprotocol.types import (
+    CompletionItem,
+    CompletionItemKind,
+    InsertTextFormat,
+    MarkupContent,
+    MarkupKind,
+)
 from pydantic import BaseModel
 
 from ...dsl.compiler import loader, registry
@@ -23,10 +34,10 @@ class RegistryCompletion:
     label: str
     insert_text: str
     detail: str
-    documentation: Optional[str]
+    documentation: str | None
     sort_text: str
     kind: CompletionItemKind
-    filter_text: Optional[str] = None
+    filter_text: str | None = None
 
     def to_item(self) -> CompletionItem:
         doc = None
@@ -78,7 +89,7 @@ def _format_type_hint(annotation: Any) -> str:
         return str(annotation).replace("typing.", "")
     if origin is Union:
         return " | ".join(_format_type_hint(arg) for arg in get_args(annotation))
-    if origin in (list, List):
+    if origin in (list, list):
         args = get_args(annotation)
         inner = args[0] if args else Any
         return f"List[{_format_type_hint(inner)}]"
@@ -93,7 +104,7 @@ def _placeholder_hint(name: str, annotation: Any) -> str:
         return f"<{plain.__name__} id>"
 
     origin = get_origin(plain)
-    if origin in (list, List):
+    if origin in (list, list):
         args = get_args(plain)
         inner = args[0] if args else Any
         inner_plain = _unwrap_optional(inner)
@@ -117,14 +128,16 @@ def _identifier_placeholder(cls: type[BaseModel]) -> str:
     return f"<{cls.__name__} name>"
 
 
-def _render_constructor(name: str, id_placeholder: Optional[str], attr_lines: List[str]) -> str:
+def _render_constructor(
+    name: str, id_placeholder: str | None, attr_lines: list[str]
+) -> str:
     head = name if id_placeholder is None else f"{name} {id_placeholder}"
     if attr_lines:
         return f"{head}({', '.join(attr_lines)})"
     return head
 
 
-def _render_inline_constructor(name: str, arg_placeholders: List[str]) -> str:
+def _render_inline_constructor(name: str, arg_placeholders: list[str]) -> str:
     if arg_placeholders:
         return f"{name}({', '.join(arg_placeholders)})"
     return f"{name}()"
@@ -133,13 +146,15 @@ def _render_inline_constructor(name: str, arg_placeholders: List[str]) -> str:
 def _build_attr_lines(
     model_cls: type[BaseModel],
     start_index: int,
-) -> Tuple[List[str], List[str], List[str], List[str], List[Tuple[str, str, bool]], List[str]]:
-    required_lines: List[str] = []
-    optional_lines: List[str] = []
-    required_names: List[str] = []
-    optional_names: List[str] = []
-    field_docs: List[Tuple[str, str, bool]] = []
-    arg_placeholders: List[str] = []
+) -> tuple[
+    list[str], list[str], list[str], list[str], list[tuple[str, str, bool]], list[str]
+]:
+    required_lines: list[str] = []
+    optional_lines: list[str] = []
+    required_names: list[str] = []
+    optional_names: list[str] = []
+    field_docs: list[tuple[str, str, bool]] = []
+    arg_placeholders: list[str] = []
     idx = start_index
     for field_name, field_info in getattr(model_cls, "model_fields", {}).items():
         placeholder = _placeholder_hint(field_name, field_info.annotation)
@@ -147,18 +162,29 @@ def _build_attr_lines(
         snippet = f"{field_name} = ${{{idx}:{placeholder}}}"
         idx += 1
         is_required = field_info.is_required()
-        field_docs.append((field_name, _format_type_hint(field_info.annotation), is_required))
+        field_docs.append(
+            (field_name, _format_type_hint(field_info.annotation), is_required)
+        )
         if is_required:
             required_lines.append(snippet)
             required_names.append(field_name)
         else:
             optional_lines.append(snippet)
             optional_names.append(field_name)
-    return required_lines, optional_lines, required_names, optional_names, field_docs, arg_placeholders
+    return (
+        required_lines,
+        optional_lines,
+        required_names,
+        optional_names,
+        field_docs,
+        arg_placeholders,
+    )
 
 
-def _build_documentation(cls: type[BaseModel], field_docs: List[Tuple[str, str, bool]]) -> Optional[str]:
-    doc_lines: List[str] = []
+def _build_documentation(
+    cls: type[BaseModel], field_docs: list[tuple[str, str, bool]]
+) -> str | None:
+    doc_lines: list[str] = []
     raw_doc = inspect.cleandoc(cls.__doc__ or "")
     if raw_doc:
         doc_lines.append(raw_doc)
@@ -176,8 +202,15 @@ def _create_model_completion(
     kind: str,
     cls: type[BaseModel],
     sort_prefix: str,
-) -> Tuple[RegistryCompletion, Optional[RegistryCompletion]]:
-    required_lines, optional_lines, required_names, optional_names, field_docs, arg_placeholders = _build_attr_lines(cls, 2)
+) -> tuple[RegistryCompletion, RegistryCompletion | None]:
+    (
+        required_lines,
+        optional_lines,
+        required_names,
+        optional_names,
+        field_docs,
+        arg_placeholders,
+    ) = _build_attr_lines(cls, 2)
     attr_lines = required_lines + optional_lines
     identifier = f"${{1:{_identifier_placeholder(cls)}}}"
     documentation = _build_documentation(cls, field_docs)
@@ -188,7 +221,11 @@ def _create_model_completion(
     if optional_names:
         detail_bits.append("optional: " + ", ".join(optional_names))
 
-    head_kind = CompletionItemKind.Class if kind in ("action", "event") else DATA_COMPLETION_KIND
+    head_kind = (
+        CompletionItemKind.Class
+        if kind in ("action", "event")
+        else DATA_COMPLETION_KIND
+    )
     completion = RegistryCompletion(
         label=cls.__name__,
         insert_text=_render_constructor(cls.__name__, identifier, attr_lines),
@@ -212,27 +249,45 @@ def _create_model_completion(
     return completion, inline
 
 
-def _iter_registry_classes(storage: Dict[str, Any]) -> Iterable[type[BaseModel]]:
-    seen: Set[type[BaseModel]] = set()
+def _iter_registry_classes(storage: dict[str, Any]) -> Iterable[type[BaseModel]]:
+    seen: set[type[BaseModel]] = set()
     for value in storage.values():
-        if isinstance(value, type) and issubclass(value, BaseModel) and value not in seen:
+        if (
+            isinstance(value, type)
+            and issubclass(value, BaseModel)
+            and value not in seen
+        ):
             seen.add(value)
             yield value
 
 
-def _build_registry_lookup() -> Tuple[Dict[str, List[RegistryCompletion]], List[RegistryCompletion]]:
-    completions: Dict[str, List[RegistryCompletion]] = {"actions": [], "events": [], "data": []}
-    inline_data: List[RegistryCompletion] = []
+def _build_registry_lookup() -> tuple[
+    dict[str, list[RegistryCompletion]], list[RegistryCompletion]
+]:
+    completions: dict[str, list[RegistryCompletion]] = {
+        "actions": [],
+        "events": [],
+        "data": [],
+    }
+    inline_data: list[RegistryCompletion] = []
 
-    for cls in sorted(_iter_registry_classes(getattr(registry, "_ACTIONS", {})), key=lambda c: c.__name__):
+    for cls in sorted(
+        _iter_registry_classes(getattr(registry, "_ACTIONS", {})),
+        key=lambda c: c.__name__,
+    ):
         comp, _ = _create_model_completion("action", cls, "01")
         completions["actions"].append(comp)
 
-    for cls in sorted(_iter_registry_classes(getattr(registry, "_EVENTS", {})), key=lambda c: c.__name__):
+    for cls in sorted(
+        _iter_registry_classes(getattr(registry, "_EVENTS", {})),
+        key=lambda c: c.__name__,
+    ):
         comp, _ = _create_model_completion("event", cls, "02")
         completions["events"].append(comp)
 
-    for cls in sorted(_iter_registry_classes(getattr(registry, "_DATA", {})), key=lambda c: c.__name__):
+    for cls in sorted(
+        _iter_registry_classes(getattr(registry, "_DATA", {})), key=lambda c: c.__name__
+    ):
         comp, inline = _create_model_completion("data", cls, "03")
         completions["data"].append(comp)
         if inline:
@@ -241,8 +296,8 @@ def _build_registry_lookup() -> Tuple[Dict[str, List[RegistryCompletion]], List[
     return completions, inline_data
 
 
-_REGISTRY_COMPLETIONS: Optional[Dict[str, List[RegistryCompletion]]] = None
-_INLINE_DATA_COMPLETIONS: Optional[List[RegistryCompletion]] = None
+_REGISTRY_COMPLETIONS: dict[str, list[RegistryCompletion]] | None = None
+_INLINE_DATA_COMPLETIONS: list[RegistryCompletion] | None = None
 _INITIALIZED = False
 
 
@@ -259,24 +314,24 @@ def ensure_registry_initialized() -> None:
     _INITIALIZED = True
 
 
-def registry_items_for_section(section: Optional[str], pfx: str) -> List[CompletionItem]:
+def registry_items_for_section(section: str | None, pfx: str) -> list[CompletionItem]:
     ensure_registry_initialized()
     if section not in (_REGISTRY_COMPLETIONS or {}):
         return []
     p = pfx.lower()
-    items: List[CompletionItem] = []
+    items: list[CompletionItem] = []
     for entry in _REGISTRY_COMPLETIONS.get(section, []):
         if not p or p in entry.label.lower():
             items.append(entry.to_item())
     return items
 
 
-def inline_data_items(pfx: str) -> List[CompletionItem]:
+def inline_data_items(pfx: str) -> list[CompletionItem]:
     ensure_registry_initialized()
     if not _INLINE_DATA_COMPLETIONS:
         return []
     p = pfx.lower()
-    items: List[CompletionItem] = []
+    items: list[CompletionItem] = []
     for entry in _INLINE_DATA_COMPLETIONS:
         if not p or p in entry.label.lower():
             items.append(entry.to_item())

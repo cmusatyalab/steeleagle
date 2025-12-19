@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import sys
-import time
+
 import cv2
-import zmq
 import numpy as np
-from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame, MissionTelemetry
+import zmq
+from steeleagle_sdk.protocol.messages.telemetry_pb2 import Frame
 
 
 def main():

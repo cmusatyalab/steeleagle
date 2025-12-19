@@ -4,7 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import zmq
 import zmq.asyncio
 import asyncio
+import base64
 import json
+import time
+
 import grpc
 import redis
 import toml
@@ -16,19 +19,18 @@ import base64
 from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    TakeOffRequest,
-    LandRequest,
-    ReturnToHomeRequest,
     HoldRequest,
     JoystickRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    TakeOffRequest,
 )
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    StopRequest,
     StartRequest,
+    StopRequest,
     UploadRequest,
 )
-
-from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from google.protobuf.message import DecodeError
@@ -114,6 +116,8 @@ async def startup_event():
         tel_sock, \
         zmq_context
 
+    with open("config.toml") as file:
+        cfg = toml.load(file)
     # Create persistent channel with connection pooling
     grpc_channel = grpc.aio.insecure_channel(cfg["grpc"]["endpoint"])
 

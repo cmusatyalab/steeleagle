@@ -1,7 +1,7 @@
-from typing import Optional
-from .timestamp import Timestamp
 from enum import Enum
+
 from ._base import Datatype
+from .timestamp import Timestamp
 
 
 class ResponseStatus(int, Enum):
@@ -34,94 +34,104 @@ class ResponseStatus(int, Enum):
         ABORTED (12): the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
         OUT_OF_RANGE (13): the operation was attempted past the valid range
         UNIMPLEMENTED (14): the operation is not implemented/supported by the service
-        INTERNAL (15): an internal error occured while executing the operation
+        INTERNAL (15): an internal error occurred while executing the operation
         UNAVAILABLE (16): the service is currently unavailable
         DATA_LOSS (17): unrecoverable data loss or corruption
         UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)
     """
-    OK = 0 
-    IN_PROGRESS = 1 
-    COMPLETED = 2 
-    CANCELLED = 3 
-    UNKNOWN = 4 
-    INVALID_ARGUMENT = 5 
-    DEADLINE_EXCEEDED = 6 
-    NOT_FOUND = 7 
-    ALREADY_EXISTS = 8 
-    PERMISSION_DENIED = 9 
-    RESOURCE_EXHAUSTED = 10 
-    FAILED_PRECONDITION = 11 
-    ABORTED = 12 
-    OUT_OF_RANGE = 13 
-    UNIMPLEMENTED = 14 
-    INTERNAL = 15 
-    UNAVAILABLE = 16 
-    DATA_LOSS = 17 
-    UNAUTHENTICATED = 18 
+
+    OK = 0
+    IN_PROGRESS = 1
+    COMPLETED = 2
+    CANCELLED = 3
+    UNKNOWN = 4
+    INVALID_ARGUMENT = 5
+    DEADLINE_EXCEEDED = 6
+    NOT_FOUND = 7
+    ALREADY_EXISTS = 8
+    PERMISSION_DENIED = 9
+    RESOURCE_EXHAUSTED = 10
+    FAILED_PRECONDITION = 11
+    ABORTED = 12
+    OUT_OF_RANGE = 13
+    UNIMPLEMENTED = 14
+    INTERNAL = 15
+    UNAVAILABLE = 16
+    DATA_LOSS = 17
+    UNAUTHENTICATED = 18
+
 
 class Response(Datatype):
-    """Global response message returned by all core services.    
-    
+    """Global response message returned by all core services.
+
     Attributes:
-        status (ResponseStatus): response status    
-        response_string (Optional[str]): detailed message on reason for response    
-        timestamp (Timestamp): response timestamp    
+        status (ResponseStatus): response status
+        response_string (Optional[str]): detailed message on reason for response
+        timestamp (Timestamp): response timestamp
     """
+
     status: ResponseStatus
-    response_string: Optional[str]
+    response_string: str | None
     timestamp: Timestamp
 
+
 class Pose(Datatype):
-    """Angular offsets or poses in 3 dimensions.    
-    
+    """Angular offsets or poses in 3 dimensions.
+
     Attributes:
-        pitch (Optional[float]): pitch [degrees]    
-        roll (Optional[float]): roll [degrees]    
-        yaw (Optional[float]): yaw [degrees]    
+        pitch (Optional[float]): pitch [degrees]
+        roll (Optional[float]): roll [degrees]
+        yaw (Optional[float]): yaw [degrees]
     """
-    pitch: Optional[float]
-    roll: Optional[float]
-    yaw: Optional[float]
+
+    pitch: float | None
+    roll: float | None
+    yaw: float | None
+
 
 class Velocity(Datatype):
-    """Representation of velocity in 3-dimensions.    
-    
+    """Representation of velocity in 3-dimensions.
+
     Attributes:
-        x_vel (Optional[float]): forward/north velocity [meters/s]    
-        y_vel (Optional[float]): right/east velocity [meters/s]    
-        z_vel (Optional[float]): up velocity [meters/s]    
-        angular_vel (Optional[float]): angular velocity [degrees/s]    
+        x_vel (Optional[float]): forward/north velocity [meters/s]
+        y_vel (Optional[float]): right/east velocity [meters/s]
+        z_vel (Optional[float]): up velocity [meters/s]
+        angular_vel (Optional[float]): angular velocity [degrees/s]
     """
-    x_vel: Optional[float]
-    y_vel: Optional[float]
-    z_vel: Optional[float]
-    angular_vel: Optional[float] = None
+
+    x_vel: float | None
+    y_vel: float | None
+    z_vel: float | None
+    angular_vel: float | None = None
+
 
 class Position(Datatype):
-    """Position offset relative to home or current location.    
-    
+    """Position offset relative to home or current location.
+
     Attributes:
-        x (Optional[float]): forward/north offset [meters]    
-        y (Optional[float]): right/east offset [meters]    
-        z (Optional[float]): up offset [meters]    
-        angle (Optional[float]): angular offset [degrees]    
+        x (Optional[float]): forward/north offset [meters]
+        y (Optional[float]): right/east offset [meters]
+        z (Optional[float]): up offset [meters]
+        angle (Optional[float]): angular offset [degrees]
     """
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    angle: Optional[float] = None
+
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
+    angle: float | None = None
+
 
 class Location(Datatype):
-    """Location in global coordinates.    
-    
-    Attributes:
-        latitude (Optional[float]): global latitude [degrees]    
-        longitude (Optional[float]): global longitude [degrees]    
-        altitude (Optional[float]): altitude above MSL or takeoff [meters]    
-        heading (Optional[float]): global heading [degrees]    
-    """
-    latitude: Optional[float]
-    longitude: Optional[float]
-    altitude: Optional[float] = None
-    heading: Optional[float] = None
+    """Location in global coordinates.
 
+    Attributes:
+        latitude (Optional[float]): global latitude [degrees]
+        longitude (Optional[float]): global longitude [degrees]
+        altitude (Optional[float]): altitude above MSL or takeoff [meters]
+        heading (Optional[float]): global heading [degrees]
+    """
+
+    latitude: float | None
+    longitude: float | None
+    altitude: float | None = None
+    heading: float | None = None

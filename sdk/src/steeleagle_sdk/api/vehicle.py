@@ -1,27 +1,35 @@
-import asyncio
-from typing import AsyncIterator, List, Optional
-import grpc
-from .mission_store import MissionStore
-from ..protocol.services.control_service_pb2_grpc import ControlStub
-from ..protocol.services import control_service_pb2 as control_proto
-from .datatypes.vehicle import (HeadingMode, AltitudeMode, ReferenceFrame, PoseMode, ImagingSensorConfiguration)
-from .datatypes.common import Velocity, Location, Position, Response, Pose
-from .datatypes.duration import Duration
-from .utils import run_unary, run_streaming
-from google.protobuf.json_format import ParseDict
-from .datatypes.telemetry import DriverTelemetry
-
 import logging
+from collections.abc import AsyncIterator
+
+import grpc
+from google.protobuf.json_format import ParseDict
+
+from ..protocol.services import control_service_pb2 as control_proto
+from ..protocol.services.control_service_pb2_grpc import ControlStub
+from .datatypes.common import Location, Pose, Position, Response, Velocity
+from .datatypes.duration import Duration
+from .datatypes.telemetry import DriverTelemetry
+from .datatypes.vehicle import (
+    AltitudeMode,
+    HeadingMode,
+    ImagingSensorConfiguration,
+    PoseMode,
+    ReferenceFrame,
+)
+from .mission_store import MissionStore
+from .utils import run_streaming, run_unary
+
 logger = logging.getLogger(__name__)
+
 
 class Vehicle:
     def __init__(self, channel: grpc.aio.Channel, mission_store: MissionStore):
         self.mission_store = mission_store
         self.control = ControlStub(channel)
 
-    async def get_telemetry(self)-> DriverTelemetry:
-        source = 'telemetry'
-        topic = 'driver_telemetry'
+    async def get_telemetry(self) -> DriverTelemetry:
+        source = "telemetry"
+        topic = "driver_telemetry"
         return await self.mission_store.get_latest(source, topic)
 
     async def connect(self) -> Response:
@@ -40,7 +48,9 @@ class Vehicle:
         req = control_proto.DisarmRequest()
         return await run_unary(self.control.Disarm, req)
 
-    async def joystick(self, velocity: Velocity, duration: Duration) -> AsyncIterator[Response]:
+    async def joystick(
+        self, velocity: Velocity, duration: Duration
+    ) -> AsyncIterator[Response]:
         req = control_proto.JoystickRequest()
         ParseDict(velocity.model_dump(), req.velocity)
         ParseDict(duration.model_dump(), req.duration)
@@ -80,9 +90,9 @@ class Vehicle:
     async def set_global_position(
         self,
         location: Location,
-        heading_mode: Optional[HeadingMode] = None,
-        altitude_mode: Optional[AltitudeMode] = None,
-        max_velocity: Optional[Velocity] = None,
+        heading_mode: HeadingMode | None = None,
+        altitude_mode: AltitudeMode | None = None,
+        max_velocity: Velocity | None = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetGlobalPositionRequest()
         ParseDict(location.model_dump(), req.location)
@@ -98,8 +108,8 @@ class Vehicle:
     async def set_relative_position(
         self,
         position: Position,
-        max_velocity: Optional[Velocity] = None,
-        frame: Optional[ReferenceFrame] = None,
+        max_velocity: Velocity | None = None,
+        frame: ReferenceFrame | None = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetRelativePositionRequest()
         ParseDict(position.model_dump(), req.position)
@@ -113,7 +123,7 @@ class Vehicle:
     async def set_velocity(
         self,
         velocity: Velocity,
-        frame: Optional[ReferenceFrame] = None,
+        frame: ReferenceFrame | None = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetVelocityRequest()
         ParseDict(velocity.model_dump(), req.velocity)
@@ -125,7 +135,7 @@ class Vehicle:
     async def set_heading(
         self,
         location: Location,
-        heading_mode: Optional[HeadingMode] = None,
+        heading_mode: HeadingMode | None = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetHeadingRequest()
         ParseDict(location.model_dump(), req.location)
@@ -138,8 +148,8 @@ class Vehicle:
         self,
         gimbal_id: int,
         pose: Pose,
-        pose_mode: Optional[PoseMode] = None,
-        frame: Optional[ReferenceFrame] = None,
+        pose_mode: PoseMode | None = None,
+        frame: ReferenceFrame | None = None,
     ) -> AsyncIterator[Response]:
         req = control_proto.SetGimbalPoseRequest()
         req.gimbal_id = int(gimbal_id)
@@ -153,7 +163,7 @@ class Vehicle:
 
     async def configure_imaging_sensor_stream(
         self,
-        configurations: List[ImagingSensorConfiguration],
+        configurations: list[ImagingSensorConfiguration],
     ) -> Response:
         req = control_proto.ConfigureImagingSensorStreamRequest()
         for c in configurations:

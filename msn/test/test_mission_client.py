@@ -1,28 +1,29 @@
 # persistent_mission_client.py
 import asyncio
 import json
-import grpc
+import logging
+from dataclasses import asdict
 
-from util.config import query_config
+import grpc
+from google.protobuf import text_format
+from steeleagle_sdk.dsl import build_mission
 from steeleagle_sdk.protocol.services import mission_service_pb2 as mission_pb
 from steeleagle_sdk.protocol.services import mission_service_pb2_grpc as mission_grpc
-from steeleagle_sdk.dsl import build_mission
-from dataclasses import asdict
-from google.protobuf import text_format
+from util.config import query_config
 
-import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
 
 class MissionClient:
     def __init__(self):
         # Initialize once and keep it around
-        target = query_config('internal.services.kernel')
+        target = query_config("internal.services.kernel")
         self._channel = grpc.aio.insecure_channel(target)
         self._stub = mission_grpc.MissionStub(self._channel)
-        self._md = [('identity', 'server')]  
-    
-    async def close(self):               
+        self._md = [("identity", "server")]
+
+    async def close(self):
         await self._channel.close()
 
     # --- API helpers ---
@@ -34,13 +35,14 @@ class MissionClient:
         return mission_json_text
 
     async def Upload(self, path: str):
-        dsl = open(path, "r", encoding="utf-8").read()
+        dsl = open(path, encoding="utf-8").read()
         logger.info(f"Uploading: {dsl}")
         mission_json_text = self.compile_dsl(dsl)
         logger.info(f"Compiled JSON -> {mission_json_text}")
-        req = mission_pb.UploadRequest(mission=mission_pb.MissionData(content=mission_json_text))
+        req = mission_pb.UploadRequest(
+            mission=mission_pb.MissionData(content=mission_json_text)
+        )
         return await self._stub.Upload(req, metadata=self._md)
-  
 
     async def Start(self):
         return await self._stub.Start(mission_pb.StartRequest(), metadata=self._md)
@@ -73,6 +75,7 @@ async def main():
                 logger.warning("Unknown command")
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

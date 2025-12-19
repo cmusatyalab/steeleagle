@@ -1,15 +1,17 @@
-from typing import Type, Dict, Optional
-from ..types.base import Action, Event, Datatype
 import logging
+
+from ..types.base import Action, Datatype, Event
 
 logger = logging.getLogger(__name__)
 
-_ACTIONS: Dict[str, Action] = {}
-_EVENTS: Dict[str, Event] = {}
-_DATA: Dict[str, Datatype] = {}
+_ACTIONS: dict[str, Action] = {}
+_EVENTS: dict[str, Event] = {}
+_DATA: dict[str, Datatype] = {}
+
 
 def _norm(name: str) -> str:
     return (name or "").strip().lower()
+
 
 def register_action(cls: Action) -> Action:
     key = _norm(cls.__name__)
@@ -21,6 +23,7 @@ def register_action(cls: Action) -> Action:
         logger.debug("Registered action '%s'", key)
     return cls
 
+
 def register_event(cls: Event) -> Event:
     key = _norm(cls.__name__)
     prev = _EVENTS.get(key)
@@ -30,6 +33,7 @@ def register_event(cls: Event) -> Event:
     else:
         logger.debug("Registered event '%s'", key)
     return cls
+
 
 def register_data(cls: Datatype) -> Datatype:
     key = _norm(cls.__name__)
@@ -41,11 +45,14 @@ def register_data(cls: Datatype) -> Datatype:
         logger.debug("Registered datatype '%s'", key)
     return cls
 
-def get_action(name: str) -> Optional[Action]:
+
+def get_action(name: str) -> Action | None:
     return _ACTIONS.get(_norm(name))
 
-def get_event(name: str) -> Optional[Event]:
+
+def get_event(name: str) -> Event | None:
     return _EVENTS.get(_norm(name))
 
-def get_data(name: str) -> Optional[Datatype]:
+
+def get_data(name: str) -> Datatype | None:
     return _DATA.get(_norm(name))

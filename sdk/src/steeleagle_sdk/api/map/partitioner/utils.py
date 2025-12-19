@@ -1,18 +1,23 @@
 from __future__ import annotations
-import math
-from shapely.geometry import Point, LineString, Polygon
-from shapely.affinity import rotate
-from typing import Dict, Tuple, List
+
 from xml.dom import minidom
+
+from shapely.affinity import rotate
+from shapely.geometry import LineString, Point, Polygon
+
 from .geopoints import GeoPoints
 
-def round_xy(x: float, y: float, decimals: int = 3) -> Tuple[float, float]:
-    k = 10 ** decimals
+
+def round_xy(x: float, y: float, decimals: int = 3) -> tuple[float, float]:
+    k = 10**decimals
     return (round(x * k) / k, round(y * k) / k)
 
-def line_polygon_intersection_points(line: LineString, polygon: Polygon) -> List[Tuple[float, float]]:
+
+def line_polygon_intersection_points(
+    line: LineString, polygon: Polygon
+) -> list[tuple[float, float]]:
     inter = line.intersection(polygon.boundary)
-    pts: List[Tuple[float, float]] = []
+    pts: list[tuple[float, float]] = []
 
     def add_pt(p: Point):
         pts.append((p.x, p.y))
@@ -33,7 +38,7 @@ def line_polygon_intersection_points(line: LineString, polygon: Polygon) -> List
 
     # Dedup (rounded) & sort along line parameter
     seen = set()
-    out: List[Tuple[float, float]] = []
+    out: list[tuple[float, float]] = []
     for x, y in pts:
         rx, ry = round_xy(x, y, 6)
         if (rx, ry) not in seen:
@@ -46,25 +51,28 @@ def line_polygon_intersection_points(line: LineString, polygon: Polygon) -> List
     dy = p1[1] - p0[1]
     denom = dx * dx + dy * dy or 1.0
 
-    def tparam(pt: Tuple[float, float]) -> float:
+    def tparam(pt: tuple[float, float]) -> float:
         x, y = pt
         return ((x - p0[0]) * dx + (y - p0[1]) * dy) / denom
 
     out.sort(key=tparam)
     return out
 
-def rotated_infinite_transects(polygon: Polygon, spacing: float, angle_deg: float) -> List[LineString]:
+
+def rotated_infinite_transects(
+    polygon: Polygon, spacing: float, angle_deg: float
+) -> list[LineString]:
     minx, miny, maxx, maxy = polygon.envelope.bounds
     width = maxx - minx
     height = maxy - miny
     max_len = max(width, height) + 100.0
     cx, cy = (minx + maxx) / 2.0, (miny + maxy) / 2.0
 
-    lines: List[LineString] = []
+    lines: list[LineString] = []
     x = minx - max_len
     end_x = maxx + max_len
 
-    verticals: List[LineString] = []
+    verticals: list[LineString] = []
     while x <= end_x:
         verticals.append(LineString([(x, miny - max_len), (x, maxy + max_len)]))
         x += spacing
@@ -72,15 +80,14 @@ def rotated_infinite_transects(polygon: Polygon, spacing: float, angle_deg: floa
     return [rotate(v, angle_deg, origin=(cx, cy), use_radians=False) for v in verticals]
 
 
-
-def parse_kml_file(kmlstr: str) -> Dict[str, GeoPoints]:
+def parse_kml_file(kmlstr: str) -> dict[str, GeoPoints]:
     """
     Parse KML Placemarks with `<coordinates>` entries `"lon,lat[,alt]"`.
     Returns `{placemark_name: GeoPoints([(lon,lat), ...])}`
     """
     doc = minidom.parseString(kmlstr)
     placemarks = doc.getElementsByTagName("Placemark")
-    result: Dict[str, GeoPoints] = {}
+    result: dict[str, GeoPoints] = {}
 
     for pm in placemarks:
         name_nodes = pm.getElementsByTagName("name")
@@ -95,7 +102,7 @@ def parse_kml_file(kmlstr: str) -> Dict[str, GeoPoints]:
 
 
 def parse_kml_coordinates_to_geopoints(kml_coordinates: str) -> GeoPoints:
-    pts: List[Tuple[float, float]] = []
+    pts: list[tuple[float, float]] = []
     for token in kml_coordinates.strip().split():
         parts = token.split(",")
         if len(parts) >= 2:

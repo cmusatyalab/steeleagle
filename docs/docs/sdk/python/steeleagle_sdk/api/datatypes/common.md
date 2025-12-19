@@ -59,7 +59,7 @@ Response types for RPC functions.
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNIMPLEMENTED**&nbsp;&nbsp;(<code>14</code>) <text>&#8212;</text> the operation is not implemented/supported by the service
 
-**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(<code>15</code>) <text>&#8212;</text> an internal error occured while executing the operation
+**<><code class="docs-attr">attr</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(<code>15</code>) <text>&#8212;</text> an internal error occurred while executing the operation
 
 **<><code class="docs-attr">attr</code></>&nbsp;&nbsp;UNAVAILABLE**&nbsp;&nbsp;(<code>16</code>) <text>&#8212;</text> the service is currently unavailable
 
@@ -105,7 +105,7 @@ class ResponseStatus(int, Enum):
         ABORTED (12): the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
         OUT_OF_RANGE (13): the operation was attempted past the valid range
         UNIMPLEMENTED (14): the operation is not implemented/supported by the service
-        INTERNAL (15): an internal error occured while executing the operation
+        INTERNAL (15): an internal error occurred while executing the operation
         UNAVAILABLE (16): the service is currently unavailable
         DATA_LOSS (17): unrecoverable data loss or corruption
         UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)

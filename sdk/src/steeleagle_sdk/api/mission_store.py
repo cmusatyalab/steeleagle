@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-import asyncio, time, json, logging
-from typing import Optional, Any
+import asyncio
+import json
+import logging
+import time
+from typing import Any
+
 import aiosqlite
-import zmq, zmq.asyncio
+import zmq
+import zmq.asyncio
+from gabriel_protocol import gabriel_pb2
 from google.protobuf.json_format import MessageToDict
+
+from ..protocol.messages import result_pb2 as result_proto
+from ..protocol.messages import telemetry_pb2 as telem_proto
 
 # --- your types/protos ---
 from .datatypes._base import Datatype
-from .datatypes.telemetry import DriverTelemetry
 from .datatypes.result import FrameResult
-from ..protocol.messages import telemetry_pb2 as telem_proto
-from ..protocol.messages import result_pb2 as result_proto
-from gabriel_protocol import gabriel_pb2
+from .datatypes.telemetry import DriverTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +43,7 @@ ON CONFLICT(source, topic) DO UPDATE SET
 """
 
 SQL_SELECT_LATEST = "SELECT payload_json FROM latest WHERE source=? AND topic=?"
+
 
 class MissionStore:
     # ---------- utils ----------
@@ -67,12 +74,14 @@ class MissionStore:
             logger.exception("Decode failed for %s", source)
         return None
 
-    def __init__(self, telemetry_addr: str, results_addr: str, db_path: str = "mission.db"):
+    def __init__(
+        self, telemetry_addr: str, results_addr: str, db_path: str = "mission.db"
+    ):
         self.telemetry_addr = telemetry_addr
         self.results_addr = results_addr
         self.db_path = db_path
 
-        self.db: Optional[aiosqlite.Connection] = None
+        self.db: aiosqlite.Connection | None = None
         self.ctx = zmq.asyncio.Context(io_threads=2)
 
         self._telemetry = None
@@ -83,21 +92,29 @@ class MissionStore:
     def _parse_payload(self, source: str, payload: bytes):
         try:
             if source == "telemetry":
-                msg = telem_proto.DriverTelemetry(); msg.ParseFromString(payload)
-                data = MessageToDict(msg, preserving_proto_field_name=True, use_integers_for_enums=True)
+                msg = telem_proto.DriverTelemetry()
+                msg.ParseFromString(payload)
+                data = MessageToDict(
+                    msg, preserving_proto_field_name=True, use_integers_for_enums=True
+                )
                 return DriverTelemetry.model_validate(data)
             elif source == "results":
-                msg = gabriel_pb2.Result(); msg.ParseFromString(payload)
-                logger.debug(f'payload:  {msg}')
-                frame_result  = result_proto.FrameResult()
+                msg = gabriel_pb2.Result()
+                msg.ParseFromString(payload)
+                logger.debug(f"payload:  {msg}")
+                frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
-                logger.debug(f'frame_result:  {frame_result}')
-                data = MessageToDict(frame_result, preserving_proto_field_name=True, use_integers_for_enums=True)
+                logger.debug(f"frame_result:  {frame_result}")
+                data = MessageToDict(
+                    frame_result,
+                    preserving_proto_field_name=True,
+                    use_integers_for_enums=True,
+                )
                 return FrameResult.model_validate(data)
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
-    
+
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
             while True:
@@ -105,8 +122,8 @@ class MissionStore:
                 if not frames:
                     continue
                 topic = self._norm_topic(frames[0])
-                if topic == 'telemetry':
-                    continue # ignore telmetry engine
+                if topic == "telemetry":
+                    continue  # ignore telmetry engine
                 payload = frames[-1]
 
                 model = self._parse_payload(source, payload)
@@ -122,7 +139,7 @@ class MissionStore:
             pass
         except Exception:
             logger.exception("Consumer crashed (%s)", source)
-    
+
     # ---------- reads ----------
     async def get_latest(self, source: str, topic: str) -> Datatype:
         """Read latest from DB and return decoded model (no cache)."""
@@ -161,6 +178,12 @@ class MissionStore:
         await asyncio.gather(*self._tasks, return_exceptions=True)
         self._tasks.clear()
 
-        if self._telemetry: self._telemetry.close(0); self._telemetry = None
-        if self._results:   self._results.close(0);   self._results = None
-        if self.db:         await self.db.close();    self.db = None
+        if self._telemetry:
+            self._telemetry.close(0)
+            self._telemetry = None
+        if self._results:
+            self._results.close(0)
+            self._results = None
+        if self.db:
+            await self.db.close()
+            self.db = None

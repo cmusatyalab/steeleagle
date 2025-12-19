@@ -1,13 +1,17 @@
 import asyncio
 import json
-from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
-from steeleagle_sdk.protocol.rpc_helpers import generate_response
+import logging
+
+from dacite import from_dict
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
+from steeleagle_sdk.protocol.rpc_helpers import generate_response
+from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionServicer
+
 from .runtime import init as fsm_init
 from .runtime import term as fsm_stop
-from dacite import from_dict
-import logging
+
 logger = logging.getLogger(__name__)
+
 
 class MissionService(MissionServicer):
     def __init__(self, address: dict):
@@ -22,14 +26,14 @@ class MissionService(MissionServicer):
         json_data = json.loads(mission_content)
         mission_ir = from_dict(MissionIR, json_data)
         return mission_ir
-    
+
     async def Upload(self, request, context):
         """Upload a mission for execution"""
         logger.info("upload mission from Swarm Controller")
         mission_content = request.mission.content
         self.mission = self._load(mission_content)
         self.mission_map = request.mission.map
-        logger.info(f"Loaded mission and map")
+        logger.info("Loaded mission and map")
         return generate_response(2, "Mission uploaded")
 
     async def _start(self):
@@ -66,7 +70,6 @@ class MissionService(MissionServicer):
             await self._stop()
             logger.info("Mission stopped")
             return generate_response(2)
-        
 
     async def Notify(self, request, context):
         """Send a notification to the current mission"""
@@ -75,5 +78,3 @@ class MissionService(MissionServicer):
     async def ConfigureTelemetryStream(self, request, context):
         """Set the mission telemetry stream parameters"""
         pass
-
-

@@ -1,11 +1,15 @@
-import grpc
-from typing import Any, Optional, Iterable, Tuple
-from collections.abc import AsyncIterator, Callable
-from google.protobuf.timestamp_pb2 import Timestamp
-from .datatypes.timestamp import Timestamp as RealTimestamp
-from .datatypes.common import Response
 import logging
+from collections.abc import AsyncIterator, Callable, Iterable
+from typing import Any
+
+import grpc
+from google.protobuf.timestamp_pb2 import Timestamp
+
+from .datatypes.common import Response
+from .datatypes.timestamp import Timestamp as RealTimestamp
+
 logger = logging.getLogger(__name__)
+
 
 def now_ts() -> Timestamp:
     ts = Timestamp()
@@ -29,7 +33,7 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     Map gRPC error codes (usually 0..16) to your API status space (+2 offset).
     """
     ts = now_ts()
-    ts = RealTimestamp(seconds = ts.seconds, nanos = ts.nanos)
+    ts = RealTimestamp(seconds=ts.seconds, nanos=ts.nanos)
     code_int = _grpc_code_int(error.code())
     return Response(
         status=code_int + 2,
@@ -38,15 +42,17 @@ def error_to_api_response(error: grpc.aio.AioRpcError) -> Response:
     )
 
 
-def _default_metadata(md: Optional[Iterable[Tuple[str, str]]]) -> Tuple[Tuple[str, str], ...]:
+def _default_metadata(
+    md: Iterable[tuple[str, str]] | None,
+) -> tuple[tuple[str, str], ...]:
     return tuple(md) if md is not None else (("identity", "internal"),)
 
 
 async def run_unary(
     method_coro: Callable[..., Any],
     request_pb: Any,
-    metadata: Optional[Iterable[Tuple[str, str]]] = None,
-    timeout: Optional[float] = None,
+    metadata: Iterable[tuple[str, str]] | None = None,
+    timeout: float | None = None,
 ) -> Response:
     """
     Runs a unary RPC and returns the protobuf Response directly.
@@ -65,8 +71,8 @@ async def run_unary(
 async def run_streaming(
     method_coro: Callable[..., Any],
     request_pb: Any,
-    metadata: Optional[Iterable[Tuple[str, str]]] = None,
-    timeout: Optional[float] = None,
+    metadata: Iterable[tuple[str, str]] | None = None,
+    timeout: float | None = None,
 ) -> AsyncIterator[Response]:
     """
     Runs a streaming RPC and yields each Response as it arrives.
