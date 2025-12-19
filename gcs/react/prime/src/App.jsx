@@ -38,6 +38,7 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
+  const [imagerySrc, setImagerySrc] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,6 +79,27 @@ function App() {
                 console.log(error);
               }
               setVehicles(v);
+            }
+          },
+        });
+      };
+    }
+    sse();
+    return () => {
+      controller.abort();
+    };
+
+  }, [useLocalVehicle]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const sse = async () => {
+      if (useLocalVehicle) {
+        await fetchEventSource(`${FASTAPI_URL}/api/local/imagery`, {
+          signal: controller.signal,
+          onmessage(ev) {
+            if (ev.event == "driver_imagery") {
+              console.log(ev.data);
             }
           },
         });
@@ -283,7 +305,7 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} />}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} imagerySrc={imagerySrc} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
