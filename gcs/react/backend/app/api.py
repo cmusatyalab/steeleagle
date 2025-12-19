@@ -87,16 +87,12 @@ control_stub = mission_stub = None
 red = None
 tel_sock = image_sock = None
 
-origins = [
-    "http://localhost:5173",
-    "localhost:5173",
-    "128.2.212.60:5173",
-    "http://128.2.212.60:5173",
-]
+with open("config.toml", "r") as file:
+    cfg = toml.load(file)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=cfg["cors"]["origins"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -115,8 +111,6 @@ async def startup_event():
         tel_sock, \
         zmq_context
 
-    with open("config.toml", "r") as file:
-        cfg = toml.load(file)
     # Create persistent channel with connection pooling
     grpc_channel = grpc.aio.insecure_channel(cfg["grpc"]["endpoint"])
 

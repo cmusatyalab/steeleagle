@@ -62,11 +62,11 @@ function App() {
   }, [useLocalVehicle]); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+    const controller = new AbortController();
     const sse = async () => {
       if (useLocalVehicle) {
         await fetchEventSource(`${FASTAPI_URL}/api/local/vehicle`, {
+          signal: controller.signal,
           onmessage(ev) {
             if (ev.event == "driver_telemetry") {
               const v = [];
@@ -85,8 +85,9 @@ function App() {
     }
     sse();
     return () => {
-      abortController.abort();
+      controller.abort();
     };
+
   }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
