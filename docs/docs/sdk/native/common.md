@@ -57,7 +57,7 @@ Therefore, for error codes, the transformation from gRPC to SteelEagle response 
 
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;UNIMPLEMENTED**&nbsp;&nbsp;(`14`) <text>&#8212;</text> the operation is not implemented/supported by the service
 
-**<><code class="docs-attr">field</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(`15`) <text>&#8212;</text> an internal error occured while executing the operation
+**<><code class="docs-attr">field</code></>&nbsp;&nbsp;INTERNAL**&nbsp;&nbsp;(`15`) <text>&#8212;</text> an internal error occurred while executing the operation
 
 **<><code class="docs-attr">field</code></>&nbsp;&nbsp;UNAVAILABLE**&nbsp;&nbsp;(`16`) <text>&#8212;</text> the service is currently unavailable
 

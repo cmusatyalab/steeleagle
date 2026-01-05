@@ -3,40 +3,38 @@
 # SPDX-License-Identifier: GPL-2.0-only
 import threading
 import time
+
 import folium
-from colorhash import ColorHash
+import grpc
 import streamlit as st
-from streamlit_folium import st_folium
+from colorhash import ColorHash
 from folium.plugins import MiniMap
+from st_keypressed import st_keypressed
+from steeleagle_sdk.protocol.rpc_helpers import generate_request
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    HoldRequest,
+    JoystickRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    TakeOffRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
+from steeleagle_sdk.protocol.services.remote_service_pb2 import (
+    CommandRequest,
+)
+from streamlit_folium import st_folium
 from util import (
-    stream_to_dataframe,
+    authenticated,
     connect_redis,
     connect_stub,
     get_vehicles,
     menu,
-    authenticated,
+    stream_to_dataframe,
 )
-from st_keypressed import st_keypressed
-
-import grpc
-from steeleagle_sdk.protocol.services.remote_service_pb2 import (
-    CommandRequest,
-)
-from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    ReturnToHomeRequest,
-    HoldRequest,
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
-)
-
-from steeleagle_sdk.protocol.rpc_helpers import generate_request
-
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -107,7 +105,7 @@ def change_center():
                 f"telemetry:{st.session_state.tracking_selection}", "+", "-", 1
             )
         )
-        for index, row in df.iterrows():
+        for _index, row in df.iterrows():
             st.session_state.center = {"lat": row["latitude"], "lng": row["longitude"]}
 
 
@@ -213,7 +211,9 @@ def update_imagery():
     col1, col2, col3 = st.columns(3, vertical_alignment="top", border=True)
     with col1:
         st.caption("**:eyes: Object Detection**")
-        st.image(f"http://{st.secrets.webserver}/detected/vehicles/{st.session_state.imagery_key}/latest.jpg?a={time.time()}")
+        st.image(
+            f"http://{st.secrets.webserver}/detected/vehicles/{st.session_state.imagery_key}/latest.jpg?a={time.time()}"
+        )
     with col2:
         st.caption("**:checkered_flag: Obstacle Avoidance**")
         st.image(f"http://{st.secrets.webserver}/moa/latest.jpg?a={time.time()}")
@@ -270,16 +270,15 @@ def draw_map():
             time.time() - last_update < st.session_state.inactivity_time * 60
         ):  # minutes -> seconds
             coords = []
-            i = 0
             drone_name = k.split(":")[-1]
-            for index, row in df.iterrows():
+            for i, row in enumerate(df.itertuples(index=False)):
                 if i % 10 == 0:
-                    coords.append([row["latitude"], row["longitude"]])
+                    coords.append([row.latitude, row.longitude])
                 if st.session_state.show_drone_markers and i == 0:
                     text = folium.DivIcon(
                         icon_size="null",  # set the size to null so that it expands to the length of the string inside in the div
                         icon_anchor=(-20, 30),
-                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name} [{row["rel_altitude"]:.2f}m]',
+                        html=f'<div style="color:white;font-size: 12pt;font-weight: bold;background-color:{ColorHash(drone_name).hex};">{drone_name} [{row.rel_altitude:.2f}m]',
                         # TODO: concatenate current task to html once it is sent i.e. <i>PatrolTask</i></div>
                     )
                     plane = folium.Icon(
@@ -287,14 +286,14 @@ def draw_map():
                         color="lightgray",
                         icon_color=ColorHash(drone_name).hex,
                         prefix="glyphicon",
-                        angle=int(row["bearing"]),
+                        angle=int(row.bearing),
                     )
 
                     fg.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row.latitude,
+                                row.longitude,
                             ],
                             icon=plane,
                         )
@@ -303,14 +302,12 @@ def draw_map():
                     fg.add_child(
                         folium.Marker(
                             location=[
-                                row["latitude"],
-                                row["longitude"],
+                                row.latitude,
+                                row.longitude,
                             ],
                             icon=text,
                         )
                     )
-
-                i += 1
 
             if st.session_state.show_gps_tracks:
                 ls = folium.PolyLine(locations=coords, color=ColorHash(drone_name).hex)
@@ -332,7 +329,7 @@ def draw_map():
             df = stream_to_dataframe(ret, types=TYPES)
             slam_coords = []
             i = 0
-            for index, row in df.iterrows():
+            for _index, row in df.iterrows():
                 slam_coords.append([row["lat"], row["lon"]])
                 if i == 0:
                     text = folium.DivIcon(
@@ -380,7 +377,7 @@ def draw_map():
         if len(ret) > 0:
             df = stream_to_dataframe(ret, types=TYPES)
             landing_coords = []
-            for index, row in df.iterrows():
+            for _index, row in df.iterrows():
                 landing_coords = [row["lat"], row["lon"]]
 
             circle = folium.Circle(
@@ -668,7 +665,7 @@ with st.sidebar:
             req.vehicle_id = d
 
             def send_command_thread(stub, req):
-                for resp in stub(req):
+                for _resp in stub(req):
                     pass
 
             thread = threading.Thread(

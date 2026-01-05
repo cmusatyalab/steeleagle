@@ -6,41 +6,23 @@ import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Button } from 'primereact/button';
 import { ToggleButton } from 'primereact/togglebutton';
-import { FloatLabel } from 'primereact/floatlabel';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
-import { Splitter, SplitterPanel } from 'primereact/splitter';
-import { Toolbar } from 'primereact/toolbar';
 import { Dropdown } from 'primereact/dropdown';
-import { Tooltip } from 'primereact/tooltip';
-import { FileUpload } from 'primereact/fileupload';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { Image } from 'primereact/image';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
 import { classNames } from 'primereact/utils';
 import { useEventListener } from 'primereact/hooks';
 import GameControls from './GameControls.jsx'
-import Mapbox from './Mapbox.jsx'
-import Status from './Status.jsx'
-import Cli from './Cli.jsx'
-import { BASE_URL, WEBSERVER_PORT, FASTAPI_URL } from './config.js';
-
-function MainContent({ selectedMenu }) {
-  switch (selectedMenu) {
-    case 0:
-      return;
-      break;
-    case 1:
-      return;
-      break;
-    case 2:
-      return;
-      break;
-  }
-}
+import Cli from './Cli.jsx';
+import ControlPage from './ControlPage.jsx';
+import MonitorPage from './MonitorPage.jsx';
+import PlanPage from './PlanPage.jsx';
+import { FASTAPI_URL } from './config.js';
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 function App() {
   const appName = "Talon";
@@ -48,8 +30,6 @@ function App() {
   const toast = useRef(null);
   const [debugBarVisible, setDebugBarVisible] = useState(false);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
-  const [mapPanelSize, setMapPanelSize] = useState(0);
-  const [armed, setArmed] = useState(false);
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
   const [gamePadButton, setGamePadButton] = useState(-99);
@@ -57,19 +37,22 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
-  const webServerUrl = `${BASE_URL}:${WEBSERVER_PORT}`
+  const [useLocalVehicle, setUseLocalVehicle] = useState(true);
+  const [imagerySrc, setImagerySrc] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await fetch(`${FASTAPI_URL}/api/vehicles`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      if (!useLocalVehicle) {
+        try {
+          const response = await fetch(`${FASTAPI_URL}/api/vehicles`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const result = await response.json();
+          setVehicles(result);
+        } catch (error) {
+          setError(error);
         }
-        const result = await response.json();
-        setVehicles(result);
-      } catch (error) {
-        setError(error);
       }
     };
 
@@ -77,7 +60,57 @@ function App() {
 
     const intervalId = setInterval(fetchData, 1000);
     return () => clearInterval(intervalId);
-  }, []); // Empty dependency array means this runs once on mount
+  }, [useLocalVehicle]); // Empty dependency array means this runs once on mount
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const sse = async () => {
+      if (useLocalVehicle) {
+        await fetchEventSource(`${FASTAPI_URL}/api/local/vehicle`, {
+          signal: controller.signal,
+          onmessage(ev) {
+            if (ev.event == "driver_telemetry") {
+              const v = [];
+              console.log(ev.data);
+              try {
+                v.push(JSON.parse(ev.data));
+              }
+              catch (error) {
+                console.log(error);
+              }
+              setVehicles(v);
+            }
+          },
+        });
+      };
+    }
+    sse();
+    return () => {
+      controller.abort();
+    };
+
+  }, [useLocalVehicle]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const sse = async () => {
+      if (useLocalVehicle) {
+        await fetchEventSource(`${FASTAPI_URL}/api/local/imagery`, {
+          signal: controller.signal,
+          onmessage(ev) {
+            if (ev.event == "driver_imagery") {
+              console.log(ev.data);
+            }
+          },
+        });
+      };
+    }
+    sse();
+    return () => {
+      controller.abort();
+    };
+
+  }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
     setKeyPressed(true);
@@ -168,82 +201,15 @@ function App() {
   }, [gamePadAxis]);
 
   useEffect(() => {
-    bindKeyDown();
-    bindKeyUp();
-
+    if (selectedMenu == 'Control') {
+      bindKeyDown();
+      bindKeyUp();
+    }
     return () => {
       unbindKeyDown();
       unbindKeyUp();
     };
-  }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp]);
-
-  const onProgress = () => {
-    toast.current.show({ severity: 'info', summary: 'In Progress', detail: 'Uploading files...' });
-  };
-
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  const uploadHandler = async (event) => {
-    const body = {};
-    for (const file of event.files) {
-      const reader = new FileReader();
-      let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
-      reader.readAsDataURL(blob);
-
-      reader.onloadend = function () {
-        const base64 = reader.result.split(',').pop();
-
-        if (file.name.endsWith(".kml")) {
-          body.kml = base64;
-          console.log("Adding kml file");
-        }
-        else if (file.name.endsWith(".json")) {
-          console.log("Adding json file");
-          body.dsl = base64;
-        }
-      };
-
-    }
-    await sleep(2000);
-    console.log(body);
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    };
-    const response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
-    }
-    else {
-      const result = await response.json();
-      toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
-    }
-
-  };
-
-
-  const onUploadComplete = () => {
-    toast.current.show({ severity: 'success', summary: 'File Uploaded', detail: 'The mission has been uploaded.' });
-  };
-
-  const onMissionStart = async () => {
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    };
-    const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
-    }
-    else {
-      const result = await response.json();
-      toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
-    }
-  }
+  }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp, selectedMenu]);
 
   const onJoystick = async (body) => {
     //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
@@ -266,7 +232,7 @@ function App() {
   }
 
   const onCommand = async (body) => {
-    toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
+    //toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -331,68 +297,22 @@ function App() {
         checked={tracking} onChange={(e) => setTracking(e.value)} />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
         placeholder="Select a Vehicle" className="w-full md:w-14rem" />
-      <Button label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
+      <Button size="small" rounded text label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
     </div>
-  );
-
-  const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
-  const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
-  const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
-  const itemTemplate = (file, props) => {
-    return (
-      <span className="text-left ml-3">
-        {file.name}
-      </span>
-
-    );
-  };
-  const endContent = (
-    <>
-      <Tooltip target=".custom-choose-btn" content="Select Mission Files" position="bottom" />
-      <Tooltip target=".custom-upload-btn" content="Upload Mission" position="bottom" />
-      <Tooltip target=".custom-cancel-btn" content="Clear Selected Files" position="bottom" />
-      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]"  url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
-      <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={() => onMissionStart()} />
-    </>
-  );
-
-  const centerContent = (
-    <>
-      <Status selectedVehicle={selectedVehicle} vehicles={vehicles} />
-    </>
-  );
-
-  const startContent = (
-    <>
-      <ToggleButton onLabel="Armed" offLabel="Disarmed" onIcon="pi pi-times pi-spin" offIcon="pi pi-ban"
-        checked={armed} onChange={(e) => setArmed(e.value)} className="w-9rem mr-2" />
-      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => onCommand({ rth: true })} />
-      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => onCommand({ hold: true })} />
-    </>
   );
 
   return (
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      <Splitter style={{ height: '720px' }} layout="vertical" onResizeEnd={(event) => setMapPanelSize(event.sizes[0])}>
-        <SplitterPanel className="flex align-items-center justify-content-center" size={80} minSize={60}>
-          <Splitter style={{ height: '100%' }} className="flex align-items-center justify-content-center" onResizeEnd={(event) => setMapPanelSize(event.sizes[0])}>
-            <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
-            </SplitterPanel>
-            <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              <Image height="90%" width="90%" src={`${webServerUrl}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"></Image>
-            </SplitterPanel>
-          </Splitter>
-        </SplitterPanel>
-        <SplitterPanel className="flex align-items-center justify-content-center m-2" size={20} minSize={20}>
-          <Toolbar style={{ width: '100%' }} start={startContent} center={centerContent} end={endContent} />
-        </SplitterPanel>
-      </Splitter>
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} imagerySrc={imagerySrc} />}
+      {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
+      {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
         <h2>Debug</h2>
         <div className="card flex flex-column align-items-center">
+          <ToggleButton className="m-2" onLabel="Use Local Vehicle" offLabel="Use Swarm Controller" onIcon="pi pi-desktop" offIcon="pi pi-cloud"
+            checked={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} />
           <button
             className={classNames('card border-1 surface-border border-round-sm py-3 px-4 text-color font-semibold text-sm transition-all transition-duration-150', { 'shadow-1': keyPressed, 'shadow-5': !keyPressed })}
             style={{
@@ -419,7 +339,7 @@ function App() {
           </div>
           <Button icon="pi pi-arrow-up" className="m-2" label="Takeoff" onClick={() => onCommand({ takeoff: true })} />
           <Button icon="pi pi-arrow-down" className="m-2" label="Land" onClick={() => onCommand({ land: true })} />
-          <Cli vehicle={selectedVehicle}/>
+          <Cli vehicle={selectedVehicle} />
         </div>
       </Sidebar>
 

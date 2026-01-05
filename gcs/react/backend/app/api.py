@@ -1,33 +1,43 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import zmq
 import zmq.asyncio
 import asyncio
+import base64
 import json
+import time
+
 import grpc
 import redis
 import toml
 import time
+import os
+import random
+from PIL import Image
 import base64
 from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    TakeOffRequest,
-    LandRequest,
-    ReturnToHomeRequest,
     HoldRequest,
     JoystickRequest,
+    LandRequest,
+    ReturnToHomeRequest,
+    TakeOffRequest,
 )
+from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    StopRequest,
     StartRequest,
+    StopRequest,
     UploadRequest,
 )
-
-from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
+from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
+from google.protobuf.message import DecodeError
+import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 app = FastAPI()
 
 
@@ -68,7 +78,7 @@ class Vehicle(BaseModel):
     last_updated: float
     type: str = Field(default="UAV")
     selected: bool = Field(default=False)
-    home: Location
+    home: Location | None = None
     current: Location
     bearing: NonNegativeInt
 
@@ -80,17 +90,14 @@ zmq_context = zmq.asyncio.Context()
 grpc_channel = None
 control_stub = mission_stub = None
 red = None
+tel_sock = image_sock = None
 
-origins = [
-    "http://localhost:5173",
-    "localhost:5173",
-    "128.2.212.60:5173",
-    "http://128.2.212.60:5173",
-]
+with open("config.toml", "r") as file:
+    cfg = toml.load(file)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=cfg["cors"]["origins"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -100,9 +107,16 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Read TOML config and initialize connections on startup"""
-    global grpc_channel, grpc_stub, red, control_stub, mission_stub
+    global \
+        grpc_channel, \
+        grpc_stub, \
+        red, \
+        control_stub, \
+        mission_stub, \
+        tel_sock, \
+        zmq_context
 
-    with open("config.toml", "r") as file:
+    with open("config.toml") as file:
         cfg = toml.load(file)
     # Create persistent channel with connection pooling
     grpc_channel = grpc.aio.insecure_channel(cfg["grpc"]["endpoint"])
@@ -111,7 +125,7 @@ async def startup_event():
     control_stub = ControlStub(grpc_channel)
     mission_stub = MissionStub(grpc_channel)
 
-    print("gRPC channel initialized")
+    logger.info("gRPC channel initialized")
     red = redis.Redis(
         host=cfg["redis"]["host"],
         port=cfg["redis"]["port"],
@@ -119,6 +133,14 @@ async def startup_event():
         password=cfg["redis"]["password"],
         decode_responses=True,
     )
+
+    # Create ZeroMQ subscriber sockets
+    tel_sock = zmq_context.socket(zmq.SUB)
+    tel_sock.connect(cfg["zmq"]["driver_telemetry"])
+    tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")
+    image_sock = zmq_context.socket(zmq.SUB)
+    image_sock.connect(cfg["zmq"]["imagery"])
+    image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
 
 
 # API Routes
@@ -186,31 +208,136 @@ async def get_location(name: str = None) -> Location:
         raise HTTPException(status_code=404, detail="Vehicle name not specified.")
 
 
-@app.get("/api/stream")
+@app.get("/api/local/vehicle")
 async def stream_zmq():
     """Stream ZeroMQ messages to the client via SSE"""
 
     async def event_generator():
-        # Create ZeroMQ subscriber socket
-        socket = zmq_context.socket(zmq.SUB)
-        socket.connect("tcp://localhost:5555")  # Adjust to your ZMQ address
-        socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
-
         try:
             while True:
-                # Receive message from ZeroMQ (non-blocking)
                 try:
-                    message = await socket.recv_string(flags=zmq.NOBLOCK)
+                    # Receive message from ZeroMQ (non-blocking)
+                    message = await tel_sock.recv_multipart(flags=zmq.NOBLOCK)
+                    tel = DriverTelemetry()
+                    tel.ParseFromString(message[1])
+                    current = Location(
+                        lat=tel.position_info.global_position.latitude,
+                        long=tel.position_info.global_position.longitude,
+                        alt=max(0, float(tel.position_info.global_position.altitude)),
+                    )
+
+                    v = Vehicle(
+                        name=tel.vehicle_info.name,
+                        model=tel.vehicle_info.model,
+                        battery=tel.alert_info.battery_warning,
+                        sats=tel.alert_info.gps_warning,
+                        mag=tel.alert_info.magnetometer_warning,
+                        last_updated=0,
+                        current=current,
+                        bearing=tel.position_info.global_position.heading,
+                    )
+
                     # Format as SSE
-                    yield f"data: {json.dumps({'message': message})}\n\n"
+                    event_str = "event: driver_telemetry"
+                    data_str = f"data: {json.dumps(v.dict())}"
+                    yield f"{event_str}\n{data_str}\n\n"
                 except zmq.Again:
                     # No message available, wait a bit
                     await asyncio.sleep(0.1)
                     # Send keep-alive comment
                     yield ": keep-alive\n\n"
+                except DecodeError as de:
+                    logger.error(f"{de} {message}!")
+                    yield ": keep-alive\n\n"
         except asyncio.CancelledError:
-            socket.close()
-            raise
+            logging.error("Client canceled SSE.")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable buffering in nginx
+        },
+    )
+
+
+def generate_random_jpg(filename, width=256, height=256):
+    """
+    Generates an image with random pixels and saves it as a JPG file.
+
+    Args:
+        filename (str): The name of the output JPG file.
+        width (int): The width of the image in pixels.
+        height (int): The height of the image in pixels.
+    """
+    # Calculate the total number of bytes needed for RGB (3 bytes per pixel)
+    # The bytes must be a linear sequence of R, G, B values
+    total_bytes = width * height * 3
+
+    # Generate a list of random integer values (0-255) for the pixels
+    rand_pixels = [random.randint(0, 255) for _ in range(total_bytes)]
+
+    # Convert the list to a bytes object
+    rand_pixels_as_bytes = bytes(rand_pixels)
+
+    # Create an image from the raw bytes using Image.frombytes
+    # Mode 'RGB' means 3 bytes per pixel, (width, height) specifies dimensions
+    try:
+        random_image = Image.frombytes("RGB", (width, height), rand_pixels_as_bytes)
+
+        # Save the image as a JPEG file
+        random_image.save(filename, format="JPEG")
+        print(f"Successfully generated random image: {filename}")
+
+    except ValueError as e:
+        print(f"Error creating image: {e}")
+        print("Ensure width and height match the number of bytes provided.")
+
+
+@app.get("/driver_imagery")
+async def get_image():
+    file_path = "/tmp/driver_imagery.jpg"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="image/jpeg")
+    return {"error": "Image not found"}
+
+
+@app.get("/api/local/imagery")
+async def stream_imagery():
+    """Stream ZeroMQ messages to the client via SSE"""
+
+    async def event_generator():
+        try:
+            while True:
+                try:
+                    if image_sock:
+                        # Receive message from ZeroMQ (non-blocking)
+                        message = await image_sock.recv_multipart(flags=zmq.NOBLOCK)
+                        frame = Frame()
+                        frame.ParseFromString(message[1])
+                        with open("/tmp/driver_imagery.jpg", "wb") as f:
+                            f.write(frame.data)
+                    else:
+                        generate_random_jpg(
+                            "/tmp/driver_imagery.jpg", width=320, height=240
+                        )
+                    # Format as SSE
+                    event_str = "event: driver_imagery"
+                    data_str = "data: new image"
+                    yield f"{event_str}\n{data_str}\n\n"
+                    await asyncio.sleep(0.1)
+                except zmq.Again:
+                    # No message available, wait a bit
+                    await asyncio.sleep(0.1)
+                    # Send keep-alive comment
+                    yield ": keep-alive\n\n"
+                except DecodeError as de:
+                    logger.error(f"{de} {message}!")
+                    yield ": keep-alive\n\n"
+        except asyncio.CancelledError:
+            logging.error("Client canceled SSE.")
 
     return StreamingResponse(
         event_generator(),
@@ -242,7 +369,7 @@ async def start(name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -267,7 +394,7 @@ async def upload(req: Upload, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -295,7 +422,7 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -310,21 +437,21 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
             takeoff.take_off_altitude = 10.0
             call = control_stub.TakeOff
             async for response in call(takeoff, metadata=(("identity", "server"),)):
-                print(f"Response for takeoff: {response.status}")
+                logger.info(f"Response for takeoff: {response.status}")
 
             return JSONResponse(status_code=200, content="Takeoff complete!")
         elif req.land:
             land = LandRequest()
             call = control_stub.Land
             async for response in call(land, metadata=(("identity", "server"),)):
-                print(f"Response for land: {response.status}")
+                logger.info(f"Response for land: {response.status}")
 
             return JSONResponse(status_code=200, content="Landing complete!")
         elif req.rth:
             rth = ReturnToHomeRequest()
             call = control_stub.ReturnToHome
             async for response in call(rth, metadata=(("identity", "server"),)):
-                print(f"Response for rth: {response.status}")
+                logger.info(f"Response for rth: {response.status}")
 
             return JSONResponse(status_code=200, content="Return to Home command sent.")
         elif req.hold:
@@ -334,7 +461,7 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
             hold = HoldRequest()
             call = control_stub.Hold
             async for response in call(hold, metadata=(("identity", "server"),)):
-                print(f"Response for hold: {response.status}")
+                logger.info(f"Response for hold: {response.status}")
 
             return JSONResponse(
                 status_code=200,
@@ -347,7 +474,7 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
-        print(e)
+        logger.error(e)
         raise HTTPException(status_code=500, detail=f"Error: {e.message}")
 
 
@@ -367,4 +494,5 @@ async def serve_spa(full_path: str):
 # Cleanup on shutdown
 @app.on_event("shutdown")
 async def shutdown_event():
+    tel_sock.close()
     zmq_context.term()

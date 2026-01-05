@@ -1,16 +1,17 @@
 # SPDX-FileCopyrightText: 2024 Carnegie Mellon University - Satyalab
 #
 # SPDX-License-Identifier: GPL-2.0-only
-import folium
-import streamlit as st
-from streamlit_folium import st_folium
-from folium.plugins import MiniMap
-from util import connect_redis, menu, authenticated, stream_to_dataframe
 import datetime
-from pykml import parser
 import json
 import time
+
+import folium
+import streamlit as st
 from colorhash import ColorHash
+from folium.plugins import MiniMap
+from pykml import parser
+from streamlit_folium import st_folium
+from util import authenticated, connect_redis, menu, stream_to_dataframe
 
 if "map_server" not in st.session_state:
     st.session_state.map_server = "Google Hybrid"
@@ -68,7 +69,7 @@ def draw_map():
                 coords = []
                 i = 0
                 drone_name = k.split(":")[-1]
-                for index, row in df.iterrows():
+                for _index, row in df.iterrows():
                     if i == 0:
                         coords.append([row["latitude"], row["longitude"]])
                         text = folium.DivIcon(
@@ -108,10 +109,10 @@ def draw_map():
     if st.session_state.show_corridors:
         try:
             partition = []
-            with open(f"{st.secrets.waypoints}", "r", encoding="utf-8") as f:
+            with open(f"{st.secrets.waypoints}", encoding="utf-8") as f:
                 j = json.load(f)
-                for k, v in j.items():
-                    for k2, v2 in v.items():  # for each corridor
+                for _k, v in j.items():
+                    for _k2, v2 in v.items():  # for each corridor
                         for c in v2:
                             lon = c[0]
                             lat = c[1]
@@ -124,7 +125,7 @@ def draw_map():
     if st.session_state.show_geofence:
         try:
             fence_coords = []
-            with open(f"{st.secrets.geofence_path}", "r", encoding="utf-8") as f:
+            with open(f"{st.secrets.geofence_path}", encoding="utf-8") as f:
                 root = parser.parse(f).getroot()
                 coords = root.Document.Placemark.Polygon.outerBoundaryIs.LinearRing.coordinates.text
                 for c in coords.split():

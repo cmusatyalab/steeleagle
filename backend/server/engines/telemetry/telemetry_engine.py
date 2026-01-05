@@ -5,13 +5,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import datetime
 import logging
 import os
 import signal
 import time
+
 import cv2
-import argparse
 
 # import foxglove
 import numpy as np
@@ -22,7 +23,6 @@ import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
@@ -209,9 +209,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             tel = telemetry.DriverTelemetry()
             assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(
-                telemetry.DriverTelemetry.DESCRIPTOR
-            )
+            assert input_frame.any_payload.Is(telemetry.DriverTelemetry.DESCRIPTOR)
             input_frame.any_payload.Unpack(tel)
 
             logger.info(tel.vehicle_info.name)
@@ -275,8 +273,11 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         logger.error(f"Engine received wrong input format: {input_frame.payload_type}")
         status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-        status.message = f"Engine received wrong input format: {input_frame.payload_type}"
+        status.message = (
+            f"Engine received wrong input format: {input_frame.payload_type}"
+        )
         return cognitive_engine.Result(status, None)
+
 
 def main():
     """Starts the Gabriel server."""

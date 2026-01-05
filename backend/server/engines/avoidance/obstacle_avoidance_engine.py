@@ -30,11 +30,10 @@ import redis
 import torch
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
+from google.protobuf.any_pb2 import Any
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
-from google.protobuf.any_pb2 import Any
-
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 

@@ -1,82 +1,97 @@
-import asyncio
-import grpc
-import threading
 import argparse
+import asyncio
+import threading
+
+import grpc
 from pynput import keyboard
+from steeleagle_sdk.protocol.services.control_service_pb2 import (
+    HoldRequest,
+    JoystickRequest,
+    LandRequest,
+    TakeOffRequest,
+)
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
+from steeleagle_sdk.protocol.services.remote_service_pb2 import (
+    CommandRequest,
+    CompileMissionRequest,
+)
+
 # Protocol imports
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
-from steeleagle_sdk.protocol.services.remote_service_pb2 import CommandRequest, CompileMissionRequest
-from steeleagle_sdk.protocol.services.control_service_pb2 import JoystickRequest, TakeOffRequest, LandRequest, HoldRequest
-from steeleagle_sdk.protocol.services.mission_service_pb2 import UploadRequest, StartRequest, StopRequest
+
 
 async def consume_keys(key_queue, vehicle, stub):
     while True:
         key = await key_queue.get()
         command = CommandRequest()
         command.vehicle_id = vehicle
-        
+
         # Send RPC coro
         async def send_command(stub, command):
             try:
                 async for response in stub.Command(command):
-                    print(f'Response for {command.method_name}: {response.status}')
+                    print(f"Response for {command.method_name}: {response.status}")
             except grpc.aio.AioRpcError as e:
-                print(f'Error: {e}')
+                print(f"Error: {e}")
 
         # Joystick
-        if key in ['w', 'a', 's', 'd', 'j', 'i', 'k', 'l']:
-            print('Sending Joystick')
-            command.method_name = 'Control.Joystick'
+        if key in ["w", "a", "s", "d", "j", "i", "k", "l"]:
+            print("Sending Joystick")
+            command.method_name = "Control.Joystick"
             joystick = JoystickRequest()
             match key:
-                case 'a':
+                case "a":
                     joystick.velocity.y_vel = -1.0
-                case 'd':
+                case "d":
                     joystick.velocity.y_vel = 1.0
-                case 'w':
+                case "w":
                     joystick.velocity.x_vel = 1.0
-                case 's':
+                case "s":
                     joystick.velocity.x_vel = -1.0
-                case 'j':
+                case "j":
                     joystick.velocity.angular_vel = -20.0
-                case 'l':
+                case "l":
                     joystick.velocity.angular_vel = 20.0
-                case 'i':
+                case "i":
                     joystick.velocity.z_vel = 1.0
-                case 'k':
+                case "k":
                     joystick.velocity.z_vel = -1.0
             command.request.Pack(joystick)
             asyncio.create_task(send_command(stub, command))
-        elif key == 't': # TakeOff
-            print('Sending TakeOff')
-            command.method_name = 'Control.TakeOff'
+        elif key == "t":  # TakeOff
+            print("Sending TakeOff")
+            command.method_name = "Control.TakeOff"
             takeoff = TakeOffRequest()
             takeoff.take_off_altitude = 10.0
             command.request.Pack(takeoff)
             asyncio.create_task(send_command(stub, command))
-        elif key == 'g': # Land
-            print('Sending Land')
-            command.method_name = 'Control.Land'
+        elif key == "g":  # Land
+            print("Sending Land")
+            command.method_name = "Control.Land"
             land = LandRequest()
             command.request.Pack(land)
             asyncio.create_task(send_command(stub, command))
-        elif key == keyboard.Key.space: # Hold
-            print('Sending Hold')
-            command.method_name = 'Control.Hold'
+        elif key == keyboard.Key.space:  # Hold
+            print("Sending Hold")
+            command.method_name = "Control.Hold"
             hold = HoldRequest()
             command.request.Pack(hold)
             asyncio.create_task(send_command(stub, command))
-        elif key == keyboard.Key.shift_l: # Compile Mission
-            kml_path = input('Choose a KML file: ')
-            dsl_path = input('Choose a DSL file: ')
+        elif key == keyboard.Key.shift_l:  # Compile Mission
+            kml_path = input("Choose a KML file: ")
+            dsl_path = input("Choose a DSL file: ")
             kml = open(kml_path, "rb").read()
-            dsl = open(dsl_path, "r", encoding="utf-8").read()
+            dsl = open(dsl_path, encoding="utf-8").read()
             req = CompileMissionRequest(dsl_content=dsl)
             responses = []
             async for response in stub.CompileMission(req):
                 responses.append(response)
             response = responses[-1]
-            command.method_name = 'Mission.Upload'
+            command.method_name = "Mission.Upload"
             upload = UploadRequest()
             upload.mission.content = response.compiled_dsl_content
             upload.mission.map = kml
@@ -85,23 +100,24 @@ async def consume_keys(key_queue, vehicle, stub):
             while not key_queue.empty():
                 key_queue.get_nowait()
                 key_queue.task_done()
-        elif key == 'm': # Start Mission
-            command.method_name = 'Mission.Start'
+        elif key == "m":  # Start Mission
+            command.method_name = "Mission.Start"
             start = StartRequest()
             command.request.Pack(start)
             asyncio.create_task(send_command(stub, command))
-        elif key == 'n': # Stop Mission
-            command.method_name = 'Mission.Stop'
+        elif key == "n":  # Stop Mission
+            command.method_name = "Mission.Stop"
             stop = StopRequest()
             command.request.Pack(stop)
             asyncio.create_task(send_command(stub, command))
         else:
-            print(f'Key not recognized: {key}')
-            
+            print(f"Key not recognized: {key}")
+
         if key == keyboard.Key.esc:
             break
 
     asyncio.get_event_loop().stop()
+
 
 def listen_for_keys(key_queue, loop):
     def on_press(key):
@@ -113,6 +129,7 @@ def listen_for_keys(key_queue, loop):
 
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
+
 
 async def main(args):
     key_queue = asyncio.Queue()
@@ -126,12 +143,15 @@ async def main(args):
 
     await consume_keys(key_queue, args.vehicle, stub)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-                    prog='CLI Commander',
-                    description='Gives a CLI interface to control a vehicle')
-    parser.add_argument('vehicle', help='name of the controlled vehicle')
-    parser.add_argument('-a', '--addr', default='localhost:5004', help='address of the swarm controller')
+        prog="CLI Commander", description="Gives a CLI interface to control a vehicle"
+    )
+    parser.add_argument("vehicle", help="name of the controlled vehicle")
+    parser.add_argument(
+        "-a", "--addr", default="localhost:5004", help="address of the swarm controller"
+    )
     args = parser.parse_args()
 
     asyncio.run(main(args))

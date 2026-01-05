@@ -1,32 +1,34 @@
 #!/usr/bin/env python3
-import asyncio
-import grpc
-import threading
 import argparse
-import os
-import sys
-import select
+import asyncio
 import contextlib
 import json
+import os
+import select
+import sys
+import threading
 from dataclasses import asdict
+
+import grpc
+from steeleagle_sdk.dsl import build_mission
 
 # Protocol imports
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    JoystickRequest,
-    TakeOffRequest,
-    LandRequest,
     HoldRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    UploadRequest,
-    StartRequest,
-    StopRequest,
+    JoystickRequest,
+    LandRequest,
+    TakeOffRequest,
 )
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
+from steeleagle_sdk.protocol.services.mission_service_pb2 import (
+    StartRequest,
+    StopRequest,
+    UploadRequest,
+)
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
-from steeleagle_sdk.dsl import build_mission
 
 IDENTITY_MD = (("identity", "server"),)
+
 
 # --------- raw TTY helpers (WSL-friendly) ---------
 class TTYMode:
@@ -38,7 +40,9 @@ class TTYMode:
     def raw(self):
         if not self._supported:
             return
-        import termios, tty
+        import termios
+        import tty
+
         if self._orig is None:
             self._orig = termios.tcgetattr(self.fd)
         tty.setcbreak(self.fd)
@@ -47,6 +51,7 @@ class TTYMode:
         if not self._supported or self._orig is None:
             return
         import termios
+
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self._orig)
 
 
@@ -104,13 +109,14 @@ async def consume_keys(
                     print(f"Response for {command_name}: {response.status}")
             except grpc.aio.AioRpcError as e:
                 print(f"Error during {command_name}: {e}")
-        
+
         async def _send_unary(call, command_name: str):
-                try:
-                    # assuming unary RPC that just acks
-                    await call
-                except grpc.aio.AioRpcError as e:
-                    print(f"Error during {command_name}: {e}")
+            try:
+                # assuming unary RPC that just acks
+                await call
+            except grpc.aio.AioRpcError as e:
+                print(f"Error during {command_name}: {e}")
+
         # Joystick
         if key in ["w", "a", "s", "d", "j", "i", "k", "l"]:
             print("Sending Joystick")
@@ -168,7 +174,7 @@ async def consume_keys(
                     print(f"[Compile] Failed to read KML: {e}")
                     kml = None
                 try:
-                    dsl = open(dsl_path, "r", encoding="utf-8").read()
+                    dsl = open(dsl_path, encoding="utf-8").read()
                 except Exception as e:
                     print(f"[Compile] Failed to read DSL: {e}")
                     dsl = None

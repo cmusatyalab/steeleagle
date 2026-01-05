@@ -1,28 +1,37 @@
 # tasks/actions/procedures.py
 import asyncio
-from typing import List, Optional, Tuple
+import logging
+
 from pydantic import Field
+
 from ....compiler.registry import register_action
 from ...base import Action
-from ..primitives.vehicle import SetGimbalPose, SetGlobalPosition, SetVelocity, Joystick
 from ...datatypes import common as common
-from ...datatypes.result import Detection, BoundingBox, FrameResult
+from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame
+from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode, ReferenceFrame
-import logging
+from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity
+
 logger = logging.getLogger(__name__)
-from ...utils import fetch_telemetry, fetch_results
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+
+from ...utils import fetch_results, fetch_telemetry
 
 
 @register_action
 class ElevateToAltitude(Action):
     target_altitude: float = Field(..., description="meters AGL/relative")
     tolerance: float = Field(0.2, ge=0.0, description="stop when within this of target")
-    poll_period: float = Field(0.5, gt=0.0, description="seconds between telemetry polls")
-    climb_speed: float = Field(1.0, description="m/s (adjust sign for your FCU if needed)")
-    max_duration: Optional[float] = Field(None, gt=0.0, description="seconds; None = no limit")
+    poll_period: float = Field(
+        0.5, gt=0.0, description="seconds between telemetry polls"
+    )
+    climb_speed: float = Field(
+        1.0, description="m/s (adjust sign for your FCU if needed)"
+    )
+    max_duration: float | None = Field(
+        None, gt=0.0, description="seconds; None = no limit"
+    )
 
     async def execute(self):
         start = asyncio.get_event_loop().time()
@@ -32,7 +41,7 @@ class ElevateToAltitude(Action):
 
             if rel_alt + self.tolerance >= self.target_altitude:
                 break
-            
+
             set_vel = SetVelocity(
                 velocity=common.Velocity(
                     x_vel=0.0,
@@ -44,12 +53,13 @@ class ElevateToAltitude(Action):
             )
             await set_vel.execute()
 
-            if self.max_duration is not None:
-                if asyncio.get_event_loop().time() - start > self.max_duration:
-                    raise TimeoutError(
-                        f"ElevateToAltitude timed out after {self.max_duration}s "
-                        f"(current={rel_alt}, target={self.target_altitude})"
-                    )
+            if self.max_duration is not None and (
+                asyncio.get_event_loop().time() - start > self.max_duration
+            ):
+                raise TimeoutError(
+                    f"ElevateToAltitude timed out after {self.max_duration}s "
+                    f"(current={rel_alt}, target={self.target_altitude})"
+                )
             await asyncio.sleep(self.poll_period)
 
 
@@ -57,6 +67,7 @@ class ElevateToAltitude(Action):
 class PrePatrolSequence(Action):
     altitude: float = Field(15.0, gt=0.0, description="meters AGL/relative")
     gimbal_pitch: float = Field(0.0, description="degrees; 0=forward, positive=down")
+
     async def execute(self):
         await ElevateToAltitude(target_altitude=15.0).execute()
         await SetGimbalPose(pitch=self.gimbal_pitch, yaw=0.0, roll=0.0).execute()
@@ -64,7 +75,9 @@ class PrePatrolSequence(Action):
 
 @register_action
 class Patrol(Action):
-    hover_time: float = Field(1.0, ge=0.0, description="seconds to hover after each move")
+    hover_time: float = Field(
+        1.0, ge=0.0, description="seconds to hover after each move"
+    )
     waypoints: Waypoints
 
     async def execute(self):
@@ -82,16 +95,18 @@ class Patrol(Action):
                     ),
                     altitude_mode=AltitudeMode.RELATIVE,
                     heading_mode=HeadingMode.TO_TARGET,
-                    max_velocity=common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0),
+                    max_velocity=common.Velocity(
+                        x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0
+                    ),
                 )
                 await goto.execute()
 
                 if self.hover_time > 0:
                     await asyncio.sleep(self.hover_time)
 
+
 @register_action
 class Track(Action):
-
     # --- Camera / image geometry ---
     image_width: int = Field(1280, gt=0, description="Camera image width in pixels")
     image_height: int = Field(720, gt=0, description="Camera image height in pixels")
@@ -101,30 +116,38 @@ class Track(Action):
         "openscout-object",
         description="Name of compute stream to pull detections from",
     )
-    
+
     # --- Compute / detection configuration ---
     target: Detection
-    leash_distance: float = Field(10, gt = 0.0, description='leashing distance towards the tracked target' )
-    target_lost_duration: float = Field(10.0, gt=0.0, description="Seconds without detection before exiting")
+    leash_distance: float = Field(
+        10, gt=0.0, description="leashing distance towards the tracked target"
+    )
+    target_lost_duration: float = Field(
+        10.0, gt=0.0, description="Seconds without detection before exiting"
+    )
 
     # --- actuation ---
     follow_speed: float = Field(1.0, ge=0.0, description="Max forward speed (m/s)")
     yaw_speed: float = Field(10.0, ge=0.0, description="Max yaw rate (deg/s)")
     orbit_speed: float = Field(0.0, ge=0.0, description="Lateral (orbit) speed (m/s)")
-    yaw_gain: float = Field(2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU")
+    yaw_gain: float = Field(
+        2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
+    )
 
     # --- private ---
     _poll_period: float = 0.05
 
     @property
-    def _pixel_center(self) -> Tuple[float, float]:
+    def _pixel_center(self) -> tuple[float, float]:
         return (self.image_width / 2.0, self.image_height / 2.0)
-    
+
     @staticmethod
     def _clamp(value: float, minimum: float, maximum: float) -> float:
         return float(np.clip(value, minimum, maximum))
-    
-    def _find_intersection(self, target_dir: np.ndarray, target_insct: np.ndarray) -> Optional[np.ndarray]:
+
+    def _find_intersection(
+        self, target_dir: np.ndarray, target_insct: np.ndarray
+    ) -> np.ndarray | None:
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
@@ -132,15 +155,21 @@ class Track(Action):
         if abs(denom) < 1e-6:
             return None
 
-        t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(target_dir)
+        t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(
+            target_dir
+        )
         return target_insct + (t * target_dir)
 
-    async def _estimate_distance(self, yaw_deg: float, pitch_deg: float, telemetry) -> np.ndarray:
+    async def _estimate_distance(
+        self, yaw_deg: float, pitch_deg: float, telemetry
+    ) -> np.ndarray:
         alt = telemetry.position_info.relative_position.z
         gimbal_pitch_deg = telemetry.gimbal_info.gimbals[0].pose_body.pitch
 
         vf = np.array([0.0, 1.0, 0.0])
-        r = R.from_euler('ZYX', [yaw_deg, 0, pitch_deg + gimbal_pitch_deg], degrees=True)
+        r = R.from_euler(
+            "ZYX", [yaw_deg, 0, pitch_deg + gimbal_pitch_deg], degrees=True
+        )
         target_dir = r.as_matrix().dot(vf)
         target_vec = self._find_intersection(target_dir, np.array([0, 0, alt]))
 
@@ -151,7 +180,9 @@ class Track(Action):
 
         return leash_vec - target_vec
 
-    async def _compute_error(self, box: BoundingBox, telemetry) -> Tuple[float, float, float]:
+    async def _compute_error(
+        self, box: BoundingBox, telemetry
+    ) -> tuple[float, float, float]:
         img_w, img_h = self.image_width, self.image_height
         cx, cy = self._pixel_center
         y_min_pix = box.y_min * img_h
@@ -169,7 +200,9 @@ class Track(Action):
         yaw_error = -1.0 * target_yaw_angle
         gimbal_error = target_pitch_angle
 
-        follow_vec = await self._estimate_distance(target_yaw_angle, target_bottom_pitch, telemetry)
+        follow_vec = await self._estimate_distance(
+            target_yaw_angle, target_bottom_pitch, telemetry
+        )
         follow_error = float(follow_vec[1] * -1.0)
 
         return (follow_error, yaw_error, gimbal_error)
@@ -200,7 +233,7 @@ class Track(Action):
         await set_gimbal.execute()
 
     async def execute(self):
-        last_seen: Optional[float] = None
+        last_seen: float | None = None
         while True:
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
@@ -213,13 +246,13 @@ class Track(Action):
                     now - last_seen,
                 )
                 break
-            
+
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            box: Optional[BoundingBox] = None
+            box: BoundingBox | None = None
             if not res or not res.result:
                 continue  # no ComputeResult entries
             for compute in res.result:
@@ -229,23 +262,28 @@ class Track(Action):
                 for det in det_result.detections:
                     if det is None:
                         continue
-                    if self.target.class_name is not None:
-                        if det.class_name == self.target.class_name:
-                            box = det.bbox
-                            last_seen = now
-                            break
-            
+                    if self.target.class_name is not None and (
+                        det.class_name == self.target.class_name
+                    ):
+                        box = det.bbox
+                        last_seen = now
+                        break
+
             # --- Track ---
             if box is not None:
                 try:
-                    follow_err, yaw_err, gimbal_err = await self._compute_error(box, telemetry)
+                    follow_err, yaw_err, gimbal_err = await self._compute_error(
+                        box, telemetry
+                    )
                 except Exception as e:
                     logger.error("Track: error computing tracking error: %s", e)
                     await asyncio.sleep(self._poll_period)
                     continue
 
                 try:
-                    follow_vel = self._clamp(follow_err, -self.follow_speed, self.follow_speed)
+                    follow_vel = self._clamp(
+                        follow_err, -self.follow_speed, self.follow_speed
+                    )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
@@ -273,6 +311,3 @@ class Track(Action):
                     logger.error("Track: actuation failed: %s", e)
 
             await asyncio.sleep(self._poll_period)
-
-
-

@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from enum import Enum
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 from steeleagle_sdk.dsl.compiler.ir import MissionIR
-from steeleagle_sdk.dsl.compiler.registry import get_action, get_event
 from steeleagle_sdk.dsl.compiler.loader import load_all
+from steeleagle_sdk.dsl.compiler.registry import get_action, get_event
 
 logger = logging.getLogger(__name__)
 
@@ -15,27 +15,27 @@ _DONE_EVENT = "done"
 _TERMINATE = "terminate"
 
 
-
 class RacerType(str, Enum):
     ACTION = "action"
-    EVENT  = "event"
-    ERROR  = "error"
+    EVENT = "event"
+    ERROR = "error"
 
 
 class MissionFSM:
     def __init__(self, mission: MissionIR):
         self.mission = mission
-        self.transition: Dict[str, Dict[str, str]] = mission.transitions
+        self.transition: dict[str, dict[str, str]] = mission.transitions
         self.start_action_id: str = mission.start_action_id
         summaries = load_all()  # ensure registries are loaded
         logger.info("[FSM] Loaded SDK registries: %s", summaries)
-        
+
     async def start(self):
         state = self.start_action_id
         while state != _TERMINATE:
             state = await self.run_state(state)
         logger.info("[FSM] Mission ended")
         from .. import runtime as _rt
+
         await _rt.term()
 
     async def run_state(self, curr_action_id: str) -> str:
@@ -47,16 +47,18 @@ class MissionFSM:
         event_ids = [e for e in self._gather_events(curr_action_id) if e != _DONE_EVENT]
         logger.info("[FSM] events: %s", event_ids)
 
-        q: asyncio.Queue[Tuple[RacerType, Any]] = asyncio.Queue(maxsize=1)
-        winner: Tuple[RacerType, Any]
+        q: asyncio.Queue[tuple[RacerType, Any]] = asyncio.Queue(maxsize=1)
+        winner: tuple[RacerType, Any]
 
         async with asyncio.TaskGroup() as tg:
-            members: List[asyncio.Task] = []
+            members: list[asyncio.Task] = []
 
             # Action
             members.append(
-                tg.create_task(self._race(action, RacerType.ACTION, curr_action_id, q),
-                               name=f"action:{curr_action_id}")
+                tg.create_task(
+                    self._race(action, RacerType.ACTION, curr_action_id, q),
+                    name=f"action:{curr_action_id}",
+                )
             )
 
             # Events
@@ -65,8 +67,9 @@ class MissionFSM:
                 ev_cls = get_event(ev_ir.type_name)
                 ev = ev_cls(**ev_ir.attributes)
                 members.append(
-                    tg.create_task(self._race(ev, RacerType.EVENT, ev_id, q),
-                                   name=f"event:{ev_id}")
+                    tg.create_task(
+                        self._race(ev, RacerType.EVENT, ev_id, q), name=f"event:{ev_id}"
+                    )
                 )
 
             # First finisher places a result into q
@@ -78,7 +81,9 @@ class MissionFSM:
 
         kind, payload = winner
         if kind is RacerType.ERROR:
-            logger.exception("[FSM] Winner failed in state %s", curr_action_id, exc_info=payload)
+            logger.exception(
+                "[FSM] Winner failed in state %s", curr_action_id, exc_info=payload
+            )
             return _TERMINATE
 
         if kind is RacerType.ACTION:
@@ -97,7 +102,7 @@ class MissionFSM:
         racer: Any,
         racer_type: RacerType,
         racer_id: str,
-        q: asyncio.Queue[Tuple[RacerType, Any]],
+        q: asyncio.Queue[tuple[RacerType, Any]],
     ) -> None:
         try:
             if racer_type is RacerType.ACTION:
@@ -111,14 +116,16 @@ class MissionFSM:
                 pass
 
         except Exception as e:
-            logger.exception("[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e)
+            logger.exception(
+                "[FSM] Racer %s (%s) failed", racer_id, racer_type, exc_info=e
+            )
             try:
                 q.put_nowait((RacerType.ERROR, e))
             except asyncio.QueueFull:
                 pass
             raise
 
-    def _gather_events(self, curr_action_id: str) -> List[str]:
+    def _gather_events(self, curr_action_id: str) -> list[str]:
         return list(self.transition.get(curr_action_id, {}).keys())
 
     def _next_state(self, curr_action_id: str, ev_id: str) -> str:

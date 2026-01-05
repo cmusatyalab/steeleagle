@@ -1,23 +1,22 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
-from pygls.server import LanguageServer
-from pygls.workspace import Document
 from lsprotocol.types import (
     INITIALIZE,
     TEXT_DOCUMENT_COMPLETION,
-    InitializeResult,
-    CompletionParams,
     CompletionItem,
     CompletionItemKind,
-    TextDocumentSyncKind,
-    CompletionOptions,
     CompletionList,
+    CompletionOptions,
+    CompletionParams,
+    InitializeResult,
     ServerCapabilities,
+    TextDocumentSyncKind,
     TextDocumentSyncOptions,
 )
+from pygls.server import LanguageServer
+from pygls.workspace import Document
 
 from . import registry_completions as reg
 
@@ -28,7 +27,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SIMPLE_KEYWORDS = ["->", "Start", "During", "done", "Data", "Actions", "Events", "Mission"]
+SIMPLE_KEYWORDS = [
+    "->",
+    "Start",
+    "During",
+    "done",
+    "Data",
+    "Actions",
+    "Events",
+    "Mission",
+]
 
 SECTION_SNIPPETS = [
     ("Data:", "Data:\n    ${1}"),
@@ -45,7 +53,7 @@ def get_line_prefix(doc: Document, line: int, ch: int) -> str:
     return lines[line][:ch] if 0 <= line < len(lines) else ""
 
 
-def detect_section(doc: Document, line: int) -> Optional[str]:
+def detect_section(doc: Document, line: int) -> str | None:
     lines = doc.source.splitlines()
     i = min(line, len(lines) - 1)
     while i >= 0:
@@ -80,9 +88,9 @@ def ident_prefix(s: str) -> str:
     return s[i:]
 
 
-def items_section_snippets(pfx: str) -> List[CompletionItem]:
+def items_section_snippets(pfx: str) -> list[CompletionItem]:
     p = pfx.lower()
-    items: List[CompletionItem] = []
+    items: list[CompletionItem] = []
     for label, snippet in SECTION_SNIPPETS:
         if p in label.lower():
             items.append(
@@ -98,7 +106,7 @@ def items_section_snippets(pfx: str) -> List[CompletionItem]:
     return items
 
 
-def items_simple_keywords(pfx: str) -> List[CompletionItem]:
+def items_simple_keywords(pfx: str) -> list[CompletionItem]:
     p = pfx.lower()
     return [
         CompletionItem(
@@ -122,8 +130,12 @@ def on_init(ls, _):
     reg.ensure_registry_initialized()
     return InitializeResult(
         capabilities=ServerCapabilities(
-            text_document_sync=TextDocumentSyncOptions(open_close=True, change=TextDocumentSyncKind.Incremental),
-            completion_provider=CompletionOptions(trigger_characters=[":", ">", "-", " ", "_", "(", ")", ",", "="]),
+            text_document_sync=TextDocumentSyncOptions(
+                open_close=True, change=TextDocumentSyncKind.Incremental
+            ),
+            completion_provider=CompletionOptions(
+                trigger_characters=[":", ">", "-", " ", "_", "(", ")", ",", "="]
+            ),
         )
     )
 
@@ -138,12 +150,14 @@ def on_complete(ls, params: CompletionParams):
     )
     try:
         doc = ls.workspace.get_document(params.text_document.uri)
-        line_pref = get_line_prefix(doc, params.position.line, params.position.character)
+        line_pref = get_line_prefix(
+            doc, params.position.line, params.position.character
+        )
         pfx = ident_prefix(line_pref)
         section = detect_section(doc, params.position.line)
         value_ctx = is_value_position(line_pref, pfx)
 
-        items: List[CompletionItem] = []
+        items: list[CompletionItem] = []
         items += reg.registry_items_for_section(section, pfx)
         if value_ctx:
             items += reg.inline_data_items(pfx)

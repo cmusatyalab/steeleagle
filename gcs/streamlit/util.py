@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
-import streamlit as st
-import redis
-import pandas as pd
+import hmac
 import json
 import time
-import hmac
 
 import grpc
+import pandas as pd
+import redis
+import streamlit as st
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 DATA_TYPES = {
