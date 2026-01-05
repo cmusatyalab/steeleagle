@@ -144,6 +144,11 @@ class Vehicle:
         async for msg in run_streaming(self.control.SetHeading, req):
             yield msg
 
+    async def set_gimbal_pose_target(
+        self,
+        gimbal_id: int,
+        pose: Pose,
+        
     async def set_gimbal_pose(
         self,
         gimbal_id: int,
