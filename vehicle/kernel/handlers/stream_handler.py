@@ -28,11 +28,11 @@ class StreamHandler:
         self.law_authority = law_authority
         # Create the result socket
         self._result_sock = zmq.Context().socket(zmq.PUB)
-        setup_zmq_socket(
-            self._result_sock,
-            'internal.streams.results',
-            SocketOperation.BIND
-            )
+        #setup_zmq_socket(
+        #    self._result_sock,
+        #    'internal.streams.results',
+        #    SocketOperation.BIND
+        #    )
         # Configure local compute handler
         self._local_compute_handler = None
         self._lch_task = None
