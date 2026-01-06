@@ -10,7 +10,7 @@ from ...datatypes import common as common
 from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame
 from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity
+from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity, SetGimbalPoseTarget
 
 logger = logging.getLogger(__name__)
 import numpy as np
@@ -229,7 +229,7 @@ class Track(Action):
 
         # Gimbal pitch command
         desired_pitch = (gimbal_error_deg * 0.5) + prev_gimbal_pitch
-        set_gimbal = SetGimbalPose(pitch=desired_pitch, yaw=0.0, roll=0.0)
+        set_gimbal = SetGimbalPoseTarget(pitch=desired_pitch, yaw=0.0, roll=0.0)
         await set_gimbal.execute()
 
     async def execute(self):

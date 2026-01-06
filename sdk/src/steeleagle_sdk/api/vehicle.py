@@ -55,7 +55,23 @@ class Vehicle:
         ParseDict(velocity.model_dump(), req.velocity)
         ParseDict(duration.model_dump(), req.duration)
         return await run_unary(self.control.Joystick, req)
-
+    
+    async def set_gimbal_pose_target(
+        self,
+        gimbal_id: int,
+        pose: Pose,        
+        pose_mode: PoseMode | None = None,
+        frame: ReferenceFrame | None = None,
+    ) -> Response:
+        req = control_proto.SetGimbalPoseTargetRequest()
+        req.gimbal_id = int(gimbal_id)
+        ParseDict(pose.model_dump(), req.pose)
+        if pose_mode is not None:
+            req.pose_mode = pose_mode
+        if frame is not None:
+            req.frame = frame
+        return await run_unary(self.control.SetGimbalPoseTarget, req)
+        
     async def take_off(self, take_off_altitude: float) -> AsyncIterator[Response]:
         req = control_proto.TakeOffRequest()
         req.take_off_altitude = float(take_off_altitude)
@@ -144,11 +160,6 @@ class Vehicle:
         async for msg in run_streaming(self.control.SetHeading, req):
             yield msg
 
-    async def set_gimbal_pose_target(
-        self,
-        gimbal_id: int,
-        pose: Pose,
-        
     async def set_gimbal_pose(
         self,
         gimbal_id: int,
