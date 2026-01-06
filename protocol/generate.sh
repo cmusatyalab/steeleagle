@@ -7,7 +7,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 PROTO_ROOT="$REPO_ROOT/protocol"   # input .proto files live here
 SDK_DIR="$REPO_ROOT/sdk"
+
 OUTPATH="$SDK_DIR/src/steeleagle_sdk/protocol"  # output python files live here
+if [[ $# = 1 ]]; then
+  OUTPATH="$1"
+fi
 DESC_OUT="$OUTPATH/protocol.desc"  # descriptor output
 
 # Prefer venv python if activated; otherwise python3
@@ -27,8 +31,8 @@ $PYTHON -c "import grpc_tools.protoc" >/dev/null 2>&1 || {
   exit 1
 }
 
-mkdir -p "$(dirname "$DESC_OUT")"
 mkdir -p "$OUTPATH"
+mkdir -p "$(dirname "$DESC_OUT")"
 
 # --- proto file lists ---
 MSG_PROTOS=(
@@ -62,10 +66,9 @@ $PROTOCPATH -I "$PROTO_ROOT" \
   --python_out="$OUTPATH" \
   "${MSG_PROTOS[@]}"
 
-# --- Build the service protocols (Python + gRPC stubs + .pyi) ---
+# --- Build the service protocols (Python + gRPC stubs) ---
 $PROTOCPATH -I "$PROTO_ROOT" \
   --python_out="$OUTPATH" \
-  --pyi_out="$OUTPATH" \
   --grpc_python_out="$OUTPATH" \
   "${SVC_PROTOS[@]}"
 
