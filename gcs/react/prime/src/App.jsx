@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import useWebSocket, { ReadyState } from "react-use-websocket"
 import './App.css'
 import React from 'react'
 import { Menubar } from 'primereact/menubar';
@@ -21,7 +22,7 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
-import { FASTAPI_URL } from './config.js';
+import { FASTAPI_URL, WEBSOCKET_URL } from './config.js';
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 function App() {
@@ -38,7 +39,29 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
-  const [imagerySrc, setImagerySrc] = useState(null);
+
+  const { sendMessage, lastMessage, readyState } = useWebSocket(
+    WEBSOCKET_URL + '/ws',
+    {
+      share: false,
+      shouldReconnect: () => true,
+    },
+  );
+
+  // Run when the connection state (readyState) changes
+  useEffect(() => {
+    console.log("Connection state changed")
+  }, [readyState]);
+
+  // Run when a new WebSocket message is received (lastMessage)
+  useEffect(() => {
+    if (lastMessage != null) {
+      var image = document.getElementById("image_stream");
+      if (image != null) {
+      image.src = "data:image/jpeg;base64," + lastMessage.data;
+      }
+    }
+  }, [lastMessage]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +83,7 @@ function App() {
 
     const intervalId = setInterval(fetchData, 1000);
     return () => clearInterval(intervalId);
-  }, [useLocalVehicle]); // Empty dependency array means this runs once on mount
+  }, [useLocalVehicle]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,27 +102,6 @@ function App() {
                 console.log(error);
               }
               setVehicles(v);
-            }
-          },
-        });
-      };
-    }
-    sse();
-    return () => {
-      controller.abort();
-    };
-
-  }, [useLocalVehicle]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const sse = async () => {
-      if (useLocalVehicle) {
-        await fetchEventSource(`${FASTAPI_URL}/api/local/imagery`, {
-          signal: controller.signal,
-          onmessage(ev) {
-            if (ev.event == "driver_imagery") {
-              console.log(ev.data);
             }
           },
         });
@@ -141,10 +143,10 @@ function App() {
       onJoystick({ yvel: -1.0, duration: 1 });
     }
     else if (e.code === 'KeyL') {
-      onJoystick({ angularvel: 1.0, duration: 1 });
+      onJoystick({ angularvel: 20.0, duration: 1 });
     }
     else if (e.code === 'KeyJ') {
-      onJoystick({ angularvel: -1.0, duration: 1 });
+      onJoystick({ angularvel: -20.0, duration: 1 });
     }
     else if (e.code === 'KeyI') {
       onJoystick({ zvel: 1.0, duration: 1 });
@@ -305,7 +307,7 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} imagerySrc={imagerySrc} />}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>

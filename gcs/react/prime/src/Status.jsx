@@ -6,7 +6,7 @@ import { Card } from 'primereact/card';
 function Status({ selectedVehicle, vehicles }) {
     if (vehicles.length > 0 && selectedVehicle) {
         let v = vehicles.find(v => v.name === selectedVehicle);
-        let last_updated = `${Math.ceil(v.last_updated)} sec`
+        let last_updated = `${Math.ceil(v.last_updated)} sec` || 'Unknown'
         let battery_severity = "info";
         let gps_severity = "info";
         let compass_severity = "info";

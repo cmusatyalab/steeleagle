@@ -1,23 +1,25 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
-from fastapi.middleware.cors import CORSMiddleware
-import zmq
-import zmq.asyncio
 import asyncio
 import base64
+import io
 import json
+import logging
+import os
+import random
 import time
 
 import grpc
 import redis
 import toml
-import time
-import os
-import random
+import zmq
+import zmq.asyncio
+from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from google.protobuf.message import DecodeError
 from PIL import Image
-import base64
-from pydantic import BaseModel, Field, NonNegativeInt, NonNegativeFloat
+from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
 from pydantic_extra_types.coordinate import Latitude, Longitude
+from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
     JoystickRequest,
@@ -32,9 +34,6 @@ from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     UploadRequest,
 )
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
-from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
-from google.protobuf.message import DecodeError
-import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +79,7 @@ class Vehicle(BaseModel):
     selected: bool = Field(default=False)
     home: Location | None = None
     current: Location
-    bearing: NonNegativeInt
+    bearing: NonNegativeFloat
 
 
 # Initialize ZeroMQ context
@@ -92,7 +91,7 @@ control_stub = mission_stub = None
 red = None
 tel_sock = image_sock = None
 
-with open("config.toml", "r") as file:
+with open("config.toml") as file:
     cfg = toml.load(file)
 
 app.add_middleware(
@@ -114,6 +113,7 @@ async def startup_event():
         control_stub, \
         mission_stub, \
         tel_sock, \
+        image_sock, \
         zmq_context
 
     with open("config.toml") as file:
@@ -141,6 +141,10 @@ async def startup_event():
     image_sock = zmq_context.socket(zmq.SUB)
     image_sock.connect(cfg["zmq"]["imagery"])
     image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
+    if tel_sock:
+        logger.info(f"Subscribed to telemetry at {cfg['zmq']['driver_telemetry']} ")
+    if image_sock:
+        logger.info(f"Subscribed to imagery at {cfg['zmq']['imagery']} ")
 
 
 # API Routes
@@ -304,50 +308,31 @@ async def get_image():
     return {"error": "Image not found"}
 
 
-@app.get("/api/local/imagery")
-async def stream_imagery():
-    """Stream ZeroMQ messages to the client via SSE"""
-
-    async def event_generator():
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
         try:
-            while True:
-                try:
-                    if image_sock:
-                        # Receive message from ZeroMQ (non-blocking)
-                        message = await image_sock.recv_multipart(flags=zmq.NOBLOCK)
-                        frame = Frame()
-                        frame.ParseFromString(message[1])
-                        with open("/tmp/driver_imagery.jpg", "wb") as f:
-                            f.write(frame.data)
-                    else:
-                        generate_random_jpg(
-                            "/tmp/driver_imagery.jpg", width=320, height=240
-                        )
-                    # Format as SSE
-                    event_str = "event: driver_imagery"
-                    data_str = "data: new image"
-                    yield f"{event_str}\n{data_str}\n\n"
-                    await asyncio.sleep(0.1)
-                except zmq.Again:
-                    # No message available, wait a bit
-                    await asyncio.sleep(0.1)
-                    # Send keep-alive comment
-                    yield ": keep-alive\n\n"
-                except DecodeError as de:
-                    logger.error(f"{de} {message}!")
-                    yield ": keep-alive\n\n"
-        except asyncio.CancelledError:
-            logging.error("Client canceled SSE.")
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable buffering in nginx
-        },
-    )
+            if image_sock:
+                # Receive message from ZeroMQ (non-blocking)
+                message = await image_sock.recv_multipart(flags=zmq.NOBLOCK)
+                frame = Frame()
+                frame.ParseFromString(message[1])
+                encoded_img = Image.frombuffer(
+                    mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
+                )
+                resized = encoded_img.resize((320, 180))
+                # resized.save("/tmp/driver_imagery.jpg")
+                img_bytes = io.BytesIO()
+                # resized.save(img_bytes, format='JPEG')
+                encoded_img.save(img_bytes, format="JPEG")
+                await websocket.send_text(
+                    {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
+                )
+            else:
+                await websocket.send_text("keep-alive")
+        except zmq.Again:
+            await asyncio.sleep(0.1)
 
 
 @app.post("/api/start")
@@ -365,12 +350,12 @@ async def start(name: str = None) -> JSONResponse:
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        ) from e
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
 
 
 @app.post("/api/upload")
@@ -390,12 +375,12 @@ async def upload(req: Upload, name: str = None) -> JSONResponse:
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        ) from e
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
 
 
 @app.post("/api/joystick")
@@ -418,12 +403,12 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        ) from e
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
 
 
 @app.post("/api/command")
@@ -455,13 +440,13 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
 
             return JSONResponse(status_code=200, content="Return to Home command sent.")
         elif req.hold:
-            stop = StopRequest()
-            call = mission_stub.Stop
-            await call(stop, metadata=(("identity", "server"),))
             hold = HoldRequest()
             call = control_stub.Hold
             async for response in call(hold, metadata=(("identity", "server"),)):
                 logger.info(f"Response for hold: {response.status}")
+            stop = StopRequest()
+            call = mission_stub.Stop
+            await call(stop, metadata=(("identity", "server"),))
 
             return JSONResponse(
                 status_code=200,
@@ -470,12 +455,12 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
     except grpc.aio.AioRpcError as e:
         raise HTTPException(
             status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        ) from e
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
     except Exception as e:
         logger.error(e)
-        raise HTTPException(status_code=500, detail=f"Error: {e.message}")
+        raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
 
 
 # Serve Vite static files
@@ -494,5 +479,8 @@ async def serve_spa(full_path: str):
 # Cleanup on shutdown
 @app.on_event("shutdown")
 async def shutdown_event():
-    tel_sock.close()
+    if tel_sock:
+        tel_sock.close()
+    if image_sock:
+        image_sock.close()
     zmq_context.term()

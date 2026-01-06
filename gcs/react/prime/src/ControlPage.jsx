@@ -135,10 +135,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
-              { useLocalVehicle ?
-                <Image height="90%" width="90%" src={`${FASTAPI_URL}/driver_imagery?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"/>
+              {useLocalVehicle ?
+                <Image height="100%" width="100%" pt={{
+                  image: {id: 'image_stream'}
+                }} src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
                 :
-                <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true"/>
+                <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
               }
             </SplitterPanel>
           </Splitter>
