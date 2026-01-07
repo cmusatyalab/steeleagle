@@ -44,6 +44,13 @@ dependencies = [
     "gabriel-protocol>=4.0",
     "scipy>=1.16.3",
 ]
+
+[project.optional-dependencies]
+dev = [
+  "grpcio-tools",
+  "protoletariat"
+]
+
 [project.scripts]
 dsl_compile = "steeleagle_sdk.dsl:cli_compile_dsl"
 

@@ -1,0 +1,2 @@
+[console_scripts]
+dsl_compile = steeleagle_sdk.dsl:cli_compile_dsl
