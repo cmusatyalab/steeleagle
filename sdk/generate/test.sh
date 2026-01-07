@@ -1,1 +1,0 @@
-uv run python -m grpc_tools.protoc --version

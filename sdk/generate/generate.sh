@@ -67,9 +67,10 @@ PROTOC=(uv run python -m grpc_tools.protoc)
   "${ALL_PROTOS[@]/#/$PROTO_ROOT/}"
 
 uv run protol \
+  -o "$PKG_ROOT" \
   --in-place \
-  -o "$SDK_DIR/src" \
-  "$PKG_ROOT"
+  protoc -p "$PROTO_ROOT" \
+  $(find "$PROTO_ROOT" -name '*.proto' | sort)
 
 
 popd >/dev/null
