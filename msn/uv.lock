@@ -1305,15 +1305,18 @@ requires-dist = [
     { name = "folium", specifier = ">=0.20.0" },
     { name = "gabriel-protocol", specifier = ">=4.0" },
     { name = "grpcio", specifier = ">=1.74.0" },
+    { name = "grpcio-tools", marker = "extra == 'dev'" },
     { name = "lark", specifier = ">=1.2.2" },
     { name = "matplotlib", specifier = ">=3.10.6" },
     { name = "protobuf", specifier = ">=3.12" },
+    { name = "protoletariat", marker = "extra == 'dev'" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pygls" },
     { name = "pyzmq", specifier = ">=27.1.0" },
     { name = "scipy", specifier = ">=1.16.3" },
     { name = "shapely", specifier = ">=2.1.1" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "typing-extensions"
