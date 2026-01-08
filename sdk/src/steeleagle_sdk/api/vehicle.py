@@ -53,7 +53,8 @@ class Vehicle:
     ) -> AsyncIterator[Response]:
         req = control_proto.JoystickRequest()
         ParseDict(velocity.model_dump(), req.velocity)
-        ParseDict(duration.model_dump(), req.duration)
+        if duration is not None:
+            ParseDict(duration.model_dump(), req.duration)
         return await run_unary(self.control.Joystick, req)
     
     async def set_gimbal_pose_target(

@@ -286,6 +286,7 @@ class DetectionFound(Event):
         # Keep consuming FrameResult messages until a matching detection appears.
         while True:
             res: FrameResult = await fetch_results("object-engine")
+            logger.info("DetectionFound: fetched results: %s", res)
 
             if not res or not res.result:
                 continue  # no ComputeResult entries

@@ -83,9 +83,9 @@ class Patrol(Action):
     async def execute(self):
         map = self.waypoints.calculate()
         for area_name, points in map.items():
-            logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
+            logger.debug("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
             for p in points:
-                logger.info(f"Patrol: goto {p}")
+                logger.debug(f"Patrol: goto {p}")
                 goto = SetGlobalPosition(
                     location=common.Location(
                         latitude=float(p["lat"]),
@@ -113,7 +113,7 @@ class Track(Action):
     hfov_deg: float = Field(69.0, gt=0, description="Horizontal FOV in degrees")
     vfov_deg: float = Field(43.0, gt=0, description="Vertical FOV in degrees")
     compute_stream: str = Field(
-        "openscout-object",
+        "object-engine",
         description="Name of compute stream to pull detections from",
     )
 
@@ -139,15 +139,18 @@ class Track(Action):
 
     @property
     def _pixel_center(self) -> tuple[float, float]:
+        logger.debug("pixel center: w=%d, h=%d", self.image_width, self.image_height)
         return (self.image_width / 2.0, self.image_height / 2.0)
 
     @staticmethod
     def _clamp(value: float, minimum: float, maximum: float) -> float:
+        logger.debug("clamping value=%f, min=%f, max=%f", value, minimum, maximum)
         return float(np.clip(value, minimum, maximum))
 
     def _find_intersection(
         self, target_dir: np.ndarray, target_insct: np.ndarray
     ) -> np.ndarray | None:
+        logger.debug("finding intersection for dir=%s, insct=%s", target_dir, target_insct)
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
@@ -163,8 +166,9 @@ class Track(Action):
     async def _estimate_distance(
         self, yaw_deg: float, pitch_deg: float, telemetry
     ) -> np.ndarray:
+        logger.debug("estimating distance for yaw=%.2f, pitch=%.2f", yaw_deg, pitch_deg)
         alt = telemetry.position_info.relative_position.z
-        gimbal_pitch_deg = telemetry.gimbal_info.gimbals[0].pose_body.pitch
+        gimbal_pitch_deg = telemetry.gimbal_info.gimbals[0].pose_neu.pitch
 
         vf = np.array([0.0, 1.0, 0.0])
         r = R.from_euler(
@@ -183,6 +187,7 @@ class Track(Action):
     async def _compute_error(
         self, box: BoundingBox, telemetry
     ) -> tuple[float, float, float]:
+        logger.debug("computing error for box=%s", box)
         img_w, img_h = self.image_width, self.image_height
         cx, cy = self._pixel_center
         y_min_pix = box.y_min * img_h
@@ -215,8 +220,15 @@ class Track(Action):
         orbit_speed: float,
         telemetry,
     ) -> None:
-        prev_gimbal_pitch = telemetry.gimbal_info.gimbals[0].pose_body.pitch
+        logger.info(
+            "actuating: follow_vel=%.3f, yaw_vel=%.3f, gimbal_error=%.3f, orbit_speed=%.3f",
+            follow_vel,
+            yaw_vel_deg,
+            gimbal_error_deg,
+            orbit_speed,
+        )
 
+        prev_gimbal_pitch = telemetry.gimbal_info.gimbals[0].pose_neu.pitch
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
         set_joystick = Joystick(
             velocity=common.Velocity(
@@ -229,7 +241,13 @@ class Track(Action):
 
         # Gimbal pitch command
         desired_pitch = (gimbal_error_deg * 0.5) + prev_gimbal_pitch
-        set_gimbal = SetGimbalPoseTarget(pitch=desired_pitch, yaw=0.0, roll=0.0)
+        pose = common.Pose(
+            pitch=desired_pitch,
+            yaw=0.0,
+            roll=0.0,
+        )
+        # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
+        set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=None, frame=None)
         await set_gimbal.execute()
 
     async def execute(self):
@@ -241,7 +259,7 @@ class Track(Action):
                 # Stop motion and exit
                 telemetry = await fetch_telemetry()
                 await self._actuate(0.0, 0.0, 0.0, 0.0, 0.0, telemetry)
-                logger.info(
+                logger.debug(
                     "Track: target lost for %.1fs, exiting",
                     now - last_seen,
                 )
@@ -249,9 +267,12 @@ class Track(Action):
 
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
+            logger.info("Track: telemetry fetched: %s", telemetry)
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
+            logger.info("Track: fetched results from stream=%s", res)
+
             box: BoundingBox | None = None
             if not res or not res.result:
                 continue  # no ComputeResult entries
@@ -290,7 +311,7 @@ class Track(Action):
                     await asyncio.sleep(self._poll_period)
                     continue
 
-                logger.info(
+                logger.debug(
                     "Track: forward=%.3f, yaw=%.3f, gimbal=%.3f, orbit=%.3f",
                     follow_vel,
                     yaw_vel,

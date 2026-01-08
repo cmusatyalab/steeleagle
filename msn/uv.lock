@@ -1282,7 +1282,7 @@ requires-dist = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.14"
+version = "1.0.15"
 source = { editable = "../sdk" }
 dependencies = [
     { name = "aiosqlite" },

@@ -155,6 +155,7 @@ class MissionStore:
     async def start(self):
         self.db = await aiosqlite.connect(self.db_path)
         await self.db.executescript(INIT_SQL)
+        await self.db.execute("DELETE FROM latest")
         await self.db.commit()
 
         self._telemetry = self.ctx.socket(zmq.SUB)
