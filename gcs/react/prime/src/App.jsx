@@ -12,6 +12,8 @@ import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { MultiStateCheckbox } from 'primereact/multistatecheckbox';
+import { FloatLabel } from 'primereact/floatlabel';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
@@ -26,7 +28,7 @@ import { FASTAPI_URL, WEBSOCKET_URL } from './config.js';
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 function App() {
-  const appName = "Talon";
+  const appName = "SteelEagle";
   const [vehicles, setVehicles] = useState([]);
   const toast = useRef(null);
   const [debugBarVisible, setDebugBarVisible] = useState(false);
@@ -39,6 +41,17 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
+  const [manualControl, setManualControl] = useState(true);
+
+  const controlOptions = [
+    { value: true, icon: 'pi pi-lock-open' },
+    { value: false, icon: 'pi pi-lock' }
+  ];
+
+  const trackingOptions = [
+    { value: true, icon: 'pi pi-bullseye' },
+    { value: false, icon: 'pi pi-map' }
+  ];
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     WEBSOCKET_URL + '/ws',
@@ -58,7 +71,7 @@ function App() {
     if (lastMessage != null) {
       var image = document.getElementById("image_stream");
       if (image != null) {
-      image.src = "data:image/jpeg;base64," + lastMessage.data;
+        image.src = "data:image/jpeg;base64," + lastMessage.data;
       }
     }
   }, [lastMessage]);
@@ -115,48 +128,47 @@ function App() {
   }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
-    setKeyPressed(true);
-    if (e.code === 'Space') {
-      setKey('space');
-
-      return;
+    if (manualControl) {
+      setKeyPressed(true);
+      if (e.code === 'Space') {
+        onCommand({ hold: true });
+      }
+      else if (e.code === 'KeyT') {
+        onCommand({ takeoff: true });
+      }
+      else if (e.code === 'KeyG') {
+        onCommand({ land: true });
+      }
+      else if (e.code === 'Home') {
+        onCommand({ rth: true });
+      }
+      else if (e.code === 'KeyW') {
+        onJoystick({ xvel: 1.0, duration: 1 });
+      }
+      else if (e.code === 'KeyS') {
+        onJoystick({ xvel: -1.0, duration: 1 });
+      }
+      else if (e.code === 'KeyD') {
+        onJoystick({ yvel: 1.0, duration: 1 });
+      }
+      else if (e.code === 'KeyA') {
+        onJoystick({ yvel: -1.0, duration: 1 });
+      }
+      else if (e.code === 'KeyL') {
+        onJoystick({ angularvel: 20.0, duration: 1 });
+      }
+      else if (e.code === 'KeyJ') {
+        onJoystick({ angularvel: -20.0, duration: 1 });
+      }
+      else if (e.code === 'KeyI') {
+        onJoystick({ zvel: 1.0, duration: 1 });
+      }
+      else if (e.code === 'KeyK') {
+        onJoystick({ zvel: -1.0, duration: 1 });
+      }
+      //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
+      setKey(e.key);
     }
-    else if (e.code === 'KeyT') {
-      onCommand({ takeoff: true });
-    }
-    else if (e.code === 'KeyG') {
-      onCommand({ land: true });
-    }
-    else if (e.code === 'Home') {
-      onCommand({ rth: true });
-    }
-    else if (e.code === 'KeyW') {
-      onJoystick({ xvel: 1.0, duration: 1 });
-    }
-    else if (e.code === 'KeyS') {
-      onJoystick({ xvel: -1.0, duration: 1 });
-    }
-    else if (e.code === 'KeyD') {
-      onJoystick({ yvel: 1.0, duration: 1 });
-    }
-    else if (e.code === 'KeyA') {
-      onJoystick({ yvel: -1.0, duration: 1 });
-    }
-    else if (e.code === 'KeyL') {
-      onJoystick({ angularvel: 20.0, duration: 1 });
-    }
-    else if (e.code === 'KeyJ') {
-      onJoystick({ angularvel: -20.0, duration: 1 });
-    }
-    else if (e.code === 'KeyI') {
-      onJoystick({ zvel: 1.0, duration: 1 });
-    }
-    else if (e.code === 'KeyK') {
-      onJoystick({ zvel: -1.0, duration: 1 });
-    }
-    //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
-    setKey(e.key);
-
   };
 
   const [bindKeyDown, unbindKeyDown] = useEventListener({
@@ -175,30 +187,45 @@ function App() {
   });
 
   useEffect(() => {
-    if (gamePadButton == 3) {
-      onCommand({ takeoff: true });
-    }
-    else if (gamePadButton == 0) {
-      onCommand({ land: true });
-    }
-    else if (gamePadButton == 4) {
-      onCommand({ rth: true });
+    if (manualControl) {
+      Object.entries(gamePadButton).forEach(([buttonIndex, state]) => {
+        console.log(`Index: ${buttonIndex}, Pressed: ${state.pressed}, Touched: ${state.touched}`);
+        if (buttonIndex == 3 && state.pressed) {
+          onCommand({ takeoff: true });
+        }
+        else if (buttonIndex == 0 && state.pressed) {
+          onCommand({ land: true });
+        }
+        else if (buttonIndex == 4 && state.pressed) {
+          onCommand({ rth: true });
+        }
+      });
     }
   }, [gamePadButton]);
 
   useEffect(() => {
-    //pitch
-    if (parseInt(gamePadAxis.index, 10) == 1) {
-      onJoystick({ xvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
-    }//yaw
-    else if (parseInt(gamePadAxis.index, 10) == 0) {
-      onJoystick({ angularvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
-    }//thrust
-    else if (parseInt(gamePadAxis.index, 10) == 3) {
-      onJoystick({ zvel: -1 * parseFloat(gamePadAxis.value), duration: 1 });
-    }//roll
-    else if (parseInt(gamePadAxis.index, 10) == 2) {
-      onJoystick({ yvel: parseFloat(gamePadAxis.value), duration: 1 });
+    let max_planar_vel = 5.0;
+    let a = 0.0;
+    let x = 0.0;
+    let y = 0.0;
+    let z = 0.0;
+
+    if (manualControl) {
+      Object.entries(gamePadAxis).forEach(([axisIndex, value]) => {
+        if (axisIndex == 0) {
+          a = value;
+        }
+        else if (axisIndex == 1) {
+          z = value;
+        }
+        else if (axisIndex == 2 || axisIndex == 4) {
+          y = value;
+        }
+        else if (axisIndex == 3 || axisIndex == 5) {
+          x = value;
+        }
+      });
+      onJoystick({ xvel: -1 * max_planar_vel * x, yvel: max_planar_vel * y, zvel: -1 * max_planar_vel * z, angularvel: 20 * a, duration: 1 });
     }
   }, [gamePadAxis]);
 
@@ -295,8 +322,8 @@ function App() {
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
       <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} />
-      <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-check" offIcon="pi pi-times"
-        checked={tracking} onChange={(e) => setTracking(e.value)} />
+      <MultiStateCheckbox tooltip={manualControl ? "Manual Control: Enabled" : "Manual Control: Disabled"} data-pr-position="bottom" empty={false} value={manualControl} onChange={(e) => setManualControl(e.value)} options={controlOptions} optionValue="value" />
+      <MultiStateCheckbox tooltip={tracking ? "Vehicle Tracking: On" : "Vehicle Tracking: Off"} data-pr-position="bottom" empty={false} value={tracking} onChange={(e) => setTracking(e.value)} options={trackingOptions} optionValue="value" />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
         placeholder="Select a Vehicle" className="w-full md:w-14rem" />
       <Button size="small" rounded text label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />

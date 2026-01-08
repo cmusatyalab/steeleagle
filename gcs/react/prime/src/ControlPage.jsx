@@ -8,7 +8,7 @@ import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Splitter, SplitterPanel } from 'primereact/splitter';
 import { Toolbar } from 'primereact/toolbar';
-import { Dropdown } from 'primereact/dropdown';
+import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
 import { DataTable } from 'primereact/datatable';
@@ -119,10 +119,16 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
 
   const startContent = (
     <>
-      <ToggleButton onLabel="Armed" offLabel="Disarmed" onIcon="pi pi-times pi-spin" offIcon="pi pi-ban"
-        checked={armed} onChange={(e) => setArmed(e.value)} className="w-9rem mr-2" />
-      <Button icon="pi pi-home" label="RTH" className="mr-2" onClick={() => onCommand({ rth: true })} />
-      <Button icon="pi pi-stop-circle" label="Hover" onClick={() => onCommand({ hold: true })} />
+    <div className="card flex flex-column gap-3">
+      <ButtonGroup className="mr-2">
+        <Button size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+        <Button size="small" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
+      </ButtonGroup>
+      <ButtonGroup className="ml-2">
+        <Button size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+        <Button size="small" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+      </ButtonGroup>
+      </div>
     </>
   );
 
@@ -137,7 +143,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
               {useLocalVehicle ?
                 <Image height="100%" width="100%" pt={{
-                  image: {id: 'image_stream'}
+                  image: { id: 'image_stream' }
                 }} src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
                 :
                 <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
