@@ -47,7 +47,7 @@ function Status({ selectedVehicle, vehicles }) {
 
         return (
             <>
-                <Card title={selectedVehicle} subTitle={v.model}>
+                <Card style={{ backgroundColor: 'var(--surface-0)'}} title={selectedVehicle} subTitle={v.model}>
                     <Tag className="mr-2" icon="pi pi-power-off" severity={battery_severity} value="Battery"></Tag>
                     <Tag className="mr-2" icon="pi pi-compass" severity={compass_severity} value="Compass"></Tag>
                     <Tag className="mr-2" icon="pi pi-map-marker" severity={gps_severity} value="GPS"></Tag>
