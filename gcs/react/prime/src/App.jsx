@@ -13,7 +13,8 @@ import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { MultiStateCheckbox } from 'primereact/multistatecheckbox';
-import { FloatLabel } from 'primereact/floatlabel';
+import { Knob } from 'primereact/knob';
+import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
@@ -32,6 +33,7 @@ function App() {
   const [vehicles, setVehicles] = useState([]);
   const toast = useRef(null);
   const [debugBarVisible, setDebugBarVisible] = useState(false);
+  const [settingsBarVisible, setSettingsBarVisible] = useState(false);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
@@ -42,6 +44,10 @@ function App() {
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
   const [manualControl, setManualControl] = useState(true);
+  const [commandProcessing, setCommandProcessing] = useState(false);
+  const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
+  const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
+  const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
 
   const controlOptions = [
     { value: true, icon: 'pi pi-lock-open' },
@@ -58,6 +64,7 @@ function App() {
     {
       share: false,
       shouldReconnect: () => true,
+      disableJson: true
     },
   );
 
@@ -100,27 +107,27 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const sse = async () => {
-      if (useLocalVehicle) {
+    if (useLocalVehicle) {
+      const sse = async () => {
         await fetchEventSource(`${FASTAPI_URL}/api/local/vehicle`, {
           signal: controller.signal,
           onmessage(ev) {
             if (ev.event == "driver_telemetry") {
               const v = [];
-              console.log(ev.data);
+              //console.log(ev.data);
               try {
                 v.push(JSON.parse(ev.data));
+                setVehicles(v);
               }
               catch (error) {
                 console.log(error);
               }
-              setVehicles(v);
             }
           },
         });
-      };
-    }
-    sse();
+      }
+      sse();
+    };
     return () => {
       controller.abort();
     };
@@ -189,7 +196,6 @@ function App() {
   useEffect(() => {
     if (manualControl) {
       Object.entries(gamePadButton).forEach(([buttonIndex, state]) => {
-        console.log(`Index: ${buttonIndex}, Pressed: ${state.pressed}, Touched: ${state.touched}`);
         if (buttonIndex == 3 && state.pressed) {
           onCommand({ takeoff: true });
         }
@@ -201,10 +207,9 @@ function App() {
         }
       });
     }
-  }, [gamePadButton]);
+  }, [gamePadButton, manualControl]);
 
   useEffect(() => {
-    let max_planar_vel = 5.0;
     let a = 0.0;
     let x = 0.0;
     let y = 0.0;
@@ -225,9 +230,11 @@ function App() {
           x = value;
         }
       });
-      onJoystick({ xvel: -1 * max_planar_vel * x, yvel: max_planar_vel * y, zvel: -1 * max_planar_vel * z, angularvel: 20 * a, duration: 1 });
+      if (!commandProcessing) {
+        onJoystick({ xvel: -1 * basePlanarVelocity * x, yvel: basePlanarVelocity * y, zvel: -1 * basePlanarVelocity * z, angularvel: baseAngularVelocity * a, duration: 1 });
+      }
     }
-  }, [gamePadAxis]);
+  }, [gamePadAxis, manualControl, commandProcessing]);
 
   useEffect(() => {
     if (selectedMenu == 'Control') {
@@ -261,20 +268,23 @@ function App() {
   }
 
   const onCommand = async (body) => {
-    //toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
+    toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     };
+    setCommandProcessing(true);
     const response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
     if (!response.ok) {
       const result = await response.json();
       toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
+      setCommandProcessing(false);
     }
     else {
       const result = await response.json();
       toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
+      setCommandProcessing(false);
 
     }
 
@@ -321,11 +331,12 @@ function App() {
   const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
   const menuBarEnd = (
     <div className="flex align-items-center gap-2">
-      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} />
+      <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
       <MultiStateCheckbox tooltip={manualControl ? "Manual Control: Enabled" : "Manual Control: Disabled"} data-pr-position="bottom" empty={false} value={manualControl} onChange={(e) => setManualControl(e.value)} options={controlOptions} optionValue="value" />
       <MultiStateCheckbox tooltip={tracking ? "Vehicle Tracking: On" : "Vehicle Tracking: Off"} data-pr-position="bottom" empty={false} value={tracking} onChange={(e) => setTracking(e.value)} options={trackingOptions} optionValue="value" />
       <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
         placeholder="Select a Vehicle" className="w-full md:w-14rem" />
+      <Button size="small" rounded text label="" icon="pi pi-cog" onClick={() => setSettingsBarVisible(true)} />
       <Button size="small" rounded text label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
     </div>
   );
@@ -371,7 +382,28 @@ function App() {
           <Cli vehicle={selectedVehicle} />
         </div>
       </Sidebar>
+      <Sidebar visible={settingsBarVisible} position="right" onHide={() => setSettingsBarVisible(false)} style={{ width: "50%" }}>
+        <h1>Settings</h1>
+        <div class="flex flex-row gap-2">
+          <div class="flex flex-column flex-wrap align-content-center">
+            <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
+            <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
+          </div>
+          <div class="flex flex-column flex-wrap">
+            <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
+            <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
+          </div>
+        </div>
+        <div class="flex flex-row gap-2">
+          <div class="flex flex-column flex-wrap align-content-center">
+            <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
+            <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
+          </div>
+          <div class="flex flex-column flex-wrap">
 
+          </div>
+        </div>
+      </Sidebar>
       <Toast ref={toast} />
     </>
   );

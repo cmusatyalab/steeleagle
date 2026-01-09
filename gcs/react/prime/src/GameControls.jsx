@@ -3,11 +3,11 @@ import { useGamepad, BUTTON_LABELS, AXIS_LABELS } from "react-gamepad-tl";
 import { Fieldset } from 'primereact/fieldset';
 import { Toast } from 'primereact/toast';
 
-function GameControls({ setAxis, setButton }) {
+function GameControls({ setAxis, setButton, deadzone }) {
   const [log, setLog] = useState([]);
   const gamePadToast = useRef(null);
   const { isGamepadConnected, gamepads, buttonStates, axisStates } = useGamepad(
-    { deadzone: 0.1,
+    { deadzone: deadzone/100,
       pollInterval: 100
     }
   );
