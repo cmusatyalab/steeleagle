@@ -1,0 +1,26 @@
+[project]
+name = "steeleagle-mission"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Mihir Bala", email = "mbala@andrew.cmu.edu" },
+    { name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu" },
+    { name = "Anthony Chen", email = "xianglic@andrew.cmu.edu" },
+    { name = "Aditya Chanana", email = "achanana@andrew.cmu.edu" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "dacite>=1.9.2",
+    "steeleagle-sdk",
+]
+
+[project.scripts]
+steeleagle-mission = "steeleagle_mission.main:cli"
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+steeleagle-sdk={path="../sdk", editable = true }
