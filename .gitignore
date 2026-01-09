@@ -112,3 +112,4 @@ gcs/react/backend/config.toml
 */yarn-error.log*
 
 gcs/vscode-client/node_modules/*
+gcs/cli/mission.json

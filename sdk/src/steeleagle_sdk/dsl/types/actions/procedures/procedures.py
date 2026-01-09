@@ -258,7 +258,7 @@ class Track(Action):
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 # Stop motion and exit
                 telemetry = await fetch_telemetry()
-                await self._actuate(0.0, 0.0, 0.0, 0.0, 0.0, telemetry)
+                await self._actuate(0.0, 0.0, 0.0, 0.0, telemetry)
                 logger.debug(
                     "Track: target lost for %.1fs, exiting",
                     now - last_seen,
