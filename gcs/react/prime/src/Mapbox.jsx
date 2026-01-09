@@ -80,6 +80,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
         .setLngLat([v.current.long, v.current.lat])
         .setPopup(new mapboxgl.Popup().setHTML(`<strong style="color:black">${v.name}</strong><p style="color:black">${v.current.alt.toFixed(2)} m</p>`)) // add popup
         .addTo(mapRef.current);
+      marker.togglePopup();
       const markerDiv = marker.getElement();
 
       markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
