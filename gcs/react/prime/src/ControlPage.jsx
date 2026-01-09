@@ -121,12 +121,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
     <>
     <div className="card flex flex-column gap-3">
       <ButtonGroup className="mr-2">
-        <Button size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
-        <Button size="small" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
+        <Button size="small" severity="success" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+        <Button size="small" severity="danger" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
       </ButtonGroup>
       <ButtonGroup className="ml-2">
-        <Button size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
-        <Button size="small" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+        <Button size="small" severity="warning" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+        <Button size="small" severity="warning" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
       </ButtonGroup>
       </div>
     </>
@@ -144,7 +144,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
               {useLocalVehicle ?
                 <Image height="100%" width="100%" pt={{
                   image: { id: 'image_stream' }
-                }} src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
+                }} src="logo.svg" preview downloadable="true" />
                 :
                 <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
               }
