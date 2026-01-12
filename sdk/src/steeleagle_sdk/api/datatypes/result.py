@@ -101,8 +101,6 @@ class ComputeResult(Datatype):
         slam_result (SLAMResult): SLAM position estimate
         generic_result (str): JSON result
     """
-
-    timestamp: Timestamp
     engine_name: str
     detection_result: DetectionResult | None = None
     avoidance_result: AvoidanceResult | None = None
@@ -118,7 +116,7 @@ class FrameResult(Datatype):
         frame_id (int): For correlation
         result (List[ComputeResult])
     """
-
     type: str | None = None
     frame_id: int | None = None
     result: list[ComputeResult]
+    timestamp: Timestamp

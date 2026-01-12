@@ -69,8 +69,8 @@ PROTOC=(uv run python -m grpc_tools.protoc)
 uv run protol \
   -o "$PKG_ROOT" \
   --in-place \
-  protoc -p "$PROTO_ROOT" \
-  $(find "$PROTO_ROOT" -name '*.proto' | sort)
+  --create-package \
+  raw < "$DESC_OUT"
 
 
 popd >/dev/null

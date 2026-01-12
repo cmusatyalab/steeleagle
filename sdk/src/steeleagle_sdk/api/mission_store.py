@@ -43,7 +43,14 @@ ON CONFLICT(source, topic) DO UPDATE SET
 """
 
 SQL_SELECT_LATEST = "SELECT payload_json FROM latest WHERE source=? AND topic=?"
-
+SQL_INSERT_EVENT = "INSERT INTO events(source, topic, ts, payload_json) VALUES(?,?,?,?)"
+SQL_SELECT_RANGE = """
+SELECT ts, payload_json
+FROM events
+WHERE source=? AND topic=? AND ts BETWEEN ? AND ?
+ORDER BY ts ASC
+"""
+SQL_DELETE_OLD_EVENTS = "DELETE FROM events WHERE ts < ?"
 
 class MissionStore:
     # ---------- utils ----------
@@ -114,6 +121,16 @@ class MissionStore:
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
+    async def _store_one(self, source: str, topic: str, ts: float, pj: str):
+        # Atomic: either both event+latest write, or neither.
+        await self.db.execute("BEGIN")
+        try:
+            await self.db.execute(SQL_INSERT_EVENT, (source, topic, ts, pj))
+            await self.db.execute(SQL_UPSERT_LATEST, (source, topic, ts, pj))
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
 
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
@@ -127,28 +144,23 @@ class MissionStore:
                 payload = frames[-1]
 
                 model = self._parse_payload(source, payload)
-                ts = time.time()
+                ts = model.timestamp
                 pj = self._to_json(model)
-
-                try:
-                    await self.db.execute(SQL_UPSERT_LATEST, (source, topic, ts, pj))
-                    await self.db.commit()
-                except Exception:
-                    logger.exception("DB upsert failed for %s/%s", source, topic)
+                await self._store_one(source, topic, ts, pj)
         except asyncio.CancelledError:
             pass
         except Exception:
             logger.exception("Consumer crashed (%s)", source)
 
     # ---------- reads ----------
-    async def get_latest(self, source: str, topic: str) -> Datatype:
-        """Read latest from DB and return decoded model (no cache)."""
-        await asyncio.sleep(0)
+    async def get_latest(self, source: str, topic: str, max_age_s: float | None = None):
         async with self.db.execute(SQL_SELECT_LATEST, (source, topic)) as cur:
             row = await cur.fetchone()
             if not row:
                 return None
-            (payload_json,) = row
+            ts, payload_json = row
+            if max_age_s is not None and (time.time() - ts) > max_age_s:
+                return None
             return self._from_json(source, payload_json)
 
     # ---------- lifecycle ----------
