@@ -330,7 +330,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
                 )
             else:
-                await websocket.send_text("keep-alive")
+                await asyncio.sleep(0.1)
         except zmq.Again:
             await asyncio.sleep(0.1)
 

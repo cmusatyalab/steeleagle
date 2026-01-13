@@ -18,7 +18,7 @@ import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
-function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, imagerySrc }) {
+function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, setManualControl }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
 
@@ -75,6 +75,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
   };
 
   const onMissionStart = async () => {
+    setManualControl(false);
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

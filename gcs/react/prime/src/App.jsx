@@ -43,7 +43,7 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
-  const [manualControl, setManualControl] = useState(true);
+  const [manualControl, setManualControl] = useState(false);
   const [commandProcessing, setCommandProcessing] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
@@ -70,7 +70,7 @@ function App() {
 
   // Run when the connection state (readyState) changes
   useEffect(() => {
-    console.log("Connection state changed")
+    console.log(`Connection state changed: ${readyState}`)
   }, [readyState]);
 
   // Run when a new WebSocket message is received (lastMessage)
@@ -345,7 +345,7 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} />}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} setManualControl={setManualControl}/>}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
@@ -384,22 +384,22 @@ function App() {
       </Sidebar>
       <Sidebar visible={settingsBarVisible} position="right" onHide={() => setSettingsBarVisible(false)} style={{ width: "50%" }}>
         <h1>Settings</h1>
-        <div class="flex flex-row gap-2">
-          <div class="flex flex-column flex-wrap align-content-center">
+        <div className="flex flex-row gap-2">
+          <div className="flex flex-column flex-wrap align-content-center">
             <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
             <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
           </div>
-          <div class="flex flex-column flex-wrap">
+          <div className="flex flex-column flex-wrap">
             <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
             <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
           </div>
         </div>
-        <div class="flex flex-row gap-2">
-          <div class="flex flex-column flex-wrap align-content-center">
+        <div className="flex flex-row gap-2">
+          <div className="flex flex-column flex-wrap align-content-center">
             <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
             <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
           </div>
-          <div class="flex flex-column flex-wrap">
+          <div className="flex flex-column flex-wrap">
 
           </div>
         </div>
