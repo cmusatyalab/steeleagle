@@ -3,8 +3,10 @@
 # install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 # install npm
-nvm use 22
+nvm install 22
 # copy config template
 cp ./prime/src/config.js.template ./prime/src/config.js
 # BACKEND
