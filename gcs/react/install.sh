@@ -7,6 +7,10 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 # install npm
 nvm install 22
+source ~/.bashrc
+cd prime
+npm install
+cd ..
 # copy config template
 cp ./prime/src/config.js.template ./prime/src/config.js
 # BACKEND
