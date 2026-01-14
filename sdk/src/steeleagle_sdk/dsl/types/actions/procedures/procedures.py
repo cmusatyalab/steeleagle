@@ -7,7 +7,7 @@ from pydantic import Field
 from ....compiler.registry import register_action
 from ...base import Action
 from ...datatypes import common as common
-from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame
+from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame, PoseMode
 from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
 from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity, SetGimbalPoseTarget
@@ -227,13 +227,11 @@ class Track(Action):
             gimbal_error_deg,
             orbit_speed,
         )
-
-        prev_gimbal_pitch = telemetry.gimbal_info.gimbals[0].pose_neu.pitch
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
         velocity_target=common.Velocity(
                 x_vel=follow_vel,
                 y_vel=orbit_speed,
-                angular_vel=yaw_vel_deg * self.yaw_gain,
+                angular_vel=-1 * yaw_vel_deg * self.yaw_gain,
             )
         logger.info("Actuate: velocity target: %s", velocity_target)
         set_joystick = Joystick(
@@ -242,15 +240,15 @@ class Track(Action):
         await set_joystick.execute()
 
         # Gimbal pitch command
-        desired_pitch = (gimbal_error_deg * 0.5) + prev_gimbal_pitch
-        # pose = common.Pose(
-        #     pitch=desired_pitch,
-        #     yaw=0.0,
-        #     roll=0.0,
-        # )
-        # # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
-        # set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=None, frame=None)
-        # await set_gimbal.execute()
+        desired_pitch = -1 * (gimbal_error_deg * 0.5)
+        pose = common.Pose(
+            pitch=desired_pitch,
+            yaw=0.0,
+            roll=0.0,
+        )
+        # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
+        set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=PoseMode.OFFSET, frame=None)
+        await set_gimbal.execute()
 
     async def execute(self):
         last_seen: float | None = None
