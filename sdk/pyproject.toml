@@ -1,6 +1,6 @@
 [project]
 name = "steeleagle-sdk"
-version = "1.0.15"
+version = "1.0.16"
 description = "SDK for interacting with SteelEagle vehicles."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -52,7 +52,7 @@ dev = [
 ]
 
 [project.scripts]
-dsl_compile = "steeleagle_sdk.dsl:cli_compile_dsl"
+dsl-compile = "steeleagle_sdk.dsl:cli_compile_dsl"
 
 [project.urls]
 Homepage = "https://cmusatyalab.github.io/steeleagle/"

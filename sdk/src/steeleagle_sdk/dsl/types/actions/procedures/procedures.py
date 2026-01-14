@@ -148,20 +148,20 @@ class Track(Action):
         return float(np.clip(value, minimum, maximum))
 
     def _find_intersection(
-        self, target_dir: np.ndarray, target_insct: np.ndarray
+        self, tracker_dir: np.ndarray, tracker_location: np.ndarray
     ) -> np.ndarray | None:
-        logger.debug("finding intersection for dir=%s, insct=%s", target_dir, target_insct)
+        logger.debug("finding intersection for dir=%s, insct=%s", tracker_dir, tracker_location)
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
-        denom = plane_norm.dot(target_dir)
+        denom = plane_norm.dot(tracker_dir)
         if abs(denom) < 1e-6:
             return None
 
-        t = (plane_norm.dot(plane_pt) - plane_norm.dot(target_insct)) / plane_norm.dot(
-            target_dir
+        t = (plane_norm.dot(plane_pt) - plane_norm.dot(tracker_location)) / plane_norm.dot(
+            tracker_dir
         )
-        return target_insct + (t * target_dir)
+        return tracker_location + (t * tracker_dir)
 
     async def _estimate_distance(
         self, yaw_deg: float, pitch_deg: float, telemetry
@@ -230,25 +230,27 @@ class Track(Action):
 
         prev_gimbal_pitch = telemetry.gimbal_info.gimbals[0].pose_neu.pitch
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
-        set_joystick = Joystick(
-            velocity=common.Velocity(
+        velocity_target=common.Velocity(
                 x_vel=follow_vel,
                 y_vel=orbit_speed,
                 angular_vel=yaw_vel_deg * self.yaw_gain,
             )
+        logger.info("Actuate: velocity target: %s", velocity_target)
+        set_joystick = Joystick(
+            velocity=velocity_target
         )
         await set_joystick.execute()
 
         # Gimbal pitch command
         desired_pitch = (gimbal_error_deg * 0.5) + prev_gimbal_pitch
-        pose = common.Pose(
-            pitch=desired_pitch,
-            yaw=0.0,
-            roll=0.0,
-        )
-        # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
-        set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=None, frame=None)
-        await set_gimbal.execute()
+        # pose = common.Pose(
+        #     pitch=desired_pitch,
+        #     yaw=0.0,
+        #     roll=0.0,
+        # )
+        # # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
+        # set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=None, frame=None)
+        # await set_gimbal.execute()
 
     async def execute(self):
         last_seen: float | None = None
@@ -267,11 +269,11 @@ class Track(Action):
 
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
-            logger.info("Track: telemetry fetched: %s", telemetry)
+            # logger.info("Track: telemetry fetched: %s", telemetry)
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            logger.info("Track: fetched results from stream=%s", res)
+            # logger.info("Track: fetched results from stream=%s", res)
 
             box: BoundingBox | None = None
             if not res or not res.result:
@@ -306,6 +308,8 @@ class Track(Action):
                         follow_err, -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
+                    logger.info("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
+
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
                     await asyncio.sleep(self._poll_period)

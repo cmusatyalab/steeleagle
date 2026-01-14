@@ -10,7 +10,7 @@ import zmq
 import zmq.asyncio
 from gabriel_protocol import gabriel_pb2
 from google.protobuf.json_format import MessageToDict
-
+from google.protobuf.timestamp_pb2 import Timestamp
 from ..protocol.messages import result_pb2 as result_proto
 from ..protocol.messages import telemetry_pb2 as telem_proto
 
@@ -33,17 +33,26 @@ CREATE TABLE IF NOT EXISTS latest (
   payload_json TEXT NOT NULL,
   PRIMARY KEY (source, topic)
 );
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,
+  topic  TEXT NOT NULL,
+  ts     REAL NOT NULL,
+  payload_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_stt ON events(source, topic, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 """
 
-SQL_UPSERT_LATEST = """
+SQL_INSERT_LATEST = """
 INSERT INTO latest(source, topic, ts, payload_json) VALUES(?,?,?,?)
 ON CONFLICT(source, topic) DO UPDATE SET
   ts=excluded.ts,
   payload_json=excluded.payload_json
 """
-
-SQL_SELECT_LATEST = "SELECT payload_json FROM latest WHERE source=? AND topic=?"
 SQL_INSERT_EVENT = "INSERT INTO events(source, topic, ts, payload_json) VALUES(?,?,?,?)"
+
+SQL_SELECT_LATEST = "SELECT ts, payload_json FROM latest WHERE source=? AND topic=?"
 SQL_SELECT_RANGE = """
 SELECT ts, payload_json
 FROM events
@@ -51,6 +60,11 @@ WHERE source=? AND topic=? AND ts BETWEEN ? AND ?
 ORDER BY ts ASC
 """
 SQL_DELETE_OLD_EVENTS = "DELETE FROM events WHERE ts < ?"
+
+
+def ts_to_unix_seconds(ts: Timestamp) -> float:
+    return float(ts.seconds) + (ts.nanos / 1e9)
+
 
 class MissionStore:
     # ---------- utils ----------
@@ -95,6 +109,8 @@ class MissionStore:
         self._results = None
         self._tasks: list[asyncio.Task] = []
 
+        self._db_lock = asyncio.Lock()
+
     # ---------- store ----------
     def _parse_payload(self, source: str, payload: bytes):
         try:
@@ -121,16 +137,18 @@ class MissionStore:
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
+    
     async def _store_one(self, source: str, topic: str, ts: float, pj: str):
         # Atomic: either both event+latest write, or neither.
-        await self.db.execute("BEGIN")
-        try:
-            await self.db.execute(SQL_INSERT_EVENT, (source, topic, ts, pj))
-            await self.db.execute(SQL_UPSERT_LATEST, (source, topic, ts, pj))
-            await self.db.commit()
-        except Exception:
-            await self.db.rollback()
-            raise
+        async with self._db_lock:
+            await self.db.execute("BEGIN IMMEDIATE")
+            try:
+                await self.db.execute(SQL_INSERT_EVENT, (source, topic, ts, pj))
+                await self.db.execute(SQL_INSERT_LATEST, (source, topic, ts, pj))
+                await self.db.commit()
+            except Exception:
+                await self.db.rollback()
+                raise
 
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
@@ -144,7 +162,7 @@ class MissionStore:
                 payload = frames[-1]
 
                 model = self._parse_payload(source, payload)
-                ts = model.timestamp
+                ts = ts_to_unix_seconds(model.timestamp)
                 pj = self._to_json(model)
                 await self._store_one(source, topic, ts, pj)
         except asyncio.CancelledError:
@@ -153,17 +171,40 @@ class MissionStore:
             logger.exception("Consumer crashed (%s)", source)
 
     # ---------- reads ----------
-    async def get_latest(self, source: str, topic: str, max_age_s: float | None = None):
-        async with self.db.execute(SQL_SELECT_LATEST, (source, topic)) as cur:
-            row = await cur.fetchone()
-            if not row:
-                return None
-            ts, payload_json = row
-            if max_age_s is not None and (time.time() - ts) > max_age_s:
-                return None
-            return self._from_json(source, payload_json)
+    async def get_latest(self, source: str, topic: str, max_age_s: float = 1.0):
+        async with self._db_lock:
+            async with self.db.execute(SQL_SELECT_LATEST, (source, topic)) as cur:
+                row = await cur.fetchone()
+                if not row:
+                    return None
+                ts, payload_json = row
+                if max_age_s is not None and (time.time() - ts) > max_age_s:
+                    return None
+                return self._from_json(source, payload_json)
+        
+    async def get_range(self, source: str, topic: str, t0: float, t1: float):
+        out = []
+        async with self._db_lock:
+            async with self.db.execute(SQL_SELECT_RANGE, (source, topic, t0, t1)) as cur:
+                async for ts, payload_json in cur:
+                    out.append((ts, self._from_json(source, payload_json)))
+            return out
 
     # ---------- lifecycle ----------
+    async def _cleanup_loop(self, retention_s: float, every_s: float = 30.0):
+        try:
+            while True:
+                cutoff = time.time() - retention_s
+                try:
+                    async with self._db_lock:
+                        await self.db.execute(SQL_DELETE_OLD_EVENTS, (cutoff,))
+                        await self.db.commit()
+                except Exception:
+                    logger.exception("Retention cleanup failed")
+                await asyncio.sleep(every_s)
+        except asyncio.CancelledError:
+            pass
+
     async def start(self):
         self.db = await aiosqlite.connect(self.db_path)
         await self.db.executescript(INIT_SQL)
@@ -183,6 +224,7 @@ class MissionStore:
         self._tasks = [
             asyncio.create_task(self._receive_and_store("telemetry", self._telemetry)),
             asyncio.create_task(self._receive_and_store("results", self._results)),
+            asyncio.create_task(self._cleanup_loop(retention_s=600.0))
         ]
 
     async def stop(self):

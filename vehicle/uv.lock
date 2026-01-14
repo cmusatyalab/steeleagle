@@ -1507,7 +1507,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.15"
+version = "1.0.16"
 source = { editable = "../sdk" }
 dependencies = [
     { name = "aiosqlite" },

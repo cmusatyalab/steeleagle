@@ -55,7 +55,7 @@ class MissionService(MissionServicer):
             logger.info(msg)
             return generate_response(3, msg)
         else:
-            logger.info("star2")
+            logger.info("start")
             await self._start()
             return generate_response(2)
 
