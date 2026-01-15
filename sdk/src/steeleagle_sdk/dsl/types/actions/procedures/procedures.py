@@ -182,7 +182,7 @@ class Track(Action):
         target_norm = np.linalg.norm(target_vec)
         leash_vec = self.leash_distance * (target_vec / target_norm)
 
-        return leash_vec - target_vec
+        return target_vec - leash_vec
 
     async def _compute_error(
         self, box: BoundingBox, telemetry
@@ -199,16 +199,16 @@ class Track(Action):
         target_y_pix = y_min_pix + (y_max_pix - y_min_pix) / 2.0
 
         target_yaw_angle = ((target_x_pix - cx) / cx) * (self.hfov_deg / 2.0)
-        target_pitch_angle = ((target_y_pix - cy) / cy) * (self.vfov_deg / 2.0)
+        target_pitch_angle = -1 * ((target_y_pix - cy) / cy) * (self.vfov_deg / 2.0)
         target_bottom_pitch = ((img_h - y_max_pix) - cy) / cy * (self.vfov_deg / 2.0)
 
-        yaw_error = -1.0 * target_yaw_angle
+        yaw_error = target_yaw_angle
         gimbal_error = target_pitch_angle
 
         follow_vec = await self._estimate_distance(
             target_yaw_angle, target_bottom_pitch, telemetry
         )
-        follow_error = float(follow_vec[1] * -1.0)
+        follow_error = float(follow_vec[1])
 
         return (follow_error, yaw_error, gimbal_error)
 
@@ -231,7 +231,7 @@ class Track(Action):
         velocity_target=common.Velocity(
                 x_vel=follow_vel,
                 y_vel=orbit_speed,
-                angular_vel=-1 * yaw_vel_deg * self.yaw_gain,
+                angular_vel= yaw_vel_deg * self.yaw_gain,
             )
         logger.info("Actuate: velocity target: %s", velocity_target)
         set_joystick = Joystick(
@@ -240,7 +240,7 @@ class Track(Action):
         await set_joystick.execute()
 
         # Gimbal pitch command
-        desired_pitch = -1 * (gimbal_error_deg * 0.5)
+        desired_pitch = (gimbal_error_deg * 0.5)
         pose = common.Pose(
             pitch=desired_pitch,
             yaw=0.0,
