@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 import sys
-
+import argparse
 import cv2
 import numpy as np
 import zmq
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import Frame
 
 
-def main():
-    addr = "ipc:///tmp/imagery.sock"  # or tcp://127.0.0.1:5557 etc.
-
+def main(addr):
     ctx = zmq.Context.instance()
     sock = ctx.socket(zmq.SUB)
     sock.connect(addr)
@@ -68,4 +66,16 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        prog="Viewer",
+        description="Gives a view for vehicle imagery",
+    )
+    parser.add_argument(
+        "-a",
+        "--addr",
+        default="unix:///ipc/imagery.sock",
+        help="Address of the driver imagery",
+    )
+    args = parser.parse_args()
+
+    main(args.addr.replace('unix', 'ipc'))

@@ -35,11 +35,7 @@ class StreamHandler:
         self.law_authority = law_authority
         # Create the result socket
         self._result_sock = zmq.Context().socket(zmq.PUB)
-        #setup_zmq_socket(
-        #    self._result_sock,
-        #    'internal.streams.results',
-        #    SocketOperation.BIND
-        #    )
+        socket_setup = False
         # Configure local compute handler
         self._local_compute_handler = None
         self._lch_task = None
@@ -56,6 +52,14 @@ class StreamHandler:
             self._local_compute_handler = ZeroMQClient(
                 lc_server, self._local_producers, self.process
             )
+            # Set up result socket
+            if not socket_setup:
+                setup_zmq_socket(
+                    self._result_sock,
+                    'internal.streams.results',
+                    SocketOperation.BIND
+                    )
+                socket_setup = True
         except Exception as e:
             logger.error(e)
             logger.warning(
@@ -77,6 +81,14 @@ class StreamHandler:
             self._remote_compute_handler = ZeroMQClient(
                 f"tcp://{rc_server}", self._remote_producers, self.process
             )
+            # Set up result socket
+            if not socket_setup:
+                setup_zmq_socket(
+                    self._result_sock,
+                    'internal.streams.results',
+                    SocketOperation.BIND
+                    )
+                socket_setup = True
         except Exception as e:
             logger.error(e)
             logger.warning(
