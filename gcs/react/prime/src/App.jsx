@@ -60,7 +60,7 @@ function App() {
   ];
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
-    WEBSOCKET_URL + '/ws',
+    WEBSOCKET_URL + `/ws`,
     {
       share: false,
       shouldReconnect: () => true,
@@ -68,9 +68,17 @@ function App() {
     },
   );
 
+    const { sendJsonMessage, lastJsonMessage, telemReadyState } = useWebSocket(
+    WEBSOCKET_URL + `/api/local/vehicle`,
+    {
+      share: false,
+      shouldReconnect: () => true,
+    },
+  );
+
   // Run when the connection state (readyState) changes
   useEffect(() => {
-    console.log(`Connection state changed: ${readyState}`)
+    console.log(`Imagery websocket state changed: ${readyState}`)
   }, [readyState]);
 
   // Run when a new WebSocket message is received (lastMessage)
@@ -82,6 +90,18 @@ function App() {
       }
     }
   }, [lastMessage]);
+
+  useEffect(() => {
+    console.log(`Telemetry websocket state changed: ${telemReadyState}`)
+  }, [telemReadyState]);
+
+  useEffect(() => {
+    if (lastJsonMessage != null) {
+      let v = [];
+      v.push(JSON.parse(lastJsonMessage));
+      setVehicles(v);
+    }
+  }, [lastJsonMessage]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,36 +125,7 @@ function App() {
     return () => clearInterval(intervalId);
   }, [useLocalVehicle]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    if (useLocalVehicle) {
-      const sse = async () => {
-        await fetchEventSource(`${FASTAPI_URL}/api/local/vehicle`, {
-          signal: controller.signal,
-          onmessage(ev) {
-            if (ev.event == "driver_telemetry") {
-              const v = [];
-              //console.log(ev.data);
-              try {
-                v.push(JSON.parse(ev.data));
-                setVehicles(v);
-              }
-              catch (error) {
-                console.log(error);
-              }
-            }
-          },
-        });
-      }
-      sse();
-    };
-    return () => {
-      controller.abort();
-    };
-
-  }, [useLocalVehicle]);
-
-  const onKeyDown = (e) => {
+   const onKeyDown = (e) => {
     if (manualControl) {
       setKeyPressed(true);
       if (e.code === 'Space') {

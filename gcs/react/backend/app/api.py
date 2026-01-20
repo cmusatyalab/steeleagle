@@ -4,7 +4,6 @@ import io
 import json
 import logging
 import os
-import random
 import time
 
 import grpc
@@ -12,9 +11,10 @@ import redis
 import toml
 import zmq
 import zmq.asyncio
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from google.protobuf.message import DecodeError
 from PIL import Image
 from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
@@ -212,92 +212,39 @@ async def get_location(name: str = None) -> Location:
         raise HTTPException(status_code=404, detail="Vehicle name not specified.")
 
 
-@app.get("/api/local/vehicle")
-async def stream_zmq():
-    """Stream ZeroMQ messages to the client via SSE"""
-
-    async def event_generator():
+@app.websocket("/api/local/vehicle")
+async def stream_telemetry(telemWebsocket: WebSocket):
+    await telemWebsocket.accept()
+    while True:
         try:
-            while True:
-                try:
-                    # Receive message from ZeroMQ (non-blocking)
-                    message = await tel_sock.recv_multipart(flags=zmq.NOBLOCK)
-                    tel = DriverTelemetry()
-                    tel.ParseFromString(message[1])
-                    current = Location(
-                        lat=tel.position_info.global_position.latitude,
-                        long=tel.position_info.global_position.longitude,
-                        alt=max(0, float(tel.position_info.global_position.altitude)),
-                    )
+            # Receive message from ZeroMQ (non-blocking)
+            message = await tel_sock.recv_multipart(flags=zmq.NOBLOCK)
+            tel = DriverTelemetry()
+            tel.ParseFromString(message[1])
+            current = Location(
+                lat=tel.position_info.global_position.latitude,
+                long=tel.position_info.global_position.longitude,
+                alt=max(0, float(tel.position_info.global_position.altitude)),
+            )
 
-                    v = Vehicle(
-                        name=tel.vehicle_info.name,
-                        model=tel.vehicle_info.model,
-                        battery=tel.alert_info.battery_warning,
-                        sats=tel.alert_info.gps_warning,
-                        mag=tel.alert_info.magnetometer_warning,
-                        last_updated=0,
-                        current=current,
-                        bearing=tel.position_info.global_position.heading,
-                    )
-
-                    # Format as SSE
-                    event_str = "event: driver_telemetry"
-                    data_str = f"data: {json.dumps(v.dict())}"
-                    yield f"{event_str}\n{data_str}\n\n"
-                except zmq.Again:
-                    # No message available, wait a bit
-                    await asyncio.sleep(0.1)
-                    # Send keep-alive comment
-                    yield ": keep-alive\n\n"
-                except DecodeError as de:
-                    logger.error(f"{de} {message}!")
-                    yield ": keep-alive\n\n"
-        except asyncio.CancelledError:
-            logging.error("Client canceled SSE.")
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable buffering in nginx
-        },
-    )
-
-
-def generate_random_jpg(filename, width=256, height=256):
-    """
-    Generates an image with random pixels and saves it as a JPG file.
-
-    Args:
-        filename (str): The name of the output JPG file.
-        width (int): The width of the image in pixels.
-        height (int): The height of the image in pixels.
-    """
-    # Calculate the total number of bytes needed for RGB (3 bytes per pixel)
-    # The bytes must be a linear sequence of R, G, B values
-    total_bytes = width * height * 3
-
-    # Generate a list of random integer values (0-255) for the pixels
-    rand_pixels = [random.randint(0, 255) for _ in range(total_bytes)]
-
-    # Convert the list to a bytes object
-    rand_pixels_as_bytes = bytes(rand_pixels)
-
-    # Create an image from the raw bytes using Image.frombytes
-    # Mode 'RGB' means 3 bytes per pixel, (width, height) specifies dimensions
-    try:
-        random_image = Image.frombytes("RGB", (width, height), rand_pixels_as_bytes)
-
-        # Save the image as a JPEG file
-        random_image.save(filename, format="JPEG")
-        print(f"Successfully generated random image: {filename}")
-
-    except ValueError as e:
-        print(f"Error creating image: {e}")
-        print("Ensure width and height match the number of bytes provided.")
+            v = Vehicle(
+                name=tel.vehicle_info.name,
+                model=tel.vehicle_info.model,
+                battery=tel.alert_info.battery_warning,
+                sats=tel.alert_info.gps_warning,
+                mag=tel.alert_info.magnetometer_warning,
+                last_updated=0,
+                current=current,
+                bearing=tel.position_info.global_position.heading,
+            )
+            await telemWebsocket.send_json(json.dumps(v.model_dump()))
+        except zmq.Again:
+            await asyncio.sleep(0.1)
+        except DecodeError as de:
+            logger.error(f"{de} {message}!")
+            await asyncio.sleep(0.1)
+        except WebSocketDisconnect:
+            await telemWebsocket.close(code=1000, reason=None)
 
 
 @app.get("/driver_imagery")
@@ -330,9 +277,11 @@ async def websocket_endpoint(websocket: WebSocket):
                     {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
                 )
             else:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
         except zmq.Again:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
+        except WebSocketDisconnect:
+            await websocket.close(code=1000, reason=None)
 
 
 @app.post("/api/start")
@@ -474,6 +423,8 @@ async def serve_spa(full_path: str):
         return FileResponse(file_path)
     return FileResponse("dist/index.html")
 """
+
+app.mount("/", StaticFiles(directory="../prime/dist", html=True), name="react_app")
 
 
 # Cleanup on shutdown

@@ -114,7 +114,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
 
   const centerContent = (
     <>
-      <Status selectedVehicle={selectedVehicle} vehicles={vehicles} />
+      <Status vehicle={vehicles.find(v => v.name === selectedVehicle)} />
     </>
   );
 
