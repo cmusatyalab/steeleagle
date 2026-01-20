@@ -10,14 +10,14 @@ nvm install 22
 source ~/.bashrc
 cd prime
 npm install
-cd ..
 # copy config template
-cp ./prime/src/config.js.template ./prime/src/config.js
+cp ./src/config.js.template ./src/config.js
+npm run build
 # BACKEND
+cd ../backend
 # install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 # copy config template
-cp ./backend/config.toml.template ./backend/config.toml
+cp ./config.toml.template ./config.toml
 # install dependencies
-cd backend
 uv sync
