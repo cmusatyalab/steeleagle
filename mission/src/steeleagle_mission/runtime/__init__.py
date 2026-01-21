@@ -24,6 +24,7 @@ _LOCK = asyncio.Lock()
 
 
 async def init(
+    name: str,
     mission: MissionIR,
     vehicle_address: str,
     telemetry_address: str,
@@ -45,7 +46,7 @@ async def init(
         try:
             _CHANNEL = grpc.aio.insecure_channel(vehicle_address)
 
-            _STORE = MissionStore(telemetry_address, result_address)
+            _STORE = MissionStore(telemetry_address, result_address, name + "_mission.db")
             await _STORE.start()
             logger.info(
                 "MissionStore started (telemetry=%s, results=%s).",

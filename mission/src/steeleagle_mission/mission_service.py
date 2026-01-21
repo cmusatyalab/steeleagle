@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class MissionService(MissionServicer):
-    def __init__(self, address: dict):
+    def __init__(self, name, address: dict):
         logger.info("Mission Service initialized")
         self.mission: MissionIR = None
         self.mission_map = None
         self.address = address
         self.fsm = None
         self.fsm_routine: asyncio.Task = None
+        self.name = name
 
     def _load(self, mission_content):
         json_data = json.loads(mission_content)
@@ -41,7 +42,7 @@ class MissionService(MissionServicer):
         tel_address = self.address.get("telemetry")
         results_address = self.address.get("results")
         map = self.mission_map
-        await fsm_init(self.mission, vehicle_address, tel_address, results_address, map)
+        await fsm_init(self.name, self.mission, vehicle_address, tel_address, results_address, map)
 
     async def Start(self, request, context):
         """Start an uploaded mission"""

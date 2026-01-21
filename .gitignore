@@ -48,6 +48,7 @@ sdk/build/src/
 *.db
 *.db-shm
 *.db-wal
+mission/*.config.toml
 
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
@@ -115,3 +116,5 @@ gcs/react/backend/config.toml
 
 gcs/vscode-client/node_modules/*
 gcs/cli/mission.json
+gcs/cli/drones.toml
+

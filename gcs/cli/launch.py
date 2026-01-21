@@ -14,18 +14,31 @@ def run_module(module: str, args: list[str]):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Launch local CLI + viewer")
+    p = argparse.ArgumentParser(description="Launch local CLI + viewer for multiple drones")
+    p.add_argument(
+        "-c",
+        "--config",
+        default=None,
+        help="Path to TOML config file with drone definitions. "
+             "Example: -c drones.toml",
+    )
     p.add_argument(
         "-a",
-        "--addr",
-        default="unix:///tmp/kernel.sock",
-        help="gRPC kernel address for local_cli.py",
+        "--addrs",
+        nargs="+",
+        default=None,
+        help="gRPC kernel addresses for local_cli.py (alternative to config). "
+             "Format: 'name=address' or just 'address'. "
+             "Examples: -a drone1=unix:///tmp/kernel1.sock drone2=unix:///tmp/kernel2.sock",
     )
     p.add_argument(
         "-i",
-        "--imagery-addr",
-        default="ipc:///tmp/imagery.sock",
-        help="ZMQ imagery address for view.py",
+        "--imagery-addrs",
+        nargs="+",
+        default=None,
+        help="ZMQ imagery addresses for view.py (alternative to config). "
+             "Format: 'name=address' or just 'address'. "
+             "Examples: -i drone1=ipc:///tmp/imagery1.sock drone2=ipc:///tmp/imagery2.sock",
     )
     p.add_argument(
         "--rgb",
@@ -34,8 +47,22 @@ def main():
     )
     args = p.parse_args()
 
-    cli_args = ["-a", args.addr]
-    view_args = ["-i", args.imagery_addr]
+    # Build arguments for local_cli.py
+    cli_args = []
+    if args.config:
+        cli_args.extend(["-c", args.config])
+    elif args.addrs:
+        cli_args.append("-a")
+        cli_args.extend(args.addrs)
+
+    # Build arguments for view.py
+    view_args = []
+    if args.config:
+        view_args.extend(["-c", args.config])
+    elif args.imagery_addrs:
+        view_args.append("-i")
+        view_args.extend(args.imagery_addrs)
+
     if args.rgb:
         view_args.append("--rgb")
 
@@ -52,23 +79,4 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Stripped down CLI for SteelEagle vehicle control."
-    )
-    parser.add_argument(
-        "--kernel",
-        "-k",
-        type=str,
-        default="unix:///tmp/kernel.sock",
-        help="Address of kernel services"
-    )
-    parser.add_argument(
-        "--imagery",
-        "-i",
-        type=str,
-        default="unix:///tmp/imagery.sock",
-        help="Address of imagery"
-    )
-    args = parser.parse_args()
-
-    main(args)
+    main()
