@@ -11,14 +11,14 @@ import { Toolbar } from 'primereact/toolbar';
 import { ButtonGroup } from 'primereact/buttongroup';
 import { Tooltip } from 'primereact/tooltip';
 import { FileUpload } from 'primereact/fileupload';
-import { DataTable } from 'primereact/datatable';
+import { MultiSelect } from 'primereact/multiselect';
 import { Column } from 'primereact/column';
 import { Image } from 'primereact/image';
 import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
-function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, setManualControl }) {
+function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, setManualControl, squadList, setSquadList}) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
 
@@ -120,15 +120,17 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
 
   const startContent = (
     <>
-    <div className="card flex flex-column gap-3">
-      <ButtonGroup className="mr-2">
-        <Button size="small" severity="success" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
-        <Button size="small" severity="danger" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
-      </ButtonGroup>
-      <ButtonGroup className="ml-2">
-        <Button size="small" severity="warning" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
-        <Button size="small" severity="warning" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
-      </ButtonGroup>
+      <div className="card flex flex-column gap-3">
+        <MultiSelect className="w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicles.map(v => v.name)} useOptionAsValue display="chip"
+          placeholder="Squad Selection" maxSelectedLabels={2} selectedItemsLabel="{0} vehicles selected." />
+        <ButtonGroup className="mr-2">
+          <Button size="small" severity="success" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+          <Button size="small" severity="danger" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
+        </ButtonGroup>
+        <ButtonGroup className="ml-2">
+          <Button size="small" severity="warning" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+          <Button size="small" severity="warning" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+        </ButtonGroup>
       </div>
     </>
   );
@@ -141,11 +143,11 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
             <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
               <Mapbox selectedVehicle={selectedVehicle} vehicles={vehicles} mapPanelSize={mapPanelSize} tracking={tracking} />
             </SplitterPanel>
-            <SplitterPanel style={{ height: '100%' }} className="flex align-items-center justify-content-center m-2" size={50} minSize={30}>
+            <SplitterPanel style={{ height: '100%' }} className="flex flex-column align-items-center justify-content-center m-2 gap-2" size={50} minSize={30}>
               {useLocalVehicle ?
                 <Image height="100%" width="100%" pt={{
                   image: { id: 'image_stream' }
-                }} src="logo.svg" preview downloadable="true" />
+                }} src="logo.svg" />
                 :
                 <Image height="90%" width="90%" src={`${WEBSERVER_URL}/raw/${selectedVehicle}/latest.jpg?time=${Math.floor(Date.now() / 1000)}`} preview downloadable="true" />
               }

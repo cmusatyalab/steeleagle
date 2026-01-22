@@ -48,6 +48,7 @@ function App() {
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
+  const [squadList, setSquadList] = useState(null);
 
   const controlOptions = [
     { value: true, icon: 'pi pi-lock-open' },
@@ -239,6 +240,7 @@ function App() {
   }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp, selectedMenu]);
 
   const onJoystick = async (body) => {
+    body.vehicles = squadList;
     //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
     const requestOptions = {
       method: 'POST',
@@ -259,6 +261,7 @@ function App() {
   }
 
   const onCommand = async (body) => {
+    body.vehicles = squadList;
     toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
     const requestOptions = {
       method: 'POST',
@@ -336,7 +339,7 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} setManualControl={setManualControl}/>}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList}/>}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
