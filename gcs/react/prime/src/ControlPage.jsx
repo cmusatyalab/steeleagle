@@ -31,6 +31,7 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
   }
   const uploadHandler = async (event) => {
     const body = {};
+    body.vehicles = squadList;
     for (const file of event.files) {
       const reader = new FileReader();
       let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
@@ -75,10 +76,13 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
   };
 
   const onMissionStart = async () => {
+    const body = {};
+    body.vehicles = squadList;
     setManualControl(false);
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     };
     const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
     if (!response.ok) {
