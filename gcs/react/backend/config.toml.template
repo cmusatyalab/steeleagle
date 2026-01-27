@@ -11,10 +11,14 @@ port = 6379
 username = "steeleagle"
 password = ""
 
-[grpc]
-endpoint = "unix:///tmp/kernel.sock"
-
-[zmq]
-driver_telemetry = 'ipc:///tmp/driver_telem.sock'
-mission_telemetry = 'ipc:///tmp/mission_telem.sock'
-imagery = 'ipc:///tmp/imagery.sock'
+[vehicle]
+[vehicle.test1]
+address = 'unix:///tmp/test1-kernel.sock'
+tel_endpoint = 'ipc:///tmp/test1-driver_telem.sock'
+img_endpoint = 'ipc:///tmp/test1-imagery.sock'
+res_endpoint = 'ipc:///tmp/test1-results.sock'
+[vehicle.test2]
+address = 'unix:///tmp/test2-kernel.sock'
+tel_endpoint = 'ipc:///tmp/test2-driver_telem.sock'
+img_endpoint = 'ipc:///tmp/test2-imagery.sock'
+res_endpoint = 'ipc:///tmp/test2-results.sock'
