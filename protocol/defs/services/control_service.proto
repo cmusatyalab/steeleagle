@@ -5,7 +5,7 @@
 syntax = "proto3";
 package steeleagle.protocol.services.control_service;
 
-import "common.proto";
+import "common/common.proto";
 import "google/protobuf/duration.proto";
 
 /*

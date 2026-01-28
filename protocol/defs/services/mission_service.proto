@@ -5,7 +5,7 @@
 syntax = "proto3";
 package steeleagle.protocol.services.mission_service;
 
-import "common.proto";
+import "common/common.proto";
 
 /*
  * Used to start a new mission or stop an active mission
