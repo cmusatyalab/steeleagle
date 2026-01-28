@@ -181,7 +181,6 @@ async def startup_event():
         )
         tel_sock = zmq_context.socket(zmq.SUB)
         tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")
-        tel_sock.setsockopt(zmq.CONFLATE, 1)
         tel_sock.connect(vehicle["tel_endpoint"])
         logger.info(
             f" **{v}** Subscribed to ZMQ telemetry at: {vehicle['tel_endpoint']}"
