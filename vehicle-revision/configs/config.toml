@@ -1,0 +1,16 @@
+# TODO: This should usually be changed to the name of the host device,
+# as this will be the service name for the daemon in Tailscale if the
+# VPN is enabled.
+host = 'steeleagle-daemon'
+# The daemon will bind to the provided port, and will assign vehicle ports
+# in ascending order from this base port.
+port = 50000
+# Switch for using Tailscale VPN (highly recommended).
+tailscale = true
+
+[[vehicles]]
+# Leave the following commented out or as empty strings.
+#name = '' # (required)
+#mission-pkg = '' # (optional, default: none)
+#mission-sandbox = false # (optional, default: false)
+#driver-pkg = '' # (optional, default: none)
