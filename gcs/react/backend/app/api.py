@@ -180,16 +180,16 @@ async def startup_event():
             f" **{v}** Opened control and missions stubs at GRPC endpoint: {vehicle['address']}"
         )
         tel_sock = zmq_context.socket(zmq.SUB)
-        tel_sock.connect(vehicle["tel_endpoint"])
         tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")
         tel_sock.setsockopt(zmq.CONFLATE, 1)
+        tel_sock.connect(vehicle["tel_endpoint"])
         logger.info(
             f" **{v}** Subscribed to ZMQ telemetry at: {vehicle['tel_endpoint']}"
         )
         image_sock = zmq_context.socket(zmq.SUB)
-        image_sock.connect(vehicle["img_endpoint"])
         image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
         image_sock.setsockopt(zmq.CONFLATE, 1)
+        image_sock.connect(vehicle["img_endpoint"])
         logger.info(f" **{v}** Subscribed to ZMQ imagery at: {vehicle['img_endpoint']}")
         vc = VehicleConnection(
             grpc_channel=channel,
@@ -277,11 +277,11 @@ async def websocket_endpoint(websocket: WebSocket, vehicle: str):
         try:
             if vehicle_connections[vehicle].imagery_endpoint:
                 # Receive message from ZeroMQ (non-blocking)
-                message = await vehicle_connections[
-                    vehicle
-                ].imagery_endpoint.recv_multipart(flags=zmq.NOBLOCK)
+                message = await vehicle_connections[vehicle].imagery_endpoint.recv(
+                    flags=zmq.DONTWAIT
+                )
                 frame = Frame()
-                frame.ParseFromString(message[1])
+                frame.ParseFromString(message)
                 encoded_img = Image.frombuffer(
                     mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
                 )
