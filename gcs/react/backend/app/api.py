@@ -75,6 +75,13 @@ class Location(BaseModel):
     alt: NonNegativeFloat
 
 
+class Velocity(BaseModel):
+    x_vel: float
+    y_vel: float
+    z_vel: float
+    angular_vel: float
+
+
 class Vehicle(BaseModel):
     name: str
     model: str | None = None
@@ -87,6 +94,7 @@ class Vehicle(BaseModel):
     home: Location | None = None
     current: Location
     bearing: NonNegativeFloat
+    velocity: Velocity | None = None
 
 
 class VehicleConnection(BaseModel):
@@ -147,15 +155,23 @@ async def _telemetry_subscriber(sock, name: str):
                     alt=max(0, float(tel.position_info.global_position.altitude)),
                 )
 
+                vel = Velocity(
+                    x_vel=tel.position_info.velocity_body.x_vel,
+                    y_vel=tel.position_info.velocity_body.y_vel,
+                    z_vel=tel.position_info.velocity_body.z_vel,
+                    angular_vel=tel.position_info.velocity_body.angular_vel,
+                )
+
                 v = Vehicle(
                     name=tel.vehicle_info.name,
                     model=tel.vehicle_info.model,
-                    battery=tel.alert_info.battery_warning,
+                    battery=tel.vehicle_info.battery_info.percentage,
                     sats=tel.alert_info.gps_warning,
                     mag=tel.alert_info.magnetometer_warning,
                     last_updated=0,
                     current=current,
                     bearing=tel.position_info.global_position.heading,
+                    velocity=vel,
                 )
                 vehicle_data[name] = v
             except zmq.Again:

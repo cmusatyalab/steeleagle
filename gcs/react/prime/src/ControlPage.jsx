@@ -18,7 +18,7 @@ import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
-function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, setManualControl, squadList, setSquadList}) {
+function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, useLocalVehicle, setManualControl, squadList, setSquadList }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
 
@@ -124,16 +124,20 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
 
   const startContent = (
     <>
-      <div className="card flex flex-column gap-3">
-        <MultiSelect className="w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicles.map(v => v.name)} useOptionAsValue display="chip"
+      <div className="flex flex-column justify-content-end gap-1">
+        <MultiSelect className="flex justify-content-center w-20rem" value={squadList} onChange={(e) => setSquadList(e.value)} options={vehicles.map(v => v.name)} useOptionAsValue display="chip"
           placeholder="Squad Selection" maxSelectedLabels={2} selectedItemsLabel="{0} vehicles selected." />
-        <ButtonGroup className="mr-2">
-          <Button size="small" severity="success" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
-          <Button size="small" severity="danger" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
+        <ButtonGroup className="w-20rem flex align-content-center justify-content-center">
+          <Button className="w-6" outlined size="small" icon="pi pi-check-circle" label="Arm" onClick={() => onCommand({ arm: true })} />
+          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
         </ButtonGroup>
-        <ButtonGroup className="ml-2">
-          <Button size="small" severity="warning" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
-          <Button size="small" severity="warning" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
+        <ButtonGroup className="w-20rem flex align-content-center justify-content-center">
+          <Button className="w-6" outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: true })} />
+          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
+        </ButtonGroup>
+        <ButtonGroup className="w-20rem flex align-content-center justify-content-center">
+          <Button className="w-6" outlined size="small" icon="pi pi-home" label="RTH" onClick={() => onCommand({ rth: true })} />
+          <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-stop-circle" label="Hold" onClick={() => onCommand({ hold: true })} />
         </ButtonGroup>
       </div>
     </>
