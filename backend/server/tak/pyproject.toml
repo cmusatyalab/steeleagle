@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University
+# SPDX-License-Identifier: GPL-2.0-only
+
+[project]
+name = "steeleagle-tak"
+version = "0.1.0"
+description = "Redis Telemetry to Cursor on Target (CoT) Daemon for SteelEagle"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.8.0",
+    "cryptography>=39.0.0",
+    "pytak>=7.2.1",
+    "redis>=4.0.0",
+]
+
+[project.scripts]
+steeleagle-tak = "steeleagle_tak.daemon:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
