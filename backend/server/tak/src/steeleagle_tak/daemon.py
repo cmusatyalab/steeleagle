@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import os
 import xml.etree.ElementTree as ET
 from configparser import ConfigParser, SectionProxy
@@ -21,8 +22,14 @@ from configparser import ConfigParser, SectionProxy
 import pytak
 import redis
 
-
 logger = logging.getLogger(__name__)
+
+
+def cot_detail_append(cot_xml: ET.Element, elem: ET.Element) -> None:
+    detail = cot_xml.find("detail")
+    if detail is None:
+        detail = ET.SubElement(cot_xml, "detail")
+    detail.append(elem)
 
 
 class TelemetryToCotSerializer(pytak.QueueWorker):
@@ -95,11 +102,27 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             # Optional fields
             abs_alt = telem.get(b"abs_altitude", telem.get(b"rel_altitude", b"0"))
 
+            # Error bounds
+            # CoT uses object + estimated error so that it reports a cylinder space
+            # in which the object is expected to be, which can then be used for
+            # collision avoidance.
+
+            # The drone only flies when it has a GPS lock, so assume it is
+            # fairly precise with some error
+            # (really should propagate any known errors along with telemetry data)
+            gps_hdop = gps_vdop = 3.
+
+            # Our largest drone, the Spirit, is probably about 1 meter tall.
+            circular_error = 1. + gps_hdop
+            height_error = 1. + gps_vdop
+
             # Generate CoT event
             cot_xml = pytak.gen_cot_xml(
                 lat=float(lat),
                 lon=float(lon),
                 hae=float(abs_alt),
+                ce=circular_error,
+                le=height_error,
                 uid=f"steeleagle-{vehicle_name}",
                 callsign=vehicle_name,
                 cot_type="a-f-A-M-H-Q",
@@ -109,6 +132,41 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             if cot_xml is None:
                 logger.error(f"Failed to generate CoT XML for {vehicle_name}")
                 return
+
+            # Extend with additional QoS and tracking information
+
+            cot_xml.set("qos", "1-r-c")  # frequent, low priority updates
+
+            bearing = telem.get(b"bearing")
+            if bearing is not None:
+                vel_x = float(telem.get(b"v_body_forward", 0.0))
+                vel_y = float(telem.get(b"v_body_lateral", 0.0))
+                vel_z = float(telem.get(b"v_body_altitude", 0.0))
+
+                speed = math.sqrt(vel_x**2 + vel_y**2 + vel_z**2)
+                vel_h = math.sqrt(vel_x**2 + vel_y**2)
+                slope = math.degrees(math.atan2(vel_z, vel_h))
+
+                track = ET.Element("track")
+                track.set("course", str(float(bearing)))
+                track.set("speed", str(speed))
+                track.set("slope", str(slope))
+                cot_detail_append(cot_xml, track)
+
+            battery = telem.get(b"battery")
+            if battery is not None:
+                status = ET.Element("status")
+                status.set("battery", str(int(battery)))
+                cot_detail_append(cot_xml, status)
+
+            # Add any other info as remarks
+            nsats = int(telem.get(b"sats", 0))
+            additional = [
+                f"satellites: {nsats}",
+            ]
+            remarks = ET.Element("remarks")
+            remarks.text = " ".join(additional)
+            cot_detail_append(cot_xml, remarks)
 
             # Convert to bytes and queue
             await self.handle_data(cot_xml)
