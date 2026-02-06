@@ -69,7 +69,10 @@ FORMATTED_TEXT_STYLE = Style.from_dict(
 
 
 def write_files(CONTEXT):
-    mkdir("redis")
+    try:
+        mkdir("redis")
+    except FileExistsError:
+        pass
     env = Environment(
         loader=PackageLoader("setup_wizard"),
     )
