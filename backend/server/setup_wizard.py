@@ -87,7 +87,7 @@ def write_files(CONTEXT):
 
 
 def download_coco_model():
-    # download yolov5 coco model
+    # download yolov26 coco model
     try:
         mkdir("models")
         print_formatted_text(
@@ -100,12 +100,12 @@ def download_coco_model():
             style=FORMATTED_TEXT_STYLE,
         )
     path, _ = urlretrieve(
-        "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m.pt",
+        "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26m.pt",
         "./models/coco.pt",
     )
     CONTEXT["detection_model"] = "coco"
     print_formatted_text(
-        HTML("<note>Downloaded YOLOv5m model to ./models/coco.pt!</note>"),
+        HTML("<note>Downloaded YOLOv26m model to ./models/coco.pt!</note>"),
         style=FORMATTED_TEXT_STYLE,
     )
 
