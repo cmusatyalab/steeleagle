@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import time
+from contextlib import asynccontextmanager
 
 import grpc
 import redis
@@ -32,12 +33,14 @@ from steeleagle_sdk.protocol.services.mission_service_pb2 import (
     UploadRequest,
 )
 from steeleagle_sdk.protocol.services.mission_service_pb2_grpc import MissionStub
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-app = FastAPI()
+from steeleagle_sdk.protocol.services.remote_service_pb2 import (
+    CommandRequest,
+)
+from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 IDENTITY_MD = (("identity", "server"),)
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class Start(BaseModel):
@@ -59,7 +62,7 @@ class Joystick(BaseModel):
     vehicles: list[str]
 
 
-class CommandRequest(BaseModel):
+class Command(BaseModel):
     takeoff: bool | None = None
     land: bool | None = None
     rth: bool | None = None
@@ -106,14 +109,103 @@ class VehicleConnection(BaseModel):
     mission_stub: MissionStub
 
 
+class BackendConnection(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    grpc_channel: grpc.aio.Channel
+    remote_stub: RemoteStub
+    redis_connection: redis.Redis
+
+
+with open("config.toml") as file:
+    cfg = toml.load(file)
+
 # Initialize ZeroMQ context
 zmq_context = zmq.asyncio.Context()
 vehicle_data: dict[str, Vehicle] = {}
 vehicle_connections: dict[str, VehicleConnection] = {}
-red = None
+backend_connections: dict[str, BackendConnection] = {}
 
-with open("config.toml") as file:
-    cfg = toml.load(file)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    for v in cfg["vehicle"]:
+        vehicle = cfg["vehicle"][v]
+        logger.info(f"Creating connections to vehicle {v}...")
+        channel = grpc.aio.insecure_channel(vehicle["address"])
+        control_stub = ControlStub(channel)
+        mission_stub = MissionStub(channel)
+        logger.info(
+            f" **{v}** Opened control and missions stubs at GRPC endpoint: {vehicle['address']}"
+        )
+        tel_sock = zmq_context.socket(zmq.SUB)
+        tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")
+        tel_sock.connect(vehicle["tel_endpoint"])
+        logger.info(
+            f" **{v}** Subscribed to ZMQ telemetry at: {vehicle['tel_endpoint']}"
+        )
+        image_sock = zmq_context.socket(zmq.SUB)
+        image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
+        image_sock.setsockopt(zmq.CONFLATE, 1)
+        image_sock.connect(vehicle["img_endpoint"])
+        logger.info(f" **{v}** Subscribed to ZMQ imagery at: {vehicle['img_endpoint']}")
+        vc = VehicleConnection(
+            grpc_channel=channel,
+            control_stub=control_stub,
+            mission_stub=mission_stub,
+            imagery_endpoint=image_sock,
+            telemetry_endpoint=tel_sock,
+        )
+        vehicle_connections[v] = vc
+        logger.info(f"Added VehicleConnection for {v}!")
+
+    for name, conn in vehicle_connections.items():
+        asyncio.create_task(
+            _telemetry_subscriber(
+                conn.telemetry_endpoint,
+                name=name,
+            )
+        )
+
+    for b in cfg["backend"]:
+        backend = cfg["backend"][b]
+        swarm_controller_channel = grpc.aio.insecure_channel(
+            backend["swarm-controller"]
+        )
+        remote_stub = RemoteStub(swarm_controller_channel)
+        logger.info(
+            f" **{b}** Opened remote stubs at GRPC endpoint: {backend['swarm-controller']}"
+        )
+        red = redis.Redis(
+            host=backend["redis_host"],
+            port=backend["redis_port"],
+            username=backend["redis_username"],
+            password=backend["redis_password"],
+            decode_responses=True,
+        )
+        logger.info(
+            f" **{b}** Connected to redis at : {backend['redis_host']}:{backend['redis_port']}"
+        )
+        bc = BackendConnection(
+            grpc_channel=channel,
+            remote_stub=remote_stub,
+            redis_connection=red,
+        )
+        backend_connections[b] = bc
+
+    yield
+    # Cleanup
+    for _name, conn in backend_connections.items():
+        conn.grpc_channel.close()
+        conn.redis_connection.close()
+    for _name, conn in vehicle_connections.items():
+        conn.telemetry_endpoint.close()
+        conn.imagery_endpoint.close()
+        conn.grpc_channel.close()
+    zmq_context.term()
+
+
+app = FastAPI(lifespan=lifespan)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -178,103 +270,59 @@ async def _telemetry_subscriber(sock, name: str):
                 await asyncio.sleep(0.01)
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Read TOML config and initialize connections on startup"""
-    global grpc_channel, grpc_stub, red, zmq_context
-
-    with open("config.toml") as file:
-        cfg = toml.load(file)
-
-    for v in cfg["vehicle"]:
-        vehicle = cfg["vehicle"][v]
-        logger.info(f"Creating connections to vehicle {v}...")
-        channel = grpc.aio.insecure_channel(vehicle["address"])
-        control_stub = ControlStub(channel)
-        mission_stub = MissionStub(channel)
-        logger.info(
-            f" **{v}** Opened control and missions stubs at GRPC endpoint: {vehicle['address']}"
-        )
-        tel_sock = zmq_context.socket(zmq.SUB)
-        tel_sock.setsockopt_string(zmq.SUBSCRIBE, "")
-        tel_sock.connect(vehicle["tel_endpoint"])
-        logger.info(
-            f" **{v}** Subscribed to ZMQ telemetry at: {vehicle['tel_endpoint']}"
-        )
-        image_sock = zmq_context.socket(zmq.SUB)
-        image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
-        image_sock.setsockopt(zmq.CONFLATE, 1)
-        image_sock.connect(vehicle["img_endpoint"])
-        logger.info(f" **{v}** Subscribed to ZMQ imagery at: {vehicle['img_endpoint']}")
-        vc = VehicleConnection(
-            grpc_channel=channel,
-            control_stub=control_stub,
-            mission_stub=mission_stub,
-            imagery_endpoint=image_sock,
-            telemetry_endpoint=tel_sock,
-        )
-        vehicle_connections[v] = vc
-        logger.info(f"Added VehicleConnection for {v}!")
-
-    for name, conn in vehicle_connections.items():
-        asyncio.create_task(
-            _telemetry_subscriber(
-                conn.telemetry_endpoint,
-                name=name,
-            )
-        )
-
-    red = redis.Redis(
-        host=cfg["redis"]["host"],
-        port=cfg["redis"]["port"],
-        username=cfg["redis"]["username"],
-        password=cfg["redis"]["password"],
-        decode_responses=True,
-    )
-
-
 # API Routes
-@app.get("/api/vehicles")
-async def get_vehicles(name: str = None) -> list[Vehicle]:
+@app.get("/api/remote/backends")
+async def get_backends() -> list[str]:
+    return backend_connections.keys()
+
+
+@app.get("/api/remote/vehicles")
+async def get_vehicles() -> list[Vehicle]:
     data = []
     current = Location(lat=42, long=-79, alt=0)
     bearing = 0
-    if name is not None:
-        fields = red.hgetall(f"vehicle:{name}")
-        data[name] = fields
-    else:
-        for k in red.keys("vehicle:*"):
-            fields = red.hgetall(k)
-            drone_name = k.split(":")[-1]
-            fields["name"] = drone_name
-            home_loc = Location(
-                lat=fields["position_info.home_lat"],
-                long=fields["position_info.home_long"],
-                alt=fields["position_info.home_alt"],
-            )
-            if red.exists(f"telemetry:{drone_name}"):
-                telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
-                for item in telem:
-                    t = item[1]
-                    current = Location(
-                        lat=t["latitude"],
-                        long=t["longitude"],
-                        alt=max(0, float(t["rel_altitude"])),
-                    )
-                    bearing = t["bearing"]
-            data.append(
-                Vehicle(
-                    name=fields["name"],
-                    model=fields["model"],
-                    battery=fields["battery"],
-                    sats=fields["sats"],
-                    mag=fields["mag"],
-                    last_updated=round(time.time() - float(fields["last_seen"]), 2),
-                    home=home_loc,
-                    current=current,
-                    bearing=bearing,
+    red = (
+        backend_connections[list(backend_connections)[0]].redis_connection
+    )  # TODO: have the front end send the key for which backend to connect to
+    for k in red.keys("vehicle:*"):
+        fields = red.hgetall(k)
+        drone_name = k.split(":")[-1]
+        fields["name"] = drone_name
+        home_loc = Location(
+            lat=fields["position_info.home_lat"],
+            long=fields["position_info.home_long"],
+            alt=fields["position_info.home_alt"],
+        )
+        if red.exists(f"telemetry:{drone_name}"):
+            telem = red.xrevrange(f"telemetry:{drone_name}", "+", "-", 1)
+            for item in telem:
+                t = item[1]
+                current = Location(
+                    lat=t["latitude"],
+                    long=t["longitude"],
+                    alt=max(0, float(t["rel_altitude"])),
                 )
+                bearing = t["bearing"]
+                vel = Velocity(
+                    x_vel=t["v_body_forward"],
+                    y_vel=t["v_body_lateral"],
+                    z_vel=t["v_body_altitude"],
+                    angular_vel=t["v_body_angular"],
+                )
+        data.append(
+            Vehicle(
+                name=fields["name"],
+                model=fields["model"],
+                battery=t["battery"],
+                sats=fields["sats"],
+                mag=fields["mag"],
+                last_updated=round(time.time() - float(fields["last_seen"]), 2),
+                home=home_loc,
+                current=current,
+                bearing=bearing,
+                velocity=vel,
             )
+        )
 
     return data
 
@@ -317,17 +365,34 @@ async def websocket_endpoint(websocket: WebSocket, vehicle: str):
 
 
 @app.post("/api/start")
-async def start(req: Start) -> JSONResponse:
+async def start(req: Start, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
-        conn = vehicle_connections[v]
+        if sandbox_mode:
+            conn = vehicle_connections[v]
+
+        else:
+            conn = backend_connections[list(backend_connections)[0]]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
-
         try:
             start = StartRequest()
-            call = conn.mission_stub.Start(start, metadata=IDENTITY_MD)
-            asyncio.create_task(_send_unary(call, vehicle=v, command="mission.start"))
+            if sandbox_mode:
+                call = conn.mission_stub.Start(start, metadata=IDENTITY_MD)
+                asyncio.create_task(
+                    _send_unary(call, vehicle=v, command="mission.start")
+                )
+            else:
+                cmd = CommandRequest()
+                cmd.method_name = "Mission.Start"
+                cmd.vehicle_id = v
+                cmd.request.Pack(start)
+                call = backend_connections[
+                    list(backend_connections)[0]
+                ].remote_stub.Command(cmd)
+                asyncio.create_task(
+                    _send_stream(call, vehicle=v, command="remote mission start")
+                )
 
         except grpc.aio.AioRpcError as e:
             raise HTTPException(
@@ -342,19 +407,35 @@ async def start(req: Start) -> JSONResponse:
 
 
 @app.post("/api/upload")
-async def upload(req: Upload) -> JSONResponse:
+async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
-        conn = vehicle_connections[v]
+        if sandbox_mode:
+            conn = vehicle_connections[v]
+        else:
+            conn = backend_connections[list(backend_connections)[0]]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
-
         try:
             up = UploadRequest()
             up.mission.map = base64.b64decode(req.kml)
             up.mission.content = base64.b64decode(req.dsl)
-            call = conn.mission_stub.Upload(up, metadata=IDENTITY_MD)
-            asyncio.create_task(_send_unary(call, vehicle=v, command="mission.upload"))
+            if sandbox_mode:
+                call = conn.mission_stub.Upload(up, metadata=IDENTITY_MD)
+                asyncio.create_task(
+                    _send_unary(call, vehicle=v, command="mission.upload")
+                )
+            else:
+                cmd = CommandRequest()
+                cmd.method_name = "Mission.Upload"
+                cmd.vehicle_id = v
+                cmd.request.Pack(up)
+                call = backend_connections[
+                    list(backend_connections)[0]
+                ].remote_stub.Command(cmd)
+                asyncio.create_task(
+                    _send_stream(call, vehicle=v, command="remote mission upload")
+                )
 
         except grpc.aio.AioRpcError as e:
             raise HTTPException(
@@ -369,13 +450,15 @@ async def upload(req: Upload) -> JSONResponse:
 
 
 @app.post("/api/joystick")
-async def joystick(req: Joystick, name: str = None) -> JSONResponse:
+async def joystick(req: Joystick, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
-        conn = vehicle_connections[v]
+        if sandbox_mode:
+            conn = vehicle_connections[v]
+        else:
+            conn = backend_connections[list(backend_connections)[0]]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
-
         try:
             joy = JoystickRequest()
             joy.velocity.x_vel = req.xvel
@@ -383,8 +466,20 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
             joy.velocity.z_vel = req.zvel
             joy.velocity.angular_vel = req.angularvel
             joy.duration.seconds = req.duration
-            call = conn.control_stub.Joystick(joy, metadata=IDENTITY_MD)
-            asyncio.create_task(_send_unary(call, vehicle=v, command="joystick"))
+            if sandbox_mode:
+                call = conn.control_stub.Joystick(joy, metadata=IDENTITY_MD)
+                asyncio.create_task(_send_unary(call, vehicle=v, command="joystick"))
+            else:
+                cmd = CommandRequest()
+                cmd.method_name = "Control.Joystick"
+                cmd.vehicle_id = v
+                cmd.request.Pack(joy)
+                call = backend_connections[
+                    list(backend_connections)[0]
+                ].remote_stub.Command(cmd)
+                asyncio.create_task(
+                    _send_stream(call, vehicle=v, command="remote joystick")
+                )
 
         except grpc.aio.AioRpcError as e:
             raise HTTPException(
@@ -399,43 +494,88 @@ async def joystick(req: Joystick, name: str = None) -> JSONResponse:
 
 
 @app.post("/api/command")
-async def command(req: CommandRequest, name: str = None) -> JSONResponse:
+async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
     response = None
-    headers = {}
     for v in req.vehicles:
         logger.info(f"Sending command to {v}...")
-        conn = vehicle_connections[v]
+        if sandbox_mode:
+            conn = vehicle_connections[v]
+        else:
+            conn = backend_connections[list(backend_connections)[0]]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
         try:
+            cmd = CommandRequest()
+            cmd.vehicle_id = v
             if req.takeoff:
                 takeoff = TakeOffRequest()
                 takeoff.take_off_altitude = 10.0
-                call = conn.control_stub.TakeOff(takeoff, metadata=IDENTITY_MD)
-                asyncio.create_task(_send_stream(call, vehicle=v, command="takeoff"))
+                if sandbox_mode:
+                    call = conn.control_stub.TakeOff(takeoff, metadata=IDENTITY_MD)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="takeoff")
+                    )
+                else:
+                    cmd.method_name = "Control.TakeOff"
+                    cmd.request.Pack(takeoff)
+                    call = conn.remote_stub.Command(cmd)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="remote takeoff")
+                    )
                 response = JSONResponse(status_code=200, content="Takeoff complete!")
             elif req.land:
                 land = LandRequest()
-                call = conn.control_stub.Land(land, metadata=IDENTITY_MD)
-                asyncio.create_task(_send_stream(call, vehicle=v, command="land"))
+                if sandbox_mode:
+                    call = conn.control_stub.Land(land, metadata=IDENTITY_MD)
+                    asyncio.create_task(_send_stream(call, vehicle=v, command="land"))
+                else:
+                    cmd.method_name = "Control.Land"
+                    cmd.request.Pack(land)
+                    call = conn.remote_stub.Command(cmd)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="remote land")
+                    )
                 response = JSONResponse(status_code=200, content="Landing complete!")
             elif req.rth:
                 rth = ReturnToHomeRequest()
-                call = conn.control_stub.ReturnToHome(rth, metadata=IDENTITY_MD)
-                asyncio.create_task(_send_stream(call, vehicle=v, command="rth"))
+                if sandbox_mode:
+                    call = conn.control_stub.ReturnToHome(rth, metadata=IDENTITY_MD)
+                    asyncio.create_task(_send_stream(call, vehicle=v, command="rth"))
+                else:
+                    cmd.method_name = "Control.ReturnToHome"
+                    cmd.request.Pack(rth)
+                    call = conn.remote_stub.Command(cmd)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="remote rth")
+                    )
                 response = JSONResponse(
                     status_code=200, content="Return to Home command sent."
                 )
             elif req.hold:
                 hold = HoldRequest()
-                call = conn.control_stub.Hold(hold, metadata=IDENTITY_MD)
-                asyncio.create_task(_send_stream(call, vehicle=v, command="hold"))
                 stop = StopRequest()
-                call = conn.mission_stub.Stop(stop, metadata=IDENTITY_MD)
-                asyncio.create_task(
-                    _send_unary(call, vehicle=v, command="mission.stop")
-                )
+                if sandbox_mode:
+                    call = conn.control_stub.Hold(hold, metadata=IDENTITY_MD)
+                    asyncio.create_task(_send_stream(call, vehicle=v, command="hold"))
+                    call = conn.mission_stub.Stop(stop, metadata=IDENTITY_MD)
+                    asyncio.create_task(
+                        _send_unary(call, vehicle=v, command="mission.stop")
+                    )
+                else:
+                    cmd.method_name = "Control.Hold"
+                    cmd.request.Pack(hold)
+                    call = conn.remote_stub.Command(cmd)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="remote hold")
+                    )
+                    cmd.method_name = "Mission.Stop"
+                    cmd.request.Pack(stop)
+                    call = conn.remote_stub.Command(cmd)
+                    asyncio.create_task(
+                        _send_stream(call, vehicle=v, command="remote stop")
+                    )
+
                 response = JSONResponse(
                     status_code=200,
                     content="Mission canceled and vehicle instructed to hold.",
@@ -454,13 +594,3 @@ async def command(req: CommandRequest, name: str = None) -> JSONResponse:
 
 # Serve Vite static files
 app.mount("/", StaticFiles(directory="../prime/dist", html=True), name="react_app")
-
-
-# Cleanup on shutdown
-@app.on_event("shutdown")
-async def shutdown_event():
-    for _name, conn in vehicle_connections.items():
-        conn.telemetry_endpoint.close()
-        conn.imagery_endpoint.close()
-        conn.grpc_channel.close()
-    zmq_context.term()

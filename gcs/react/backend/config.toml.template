@@ -11,6 +11,14 @@ port = 6379
 username = "steeleagle"
 password = ""
 
+[backend]
+[backend.machine1]
+swarm-controller = "localhost:5004"
+redis_host = "localhost"
+redis_port = 6379
+redis_username = "steeleagle"
+redis_password = ""
+
 [vehicle]
 [vehicle.test1]
 address = 'unix:///tmp/test1-kernel.sock'

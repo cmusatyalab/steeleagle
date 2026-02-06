@@ -94,7 +94,7 @@ function App() {
       try {
         let response = "";
         if (!useLocalVehicle) {
-          response = await fetch(`${FASTAPI_URL}/api/vehicles`);
+          response = await fetch(`${FASTAPI_URL}/api/remote/vehicles`);
         }
         else {
           response = await fetch(`${FASTAPI_URL}/api/local/vehicles`);
@@ -236,7 +236,12 @@ const onJoystick = async (body) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   };
-  const response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
+  let response = null;
+  if (useLocalVehicle) {
+    response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
+  } else {
+    response = await fetch(`${FASTAPI_URL}/api/joystick?sandbox_mode=0`, requestOptions);
+  }
   if (!response.ok) {
     const result = await response.json();
     toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
@@ -258,7 +263,12 @@ const onCommand = async (body) => {
     body: JSON.stringify(body)
   };
   setCommandProcessing(true);
-  const response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
+  let response = null;
+  if (useLocalVehicle) {
+    response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
+  } else {
+    response = await fetch(`${FASTAPI_URL}/api/command?sandbox_mode=0`, requestOptions);
+  }
   if (!response.ok) {
     const result = await response.json();
     toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });

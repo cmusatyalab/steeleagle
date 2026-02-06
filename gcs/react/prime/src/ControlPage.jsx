@@ -58,7 +58,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     };
-    const response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+    let response = null;
+    if (useLocalVehicle) {
+      response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+    } else {
+      response = await fetch(`${FASTAPI_URL}/api/upload?sandbox_mode=0`, requestOptions);
+    }
     if (!response.ok) {
       const result = await response.json();
       toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
@@ -84,7 +89,12 @@ function ControlPage({ vehicles, selectedVehicle, tracking, toast, onCommand, us
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     };
-    const response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+    let response = null;
+    if (useLocalVehicle) {
+      response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+    } else {
+      response = await fetch(`${FASTAPI_URL}/api/start?sandbox_mode=0`, requestOptions);
+    }
     if (!response.ok) {
       const result = await response.json();
       toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
