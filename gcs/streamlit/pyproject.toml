@@ -20,4 +20,4 @@ dependencies = [
 
 
 [tool.uv.sources]
-foo = { path = "streamlit_keypressed-0.1.5-py3-none-any.whl" }
+streamlit_keypressed = { path = "streamlit_keypressed-0.1.5-py3-none-any.whl" }
