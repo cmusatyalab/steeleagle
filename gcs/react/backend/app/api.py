@@ -145,7 +145,7 @@ async def lifespan(app: FastAPI):
         )
         image_sock = zmq_context.socket(zmq.SUB)
         image_sock.setsockopt_string(zmq.SUBSCRIBE, "")
-        image_sock.setsockopt(zmq.CONFLATE, 1)
+        image_sock.setsockopt(zmq.RCVHWM, 2)
         image_sock.connect(vehicle["img_endpoint"])
         logger.info(f" **{v}** Subscribed to ZMQ imagery at: {vehicle['img_endpoint']}")
         vc = VehicleConnection(
@@ -340,11 +340,11 @@ async def websocket_endpoint(websocket: WebSocket, vehicle: str):
         try:
             if vehicle_connections[vehicle].imagery_endpoint:
                 # Receive message from ZeroMQ (non-blocking)
-                message = await vehicle_connections[vehicle].imagery_endpoint.recv(
-                    flags=zmq.DONTWAIT
-                )
+                message = await vehicle_connections[
+                    vehicle
+                ].imagery_endpoint.recv_multipart(flags=zmq.DONTWAIT)
                 frame = Frame()
-                frame.ParseFromString(message)
+                frame.ParseFromString(message[1])
                 encoded_img = Image.frombuffer(
                     mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
                 )
