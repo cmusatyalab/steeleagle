@@ -12,16 +12,20 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import logging
 import math
 import os
 import xml.etree.ElementTree as ET
 from configparser import ConfigParser, SectionProxy
+from pathlib import Path
+from typing import Any
 
 import pytak
 import redis
 
+logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +34,38 @@ def cot_detail_append(cot_xml: ET.Element, elem: ET.Element) -> None:
     if detail is None:
         detail = ET.SubElement(cot_xml, "detail")
     detail.append(elem)
+
+
+def estimate_gps_accuracy(satellites: int) -> dict[str, Any]:
+    """Estimate GPS accuracy based on satellite count."""
+    if satellites < 4:
+        return {
+            "status": "NO_FIX",
+            "horizontal_error": 15.0,  # meters
+            "vertical_error": 30.0,  # meters
+            "hdop": 5.0,
+        }
+    elif satellites < 6:
+        return {
+            "status": "WEAK_SIGNAL",
+            "horizontal_error": 6.5,  # meters
+            "vertical_error": 13.0,  # meters
+            "hdop": 2.5,
+        }
+    elif satellites < 8:
+        return {
+            "status": "MODERATE_ACCURACY",
+            "horizontal_error": 2.0,  # meters
+            "vertical_error": 4.0,  # meters
+            "hdop": 1.2,
+        }
+    else:
+        return {
+            "status": "HIGH_ACCURACY",
+            "horizontal_error": 1.0,  # meters
+            "vertical_error": 2.0,  # meters
+            "hdop": 0.6,
+        }
 
 
 class TelemetryToCotSerializer(pytak.QueueWorker):
@@ -87,7 +123,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             # Extract the most recent telemetry entry
             _, telem = latest[0]
 
-            # logger.debug(f"{telem}")
+            logger.debug(f"{telem}")
 
             # Required fields for CoT
             lat = telem.get(b"latitude")
@@ -107,14 +143,16 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             # in which the object is expected to be, which can then be used for
             # collision avoidance.
 
-            # The drone only flies when it has a GPS lock, so assume it is
-            # fairly precise with some error
-            # (really should propagate any known errors along with telemetry data)
-            gps_hdop = gps_vdop = 3.
-
             # Our largest drone, the Spirit, is probably about 1 meter tall.
-            circular_error = 1. + gps_hdop
-            height_error = 1. + gps_vdop
+            drone_size = 1.0
+
+            # Estimate positioning error off of the number of visible satellites
+            # (really should propagate any known errors along with telemetry data)
+            satellites = int(telem.get(b"sats", 0))
+            estimated = estimate_gps_accuracy(satellites)
+
+            circular_error = drone_size + estimated["horizontal_error"]
+            height_error = drone_size + estimated["vertical_error"]
 
             # Generate CoT event
             cot_xml = pytak.gen_cot_xml(
@@ -148,7 +186,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
                 slope = math.degrees(math.atan2(vel_z, vel_h))
 
                 track = ET.Element("track")
-                track.set("course", str(float(bearing)))
+                track.set("course", str(int(bearing)))
                 track.set("speed", str(speed))
                 track.set("slope", str(slope))
                 cot_detail_append(cot_xml, track)
@@ -160,9 +198,8 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
                 cot_detail_append(cot_xml, status)
 
             # Add any other info as remarks
-            nsats = int(telem.get(b"sats", 0))
             additional = [
-                f"satellites: {nsats}",
+                f"satellites: {satellites}",
             ]
             remarks = ET.Element("remarks")
             remarks.text = " ".join(additional)
@@ -197,28 +234,13 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             await asyncio.sleep(self.poll_interval)
 
 
-async def async_main() -> None:
+async def async_main(config: SectionProxy) -> None:
     """Main entry point for the daemon."""
-    config = ConfigParser()
-    config.read_dict(
-        {
-            "steeleagle_tak": {
-                "COT_URL": "tcp://localhost:8087",
-                "COT_STALE": "120",
-                "POLL_INTERVAL": "1",
-                "DEBUG": "0",
-            }
-        }
-    )
-    for key, value in os.environ.items():
-        if key.startswith(("COT_", "REDIS_", "POLL_", "PYTAK_")):
-            config.set("steeleagle_tak", key, value)
-
-    # Load environment variables or config
-    redis_host = config.get("steeleagle_tak", "REDIS_HOST", fallback="localhost")
-    redis_port = int(config.get("steeleagle_tak", "REDIS_PORT", fallback=6379))
-    redis_username = config.get("steeleagle_tak", "REDIS_USERNAME", fallback=None)
-    redis_password = config.get("steeleagle_tak", "REDIS_PASSWORD", fallback=None)
+    # Load config
+    redis_host = config.get("REDIS_HOST", fallback="localhost")
+    redis_port = int(config.get("REDIS_PORT", fallback=6379))
+    redis_username = config.get("REDIS_USERNAME", fallback=None)
+    redis_password = config.get("REDIS_PASSWORD", fallback=None)
 
     # Connect to Redis
     try:
@@ -236,10 +258,10 @@ async def async_main() -> None:
         return
 
     # Initialize PyTAK CLI tool
-    clitool = pytak.CLITool(config["steeleagle_tak"])
+    clitool = pytak.CLITool(config)
 
-    # Avoid 100% CPU usage when we have a write-only connection
-    # instead of...  await clitool.setup()
+    # Instead of calling `await clitool.setup()`
+    # avoids 100% CPU usage when we have a write-only connection
     reader, writer = await pytak.protocol_factory(clitool.config)
     if writer:
         write_worker = pytak.TXWorker(clitool.tx_queue, clitool.config, writer)
@@ -249,11 +271,7 @@ async def async_main() -> None:
         clitool.add_task(read_worker)
 
     # Add our serializer to the task list
-    serializer = TelemetryToCotSerializer(
-        clitool.tx_queue,
-        config["steeleagle_tak"],
-        redis_client,
-    )
+    serializer = TelemetryToCotSerializer(clitool.tx_queue, config, redis_client)
     clitool.add_tasks({serializer})
 
     # Start all tasks
@@ -262,12 +280,43 @@ async def async_main() -> None:
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", "--config", type=Path, default="config.ini", help="configuration file"
     )
-    # logger.setLevel(logging.DEBUG)
-    asyncio.run(async_main())
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="enable verbose logging"
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true", help="enable debug logging"
+    )
+    args = parser.parse_args()
+
+    logger.setLevel(
+        logging.DEBUG
+        if args.debug
+        else logging.INFO
+        if args.verbose
+        else logging.WARNING
+    )
+
+    envvars = {k: v for k, v in os.environ.items() if "%" not in v}
+    # envvars.setdefault("REDIS_HOST", "localhost")
+    # envvars.setdefault("REDIS_PORT", "6379")
+    # envvars.setdefault("REDIS_USERNAME", None)
+    # envvars.setdefault("REDIS_PASSWORD", None)
+    envvars.setdefault("COT_URL", "tcp://localhost:8087")
+    envvars.setdefault("COT_STALE", "120")
+    envvars.setdefault("POLL_INTERVAL", "1")
+    envvars.setdefault("DEBUG", "1" if args.debug else "0")
+    config = ConfigParser(envvars)
+
+    if args.config is not None and args.config.exists():
+        config.read(args.config)
+    else:
+        config.add_section("steeleagle_tak")
+
+    asyncio.run(async_main(config["steeleagle_tak"]), debug=args.debug)
 
 
 if __name__ == "__main__":
