@@ -62,8 +62,12 @@ function App() {
   ];
 
   useEffect(() => {
-    setSocketUrl(WEBSOCKET_URL + `/ws/imagery/${selectedVehicle}`);
-  }, [selectedVehicle]);
+    if (useLocalVehicle) {
+      setSocketUrl(WEBSOCKET_URL + `/ws/imagery/${selectedVehicle}`);
+    } else {
+      setSocketUrl(WEBSOCKET_URL + `/ws/imagery/remote/${selectedVehicle}`);
+    }
+  }, [selectedVehicle, useLocalVehicle]);
 
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 import grpc
 import redis
+import requests
 import toml
 import zmq
 import zmq.asyncio
@@ -114,6 +115,7 @@ class BackendConnection(BaseModel):
     grpc_channel: grpc.aio.Channel
     remote_stub: RemoteStub
     redis_connection: redis.Redis
+    webserver: str
 
 
 with open("config.toml") as file:
@@ -185,10 +187,12 @@ async def lifespan(app: FastAPI):
         logger.info(
             f" **{b}** Connected to redis at : {backend['redis_host']}:{backend['redis_port']}"
         )
+        webserver = backend["webserver"]
         bc = BackendConnection(
             grpc_channel=channel,
             remote_stub=remote_stub,
             redis_connection=red,
+            webserver=webserver,
         )
         backend_connections[b] = bc
 
@@ -330,6 +334,27 @@ async def get_vehicles() -> list[Vehicle]:
 @app.get("/api/local/vehicles")
 async def get_local_vehicles(name: str = None) -> list[Vehicle]:
     return vehicle_data.values()
+
+
+@app.websocket("/ws/imagery/remote/{vehicle}")
+async def remote_websocket_endpoint(websocket: WebSocket, vehicle: str):
+    await websocket.accept()
+    conn = backend_connections[list(backend_connections)[0]]
+    logger.info(f"Selected vehicle {vehicle} for imagery")
+    logger.info(f"Fetching images from: {conn.webserver}")
+    while vehicle != "":
+        try:
+            url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
+            response = requests.get(url)
+            if response.status_code == 200:
+                await websocket.send_text(
+                    {base64.b64encode(response.content).decode("ascii")}
+                )
+            await asyncio.sleep(0.1)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching image: {e}")
+        except WebSocketDisconnect:
+            await websocket.close(code=1000, reason=None)
 
 
 @app.websocket("/ws/imagery/{vehicle}")
