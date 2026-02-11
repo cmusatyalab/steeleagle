@@ -34,7 +34,7 @@ _store: MissionStore | None = None
 _channel: grpc.aio.Channel | None = None
 
 
-async def _init_sdk(drone_cfg: dict, mcp_cfg: dict) -> None:
+async def _init_sdk(drone_cfg: dict, compute_cfg: dict) -> None:
     """Initialize SDK and set DSL globals (types.VEHICLE, types.COMPUTE)."""
     global _store, _channel
 
@@ -42,7 +42,7 @@ async def _init_sdk(drone_cfg: dict, mcp_cfg: dict) -> None:
     _store = MissionStore(
         drone_cfg["telemetry"],
         drone_cfg["results"],
-        mcp_cfg.get("db_path", "mcp_mission.db"),
+        compute_cfg.get("db_path", "mcp_mission.db"),
     )
     await _store.start()
     logger.info(
@@ -186,7 +186,7 @@ _register_all()
 
 async def amain(config: dict) -> None:
     """Async entry point: init SDK, run MCP server over stdio."""
-    await _init_sdk(config["drone"], config["mcp"])
+    await _init_sdk(config["drone"], config["compute"])
     try:
         await mcp.run_stdio_async()
     finally:

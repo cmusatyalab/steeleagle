@@ -16,7 +16,7 @@ DEFAULT_DRONE_CONFIG = {
     "results": "ipc:///tmp/results.sock",
 }
 
-DEFAULT_MCP_CONFIG = {
+DEFAULT_CPT_CONFIG = {
     "db_path": "mcp_mission.db",
 }
 
@@ -36,7 +36,7 @@ def load_config(config_path: str | None) -> dict:
 
     return {
         "drone": {**DEFAULT_DRONE_CONFIG, **raw.get("drone", {})},
-        "mcp": {**DEFAULT_MCP_CONFIG, **raw.get("mcp", {})},
+        "compute": {**DEFAULT_CPT_CONFIG, **raw.get("compute", {})},
         "client": {**DEFAULT_CLIENT_CONFIG, **raw.get("client", {})},
     }
 
