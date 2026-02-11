@@ -35,7 +35,13 @@ class ResponseStatus(int, Enum):
 
 
 class Response(Datatype):
-    """Global response message returned by all core services."""
+    """Global response message returned by all core services.
+
+    Attributes:
+        status (ResponseStatus): Response status code.
+        response_string (Optional[str]): Detailed message on reason for response.
+        timestamp (Timestamp): Response timestamp.
+    """
 
     status: ResponseStatus = Field(description="Response status code. Enum values: 0=OK, 1=IN_PROGRESS, 2=COMPLETED, 3=CANCELLED, 4=UNKNOWN, 5=INVALID_ARGUMENT, 6=DEADLINE_EXCEEDED, 7=NOT_FOUND, 8=ALREADY_EXISTS, 9=PERMISSION_DENIED, 10=RESOURCE_EXHAUSTED, 11=FAILED_PRECONDITION, 12=ABORTED, 13=OUT_OF_RANGE, 14=UNIMPLEMENTED, 15=INTERNAL, 16=UNAVAILABLE, 17=DATA_LOSS, 18=UNAUTHENTICATED.")
     response_string: str | None = Field(default=None, description="Detailed message on reason for response.")
@@ -44,7 +50,13 @@ class Response(Datatype):
 
 @register_data
 class Pose(Datatype):
-    """Angular offsets or poses in 3 dimensions."""
+    """Angular offsets or poses in 3 dimensions.
+
+    Attributes:
+        pitch (Optional[float]): Pitch angle [degrees].
+        roll (Optional[float]): Roll angle [degrees].
+        yaw (Optional[float]): Yaw angle [degrees].
+    """
 
     pitch: float | None = Field(default=None, description="Pitch angle [degrees].")
     roll: float | None = Field(default=None, description="Roll angle [degrees].")
@@ -53,7 +65,14 @@ class Pose(Datatype):
 
 @register_data
 class Velocity(Datatype):
-    """Velocity in 3 dimensions."""
+    """Velocity in 3 dimensions.
+
+    Attributes:
+        x_vel (Optional[float]): Forward/north velocity [m/s].
+        y_vel (Optional[float]): Right/east velocity [m/s].
+        z_vel (Optional[float]): Up velocity [m/s].
+        angular_vel (Optional[float]): Angular velocity [deg/s].
+    """
 
     x_vel: float | None = Field(default=None, description="Forward/north velocity [m/s].")
     y_vel: float | None = Field(default=None, description="Right/east velocity [m/s].")
@@ -63,7 +82,14 @@ class Velocity(Datatype):
 
 @register_data
 class Position(Datatype):
-    """Position offset relative to home or current location."""
+    """Position offset relative to home or current location.
+
+    Attributes:
+        x (Optional[float]): Forward/north offset [meters].
+        y (Optional[float]): Right/east offset [meters].
+        z (Optional[float]): Up offset [meters].
+        angle (Optional[float]): Angular offset [degrees].
+    """
 
     x: float | None = Field(default=None, description="Forward/north offset [meters].")
     y: float | None = Field(default=None, description="Right/east offset [meters].")
@@ -73,7 +99,14 @@ class Position(Datatype):
 
 @register_data
 class Location(Datatype):
-    """Location in global (GPS) coordinates."""
+    """Location in global (GPS) coordinates.
+
+    Attributes:
+        latitude (Optional[float]): Global latitude [degrees].
+        longitude (Optional[float]): Global longitude [degrees].
+        altitude (Optional[float]): Altitude above MSL or takeoff [meters].
+        heading (Optional[float]): Global heading [degrees].
+    """
 
     latitude: float | None = Field(default=None, description="Global latitude [degrees].")
     longitude: float | None = Field(default=None, description="Global longitude [degrees].")

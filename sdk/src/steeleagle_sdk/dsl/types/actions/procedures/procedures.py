@@ -21,6 +21,8 @@ from ...utils import fetch_results, fetch_telemetry
 
 @register_action
 class ElevateToAltitude(Action):
+    """Climb to a target altitude by setting vertical velocity until reached."""
+
     target_altitude: float = Field(..., description="meters AGL/relative")
     tolerance: float = Field(0.2, ge=0.0, description="stop when within this of target")
     poll_period: float = Field(
@@ -65,6 +67,8 @@ class ElevateToAltitude(Action):
 
 @register_action
 class PrePatrolSequence(Action):
+    """Elevate to altitude and set gimbal pitch before starting a patrol."""
+
     altitude: float = Field(15.0, gt=0.0, description="meters AGL/relative")
     gimbal_pitch: float = Field(0.0, description="degrees; 0=forward, positive=down")
 
@@ -75,10 +79,12 @@ class PrePatrolSequence(Action):
 
 @register_action
 class Patrol(Action):
+    """Fly through a sequence of waypoints generated from an area and slicing algorithm."""
+
     hover_time: float = Field(
         1.0, ge=0.0, description="seconds to hover after each move"
     )
-    waypoints: Waypoints
+    waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
 
     async def execute(self):
         map = self.waypoints.calculate()
@@ -107,6 +113,8 @@ class Patrol(Action):
 
 @register_action
 class Track(Action):
+    """Track a detected object using vision-based control, adjusting yaw and gimbal to follow the target."""
+
     # --- Camera / image geometry ---
     image_width: int = Field(1280, gt=0, description="Camera image width in pixels")
     image_height: int = Field(720, gt=0, description="Camera image height in pixels")
@@ -118,7 +126,7 @@ class Track(Action):
     )
 
     # --- Compute / detection configuration ---
-    target: Detection
+    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold).")
     leash_distance: float = Field(
         10, gt=0.0, description="leashing distance towards the tracked target"
     )

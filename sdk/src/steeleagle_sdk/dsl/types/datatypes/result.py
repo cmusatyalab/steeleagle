@@ -11,7 +11,14 @@ from .timestamp import Timestamp
 
 @register_data
 class BoundingBox(Datatype):
-    """Bounding box for an object detection. Origin (0,0) is top-left of image."""
+    """Bounding box for an object detection. Origin (0,0) is top-left of image.
+
+    Attributes:
+        y_min (Optional[float]): Minimum y offset as percentage of image height [0.0-1.0].
+        x_min (Optional[float]): Minimum x offset as percentage of image width [0.0-1.0].
+        y_max (Optional[float]): Maximum y offset as percentage of image height [0.0-1.0].
+        x_max (Optional[float]): Maximum x offset as percentage of image width [0.0-1.0].
+    """
 
     y_min: float | None = Field(default=None, description="Minimum y offset as percentage of image height [0.0-1.0].")
     x_min: float | None = Field(default=None, description="Minimum x offset as percentage of image width [0.0-1.0].")
@@ -21,7 +28,13 @@ class BoundingBox(Datatype):
 
 @register_data
 class HSV(Datatype):
-    """HSV color filter values (OpenCV ranges)."""
+    """HSV color filter values (OpenCV ranges).
+
+    Attributes:
+        h (Optional[int]): Hue [0-179].
+        s (Optional[int]): Saturation [0-255].
+        v (Optional[int]): Value [0-255].
+    """
 
     h: int | None = Field(default=None, description="Hue [0-179].")
     s: int | None = Field(default=None, description="Saturation [0-255].")
@@ -30,7 +43,14 @@ class HSV(Datatype):
 
 @register_data
 class Detection(Datatype):
-    """Single object detection from a model."""
+    """Single object detection from a model.
+
+    Attributes:
+        detection_id (Optional[int]): Detection ID (multiple objects per frame).
+        class_name (Optional[str]): Class name of detection.
+        score (Optional[float]): Confidence score.
+        bbox (Optional[BoundingBox]): Bounding box of the detection.
+    """
 
     detection_id: int | None = Field(default=None, description="Detection ID (multiple objects per frame).")
     class_name: str | None = Field(default=None, description="Class name of detection.")
@@ -40,7 +60,12 @@ class Detection(Datatype):
 
 @register_data
 class DetectionResult(Datatype):
-    """List of object detections for a frame."""
+    """List of object detections for a frame.
+
+    Attributes:
+        detections (Optional[List[Detection]]): List of detections.
+        frame_id (Optional[int]): Frame ID corresponding to these detections.
+    """
 
     detections: list[Detection] | None = Field(default=None, description="List of detections.")
     frame_id: int | None = Field(default=None, description="Frame ID corresponding to these detections.")
@@ -48,7 +73,11 @@ class DetectionResult(Datatype):
 
 @register_data
 class AvoidanceResult(Datatype):
-    """Avoidance result from an avoidance model."""
+    """Avoidance result from an avoidance model.
+
+    Attributes:
+        actuation_vector (Optional[float]): Actuation vector towards safe area.
+    """
 
     actuation_vector: float | None = Field(default=None, description="Actuation vector towards safe area.")
 
