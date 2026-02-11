@@ -229,6 +229,33 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PWD}
 
+  takserver:
+    build:
+      context: ./tak
+      dockerfile: Dockerfile.taky
+    container_name: takserver
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    networks:
+      - steeleagle-net
+
+  steeleagle-tak:
+    build: ./tak
+    container_name: steeleagle-tak
+    restart: unless-stopped
+    environment:
+      COT_URL: "${COT_URL}"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_USERNAME: steeleagle
+      REDIS_PASSWORD: "${REDIS_AUTH}"
+    depends_on:
+      - redis
+      - takserver
+    networks:
+      - steeleagle-net
+      - redis
 
 networks:
   steeleagle-net:
