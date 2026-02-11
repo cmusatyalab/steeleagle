@@ -3,18 +3,15 @@
 #####################################################################
 from enum import Enum
 
+from pydantic import Field
+
 from ...compiler.registry import register_data
 from ..base import Datatype
 from ..datatypes import common as common
 
 
 class DatasinkLocation(int, Enum):
-    """Denotes where a datasink is located.
-
-    Attributes:
-        REMOTE (0): remote location (network hop required)
-        LOCAL (1): local location (IPC)
-    """
+    """Datasink location: REMOTE(0)=network hop required, LOCAL(1)=IPC."""
 
     REMOTE = 0
     LOCAL = 1
@@ -22,12 +19,7 @@ class DatasinkLocation(int, Enum):
 
 @register_data
 class DatasinkInfo(Datatype):
-    """Information about a datasink.
+    """Information about a compute datasink."""
 
-    Attributes:
-        id (str): datasink ID
-        location (DatasinkLocation): datasink location
-    """
-
-    id: str
-    location: DatasinkLocation
+    id: str = Field(description="Datasink ID.")
+    location: DatasinkLocation = Field(description="Datasink location. Enum values: 0=REMOTE (network hop required), 1=LOCAL (IPC).")

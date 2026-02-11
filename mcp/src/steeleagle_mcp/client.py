@@ -15,8 +15,8 @@ import anthropic
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from .config import load_config, make_client_parser
-from .system_prompt import SYSTEM_PROMPT
+from steeleagle_mcp.config import load_config, make_client_parser
+from steeleagle_mcp.system_prompt import SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -105,38 +105,6 @@ async def _agentic_loop(
         messages.append({"role": "user", "content": tool_results})
 
 
-async def _fetch_resources(session: ClientSession) -> str:
-    """Read all MCP resources and format as a reference section for the system prompt."""
-    try:
-        res_list = await session.list_resources()
-    except Exception:
-        logger.warning("Failed to list resources")
-        return ""
-
-    if not res_list.resources:
-        return ""
-
-    sections: list[str] = []
-    for res in res_list.resources:
-        try:
-            content = await session.read_resource(res.uri)
-            text = "".join(
-                c.text for c in content.contents if hasattr(c, "text")
-            )
-            sections.append(text)
-        except Exception:
-            logger.warning("Failed to read resource %s", res.uri)
-
-    if not sections:
-        return ""
-
-    return (
-        "\n\n## Available Data Types and Enums (MCP Resources)\n"
-        "Use these schemas when constructing arguments for tool calls.\n\n"
-        + "\n\n".join(sections)
-    )
-
-
 async def run_chat(config: dict, cli_api_key: str | None, cli_model: str | None) -> None:
     """Main chat loop: spawn MCP server, discover tools, run REPL."""
     client_cfg = config["client"]
@@ -163,14 +131,7 @@ async def run_chat(config: dict, cli_api_key: str | None, cli_model: str | None)
             tools_result = await session.list_tools()
             anthropic_tools = _mcp_tools_to_anthropic(tools_result.tools)
 
-            # Fetch resources and append to system prompt
-            resource_ref = await _fetch_resources(session)
-            system_prompt = SYSTEM_PROMPT + resource_ref
-
             print(f"Connected. Discovered {len(anthropic_tools)} tools.")
-            if resource_ref:
-                res_list = await session.list_resources()
-                print(f"Loaded {len(res_list.resources)} resource schemas for LLM reference.")
             print(f"Model: {model}")
             print("Type your mission instructions (Ctrl+C or 'quit' to exit).\n")
 
@@ -195,7 +156,6 @@ async def run_chat(config: dict, cli_api_key: str | None, cli_model: str | None)
                 try:
                     await _agentic_loop(
                         client, session, model, anthropic_tools, messages,
-                        system_prompt,
                     )
                 except anthropic.APIError as e:
                     print(f"\nClaude API error: {e}")
