@@ -1,5 +1,3 @@
-from google.protobuf.duration_pb2 import Duration
-
 from .... import types
 from ....compiler.registry import register_action
 
@@ -7,6 +5,7 @@ from ....compiler.registry import register_action
 from ...base import Action
 from ...datatypes import common as common
 from ...datatypes import control as params
+from ...datatypes.duration import Duration
 
 # Type imports
 from ...datatypes.common import Response

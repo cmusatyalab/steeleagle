@@ -1,0 +1,14 @@
+# MCP module configuration for a single drone
+
+[drone]
+name = "drone1"
+kernel = "unix:///tmp/kernel.sock"
+telemetry = "ipc:///tmp/driver_telem.sock"
+results = "ipc:///tmp/results.sock"
+
+[mcp]
+db_path = "mcp_mission.db"
+
+[client]
+# API key should be set via ANTHROPIC_API_KEY env var
+model = "claude-sonnet-4-20250514"
