@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from .... import types
 from ....compiler.registry import register_action
 
@@ -100,8 +102,8 @@ class Joystick(Action):
         duration (Duration): time of actuation after which the vehicle will Hold
     """
 
-    velocity: common.Velocity
-    duration: Duration | None = None
+    velocity: common.Velocity = Field(description="Target velocity to move towards (x_vel, y_vel, z_vel, angular_vel).")
+    duration: Duration | None = Field(default=None, description="Time of actuation [seconds, nanos] after which the vehicle will hold.")
 
     async def execute(self) -> Response:
         """Execute the Joystick action.
@@ -113,10 +115,12 @@ class Joystick(Action):
 
 @register_action
 class SetGimbalPoseTarget(Action):
-    gimbal_id: int
-    pose: common.Pose
-    pose_mode: params.PoseMode | None
-    frame: params.ReferenceFrame | None
+    """Set the target pose of a gimbal without streaming feedback."""
+
+    gimbal_id: int = Field(description="ID of the target gimbal.")
+    pose: common.Pose = Field(description="Target pose (pitch, roll, yaw) [degrees].")
+    pose_mode: params.PoseMode | None = Field(default=None, description="How to interpret the pose. Enum values: 0=ANGLE (absolute), 1=OFFSET (from current), 2=VELOCITY (rotational).")
+    frame: params.ReferenceFrame | None = Field(default=None, description="Reference frame. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).")
 
     async def execute(self) -> Response:
         """Execute the SetGimbalPoseTarget action.
@@ -137,7 +141,7 @@ class TakeOff(Action):
         take_off_altitude (float): take off height in relative altitude [meters]
     """
 
-    take_off_altitude: float
+    take_off_altitude: float = Field(description="Take off height in relative altitude [meters].")
 
     async def execute(self) -> Response:
         """Execute the TakeOff action.
@@ -212,7 +216,7 @@ class SetHome(Action):
         location (common.Location): new home location
     """
 
-    location: common.Location
+    location: common.Location = Field(description="New home location (latitude, longitude, altitude, heading).")
 
     async def execute(self) -> Response:
         """Execute the SetHome action.
@@ -278,10 +282,10 @@ class SetGlobalPosition(Action):
         max_velocity (Optional[common.Velocity]): maximum velocity during transit
     """
 
-    location: common.Location
-    heading_mode: params.HeadingMode | None
-    altitude_mode: params.AltitudeMode | None
-    max_velocity: common.Velocity | None
+    location: common.Location = Field(description="Target global position (latitude, longitude, altitude, heading).")
+    heading_mode: params.HeadingMode | None = Field(default=None, description="How the vehicle orients during transit. Enum values: 0=TO_TARGET (face target bearing), 1=HEADING_START (face given heading).")
+    altitude_mode: params.AltitudeMode | None = Field(default=None, description="How the vehicle interprets altitude. Enum values: 0=ABSOLUTE (meters above MSL), 1=RELATIVE (meters above takeoff).")
+    max_velocity: common.Velocity | None = Field(default=None, description="Maximum velocity during transit. x_vel=max horizontal, z_vel=max vertical [m/s].")
 
     async def execute(self) -> Response:
         """Execute the SetGlobalPosition action.
@@ -317,9 +321,9 @@ class SetRelativePosition(Action):
         frame (Optional[params.ReferenceFrame]): frame of reference
     """
 
-    position: common.Position
-    max_velocity: common.Velocity | None
-    frame: params.ReferenceFrame | None
+    position: common.Position = Field(description="Target relative position (x, y, z offsets). Interpretation depends on frame.")
+    max_velocity: common.Velocity | None = Field(default=None, description="Maximum velocity during transit. x_vel=max horizontal, z_vel=max vertical [m/s].")
+    frame: params.ReferenceFrame | None = Field(default=None, description="Reference frame. Enum values: 0=BODY (forward/right/up from current), 1=NEU (north/east/up from start).")
 
     async def execute(self) -> Response:
         """Execute the SetRelativePosition action.
@@ -345,8 +349,8 @@ class SetVelocity(Action):
         frame (Optional[params.ReferenceFrame]): frame of reference
     """
 
-    velocity: common.Velocity
-    frame: params.ReferenceFrame | None
+    velocity: common.Velocity = Field(description="Target velocity (x_vel, y_vel, z_vel, angular_vel). Interpretation depends on frame.")
+    frame: params.ReferenceFrame | None = Field(default=None, description="Reference frame. Enum values: 0=BODY (forward/right/up), 1=NEU (north/east/up).")
 
     async def execute(self) -> Response:
         """Execute the SetVelocity action.
@@ -371,8 +375,8 @@ class SetHeading(Action):
         heading_mode (Optional[params.HeadingMode]): determines how the vehicle will orient
     """
 
-    location: common.Location
-    heading_mode: params.HeadingMode | None
+    location: common.Location = Field(description="Target heading or global location to orient towards.")
+    heading_mode: params.HeadingMode | None = Field(default=None, description="How the vehicle orients. Enum values: 0=TO_TARGET (face target bearing), 1=HEADING_START (face given heading).")
 
     async def execute(self) -> Response:
         """Execute the SetHeading action.
@@ -405,10 +409,10 @@ class SetGimbalPose(Action):
         frame (Optional[params.ReferenceFrame]): frame of reference
     """
 
-    gimbal_id: int
-    pose: common.Pose
-    pose_mode: params.PoseMode | None
-    frame: params.ReferenceFrame | None
+    gimbal_id: int = Field(description="ID of the target gimbal.")
+    pose: common.Pose = Field(description="Target pose (pitch, roll, yaw) [degrees].")
+    pose_mode: params.PoseMode | None = Field(default=None, description="How to interpret the pose. Enum values: 0=ANGLE (absolute), 1=OFFSET (from current), 2=VELOCITY (rotational).")
+    frame: params.ReferenceFrame | None = Field(default=None, description="Reference frame. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).")
 
     async def execute(self) -> Response:
         """Execute the SetGimbalPose action.
@@ -430,7 +434,7 @@ class ConfigureImagingSensorStream(Action):
         configurations (List[params.ImagingSensorConfiguration]): list of configurations to be updated
     """
 
-    configurations: list[params.ImagingSensorConfiguration]
+    configurations: list[params.ImagingSensorConfiguration] = Field(description="List of imaging sensor configurations to apply (id, set_primary, set_fps).")
 
     async def execute(self) -> Response:
         """Execute the ConfigureImagingSensorStream action.
@@ -451,7 +455,7 @@ class ConfigureTelemetryStream(Action):
         frequency (int): target frequency of telemetry generation, in Hz
     """
 
-    frequency: int
+    frequency: int = Field(description="Target telemetry generation frequency [Hz].")
 
     async def execute(self) -> Response:
         """Execute the ConfigureTelemetryStream action.

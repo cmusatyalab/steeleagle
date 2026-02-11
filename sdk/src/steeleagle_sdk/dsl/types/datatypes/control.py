@@ -3,55 +3,36 @@
 #####################################################################
 from enum import Enum
 
+from pydantic import Field
+
 from ...compiler.registry import register_data
 from ..base import Datatype
 from ..datatypes import common as common
 
 
 class AltitudeMode(int, Enum):
-    """Altitude mode switch.
-
-    Attributes:
-        ABSOLUTE (0): meters above Mean Sea Level
-        RELATIVE (1): meters above takeoff position
-    """
+    """Altitude mode: ABSOLUTE(0)=meters above MSL, RELATIVE(1)=meters above takeoff."""
 
     ABSOLUTE = 0
     RELATIVE = 1
 
 
 class HeadingMode(int, Enum):
-    """Heading mode switch.
-
-    Attributes:
-        TO_TARGET (0): orient towards the target location
-        HEADING_START (1): orient towards the given heading
-    """
+    """Heading mode: TO_TARGET(0)=orient towards target, HEADING_START(1)=orient to given heading."""
 
     TO_TARGET = 0
     HEADING_START = 1
 
 
 class ReferenceFrame(int, Enum):
-    """Reference frame mode switch.
-
-    Attributes:
-        BODY (0): vehicle reference frame
-        NEU (1): NEU (North, East, Up) reference frame
-    """
+    """Reference frame: BODY(0)=vehicle frame, NEU(1)=North-East-Up frame."""
 
     BODY = 0
     NEU = 1
 
 
 class PoseMode(int, Enum):
-    """Pose mode switch.
-
-    Attributes:
-        ANGLE (0): absolute angle
-        OFFSET (1): request data // Offset from current
-        VELOCITY (2): rotational velocities
-    """
+    """Pose mode: ANGLE(0)=absolute angle, OFFSET(1)=offset from current, VELOCITY(2)=rotational velocity."""
 
     ANGLE = 0
     OFFSET = 1
@@ -60,14 +41,8 @@ class PoseMode(int, Enum):
 
 @register_data
 class ImagingSensorConfiguration(Datatype):
-    """Configuration for an imaging sensor.
+    """Configuration for an imaging sensor stream."""
 
-    Attributes:
-        id (int): target imaging sensor ID
-        set_primary (bool): set this sensor as the primary stream
-        set_fps (int): target FPS for stream
-    """
-
-    id: int
-    set_primary: bool
-    set_fps: int
+    id: int = Field(description="Target imaging sensor ID.")
+    set_primary: bool = Field(description="Set this sensor as the primary stream.")
+    set_fps: int = Field(description="Target FPS for the stream.")

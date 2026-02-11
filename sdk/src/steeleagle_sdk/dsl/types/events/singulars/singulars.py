@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 # ---- events ----
 @register_event
 class TimeReached(Event):
-    duration: float = Field(..., ge=0.0, description="Seconds to wait")
+    """True after a specified duration has elapsed."""
+
+    duration: float = Field(..., ge=0.0, description="Seconds to wait before returning true.")
 
     async def check(self) -> bool:
         await asyncio.sleep(self.duration)
@@ -30,7 +32,7 @@ class TimeReached(Event):
 class BatteryReached(Event):
     """True when battery <= threshold."""
 
-    threshold: int = Field(..., ge=0, le=100)
+    threshold: int = Field(..., ge=0, le=100, description="Battery percentage [0-100] at or below which this event fires.")
 
     async def check(self) -> bool:
         while True:
@@ -46,7 +48,7 @@ class BatteryReached(Event):
 class SatellitesReached(Event):
     """True when satellites >= threshold."""
 
-    threshold: int = Field(..., ge=0)
+    threshold: int = Field(..., ge=0, description="Minimum number of GPS satellites required for this event to fire.")
 
     async def check(self) -> bool:
         while True:
@@ -62,8 +64,8 @@ class SatellitesReached(Event):
 class GimbalPoseReached(Event):
     """Checks provided axes only; abs error <= tol_deg."""
 
-    target: Pose
-    tol_deg: float = Field(3.0, gt=0.0)
+    target: Pose = Field(description="Target gimbal pose (pitch, roll, yaw) [degrees]. Only provided axes are checked.")
+    tol_deg: float = Field(3.0, gt=0.0, description="Allowed absolute error per axis [degrees].")
 
     async def check(self) -> bool:
         while True:
@@ -101,10 +103,10 @@ class GimbalPoseReached(Event):
 class VelocityReached(Event):
     """True when the selected frame's velocity matches the target (per-component) within tolerance."""
 
-    frame: ReferenceFrame
-    target: Velocity
+    frame: ReferenceFrame = Field(description="Reference frame to check velocity in. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).")
+    target: Velocity = Field(description="Target velocity (x_vel, y_vel, z_vel, angular_vel). Only provided components are checked.")
     tol: float | None = Field(
-        0, ge=0.0, description="Allowed absolute error per component"
+        0, ge=0.0, description="Allowed absolute error per component [m/s]."
     )
 
     async def check(self) -> bool:
@@ -151,12 +153,12 @@ class RelativePositionReached(Event):
     Compares only fields provided on `target`.
     """
 
-    target: Position
+    target: Position = Field(description="Target relative position (x, y, z, angle). Only provided fields are checked.")
     tol_m: float | None = Field(
-        0.20, ge=0.0, description="Tolerance for x/y/z (meters)"
+        0.20, ge=0.0, description="Tolerance for x/y/z [meters]."
     )
     tol_deg: float | None = Field(
-        0.0, ge=0.0, description="Tolerance for angle (degrees)"
+        0.0, ge=0.0, description="Tolerance for angle [degrees]."
     )
 
     @staticmethod
@@ -202,15 +204,15 @@ class GlobalPositionReached(Event):
     Compares only fields provided on `target`.
     """
 
-    target: Location = None
+    target: Location = Field(default=None, description="Target global position (latitude, longitude, altitude, heading). Only provided fields are checked.")
     tol_m: float | None = Field(
-        0.50, ge=0.0, description="Lat/Lon distance tolerance (meters)"
+        0.50, ge=0.0, description="Lat/lon great-circle distance tolerance [meters]."
     )
     tol_alt_m: float | None = Field(
-        0.50, ge=0.0, description="Altitude tolerance (meters)"
+        0.50, ge=0.0, description="Altitude tolerance [meters]."
     )
     tol_deg: float | None = Field(
-        3.0, ge=0.0, description="Heading tolerance (degrees)"
+        3.0, ge=0.0, description="Heading tolerance [degrees]."
     )
 
     @staticmethod
@@ -280,7 +282,7 @@ class GlobalPositionReached(Event):
 class DetectionFound(Event):
     """True if any detection matches optional class_name and min score."""
 
-    target: Detection  # use class_name/score if provided
+    target: Detection = Field(description="Detection filter (class_name to match, optional minimum score threshold).")
 
     async def check(self) -> bool:
         # Keep consuming FrameResult messages until a matching detection appears.
@@ -326,8 +328,8 @@ class HSVReached(Event):
     Looks only in ComputeResult.generic_result (JSON).
     """
 
-    target: HSV
-    tol: int = Field(15, ge=0)
+    target: HSV = Field(description="Target HSV color values (h: 0-179, s: 0-255, v: 0-255). Only provided components are checked.")
+    tol: int = Field(15, ge=0, description="Allowed absolute error per HSV component.")
 
     async def check(self) -> bool:
         # Continuously read FrameResult messages and inspect generic_result JSON.

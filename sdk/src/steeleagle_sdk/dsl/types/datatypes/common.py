@@ -3,46 +3,15 @@
 #####################################################################
 from enum import Enum
 
+from pydantic import Field
+
 from ...compiler.registry import register_data
 from ..base import Datatype
 from .timestamp import Timestamp
 
 
 class ResponseStatus(int, Enum):
-    """Response types for RPC functions.
-
-        Values 0-2 (`OK`, `IN_PROGRESS`, `COMPLETED`) are specific to the SteelEagle protocol.
-        They determine what phase an RPC call is in: `OK` -> ack, `IN_PROGRESS` -> in progress,
-        and `COMPLETED` -> completed. These intermediate phases are generally not exposed to
-        user-facing code and are only used for streaming methods. In contrast to normal gRPC
-        procedure, a call is only considered complete on a response of `COMPLETED` instead of `OK`.
-        If an error occurs, SteelEagle defers to gRPC error codes, 3-18. More details on these codes
-        can be found [here](https://grpc.github.io/grpc/core/md_doc_statuscodes.html). Note that
-        the value of these codes is offset by 2 from their original form (e.g. `CANCELLED` = 3 vs = 1).
-        Therefore, for error codes, the transformation from gRPC to SteelEagle response code is to add
-        2 to the code. The only codes that differ from their gRPC meaning are codes 9 and 18.
-
-    Attributes:
-        OK (0): command acknowledged
-        IN_PROGRESS (1): command in progress
-        COMPLETED (2): command finished without error
-        CANCELLED (3): the operation was cancelled, typically by the caller
-        UNKNOWN (4): unknown error
-        INVALID_ARGUMENT (5): the client specified an invalid argument
-        DEADLINE_EXCEEDED (6): the deadline expired before the operation could complete
-        NOT_FOUND (7): some requested entity was not found
-        ALREADY_EXISTS (8): an entity the client attempted to create already exists
-        PERMISSION_DENIED (9): the provided identity is not permitted to execute this operation by the current law (unique to SteelEagle)
-        RESOURCE_EXHAUSTED (10): some resource has been exhausted
-        FAILED_PRECONDITION (11): the operation was rejected because the system is not in a state required for the operation's execution
-        ABORTED (12): the operation was aborted, typically due to a concurrency issue such as a sequencer check failure or transaction abort
-        OUT_OF_RANGE (13): the operation was attempted past the valid range
-        UNIMPLEMENTED (14): the operation is not implemented/supported by the service
-        INTERNAL (15): an internal error occurred while executing the operation
-        UNAVAILABLE (16): the service is currently unavailable
-        DATA_LOSS (17): unrecoverable data loss or corruption
-        UNAUTHENTICATED (18): the client failed to provide an identity (unique to SteelEagle)
-    """
+    """RPC response status codes. 0=OK, 1=IN_PROGRESS, 2=COMPLETED, 3-18=errors (gRPC codes offset by 2)."""
 
     OK = 0
     IN_PROGRESS = 1
@@ -69,14 +38,14 @@ class Response(Datatype):
     """Global response message returned by all core services.
 
     Attributes:
-        status (ResponseStatus): response status
-        response_string (Optional[str]): detailed message on reason for response
-        timestamp (Timestamp): response timestamp
+        status (ResponseStatus): Response status code.
+        response_string (Optional[str]): Detailed message on reason for response.
+        timestamp (Timestamp): Response timestamp.
     """
 
-    status: ResponseStatus
-    response_string: str | None = None
-    timestamp: Timestamp
+    status: ResponseStatus = Field(description="Response status code. Enum values: 0=OK, 1=IN_PROGRESS, 2=COMPLETED, 3=CANCELLED, 4=UNKNOWN, 5=INVALID_ARGUMENT, 6=DEADLINE_EXCEEDED, 7=NOT_FOUND, 8=ALREADY_EXISTS, 9=PERMISSION_DENIED, 10=RESOURCE_EXHAUSTED, 11=FAILED_PRECONDITION, 12=ABORTED, 13=OUT_OF_RANGE, 14=UNIMPLEMENTED, 15=INTERNAL, 16=UNAVAILABLE, 17=DATA_LOSS, 18=UNAUTHENTICATED.")
+    response_string: str | None = Field(default=None, description="Detailed message on reason for response.")
+    timestamp: Timestamp = Field(description="Response timestamp.")
 
 
 @register_data
@@ -84,31 +53,31 @@ class Pose(Datatype):
     """Angular offsets or poses in 3 dimensions.
 
     Attributes:
-        pitch (Optional[float]): pitch [degrees]
-        roll (Optional[float]): roll [degrees]
-        yaw (Optional[float]): yaw [degrees]
+        pitch (Optional[float]): Pitch angle [degrees].
+        roll (Optional[float]): Roll angle [degrees].
+        yaw (Optional[float]): Yaw angle [degrees].
     """
 
-    pitch: float | None = None
-    roll: float | None = None
-    yaw: float | None = None
+    pitch: float | None = Field(default=None, description="Pitch angle [degrees].")
+    roll: float | None = Field(default=None, description="Roll angle [degrees].")
+    yaw: float | None = Field(default=None, description="Yaw angle [degrees].")
 
 
 @register_data
 class Velocity(Datatype):
-    """Representation of velocity in 3-dimensions.
+    """Velocity in 3 dimensions.
 
     Attributes:
-        x_vel (Optional[float]): forward/north velocity [meters/s]
-        y_vel (Optional[float]): right/east velocity [meters/s]
-        z_vel (Optional[float]): up velocity [meters/s]
-        angular_vel (Optional[float]): angular velocity [degrees/s]
+        x_vel (Optional[float]): Forward/north velocity [m/s].
+        y_vel (Optional[float]): Right/east velocity [m/s].
+        z_vel (Optional[float]): Up velocity [m/s].
+        angular_vel (Optional[float]): Angular velocity [deg/s].
     """
 
-    x_vel: float | None = None
-    y_vel: float | None = None
-    z_vel: float | None = None
-    angular_vel: float | None = None
+    x_vel: float | None = Field(default=None, description="Forward/north velocity [m/s].")
+    y_vel: float | None = Field(default=None, description="Right/east velocity [m/s].")
+    z_vel: float | None = Field(default=None, description="Up velocity [m/s].")
+    angular_vel: float | None = Field(default=None, description="Angular velocity [deg/s].")
 
 
 @register_data
@@ -116,30 +85,30 @@ class Position(Datatype):
     """Position offset relative to home or current location.
 
     Attributes:
-        x (Optional[float]): forward/north offset [meters]
-        y (Optional[float]): right/east offset [meters]
-        z (Optional[float]): up offset [meters]
-        angle (Optional[float]): angular offset [degrees]
+        x (Optional[float]): Forward/north offset [meters].
+        y (Optional[float]): Right/east offset [meters].
+        z (Optional[float]): Up offset [meters].
+        angle (Optional[float]): Angular offset [degrees].
     """
 
-    x: float | None = None
-    y: float | None = None
-    z: float | None = None
-    angle: float | None = None
+    x: float | None = Field(default=None, description="Forward/north offset [meters].")
+    y: float | None = Field(default=None, description="Right/east offset [meters].")
+    z: float | None = Field(default=None, description="Up offset [meters].")
+    angle: float | None = Field(default=None, description="Angular offset [degrees].")
 
 
 @register_data
 class Location(Datatype):
-    """Location in global coordinates.
+    """Location in global (GPS) coordinates.
 
     Attributes:
-        latitude (Optional[float]): global latitude [degrees]
-        longitude (Optional[float]): global longitude [degrees]
-        altitude (Optional[float]): altitude above MSL or takeoff [meters]
-        heading (Optional[float]): global heading [degrees]
+        latitude (Optional[float]): Global latitude [degrees].
+        longitude (Optional[float]): Global longitude [degrees].
+        altitude (Optional[float]): Altitude above MSL or takeoff [meters].
+        heading (Optional[float]): Global heading [degrees].
     """
 
-    latitude: float | None = None
-    longitude: float | None = None
-    altitude: float | None = None
-    heading: float | None = None
+    latitude: float | None = Field(default=None, description="Global latitude [degrees].")
+    longitude: float | None = Field(default=None, description="Global longitude [degrees].")
+    altitude: float | None = Field(default=None, description="Altitude above MSL or takeoff [meters].")
+    heading: float | None = Field(default=None, description="Global heading [degrees].")

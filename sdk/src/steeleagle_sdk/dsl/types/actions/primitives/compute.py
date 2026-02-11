@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from .... import types
 from ....compiler.registry import register_action
 
@@ -20,7 +22,7 @@ class AddDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: list[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo] = Field(description="List of datasinks to add (each has id and location: 0=REMOTE, 1=LOCAL).")
 
     async def execute(self) -> Response:
         """Execute the AddDatasinks action.
@@ -42,7 +44,7 @@ class SetDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: list[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo] = Field(description="List of datasinks to set as the consumer list (each has id and location: 0=REMOTE, 1=LOCAL).")
 
     async def execute(self) -> Response:
         """Execute the SetDatasinks action.
@@ -63,7 +65,7 @@ class RemoveDatasinks(Action):
         datasinks (List[params.DatasinkInfo]): name of target datasinks
     """
 
-    datasinks: list[params.DatasinkInfo]
+    datasinks: list[params.DatasinkInfo] = Field(description="List of datasinks to remove from the consumer list (each has id and location: 0=REMOTE, 1=LOCAL).")
 
     async def execute(self) -> Response:
         """Execute the RemoveDatasinks action.

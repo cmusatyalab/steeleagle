@@ -1,6 +1,8 @@
 import logging
 from typing import Literal
 
+from pydantic import Field
+
 from ....api.datatypes.common import Location
 from ....api.map.partitioner.algos.corridor import CorridorPartition
 from ....api.map.partitioner.algos.edge import EdgePartition
@@ -21,32 +23,14 @@ class RelativeWaypoints(Datatype):
 
 @register_data
 class Waypoints(Datatype):
-    """Datatype representing a list of geolocation waypoints.
+    """A list of geolocation waypoints with a slicing algorithm for coverage patterns."""
 
-    Takes in a list of geolocations and transforms them into waypoints given
-    a slicing algorithm. The slicing algorithm determines how the waypoints
-    will be visited; `edge` visits the exact geolocations and `survey`/`corridor`
-    divide the geolocations into lines which are traversed in order. These
-    are used to scan over an area.
-
-    Attributes:
-        area (Union[str, List[Location]]): can be either a KML reference or a list
-            of geolocation points; if a KML reference, use the name of the polyshape, otherwise
-            provide a list of `Location` objects
-        alt (float): altitude at which the waypoints will be visited; _altitudes provided by Location objects are ignored_
-        algo (Optional[Literal["edge", "corridor", "survey"]]): determines how the waypoints are sliced, `edge`
-            follows the points in order and `survey`/`corridor` attempt to cover the area enclosed by the points (default: `edge`)
-        spacing (Optional[float]): must be set for `survey` and `corridor`, ignored otherwise; spacing in between survey columns [meters]
-        angle_degrees (Optional[float]): must be set for `survey` and `corridor`, ignored otherwise; the angle of the survey columns [degrees]
-        trigger_distance (Optional[float]): must be set for `survey`, ignored otherwise; the distance before a snapshot is triggered
-    """
-
-    area: str | list[Location]
-    alt: float
-    algo: Literal["edge", "corridor", "survey"] | None = "edge"
-    spacing: float | None = None
-    angle_degrees: float | None = None
-    trigger_distance: float | None = None
+    area: str | list[Location] = Field(description="KML area name (string) or list of Location points defining the area.")
+    alt: float = Field(description="Altitude at which waypoints are visited [meters]. Altitudes in Location objects are ignored.")
+    algo: Literal["edge", "corridor", "survey"] | None = Field(default="edge", description="Slicing algorithm: 'edge' follows points in order, 'survey'/'corridor' cover the enclosed area.")
+    spacing: float | None = Field(default=None, description="Spacing between survey/corridor columns [meters]. Required for survey/corridor.")
+    angle_degrees: float | None = Field(default=None, description="Angle of survey/corridor columns [degrees]. Required for survey/corridor.")
+    trigger_distance: float | None = Field(default=None, description="Distance before snapshot trigger [meters]. Required for survey only.")
 
     def calculate(self) -> dict[str, list[dict[str, float]]]:
         raw = None  # Raw geopoints
