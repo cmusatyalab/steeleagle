@@ -1,0 +1,17 @@
+# TODO: This should usually be changed to the name of the host device,
+# as this will be the service name for the daemon in Tailscale if the
+# VPN is enabled.
+host = 'daemon'
+# The daemon will bind to the provided port, and will assign vehicle ports
+# in ascending order from this base port.
+port = 50000
+# Switch for using Tailscale VPN (highly recommended).
+tailscale = true
+
+[[vehicles]]
+# TODO: the following is the format for creating a vehicle.
+#name = ''
+#wait-control = true
+#wait-mission = true
+#   [[vehicles.plugins]]
+#   name = ''

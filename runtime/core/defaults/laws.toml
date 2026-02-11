@@ -1,0 +1,23 @@
+# Initial control state
+first = 'REMOTE'
+
+# State definitions start here!
+[[states]]
+name = 'REMOTE'
+allowed = [
+    'server/**'
+]
+match = [
+    ['server/Mission/Start', 'LOCAL'],
+    ['server/Control/ReturnToHome', 'LOCAL']
+]
+
+[[states]]
+name = 'LOCAL'
+allowed = [
+    'internal/Control/*',
+    'internal/Compute/*',
+]
+match = [
+    ['server/Mission/Stop', 'REMOTE']
+]

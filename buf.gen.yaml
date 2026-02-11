@@ -3,17 +3,17 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/cmusatyalab/steeleagle/tree/vehicle-go/protocol/bindings/go/
+      value: github.com/cmusatyalab/steeleagle/vehicle/pkg/pb
 plugins:
   - remote: buf.build/protocolbuffers/go
-    out: protocol/bindings/go
+    out: vehicle-revision/pkg/pb
     opt: paths=source_relative
   - remote: buf.build/grpc/go
-    out: protocol/bindings/go
+    out: vehicle-revision/pkg/pb
     opt: paths=source_relative
-  - remote: buf.build/protocolbuffers/python
-    out: protocol/bindings/python
-  - remote: buf.build/grpc/python
-    out: protocol/bindings/python
+#- remote: buf.build/protocolbuffers/python
+#  out: protocol/bindings/python
+#- remote: buf.build/grpc/python
+#  out: protocol/bindings/python
 inputs:
-  - directory: protocol/defs
+  - directory: protocol
