@@ -207,24 +207,25 @@ function App() {
 
     if (manualControl) {
       Object.entries(gamePadAxis).forEach(([axisIndex, value]) => {
-        console.log(`axisIndex: ${axisIndex} value ${value}`)
-        if (axisIndex == 0) {
-          a = value;
-        }
-        else if (axisIndex == 1) {
-          z = value;
-        }
-        else if (axisIndex == 2) {
-          y = value;
-        }
-        else if (axisIndex == 4 && y == 0.0) {
-          y = value;
-        }
-        else if (axisIndex == 3) {
-          x = value;
-        }
-        else if (axisIndex == 5 && x == 0.0) {
-          x = value;
+        if (value != 0.0) {
+          if (axisIndex == 0) {
+            a = value;
+          }
+          else if (axisIndex == 1) {
+            z = value;
+          }
+          else if (axisIndex == 2) {
+            y = value;
+          }
+          else if (axisIndex == 4) {
+            y = value;
+          }
+          else if (axisIndex == 3) {
+            x = value;
+          }
+          else if (axisIndex == 5) {
+            x = value;
+          }
         }
       });
       if (!commandProcessing) {
