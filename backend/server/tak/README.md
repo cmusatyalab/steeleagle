@@ -6,7 +6,7 @@ This package provides a daemon that subscribes to Redis telemetry streams from S
 
 ```bash
 # From the backend/server/tak directory
-uv run python -m steeleagle_tak.daemon
+uv run steeleagle-tak
 
 # Or install and run
 pip install .

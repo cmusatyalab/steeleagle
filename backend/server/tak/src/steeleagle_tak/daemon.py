@@ -205,6 +205,14 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             remarks.text = " ".join(additional)
             cot_detail_append(cot_xml, remarks)
 
+            # Not sure what these are for, but least taky seems to need it
+            takv = ET.Element("takv")
+            takv.set("os", "Linux")
+            takv.set("device", "Drone")
+            takv.set("version", "1.0")
+            takv.set("platform", "SteelEagle")
+            cot_detail_append(cot_xml, takv)
+
             # Convert to bytes and queue
             await self.handle_data(cot_xml)
 
