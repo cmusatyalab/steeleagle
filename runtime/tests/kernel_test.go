@@ -18,15 +18,12 @@ import (
 )
 
 func TestBasicStartup(t *testing.T) {
-    kernel, err := core.CreateKernel(core.WithTest(true), core.WithPort(8000))
+    kernel, err := core.NewKernel(t.Context(), core.WithTest(true), core.WithPort(8000))
+    defer kernel.Stop()
     if err != nil {
         t.Fatalf("failed to create kernel: %v", err)
     }
-    err = kernel.Start()
-    if err != nil {
-        t.Fatalf("failed to start kernel: %v", err)
-    }
-
+    
     // Control/Arm
     s := grpc.NewServer()
     pb.RegisterControlServer(s, &controlServer{})
@@ -81,8 +78,6 @@ func TestBasicStartup(t *testing.T) {
     } else if out.Status != 2 {
         t.Fatalf("mock service call did not return the expected value (2), instead: (%v)", out.Status)
     }
-
-    kernel.Stop()
 }
 
 func TestPolicy(t *testing.T) {}

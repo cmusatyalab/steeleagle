@@ -16,12 +16,12 @@ import (
     "github.com/open-policy-agent/opa/rego"
 )
 
-type PolicyState struct {
-    State string
-    Laws map[string]State
-    Query rego.PreparedEvalQuery
+type policyState struct {
     stateMu sync.Mutex
+    currentState string
+    query rego.PreparedEvalQuery
     test bool
+    lawMap map[string]controlLawState
 }
 
 type policyDecision struct {
@@ -71,7 +71,7 @@ func getDefaultRegoPolicy() rego.PreparedEvalQuery {
     return query
 }
 
-func (i *PolicyState) safeCheckAndTransit(ctx context.Context, command string) (bool, string, error) {
+func (i *policyState) safeCheckAndTransit(ctx context.Context, command string) (bool, string, error) {
     i.stateMu.Lock()
     defer i.stateMu.Unlock()
 
@@ -85,7 +85,7 @@ func (i *PolicyState) safeCheckAndTransit(ctx context.Context, command string) (
     return allow, cleanedCommand, nil
 }
 
-func (i *PolicyState) check(ctx context.Context, command string) (bool, string, string, error) {
+func (i *policyState) check(ctx context.Context, command string) (bool, string, string, error) {
     // If we are in test mode, we can set our peer type to test the policy
     peer := "unknown"
     if i.test {
@@ -105,10 +105,10 @@ func (i *PolicyState) check(ctx context.Context, command string) (bool, string, 
 
     splits := strings.Split(command, ".")
     cleanedCommand := fmt.Sprintf("%s/%s", peer, splits[len(splits) - 1])
-    results, err := i.Query.Eval(ctx, rego.EvalInput(map[string]any{
+    results, err := i.query.Eval(ctx, rego.EvalInput(map[string]any{
 		"command": cleanedCommand,
-        "state": i.State,
-        "law": i.Laws,
+        "state": i.currentState,
+        "law": i.lawMap,
 	}))
 
     if len(results) == 0 {
@@ -129,10 +129,10 @@ func (i *PolicyState) check(ctx context.Context, command string) (bool, string, 
     return d.Allowed, d.NextState, cleanedCommand, nil
 }
 
-func (i *PolicyState) transit(nextState string) error {
-    _, ok := i.Laws[nextState]
+func (i *policyState) transit(nextState string) error {
+    _, ok := i.lawMap[nextState]
     if ok {
-        i.State = nextState
+        i.currentState = nextState
     } else {
         return fmt.Errorf("failed to transition to state %s, not in law!", nextState)
     }

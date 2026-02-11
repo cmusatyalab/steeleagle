@@ -9,19 +9,19 @@ import (
     "github.com/pelletier/go-toml/v2"
 )
 
-type State struct {
+type controlLawState struct {
     Name      string     `toml:"name" json:"name"`
     Enter     []string   `toml:"enter,omitempty" json:"enter"`
     Allowed   []string   `toml:"allowed,omitempty" json:"allowed"`
     Match     [][]string `toml:"match,omitempty" json:"match"`
 }
 
-type Law struct {
+type controlLaw struct {
     First     string     `toml:"first" json:"first"`
-    States    []State    `toml:"states,omitempty" json:"states"`
+    States    []controlLawState    `toml:"states,omitempty" json:"states"`
 }
 
-func getLaw() (map[string]State, string) {
+func getLaw() (map[string]controlLawState, string) {
     configDir, err := os.UserConfigDir()
     if err != nil {
         slog.Warn("OS config directory could not be found, using default laws")
@@ -37,7 +37,7 @@ func getLaw() (map[string]State, string) {
         return getDefaultLaw()
     }
 
-    l := &Law{}
+    l := &controlLaw{}
     err = toml.Unmarshal(data, l)
     if err != nil {
         slog.Warn("something went wrong reading law file, using default laws", "error", err)
@@ -53,7 +53,7 @@ func getLaw() (map[string]State, string) {
     return m, l.First
 }
 
-func getDefaultLaw() (map[string]State, string) {
+func getDefaultLaw() (map[string]controlLawState, string) {
     l, err := parseDefaultLaw()
     if err != nil {
         panic(err)
@@ -67,8 +67,8 @@ func getDefaultLaw() (map[string]State, string) {
     return m, l.First
 }
 
-func createLawMap(l *Law) (map[string]State, error) {
-    m := make(map[string]State)
+func createLawMap(l *controlLaw) (map[string]controlLawState, error) {
+    m := make(map[string]controlLawState)
     for _, value := range l.States {
         if value.Name == "" {
             return nil, fmt.Errorf("unnamed law found in configuration!")
@@ -80,8 +80,8 @@ func createLawMap(l *Law) (map[string]State, error) {
     return m, nil
 }
 
-func parseDefaultLaw() (*Law, error) {
-    l := &Law{}
+func parseDefaultLaw() (*controlLaw, error) {
+    l := &controlLaw{}
     err := toml.Unmarshal(DefaultLaw, l)
     return l, err
 }

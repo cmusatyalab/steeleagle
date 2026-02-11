@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (i *PolicyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
+func (i *policyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
@@ -18,7 +18,7 @@ func (i *PolicyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
 
 		allowed, command, err := i.safeCheckAndTransit(ctx, info.FullMethod)
         if allowed == false && err == nil {
-		    return nil, status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.State)
+		    return nil, status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
 		} else if allowed == false && err != nil {
             return nil, status.Errorf(codes.Internal, "error making policy request, denying to be safe")
         }
@@ -27,7 +27,7 @@ func (i *PolicyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (i *PolicyState) getStreamInterceptor() grpc.StreamServerInterceptor {
+func (i *policyState) getStreamInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -37,7 +37,7 @@ func (i *PolicyState) getStreamInterceptor() grpc.StreamServerInterceptor {
 
 		allowed, command, err := i.safeCheckAndTransit(ss.Context(), info.FullMethod)
         if allowed == false && err == nil {
-		    return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.State)
+		    return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
 		} else if allowed == false && err != nil {
             return status.Errorf(codes.Internal, "error making policy request, denying to be safe")
         }
