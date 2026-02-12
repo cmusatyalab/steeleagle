@@ -96,7 +96,7 @@ class TestAdapter:
 
                 _, jpg_buffer = cv2.imencode(".jpg", img)
                 input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-                input_frame.payloads.append(jpg_buffer.tobytes())
+                # input_frame.byte_payload =jpg_buffer.tobytes()
 
                 extras = telemetry.Frame()
                 extras.data = jpg_buffer.tobytes()
@@ -117,23 +117,23 @@ class TestAdapter:
 
                 FRAME_ID += 1
                 # Pack extras into the input frame
-                input_frame.extras.Pack(extras)
+                input_frame.any_payload.Pack(extras)
 
                 logger.debug(
                     f"Image producer: finished preparing frame at {time.time()}"
                 )
-            except Exception as e:
+            except AttributeError as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append(f"Unable to produce a frame: {e}".encode())
-                logger.error(f"Image producer: unable to produce a frame: {type(e)}")
+                input_frame.string_payload = f"Unable to produce a frame: {e}"
+                raise e
 
             return input_frame
 
         return [
             InputProducer(
                 producer=producer,
-                source_name=self.source_name,
-                target_engine_ids="openscout-object",
+                producer_name=self.source_name,
+                target_engine_ids=["object-engine"],
             )
         ]
 
@@ -169,7 +169,7 @@ def main():
     test_adapter = TestAdapter(args)
 
     client = ZeroMQClient(
-        f"tcp://localhost:{args.port}",
+        f"tcp://{args.server}:{args.port}",
         test_adapter.get_producer_wrappers(),
         test_adapter.process_results,
     )
