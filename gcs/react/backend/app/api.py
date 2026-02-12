@@ -127,6 +127,72 @@ class BackendConnection(BaseModel):
     webserver: str
 
 
+class ConnectionManager:
+    """Manages WebSocket connections for broadcasting imagery to multiple websocket clients"""
+
+    def __init__(self):
+        self.active_connections: dict[str, list[WebSocket]] = {}
+        self.lock = asyncio.Lock()
+
+    async def connect(self, websocket: WebSocket, vehicle: str):
+        await websocket.accept()
+        async with self.lock:
+            if vehicle not in self.active_connections:
+                self.active_connections[vehicle] = []
+            self.active_connections[vehicle].append(websocket)
+        logger.info(
+            f"{websocket.client.host} connected to vehicle '{vehicle}' ({len(self.active_connections[vehicle])} clients)"
+        )
+
+    async def disconnect(self, websocket: WebSocket, vehicle: str):
+        async with self.lock:
+            if vehicle in self.active_connections:
+                if websocket in self.active_connections[vehicle]:
+                    self.active_connections[vehicle].remove(websocket)
+                    logger.info(
+                        f"{websocket.client.host} disconnected from vehicle '{vehicle}'  ({len(self.active_connections[vehicle])} clients)"
+                    )
+
+                # Clean up empty lists
+                if not self.active_connections[vehicle]:
+                    del self.active_connections[vehicle]
+
+    async def broadcast(self, vehicle: str, message: str):
+        if vehicle not in self.active_connections:
+            return
+
+        # Create a copy of the connections list to avoid issues with concurrent modifications
+        connections = self.active_connections[vehicle].copy()
+        disconnected = []
+
+        for connection in connections:
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                logger.error(f"Error sending to client: {e}")
+                disconnected.append(connection)
+
+        # Remove disconnected clients
+        if disconnected:
+            async with self.lock:
+                for connection in disconnected:
+                    if (
+                        vehicle in self.active_connections
+                        and connection in self.active_connections[vehicle]
+                    ):
+                        self.active_connections[vehicle].remove(connection)
+
+                # Clean up empty lists
+                if (
+                    vehicle in self.active_connections
+                    and not self.active_connections[vehicle]
+                ):
+                    del self.active_connections[vehicle]
+
+    def get_client_count(self, vehicle: str) -> int:
+        return len(self.active_connections.get(vehicle, []))
+
+
 with open("config.toml") as file:
     cfg = toml.load(file)
 
@@ -135,6 +201,7 @@ zmq_context = zmq.asyncio.Context()
 vehicle_data: dict[str, Vehicle] = {}
 vehicle_connections: dict[str, VehicleConnection] = {}
 backend_connections: dict[str, BackendConnection] = {}
+connection_manager = ConnectionManager()
 
 
 @asynccontextmanager
@@ -173,6 +240,13 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(
             _telemetry_subscriber(
                 conn.telemetry_endpoint,
+                name=name,
+            )
+        )
+
+        asyncio.create_task(
+            _imagery_broadcaster(
+                conn.imagery_endpoint,
                 name=name,
             )
         )
@@ -283,6 +357,61 @@ async def _telemetry_subscriber(sock, name: str):
                 await asyncio.sleep(0.01)
 
 
+async def _imagery_broadcaster(sock, name: str):
+    """
+    Background task that continuously reads imagery from ZMQ and broadcasts to all WebSocket clients
+    """
+    logger.debug(f"Starting imagery broadcaster for '{name}'")
+    while True:
+        if sock:
+            try:
+                # Receive message from ZeroMQ (non-blocking)
+                message = await sock.recv_multipart(flags=zmq.DONTWAIT)
+                frame = Frame()
+                frame.ParseFromString(message[1])
+                encoded_img = Image.frombuffer(
+                    mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
+                )
+                # resized = encoded_img.resize((320, 180))
+                img_bytes = io.BytesIO()
+                encoded_img.save(img_bytes, format="JPEG")
+
+                # Encode to base64 and broadcast to all connected clients
+                base64_image = base64.b64encode(img_bytes.getvalue()).decode("ascii")
+                await connection_manager.broadcast(name, base64_image)
+
+            except zmq.Again:
+                await asyncio.sleep(0.01)
+            except Exception as e:
+                logger.error(f"Error in imagery broadcaster for {name}: {e}")
+                await asyncio.sleep(0.1)
+
+
+async def _remote_imagery_broadcaster(vehicle: str):
+    """
+    Background task for remote imagery fetching and broadcasting
+    """
+    logger.debug(f"Starting remote imagery broadcaster for '{vehicle}'")
+    conn = backend_connections[list(backend_connections)[0]]
+
+    while connection_manager.get_client_count(f"remote_{vehicle}") > 0:
+        try:
+            url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                base64_image = base64.b64encode(response.content).decode("ascii")
+                await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
+            await asyncio.sleep(0.1)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching remote image for {vehicle}: {e}")
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            logger.error(f"Error in remote imagery broadcaster for {vehicle}: {e}")
+            await asyncio.sleep(0.5)
+
+    logger.debug(f"Stopping remote imagery broadcaster for '{vehicle}' (no clients)")
+
+
 # API Routes
 @app.get("/api/remote/backends")
 async def get_backends() -> list[str]:
@@ -347,63 +476,51 @@ async def get_local_vehicles(name: str = None) -> list[Vehicle]:
 
 @app.websocket("/ws/imagery/remote/{vehicle}")
 async def remote_websocket_endpoint(websocket: WebSocket, vehicle: str):
-    if vehicle != "":
-        await websocket.accept()
-        try:
-            conn = backend_connections[list(backend_connections)[0]]
-            logger.info(f"Selected vehicle {vehicle} for imagery")
-            logger.info(f"Fetching images from: {conn.webserver}")
-            while True:
-                url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    await websocket.send_text(
-                        {base64.b64encode(response.content).decode("ascii")}
-                    )
-                await asyncio.sleep(0.1)
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching image: {e}")
-        except WebSocketDisconnect:
-            await websocket.close(code=1000, reason=None)
-        except RuntimeError as e:
-            logger.error(e)
+    if vehicle == "":
+        await websocket.close(code=1008, reason="Vehicle name required")
+        return
+
+    vehicle_key = f"remote_{vehicle}"
+    await connection_manager.connect(websocket, vehicle_key)
+
+    # Start broadcaster task if this is the first client for this vehicle
+    if connection_manager.get_client_count(vehicle_key) == 1:
+        asyncio.create_task(_remote_imagery_broadcaster(vehicle))
+
+    try:
+        # Keep the connection alive and handle any incoming messages
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from /ws/imagery/remote/{vehicle}")
+    except Exception as e:
+        logger.error(f"WebSocket error for remote vehicle '{vehicle}': {e}")
+    finally:
+        await connection_manager.disconnect(websocket, vehicle_key)
 
 
 @app.websocket("/ws/imagery/{vehicle}")
 async def websocket_endpoint(websocket: WebSocket, vehicle: str):
-    if vehicle != "":
-        await websocket.accept()
-        try:
-            logger.info(f"Selected vehicle {vehicle} for imagery")
-            while True:
-                if vehicle_connections[vehicle].imagery_endpoint:
-                    try:
-                        # Receive message from ZeroMQ (non-blocking)
-                        message = await vehicle_connections[
-                            vehicle
-                        ].imagery_endpoint.recv_multipart(flags=zmq.DONTWAIT)
-                        frame = Frame()
-                        frame.ParseFromString(message[1])
-                        encoded_img = Image.frombuffer(
-                            mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
-                        )
-                        resized = encoded_img.resize((320, 180))
-                        # resized.save("/tmp/driver_imagery.jpg")
-                        img_bytes = io.BytesIO()
-                        # resized.save(img_bytes, format='JPEG')
-                        encoded_img.save(img_bytes, format="JPEG")
-                        await websocket.send_text(
-                            {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
-                        )
-                    except zmq.Again:
-                        await asyncio.sleep(0.01)
-                else:
-                    await asyncio.sleep(0.5)
+    if vehicle == "":
+        await websocket.close(code=1008, reason="Vehicle name required")
+        return
 
-        except WebSocketDisconnect:
-            await websocket.close(code=1000, reason=None)
-        except RuntimeError as e:
-            logger.error(e)
+    if vehicle not in vehicle_connections:
+        await websocket.close(code=1008, reason=f"Vehicle '{vehicle}' not found")
+        return
+
+    await connection_manager.connect(websocket, vehicle)
+
+    try:
+        # Keep the connection alive and handle any incoming messages
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from /ws/imagery/{vehicle}")
+    except Exception as e:
+        logger.error(f"WebSocket error for vehicle '{vehicle}': {e}")
+    finally:
+        await connection_manager.disconnect(websocket, vehicle)
 
 
 @app.post("/api/start")
