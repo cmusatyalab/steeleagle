@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: 0BSD
 """OpenAI provider implementation for MCP client."""
 
+import json
 import logging
 from typing import Any
 
@@ -9,7 +10,7 @@ from openai import OpenAI
 
 from steeleagle_mcp.providers import LLMProvider
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("provider.openai")
 
 
 class OpenAIProvider(LLMProvider):
@@ -51,12 +52,13 @@ class OpenAIProvider(LLMProvider):
         system_prompt: str,
         model: str,
     ) -> None:
-        """Run the agentic loop with OpenAI's API."""
+        """Run one LLM turn: send messages, execute any tool calls."""
         messages_with_system = [
             {"role": "system", "content": system_prompt},
             *messages,
         ]
 
+        logger.info("LLM request  model=%s messages=%d", model, len(messages))
         response = client.chat.completions.create(
             model=model,
             messages=messages_with_system,
@@ -66,12 +68,20 @@ class OpenAIProvider(LLMProvider):
 
         choice = response.choices[0]
         message = choice.message
+        n_tools = len(message.tool_calls) if message.tool_calls else 0
+        logger.info("LLM response  finish=%s tools=%d content=%s",
+                 choice.finish_reason, n_tools, (message.content or "")[:120])
+
         messages.append({"role": "assistant", "content": message.content or ""})
 
         if message.tool_calls:
-            for tool_call in message.tool_calls:
-                tool_message = await _execute_tool(session, tool_call)
-                messages.append(tool_message)
+            for i, tc in enumerate(message.tool_calls):
+                logger.info("tool [%d/%d] %s(%s)", i + 1, n_tools,
+                         tc.function.name, tc.function.arguments)
+                result = await _execute_tool(session, tc)
+                logger.info("tool [%d/%d] %s -> %s", i + 1, n_tools,
+                         tc.function.name, result["content"][:120])
+                messages.append(result)
 
     def tool_call_to_id(self, tool_call: Any) -> str:
         """Extract tool call ID from an OpenAI tool call."""
@@ -79,31 +89,23 @@ class OpenAIProvider(LLMProvider):
 
     def tool_result_to_message(self, tool_call_id: str, content: str) -> dict[str, Any]:
         """Convert tool result to an OpenAI tool message."""
-        return {
-            "role": "tool",
-            "tool_call_id": tool_call_id,
-            "content": content,
-        }
+        return {"role": "tool", "tool_call_id": tool_call_id, "content": content}
 
 
 async def _execute_tool(session: Any, tool_call: Any) -> dict[str, Any]:
     """Execute an MCP tool and return the result as a message."""
-    tool_name = tool_call.function.name
-    tool_input = (
-        tool_call.function.arguments
-        if isinstance(tool_call.function.arguments, dict)
-        else {}
-    )
+    name = tool_call.function.name
+    raw = tool_call.function.arguments
+    args = json.loads(raw) if isinstance(raw, str) and raw else raw if isinstance(raw, dict) else {}
 
-    logger.debug("Executing tool: %s", tool_name)
+    try:
+        result = await session.call_tool(name, args)
+    except Exception:
+        logger.exception("MCP call failed: %s", name)
+        raise
 
-    result = await session.call_tool(tool_name, tool_input)
-    result_text = (
-        result.content[0].text if hasattr(result.content[0], "text") else str(result)
-    )
+    if result.isError:
+        logger.error("MCP error: %s  %s", name, result.content)
 
-    return {
-        "role": "tool",
-        "tool_call_id": tool_call.id,
-        "content": result_text,
-    }
+    text = result.content[0].text if hasattr(result.content[0], "text") else str(result)
+    return {"role": "tool", "tool_call_id": tool_call.id, "content": text}

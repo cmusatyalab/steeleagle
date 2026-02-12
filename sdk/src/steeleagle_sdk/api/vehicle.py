@@ -7,7 +7,6 @@ from google.protobuf.json_format import ParseDict
 from ..protocol.services import control_service_pb2 as control_proto
 from ..protocol.services.control_service_pb2_grpc import ControlStub
 from .datatypes.common import Location, Pose, Position, Response, Velocity
-from .datatypes.duration import Duration
 from .datatypes.telemetry import DriverTelemetry
 from .datatypes.vehicle import (
     AltitudeMode,
@@ -49,12 +48,10 @@ class Vehicle:
         return await run_unary(self.control.Disarm, req)
 
     async def joystick(
-        self, velocity: Velocity, duration: Duration
+        self, velocity: Velocity,
     ) -> AsyncIterator[Response]:
         req = control_proto.JoystickRequest()
         ParseDict(velocity.model_dump(), req.velocity)
-        if duration is not None:
-            ParseDict(duration.model_dump(), req.duration)
         return await run_unary(self.control.Joystick, req)
     
     async def set_gimbal_pose_target(

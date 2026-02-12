@@ -4,7 +4,6 @@ from pydantic import Field
 
 from . import common
 from ._base import Datatype
-from .duration import Duration
 from .timestamp import Timestamp
 
 
@@ -142,12 +141,10 @@ class TelemetryStreamInfo(Datatype):
     Attributes:
         current_frequency (int): current frequency of telemetry messages [Hz]
         max_frequency (int): maximum frequency of telemetry messages [Hz]
-        uptime (Duration): uptime of the stream
     """
 
     current_frequency: int | None = None
     max_frequency: int | None = None
-    uptime: Duration | None = None
 
 
 class BatteryInfo(Datatype):

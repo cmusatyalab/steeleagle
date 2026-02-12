@@ -7,8 +7,6 @@ from ....compiler.registry import register_action
 from ...base import Action
 from ...datatypes import common as common
 from ...datatypes import control as params
-from ...datatypes.duration import Duration
-
 # Type imports
 from ...datatypes.common import Response
 from ...utils import consume_last
@@ -93,17 +91,15 @@ class Joystick(Action):
     """Send a joystick command to the vehicle.
 
     Causes the vehicle to accelerate towards a provided velocity
-    setpoint over a provided duration. This is useful for fine-grained
+    setpoint. This is useful for fine-grained
     control based on streamed datasink results or for tele-operating
     the vehicle from a remote commander.
 
     Attributes:
         velocity (common.Velocity): target velocity to move towards
-        duration (Duration): time of actuation after which the vehicle will Hold
     """
 
     velocity: common.Velocity = Field(description="Target velocity to move towards (x_vel, y_vel, z_vel, angular_vel).")
-    duration: Duration | None = Field(default=None, description="Time of actuation [seconds, nanos] after which the vehicle will hold.")
 
     async def execute(self) -> Response:
         """Execute the Joystick action.

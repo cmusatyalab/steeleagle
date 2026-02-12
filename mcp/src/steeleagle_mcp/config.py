@@ -1,13 +1,48 @@
 # SPDX-FileCopyrightText: 2026 Carnegie Mellon University
 # SPDX-License-Identifier: 0BSD
-"""Configuration loading for the MCP server and client."""
+"""Configuration loading and shared utilities for the MCP server and client."""
 
 import argparse
+import logging
 
 try:
     import tomllib
 except ImportError:
     import tomli as tomllib
+
+
+def setup_logging() -> None:
+    """Configure rich-based logging for both server and client CLIs.
+
+    All output goes to stderr so it never pollutes the MCP stdio protocol
+    (which uses stdout for JSON-RPC).
+    """
+    import sys
+
+    from rich.console import Console
+    from rich.logging import RichHandler
+
+    handler = RichHandler(
+        console=Console(stderr=True),
+        rich_tracebacks=True,
+    )
+
+    # Remove the root logger's existing handlers (force=True),
+    # and also clear handlers on any loggers that libraries already created.
+    logging.root.handlers.clear()
+    for name in list(logging.Logger.manager.loggerDict):
+        logging.getLogger(name).handlers.clear()
+        logging.getLogger(name).propagate = True
+
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[handler],
+        force=True,
+    )
+
+    # Suppress noisy third-party loggers
+    for name in ("httpx", "httpcore", "openai", "anthropic", "mcp.client", "mcp.server"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 DEFAULT_DRONE_CONFIG = {

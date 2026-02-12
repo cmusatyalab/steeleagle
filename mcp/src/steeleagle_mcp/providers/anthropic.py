@@ -9,7 +9,7 @@ from anthropic import Anthropic
 
 from steeleagle_mcp.providers import LLMProvider
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("provider.anthropic")
 
 
 class AnthropicProvider(LLMProvider):
@@ -45,7 +45,8 @@ class AnthropicProvider(LLMProvider):
         system_prompt: str,
         model: str,
     ) -> None:
-        """Run the agentic loop with Anthropic's API."""
+        """Run one LLM turn: send messages, execute any tool calls."""
+        logger.info("LLM request  model=%s messages=%d", model, len(messages))
         response = client.messages.create(
             model=model,
             messages=messages,
@@ -54,12 +55,22 @@ class AnthropicProvider(LLMProvider):
             max_tokens=4096,
         )
 
+        tool_blocks = [b for b in response.content if b.type == "tool_use"]
+        text_blocks = [b for b in response.content if b.type == "text"]
+        logger.info("LLM response  stop=%s tools=%d content=%s",
+                 response.stop_reason, len(tool_blocks),
+                 (text_blocks[0].text[:120] if text_blocks else ""))
+
         messages.append({"role": "assistant", "content": response.content})
 
-        for content_block in response.content:
-            if content_block.type == "tool_use":
-                tool_message = await _execute_tool(session, content_block)
-                messages.append(tool_message)
+        for i, block in enumerate(tool_blocks):
+            logger.info("tool [%d/%d] %s(%s)", i + 1, len(tool_blocks),
+                     block.name, block.input)
+            result = await _execute_tool(session, block)
+            logger.info("tool [%d/%d] %s -> %s", i + 1, len(tool_blocks),
+                     block.name, result["content"][0]["content"][:120]
+                     if isinstance(result["content"], list) else str(result["content"])[:120])
+            messages.append(result)
 
     def tool_call_to_id(self, tool_call: Any) -> str:
         """Extract tool call ID from a tool_use block."""
@@ -70,34 +81,29 @@ class AnthropicProvider(LLMProvider):
         return {
             "role": "user",
             "content": [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": tool_call_id,
-                    "content": content,
-                }
+                {"type": "tool_result", "tool_use_id": tool_call_id, "content": content}
             ],
         }
 
 
 async def _execute_tool(session: Any, tool_use_block: Any) -> dict[str, Any]:
     """Execute an MCP tool and return the result as a message."""
-    tool_name = tool_use_block.name
-    tool_input = tool_use_block.input
+    name = tool_use_block.name
+    args = tool_use_block.input
 
-    logger.debug("Executing tool: %s", tool_name)
+    try:
+        result = await session.call_tool(name, args)
+    except Exception:
+        logger.exception("MCP call failed: %s", name)
+        raise
 
-    result = await session.call_tool(tool_name, tool_input)
-    result_text = (
-        result.content[0].text if hasattr(result.content[0], "text") else str(result)
-    )
+    if result.isError:
+        logger.error("MCP error: %s  %s", name, result.content)
 
+    text = result.content[0].text if hasattr(result.content[0], "text") else str(result)
     return {
         "role": "user",
         "content": [
-            {
-                "type": "tool_result",
-                "tool_use_id": tool_use_block.id,
-                "content": result_text,
-            }
+            {"type": "tool_result", "tool_use_id": tool_use_block.id, "content": text}
         ],
     }

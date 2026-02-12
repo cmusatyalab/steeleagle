@@ -8,7 +8,6 @@ from pydantic import Field
 from ...compiler.registry import register_data
 from ..base import Datatype
 from ..datatypes import common as common
-from .duration import Duration
 from .timestamp import Timestamp
 
 
@@ -91,12 +90,10 @@ class TelemetryStreamInfo(Datatype):
     Attributes:
         current_frequency (Optional[int]): Current telemetry frequency [Hz].
         max_frequency (Optional[int]): Maximum telemetry frequency [Hz].
-        uptime (Optional[Duration]): Stream uptime.
     """
 
     current_frequency: int | None = Field(default=None, description="Current telemetry frequency [Hz].")
     max_frequency: int | None = Field(default=None, description="Maximum telemetry frequency [Hz].")
-    uptime: Duration | None = Field(default=None, description="Stream uptime.")
 
 
 @register_data

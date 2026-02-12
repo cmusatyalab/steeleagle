@@ -11,7 +11,6 @@ import asyncio
 import inspect
 import json
 import logging
-import sys
 from typing import Any
 
 import grpc
@@ -28,9 +27,9 @@ from steeleagle_sdk.dsl import types
 from steeleagle_sdk.dsl.compiler.loader import load_all
 from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
 
-from steeleagle_mcp.config import load_config, make_server_parser
+from steeleagle_mcp.config import load_config, make_server_parser, setup_logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("server")
 
 # ---------------------------------------------------------------------------
 # Module-level SDK state
@@ -50,15 +49,11 @@ async def _init_sdk(drone_cfg: dict, compute_cfg: dict) -> None:
         compute_cfg.get("db_path", "mcp_mission.db"),
     )
     await _store.start()
-    logger.info(
-        "MissionStore started (telemetry=%s, results=%s)",
-        drone_cfg["telemetry"],
-        drone_cfg["results"],
-    )
+    logger.info("SDK init: kernel=%s telem=%s results=%s",
+             drone_cfg["kernel"], drone_cfg["telemetry"], drone_cfg["results"])
 
     types.VEHICLE = Vehicle(_channel, _store)
     types.COMPUTE = Compute(_channel, _store)
-    logger.info("SDK initialized: kernel=%s", drone_cfg["kernel"])
 
 
 async def _shutdown_sdk() -> None:
@@ -139,16 +134,26 @@ def _register_action(name: str, cls: type) -> None:
     """Register a single DSL Action class as an @mcp.tool()."""
     doc = (cls.__doc__ or f"Execute {cls.__name__}.").strip()
 
-    async def action_tool(_cls=cls, **kwargs) -> str:
-        instance = _cls(**kwargs)
-        result = await instance.execute()
-        return _serialize(result)
+    async def action_tool(_cls=cls, _name=name, **kwargs) -> str:
+        logger.info("action %s called  args=%s", _name, kwargs)
+        try:
+            instance = _cls(**kwargs)
+        except Exception:
+            logger.exception("action %s instantiation failed  args=%s", _name, kwargs)
+            raise
+        try:
+            result = await instance.execute()
+        except Exception:
+            logger.exception("action %s execution failed", _name)
+            raise
+        serialized = _serialize(result)
+        logger.info("action %s result  %s", _name, serialized)
+        return serialized
 
     action_tool.__name__ = name
     action_tool.__doc__ = doc
     action_tool.__signature__ = _make_signature(cls)
     mcp.tool(name=name, description=f"[Action] {doc}")(action_tool)
-    logger.info("  action tool: %s", name)
 
 
 def _register_event(name: str, cls: type) -> None:
@@ -156,30 +161,35 @@ def _register_event(name: str, cls: type) -> None:
     doc = (cls.__doc__ or f"Check if {cls.__name__} is satisfied.").strip()
     tool_name = f"check_{name}"
 
-    async def event_tool(_cls=cls, **kwargs) -> str:
-        instance = _cls(**kwargs)
-        result = await instance.check()
-        return _serialize(result)
+    async def event_tool(_cls=cls, _name=tool_name, **kwargs) -> str:
+        logger.info("event %s called  args=%s", _name, kwargs)
+        try:
+            instance = _cls(**kwargs)
+        except Exception:
+            logger.exception("event %s instantiation failed  args=%s", _name, kwargs)
+            raise
+        try:
+            result = await instance.check()
+        except Exception:
+            logger.exception("event %s check failed", _name)
+            raise
+        serialized = _serialize(result)
+        logger.info("event %s result  %s", _name, serialized)
+        return serialized
 
     event_tool.__name__ = tool_name
     event_tool.__doc__ = doc
     event_tool.__signature__ = _make_signature(cls)
     mcp.tool(name=tool_name, description=f"[Event] {doc}")(event_tool)
-    logger.info("  event tool: %s", tool_name)
 
 
 def _register_all() -> None:
     """Load DSL registry and register all tools."""
     load_all()
-    logger.info(
-        "DSL registry: %d actions, %d events",
-        len(_ACTIONS),
-        len(_EVENTS),
-    )
+    logger.info("DSL registry: %d actions, %d events", len(_ACTIONS), len(_EVENTS))
 
     for name, cls in _ACTIONS.items():
         _register_action(name, cls)
-
     for name, cls in _EVENTS.items():
         _register_event(name, cls)
 
@@ -205,16 +215,11 @@ def get_sse_transport() -> SseServerTransport:
 
 
 def make_asgi_app() -> Starlette:
-    """Create a Starlette ASGI app that uses the SSE transport.
-
-    This creates an ASGI application that can be used with ASGI servers like
-    uvicorn or gunicorn. It handles the MCP protocol over HTTP using SSE.
-    """
+    """Create a Starlette ASGI app that uses the SSE transport."""
     transport = get_sse_transport()
-    app = Starlette(
+    return Starlette(
         routes=[Mount(DEFAULT_SSE_ENDPOINT, app=transport.handle_post_message)]
     )
-    return app
 
 
 # ---------------------------------------------------------------------------
@@ -225,23 +230,16 @@ def make_asgi_app() -> Starlette:
 async def amain(
     config: dict, transport: str = "stdio", host: str = "0.0.0.0", port: int = 8080
 ) -> None:
-    """Async entry point: init SDK, run MCP server.
-
-    Args:
-        config: Server configuration dictionary
-        transport: Transport mode ("stdio", "sse", or "streamable_http")
-        host: Host for HTTP transport (unused for stdio)
-        port: Port for HTTP transport (unused for stdio)
-    """
+    """Async entry point: init SDK, run MCP server."""
     await _init_sdk(config["drone"], config["compute"])
     try:
         if transport == "stdio":
             await mcp.run_stdio_async()
         elif transport == "sse":
-            logger.info(f"Starting SSE server on http://{host}:{port}")
+            logger.info("Starting SSE on http://%s:%d", host, port)
             await uvicorn.run(make_asgi_app(), host=host, port=port, log_level="info")
         elif transport == "streamable_http":
-            logger.info(f"Starting streamable HTTP server on http://{host}:{port}")
+            logger.info("Starting streamable HTTP on http://%s:%d", host, port)
             await uvicorn.run(
                 mcp.streamable_http_app, host=host, port=port, log_level="info"
             )
@@ -253,13 +251,8 @@ async def amain(
 
 def cli() -> None:
     """CLI entry point for steeleagle-mcp-server."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(name)s %(levelname)s %(message)s",
-        stream=sys.stderr,
-    )
+    setup_logging()
     parser = make_server_parser()
     args = parser.parse_args()
     config = load_config(args.config)
-
     asyncio.run(amain(config, transport=args.transport, host=args.host, port=args.port))
