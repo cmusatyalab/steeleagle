@@ -52,16 +52,16 @@ function GameControls({ setAxis, setButton, deadzone }) {
 
   useEffect(() => {
     if(Object.keys(gamepads).length > 0) {
-      gamePadToast.current.replace({ severity: 'success', summary: 'Gamepad', detail: `Gamepad connected.`, sticky: true });
+      gamePadToast.current.replace({ severity: 'success', summary: 'Gamepad', detail: `Gamepad connected.`, sticky: false });
     }
     else {
-      gamePadToast.current.replace({ severity: 'warn', summary: 'Gamepad', detail: 'No gamepad detected. Please connect a controller.', sticky: true });
+      gamePadToast.current.replace({ severity: 'warn', summary: 'Gamepad', detail: 'No gamepad detected. Please connect a controller.', sticky: false });
     }
   }, [gamepads]);
 
   return (
     <>
-      <Toast ref={gamePadToast} position="bottom-left"/>
+      <Toast ref={gamePadToast} position="bottom-right"/>
     </>
   );
 }

@@ -6,7 +6,7 @@ import { Menubar } from 'primereact/menubar';
 import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Button } from 'primereact/button';
-import { ToggleButton } from 'primereact/togglebutton';
+import { Messages } from 'primereact/messages';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
@@ -50,7 +50,7 @@ function App() {
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
-
+  const warnings = useRef(null);
   const controlOptions = [
     { value: true, icon: 'pi pi-lock-open' },
     { value: false, icon: 'pi pi-lock' }
@@ -74,6 +74,22 @@ function App() {
     }
   }, [selectedVehicle, useLocalVehicle]);
 
+  useEffect(() => {
+    if (manualControl) {
+      if (warnings.current) {
+        warnings.current.replace([
+          { sticky: true, severity: 'success', summary: 'Manual Control', detail: 'Enabled', closable: false },
+        ]);
+      }
+    } else {
+      if (warnings.current) {
+        warnings.current.replace([
+          { sticky: true, severity: 'error', summary: 'Manual Control', detail: 'Disabled', closable: false },
+
+        ]);
+      }
+    }
+  }, [manualControl]);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     socketUrl,
@@ -125,6 +141,9 @@ function App() {
   }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
+    if (e.code === 'CapsLock') {
+      setManualControl(!manualControl);
+    }
     if (manualControl) {
       setKeyPressed(true);
       if (e.code === 'Space') {
@@ -184,8 +203,11 @@ function App() {
   });
 
   useEffect(() => {
-    if (manualControl) {
-      Object.entries(gamePadButton).forEach(([buttonIndex, state]) => {
+    Object.entries(gamePadButton).forEach(([buttonIndex, state]) => {
+      if (buttonIndex == 16 && state.pressed) {
+        setManualControl(!manualControl);
+      }
+      if (manualControl) {
         if (buttonIndex == 3 && state.pressed) {
           onCommand({ takeoff: true });
         }
@@ -195,9 +217,10 @@ function App() {
         else if (buttonIndex == 4 && state.pressed) {
           onCommand({ rth: true });
         }
-      });
-    }
-  }, [gamePadButton, manualControl]);
+
+      }
+    });
+  }, [gamePadButton]);
 
   useEffect(() => {
     let a = 0.0;
@@ -359,6 +382,7 @@ function App() {
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
+      <Messages ref={warnings} />
       <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
         <h2>Debug</h2>
         <div className="card flex flex-column align-items-center">
