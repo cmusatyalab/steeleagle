@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University
+# SPDX-License-Identifier: 0BSD
 """Configuration loading for the MCP server and client."""
 
 import argparse
-import os
 
 try:
     import tomllib
@@ -16,14 +17,19 @@ DEFAULT_DRONE_CONFIG = {
     "results": "ipc:///tmp/results.sock",
 }
 
-DEFAULT_CPT_CONFIG = {
+DEFAULT_COMPUTE_CONFIG = {
     "db_path": "mcp_mission.db",
 }
 
 DEFAULT_CLIENT_CONFIG = {
+    "provider": "anthropic",
     "anthropic_api_key": "",
+    "openai_api_key": "",
+    "openai_base_url": "",
     "model": "claude-sonnet-4-20250514",
 }
+
+DEFAULT_PORT = 8080
 
 
 def load_config(config_path: str | None) -> dict:
@@ -36,7 +42,7 @@ def load_config(config_path: str | None) -> dict:
 
     return {
         "drone": {**DEFAULT_DRONE_CONFIG, **raw.get("drone", {})},
-        "compute": {**DEFAULT_CPT_CONFIG, **raw.get("compute", {})},
+        "compute": {**DEFAULT_COMPUTE_CONFIG, **raw.get("compute", {})},
         "client": {**DEFAULT_CLIENT_CONFIG, **raw.get("client", {})},
     }
 
@@ -46,8 +52,23 @@ def make_server_parser() -> argparse.ArgumentParser:
         prog="steeleagle-mcp-server",
         description="MCP server for SteelEagle drone control",
     )
+    parser.add_argument("-c", "--config", default=None, help="Path to TOML config file")
     parser.add_argument(
-        "-c", "--config", default=None, help="Path to TOML config file"
+        "--transport",
+        choices=["stdio", "sse", "streamable_http"],
+        default="stdio",
+        help="Transport mode (stdio, sse, or streamable_http)",
+    )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind for HTTP transport (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to bind for HTTP transport (default: 8080)",
     )
     return parser
 
@@ -55,15 +76,20 @@ def make_server_parser() -> argparse.ArgumentParser:
 def make_client_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="steeleagle-mcp-client",
-        description="MCP client REPL for SteelEagle drone control via Claude",
+        description="MCP client REPL for SteelEagle drone control via LLM",
     )
+    parser.add_argument("-c", "--config", default=None, help="Path to TOML config file")
     parser.add_argument(
-        "-c", "--config", default=None, help="Path to TOML config file"
+        "--provider",
+        choices=["anthropic", "openai"],
+        default=None,
+        help="LLM provider (anthropic or openai)",
     )
+    parser.add_argument("--api-key", default=None, help="API key for the provider")
     parser.add_argument(
-        "--api-key", default=None, help="Anthropic API key (overrides config/env)"
+        "--base-url",
+        default=None,
+        help="Base URL for OpenAI-compatible services (e.g., http://localhost:8080/v1)",
     )
-    parser.add_argument(
-        "--model", default=None, help="Claude model to use"
-    )
+    parser.add_argument("--model", default=None, help="Model to use")
     return parser

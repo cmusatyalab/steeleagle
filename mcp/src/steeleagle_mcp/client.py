@@ -1,117 +1,140 @@
-"""MCP Client: Interactive chat REPL for drone mission planning via Claude.
+"""MCP Client: Interactive chat REPL for drone mission planning via LLM providers.
 
 Spawns the MCP server as a subprocess (stdio transport), discovers tools,
-and runs an agentic loop: user message → Claude API (with tools) → execute
-tool_use calls via MCP → feed results back → repeat until done.
+and runs an agentic loop: user message → LLM API (with tools) → execute
+tool calls via MCP → feed results back → repeat until done.
 """
 
 import asyncio
-import json
 import logging
 import os
 import sys
 
-import anthropic
-from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from mcp import ClientSession, StdioServerParameters
 from steeleagle_mcp.config import load_config, make_client_parser
+from steeleagle_mcp.providers.anthropic import AnthropicProvider
+from steeleagle_mcp.providers.openai import OpenAIProvider
 from steeleagle_mcp.system_prompt import SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
 
-def _resolve_api_key(client_cfg: dict, cli_api_key: str | None) -> str:
-    """Resolve the Anthropic API key from CLI flag, config, or env var."""
-    key = cli_api_key or client_cfg.get("anthropic_api_key") or os.environ.get(
-        "ANTHROPIC_API_KEY"
-    )
+def _resolve_api_key(client_cfg: dict, provider: str, cli_api_key: str | None) -> str:
+    """Resolve the API key from CLI flag, config, or env var."""
+    api_key_fields = {
+        "anthropic": "anthropic_api_key",
+        "openai": "openai_api_key",
+    }
+    env_vars = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+    }
+
+    key_field = api_key_fields[provider]
+    env_var = env_vars[provider]
+
+    key = cli_api_key or client_cfg.get(key_field) or os.environ.get(env_var)
     if not key:
         print(
-            "Error: No Anthropic API key found.\n"
-            "Set ANTHROPIC_API_KEY env var, pass --api-key, or add to config file."
+            f"Error: No {provider.capitalize()} API key found.\n"
+            f"Set {env_var} env var, pass --api-key, or add to config file."
         )
         sys.exit(1)
     return key
 
 
-def _mcp_tools_to_anthropic(mcp_tools) -> list[dict]:
-    """Convert MCP tool objects to Anthropic API tool format."""
-    return [
-        {
-            "name": t.name,
-            "description": t.description or "",
-            "input_schema": t.inputSchema,
-        }
-        for t in mcp_tools
-    ]
+def _create_provider(provider_name: str, base_url: str = ""):
+    """Create and return the appropriate provider instance."""
+    providers = {
+        "anthropic": AnthropicProvider,
+        "openai": OpenAIProvider(base_url)
+        if provider_name == "openai"
+        else OpenAIProvider(),
+    }
+    if provider_name not in providers:
+        print(
+            f"Error: Unknown provider '{provider_name}'. Supported: {', '.join(providers.keys())}"
+        )
+        sys.exit(1)
+    return providers[provider_name]
+
+
+def _mcp_tools_to_provider(mcp_tools, provider) -> list[dict]:
+    """Convert MCP tool objects to provider-specific tool format."""
+    return provider.tools_to_provider_format(
+        [
+            {
+                "name": t.name,
+                "description": t.description or "",
+                "input_schema": t.inputSchema,
+            }
+            for t in mcp_tools
+        ]
+    )
 
 
 async def _agentic_loop(
-    client: anthropic.Anthropic,
+    provider,
+    client,
     session: ClientSession,
-    model: str,
-    anthropic_tools: list[dict],
+    provider_tools: list[dict],
     messages: list[dict],
-    system_prompt: str = "",
+    system_prompt: str,
+    model: str,
 ) -> None:
-    """Inner loop: call Claude, execute tools, feed results back, repeat."""
+    """Inner loop: call LLM, execute tools, feed results back, repeat."""
     while True:
-        response = client.messages.create(
-            model=model,
-            max_tokens=4096,
-            system=system_prompt or SYSTEM_PROMPT,
-            tools=anthropic_tools,
+        await provider.agentic_loop(
+            client=client,
+            session=session,
+            provider_tools=provider_tools,
             messages=messages,
+            system_prompt=system_prompt,
+            model=model,
         )
 
-        assistant_content = response.content
-        messages.append({"role": "assistant", "content": assistant_content})
-
-        # Print text blocks
-        for block in assistant_content:
-            if hasattr(block, "text"):
-                print(f"\nClaude> {block.text}")
-
-        # Collect tool_use blocks
-        tool_use_blocks = [b for b in assistant_content if b.type == "tool_use"]
-        if not tool_use_blocks:
+        if not messages:
             break
 
-        # Execute each tool call via MCP server
-        tool_results = []
-        for tb in tool_use_blocks:
-            print(f"\n  [{tb.name}] args={json.dumps(tb.input)}")
-            try:
-                result = await session.call_tool(tb.name, tb.input)
-                result_text = "\n".join(c.text for c in result.content if hasattr(c, "text"))
-                # Show a truncated preview
-                preview = result_text[:300]
-                if len(result_text) > 300:
-                    preview += "..."
-                print(f"  [{tb.name}] result: {preview}")
-            except Exception as e:
-                result_text = json.dumps({"error": str(e)})
-                print(f"  [{tb.name}] error: {e}")
+        last_role = messages[-1].get("role", "")
 
-            tool_results.append(
-                {
-                    "type": "tool_result",
-                    "tool_use_id": tb.id,
-                    "content": result_text,
-                }
-            )
+        if last_role == "assistant":
+            content = messages[-1].get("content", "")
+            has_tools = False
+            if isinstance(content, list):
+                for block in content:
+                    if hasattr(block, "text"):
+                        print(f"\n{provider.name.capitalize()}> {block.text}")
+                    if getattr(block, "type", None) == "tool_use":
+                        has_tools = True
+            elif isinstance(content, str):
+                print(f"\n{provider.name.capitalize()}> {content}")
 
-        messages.append({"role": "user", "content": tool_results})
+            if not has_tools:
+                break
+
+        elif last_role in ("tool", "user"):
+            continue
 
 
-async def run_chat(config: dict, cli_api_key: str | None, cli_model: str | None) -> None:
+async def run_chat(
+    config: dict,
+    cli_api_key: str | None,
+    cli_model: str | None,
+    cli_provider: str | None,
+    cli_base_url: str | None,
+) -> None:
     """Main chat loop: spawn MCP server, discover tools, run REPL."""
     client_cfg = config["client"]
-    api_key = _resolve_api_key(client_cfg, cli_api_key)
-    model = cli_model or client_cfg.get("model", "claude-sonnet-4-20250514")
+    provider_name = cli_provider or client_cfg.get("provider", "anthropic")
+    base_url = cli_base_url or client_cfg.get("openai_base_url", "")
+    provider = _create_provider(provider_name, base_url)
 
-    # Build server launch command
+    api_key = _resolve_api_key(client_cfg, provider_name, cli_api_key)
+    model = cli_model or client_cfg.get("model", provider.default_model)
+
     server_cmd = ["steeleagle-mcp-server"]
     if config.get("_config_path"):
         server_cmd.extend(["-c", config["_config_path"]])
@@ -122,46 +145,52 @@ async def run_chat(config: dict, cli_api_key: str | None, cli_model: str | None)
     )
 
     print(f"Starting MCP server: {' '.join(server_cmd)}")
+    print(f"Using provider: {provider_name}")
+    print(f"Model: {model}")
 
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    async with (
+        stdio_client(server_params) as (read, write),
+        ClientSession(read, write) as session,
+    ):
+        await session.initialize()
 
-            # Discover tools
-            tools_result = await session.list_tools()
-            anthropic_tools = _mcp_tools_to_anthropic(tools_result.tools)
+        tools_result = await session.list_tools()
+        provider_tools = _mcp_tools_to_provider(tools_result.tools, provider)
 
-            print(f"Connected. Discovered {len(anthropic_tools)} tools.")
-            print(f"Model: {model}")
-            print("Type your mission instructions (Ctrl+C or 'quit' to exit).\n")
+        print(f"Connected. Discovered {len(provider_tools)} tools.")
+        print("Type your mission instructions (Ctrl+C or 'quit' to exit).\n")
 
-            client = anthropic.Anthropic(api_key=api_key)
-            messages: list[dict] = []
+        client = provider.create_client(api_key)
+        messages: list[dict] = []
 
-            while True:
-                try:
-                    user_input = input("You> ").strip()
-                except (EOFError, KeyboardInterrupt):
-                    print("\nExiting.")
-                    break
+        while True:
+            try:
+                user_input = input("You> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nExiting.")
+                break
 
-                if not user_input:
-                    continue
-                if user_input.lower() in ("quit", "exit"):
-                    print("Exiting.")
-                    break
+            if not user_input:
+                continue
+            if user_input.lower() in ("quit", "exit"):
+                print("Exiting.")
+                break
 
-                messages.append({"role": "user", "content": user_input})
+            messages.append({"role": "user", "content": user_input})
 
-                try:
-                    await _agentic_loop(
-                        client, session, model, anthropic_tools, messages,
-                    )
-                except anthropic.APIError as e:
-                    print(f"\nClaude API error: {e}")
-                except Exception as e:
-                    logger.exception("Error in agentic loop")
-                    print(f"\nError: {e}")
+            try:
+                await _agentic_loop(
+                    provider,
+                    client,
+                    session,
+                    provider_tools,
+                    messages,
+                    SYSTEM_PROMPT,
+                    model,
+                )
+            except Exception as e:
+                logger.exception("Error in agentic loop")
+                print(f"\nError: {e}")
 
 
 def cli() -> None:
@@ -174,6 +203,8 @@ def cli() -> None:
     args = parser.parse_args()
 
     config = load_config(args.config)
-    config["_config_path"] = args.config  # pass through for server subprocess
+    config["_config_path"] = args.config
 
-    asyncio.run(run_chat(config, args.api_key, args.model))
+    asyncio.run(
+        run_chat(config, args.api_key, args.model, args.provider, args.base_url)
+    )

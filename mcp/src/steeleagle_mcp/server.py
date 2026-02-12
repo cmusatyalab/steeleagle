@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Carnegie Mellon University
+# SPDX-License-Identifier: 0BSD
 """MCP Server for SteelEagle drone control.
 
 Dynamically registers:
@@ -13,9 +15,12 @@ import sys
 from typing import Any
 
 import grpc
+import uvicorn
 from google.protobuf.json_format import MessageToDict
 from mcp.server.fastmcp import FastMCP
-
+from mcp.server.sse import SseServerTransport
+from starlette.applications import Starlette
+from starlette.routing import Mount
 from steeleagle_sdk.api.compute import Compute
 from steeleagle_sdk.api.mission_store import MissionStore
 from steeleagle_sdk.api.vehicle import Vehicle
@@ -67,6 +72,9 @@ async def _shutdown_sdk() -> None:
     types.COMPUTE = None
     types.MAP = None
     _store = _channel = None
+
+
+DEFAULT_SSE_ENDPOINT = "/messages/"
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +173,8 @@ def _register_all() -> None:
     load_all()
     logger.info(
         "DSL registry: %d actions, %d events",
-        len(_ACTIONS), len(_EVENTS),
+        len(_ACTIONS),
+        len(_EVENTS),
     )
 
     for name, cls in _ACTIONS.items():
@@ -180,15 +189,64 @@ _register_all()
 
 
 # ---------------------------------------------------------------------------
+# ASGI Application
+# ---------------------------------------------------------------------------
+
+
+_sse_transport: SseServerTransport | None = None
+
+
+def get_sse_transport() -> SseServerTransport:
+    """Get or create the SSE server transport for ASGI."""
+    global _sse_transport
+    if _sse_transport is None:
+        _sse_transport = SseServerTransport(DEFAULT_SSE_ENDPOINT)
+    return _sse_transport
+
+
+def make_asgi_app() -> Starlette:
+    """Create a Starlette ASGI app that uses the SSE transport.
+
+    This creates an ASGI application that can be used with ASGI servers like
+    uvicorn or gunicorn. It handles the MCP protocol over HTTP using SSE.
+    """
+    transport = get_sse_transport()
+    app = Starlette(
+        routes=[Mount(DEFAULT_SSE_ENDPOINT, app=transport.handle_post_message)]
+    )
+    return app
+
+
+# ---------------------------------------------------------------------------
 # Entry points
 # ---------------------------------------------------------------------------
 
 
-async def amain(config: dict) -> None:
-    """Async entry point: init SDK, run MCP server over stdio."""
+async def amain(
+    config: dict, transport: str = "stdio", host: str = "0.0.0.0", port: int = 8080
+) -> None:
+    """Async entry point: init SDK, run MCP server.
+
+    Args:
+        config: Server configuration dictionary
+        transport: Transport mode ("stdio", "sse", or "streamable_http")
+        host: Host for HTTP transport (unused for stdio)
+        port: Port for HTTP transport (unused for stdio)
+    """
     await _init_sdk(config["drone"], config["compute"])
     try:
-        await mcp.run_stdio_async()
+        if transport == "stdio":
+            await mcp.run_stdio_async()
+        elif transport == "sse":
+            logger.info(f"Starting SSE server on http://{host}:{port}")
+            await uvicorn.run(make_asgi_app(), host=host, port=port, log_level="info")
+        elif transport == "streamable_http":
+            logger.info(f"Starting streamable HTTP server on http://{host}:{port}")
+            await uvicorn.run(
+                mcp.streamable_http_app, host=host, port=port, log_level="info"
+            )
+        else:
+            raise ValueError(f"Unsupported transport mode: {transport}")
     finally:
         await _shutdown_sdk()
 
@@ -204,4 +262,4 @@ def cli() -> None:
     args = parser.parse_args()
     config = load_config(args.config)
 
-    asyncio.run(amain(config))
+    asyncio.run(amain(config, transport=args.transport, host=args.host, port=args.port))
