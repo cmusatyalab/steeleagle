@@ -118,3 +118,4 @@ gcs/vscode-client/node_modules/*
 gcs/cli/mission.json
 gcs/cli/drones.toml
 
+mcp/test/config.toml
