@@ -12,7 +12,7 @@ from ...datatypes.common import Response
 from ...utils import consume_last
 
 
-@register_action
+# @register_action
 class Connect(Action):
     """Connect to the vehicle.
 
@@ -31,7 +31,7 @@ class Connect(Action):
         return await types.VEHICLE.connect(**self.__dict__)
 
 
-@register_action
+# @register_action
 class Disconnect(Action):
     """Disconnect from the vehicle.
 
@@ -49,7 +49,7 @@ class Disconnect(Action):
         return await types.VEHICLE.disconnect(**self.__dict__)
 
 
-@register_action
+# @register_action
 class Arm(Action):
     """Order the vehicle to arm.
 
@@ -69,7 +69,7 @@ class Arm(Action):
         return await types.VEHICLE.arm(**self.__dict__)
 
 
-@register_action
+# @register_action
 class Disarm(Action):
     """Order the vehicle to disarm.
 
@@ -182,7 +182,7 @@ class Hold(Action):
         return await consume_last(types.VEHICLE.hold(**self.__dict__))
 
 
-@register_action
+# @register_action
 class Kill(Action):
     """Orders an emergency shutdown of the vehicle motors.
 
@@ -330,7 +330,7 @@ class SetRelativePosition(Action):
         return await consume_last(types.VEHICLE.set_relative_position(**self.__dict__))
 
 
-@register_action
+# @register_action
 class SetVelocity(Action):
     """Order the vehicle to accelerate to a velocity.
 

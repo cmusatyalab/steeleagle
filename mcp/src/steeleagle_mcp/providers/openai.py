@@ -72,8 +72,10 @@ class OpenAIProvider(LLMProvider):
         logger.info("LLM response  finish=%s tools=%d content=%s",
                  choice.finish_reason, n_tools, (message.content or "")[:120])
 
-        messages.append({"role": "assistant", "content": message.content or ""})
-
+        assistant_msg = message.model_dump(exclude_none=True)
+        # ensure role is present
+        assistant_msg["role"] = "assistant"
+        messages.append(assistant_msg)
         if message.tool_calls:
             for i, tc in enumerate(message.tool_calls):
                 logger.info("tool [%d/%d] %s(%s)", i + 1, n_tools,

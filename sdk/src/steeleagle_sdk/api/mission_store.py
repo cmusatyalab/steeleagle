@@ -120,6 +120,7 @@ class MissionStore:
                 data = MessageToDict(
                     msg, preserving_proto_field_name=True, use_integers_for_enums=True
                 )
+                data.get("telemetry_stream_info", {}).pop("uptime", None) # patch fix for duration field parsing issue
                 return DriverTelemetry.model_validate(data)
             elif source == "results":
                 msg = gabriel_pb2.Result()
