@@ -15,4 +15,5 @@ dependencies = [
     "uvicorn",
     "steeleagle_sdk",
     "websockets",
+    "rich",
 ]

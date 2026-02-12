@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, NonNegativeInt
 from pydantic_extra_types.coordinate import Latitude, Longitude
+from rich.logging import RichHandler
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
@@ -40,8 +41,16 @@ from steeleagle_sdk.protocol.services.remote_service_pb2 import (
 from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
 
 IDENTITY_MD = (("identity", "server"),)
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+FORMAT = "%(message)s"
+logging.basicConfig(
+    level="INFO",
+    format=FORMAT,
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+logger = logging.getLogger("rich")
+uvicorn_access = logging.getLogger("uvicorn.access")
+uvicorn_access.disabled = True
 
 
 class Start(BaseModel):
@@ -199,12 +208,12 @@ async def lifespan(app: FastAPI):
     yield
     # Cleanup
     for _name, conn in backend_connections.items():
-        conn.grpc_channel.close()
+        await conn.grpc_channel.close()
         conn.redis_connection.close()
     for _name, conn in vehicle_connections.items():
         conn.telemetry_endpoint.close()
         conn.imagery_endpoint.close()
-        conn.grpc_channel.close()
+        await conn.grpc_channel.close()
     zmq_context.term()
 
 
@@ -338,55 +347,63 @@ async def get_local_vehicles(name: str = None) -> list[Vehicle]:
 
 @app.websocket("/ws/imagery/remote/{vehicle}")
 async def remote_websocket_endpoint(websocket: WebSocket, vehicle: str):
-    await websocket.accept()
-    conn = backend_connections[list(backend_connections)[0]]
-    logger.info(f"Selected vehicle {vehicle} for imagery")
-    logger.info(f"Fetching images from: {conn.webserver}")
-    while vehicle != "":
+    if vehicle != "":
+        await websocket.accept()
         try:
-            url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                await websocket.send_text(
-                    {base64.b64encode(response.content).decode("ascii")}
-                )
-            await asyncio.sleep(0.1)
+            conn = backend_connections[list(backend_connections)[0]]
+            logger.info(f"Selected vehicle {vehicle} for imagery")
+            logger.info(f"Fetching images from: {conn.webserver}")
+            while True:
+                url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    await websocket.send_text(
+                        {base64.b64encode(response.content).decode("ascii")}
+                    )
+                await asyncio.sleep(0.1)
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching image: {e}")
         except WebSocketDisconnect:
             await websocket.close(code=1000, reason=None)
+        except RuntimeError as e:
+            logger.error(e)
 
 
 @app.websocket("/ws/imagery/{vehicle}")
 async def websocket_endpoint(websocket: WebSocket, vehicle: str):
-    await websocket.accept()
-    logger.info(f"Selected vehicle {vehicle} for imagery")
-    while vehicle != "":
+    if vehicle != "":
+        await websocket.accept()
         try:
-            if vehicle_connections[vehicle].imagery_endpoint:
-                # Receive message from ZeroMQ (non-blocking)
-                message = await vehicle_connections[
-                    vehicle
-                ].imagery_endpoint.recv_multipart(flags=zmq.DONTWAIT)
-                frame = Frame()
-                frame.ParseFromString(message[1])
-                encoded_img = Image.frombuffer(
-                    mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
-                )
-                resized = encoded_img.resize((320, 180))
-                # resized.save("/tmp/driver_imagery.jpg")
-                img_bytes = io.BytesIO()
-                # resized.save(img_bytes, format='JPEG')
-                encoded_img.save(img_bytes, format="JPEG")
-                await websocket.send_text(
-                    {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
-                )
-            else:
-                await asyncio.sleep(0.5)
-        except zmq.Again:
-            await asyncio.sleep(0.01)
+            logger.info(f"Selected vehicle {vehicle} for imagery")
+            while True:
+                if vehicle_connections[vehicle].imagery_endpoint:
+                    try:
+                        # Receive message from ZeroMQ (non-blocking)
+                        message = await vehicle_connections[
+                            vehicle
+                        ].imagery_endpoint.recv_multipart(flags=zmq.DONTWAIT)
+                        frame = Frame()
+                        frame.ParseFromString(message[1])
+                        encoded_img = Image.frombuffer(
+                            mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
+                        )
+                        resized = encoded_img.resize((320, 180))
+                        # resized.save("/tmp/driver_imagery.jpg")
+                        img_bytes = io.BytesIO()
+                        # resized.save(img_bytes, format='JPEG')
+                        encoded_img.save(img_bytes, format="JPEG")
+                        await websocket.send_text(
+                            {base64.b64encode(img_bytes.getvalue()).decode("ascii")}
+                        )
+                    except zmq.Again:
+                        await asyncio.sleep(0.01)
+                else:
+                    await asyncio.sleep(0.5)
+
         except WebSocketDisconnect:
             await websocket.close(code=1000, reason=None)
+        except RuntimeError as e:
+            logger.error(e)
 
 
 @app.post("/api/start")
