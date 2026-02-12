@@ -4,12 +4,9 @@ first = 'REMOTE'
 # State definitions start here!
 [[states]]
 name = 'REMOTE'
-allowed = [
-    'server/**'
-]
+allowed = []
 match = [
-    ['server/Mission/Start', 'LOCAL'],
-    ['server/Control/ReturnToHome', 'LOCAL']
+    ['server/Mission/Start', 'LOCAL']
 ]
 
 [[states]]
@@ -19,5 +16,5 @@ allowed = [
     'internal/Compute/*',
 ]
 match = [
-    ['server/Mission/Stop', 'REMOTE']
+    ['server/**', 'REMOTE']
 ]

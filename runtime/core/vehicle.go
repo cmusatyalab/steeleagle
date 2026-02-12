@@ -35,13 +35,14 @@ type connectionState struct {
     localConn net.Listener
 }
 
-type Kernel struct {
+type Vehicle struct {
     // Public
     Name string
     Path string
     // Private
     mu sync.RWMutex
     test bool
+    logLevel *slog.LevelVar
     services serviceState
     connections connectionState
     policy policyState
@@ -50,103 +51,113 @@ type Kernel struct {
     cancel context.CancelFunc
 }
 
-func NewKernel(parentCtx context.Context, options ...KernelOption) (*Kernel, error) {
+var logger *slog.Logger
+
+func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, error) {
     // Set up new context
     ctx, cancel := context.WithCancel(parentCtx)
 
     // Set default input options and retrieve options
-    kernel := &Kernel {
+    vehicle := &Vehicle {
         Name : uuid.New().String(),
+        logLevel : new(slog.LevelVar),
         ctx : ctx,
         cancel : cancel,
     }
+    vehicle.logLevel.Set(slog.LevelInfo)
+
     for _, option := range options {
-        option(kernel)
+        option(vehicle)
     }
+
+    logger = slog.New(
+        slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level : vehicle.logLevel}),
+    ).With("name", vehicle.Name)
     
     // Create runtime directory if it doesn't exist
-    kernel.Path = filepath.Join(xdg.RuntimeDir, ApplicationName, kernel.Name)
-    err := os.MkdirAll(kernel.Path, 0755)
+    vehicle.Path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.Name)
+    err := os.MkdirAll(vehicle.Path, 0755)
     if err != nil {
-        slog.Error("could not create runtime directory", "error", err)
+        logger.Error("could not create runtime directory", "error", err)
         return nil, err
     }
+    logger.Debug("vehicle folder configured", "folder", vehicle.Path)
     
     // Set up law handling
-    regoPolicy := getRegoPolicy()
-    laws, first := getLaw()
-    kernel.policy = policyState{
+    regoPolicy := getRegoPolicy(vehicle.test)
+    laws, first := getLaw(vehicle.test)
+    vehicle.policy = policyState{
         currentState: first,
         lawMap: laws,
         query: regoPolicy,
-        test: kernel.test,
+        test: vehicle.test,
     }
     
     // Create UDS files for the Control and Mission services so that they
     // can be shared with any plugins at start time
-    err = os.MkdirAll(filepath.Join(kernel.Path, "control"), os.ModePerm)
+    err = os.MkdirAll(filepath.Join(vehicle.Path, "control"), os.ModePerm)
     if err != nil {
-        slog.Error("could not create control directory", "error", err)
+        logger.Error("could not create control directory", "error", err)
         return nil, err
     }
-    kernel.services.control, err = grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(kernel.Path, "control", ControlSocket)),
+    vehicle.services.control, err = grpc.NewClient(
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, "control", ControlSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
 	if err != nil {
-		slog.Error("failed to establish control socket", "error", err)
+		logger.Error("failed to establish control socket", "error", err)
         return nil, err
 	}
 
-    err = os.MkdirAll(filepath.Join(kernel.Path, "mission"), os.ModePerm)
+    err = os.MkdirAll(filepath.Join(vehicle.Path, "mission"), os.ModePerm)
     if err != nil {
-        slog.Error("could not create mission directory", "error", err)
+        logger.Error("could not create mission directory", "error", err)
         return nil, err
     }
-    kernel.services.mission, err = grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(kernel.Path, "mission", MissionSocket)),
+    vehicle.services.mission, err = grpc.NewClient(
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, "mission", MissionSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
 	if err != nil {
-		slog.Error("failed to establish mission socket", "error", err)
+		logger.Error("failed to establish mission socket", "error", err)
         return nil, err
 	}
 
     // Create 0MQ data sockets
-    kernel.services.dataOut = zmq4.NewXSub(ctx)
-    err = kernel.services.dataOut.Listen(fmt.Sprintf("ipc://%s", filepath.Join(kernel.Path, DataOutSocket)))
+    vehicle.services.dataOut = zmq4.NewXSub(ctx)
+    err = vehicle.services.dataOut.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, DataOutSocket)))
 	if err != nil {
-        slog.Error("failed to bind data out socket", "error", err)
+        logger.Error("failed to bind data out socket", "error", err)
         return nil, err
 	}
 
-	kernel.services.dataIn = zmq4.NewXPub(ctx)
-    err = kernel.services.dataIn.Listen(fmt.Sprintf("ipc://%s", filepath.Join(kernel.Path, DataInSocket)))
+	vehicle.services.dataIn = zmq4.NewXPub(ctx)
+    err = vehicle.services.dataIn.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, DataInSocket)))
 	if err != nil {
-        slog.Error("failed to bind data in socket", "error", err)
+        logger.Error("failed to bind data in socket", "error", err)
         return nil, err
 	}
     
-    kernel.services.proxy = zmq4.NewProxy(ctx, kernel.services.dataOut, kernel.services.dataIn, nil)
+    vehicle.services.proxy = zmq4.NewProxy(ctx, vehicle.services.dataOut, vehicle.services.dataIn, nil)
 
     // Set up gRPC server and set up interceptor chain
-    kernel.services.grpcServer = grpc.NewServer(
-        grpc.UnaryInterceptor(kernel.policy.getUnaryInterceptor()),
-        grpc.StreamInterceptor(kernel.policy.getStreamInterceptor()),
+    vehicle.services.grpcServer = grpc.NewServer(
+        grpc.UnaryInterceptor(vehicle.policy.getUnaryInterceptor()),
+        grpc.StreamInterceptor(vehicle.policy.getStreamInterceptor()),
         grpc.CustomCodec(proxy.Codec()),
         grpc.UnknownServiceHandler(proxy.TransparentHandler(
             getProxyDirector(
-                kernel.services.control, 
-                kernel.services.mission,
+                vehicle.services.control, 
+                vehicle.services.mission,
             ),
         )),
     )
 
-    go kernel.run()
-    return kernel, nil
+    go vehicle.run()
+    return vehicle, nil
 }
 
-func (i *Kernel) run() {
+func (i *Vehicle) run() {
     // Set up WLAN network listener, if requested
     var err error
     portStr := fmt.Sprintf(":%d", i.connections.port)
@@ -156,34 +167,34 @@ func (i *Kernel) run() {
         err = tsSrv.Start()
 
         if err != nil {
-            slog.Error("can't start tsnet server", "error", err)
+            logger.Error("can't start tsnet server", "error", err)
         } else {
-            slog.Info("listening on VPN network", "address", portStr)
+            logger.Info("listening on VPN network", "address", portStr)
             i.connections.wlanConn, err = tsSrv.Listen("tcp", portStr)
         }
     } else if i.connections.port != 0 {
         if !i.test {
-            slog.Warn("listening on open address, this should only be done on a secure network!", "address", portStr)
+            logger.Warn("listening on open address, this should only be done on a secure network!", "address", portStr)
         }
         i.connections.wlanConn, err = net.Listen("tcp", portStr)
     } else {
-        slog.Info("ignoring WLAN connection, using local only mode")
+        logger.Info("ignoring WLAN connection, using local only mode")
     }
     
     // If there's an error here, don't automatically return; a
-    // VPN connection is not needed for kernel operation
+    // VPN connection is not needed for vehicle operation
     if err != nil {
-        slog.Error("can't listen on port", "port", portStr)
-        slog.Warn("WLAN connection failure, proceeding in local only mode")
+        logger.Error("can't listen on port", "port", portStr)
+        logger.Warn("WLAN connection failure, proceeding in local only mode")
     }
 
     // However, if a local connection cannot be established, the
-    // kernel cannot interact with any local services and thus it
+    // vehicle cannot interact with any local services and thus it
     // should abort
     i.connections.localConn, err = net.Listen("unix", filepath.Join(i.Path, MainSocket))
 	if err != nil {
-        slog.Error("can't listen at file", "error", filepath.Join(i.Path, MainSocket))
-        slog.Error("failed to start main services, aborting!")
+        logger.Error("can't listen at file", "error", filepath.Join(i.Path, MainSocket))
+        logger.Error("failed to start main services, aborting!")
         return
 	}
 
@@ -193,7 +204,7 @@ func (i *Kernel) run() {
             e := i.services.grpcServer.Serve(i.connections.wlanConn)
             defer i.connections.wlanConn.Close()
             if e != nil {
-                slog.Error("WLAN connection closed unexpectedly", "error", e)
+                logger.Error("WLAN connection closed unexpectedly", "error", e)
             }
         }()
     }
@@ -202,7 +213,7 @@ func (i *Kernel) run() {
         e := i.services.grpcServer.Serve(i.connections.localConn)
         defer i.connections.localConn.Close()
         if e != nil {
-            slog.Error("local connection closed unexpectedly", "error", e)
+            logger.Error("local connection closed unexpectedly", "error", e)
         }
     }()
 
@@ -211,8 +222,8 @@ func (i *Kernel) run() {
         e := i.services.proxy.Run()
         defer i.services.dataOut.Close()
         defer i.services.dataIn.Close()
-        if e != nil && !errors.Is(err, context.Canceled) {
-            slog.Error("data proxy exited unexpectedly", "error", e)
+        if e != nil && !errors.Is(e, context.Canceled) {
+            logger.Error("data proxy exited unexpectedly", "error", e)
         }
     }()
 
@@ -223,6 +234,6 @@ func (i *Kernel) run() {
     i.services.grpcServer.GracefulStop()
 }
 
-func (i *Kernel) Stop() {
+func (i *Vehicle) Stop() {
     i.cancel()
 }

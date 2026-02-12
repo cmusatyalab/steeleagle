@@ -2,7 +2,6 @@ package core
 
 import (
     "fmt"
-    "log/slog"
     "os"
     "path/filepath"
 
@@ -21,10 +20,15 @@ type controlLaw struct {
     States    []controlLawState    `toml:"states,omitempty" json:"states"`
 }
 
-func getLaw() (map[string]controlLawState, string) {
+func getLaw(isTesting bool) (map[string]controlLawState, string) {
+    // Ignore reading config directory if in test mode
+    if isTesting {
+        return getDefaultLaw()
+    }
+
     configDir, err := os.UserConfigDir()
     if err != nil {
-        slog.Warn("OS config directory could not be found, using default laws")
+        logger.Warn("OS config directory could not be found, using default laws")
         return getDefaultLaw()
     }
 
@@ -33,20 +37,20 @@ func getLaw() (map[string]controlLawState, string) {
     
     data, err := os.ReadFile(configPath)
     if err != nil {
-        slog.Warn("could not find law file, using default laws", "error", err)
+        logger.Warn("could not find law file, using default laws", "error", err)
         return getDefaultLaw()
     }
 
     l := &controlLaw{}
     err = toml.Unmarshal(data, l)
     if err != nil {
-        slog.Warn("something went wrong reading law file, using default laws", "error", err)
+        logger.Warn("something went wrong reading law file, using default laws", "error", err)
         return getDefaultLaw()
     }
     
     m, err := createLawMap(l)
     if err != nil {
-        slog.Warn("something went wrong reading law file, using default laws", "error", err)
+        logger.Warn("something went wrong reading law file, using default laws", "error", err)
         return getDefaultLaw() 
     }
 

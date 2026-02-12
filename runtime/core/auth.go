@@ -3,16 +3,11 @@ package core
 import (
     "fmt"
     "os"
-    "log/slog"
-    "net"
     "sync"
     "context"
     "encoding/json"
     "path/filepath"
-    "strings"
 
-    "google.golang.org/grpc/peer"
-    "google.golang.org/grpc/metadata"
     "github.com/open-policy-agent/opa/rego"
 )
 
@@ -29,10 +24,15 @@ type policyDecision struct {
 	NextState string `json:"next_state"`
 }
 
-func getRegoPolicy() rego.PreparedEvalQuery {
+func getRegoPolicy(isTesting bool) rego.PreparedEvalQuery {
+    // Ignore reading config directory if in test mode 
+    if isTesting {
+        return getDefaultRegoPolicy()
+    }
+
     configDir, err := os.UserConfigDir()
     if err != nil {
-        slog.Warn("OS config directory could not be found, using default rego policy", "error", err)
+        logger.Warn("OS config directory could not be found, using default rego policy", "error", err)
         return getDefaultRegoPolicy()
     }
 
@@ -41,7 +41,7 @@ func getRegoPolicy() rego.PreparedEvalQuery {
     
     data, err := os.ReadFile(configPath)
     if err != nil {
-        slog.Warn("could not find rego policy file, using default policy", "error", err)
+        logger.Warn("could not find rego policy file, using default policy", "error", err)
         return getDefaultRegoPolicy()
     }
 
@@ -51,7 +51,7 @@ func getRegoPolicy() rego.PreparedEvalQuery {
     )
     query, err := r.PrepareForEval(context.Background())
     if err != nil {
-        slog.Warn("something went wrong preparing rego policy from file, using default policy", "error", err)
+        logger.Warn("something went wrong preparing rego policy from file, using default policy", "error", err)
         return getDefaultRegoPolicy()
     }
 
@@ -75,89 +75,50 @@ func (i *policyState) safeCheckAndTransit(ctx context.Context, command string) (
     i.stateMu.Lock()
     defer i.stateMu.Unlock()
 
-    allow, nextState, cleanedCommand, err := i.check(ctx, command)
+    allow, nextState, err := i.check(ctx, command)
     if err != nil {
-        return false, cleanedCommand, err
+        return false, "", err
     } else if nextState != "" {
-        return allow, cleanedCommand, i.transit(nextState)
+        return allow, nextState, i.transit(nextState)
     }
 
-    return allow, cleanedCommand, nil
+    return allow, nextState, nil
 }
 
-func (i *policyState) check(ctx context.Context, command string) (bool, string, string, error) {
-    // If we are in test mode, we can set our peer type to test the policy
-    peer := "unknown"
-    if i.test {
-        md, ok := metadata.FromIncomingContext(ctx)
-        if !ok {
-            peer = getPeer(ctx)
-        } else if identity, exists := md["identity"]; exists {
-            if len(identity) > 0 {
-                peer = identity[0]
-            } else {
-                peer = getPeer(ctx)
-            }
-        }
-    } else {
-        peer = getPeer(ctx)
-    }
-
-    splits := strings.Split(command, ".")
-    cleanedCommand := fmt.Sprintf("%s/%s", peer, splits[len(splits) - 1])
+func (i *policyState) check(ctx context.Context, command string) (bool, string, error) {
+    logger.Debug("command check started", "command", command)
     results, err := i.query.Eval(ctx, rego.EvalInput(map[string]any{
-		"command": cleanedCommand,
+		"command": command,
         "state": i.currentState,
         "law": i.lawMap,
 	}))
 
     if len(results) == 0 {
-		return false, "", cleanedCommand, fmt.Errorf("got no results back from rego query")
+		return false, "", fmt.Errorf("got no results back from rego query")
 	}
 
     raw := results[0].Expressions[0].Value
 	str, err := json.Marshal(raw)
     if err != nil {
-		return false, "", cleanedCommand, err
+		return false, "", err
 	}
 
     d := &policyDecision{}
 	if err := json.Unmarshal(str, d); err != nil {
-		return false, "", cleanedCommand, err
+		return false, "", err
 	}
 
-    return d.Allowed, d.NextState, cleanedCommand, nil
+    logger.Debug("command check completed", "command", command, "allowed", d.Allowed, "next_state", d.NextState)
+    return d.Allowed, d.NextState, nil
 }
 
 func (i *policyState) transit(nextState string) error {
     _, ok := i.lawMap[nextState]
     if ok {
+        logger.Info("transitioning to new control state", "state", nextState)
         i.currentState = nextState
     } else {
         return fmt.Errorf("failed to transition to state %s, not in law!", nextState)
     }
     return nil
-}
-
-func getPeer(ctx context.Context) string {
-	p, ok := peer.FromContext(ctx)
-	if !ok || p.Addr == nil {
-		return "unknown"
-	}
-
-	switch addr := p.Addr.(type) {
-	case *net.TCPAddr:
-		if addr.IP.IsLoopback() {
-			return "internal"
-		}
-		return "server"
-	case *net.UnixAddr:
-		return "internal"
-	default:
-		if addr.Network() == "pipe" {
-            return "kernel"
-        } else {
-            return "unknown"
-        }
-	}
 }

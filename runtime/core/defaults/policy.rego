@@ -20,10 +20,10 @@ allowed if {
 default next_state := ""
 
 next_state := transition[1] if {
-    some i, j, k
-    glob.match(input.law[input.state].allowed[i], [], input.command)
-    transition := input.law[input.state].match[j]
+    allowed
+    some i
+    transition := input.law[input.state].match[i]
     count(transition) == 2
     glob.match(transition[0], [], input.command)
-    input.law[k] == transition[1]
+    _ = input.law[transition[1]]
 }   
