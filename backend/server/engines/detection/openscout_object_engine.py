@@ -302,7 +302,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         compute_result.engine_name = self.ENGINE_NAME
 
         if detections is not None:
-            compute_result.generic_result = detections
+            compute_result.generic_result = json.dumps(detections)
 
         frame_result = result_pb2.FrameResult()
         frame_result.type = "object-detection"
@@ -454,6 +454,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     f"IndexError while getting bounding boxes [{traceback.format_exc()}]"
                 )
 
+        now_secs = time.time()
+        if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
+            self.geodb_garbage_collection()
+            self.last_geodb_gc_time = now_secs
+
         return detections if not df.is_empty() else None
 
     def store_detections_disk(self, im_bgr, filename, vehicle_id, uniq_classes):
@@ -522,11 +527,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def geofilter_passed(self, detection):
         cls = detection["class"]
         vehicle_id = detection["id"]
-
-        now_secs = time.time()
-        if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
-            self.geodb_garbage_collection()
-            self.last_geodb_gc_time = now_secs
 
         # first do a geosearch to see if there is a match within radius
         objects = self.r.geosearch(
