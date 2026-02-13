@@ -14,37 +14,37 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import datetime
 import logging
 import math
 import os
 import time
 import xml.etree.ElementTree as ET
+from abc import abstractmethod
 from configparser import ConfigParser, SectionProxy
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
+import aiohttp
 import pytak
-import redis
+import redis.asyncio as redis
+
+if TYPE_CHECKING:
+    import multiprocessing as mp
 
 logging.basicConfig(format="%(asctime)s %(name)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+ESTIMATED_DRONE_SIZE = 1.0  # meters
 
-class RXDrain(pytak.RXWorker):
+
+class _RXDrain(pytak.RXWorker):
     async def run_once(self) -> None:
         if self.reader:
-            data: bytes = await self.readcot()
+            data = await self.readcot()
             if data:
                 self._logger.debug("RX data: %s", data)
-                # and drop the data on the floor...
-
-
-def cot_detail_append(cot_xml: ET.Element, elem: ET.Element) -> None:
-    detail = cot_xml.find("detail")
-    if detail is None:
-        detail = ET.SubElement(cot_xml, "detail")
-    detail.append(elem)
 
 
 def estimate_gps_accuracy(satellites: int) -> dict[str, Any]:
@@ -56,30 +56,72 @@ def estimate_gps_accuracy(satellites: int) -> dict[str, Any]:
             "vertical_error": 30.0,  # meters
             "hdop": 5.0,
         }
-    elif satellites < 6:
+    if satellites < 6:
         return {
             "status": "WEAK_SIGNAL",
             "horizontal_error": 6.5,  # meters
             "vertical_error": 13.0,  # meters
             "hdop": 2.5,
         }
-    elif satellites < 8:
+    if satellites < 8:
         return {
             "status": "MODERATE_ACCURACY",
             "horizontal_error": 2.0,  # meters
             "vertical_error": 4.0,  # meters
             "hdop": 1.2,
         }
-    else:
-        return {
-            "status": "HIGH_ACCURACY",
-            "horizontal_error": 1.0,  # meters
-            "vertical_error": 2.0,  # meters
-            "hdop": 0.6,
-        }
+    return {
+        "status": "HIGH_ACCURACY",
+        "horizontal_error": 1.0,  # meters
+        "vertical_error": 2.0,  # meters
+        "hdop": 0.6,
+    }
 
 
-class TelemetryToCotSerializer(pytak.QueueWorker):
+class CotSerializer(pytak.QueueWorker):
+    """Publish Cursor on Target events."""
+
+    def __init__(
+        self,
+        queue: asyncio.Queue | mp.Queue,
+        config: SectionProxy | dict,
+        poll_interval: float,
+    ) -> None:
+        """Initialize the serializer.
+
+        Args:
+            queue: PyTAK event queue to send CoT events to
+            config: Configuration with CoT settings
+            poll_interval: How frequently self.run_once is called (seconds)
+        """
+        super().__init__(queue, config)
+
+        self.poll_interval = poll_interval
+        logger.info(f"Initialized with poll interval: {self.poll_interval}s")
+
+    async def handle_data(self, data: bytes) -> None:
+        """Handle pre-CoT data, serialize to CoT Event, then puts on queue.
+
+        Args:
+            data: XML bytes of CoT event to queue
+        """
+        await self.put_queue(data)
+
+    async def run(self, _: int = -1) -> None:
+        """Continuously poll for updates."""
+        while True:
+            try:
+                await self.run_once()
+            except Exception:
+                logger.exception("Unexpected error")
+            await asyncio.sleep(self.poll_interval)
+
+    @abstractmethod
+    async def run_once(self) -> None:
+        """Poll for events."""
+
+
+class TelemetryToCotSerializer(CotSerializer):
     """Converts Redis telemetry data to Cursor on Target events.
 
     Subscribes to Redis telemetry streams, generating CoT events for each
@@ -88,7 +130,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
 
     def __init__(
         self,
-        queue: asyncio.Queue,
+        queue: asyncio.Queue | mp.Queue,
         config: SectionProxy | dict,
         redis_client: redis.Redis,
     ) -> None:
@@ -99,23 +141,11 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             config: Configuration with Redis and CoT settings
             redis_client: Connected Redis client
         """
-        super().__init__(queue, config)
+        poll_interval = float(config.get("POLL_INTERVAL", 1.0))
+        super().__init__(queue, config, poll_interval)
+
         self.redis_client = redis_client
-
-        self.poll_interval = float(config.get("POLL_INTERVAL", 1.0))
         self.stale_time = int(config.get("COT_STALE", 120))
-
-        logger.info(f"Initialized with poll interval: {self.poll_interval}s")
-
-    async def handle_data(self, data: ET.Element) -> None:
-        """Handle pre-CoT data, serialize to CoT Event, then puts on queue.
-
-        Args:
-            data: XML bytes of CoT event to queue
-        """
-        event_xml = ET.tostring(data, encoding="utf-8")
-        # logger.debug(event_xml)
-        await self.put_queue(event_xml)
 
     async def process_vehicle_telemetry(self, vehicle_name: str) -> None:
         """Process latest telemetry for a vehicle and generate CoT event.
@@ -125,7 +155,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
         """
         try:
             # Get latest telemetry from Redis stream
-            latest = self.redis_client.xrevrange(
+            latest = await self.redis_client.xrevrange(
                 f"telemetry:{vehicle_name}", "+", "-", 1
             )
 
@@ -136,7 +166,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             # Extract the most recent telemetry entry
             _, telem = latest[0]
 
-            logger.debug(f"{telem}")
+            # logger.debug("{}".format(telem))
 
             # Required fields for CoT
             lat = telem.get(b"latitude")
@@ -156,8 +186,7 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             # in which the object is expected to be, which can then be used for
             # collision avoidance.
 
-            # Our largest drone, the Spirit, is probably about 1 meter tall.
-            drone_size = 1.0
+            drone_size = ESTIMATED_DRONE_SIZE
 
             # Estimate positioning error off of the number of visible satellites
             # (really should propagate any known errors along with telemetry data)
@@ -188,6 +217,17 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
 
             cot_xml.set("qos", "1-r-c")  # frequent, low priority updates
 
+            detail = cot_xml.find("detail")
+            if detail is None:
+                detail = ET.SubElement(cot_xml, "detail")
+
+            takv = ET.Element("takv")
+            takv.set("os", "Linux")
+            takv.set("device", "Drone")
+            takv.set("version", "1.0")
+            takv.set("platform", "SteelEagle")
+            detail.append(takv)
+
             bearing = telem.get(b"bearing")
             if bearing is not None:
                 vel_x = float(telem.get(b"v_body_forward", 0.0))
@@ -202,13 +242,13 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
                 track.set("course", str(int(bearing)))
                 track.set("speed", str(speed))
                 track.set("slope", str(slope))
-                cot_detail_append(cot_xml, track)
+                detail.append(track)
 
             battery = telem.get(b"battery")
             if battery is not None:
                 status = ET.Element("status")
                 status.set("battery", str(int(battery)))
-                cot_detail_append(cot_xml, status)
+                detail.append(status)
 
             # Add any other info as remarks
             additional = [
@@ -216,46 +256,31 @@ class TelemetryToCotSerializer(pytak.QueueWorker):
             ]
             remarks = ET.Element("remarks")
             remarks.text = " ".join(additional)
-            cot_detail_append(cot_xml, remarks)
-
-            # Not sure what these are for, but least taky seems to need it
-            takv = ET.Element("takv")
-            takv.set("os", "Linux")
-            takv.set("device", "Drone")
-            takv.set("version", "1.0")
-            takv.set("platform", "SteelEagle")
-            cot_detail_append(cot_xml, takv)
+            detail.append(remarks)
 
             # Convert to bytes and queue
-            await self.handle_data(cot_xml)
+            event_xml = ET.tostring(cot_xml, encoding="utf-8")
+            await self.handle_data(event_xml)
 
-        except redis.RedisError as e:
-            logger.error(f"Redis error for {vehicle_name}: {e}")
-        except Exception as e:
-            logger.error(f"Error processing {vehicle_name}: {e}")
+        except redis.RedisError:
+            logger.exception(f"Redis error for {vehicle_name}")
+        except Exception:
+            logger.exception(f"Error processing {vehicle_name}")
 
-    async def run(self) -> None:
-        """Continuously poll Redis for telemetry updates."""
-        logger.info("Starting telemetry poller")
+    async def run_once(self) -> None:
+        try:
+            # Find all active vehicle telemetry streams
+            telemetry_keys = await self.redis_client.keys("telemetry:*")
 
-        while True:
-            try:
-                # Find all active vehicle telemetry streams
-                telemetry_keys = self.redis_client.keys("telemetry:*")
+            for key in telemetry_keys:
+                vehicle_name = key.decode("utf-8").split(":", 1)[1]
+                await self.process_vehicle_telemetry(vehicle_name)
 
-                for key in telemetry_keys:
-                    vehicle_name = key.decode("utf-8").split(":", 1)[1]
-                    await self.process_vehicle_telemetry(vehicle_name)
-
-            except redis.RedisError as e:
-                logger.error(f"Redis connection error: {e}")
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-
-            await asyncio.sleep(self.poll_interval)
+        except redis.RedisError:
+            logger.exception("Redis connection error")
 
 
-class DetectionToCotSerializer(pytak.QueueWorker):
+class DetectionToCotSerializer(CotSerializer):
     """Converts Redis detection data to Cursor on Target events.
 
     Subscribes to Redis detection sets, generating CoT events for detected
@@ -264,9 +289,10 @@ class DetectionToCotSerializer(pytak.QueueWorker):
 
     def __init__(
         self,
-        queue: asyncio.Queue,
+        queue: asyncio.Queue | mp.Queue,
         config: SectionProxy | dict,
         redis_client: redis.Redis,
+        http_session: aiohttp.ClientSession,
     ) -> None:
         """Initialize the serializer.
 
@@ -274,14 +300,17 @@ class DetectionToCotSerializer(pytak.QueueWorker):
             queue: PyTAK event queue to send CoT events to
             config: Configuration with Redis and CoT settings
             redis_client: Connected Redis client
+            http_session: aiohttp client session for fetching images
         """
-        super().__init__(queue, config)
+        poll_interval = float(config.get("DETECTION_POLL_INTERVAL", "5.0"))
+        super().__init__(queue, config, poll_interval)
+
+        self.http_session = http_session
         self.redis_client = redis_client
+        self.detection_ttl = int(config.get("DETECTION_TTL", "1200"))
+        self._detected: dict[str, float] = {}
 
-        self.poll_interval = float(config.get("DETECTION_POLL_INTERVAL", 5.0))
-        self.detection_ttl = int(config.get("DETECTION_TTL", 1200))
-
-        detection_class_map = config.get("DETECTION_CLASS_MAP", fallback="")
+        detection_class_map = str(config.get("DETECTION_CLASS_MAP", ""))
         self.class_to_cot_map: dict[str, str] = {}
         if detection_class_map:
             for mapping in detection_class_map.split(","):
@@ -290,45 +319,26 @@ class DetectionToCotSerializer(pytak.QueueWorker):
                     class_name, cot_type = parts
                     self.class_to_cot_map[class_name.strip()] = cot_type.strip()
 
-        logger.info(f"Initialized with poll interval: {self.poll_interval}s")
         if self.class_to_cot_map:
             logger.info(f"Detection class map: {self.class_to_cot_map}")
 
-    async def handle_data(self, data: ET.Element) -> None:
-        """Handle pre-CoT data, serialize to CoT Event, then puts on queue.
-
-        Args:
-            data: XML bytes of CoT event to queue
-        """
-        event_xml = ET.tostring(data, encoding="utf-8")
-        logger.debug(event_xml)
-        await self.put_queue(event_xml)
-
     async def process_detection(
-        self,
-        object_name: str,
-        fields: dict[str, str],
+        self, object_name: str, fields: dict[bytes, bytes]
     ) -> None:
         """Process detection data and generate CoT event.
 
         Args:
             object_name: Name of the detected object
-            fields: Detection details from Redis hash
         """
-        logger.debug(f"{fields}")
         try:
             lat = fields.get(b"latitude")
             lon = fields.get(b"longitude")
-            cls = fields.get(b"cls", b"unknown").decode("utf-8")
-            confidence = fields.get(b"confidence")
-            vehicle_id = fields.get(b"id").decode("utf-8")
-            link = fields.get(b"link").decode("utf-8")
-            last_seen = fields.get(b"last_seen")
-
             if not lat or not lon:
                 logger.warning(f"Missing location data for detection {object_name}")
                 return
 
+            vehicle_id = fields.get(b"id", b"").decode("utf-8")
+            cls = fields.get(b"cls", b"unknown").decode("utf-8")
             cot_type = self.class_to_cot_map.get(cls, "a-u-G-I")
 
             cot_xml = pytak.gen_cot_xml(
@@ -344,96 +354,97 @@ class DetectionToCotSerializer(pytak.QueueWorker):
                 logger.error(f"Failed to generate CoT XML for {object_name}")
                 return
 
+            cot_xml.set("how", "m-i")  # mensurated (from imagery) location
             cot_xml.set("qos", "5-r-d")  # occasional "push" priority update
 
+            detail = cot_xml.find("detail")
+            if detail is None:
+                detail = ET.SubElement(cot_xml, "detail")
+
+            link = fields.get(b"link", b"").decode("utf-8")
             if link:
                 image_elem = ET.Element("image")
                 image_elem.set("url", link)
-                # fetch image
-                # image_elem.set("type", "CP")  # Color Frame Photography
-                # image_elem.set("size", image.bytes)
-                # image_elem.set("mime", image.mimetype)
-                # image_elem.set("width", image.width)
-                # image_elem.set("height", image.height)
-                # image_elem.set("quality", image.compression)
-                # image_elem.text = base64-encoded image data
-                cot_detail_append(cot_xml, image_elem)
+
+                try:
+                    async with self.http_session.get(link) as response:
+                        if response.status == 200:
+                            image_data = await response.read()
+                            image_elem.set("type", "CP")  # Color Frame Photography
+                            image_elem.set("size", str(len(image_data)))
+                            image_elem.set(
+                                "mime",
+                                response.headers.get("Content-Type", "image/jpeg"),
+                            )
+                            image_elem.text = base64.b64encode(image_data).decode(
+                                "utf-8"
+                            )
+                except Exception as e:
+                    logger.debug(f"Failed to fetch image from {link}: {e}")
+
+                detail.append(image_elem)
 
             remarks_parts = []
-            if cls:
-                remarks_parts.append(f"class: {cls}")
+            remarks_parts.append(f"vehicle: {vehicle_id}")
+            remarks_parts.append(f"class: {cls}")
+
+            confidence = float(fields.get(b"confidence", b"0.0"))
             if confidence:
                 remarks_parts.append(f"confidence: {float(confidence)}")
-            if vehicle_id:
-                remarks_parts.append(f"vehicle: {vehicle_id}")
+
+            last_seen = float(fields.get(b"last_seen", b"0.0"))
             if last_seen:
-                try:
-                    ts = float(last_seen)
-                    remarks_parts.append(
-                        f"time: {datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
-                except (ValueError, OSError):
-                    remarks_parts.append(f"time: {last_seen}")
+                last_seen_time = datetime.datetime.fromtimestamp(last_seen).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                remarks_parts.append(f"time: {last_seen_time}")
 
-            if remarks_parts:
-                remarks = ET.Element("remarks")
-                remarks.text = " ".join(remarks_parts)
-                cot_detail_append(cot_xml, remarks)
+            remarks = ET.Element("remarks")
+            remarks.text = " ".join(remarks_parts)
+            detail.append(remarks)
 
-            await self.handle_data(cot_xml)
+            event_xml = ET.tostring(cot_xml, encoding="utf-8")
+            await self.handle_data(event_xml)
+        except redis.RedisError:
+            logger.exception(f"Redis error for detection {object_name}")
+        except Exception:
+            logger.exception(f"Error processing detection {object_name}")
 
-        except redis.RedisError as e:
-            logger.error(f"Redis error for detection {object_name}: {e}")
-        except Exception as e:
-            logger.error(f"Error processing detection {object_name}: {e}")
+    async def run_once(self) -> None:
+        """Poll Redis for detection updates."""
+        try:
+            now = time.time()
 
-    async def run(self) -> None:
-        """Continuously poll Redis for detection updates."""
-        logger.info("Starting detection poller")
+            objects = await self.redis_client.zrange("detections", 0, -1)
 
-        while True:
-            try:
-                now = time.time()
+            for obj_name in objects:
+                object_name = obj_name.decode("utf-8")
 
-                objects = self.redis_client.zrange("detections", 0, -1)
+                # redis type stubs don't properly handle Union[Awaitable[T], T]
+                raw = await self.redis_client.hgetall(f"objects:{object_name}")  # type: ignore[return-value]
+                fields = cast(dict[bytes, bytes], raw)
+                if not fields:
+                    continue
 
-                for obj_name in objects:
-                    obj_name_str = (
-                        obj_name.decode("utf-8")
-                        if isinstance(obj_name, bytes)
-                        else obj_name
-                    )
+                # do not report detections repeatedly, unless something changed
+                last_seen = float(fields.get(b"last_seen", b"0.0"))
+                last_reported = self._detected.get(object_name)
+                if last_reported and last_seen < last_reported:
+                    continue
 
-                    last_seen_ts = self.redis_client.hget(
-                        f"objects:{obj_name_str}", "last_seen"
-                    )
-                    logger.debug(f"{obj_name_str}: {last_seen_ts}")
+                await self.process_detection(object_name, fields)
+                self._detected[object_name] = last_seen
 
-                    if not last_seen_ts:
-                        continue
-
-                    try:
-                        last_seen = float(last_seen_ts)
-                    except (ValueError, OSError):
-                        continue
-
-                    if now - last_seen > self.detection_ttl:
-                        continue
-
-                    fields = self.redis_client.hgetall(f"objects:{obj_name_str}")
-                    if fields:
-                        await self.process_detection(obj_name_str, fields)
-
-            except redis.RedisError as e:
-                logger.error(f"Redis connection error: {e}")
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-
-            await asyncio.sleep(self.poll_interval)
+        except redis.RedisError:
+            logger.exception("Redis connection error")
 
 
 async def async_main(config: SectionProxy) -> None:
-    """Main entry point for the daemon."""
+    """Main entry point for the daemon.
+
+    Args:
+        config: Configuration settings
+    """
     # Load config
     redis_host = config.get("REDIS_HOST", fallback="localhost")
     redis_port = int(config.get("REDIS_PORT", fallback=6379))
@@ -449,37 +460,50 @@ async def async_main(config: SectionProxy) -> None:
             password=redis_password,
             decode_responses=False,  # We need bytes for key parsing
         )
-        redis_client.ping()
+        await redis_client.ping()  # type: ignore[return-value]
         logger.info(f"Connected to Redis at {redis_host}:{redis_port}")
-    except redis.ConnectionError as e:
-        logger.error(f"Failed to connect to Redis: {e}")
+    except redis.ConnectionError:
+        logger.exception("Failed to connect to Redis")
         return
 
+    # Create HTTP session for fetching images
+    http_session = aiohttp.ClientSession()
+
     # Initialize PyTAK CLI tool
-    clitool = pytak.CLITool(config)
+    pytak_config: SectionProxy | dict = config
+    clitool = pytak.CLITool(pytak_config)
 
     # Instead of calling `await clitool.setup()`
     # avoids 100% CPU usage when we have a write-only connection
-    reader, writer = await pytak.protocol_factory(clitool.config)
+    reader, writer = await pytak.protocol_factory(pytak_config)
     if writer:
-        write_worker = pytak.TXWorker(clitool.tx_queue, clitool.config, writer)
+        write_worker = pytak.TXWorker(clitool.tx_queue, pytak_config, writer)
         clitool.add_task(write_worker)
     if reader:
-        read_worker = RXDrain(clitool.rx_queue, clitool.config, reader)
+        read_worker = _RXDrain(clitool.rx_queue, pytak_config, reader)
         clitool.add_task(read_worker)
 
     # Add our serializer to the task list
-    telemetry = TelemetryToCotSerializer(clitool.tx_queue, config, redis_client)
+    telemetry = TelemetryToCotSerializer(clitool.tx_queue, pytak_config, redis_client)
     clitool.add_tasks({telemetry})
 
     # Add our serializer to the task list
     if config.getboolean("steeleagle_tak", "detection_poll_enabled"):
-        detections = DetectionToCotSerializer(clitool.tx_queue, config, redis_client)
+        detections = DetectionToCotSerializer(
+            clitool.tx_queue, pytak_config, redis_client, http_session
+        )
         clitool.add_tasks({detections})
 
     # Start all tasks
     logger.info("Starting Telemetry-to-CoT daemon...")
-    await clitool.run()
+    try:
+        await clitool.run()
+    except asyncio.exceptions.CancelledError:
+        pass
+
+    logger.info("Shutting down...")
+    await http_session.close()
+    await redis_client.aclose()
 
 
 def main() -> None:
