@@ -111,5 +111,5 @@ class Waypoints(Datatype):
             len(parts_wgs),
             len(waypoints),
         )
-
-        return {self.area: waypoints}
+        key = self.area if isinstance(self.area, str) else "inline_area"
+        return {key: waypoints}

@@ -419,7 +419,7 @@ class SetGimbalPose(Action):
         return await consume_last(types.VEHICLE.set_gimbal_pose(**self.__dict__))
 
 
-@register_action
+# @register_action
 class ConfigureImagingSensorStream(Action):
     """Configure the vehicle imaging stream.
 
@@ -441,7 +441,7 @@ class ConfigureImagingSensorStream(Action):
         return await types.VEHICLE.configure_imaging_sensor_stream(**self.__dict__)
 
 
-@register_action
+# @register_action
 class ConfigureTelemetryStream(Action):
     """Configure the vehicle telemetry stream.
 

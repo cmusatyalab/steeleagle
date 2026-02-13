@@ -12,7 +12,7 @@ from ...datatypes import compute as params
 from ...datatypes.common import Response
 
 
-@register_action
+# @register_action
 class AddDatasinks(Action):
     """Add datasinks to consumer list.
 
@@ -34,7 +34,7 @@ class AddDatasinks(Action):
         return await types.COMPUTE.add_datasinks(**self.model_dump())
 
 
-@register_action
+# @register_action
 class SetDatasinks(Action):
     """Set the datasink consumer list.
 
@@ -55,7 +55,7 @@ class SetDatasinks(Action):
         return await types.COMPUTE.set_datasinks(**self.model_dump())
 
 
-@register_action
+# @register_action
 class RemoveDatasinks(Action):
     """Remove datasinks from consumer list.
 
