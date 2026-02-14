@@ -51,7 +51,7 @@ class ElevateToAltitude(Action):
                     z_vel=self.climb_speed,
                     angular_vel=0.0,
                 ),
-                frame=ReferenceFrame.ENU,  # or BODY
+                frame=ReferenceFrame.NEU,  # or BODY
             )
             await set_vel.execute()
 
@@ -73,8 +73,11 @@ class PrePatrolSequence(Action):
     gimbal_pitch: float = Field(0.0, description="degrees; 0=forward, positive=down")
 
     async def execute(self):
-        await ElevateToAltitude(target_altitude=15.0).execute()
-        await SetGimbalPose(pitch=self.gimbal_pitch, yaw=0.0, roll=0.0).execute()
+        await ElevateToAltitude(target_altitude=self.altitude).execute()
+        await SetGimbalPose(
+            gimbal_id=0,
+            pose=common.Pose(pitch=self.gimbal_pitch, roll=0.0, yaw=0.0)
+        ).execute()
 
 
 @register_action
@@ -89,9 +92,9 @@ class Patrol(Action):
     async def execute(self):
         map = self.waypoints.calculate()
         for area_name, points in map.items():
-            logger.debug("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
+            logger.info("Patrol: area=%s, waypoints_num=%d", area_name, len(points))
             for p in points:
-                logger.debug(f"Patrol: goto {p}")
+                logger.info(f"Patrol: goto {p}")
                 goto = SetGlobalPosition(
                     location=common.Location(
                         latitude=float(p["lat"]),

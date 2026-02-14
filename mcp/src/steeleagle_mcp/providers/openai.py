@@ -63,7 +63,7 @@ class OpenAIProvider(LLMProvider):
             model=model,
             messages=messages_with_system,
             tools=provider_tools,
-            max_tokens=4096,
+            max_completion_tokens=4096,
         )
 
         choice = response.choices[0]

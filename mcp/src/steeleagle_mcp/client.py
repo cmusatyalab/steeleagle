@@ -18,7 +18,9 @@ from mcp.client.stdio import stdio_client
 from steeleagle_mcp.config import load_config, make_client_parser, setup_logging
 from steeleagle_mcp.providers.anthropic import AnthropicProvider
 from steeleagle_mcp.providers.openai import OpenAIProvider
-from steeleagle_mcp.system_prompt import SYSTEM_PROMPT
+from steeleagle_mcp.system_prompt import generate_system_prompt
+from steeleagle_sdk.dsl.compiler.loader import load_all
+from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
 
 logger = logging.getLogger("client")
 
@@ -134,6 +136,11 @@ async def run_chat(
     cli_base_url: str | None,
 ) -> None:
     """Main chat loop: spawn MCP server, discover tools, run REPL."""
+    # Load DSL registry to generate dynamic system prompt
+    load_all()
+    system_prompt = generate_system_prompt(_ACTIONS, _EVENTS)
+    logger.info("Generated system prompt with %d actions, %d events", len(_ACTIONS), len(_EVENTS))
+
     client_cfg = config["client"]
     provider_name = cli_provider or client_cfg.get("provider", "anthropic")
     base_url = cli_base_url or client_cfg.get("openai_base_url", "")
@@ -186,7 +193,7 @@ async def run_chat(
             try:
                 await _agentic_loop(
                     provider, client, session,
-                    provider_tools, messages, SYSTEM_PROMPT, model,
+                    provider_tools, messages, system_prompt, model,
                 )
             except Exception:
                 logger.exception("Agentic loop error")

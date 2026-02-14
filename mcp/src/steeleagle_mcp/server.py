@@ -193,9 +193,189 @@ def _register_all() -> None:
     for name, cls in _EVENTS.items():
         _register_event(name, cls)
 
+    # Log all registered action and event tools
+    action_tools = list(_ACTIONS.keys())
+    event_tools = [f"check_{name}" for name in _EVENTS.keys()]
+    logger.info("Registered %d action tools: %s", len(action_tools), ", ".join(sorted(action_tools)))
+    logger.info("Registered %d event tools: %s", len(event_tools), ", ".join(sorted(event_tools)))
+
 
 # Register tools at import time so `mcp dev server.py` works
 _register_all()
+
+
+# ---------------------------------------------------------------------------
+# Racer tool: race an action against events
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool(
+    name="racer",
+    description=(
+        "Race an action against events - returns whichever completes first. "
+        "Use ONLY when you need timeout, safety monitoring, or early termination. "
+        "DO NOT use for normal action execution - call the action directly instead. "
+        "REQUIRED: action (str), action_params (dict, use {} if empty), events (list, min 1 event). "
+        "Example: racer(action='patrol', action_params={'waypoints': {...}}, "
+        "events=[{'name': 'timereached', 'params': {'duration': 300}}])"
+    ),
+)
+async def racer(
+    action: str,
+    action_params: dict[str, Any],
+    events: list[dict[str, Any]],
+) -> str:
+    """Race an action against a list of events.
+
+    Args:
+        action: Name of the DSL action to execute (required)
+        action_params: Dictionary of parameters for the action (required, use {} if none)
+        events: List of event specs with 'name' and 'params' keys (required, must have at least 1)
+
+    Returns:
+        JSON result of whichever completes first (action or event)
+
+    Example:
+        {
+            "action": "patrol",
+            "action_params": {"waypoints": [...]},
+            "events": [
+                {"name": "timereached", "params": {"duration": 300}},
+                {"name": "batteryreached", "params": {"threshold": 20}}
+            ]
+        }
+    """
+    logger.info("racer called  action=%s events=%d", action, len(events))
+
+    # Validate events list is not empty
+    if not events:
+        error_msg = "events list cannot be empty - provide at least one event to race against"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg})
+
+    # Validate action exists
+    if action not in _ACTIONS:
+        error_msg = f"Unknown action: {action}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg})
+
+    # Validate events
+    for i, event_spec in enumerate(events):
+        if "name" not in event_spec or "params" not in event_spec:
+            error_msg = f"Event {i} missing 'name' or 'params'"
+            logger.error(error_msg)
+            return json.dumps({"error": error_msg})
+
+        # Normalize event name: strip "check_" prefix if present
+        event_name = event_spec["name"]
+        if event_name.startswith("check_"):
+            event_name = event_name[6:]  # Remove "check_" prefix
+
+        if event_name not in _EVENTS:
+            error_msg = f"Unknown event: {event_spec['name']} (normalized: {event_name})"
+            logger.error(error_msg)
+            return json.dumps({"error": error_msg})
+
+        # Update the event_spec with normalized name
+        event_spec["name"] = event_name
+
+    async def run_action():
+        """Execute the action and return result with metadata."""
+        try:
+            action_cls = _ACTIONS[action]
+            instance = action_cls(**action_params)
+            result = await instance.execute()
+            return {
+                "type": "action",
+                "name": action,
+                "result": result,
+            }
+        except Exception as e:
+            logger.exception("racer: action %s failed", action)
+            return {
+                "type": "action",
+                "name": action,
+                "error": str(e),
+            }
+
+    async def run_event(event_name: str, event_params: dict):
+        """Check an event and return result with metadata."""
+        try:
+            event_cls = _EVENTS[event_name]
+            instance = event_cls(**event_params)
+            result = await instance.check()
+            return {
+                "type": "event",
+                "name": event_name,
+                "result": result,
+            }
+        except Exception as e:
+            logger.exception("racer: event %s failed", event_name)
+            return {
+                "type": "event",
+                "name": event_name,
+                "error": str(e),
+            }
+
+    # Create tasks for action and all events
+    tasks = [asyncio.create_task(run_action())]
+    for event_spec in events:
+        tasks.append(
+            asyncio.create_task(
+                run_event(event_spec["name"], event_spec["params"])
+            )
+        )
+
+    # Race them - return first to complete
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+    # Cancel pending tasks
+    for task in pending:
+        task.cancel()
+
+    # Get the winner
+    winner = done.pop()
+    result_data = await winner
+
+    # Format response based on what won
+    if result_data["type"] == "action":
+        if "error" in result_data:
+            response = {
+                "winner": "action",
+                "action": result_data["name"],
+                "error": result_data["error"],
+                "events_triggered": [],
+            }
+        else:
+            response = {
+                "winner": "action",
+                "action": result_data["name"],
+                "action_result": result_data["result"],
+                "events_triggered": [],
+            }
+    else:  # event
+        if "error" in result_data:
+            response = {
+                "winner": "event",
+                "event": result_data["name"],
+                "error": result_data["error"],
+                "action_completed": False,
+            }
+        else:
+            response = {
+                "winner": "event",
+                "event": result_data["name"],
+                "event_result": result_data["result"],
+                "action_completed": False,
+            }
+
+    serialized = _serialize(response)
+    logger.info("racer completed  winner=%s", result_data["type"])
+    return serialized
+
+
+# Log control flow tool registration
+logger.info("Registered 1 control flow tool: racer")
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +412,16 @@ async def amain(
 ) -> None:
     """Async entry point: init SDK, run MCP server."""
     await _init_sdk(config["drone"], config["compute"])
+
+    # Log available tools summary
+    total_tools = len(_ACTIONS) + len(_EVENTS) + 1  # +1 for racer
+    logger.info("=" * 60)
+    logger.info("MCP Server ready with %d tools available:", total_tools)
+    logger.info("  - %d Action tools (execute drone commands)", len(_ACTIONS))
+    logger.info("  - %d Event tools (check drone state)", len(_EVENTS))
+    logger.info("  - 1 Control flow tool (racer)")
+    logger.info("=" * 60)
+
     try:
         if transport == "stdio":
             await mcp.run_stdio_async()

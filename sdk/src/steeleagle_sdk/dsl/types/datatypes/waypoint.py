@@ -57,7 +57,7 @@ class Waypoints(Datatype):
                 logger.warning("Area %s has < 3 points; skipping.", self.area)
                 return {}
         else:
-            raw = GeoPoints([(p.latitude, p.longitude) for p in self.area])
+            raw = GeoPoints([(p.longitude, p.latitude) for p in self.area])
 
         # Choose partitioner
         if self.algo == "edge":

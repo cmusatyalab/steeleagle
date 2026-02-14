@@ -46,7 +46,7 @@ class ElevateToAltitude(Action):
                     z_vel=self.climb_speed,
                     angular_vel=0.0,
                 ),
-                frame=ReferenceFrame.ENU,  # or BODY
+                frame=ReferenceFrame.NEU,  # or BODY
             )
             await set_vel.execute()
 
