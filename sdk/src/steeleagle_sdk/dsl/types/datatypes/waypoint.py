@@ -1,7 +1,7 @@
 import logging
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from ....api.datatypes.common import Location
 from ....api.map.partitioner.algos.corridor import CorridorPartition
@@ -32,6 +32,33 @@ class Waypoints(Datatype):
     angle_degrees: float | None = Field(default=None, description="Angle of survey/corridor columns [degrees]. Required for survey/corridor.")
     trigger_distance: float | None = Field(default=None, description="Distance before snapshot trigger [meters]. Required for survey only.")
 
+    @model_validator(mode='after')
+    def validate_algo_requirements(self):
+        """Validate that required parameters are present based on the selected algorithm."""
+        if self.algo == "survey":
+            missing = []
+            if self.spacing is None:
+                missing.append("spacing")
+            if self.angle_degrees is None:
+                missing.append("angle_degrees")
+            if self.trigger_distance is None:
+                missing.append("trigger_distance")
+            if missing:
+                raise ValueError(
+                    f"For 'survey' algo, the following parameters are required: {', '.join(missing)}"
+                )
+        elif self.algo == "corridor":
+            missing = []
+            if self.spacing is None:
+                missing.append("spacing")
+            if self.angle_degrees is None:
+                missing.append("angle_degrees")
+            if missing:
+                raise ValueError(
+                    f"For 'corridor' algo, the following parameters are required: {', '.join(missing)}"
+                )
+        return self
+
     def calculate(self) -> dict[str, list[dict[str, float]]]:
         raw = None  # Raw geopoints
 
@@ -59,33 +86,22 @@ class Waypoints(Datatype):
         else:
             raw = GeoPoints([(p.longitude, p.latitude) for p in self.area])
 
-        # Choose partitioner
+        # Choose partitioner (validation already done by @model_validator)
         if self.algo == "edge":
             partition = EdgePartition()
         elif self.algo == "survey":
-            if (
-                self.spacing is None
-                or self.angle_degrees is None
-                or self.trigger_distance is None
-            ):
-                raise ValueError(
-                    "For 'survey' algo, 'spacing', 'angle_degrees', and 'trigger_distance' must be set."
-                )
             partition = SurveyPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
                 trigger_distance=self.trigger_distance,
             )
         elif self.algo == "corridor":
-            if self.spacing is None or self.angle_degrees is None:
-                raise ValueError(
-                    "For 'corridor' algo, 'spacing' and 'angle_degrees' must be set."
-                )
             partition = CorridorPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
             )
         else:
+            # This should never happen due to Literal type, but keep for safety
             msg = f"Unknown algo '{self.algo}'. Expected one of: 'edge', 'survey', 'corridor'."
             raise ValueError(msg)
 

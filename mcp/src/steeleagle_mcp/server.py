@@ -156,31 +156,6 @@ def _register_action(name: str, cls: type) -> None:
     mcp.tool(name=name, description=f"[Action] {doc}")(action_tool)
 
 
-def _register_event(name: str, cls: type) -> None:
-    """Register a single DSL Event class as an @mcp.tool()."""
-    doc = (cls.__doc__ or f"Check if {cls.__name__} is satisfied.").strip()
-    tool_name = f"check_{name}"
-
-    async def event_tool(_cls=cls, _name=tool_name, **kwargs) -> str:
-        logger.info("event %s called  args=%s", _name, kwargs)
-        try:
-            instance = _cls(**kwargs)
-        except Exception:
-            logger.exception("event %s instantiation failed  args=%s", _name, kwargs)
-            raise
-        try:
-            result = await instance.check()
-        except Exception:
-            logger.exception("event %s check failed", _name)
-            raise
-        serialized = _serialize(result)
-        logger.info("event %s result  %s", _name, serialized)
-        return serialized
-
-    event_tool.__name__ = tool_name
-    event_tool.__doc__ = doc
-    event_tool.__signature__ = _make_signature(cls)
-    mcp.tool(name=tool_name, description=f"[Event] {doc}")(event_tool)
 
 
 def _register_all() -> None:
@@ -188,16 +163,17 @@ def _register_all() -> None:
     load_all()
     logger.info("DSL registry: %d actions, %d events", len(_ACTIONS), len(_EVENTS))
 
+    # Register actions as individual tools
     for name, cls in _ACTIONS.items():
         _register_action(name, cls)
-    for name, cls in _EVENTS.items():
-        _register_event(name, cls)
 
-    # Log all registered action and event tools
+    # Events are NOT registered as individual tools - they're only accessible via racer
+    # This enforces the pattern that events are conditions, not standalone operations
+
+    # Log what was registered
     action_tools = list(_ACTIONS.keys())
-    event_tools = [f"check_{name}" for name in _EVENTS.keys()]
     logger.info("Registered %d action tools: %s", len(action_tools), ", ".join(sorted(action_tools)))
-    logger.info("Registered %d event tools: %s", len(event_tools), ", ".join(sorted(event_tools)))
+    logger.info("Events are available only through racer tool: %s", ", ".join(sorted(_EVENTS.keys())))
 
 
 # Register tools at import time so `mcp dev server.py` works
@@ -266,7 +242,8 @@ async def racer(
             logger.error(error_msg)
             return json.dumps({"error": error_msg})
 
-        # Normalize event name: strip "check_" prefix if present
+        # Normalize event name: strip "check_" prefix if present (for backward compatibility)
+        # Events are now only accessible via racer, so "check_" prefix is optional
         event_name = event_spec["name"]
         if event_name.startswith("check_"):
             event_name = event_name[6:]  # Remove "check_" prefix
@@ -414,12 +391,11 @@ async def amain(
     await _init_sdk(config["drone"], config["compute"])
 
     # Log available tools summary
-    total_tools = len(_ACTIONS) + len(_EVENTS) + 1  # +1 for racer
+    total_tools = len(_ACTIONS) + 1  # +1 for racer (events are only in racer, not standalone)
     logger.info("=" * 60)
     logger.info("MCP Server ready with %d tools available:", total_tools)
     logger.info("  - %d Action tools (execute drone commands)", len(_ACTIONS))
-    logger.info("  - %d Event tools (check drone state)", len(_EVENTS))
-    logger.info("  - 1 Control flow tool (racer)")
+    logger.info("  - 1 Control flow tool (racer - provides access to %d events)", len(_EVENTS))
     logger.info("=" * 60)
 
     try:

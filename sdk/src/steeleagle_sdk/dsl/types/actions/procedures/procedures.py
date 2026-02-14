@@ -231,7 +231,7 @@ class Track(Action):
         orbit_speed: float,
         telemetry,
     ) -> None:
-        logger.info(
+        logger.debug(
             "actuating: follow_vel=%.3f, yaw_vel=%.3f, gimbal_error=%.3f, orbit_speed=%.3f",
             follow_vel,
             yaw_vel_deg,
@@ -244,7 +244,7 @@ class Track(Action):
                 y_vel=orbit_speed,
                 angular_vel= yaw_vel_deg * self.yaw_gain,
             )
-        logger.info("Actuate: velocity target: %s", velocity_target)
+        logger.debug("Actuate: velocity target: %s", velocity_target)
         set_joystick = Joystick(
             velocity=velocity_target
         )
@@ -270,7 +270,7 @@ class Track(Action):
                 # Stop motion and exit
                 telemetry = await fetch_telemetry()
                 await self._actuate(0.0, 0.0, 0.0, 0.0, telemetry)
-                logger.debug(
+                logger.info(
                     "Track: target lost for %.1fs, exiting",
                     now - last_seen,
                 )
@@ -317,7 +317,7 @@ class Track(Action):
                         follow_err, -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
-                    logger.info("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
+                    logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
 
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
