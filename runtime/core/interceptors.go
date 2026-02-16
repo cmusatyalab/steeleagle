@@ -58,7 +58,7 @@ func cleanCommand(ctx context.Context, fullName string, isTesting bool) string {
     return fmt.Sprintf("%s/%s", peer, splits[len(splits) - 1])
 }
 
-func (i *policyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
+func (i *policyState) getUnaryInterceptor(isTesting bool) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
@@ -66,7 +66,7 @@ func (i *policyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
 		handler grpc.UnaryHandler,
 	) (any, error) {
 
-        command := cleanCommand(ctx, info.FullMethod, i.test)
+        command := cleanCommand(ctx, info.FullMethod, isTesting)
         logger.Info("received unary RPC request", "command", command)
 		allowed, _, err := i.safeCheckAndTransit(ctx, command)
         if allowed == false && err == nil {
@@ -82,7 +82,7 @@ func (i *policyState) getUnaryInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (i *policyState) getStreamInterceptor() grpc.StreamServerInterceptor {
+func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -90,7 +90,7 @@ func (i *policyState) getStreamInterceptor() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) error {
 
-        command := cleanCommand(ss.Context(), info.FullMethod, i.test)
+        command := cleanCommand(ss.Context(), info.FullMethod, isTesting)
         logger.Info("received stream RPC request", "command", command)
 		allowed, _, err := i.safeCheckAndTransit(ss.Context(), command)
         if allowed == false && err == nil {

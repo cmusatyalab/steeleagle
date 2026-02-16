@@ -13,7 +13,6 @@ import (
     "github.com/google/uuid"
     "google.golang.org/grpc"
     "google.golang.org/grpc/credentials/insecure"
-    "tailscale.com/tsnet"
     "github.com/mwitkow/grpc-proxy/proxy"
     "github.com/adrg/xdg"
     "github.com/go-zeromq/zmq4"
@@ -29,9 +28,7 @@ type serviceState struct {
 }
 
 type connectionState struct {
-    port int
-    useVPN bool
-    wlanConn net.Listener
+    externConns []net.Listener
     localConn net.Listener
 }
 
@@ -45,6 +42,7 @@ type Vehicle struct {
     logLevel *slog.LevelVar
     services serviceState
     connections connectionState
+    lawFile string
     policy policyState
     // Context related attributes
     ctx context.Context
@@ -84,14 +82,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     logger.Debug("vehicle folder configured", "folder", vehicle.Path)
     
     // Set up law handling
-    regoPolicy := getRegoPolicy(vehicle.test)
-    laws, first := getLaw(vehicle.test)
-    vehicle.policy = policyState{
-        currentState: first,
-        lawMap: laws,
-        query: regoPolicy,
-        test: vehicle.test,
-    }
+    vehicle.policy = getPolicy(vehicle.lawFile)
     
     // Create UDS files for the Control and Mission services so that they
     // can be shared with any plugins at start time
@@ -142,8 +133,8 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 
     // Set up gRPC server and set up interceptor chain
     vehicle.services.grpcServer = grpc.NewServer(
-        grpc.UnaryInterceptor(vehicle.policy.getUnaryInterceptor()),
-        grpc.StreamInterceptor(vehicle.policy.getStreamInterceptor()),
+        grpc.UnaryInterceptor(vehicle.policy.getUnaryInterceptor(vehicle.test)),
+        grpc.StreamInterceptor(vehicle.policy.getStreamInterceptor(vehicle.test)),
         grpc.CustomCodec(proxy.Codec()),
         grpc.UnknownServiceHandler(proxy.TransparentHandler(
             getProxyDirector(
@@ -158,39 +149,9 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 }
 
 func (i *Vehicle) run() {
-    // Set up WLAN network listener, if requested
+    // If a local connection cannot be established, the vehicle cannot
+    // interact with any local services and thus it should abort
     var err error
-    portStr := fmt.Sprintf(":%d", i.connections.port)
-    if i.connections.useVPN && i.connections.port != 0 {
-        tsSrv := new(tsnet.Server)
-        tsSrv.Hostname = i.Name
-        err = tsSrv.Start()
-
-        if err != nil {
-            logger.Error("can't start tsnet server", "error", err)
-        } else {
-            logger.Info("listening on VPN network", "address", portStr)
-            i.connections.wlanConn, err = tsSrv.Listen("tcp", portStr)
-        }
-    } else if i.connections.port != 0 {
-        if !i.test {
-            logger.Warn("listening on open address, this should only be done on a secure network!", "address", portStr)
-        }
-        i.connections.wlanConn, err = net.Listen("tcp", portStr)
-    } else {
-        logger.Info("ignoring WLAN connection, using local only mode")
-    }
-    
-    // If there's an error here, don't automatically return; a
-    // VPN connection is not needed for vehicle operation
-    if err != nil {
-        logger.Error("can't listen on port", "port", portStr)
-        logger.Warn("WLAN connection failure, proceeding in local only mode")
-    }
-
-    // However, if a local connection cannot be established, the
-    // vehicle cannot interact with any local services and thus it
-    // should abort
     i.connections.localConn, err = net.Listen("unix", filepath.Join(i.Path, MainSocket))
 	if err != nil {
         logger.Error("can't listen at file", "error", filepath.Join(i.Path, MainSocket))
@@ -198,15 +159,17 @@ func (i *Vehicle) run() {
         return
 	}
 
-    // Serve the WLAN and local server endpoints
-    if i.connections.wlanConn != nil {
-        go func() {
-            e := i.services.grpcServer.Serve(i.connections.wlanConn)
-            defer i.connections.wlanConn.Close()
-            if e != nil {
-                logger.Error("WLAN connection closed unexpectedly", "error", e)
-            }
-        }()
+    // Serve any attached external listeners
+    if len(i.connections.externConns) > 0 {
+        for _, conn := range(i.connections.externConns) { 
+            go func() {
+                e := i.services.grpcServer.Serve(conn)
+                defer conn.Close()
+                if e != nil {
+                    logger.Error("external connection closed unexpectedly", "error", e)
+                }
+            }()
+        }
     }
 
     go func() {

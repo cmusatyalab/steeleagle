@@ -3,7 +3,6 @@ package core
 import (
     "fmt"
     "os"
-    "path/filepath"
 
     "github.com/pelletier/go-toml/v2"
 )
@@ -16,26 +15,17 @@ type controlLawState struct {
 }
 
 type controlLaw struct {
-    First     string     `toml:"first" json:"first"`
+    First     string               `toml:"first" json:"first"`
     States    []controlLawState    `toml:"states,omitempty" json:"states"`
 }
 
-func getLaw(isTesting bool) (map[string]controlLawState, string) {
-    // Ignore reading config directory if in test mode
-    if isTesting {
-        return getDefaultLaw()
+func getLaw(filename string) (map[string]controlLawState, string) {
+    // If no file is provided, ignore and load default laws
+    if filename == "" {
+       return getDefaultLaw()
     }
 
-    configDir, err := os.UserConfigDir()
-    if err != nil {
-        logger.Warn("OS config directory could not be found, using default laws")
-        return getDefaultLaw()
-    }
-
-    appDir := filepath.Join(configDir, ApplicationName)
-    configPath := filepath.Join(appDir, LawFilename)
-    
-    data, err := os.ReadFile(configPath)
+    data, err := os.ReadFile(filename)
     if err != nil {
         logger.Warn("could not find law file, using default laws", "error", err)
         return getDefaultLaw()

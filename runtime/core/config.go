@@ -1,6 +1,6 @@
 package core
 
-import "log/slog"
+import "net"
 
 type VehicleOption func(*Vehicle)
 
@@ -10,21 +10,20 @@ func WithName(name string) func(*Vehicle) {
     }
 }
 
-func WithPort(port int) func(*Vehicle) {
-    return func(k *Vehicle) {
-        k.connections.port = port
-    }
-}
-
-func WithVPN(vpn bool) func(*Vehicle) {
-    return func(k *Vehicle) {
-        k.connections.useVPN = true
-    }
-}
-
 func WithTest(test bool) func(*Vehicle) {
     return func(k *Vehicle) {
         k.test = test
-        k.logLevel.Set(slog.LevelDebug)
+    }
+}
+
+func WithPolicyFile(filename string) func(*Vehicle) {
+    return func(k *Vehicle) {
+        k.lawFile = filename
+    }
+}
+
+func WithExternalLinks(links []net.Listener) func(*Vehicle) {
+    return func(k *Vehicle) {
+        k.connections.externConns = links
     }
 }

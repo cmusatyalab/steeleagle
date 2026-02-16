@@ -18,7 +18,7 @@ import (
 )
 
 func TestBasicCommands(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithPort(8000))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
     defer vehicle.Stop()
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
@@ -113,7 +113,7 @@ func TestBasicCommands(t *testing.T) {
 }
 
 func TestStateTransition(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithPort(8000))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
     defer vehicle.Stop()
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
