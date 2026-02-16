@@ -191,19 +191,34 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             % 360,  # % 360 to adjust for the cases when we wrap around 0 degrees due to the target_yaw_angle
         )
 
-    def estimate_gps(self, lat, lon, pitch, yaw, alt):
+    def estimate_gps(self, lat_deg, lon_deg, pitch_deg, yaw_deg, altitude):
         EARTH_RADIUS = 6378137.0
-        vf = [0, 1, 0]
-        r = R.from_euler("ZYX", [yaw, 0, pitch], degrees=True)
+
+        vf = np.array([0, 1, 0])
+        r = R.from_euler("ZYX", [yaw_deg, 0, pitch_deg], degrees=True)
         target_dir = r.as_matrix().dot(vf)
-        target_vec = self.find_intersection(target_dir, np.array([0, 0, alt]))
+
+        drone_pos = np.array([0, 0, altitude])
+        target_vec = self.find_intersection(target_dir, drone_pos)
+
+        if target_vec is None:
+            logger.warning("Could not find intersection with ground plane")
+            return lat_deg, lon_deg
 
         logger.info(
             f"Intersection with ground plane: ({target_vec[0]}, {target_vec[1]}, {target_vec[2]})"
         )
 
-        est_lat = lat + (180 / np.pi) * (target_vec[1] / EARTH_RADIUS)
-        est_lon = lon + (180 / np.pi) * (target_vec[0] / EARTH_RADIUS) / np.cos(lat)
+        north_offset = target_vec[1]
+        east_offset = target_vec[0]
+
+        lat_rad = np.deg2rad(lat_deg)
+        lat_offset = north_offset / EARTH_RADIUS
+        lon_offset = east_offset / (EARTH_RADIUS * np.cos(lat_rad))
+
+        est_lat = lat_deg + np.rad2deg(lat_offset)
+        est_lon = lon_deg + np.rad2deg(lon_offset)
+
         logger.info(f"Estimated GPS location: ({est_lat}, {est_lon})")
         return est_lat, est_lon
 
@@ -357,23 +372,19 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
             box = row["box"]
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
-            # target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-            #    box, image_np, position_info, gimbal_info
-            # )
+            target_pitch, target_yaw = self.calculate_target_pitch_yaw(
+                box, image_np, position_info, gimbal_info
+            )
 
-            ## Estimate GPS coordinates of detected object
-            # global_pos = position_info.global_position
-            # rel_pos = position_info.relative_position
-            # lat, lon = self.estimate_gps(
-            #    global_pos.latitude,
-            #    global_pos.longitude,
-            #    target_pitch,
-            #    target_yaw,
-            #    rel_pos.z,
-            # )
-
-            lon = 42.0
-            lat = 42.0
+            global_pos = position_info.global_position
+            rel_pos = position_info.relative_position
+            lat, lon = self.estimate_gps(
+                global_pos.latitude,
+                global_pos.longitude,
+                target_pitch,
+                target_yaw,
+                rel_pos.z,
+            )
 
             lon = float(np.clip(lon, -180, 180))
             lat = float(np.clip(lat, -85, 85))
