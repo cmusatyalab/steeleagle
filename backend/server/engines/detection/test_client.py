@@ -9,9 +9,6 @@ import time
 import cv2
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
-from google.protobuf import text_format
-from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logging.basicConfig(level=logging.INFO)
@@ -58,24 +55,17 @@ class TestAdapter:
                 raise ValueError(f"Cannot read {image_path}")
             self.is_dir = False
 
-    def process_results(self, result_wrapper):
-        if len(result_wrapper.results) == 0:
+    def process_results(self, result):
+        if not result:
             return
 
         # Get engine ID
-        engine_id = result_wrapper.result_producer_name.value
-        logger.info(
-            f"Received {len(result_wrapper.results)} results from engine: {engine_id}"
-        )
+        engine_id = result.target_engine_id
+        logger.info(f"Received result from engine: {engine_id}")
 
-        extras = cognitive_engine.unpack_extras(
-            result_pb2.ComputeResult, result_wrapper
-        )
-        logger.info(f"=====Extras=====\t{text_format.MessageToString(extras)}")
-        for result in result_wrapper.results:
-            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                payload = result.payload.decode("utf-8")
-                logger.info(f"=====result.payload=====\t{payload}")
+        if result.string_result:
+            payload = result.string_result.decode("utf-8")
+            logger.info(f"=====result.payload=====\t{payload}")
 
     def get_producer_wrappers(self):
         async def producer():
