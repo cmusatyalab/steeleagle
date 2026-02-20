@@ -49,33 +49,31 @@ function Status({ vehicle }) {
 
         return (
             <>
-                <Card style={{ backgroundColor: 'var(--surface-0)' }} subTitle={`${vehicle.name} (${vehicle.model})`}>
-                    <div className="flex flex-row gap-2">
+                <Card style={{ backgroundColor: 'var(--surface-0)', width: '100%' }} subTitle={`${vehicle.name} (${vehicle.model})`}>
+                    <div className="flex flex-row gap-2 mb-2">
                         <ProgressBar className="w-full flex align-items-center justify-content-center" value={vehicle.battery} />
                     </div>
-                    <div className="flex flex-row gap-2">
-                        <div className="flex flex-column flex-wrap align-content-center">
-                            <Knob className="flex align-items-center justify-content-center" strokeWidth={5} size={70} value={vehicle.velocity.x_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
-                            <Tag className="flex align-items-center justify-content-center" rounded value="X" icon="pi pi-gauge" />
+                    <div className="flex flex-row flex-wrap justify-content-center gap-2">
+                        <div className="flex flex-column align-items-center">
+                            <Knob strokeWidth={5} size={60} value={vehicle.velocity.x_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
+                            <Tag rounded value="X" icon="pi pi-gauge" />
                         </div>
-                        <div className="flex flex-column flex-wrap align-content-center">
-                            <Knob className="flex align-items-center justify-content-center" strokeWidth={5} size={70} value={vehicle.velocity.y_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
-                            <Tag className="flex align-items-center justify-content-center" rounded value="Y" icon="pi pi-gauge" />
+                        <div className="flex flex-column align-items-center">
+                            <Knob strokeWidth={5} size={60} value={vehicle.velocity.y_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
+                            <Tag rounded value="Y" icon="pi pi-gauge" />
                         </div>
-                        <div className="flex flex-column flex-wrap align-content-center">
-                            <Knob className="flex align-items-center justify-content-center" strokeWidth={5} size={70} value={vehicle.velocity.z_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
-                            <Tag className="flex align-items-center justify-content-center" rounded value="Z" icon="pi pi-gauge" />
+                        <div className="flex flex-column align-items-center">
+                            <Knob strokeWidth={5} size={60} value={vehicle.velocity.z_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
+                            <Tag rounded value="Z" icon="pi pi-gauge" />
                         </div>
-                        <div className="flex flex-column flex-wrap align-items-center justify-content-end">
+                        <div className="flex flex-column align-items-center justify-content-end">
                             <Avatar className="m-2" size="large" shape="circle" icon="pi pi-arrow-up" style={{
                                 transform: `rotate(${vehicle.bearing}deg)`,
-                                transition: 'transform 0.0s ease' // Optional: adds a smooth transition
+                                transition: 'transform 0.0s ease'
                             }} />
-                            <Tag className="flex align-items-center justify-content-center" rounded value="Compass" icon="pi pi-compass" />
+                            <Tag rounded value="Compass" icon="pi pi-compass" />
                         </div>
-
                     </div>
-
                 </Card >
             </>
         );
