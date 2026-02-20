@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import useWebSocket, { ReadyState } from "react-use-websocket"
 import './App.css'
 import React from 'react'
@@ -6,7 +6,7 @@ import { Menubar } from 'primereact/menubar';
 import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
 import { Button } from 'primereact/button';
-import { Messages } from 'primereact/messages';
+import { Message } from 'primereact/message';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
@@ -28,12 +28,15 @@ import PlanPage from './PlanPage.jsx';
 import { FASTAPI_URL, WEBSOCKET_URL } from './config.js';
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
+const modeOptions = [
+  { value: true, icon: 'pi pi-desktop' },
+  { value: false, icon: 'pi pi-cloud' }
+];
+
 function App() {
   const appName = "SteelEagle";
   const [vehicles, setVehicles] = useState([]);
   const toast = useRef(null);
-  const [debugBarVisible, setDebugBarVisible] = useState(false);
-  const [settingsBarVisible, setSettingsBarVisible] = useState(false);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
@@ -50,21 +53,9 @@ function App() {
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
-  const warnings = useRef(null);
-  const controlOptions = [
-    { value: true, icon: 'pi pi-lock-open' },
-    { value: false, icon: 'pi pi-lock' }
-  ];
-
-  const trackingOptions = [
-    { value: true, icon: 'pi pi-bullseye' },
-    { value: false, icon: 'pi pi-map' }
-  ];
-
-  const modeOptions = [
-    { value: true, icon: 'pi pi-desktop' },
-    { value: false, icon: 'pi pi-cloud' }
-  ];
+  // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
+  // the server returns identical data, preventing needless re-renders.
+  const vehiclesJsonRef = useRef('');
 
   useEffect(() => {
     if (useLocalVehicle) {
@@ -73,23 +64,6 @@ function App() {
       setSocketUrl(WEBSOCKET_URL + `/ws/imagery/remote/${selectedVehicle}`);
     }
   }, [selectedVehicle, useLocalVehicle]);
-
-  useEffect(() => {
-    if (manualControl) {
-      if (warnings.current) {
-        warnings.current.replace([
-          { sticky: true, severity: 'success', summary: 'Manual Control', detail: 'Enabled', closable: false },
-        ]);
-      }
-    } else {
-      if (warnings.current) {
-        warnings.current.replace([
-          { sticky: true, severity: 'error', summary: 'Manual Control', detail: 'Disabled', closable: false },
-
-        ]);
-      }
-    }
-  }, [manualControl]);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     socketUrl,
@@ -128,7 +102,12 @@ function App() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const result = await response.json();
-        setVehicles(result);
+        // Only update state (and trigger a re-render) when the data has actually changed
+        const resultJson = JSON.stringify(result);
+        if (resultJson !== vehiclesJsonRef.current) {
+          vehiclesJsonRef.current = resultJson;
+          setVehicles(result);
+        }
       } catch (error) {
         setError(error);
       }
@@ -268,7 +247,7 @@ function App() {
     };
   }, [bindKeyDown, bindKeyUp, unbindKeyDown, unbindKeyUp, selectedMenu]);
 
-  const onJoystick = async (body) => {
+  const onJoystick = useCallback(async (body) => {
     body.vehicles = squadList;
     //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
     const requestOptions = {
@@ -292,9 +271,9 @@ function App() {
 
     }
 
-  }
+  }, [squadList, useLocalVehicle, basePlanarVelocity, baseAngularVelocity]);
 
-  const onCommand = async (body) => {
+  const onCommand = useCallback(async (body) => {
     body.vehicles = squadList;
     toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
     const requestOptions = {
@@ -321,24 +300,15 @@ function App() {
 
     }
 
-  }
+  }, [squadList, useLocalVehicle]);
 
-  const itemRenderer = (item) => (
-    <a className="flex align-items-center p-menuitem-link">
-      <span className={item.icon}></span>
-      <span className="mx-2 p-overlay-badge">{item.label}</span>
-      {item.label == selectedMenu && <Badge className="mr-2" severity="info" />}
-      {item.shortcut && <span className="ml-auto border-1 surface-border border-round surface-100 text-xs p-1">{item.shortcut}</span>}
-    </a>
-  );
-  const items = [
+  const items = useMemo(() => [
     {
       label: 'Monitor',
       icon: 'pi pi-eye',
       command: () => {
         setSeletectedMenu('Monitor');
       },
-      template: itemRenderer,
     },
     {
       label: 'Control',
@@ -346,7 +316,6 @@ function App() {
       command: () => {
         setSeletectedMenu('Control');
       },
-      template: itemRenderer,
     },
     {
       label: 'Plan',
@@ -354,87 +323,34 @@ function App() {
       command: () => {
         setSeletectedMenu('Plan');
       },
-      template: itemRenderer,
     },
 
-  ];
+  ], []);
 
 
+  const menuBarStart = useMemo(() => (
+    <div className="flex align-items-center gap-2 mr-2">
+      <img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img>
+      <h2 className="mt-3">{appName}</h2>
+    </div>
+  ), [appName]);
 
-  const menuBarStart = <div className="flex align-items-center gap-2"><img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img><h2 className="mt-3">{appName}</h2></div>;
-  const menuBarEnd = (
-    <div className="flex align-items-center gap-2">
+  const menuBarEnd = useMemo(() => (
+    <div className="flex align-items-center gap-2 mr-2">
       <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
       <MultiStateCheckbox tooltip={useLocalVehicle ? "Mode: Dev (local vehicles)" : "Mode: Prod (swarm controller)"} data-pr-position="bottom" empty={false} value={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} options={modeOptions} optionValue="value" />
-      <MultiStateCheckbox tooltip={manualControl ? "Manual Control: Enabled" : "Manual Control: Disabled"} data-pr-position="bottom" empty={false} value={manualControl} onChange={(e) => setManualControl(e.value)} options={controlOptions} optionValue="value" />
-      <MultiStateCheckbox tooltip={tracking ? "Vehicle Tracking: On" : "Vehicle Tracking: Off"} data-pr-position="bottom" empty={false} value={tracking} onChange={(e) => setTracking(e.value)} options={trackingOptions} optionValue="value" />
-      <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicles} optionValue="name" optionLabel="name"
-        placeholder="Select a Vehicle" className="w-full md:w-14rem" />
-      <Button size="small" rounded text label="" icon="pi pi-cog" onClick={() => setSettingsBarVisible(true)} />
-      <Button size="small" rounded text label="" icon="pi pi-question" onClick={() => setDebugBarVisible(true)} />
     </div>
-  );
+  ), [useLocalVehicle, gamepadDeadzone]);
 
   return (
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle} manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} />}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
+                    manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
+                    baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
-      <Messages ref={warnings} />
-      <Sidebar visible={debugBarVisible} position="right" onHide={() => setDebugBarVisible(false)} style={{ width: "50%" }}>
-        <h2>Debug</h2>
-        <div className="card flex flex-column align-items-center">
-          <button
-            className={classNames('card border-1 surface-border border-round-sm py-3 px-4 text-color font-semibold text-sm transition-all transition-duration-150', { 'shadow-1': keyPressed, 'shadow-5': !keyPressed })}
-            style={{
-              background: '-webkit-linear-gradient(top, var(--surface-ground) 0%, var(--surface-card) 100%)',
-              transform: keyPressed ? 'translateY(5px)' : 'translateY(0)'
-            }}>
-            {key.toUpperCase() || 'Press a Key'}
-          </button>
-          <div style={{ width: "100%" }} className="card">
-            <DataTable value={vehicles} scrollable stripedRows size="small">
-              <Column field="name" frozen sortable header="Name"></Column>
-              <Column field="type" sortable header="Type"></Column>
-              <Column field="model" sortable header="Model"></Column>
-              <Column field="battery" header="Battery Alert"></Column>
-              <Column field="mag" header="Mag Alert"></Column>
-              <Column field="sats" header="Sats Alert"></Column>
-              <Column field="current.lat" header="Current (Lat)"></Column>
-              <Column field="current.long" header="Current (Lon)"></Column>
-              <Column field="current.alt" header="Current (Alt)"></Column>
-              <Column field="home.lat" header="Home (Lat)"></Column>
-              <Column field="home.long" header="Home (Lon)"></Column>
-              <Column field="home.alt" header="Home (Alt)"></Column>
-            </DataTable>
-          </div>
-          <Cli vehicle={selectedVehicle} />
-        </div>
-      </Sidebar>
-      <Sidebar visible={settingsBarVisible} position="right" onHide={() => setSettingsBarVisible(false)} style={{ width: "50%" }}>
-        <h1>Settings</h1>
-        <div className="flex flex-row gap-2">
-          <div className="flex flex-column flex-wrap align-content-center">
-            <Knob className="flex align-items-center justify-content-center" value={basePlanarVelocity} onChange={(e) => setBasePlanarVelocity(e.value)} min={1} max={10} valueTemplate={'{value}m/s'} />
-            <Chip className="flex align-items-center justify-content-center" label="Base Planar Velocity" icon="pi pi-sliders-v" />
-          </div>
-          <div className="flex flex-column flex-wrap">
-            <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
-            <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
-          </div>
-        </div>
-        <div className="flex flex-row gap-2">
-          <div className="flex flex-column flex-wrap align-content-center">
-            <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
-            <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
-          </div>
-          <div className="flex flex-column flex-wrap">
-
-          </div>
-        </div>
-      </Sidebar>
       <Toast ref={toast} />
     </>
   );
