@@ -19,7 +19,6 @@ import datetime
 import logging
 import math
 import os
-import time
 import xml.etree.ElementTree as ET
 from abc import abstractmethod
 from configparser import ConfigParser, SectionProxy
@@ -413,8 +412,6 @@ class DetectionToCotSerializer(CotSerializer):
     async def run_once(self) -> None:
         """Poll Redis for detection updates."""
         try:
-            now = time.time()
-
             objects = await self.redis_client.zrange("detections", 0, -1)
 
             for obj_name in objects:
@@ -426,10 +423,10 @@ class DetectionToCotSerializer(CotSerializer):
                 if not fields:
                     continue
 
-                # do not report detections repeatedly, unless something changed
+                # do not report detections repeatedly
                 last_seen = float(fields.get(b"last_seen", b"0.0"))
                 last_reported = self._detected.get(object_name)
-                if last_reported and last_seen < last_reported:
+                if last_reported and (last_seen < last_reported + 60):
                     continue
 
                 await self.process_detection(object_name, fields)
