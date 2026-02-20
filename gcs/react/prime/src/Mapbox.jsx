@@ -112,9 +112,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
   }, [selectedVehicle]);
 
   return (
-    <>
-      <div id='map-container' ref={mapContainerRef} />
-    </>
+    <div id='map-container' ref={mapContainerRef} style={{ width: '100%', height: '20rem' }} />
   )
 }
 
