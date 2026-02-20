@@ -306,7 +306,7 @@ class DetectionToCotSerializer(CotSerializer):
 
         self.http_session = http_session
         self.redis_client = redis_client
-        self.detection_ttl = int(config.get("DETECTION_TTL", "1200"))
+        self.detection_ttl = int(config.get("DETECTION_TTL", "600"))
         self._detected: dict[str, float] = {}
 
         detection_class_map = str(config.get("DETECTION_CLASS_MAP", ""))
@@ -534,7 +534,7 @@ def main() -> None:
     envvars.setdefault("POLL_INTERVAL", "1")
     envvars.setdefault("DETECTION_POLL_ENABLED", "0")
     envvars.setdefault("DETECTION_POLL_INTERVAL", "5")
-    envvars.setdefault("DETECTION_TTL", "1200")
+    envvars.setdefault("DETECTION_TTL", "600")
     envvars.setdefault("DETECTION_CLASS_MAP", "")
     envvars.setdefault("DEBUG", "1" if args.debug else "0")
     config = ConfigParser(envvars)
