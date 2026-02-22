@@ -19,10 +19,10 @@ import (
 
 func TestBasicCommands(t *testing.T) {
     vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
-    defer vehicle.Stop()
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
+    defer vehicle.Stop()
     
     // Control/Arm
     s := grpc.NewServer()
@@ -114,10 +114,10 @@ func TestBasicCommands(t *testing.T) {
 
 func TestStateTransition(t *testing.T) {
     vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
-    defer vehicle.Stop()
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
+    defer vehicle.Stop()
     
     // Start the Control and Mission servers
     control := grpc.NewServer()

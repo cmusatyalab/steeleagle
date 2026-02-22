@@ -27,20 +27,20 @@ func getLaw(filename string) (map[string]controlLawState, string) {
 
     data, err := os.ReadFile(filename)
     if err != nil {
-        logger.Warn("could not find law file, using default laws", "error", err)
+        logger.Warn().Err(err).Msg("could not find law file, using default laws")
         return getDefaultLaw()
     }
 
     l := &controlLaw{}
     err = toml.Unmarshal(data, l)
     if err != nil {
-        logger.Warn("something went wrong reading law file, using default laws", "error", err)
+        logger.Warn().Err(err).Msg("something went wrong reading law file, using default laws")
         return getDefaultLaw()
     }
     
     m, err := createLawMap(l)
     if err != nil {
-        logger.Warn("something went wrong reading law file, using default laws", "error", err)
+        logger.Warn().Err(err).Msg("something went wrong reading law file, using default laws")
         return getDefaultLaw() 
     }
 

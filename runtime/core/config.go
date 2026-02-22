@@ -16,6 +16,12 @@ func WithTest(test bool) func(*Vehicle) {
     }
 }
 
+func WithLogLevel(level string) func(*Vehicle) {
+    return func(k *Vehicle) {
+        k.logLevel = level
+    }
+}
+
 func WithPolicyFile(filename string) func(*Vehicle) {
     return func(k *Vehicle) {
         k.lawFile = filename
@@ -24,6 +30,6 @@ func WithPolicyFile(filename string) func(*Vehicle) {
 
 func WithExternalLinks(links []net.Listener) func(*Vehicle) {
     return func(k *Vehicle) {
-        k.connections.externConns = links
+        k.connections.externGRPC = links
     }
 }

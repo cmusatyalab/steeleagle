@@ -67,17 +67,17 @@ func (i *policyState) getUnaryInterceptor(isTesting bool) grpc.UnaryServerInterc
 	) (any, error) {
 
         command := cleanCommand(ctx, info.FullMethod, isTesting)
-        logger.Info("received unary RPC request", "command", command)
+        logger.Info().Str("command", command).Msg("received unary RPC request")
 		allowed, _, err := i.safeCheckAndTransit(ctx, command)
         if allowed == false && err == nil {
-            logger.Error("command is not allowed in current state!", "command", command, "state", i.currentState)
+            logger.Error().Str("command", command).Str("state", i.currentState).Msg("command is not allowed in current state!")
 		    return nil, status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
 		} else if allowed == false && err != nil {
-            logger.Warn("policy check failed, denying to be safe", "error", err)
+            logger.Warn().Err(err).Msg("policy check failed, denying to be safe")
             return nil, status.Errorf(codes.Internal, "policy check failed, denying to be safe")
         }
 
-        logger.Info("responding to unary RPC request", "command", command)
+        logger.Info().Str("command", command).Msg("responding to unary RPC request")
 		return handler(ctx, req)
 	}
 }
@@ -91,17 +91,17 @@ func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInte
 	) error {
 
         command := cleanCommand(ss.Context(), info.FullMethod, isTesting)
-        logger.Info("received stream RPC request", "command", command)
+        logger.Info().Str("command", command).Msg("received stream RPC request")
 		allowed, _, err := i.safeCheckAndTransit(ss.Context(), command)
         if allowed == false && err == nil {
-            logger.Error("command is not allowed in current state!", "command", command, "state", i.currentState)
+            logger.Error().Str("command", command).Str("state", i.currentState).Msg("command is not allowed in current state!")
 		    return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
 		} else if allowed == false && err != nil {
-            logger.Warn("policy check failed, denying to be safe", "error", err)
+            logger.Warn().Err(err).Msg("policy check failed, denying to be safe")
             return status.Errorf(codes.Internal, "error making policy request, denying to be safe")
         }
 
-        logger.Info("responding to stream RPC request", "command", command)
+        logger.Info().Str("command", command).Msg("responding to stream RPC request")
 		return handler(srv, ss)
 	}
 }
