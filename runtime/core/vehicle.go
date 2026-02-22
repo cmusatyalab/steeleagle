@@ -15,7 +15,7 @@ import (
     "go.nanomsg.org/mangos/v3"
 	"go.nanomsg.org/mangos/v3/protocol/xpub"
 	"go.nanomsg.org/mangos/v3/protocol/xsub"
-    _ "go.nanomsg.org/mangos/v3/transport/ipc"
+    _ "go.nanomsg.org/mangos/v3/transport/all"
     "github.com/adrg/xdg"
     "github.com/rs/zerolog"
 )
@@ -75,6 +75,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 
     // Create runtime directory if it doesn't exist
     vehicle.Path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.Name)
+    logger.Debug().Str("filepath", vehicle.Path).Msg("starting vehicle in runtime directory")
     err := os.MkdirAll(vehicle.Path, 0755)
     if err != nil {
         logger.Error().Err(err).Msg("could not create runtime directory")

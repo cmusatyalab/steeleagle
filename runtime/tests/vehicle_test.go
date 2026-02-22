@@ -15,10 +15,14 @@ import (
     "google.golang.org/grpc/credentials/insecure"
     "github.com/cmusatyalab/steeleagle/runtime/core"
     "github.com/cmusatyalab/steeleagle/runtime/pb"
+    "go.nanomsg.org/mangos/v3"
+	"go.nanomsg.org/mangos/v3/protocol/pub"
+	"go.nanomsg.org/mangos/v3/protocol/sub"
+    _ "go.nanomsg.org/mangos/v3/transport/all"
 )
 
 func TestBasicCommands(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -113,7 +117,7 @@ func TestBasicCommands(t *testing.T) {
 }
 
 func TestStateTransition(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -236,5 +240,50 @@ func TestStateTransition(t *testing.T) {
         t.Fatalf("got incorrect error code %v", status.Code(err))
     } else {
         t.Log("correctly got permission denied")
+    }
+}
+
+func TestDataplane(t *testing.T) {
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
+    if err != nil {
+        t.Fatalf("failed to create vehicle: %v", err)
+    }
+    defer vehicle.Stop()
+
+    frontend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, core.DataInSocket))
+    backend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, core.DataOutSocket))
+    testSender, err := pub.NewSocket() 
+    if err != nil {
+        t.Fatalf("failed to open publisher test socket: %v", err)
+    }
+    if testSender.Dial(frontend); err != nil {
+        t.Fatalf("failed to dial data in socket: %v", err)
+    }
+    defer testSender.Close()
+    
+    testReceiver, err := sub.NewSocket() 
+    if err != nil {
+        t.Fatalf("failed to open subscriber test socket: %v", err)
+    }
+    if testReceiver.SetOption(mangos.OptionSubscribe, []byte("test")); err != nil {
+        t.Fatalf("failed to subcribe to test topic: %v", err)
+    }
+    if err = testReceiver.Dial(backend); err != nil {
+        t.Fatalf("failed to dial data out socket: %v", err)
+    }
+    defer testReceiver.Close()
+
+    payload := "test" + " " + "helloworld"
+    if err = testSender.Send([]byte(payload)); err != nil {
+		t.Fatalf("publisher send error: %v", err)
+	}
+
+    received, err := testReceiver.Recv()
+    if err != nil {
+		t.Fatalf("subscriber could not receive: %v", err)
+	}
+
+    if string(received) != payload {
+        t.Fatalf("received data did not match!")
     }
 }
