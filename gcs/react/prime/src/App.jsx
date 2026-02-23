@@ -249,55 +249,65 @@ function App() {
 
   const onJoystick = useCallback(async (body) => {
     body.vehicles = squadList;
-    //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    };
-    let response = null;
-    if (useLocalVehicle) {
-      response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
+    if (squadList == null || squadList.length == 0) {
+      toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
+      return;
     } else {
-      response = await fetch(`${FASTAPI_URL}/api/joystick?sandbox_mode=0`, requestOptions);
-    }
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
-    }
-    else {
-      const result = await response.json();
-      // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
+      //toast.current.show({severity: 'info', summary: 'Joystick Sent', detail: `${JSON.stringify(body)}`});
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+      let response = null;
+      if (useLocalVehicle) {
+        response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
+      } else {
+        response = await fetch(`${FASTAPI_URL}/api/joystick?sandbox_mode=0`, requestOptions);
+      }
+      if (!response.ok) {
+        const result = await response.json();
+        toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
+      }
+      else {
+        const result = await response.json();
+        // toast.current.show({severity: 'success', summary: 'Joystick Success', detail: `${result}`});
 
+      }
     }
-
   }, [squadList, useLocalVehicle, basePlanarVelocity, baseAngularVelocity]);
 
   const onCommand = useCallback(async (body) => {
     body.vehicles = squadList;
-    toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    };
-    setCommandProcessing(true);
-    let response = null;
-    if (useLocalVehicle) {
-      response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
+    if (squadList == null || squadList.length == 0) {
+      toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
+      return;
     } else {
-      response = await fetch(`${FASTAPI_URL}/api/command?sandbox_mode=0`, requestOptions);
-    }
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
-      setCommandProcessing(false);
-    }
-    else {
-      const result = await response.json();
-      toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
-      setCommandProcessing(false);
+      setManualControl(false);
+      toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+      setCommandProcessing(true);
+      let response = null;
+      if (useLocalVehicle) {
+        response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
+      } else {
+        response = await fetch(`${FASTAPI_URL}/api/command?sandbox_mode=0`, requestOptions);
+      }
+      if (!response.ok) {
+        const result = await response.json();
+        toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
+        setCommandProcessing(false);
+      }
+      else {
+        const result = await response.json();
+        toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
+        setCommandProcessing(false);
 
+      }
     }
 
   }, [squadList, useLocalVehicle]);
@@ -347,8 +357,8 @@ function App() {
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
-                    manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
-                    baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} />}
+        manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
+        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Toast ref={toast} />
