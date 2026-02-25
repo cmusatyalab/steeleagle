@@ -14,17 +14,13 @@ function Status({ vehicle }) {
         let compass_severity = "info";
 
         //consult protocol/telemetry.proto for enum mappings
-        switch (vehicle.battery) {
-            case 0:
-                battery_severity = "success";
-                break;
-            case 1:
-                battery_severity = "warning";
-                break;
-            case 2:
-                battery_severity = "danger";
-                break;
-        };
+        if(vehicle.battery < 50) {
+            battery_severity = "orange-500";
+        } else if(vehicle.battery < 25) {
+            battery_severity = "red-500";
+        } else {
+            battery_severity = "green-500";
+        }
 
         switch (vehicle.mag) {
             case 0:
@@ -51,7 +47,7 @@ function Status({ vehicle }) {
             <>
                 <Card style={{ backgroundColor: 'var(--surface-0)', width: '100%' }} subTitle={`${vehicle.name} (${vehicle.model})`}>
                     <div className="flex flex-row gap-2 mb-2">
-                        <ProgressBar className="w-full flex align-items-center justify-content-center" value={vehicle.battery} />
+                        <ProgressBar color={`var(--${battery_severity})`} className="w-full flex align-items-center justify-content-center" value={vehicle.battery} />
                     </div>
                     <div className="flex flex-row flex-wrap justify-content-center gap-2">
                         <div className="flex flex-column align-items-center">
