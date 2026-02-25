@@ -39,45 +39,50 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   const uploadHandler = async (event) => {
     const body = {};
     body.vehicles = squadList;
-    for (const file of event.files) {
-      const reader = new FileReader();
-      let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
-      reader.readAsDataURL(blob);
-
-      reader.onloadend = function () {
-        const base64 = reader.result.split(',').pop();
-
-        if (file.name.endsWith(".kml")) {
-          body.kml = base64;
-          console.log("Adding kml file");
-        }
-        else if (file.name.endsWith(".json")) {
-          console.log("Adding json file");
-          body.dsl = base64;
-        }
-      };
-
-    }
-    await sleep(2000);
-    console.log(body);
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    };
-    let response = null;
-    if (useLocalVehicle) {
-      response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+    if (squadList == null || squadList.length == 0) {
+      toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
+      return;
     } else {
-      response = await fetch(`${FASTAPI_URL}/api/upload?sandbox_mode=0`, requestOptions);
-    }
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
-    }
-    else {
-      const result = await response.json();
-      toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
+      for (const file of event.files) {
+        const reader = new FileReader();
+        let blob = await fetch(file.objectURL).then((r) => r.blob()); //blob:url
+        reader.readAsDataURL(blob);
+
+        reader.onloadend = function () {
+          const base64 = reader.result.split(',').pop();
+
+          if (file.name.endsWith(".kml")) {
+            body.kml = base64;
+            console.log("Adding kml file");
+          }
+          else if (file.name.endsWith(".json")) {
+            console.log("Adding json file");
+            body.dsl = base64;
+          }
+        };
+
+      }
+      await sleep(2000);
+      console.log(body);
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+      let response = null;
+      if (useLocalVehicle) {
+        response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+      } else {
+        response = await fetch(`${FASTAPI_URL}/api/upload?sandbox_mode=0`, requestOptions);
+      }
+      if (!response.ok) {
+        const result = await response.json();
+        toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
+      }
+      else {
+        const result = await response.json();
+        toast.current.show({ severity: 'success', summary: 'Upload Mission', detail: `${result}` });
+      }
     }
 
   };
@@ -90,25 +95,30 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
   const onMissionStart = async () => {
     const body = {};
     body.vehicles = squadList;
-    setManualControl(false);
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    };
-    let response = null;
-    if (useLocalVehicle) {
-      response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+    if (squadList == null || squadList.length == 0) {
+      toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
+      return;
     } else {
-      response = await fetch(`${FASTAPI_URL}/api/start?sandbox_mode=0`, requestOptions);
-    }
-    if (!response.ok) {
-      const result = await response.json();
-      toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
-    }
-    else {
-      const result = await response.json();
-      toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
+      setManualControl(false);
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+      let response = null;
+      if (useLocalVehicle) {
+        response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+      } else {
+        response = await fetch(`${FASTAPI_URL}/api/start?sandbox_mode=0`, requestOptions);
+      }
+      if (!response.ok) {
+        const result = await response.json();
+        toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
+      }
+      else {
+        const result = await response.json();
+        toast.current.show({ severity: 'success', summary: 'Mission Success', detail: `${result}` });
+      }
     }
   }
 
