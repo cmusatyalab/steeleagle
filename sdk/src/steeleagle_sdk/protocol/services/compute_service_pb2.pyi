@@ -10,17 +10,30 @@ class DatasinkLocation(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     REMOTE: _ClassVar[DatasinkLocation]
     LOCAL: _ClassVar[DatasinkLocation]
+
+class InputSource(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    SOURCE_UNSPECIFIED: _ClassVar[InputSource]
+    DRIVER_TELEMETRY: _ClassVar[InputSource]
+    MISSION_TELEMETRY: _ClassVar[InputSource]
+    IMAGERY: _ClassVar[InputSource]
 REMOTE: DatasinkLocation
 LOCAL: DatasinkLocation
+SOURCE_UNSPECIFIED: InputSource
+DRIVER_TELEMETRY: InputSource
+MISSION_TELEMETRY: InputSource
+IMAGERY: InputSource
 
 class DatasinkInfo(_message.Message):
-    __slots__ = ('id', 'location')
+    __slots__ = ('id', 'location', 'sources')
     ID_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
+    SOURCES_FIELD_NUMBER: _ClassVar[int]
     id: str
     location: DatasinkLocation
+    sources: _containers.RepeatedScalarFieldContainer[InputSource]
 
-    def __init__(self, id: _Optional[str]=..., location: _Optional[_Union[DatasinkLocation, str]]=...) -> None:
+    def __init__(self, id: _Optional[str]=..., location: _Optional[_Union[DatasinkLocation, str]]=..., sources: _Optional[_Iterable[_Union[InputSource, str]]]=...) -> None:
         ...
 
 class AddDatasinksRequest(_message.Message):

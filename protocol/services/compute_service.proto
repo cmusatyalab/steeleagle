@@ -10,9 +10,9 @@ import "common.proto";
 /*
  * Used to configure datasinks for sensor streams.
  *
- * This service is used to configure datasink endpoints for frames and 
- * telemetry post-processing. It maintains an internal consumer list of 
- * datasinks that the kernel broadcasts frames and telemetry to. RPC 
+ * This service is used to configure datasink endpoints for frames and
+ * telemetry post-processing. It maintains an internal consumer list of
+ * datasinks that the kernel broadcasts frames and telemetry to. RPC
  * methods within this service allow for manipulation of this list.
  */
 service Compute {
@@ -30,7 +30,7 @@ service Compute {
    */
   rpc SetDatasinks (SetDatasinksRequest)
 	returns (steeleagle.protocol.common.Response) {}
-  /* 
+  /*
    * Remove datasinks from consumer list.
    *
    * Takes a list of datasinks and removes them from the current consumer list.
@@ -45,12 +45,25 @@ enum DatasinkLocation {
   LOCAL = 1; // local location (IPC)
 }
 
+enum InputSource {
+  // default value
+  SOURCE_UNSPECIFIED = 0;
+  // telemetry from the vehicle driver
+  DRIVER_TELEMETRY = 1;
+  // telemetry from the mission service
+  MISSION_TELEMETRY = 2;
+  // imagery from the vehicle
+  IMAGERY = 3;
+}
+
 // Information about a datasink.
 message DatasinkInfo {
   // datasink ID
   string id = 1;
   // datasink location
-  DatasinkLocation location = 2;  
+  DatasinkLocation location = 2;
+  // input sources for this datasink
+  repeated InputSource sources = 3;
 }
 
 message AddDatasinksRequest {
