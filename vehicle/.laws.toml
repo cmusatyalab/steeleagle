@@ -1,7 +1,11 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
 [__BASE__]
+<<<<<<< HEAD
 enter = ['Control.ConfigureTelemetryStream|{"frequency": 10}', 'Control.ConfigureImagingSensorStream', 'Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "sources": [1,3]}, {"id": "object-engine", "sources": [3]}, {"id": "obstacle-engine", "sources": [3]}]}']
+=======
+enter = ['Control.ConfigureTelemetryStream|{"frequency": 10}', 'Control.ConfigureImagingSensorStream', 'Compute.AddDatasinks|{"datasinks": [{"id": "telemetry"}, {"id": "object-engine"}]}']
+>>>>>>> 340438eb (config changes for launching sphinx)
 [__BASE__.rules]
 allowed = ['server.*', 'internal.*']
 match = [
