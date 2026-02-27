@@ -402,7 +402,7 @@ wheels = [
 
 [[package]]
 name = "gabriel-client"
-version = "4.1.1"
+version = "4.1.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
@@ -412,9 +412,9 @@ dependencies = [
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/97/1e/53da46e13421aa518d2f746f03b8bfd3fdbe90aa9a9f4acbf39532632871/gabriel_client-4.1.1.tar.gz", hash = "sha256:ae902f02e7c0669ee072003bb6c3338294175eac6b48515763edda9345e359c0", size = 15258, upload-time = "2025-12-08T20:03:35.055Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/b2/04ded9be2057207cc3ca09e0cb922cec7a9e7b1c395703aabe151419e0ad/gabriel_client-4.1.6.tar.gz", hash = "sha256:9d65223bd65958714796aedc2d4dc134c981f3c176c761d1730a29d668b0d6be", size = 15393, upload-time = "2026-02-25T15:46:30.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/19/8b6756ddbb053b3411b6f61d86a797f976b0d7910ffe7dc435977b1862ab/gabriel_client-4.1.1-py3-none-any.whl", hash = "sha256:1f5cf4c0706e672661a42278145a68c1496e0fe372fc08d337282c8553c3f9ff", size = 17330, upload-time = "2025-12-08T20:03:33.902Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/08/6c1eac948c3c9f57c26e09e9102f3a3b4af09e344530bcda4a83871222a9/gabriel_client-4.1.6-py3-none-any.whl", hash = "sha256:bc35b2e893e84c3f3169a123f24307ce2ab30922207729e85982b0fa577b71f1", size = 17457, upload-time = "2026-02-25T15:46:29.045Z" },
 ]
 
 [[package]]
@@ -1572,7 +1572,7 @@ dependencies = [
 requires-dist = [
     { name = "aiorwlock", specifier = ">=1.5.0" },
     { name = "dacite", specifier = ">=1.9.2" },
-    { name = "gabriel-client", specifier = ">=4.1.1" },
+    { name = "gabriel-client", specifier = ">=4.1.6" },
     { name = "grpc-interceptor", specifier = ">=0.15.4" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
