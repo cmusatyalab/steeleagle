@@ -372,16 +372,16 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
             box = row["box"]
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
+            global_pos = position_info.global_position
             if gimbal_info.num_gimbals == 0:
-                lon = position_info.longitude
-                lat = position_info.latitude
+                lon = global_pos.longitude
+                lat = global_pos.latitude
                 p = LatLon(lat, lon)
             else:
                 target_pitch, target_yaw = self.calculate_target_pitch_yaw(
                     box, image_np, position_info, gimbal_info
                 )
 
-                global_pos = position_info.global_position
                 rel_pos = position_info.relative_position
                 lat, lon = self.estimate_gps(
                     global_pos.latitude,
