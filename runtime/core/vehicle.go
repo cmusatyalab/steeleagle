@@ -21,35 +21,35 @@ import (
 )
 
 type serviceState struct {
-    grpcServer *grpc.Server
-    control *grpc.ClientConn
-    mission *grpc.ClientConn
-    dataIn mangos.Socket
-    dataOut mangos.Socket
+    grpcServer  *grpc.Server
+    control     *grpc.ClientConn
+    mission     *grpc.ClientConn
+    dataIn      mangos.Socket
+    dataOut     mangos.Socket
 }
 
 type connectionState struct {
-    externGRPC []net.Listener
-    localGRPC net.Listener
+    externGRPC  []net.Listener
+    localGRPC   net.Listener
 }
 
 type Vehicle struct {
     // Public
-    Name string
-    Path string
+    Name        string
+    Path        string
     // Private
-    mu sync.RWMutex
-    test bool
-    logLevel string
-    services serviceState
+    mu          sync.RWMutex
+    test        bool
+    services    serviceState
     connections connectionState
-    policy policyState
-    // Filepaths
-    logFile string
-    lawFile string
+    // Log
+    logCfg      LogConfig
+    // Policy
+    policyCfg   policyConfig
+    policy      policyState
     // Context related attributes
-    ctx context.Context
-    cancel context.CancelFunc
+    ctx         context.Context
+    cancel      context.CancelFunc
 }
 
 var logger zerolog.Logger
@@ -61,7 +61,9 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     // Set default input options and retrieve options
     vehicle := &Vehicle {
         Name: uuid.New().String(),
-        logLevel: "info",
+        logCfg: LogConfig{
+            Level: "info",
+        },
         ctx: ctx,
         cancel: cancel,
     }
@@ -71,7 +73,8 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     }
 
     // Create the logger
-    logger = NewChannelLogger(vehicle.logLevel)
+    vehicle.logCfg.Name = vehicle.Name
+    logger = NewChannelLogger(vehicle.logCfg)
 
     // Create runtime directory if it doesn't exist
     vehicle.Path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.Name)
@@ -82,9 +85,9 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
         return nil, err
     }
     logger.Debug().Str("folder", vehicle.Path).Msg("vehicle folder configured")
-    
+
     // Set up law handling
-    vehicle.policy = getPolicy(vehicle.lawFile)
+    vehicle.policy = getPolicy(vehicle.policyCfg)
     
     // Create UDS files for the Control and Mission services so that they
     // can be shared with any plugins at start time
@@ -160,6 +163,10 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 }
 
 func (i *Vehicle) run() {
+    // Defer closing of dataplane sockets
+    defer i.services.dataIn.Close()
+    defer i.services.dataOut.Close()
+    
     // If a local connection cannot be established, the vehicle cannot
     // interact with any local services and thus it should abort
     var err error
@@ -176,8 +183,6 @@ func (i *Vehicle) run() {
         logger.Error().Err(err).Msg("error creating data proxy")  
         return
     }
-    defer i.services.dataIn.Close()
-    defer i.services.dataOut.Close()
 
     // Serve any attached external listeners
     if len(i.connections.externGRPC) > 0 {

@@ -21,8 +21,8 @@ type policyDecision struct {
 	NextState string `json:"next_state"`
 }
 
-func getPolicy(filename string) policyState {
-    laws, first := getLaw(filename)
+func getPolicy(policyCfg policyConfig) policyState {
+    laws, first := getLaw(policyCfg.filename)
     regoQuery := getRegoQuery()
     return policyState{
         currentState: first,

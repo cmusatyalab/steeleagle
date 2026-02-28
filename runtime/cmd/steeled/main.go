@@ -1,26 +1,22 @@
 package main
 
 import (
-    "log"
-    "log/slog"
     "os"
+    "net/http"
 
     "github.com/pelletier/go-toml/v2"
     "tailscale.com/tsnet"
+    "github.com/rs/zerolog"
+    "github.com/cmusatyalab/steeleagle/runtime/core"
 )
 
 // Config struct derived from config.toml
 type Vehicle struct {
     Name        string `toml:"name"`
-    MissionPkg  string `toml:"mission-pkg,omitempty"` 
-    MissionSbx  bool   `toml:"mission-sandbox,omitempty"`
-    DriverPkg   string `toml:"driver-pkg,omitempty"` 
 }
 
 type Config struct {
 	Name        string      `toml:"name"`
-    Port        int         `toml:"port"`
-    Tailscale   bool        `toml:"tailscale,omitempty"`
     Vehicles    []Vehicle   `toml:"vehicles,omitempty"`
 }
 
@@ -51,6 +47,10 @@ func main() {
         log.Fatal(err)
     }
     defer vpn_conn.Close()
+
+    // Set up HTTP listeners
+    http.HandleFunc("/start", start)
+	http.HandleFunc("/info", info)
 
     select {}
 }

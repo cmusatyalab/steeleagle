@@ -29,3 +29,6 @@ var DefaultConfig []byte // DefaultConfig is the default daemon config if no use
 
 //go:embed defaults/check.rego
 var DefaultRego string // DefaultRego is the default Rego OPA config for law interceptors.
+
+//go:embed descriptors/proto.desc
+var DescriptorFile []byte
