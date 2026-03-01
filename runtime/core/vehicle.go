@@ -6,7 +6,6 @@ import (
     "path/filepath"
     "net"
     "context"
-    "sync"
 
     "github.com/google/uuid"
     "google.golang.org/grpc"
@@ -38,14 +37,13 @@ type Vehicle struct {
     Name        string
     Path        string
     // Private
-    mu          sync.RWMutex
     test        bool
     services    serviceState
     connections connectionState
     // Log
     logCfg      LogConfig
     // Policy
-    policyCfg   policyConfig
+    policyCfg   PolicyConfig
     policy      policyState
     // Context related attributes
     ctx         context.Context
@@ -73,7 +71,10 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     }
 
     // Create the logger
-    vehicle.logCfg.Name = vehicle.Name
+    if vehicle.logCfg.Name == "" {
+        // Name the logger if not named by the config
+        vehicle.logCfg.Name = vehicle.Name
+    }
     logger = NewChannelLogger(vehicle.logCfg)
 
     // Create runtime directory if it doesn't exist

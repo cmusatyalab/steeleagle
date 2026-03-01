@@ -3,54 +3,77 @@ package main
 import (
     "os"
     "net/http"
+    "context"
+    "sync"
 
-    "github.com/pelletier/go-toml/v2"
     "tailscale.com/tsnet"
     "github.com/rs/zerolog"
     "github.com/cmusatyalab/steeleagle/runtime/core"
+    "go.nanomsg.org/mangos/v3"
+	"go.nanomsg.org/mangos/v3/protocol/sub"
+    _ "go.nanomsg.org/mangos/v3/transport/all"
 )
 
-// Config struct derived from config.toml
-type Vehicle struct {
-    Name        string `toml:"name"`
+type daemonContext struct {
+	channel		chan<- core.LogMessage
+    mu          sync.Mutex
+	mcap		MCAPLogger
+	vehicles 	map[string]*core.Vehicle
+	// Context related attributes
+	ctx			context.Context
+	cancel		context.CancelFunc
 }
 
-type Config struct {
-	Name        string      `toml:"name"`
-    Vehicles    []Vehicle   `toml:"vehicles,omitempty"`
+func (i *daemonContext) start(w http.ResponseWriter, r *http.Request) {
+    i.mu.Lock()
+    defer i.mu.Unlock()
+
+    // TODO: Unmarshal config from JSON
+
+    // Create a reader socket that will read from the vehicles dataOut
+
+    // Start vehicles
 }
+
+func (i *daemonContext) stop(w http.ResponseWriter, r *http.Request) {
+    i.mu.Lock()
+    defer i.mu.Unlock()
+
+}
+
+func (i *daemonContext) info(w http.ResponseWriter, r *http.Request) {
+    i.mu.Lock()
+    defer i.mu.Unlock()
+
+}
+
+func (i *daemonContext) cleanup() {
+    i.mu.Lock()
+    defer i.mu.Unlock()
+
+}
+
+var logger zerolog.Logger
 
 func main() {
-    // Attempt to read configuration file at startup
-    data, err := os.ReadFile("config.toml")
-    if err != nil {
-        slog.Warn("No config.toml found, creating one!")
-        //TODO
-    }
-    var cfg Config
-    err = toml.Unmarshal([]byte(data), &cfg)
-    if err != nil {
-	    panic(err)
-    }
-    ts_srv := new(tsnet.Server)
-    ts_srv.Hostname = cfg.Name
-    
-    // Start Tailscale server connection
-    if err := ts_srv.Start(); err != nil {
-	    log.Fatalf("Can't start tsnet server: %v", err)
-    }
-    defer ts_srv.Close()
+	// Create the log channel
+    channel := make(chan<- core.LogMessage, 1000)
 
-    // Specify external exposed ports via Tailscale
-    vpn_conn, err := ts_srv.Listen("tcp", ":50051")
-    if err != nil {
-        log.Fatal(err)
+	// Set up the logger
+	logger = core.NewChannelLogger(core.LogConfig{
+		Name: "daemon",
+		Level: "info",
+        Channel: channel,
+	})
+
+    // Create daemon context
+    daemon := daemonContext{
+        channel: channel,
     }
-    defer vpn_conn.Close()
+    defer daemon.cleanup()
 
     // Set up HTTP listeners
-    http.HandleFunc("/start", start)
-	http.HandleFunc("/info", info)
-
-    select {}
+    http.HandleFunc("/start", daemon.start)
+	http.HandleFunc("/stop", daemon.stop)
+    http.HandleFunc("/info", daemon.info)
 }

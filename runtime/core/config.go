@@ -2,10 +2,9 @@ package core
 
 import "net"
 
-type policyConfig struct {
-    // Path to custom file containing law specification, or left blank
-    // to use default included laws
-    filename    string
+type PolicyConfig struct {
+    // Control laws to use for RPC authorization policy
+    Law         ControlLaw
 }
 
 type LogConfig struct {
@@ -31,15 +30,15 @@ func WithTest(test bool) func(*Vehicle) {
     }
 }
 
-func WithLogLevel(level string) func(*Vehicle) {
+func WithLogConfig(logCfg LogConfig) func(*Vehicle) {
     return func(k *Vehicle) {
-        k.logCfg.Level = level
+        k.logCfg = logCfg
     }
 }
 
-func WithPolicyFile(filename string) func(*Vehicle) {
+func WithPolicyConfig(policyCfg PolicyConfig) func(*Vehicle) {
     return func(k *Vehicle) {
-        k.policyCfg.filename = filename
+        k.policyCfg = policyCfg
     }
 }
 

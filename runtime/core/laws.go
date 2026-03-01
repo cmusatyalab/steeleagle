@@ -2,42 +2,28 @@ package core
 
 import (
     "fmt"
-    "os"
 
     "github.com/pelletier/go-toml/v2"
 )
 
-type controlLawState struct {
+type ControlLawState struct {
     Name      string     `toml:"name" json:"name"`
     Enter     []string   `toml:"enter,omitempty" json:"enter"`
     Allowed   []string   `toml:"allowed,omitempty" json:"allowed"`
     Match     [][]string `toml:"match,omitempty" json:"match"`
 }
 
-type controlLaw struct {
+type ControlLaw struct {
     First     string               `toml:"first" json:"first"`
-    States    []controlLawState    `toml:"states,omitempty" json:"states"`
+    States    []ControlLawState    `toml:"states,omitempty" json:"states"`
 }
 
-func getLaw(filename string) (map[string]controlLawState, string) {
-    // If no file is provided, ignore and load default laws
-    if filename == "" {
+func getLaw(l *ControlLaw) (map[string]ControlLawState, string) {
+    // If no start state is provided, ignore and load default laws
+    if l.First == "" {
        return getDefaultLaw()
     }
 
-    data, err := os.ReadFile(filename)
-    if err != nil {
-        logger.Warn().Err(err).Msg("could not find law file, using default laws")
-        return getDefaultLaw()
-    }
-
-    l := &controlLaw{}
-    err = toml.Unmarshal(data, l)
-    if err != nil {
-        logger.Warn().Err(err).Msg("something went wrong reading law file, using default laws")
-        return getDefaultLaw()
-    }
-    
     m, err := createLawMap(l)
     if err != nil {
         logger.Warn().Err(err).Msg("something went wrong reading law file, using default laws")
@@ -47,7 +33,7 @@ func getLaw(filename string) (map[string]controlLawState, string) {
     return m, l.First
 }
 
-func getDefaultLaw() (map[string]controlLawState, string) {
+func getDefaultLaw() (map[string]ControlLawState, string) {
     l, err := parseDefaultLaw()
     if err != nil {
         panic(err)
@@ -61,8 +47,8 @@ func getDefaultLaw() (map[string]controlLawState, string) {
     return m, l.First
 }
 
-func createLawMap(l *controlLaw) (map[string]controlLawState, error) {
-    m := make(map[string]controlLawState)
+func createLawMap(l *ControlLaw) (map[string]ControlLawState, error) {
+    m := make(map[string]ControlLawState)
     for _, value := range l.States {
         if value.Name == "" {
             return nil, fmt.Errorf("unnamed law found in configuration!")
@@ -74,8 +60,8 @@ func createLawMap(l *controlLaw) (map[string]controlLawState, error) {
     return m, nil
 }
 
-func parseDefaultLaw() (*controlLaw, error) {
-    l := &controlLaw{}
+func parseDefaultLaw() (*ControlLaw, error) {
+    l := &ControlLaw{}
     err := toml.Unmarshal(DefaultLaw, l)
     return l, err
 }

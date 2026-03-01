@@ -22,7 +22,7 @@ import (
 )
 
 func TestBasicCommands(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -117,7 +117,7 @@ func TestBasicCommands(t *testing.T) {
 }
 
 func TestStateTransition(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -244,7 +244,7 @@ func TestStateTransition(t *testing.T) {
 }
 
 func TestDataplane(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogLevel("debug"))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }

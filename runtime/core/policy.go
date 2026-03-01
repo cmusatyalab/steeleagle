@@ -13,7 +13,7 @@ type policyState struct {
     mu sync.Mutex
     currentState string
     query rego.PreparedEvalQuery
-    lawMap map[string]controlLawState
+    lawMap map[string]ControlLawState
 }
 
 type policyDecision struct {
@@ -21,8 +21,8 @@ type policyDecision struct {
 	NextState string `json:"next_state"`
 }
 
-func getPolicy(policyCfg policyConfig) policyState {
-    laws, first := getLaw(policyCfg.filename)
+func getPolicy(policyCfg PolicyConfig) policyState {
+    laws, first := getLaw(&policyCfg.Law)
     regoQuery := getRegoQuery()
     return policyState{
         currentState: first,
