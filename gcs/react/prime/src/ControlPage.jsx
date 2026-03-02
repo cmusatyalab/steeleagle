@@ -24,7 +24,7 @@ const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, classN
 
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand, useLocalVehicle,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
-  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone }) {
+  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
   const op = useRef(null);
@@ -144,7 +144,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-times-circle " label="Disarm" onClick={() => onCommand({ arm: false })} />
         </ButtonGroup>
         <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
-          <Button className="w-6" outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: true })} />
+          <Button className="w-6" outlined size="small" icon="pi pi-arrow-up" label="Takeoff" onClick={() => onCommand({ takeoff: takeOffAltitude })} />
           <Button className="w-6" outlined size="small" iconPos="right" icon="pi pi-arrow-down" label="Land" onClick={() => onCommand({ land: true })} />
         </ButtonGroup>
         <ButtonGroup className="w-full md:w-20rem flex align-content-center justify-content-center">
@@ -181,14 +181,25 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           <Knob className="flex align-items-center justify-content-center" value={gamepadDeadzone} onChange={(e) => setGamepadDeadzone(e.value)} min={5} max={50} step={5} valueTemplate={'{value}%'} />
           <Chip className="flex align-items-center justify-content-center" label="Gamepad Deadzone" icon="pi pi-bullseye" />
         </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={takeOffAltitude} onChange={(e) => setTakeOffAltitude(e.value)} min={1} max={10} step={1} valueTemplate={'{value}m'} />
+          <Chip className="flex align-items-center justify-content-center" label="Takeoff Altitude" icon="pi pi-sort-numeric-up-alt" />
+        </div>
+      </div>
+      <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
           <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
             checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" />
         </div>
+
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+
+        </div>
       </div>
     </>
 
-  ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity, gamepadDeadzone, setGamepadDeadzone, tracking, setTracking]);
+  ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
+    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude]);
 
   const swarmHeaderTemplate = (options) => {
     const className = `${options.className} justify-content-space-between`;

@@ -50,6 +50,7 @@ function App() {
   const [commandProcessing, setCommandProcessing] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
+  const [takeOffAltitude, setTakeOffAltitude] = useState(3);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
@@ -120,7 +121,7 @@ function App() {
   }, [useLocalVehicle]);
 
   const onKeyDown = (e) => {
-    if (e.code === 'CapsLock') {
+    if (e.code === 'Escape') {
       setManualControl(!manualControl);
     }
     if (manualControl) {
@@ -129,7 +130,7 @@ function App() {
         onCommand({ hold: true });
       }
       else if (e.code === 'KeyT') {
-        onCommand({ takeoff: true });
+        onCommand({ takeoff: {takeOffAltitude} });
       }
       else if (e.code === 'KeyG') {
         onCommand({ land: true });
@@ -161,6 +162,9 @@ function App() {
       else if (e.code === 'KeyK') {
         onJoystick({ zvel: -1 * basePlanarVelocity, duration: 1 });
       }
+      else if (e.code === 'Digit0') {
+        onJoystick({ zvel: 0, yvel:0, xvel: 0, angularvel: 0, duration: 1 });
+      }
       //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
       setKey(e.key);
     }
@@ -188,7 +192,7 @@ function App() {
       }
       if (manualControl) {
         if (buttonIndex == 3 && state.pressed) {
-          onCommand({ takeoff: true });
+          onCommand({ takeoff: {takeOffAltitude} });
         }
         else if (buttonIndex == 0 && state.pressed) {
           onCommand({ land: true });
@@ -199,7 +203,7 @@ function App() {
 
       }
     });
-  }, [gamePadButton]);
+  }, [gamePadButton, takeOffAltitude]);
 
   useEffect(() => {
     let a = 0.0;
@@ -290,7 +294,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       };
-      setCommandProcessing(true);
+
       let response = null;
       if (useLocalVehicle) {
         response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
@@ -300,17 +304,14 @@ function App() {
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
-        setCommandProcessing(false);
       }
       else {
         const result = await response.json();
         toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
-        setCommandProcessing(false);
-
       }
     }
 
-  }, [squadList, useLocalVehicle]);
+  }, [squadList, useLocalVehicle, takeOffAltitude]);
 
   const items = useMemo(() => [
     {
@@ -358,7 +359,8 @@ function App() {
       <Divider />
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
-        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} />}
+        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} 
+        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Toast ref={toast} />

@@ -73,7 +73,7 @@ class Joystick(BaseModel):
 
 
 class Command(BaseModel):
-    takeoff: bool | None = None
+    takeoff: NonNegativeInt | None = None
     land: bool | None = None
     rth: bool | None = None
     hold: bool | None = None
@@ -667,9 +667,9 @@ async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
         try:
             cmd = CommandRequest()
             cmd.vehicle_id = v
-            if req.takeoff:
+            if req.takeoff is not None:
                 takeoff = TakeOffRequest()
-                takeoff.take_off_altitude = 10.0
+                takeoff.take_off_altitude = req.takeoff
                 if sandbox_mode:
                     call = conn.control_stub.TakeOff(takeoff, metadata=IDENTITY_MD)
                     asyncio.create_task(
