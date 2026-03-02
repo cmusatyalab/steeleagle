@@ -40,7 +40,7 @@ from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 from ultralytics import YOLO
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -374,6 +374,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
             global_pos = position_info.global_position
             if gimbal_info.num_gimbals == 0:
+                logger.warning("Number of gimbals is zero, using the vehicle global location for target coordinates")
                 lon = global_pos.longitude
                 lat = global_pos.latitude
                 p = LatLon(lat, lon)
