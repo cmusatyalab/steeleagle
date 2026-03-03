@@ -189,7 +189,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
           <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
-            checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" />
+            checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" tooltip="When enabled, the map will recenter on the selected vehicle." />
         </div>
 
         <div className="flex flex-column flex-wrap align-content-center m-2">
@@ -229,7 +229,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           <span className="font-bold">Vehicle Details</span>
         </div>
         <div className="flex align-items-center gap-2">
-          <Dropdown value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
+          <Dropdown value={selectedVehicle} checkmark={true} onChange={(e) => setSelectedVehicle(e.value)} options={vehicleNames} useOptionAsValue optionLabel="name"
             placeholder="Select a Vehicle" className="w-full md:w-14rem" />
           <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
           <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
