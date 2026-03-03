@@ -146,13 +146,10 @@ class StreamHandler:
                     remote_engines.append(engine.replace('remote:', ''))
                 elif 'local:' in engine:
                     local_engines.append(engine.replace('local:', ''))
-            try:
+            if remote_engines and source in self._remote_producers:
                 self._remote_producers[source].change_target_engines(remote_engines)
-                if local_engines:
-                    self._local_producers[source].change_target_engines(local_engines)
-            except KeyError:
-                logger.error(f"Did not find {InputSource.Name(source)} producer")
-                raise
+            if local_engines and source in self._local_producers:
+                self._local_producers[source].change_target_engines(local_engines)
 
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)
