@@ -11,8 +11,8 @@ import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
-import { MultiStateCheckbox } from 'primereact/multistatecheckbox';
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { ToggleButton } from 'primereact/togglebutton';
 import { Knob } from 'primereact/knob';
 import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
@@ -47,13 +47,13 @@ function App() {
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
   const [manualControl, setManualControl] = useState(false);
-  const [commandProcessing, setCommandProcessing] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
+  const op = useRef(null);
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
@@ -130,7 +130,7 @@ function App() {
         onCommand({ hold: true });
       }
       else if (e.code === 'KeyT') {
-        onCommand({ takeoff: {takeOffAltitude} });
+        onCommand({ takeoff: takeOffAltitude });
       }
       else if (e.code === 'KeyG') {
         onCommand({ land: true });
@@ -163,7 +163,7 @@ function App() {
         onJoystick({ zvel: -1 * basePlanarVelocity, duration: 1 });
       }
       else if (e.code === 'Digit0') {
-        onJoystick({ zvel: 0, yvel:0, xvel: 0, angularvel: 0, duration: 1 });
+        onJoystick({ zvel: 0, yvel: 0, xvel: 0, angularvel: 0, duration: 1 });
       }
       //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
       setKey(e.key);
@@ -192,7 +192,7 @@ function App() {
       }
       if (manualControl) {
         if (buttonIndex == 3 && state.pressed) {
-          onCommand({ takeoff: {takeOffAltitude} });
+          onCommand({ takeoff: takeOffAltitude });
         }
         else if (buttonIndex == 0 && state.pressed) {
           onCommand({ land: true });
@@ -234,11 +234,10 @@ function App() {
           }
         }
       });
-      if (!commandProcessing) {
-        onJoystick({ xvel: -1 * basePlanarVelocity * x, yvel: basePlanarVelocity * y, zvel: -1 * basePlanarVelocity * z, angularvel: baseAngularVelocity * a, duration: 1 });
-      }
+      onJoystick({ xvel: -1 * basePlanarVelocity * x, yvel: basePlanarVelocity * y, zvel: -1 * basePlanarVelocity * z, angularvel: baseAngularVelocity * a, duration: 1 });
+
     }
-  }, [gamePadAxis, manualControl, commandProcessing]);
+  }, [gamePadAxis, manualControl]);
 
   useEffect(() => {
     if (selectedMenu == 'Control') {
@@ -338,6 +337,26 @@ function App() {
 
   ], []);
 
+  const overlayContent = useMemo(() => (
+    <>
+      <div className="flex flex-row gap-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <ToggleButton onLabel="Use Local Vehicles (dev)" offLabel="Use Swarm Controller (prod)" onIcon="pi pi-desktop" offIcon="pi pi-cloud"
+            checked={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} className="flex align-items-center justify-content-center" />
+        </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+        </div>
+      </div>
+      <div className="flex flex-row gap-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+
+        </div>
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+        </div>
+      </div>
+    </>
+
+  ), [useLocalVehicle, setUseLocalVehicle]);
 
   const menuBarStart = useMemo(() => (
     <div className="flex align-items-center gap-2 mr-2">
@@ -349,9 +368,11 @@ function App() {
   const menuBarEnd = useMemo(() => (
     <div className="flex align-items-center gap-2 mr-2">
       <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
-      <MultiStateCheckbox tooltip={useLocalVehicle ? "Mode: Dev (local vehicles)" : "Mode: Prod (swarm controller)"} data-pr-position="bottom" empty={false} value={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} options={modeOptions} optionValue="value" />
+      <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
+      <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
+
     </div>
-  ), [useLocalVehicle, gamepadDeadzone]);
+  ), [useLocalVehicle, gamepadDeadzone, overlayContent]);
 
   return (
     <>
@@ -359,7 +380,7 @@ function App() {
       <Divider />
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
-        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone} 
+        baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
