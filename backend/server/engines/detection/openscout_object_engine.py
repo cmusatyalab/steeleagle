@@ -421,34 +421,30 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 "hsv_filter": hsv_filter_passed,
             }
 
-            if not self.geofence_enabled:
-                detections.append(detection)
-                if not self.unittest:
-                    self.store_detection_db(
-                        vehicle_info.name,
-                        lat,
-                        lon,
-                        row["name"],
-                        row["confidence"],
-                        detection_url,
-                    )
+            # Ignore this detection if geofence is enabled and this detection
+            # is not within the geofence
+            if (self.geofence_enabled and
+                len(self.geofence) != 0 and
+                not p.isenclosedBy(self.geofence)):
                 continue
 
-            # if there is no geofence, or the estimated object location is within the geofence...
-            if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                passed, prev_obj = self.geofilter_passed(detection)
-                if passed:
-                    detections.append(detection)
-                    if not self.unittest:
-                        self.store_detection_db(
-                            vehicle_info.name,
-                            lat,
-                            lon,
-                            row["name"],
-                            row["confidence"],
-                            detection_url,
-                            prev_obj,
-                        )
+            passed, prev_obj = self.geofilter_passed(detection)
+            if not passed:
+                continue
+
+            detections.append(detection)
+
+            if self.unittest:
+                continue
+            self.store_detection_db(
+                vehicle_info.name,
+                lat,
+                lon,
+                row["name"],
+                row["confidence"],
+                detection_url,
+                prev_obj,
+            )
 
         if len(detections) == 0:
             return None
