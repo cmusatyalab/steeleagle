@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -51,6 +52,8 @@ logging.basicConfig(
 logger = logging.getLogger("rich")
 uvicorn_access = logging.getLogger("uvicorn.access")
 uvicorn_access.disabled = True
+
+backend_key = os.getenv("BACKEND")
 
 
 class Start(BaseModel):
@@ -392,7 +395,10 @@ async def _remote_imagery_broadcaster(vehicle: str):
     Background task for remote imagery fetching and broadcasting
     """
     logger.debug(f"Starting remote imagery broadcaster for '{vehicle}'")
-    conn = backend_connections[list(backend_connections)[0]]
+    if backend_key is None:
+        conn = backend_connections[list(backend_connections)[0]]
+    else:
+        conn = backend_connections[backend_key]
 
     while connection_manager.get_client_count(f"remote_{vehicle}") > 0:
         try:
@@ -423,9 +429,11 @@ async def get_vehicles() -> list[Vehicle]:
     data = []
     current = Location(lat=42, long=-79, alt=0)
     bearing = 0
-    red = (
-        backend_connections[list(backend_connections)[0]].redis_connection
-    )  # TODO: have the front end send the key for which backend to connect to
+    if backend_key is None:
+        conn = backend_connections[list(backend_connections)[0]].redis_connection
+    else:
+        conn = backend_connections[backend_key].redis_connection
+    red = conn
     for k in red.keys("vehicle:*"):
         fields = red.hgetall(k)
         drone_name = k.split(":")[-1]
@@ -528,9 +536,11 @@ async def start(req: Start, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
         if sandbox_mode:
             conn = vehicle_connections[v]
-
         else:
-            conn = backend_connections[list(backend_connections)[0]]
+            if backend_key is None:
+                conn = backend_connections[list(backend_connections)[0]]
+            else:
+                conn = backend_connections[backend_key]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
@@ -571,7 +581,10 @@ async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
         if sandbox_mode:
             conn = vehicle_connections[v]
         else:
-            conn = backend_connections[list(backend_connections)[0]]
+            if backend_key is None:
+                conn = backend_connections[list(backend_connections)[0]]
+            else:
+                conn = backend_connections[backend_key]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
@@ -614,7 +627,10 @@ async def joystick(req: Joystick, sandbox_mode: bool = True) -> JSONResponse:
         if sandbox_mode:
             conn = vehicle_connections[v]
         else:
-            conn = backend_connections[list(backend_connections)[0]]
+            if backend_key is None:
+                conn = backend_connections[list(backend_connections)[0]]
+            else:
+                conn = backend_connections[backend_key]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
@@ -660,7 +676,10 @@ async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
         if sandbox_mode:
             conn = vehicle_connections[v]
         else:
-            conn = backend_connections[list(backend_connections)[0]]
+            if backend_key is None:
+                conn = backend_connections[list(backend_connections)[0]]
+            else:
+                conn = backend_connections[backend_key]
         _ = conn.grpc_channel.get_state(
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
