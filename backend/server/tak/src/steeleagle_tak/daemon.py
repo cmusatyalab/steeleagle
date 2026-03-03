@@ -22,12 +22,14 @@ import os
 import xml.etree.ElementTree as ET
 from abc import abstractmethod
 from configparser import ConfigParser, SectionProxy
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
 import pytak
 import redis.asyncio as redis
+from PIL import Image
 
 if TYPE_CHECKING:
     import multiprocessing as mp
@@ -301,7 +303,7 @@ class DetectionToCotSerializer(CotSerializer):
             redis_client: Connected Redis client
             http_session: aiohttp client session for fetching images
         """
-        poll_interval = float(config.get("DETECTION_POLL_INTERVAL", "5.0"))
+        poll_interval = float(config.get("DETECTION_POLL_INTERVAL", "0."))
         super().__init__(queue, config, poll_interval)
 
         self.http_session = http_session
@@ -369,13 +371,20 @@ class DetectionToCotSerializer(CotSerializer):
                     async with self.http_session.get(link) as response:
                         if response.status == 200:
                             image_data = await response.read()
+                            image = Image.open(BytesIO(image_data))
+                            image.thumbnail((256, 256), Image.LANCZOS)
+
+                            image_out = BytesIO()
+                            image.save(image_out, format="JPEG")
+                            thumbnail = image_out.getvalue()
+
                             image_elem.set("type", "CP")  # Color Frame Photography
                             image_elem.set("size", str(len(image_data)))
                             image_elem.set(
                                 "mime",
                                 response.headers.get("Content-Type", "image/jpeg"),
                             )
-                            image_elem.text = base64.b64encode(image_data).decode(
+                            image_elem.text = base64.b64encode(thumbnail).decode(
                                 "utf-8"
                             )
                 except Exception as e:
@@ -485,7 +494,8 @@ async def async_main(config: SectionProxy) -> None:
     clitool.add_tasks({telemetry})
 
     # Add our serializer to the task list
-    if config.getboolean("steeleagle_tak", "detection_poll_enabled"):
+    detection_enabled = config.get("DETECTION_POLL_INTERVAL", "0")
+    if float(detection_enabled) != 0.:
         detections = DetectionToCotSerializer(
             clitool.tx_queue, pytak_config, redis_client, http_session
         )
@@ -532,7 +542,6 @@ def main() -> None:
     envvars.setdefault("COT_URL", "tcp://localhost:8087")
     envvars.setdefault("COT_STALE", "120")
     envvars.setdefault("POLL_INTERVAL", "1")
-    envvars.setdefault("DETECTION_POLL_ENABLED", "0")
     envvars.setdefault("DETECTION_POLL_INTERVAL", "5")
     envvars.setdefault("DETECTION_TTL", "600")
     envvars.setdefault("DETECTION_CLASS_MAP", "")

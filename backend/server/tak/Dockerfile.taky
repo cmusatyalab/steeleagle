@@ -7,7 +7,7 @@ RUN apt-get update \
     git \
  && apt-get clean
 
-RUN mkdir /var/taky
+RUN mkdir -p /var/taky/logs
 
 WORKDIR /app
 

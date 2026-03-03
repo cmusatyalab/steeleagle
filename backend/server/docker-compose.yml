@@ -245,11 +245,11 @@ services:
     container_name: steeleagle-tak
     restart: unless-stopped
     environment:
-      COT_URL: "${COT_URL}"
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_USERNAME: steeleagle
-      REDIS_PASSWORD: "${REDIS_AUTH}"
+      - "COT_URL=${COT_URL}"
+      - "REDIS_HOST=redis"
+      - "REDIS_PORT=6379"
+      - "REDIS_USERNAME=steeleagle"
+      - "REDIS_PASSWORD=${REDIS_AUTH}"
     depends_on:
       - redis
       - takserver
