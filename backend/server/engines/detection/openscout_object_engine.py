@@ -562,12 +562,12 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if d and d["cls"] == cls:
                 if d["id"] == vehicle_id:
                     logger.debug(
-                        f"Vehicle {d['vehicle_id']} detected {obj} in same area, updating obj location"
+                        f"Vehicle {vehicle_id} detected {obj} in same area, updating obj location"
                     )
                     return (True, obj)
                 else:
                     logger.info(
-                        f"Ignoring detection, {obj} already found by {d['vehicle_id']}"
+                        f"Ignoring detection, {obj} already found by {d['id']}"
                     )
                     return (False, None)
         return (True, None)
