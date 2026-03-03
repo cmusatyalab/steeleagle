@@ -14,11 +14,11 @@ function Status({ vehicle }) {
         let compass_severity = "info";
 
         //consult protocol/telemetry.proto for enum mappings
-        if(vehicle.battery < 50) {
-            battery_severity = "orange-500";
-        } else if(vehicle.battery < 25) {
+        if(vehicle.battery <= 25) {
             battery_severity = "red-500";
-        } else {
+        } else if(vehicle.battery <= 50) {
+            battery_severity = "orange-500";
+        }  else {
             battery_severity = "green-500";
         }
 
