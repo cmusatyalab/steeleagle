@@ -313,7 +313,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             )
 
         compute_result = result_pb2.ComputeResult()
-        compute_result.timestamp.GetCurrentTime()
         compute_result.engine_name = self.ENGINE_NAME
 
         if detections is not None:
@@ -322,6 +321,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         frame_result = result_pb2.FrameResult()
         frame_result.type = "object-detection"
         frame_result.result.append(compute_result)
+        frame_result.timestamp.GetCurrentTime()
         # TODO: if we want to use the Detections message in
         # telemetry.proto, then we need to add some fields
         # such as lat/lon/passes_hsv_filter
@@ -374,7 +374,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
             global_pos = position_info.global_position
             if gimbal_info.num_gimbals == 0:
-                logger.warning("Number of gimbals is zero, using the vehicle global location for target coordinates")
+                logger.warning(
+                    "Number of gimbals is zero, using the vehicle global location for target coordinates"
+                )
                 lon = global_pos.longitude
                 lat = global_pos.latitude
                 p = LatLon(lat, lon)
@@ -423,9 +425,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
             # Ignore this detection if geofence is enabled and this detection
             # is not within the geofence
-            if (self.geofence_enabled and
-                len(self.geofence) != 0 and
-                not p.isenclosedBy(self.geofence)):
+            if (
+                self.geofence_enabled
+                and len(self.geofence) != 0
+                and not p.isenclosedBy(self.geofence)
+            ):
                 continue
 
             passed, prev_obj = self.geofilter_passed(detection)
@@ -566,9 +570,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                     )
                     return (True, obj)
                 else:
-                    logger.info(
-                        f"Ignoring detection, {obj} already found by {d['id']}"
-                    )
+                    logger.info(f"Ignoring detection, {obj} already found by {d['id']}")
                     return (False, None)
         return (True, None)
 
