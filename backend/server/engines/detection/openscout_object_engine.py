@@ -31,6 +31,7 @@ import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from google.protobuf.any_pb2 import Any
+from google.protobuf.json_format import ParseDict
 from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
@@ -317,16 +318,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         if detections is not None:
             compute_result.generic_result = json.dumps(detections)
+            compute_result.detections_result = result_pb2.Detections()
+            for d in detections:
+                det_object = result_pb2.Detection()
+                ParseDict(d, det_object)
+                compute_result.detections_result.detections.append(det_object)
 
         frame_result = result_pb2.FrameResult()
         frame_result.type = "object-detection"
         frame_result.result.append(compute_result)
         frame_result.timestamp.GetCurrentTime()
-        # TODO: if we want to use the Detections message in
-        # telemetry.proto, then we need to add some fields
-        # such as lat/lon/passes_hsv_filter
-        # if detections is not None:
-        #    response.detection_result = detections
+
         any_payload = Any()
         any_payload.Pack(frame_result)
 
