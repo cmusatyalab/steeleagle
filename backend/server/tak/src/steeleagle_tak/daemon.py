@@ -308,6 +308,7 @@ class DetectionToCotSerializer(CotSerializer):
 
         self.http_session = http_session
         self.redis_client = redis_client
+        self.detection_report = float(config.get("DETECTION_REPORT_INTERVAL", "15."))
         self.detection_ttl = int(config.get("DETECTION_TTL", "600"))
         self._detected: dict[str, float] = {}
 
@@ -435,7 +436,7 @@ class DetectionToCotSerializer(CotSerializer):
                 # do not report detections repeatedly
                 last_seen = float(fields.get(b"last_seen", b"0.0"))
                 last_reported = self._detected.get(object_name)
-                if last_reported and (last_seen < last_reported + 60):
+                if last_reported and (last_seen < last_reported + self.detection_report):
                     continue
 
                 await self.process_detection(object_name, fields)
@@ -543,6 +544,7 @@ def main() -> None:
     envvars.setdefault("COT_STALE", "120")
     envvars.setdefault("POLL_INTERVAL", "1")
     envvars.setdefault("DETECTION_POLL_INTERVAL", "5")
+    envvars.setdefault("DETECTION_REPORT_INTERVAL", "15")
     envvars.setdefault("DETECTION_TTL", "600")
     envvars.setdefault("DETECTION_CLASS_MAP", "")
     envvars.setdefault("DEBUG", "1" if args.debug else "0")
