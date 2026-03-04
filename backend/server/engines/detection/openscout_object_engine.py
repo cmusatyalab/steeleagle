@@ -318,11 +318,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         if detections is not None:
             compute_result.generic_result = json.dumps(detections)
-            compute_result.detections_result = result_pb2.Detections()
+            compute_result.detection_result = result_pb2.DetectionResult()
             for d in detections:
                 det_object = result_pb2.Detection()
                 ParseDict(d, det_object)
-                compute_result.detections_result.detections.append(det_object)
+                compute_result.detection_result.detections.append(det_object)
 
         frame_result = result_pb2.FrameResult()
         frame_result.type = "object-detection"
