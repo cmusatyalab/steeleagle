@@ -31,7 +31,6 @@ import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from google.protobuf.any_pb2 import Any
-from google.protobuf.json_format import ParseDict
 from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
@@ -321,7 +320,15 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             detection_result = result_pb2.DetectionResult()
             for d in detections:
                 det_object = result_pb2.Detection()
-                ParseDict(d, det_object)
+                det_object.detection_id = d["id"]
+                det_object.class_name = d["class"]
+                det_object.score = d["score"]
+                det_object.bbox = result_pb2.BoundingBox(
+                    x1=d["box"][1],
+                    y1=d["box"][0],
+                    x2=d["box"][3],
+                    y2=d["box"][2],
+                )
                 detection_result.detections.append(det_object)
             compute_result.detection_result.CopyFrom(detection_result)
         frame_result = result_pb2.FrameResult()
