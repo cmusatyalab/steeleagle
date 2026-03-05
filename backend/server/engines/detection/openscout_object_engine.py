@@ -324,10 +324,10 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 det_object.class_name = d["class"]
                 det_object.score = d["score"]
                 det_object.bbox = result_pb2.BoundingBox(
-                    x1=d["box"][1],
-                    y1=d["box"][0],
-                    x2=d["box"][3],
-                    y2=d["box"][2],
+                    xmin=d["box"][1],
+                    ymin=d["box"][0],
+                    xmax=d["box"][3],
+                    ymax=d["box"][2],
                 )
                 detection_result.detections.append(det_object)
             compute_result.detection_result.CopyFrom(detection_result)
