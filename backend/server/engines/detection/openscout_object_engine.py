@@ -701,7 +701,7 @@ def main():
         "--unittest",
         action="store_true",
         default=False,
-        help="When enabled, will not connect to redis nor store images to disk.",
+        help="When enabled, will not connect to redis nor store images to disk",
     )
 
     args, _ = parser.parse_known_args()
