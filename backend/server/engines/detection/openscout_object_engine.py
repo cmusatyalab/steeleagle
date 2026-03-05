@@ -411,6 +411,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             hsv_filter_passed = False
             if run_hsv_filter:
                 logger.info("TODO: need to get hsv bounds")
+                logger.info("HSV bounds code not yet implemented")
                 # lower_bound = cpt_config.lower_bound
                 # upper_bound = cpt_config.upper_bound
                 # lower_bound = [lower_bound.h, lower_bound.s, lower_bound.v]
