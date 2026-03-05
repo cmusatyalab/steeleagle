@@ -318,9 +318,9 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         if detections is not None:
             compute_result.generic_result = json.dumps(detections)
             detection_result = result_pb2.DetectionResult()
-            for d in detections:
+            for i, d in enumerate(detections):
                 det_object = result_pb2.Detection()
-                det_object.detection_id = d["id"]
+                det_object.detection_id = i
                 det_object.class_name = d["class"]
                 det_object.score = d["score"]
                 det_object.bbox = result_pb2.BoundingBox(
