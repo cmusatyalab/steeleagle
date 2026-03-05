@@ -315,30 +315,32 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         compute_result = result_pb2.ComputeResult()
         compute_result.engine_name = self.ENGINE_NAME
 
-        if detections is not None:
-            compute_result.generic_result = json.dumps(detections)
-            detection_result = result_pb2.DetectionResult()
-            for i, d in enumerate(detections):
-                det_object = result_pb2.Detection()
-                det_object.detection_id = i
-                det_object.class_name = d["class"]
-                det_object.score = d["score"]
-                bbox = result_pb2.BoundingBox(
-                    x_min=d["box"][1],
-                    y_min=d["box"][0],
-                    x_max=d["box"][3],
-                    y_max=d["box"][2],
-                )
-                det_object.bbox.CopyFrom(bbox)
-                detection_result.detections.append(det_object)
-            compute_result.detection_result.CopyFrom(detection_result)
-        frame_result = result_pb2.FrameResult()
-        frame_result.type = "object-detection"
-        frame_result.result.append(compute_result)
-        frame_result.timestamp.GetCurrentTime()
+        try:
+            if detections is not None:
+                detection_result = result_pb2.DetectionResult()
+                for i, d in enumerate(detections):
+                    det_object = result_pb2.Detection()
+                    det_object.detection_id = i
+                    det_object.class_name = d["class"]
+                    det_object.score = d["score"]
+                    bbox = result_pb2.BoundingBox(
+                        x_min=d["box"][1],
+                        y_min=d["box"][0],
+                        x_max=d["box"][3],
+                        y_max=d["box"][2],
+                    )
+                    det_object.bbox.CopyFrom(bbox)
+                    detection_result.detections.append(det_object)
+                compute_result.detection_result.CopyFrom(detection_result)
+            frame_result = result_pb2.FrameResult()
+            frame_result.type = "object-detection"
+            frame_result.result.append(compute_result)
+            frame_result.timestamp.GetCurrentTime()
 
-        any_payload = Any()
-        any_payload.Pack(frame_result)
+            any_payload = Any()
+            any_payload.Pack(frame_result)
+        except Exception as e:
+            logger.error(e)
 
         self.count += 1
 
