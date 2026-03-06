@@ -134,11 +134,13 @@ class MissionStore:
                     preserving_proto_field_name=True,
                     use_integers_for_enums=True,
                 )
+                if len(data) == 0:
+                    return None
                 return FrameResult.model_validate(data)
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
-    
+
     async def _store_one(self, source: str, topic: str, ts: float, pj: str):
         # Atomic: either both event+latest write, or neither.
         async with self._db_lock:
@@ -163,6 +165,8 @@ class MissionStore:
                 payload = frames[-1]
 
                 model = self._parse_payload(source, payload)
+                if model is None:
+                    continue
                 ts = ts_to_unix_seconds(model.timestamp)
                 pj = self._to_json(model)
                 await self._store_one(source, topic, ts, pj)
@@ -182,7 +186,7 @@ class MissionStore:
                 if max_age_s is not None and (time.time() - ts) > max_age_s:
                     return None
                 return self._from_json(source, payload_json)
-        
+
     async def get_range(self, source: str, topic: str, t0: float, t1: float):
         out = []
         async with self._db_lock:
