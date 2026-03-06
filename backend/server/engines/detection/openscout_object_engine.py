@@ -355,7 +355,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def process_results(
         self, image_np, results, vehicle_info, position_info, gimbal_info
     ):
-        df = results[0].to_df()  # polars dataframe
+        df = results[0].to_df(normalize=True)  # polars dataframe
 
         exclusions = self.exclusions or []
         if not df.is_empty():
