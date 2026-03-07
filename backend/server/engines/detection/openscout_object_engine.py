@@ -237,21 +237,31 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self.r.zadd("detections", objects)
 
     def store_detection_db(
-        self, vehicle, lat, lon, cls, conf, link="", object_name=None
+        self, detection, link="", object_name=None
     ):
         if object_name is None:
-            object_name = f"{cls}-{os.urandom(2).hex()}"
+            object_name = f"{detection["class"]}-{os.urandom(2).hex()}"
+        lon = detection["lon"]
+        lat = detection["lat"]
         logger.info(f"Adding detection {lon=} {lat=} {object_name=}")
         self.r.geoadd("detections", [lon, lat, object_name])
 
         object_key = f"objects:{object_name}"
-        self.r.hset(object_key, "last_seen", f"{time.time()}")
-        self.r.hset(object_key, "id", f"{vehicle}")
-        self.r.hset(object_key, "cls", f"{cls}")
-        self.r.hset(object_key, "confidence", f"{conf}")
-        self.r.hset(object_key, "link", f"{link}")
-        self.r.hset(object_key, "longitude", f"{lon}")
-        self.r.hset(object_key, "latitude", f"{lat}")
+        y1, x1, y2, x2 = detection["box"]
+
+        self.r.hset(object_key, mapping={
+            "last_seen": time.time(),
+            "id": detection["id"],
+            "cls": detection["class"],
+            "confidence": detection["score"],
+            "link": link,
+            "longitude": lon,
+            "latitude": lat,
+            "x_min": x1,
+            "y_min": y1,
+            "x_max": x2,
+            "y_max": y2,
+        })
         self.r.expire(object_key, self.ttl_secs)
         logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
 
@@ -453,11 +463,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if self.unittest:
                 continue
             self.store_detection_db(
-                vehicle_info.name,
-                lat,
-                lon,
-                row["name"],
-                row["confidence"],
+                detection,
                 detection_url,
                 prev_obj,
             )
