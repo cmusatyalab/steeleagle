@@ -236,6 +236,17 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return
         self.r.zadd("detections", objects)
 
+    def store_latest_drone_detection_db(self, detections):
+        vehicle_name = detections[0]["id"]
+        key = f"latest-detection:{vehicle_name}"
+
+        pipe = self.r.pipeline()
+        pipe.delete(key)
+        pipe.rpush(key, *[json.dumps(d) for d in detections])
+        pipe.pexpire(key, 100)
+
+        pipe.execute()
+
     def store_detection_db(
         self, detection, link="", object_name=None
     ):
@@ -472,6 +483,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return None
 
         logger.info(json.dumps(detections, sort_keys=True, indent=4))
+        self.store_latest_drone_detection_db(detections)
 
         if run_hsv_filter and not self.unittest:
             logger.info("TODO: need to get hsv bounds")
