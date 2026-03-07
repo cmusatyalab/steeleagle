@@ -251,7 +251,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self, detection, link="", object_name=None
     ):
         if object_name is None:
-            object_name = f"{detection["class"]}-{os.urandom(2).hex()}"
+            object_name = f"{detection['class']}-{os.urandom(2).hex()}"
         lon = detection["lon"]
         lat = detection["lat"]
         logger.info(f"Adding detection {lon=} {lat=} {object_name=}")
