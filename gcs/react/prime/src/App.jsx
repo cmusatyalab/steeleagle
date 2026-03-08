@@ -50,6 +50,7 @@ function App() {
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
+  const [showDetections, setShowDetections] = useState(true);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
@@ -374,6 +375,36 @@ function App() {
     </div>
   ), [useLocalVehicle, gamepadDeadzone, overlayContent]);
 
+
+  const onToggleDetections = useCallback(async (value) => {
+    setShowDetections(value);
+
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        show_detections: value
+      })
+    };
+
+    const response = await fetch(`${FASTAPI_URL}/api/imagery/show_detections`, requestOptions);
+
+    if (!response.ok) {
+      const result = await response.json();
+      toast.current.show({
+        severity: 'error',
+        summary: 'Config Error',
+        detail: `HTTP error! status: ${result.detail}`
+      });
+    } else {
+      toast.current.show({
+        severity: 'success',
+        summary: 'Config Updated',
+        detail: `Show detections set to ${value}`
+      });
+    }
+  }, []);
+
   return (
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
@@ -381,7 +412,7 @@ function App() {
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
-        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} />}
+        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Toast ref={toast} />

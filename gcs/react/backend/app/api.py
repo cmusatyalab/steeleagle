@@ -6,6 +6,8 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+import numpy as np
+import cv2
 
 import grpc
 import redis
@@ -128,7 +130,10 @@ class BackendConnection(BaseModel):
     remote_stub: RemoteStub
     redis_connection: redis.Redis
     webserver: str
+    show_detections: bool
 
+class ShowDetectionsConfig(BaseModel):
+    show_detections: bool
 
 class ConnectionManager:
     """Manages WebSocket connections for broadcasting imagery to multiple websocket clients"""
@@ -279,6 +284,7 @@ async def lifespan(app: FastAPI):
             remote_stub=remote_stub,
             redis_connection=red,
             webserver=webserver,
+            show_detections=False,
         )
         backend_connections[b] = bc
 
@@ -405,7 +411,16 @@ async def _remote_imagery_broadcaster(vehicle: str):
             url = f"{conn.webserver}/raw/{vehicle}/latest.jpg?t={time.time()}"
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
-                base64_image = base64.b64encode(response.content).decode("ascii")
+                img_bytes = response.content
+                if conn.show_detections:
+                    bbox_img = maybe_add_bboxes(vehicle, img_bytes)
+                    if bbox_img is None:
+                        base64_image = base64.b64encode(img_bytes).decode("ascii")
+                    else:
+                        _, buffer = cv2.imencode(".jpg", bbox_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                        base64_image = base64.b64encode(buffer).decode("ascii")
+                else:
+                    base64_image = base64.b64encode(img_bytes).decode("ascii")
                 await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
             await asyncio.sleep(0.1)
         except requests.exceptions.RequestException as e:
@@ -417,6 +432,89 @@ async def _remote_imagery_broadcaster(vehicle: str):
 
     logger.debug(f"Stopping remote imagery broadcaster for '{vehicle}' (no clients)")
 
+def get_latest_detections(vehicle_id):
+    if backend_key is None:
+        conn = backend_connections[list(backend_connections)[0]].redis_connection
+    else:
+        conn = backend_connections[backend_key].redis_connection
+    red = conn
+
+    key = f"latest-detection:{vehicle_id}"
+    logger.info(f"Looking for {key} in redis")
+    raw = red.lrange(key, 0, -1)
+    if not raw:
+        return []
+
+    detections = []
+    for d in raw:
+        try:
+            detection = json.loads(d)
+            detections.append(detection)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(e)
+            return []
+    return detections
+
+def maybe_add_bboxes(vehicle_id, img_bytes):
+    detections = get_latest_detections(vehicle_id)
+    if len(detections) == 0:
+        return None
+    nparr = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    h, w = img.shape[:2]
+
+    CLASS_COLORS = {
+        "person":  (0, 255, 120),
+    }
+    DEFAULT_COLOR = (200, 200, 200)
+
+    for det in detections:
+        try:
+            y_min_f, x_min_f, y_max_f, x_max_f = det["box"]
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error(e)
+            continue
+
+        # Convert fractional coords → pixel coords
+        x1 = int(x_min_f * w)
+        y1 = int(y_min_f * h)
+        x2 = int(x_max_f * w)
+        y2 = int(y_max_f * h)
+
+        cls   = det.get("class", "unknown")
+        score = det.get("score", 0.0)
+        label = f"{cls} {score:.2f}"
+        color = CLASS_COLORS.get(cls, DEFAULT_COLOR)
+
+        # Bounding box
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness=2)
+
+        # Label background
+        (text_w, text_h), baseline = cv2.getTextSize(
+            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
+        )
+        label_y1 = max(y1 - text_h - baseline - 4, 0)
+        cv2.rectangle(
+            img,
+            (x1, label_y1),
+            (x1 + text_w + 4, y1),
+            color,
+            thickness=cv2.FILLED,
+        )
+
+        # Label text
+        cv2.putText(
+            img,
+            label,
+            (x1 + 2, y1 - baseline - 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 0),
+            thickness=1,
+            lineType=cv2.LINE_AA,
+        )
+
+    return img
 
 # API Routes
 @app.get("/api/remote/backends")
@@ -474,12 +572,21 @@ async def get_vehicles() -> list[Vehicle]:
             )
         )
 
+    logger.info(f'{data=}')
+
     return data
 
 
 @app.get("/api/local/vehicles")
 async def get_local_vehicles(name: str = None) -> list[Vehicle]:
     return vehicle_data.values()
+
+
+@app.post("/api/imagery/show_detections")
+async def show_detections(config: ShowDetectionsConfig):
+    for backend in backend_connections.values():
+        backend.show_detections = config.show_detections
+    return {"status": "updated", "show_detections": config.show_detections}
 
 
 @app.websocket("/ws/imagery/remote/{vehicle}")

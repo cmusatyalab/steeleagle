@@ -16,4 +16,6 @@ dependencies = [
     "steeleagle_sdk",
     "websockets",
     "rich",
+    "opencv-python",
+    "numpy",
 ]

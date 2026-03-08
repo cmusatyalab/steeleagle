@@ -24,7 +24,8 @@ const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, classN
 
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand, useLocalVehicle,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
-  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude }) {
+  baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
+  showDetections, onToggleDetections }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
   const op = useRef(null);
@@ -191,6 +192,10 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           <ToggleButton onLabel="Tracking On" offLabel="Tracking Off" onIcon="pi pi-bullseye" offIcon="pi pi-map"
             checked={tracking} onChange={(e) => setTracking(e.value)} className="flex" tooltip="When enabled, the map will recenter on the selected vehicle." />
         </div>
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+          <ToggleButton onLabel="Show Detections" offLabel="Hide Detections" onIcon="pi pi-expand" offIcon="pi pi-expand"
+            checked={showDetections} onChange={(e) => onToggleDetections(e.value)} className="flex" tooltip="When enabled, the video stream will show detection bounding boxes." />
+        </div>
 
         <div className="flex flex-column flex-wrap align-content-center m-2">
 
@@ -199,7 +204,8 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
     </>
 
   ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
-    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude]);
+      gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
+      showDetections, onToggleDetections]);
 
   const swarmHeaderTemplate = (options) => {
     const className = `${options.className} justify-content-space-between`;
