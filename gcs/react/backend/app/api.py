@@ -572,8 +572,6 @@ async def get_vehicles() -> list[Vehicle]:
             )
         )
 
-    logger.info(f'{data=}')
-
     return data
 
 
