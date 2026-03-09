@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: common.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -582,7 +582,7 @@ const file_common_proto_rawDesc = "" +
 	"\vUNAVAILABLE\x10\x10\x12\r\n" +
 	"\tDATA_LOSS\x10\x11\x12\x13\n" +
 	"\x0fUNAUTHENTICATED\x10\x12B\xe9\x01\n" +
-	"\x1ecom.steeleagle.protocol.commonB\vCommonProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPC\xaa\x02\x1aSteeleagle.Protocol.Common\xca\x02\x1aSteeleagle\\Protocol\\Common\xe2\x02&Steeleagle\\Protocol\\Common\\GPBMetadata\xea\x02\x1cSteeleagle::Protocol::Commonb\x06proto3"
+	"\x1ecom.steeleagle.protocol.commonB\vCommonProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPC\xaa\x02\x1aSteeleagle.Protocol.Common\xca\x02\x1aSteeleagle\\Protocol\\Common\xe2\x02&Steeleagle\\Protocol\\Common\\GPBMetadata\xea\x02\x1cSteeleagle::Protocol::Commonb\x06proto3"
 
 var (
 	file_common_proto_rawDescOnce sync.Once

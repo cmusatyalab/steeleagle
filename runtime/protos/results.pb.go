@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: results.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -492,7 +492,7 @@ const file_results_proto_rawDesc = "" +
 	"slamResult\x12'\n" +
 	"\x0egeneric_result\x18\x05 \x01(\fH\x00R\rgenericResultB\x06\n" +
 	"\x04typeB\xef\x01\n" +
-	"\x1fcom.steeleagle.protocol.resultsB\fResultsProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPR\xaa\x02\x1bSteeleagle.Protocol.Results\xca\x02\x1bSteeleagle\\Protocol\\Results\xe2\x02'Steeleagle\\Protocol\\Results\\GPBMetadata\xea\x02\x1dSteeleagle::Protocol::Resultsb\x06proto3"
+	"\x1fcom.steeleagle.protocol.resultsB\fResultsProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPR\xaa\x02\x1bSteeleagle.Protocol.Results\xca\x02\x1bSteeleagle\\Protocol\\Results\xe2\x02'Steeleagle\\Protocol\\Results\\GPBMetadata\xea\x02\x1dSteeleagle::Protocol::Resultsb\x06proto3"
 
 var (
 	file_results_proto_rawDescOnce sync.Once

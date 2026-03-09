@@ -14,7 +14,7 @@ import (
     "google.golang.org/grpc/metadata"
     "google.golang.org/grpc/credentials/insecure"
     "github.com/cmusatyalab/steeleagle/runtime/core"
-    "github.com/cmusatyalab/steeleagle/runtime/pb"
+    pb "github.com/cmusatyalab/steeleagle/runtime/protos"
     "go.nanomsg.org/mangos/v3"
 	"go.nanomsg.org/mangos/v3/protocol/pub"
 	"go.nanomsg.org/mangos/v3/protocol/sub"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestBasicCommands(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -117,7 +117,7 @@ func TestBasicCommands(t *testing.T) {
 }
 
 func TestStateTransition(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }
@@ -244,7 +244,7 @@ func TestStateTransition(t *testing.T) {
 }
 
 func TestDataplane(t *testing.T) {
-    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(true), core.WithLogConfig(core.LogConfig{Level: "debug"}))
+    vehicle, err := core.NewVehicle(t.Context(), core.WithTest(), core.WithLogConfig(core.LogConfig{Level: "debug"}))
     if err != nil {
         t.Fatalf("failed to create vehicle: %v", err)
     }

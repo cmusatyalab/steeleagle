@@ -4,7 +4,6 @@ import (
     "fmt"
     "context"
     "net"
-    "strings"
 
 	"google.golang.org/grpc"
     "google.golang.org/grpc/peer"
@@ -54,32 +53,7 @@ func cleanCommand(ctx context.Context, fullName string, isTesting bool) string {
         peer = getPeer(ctx)
     }
 
-    splits := strings.Split(fullName, ".")
-    return fmt.Sprintf("%s/%s", peer, splits[len(splits) - 1])
-}
-
-func (i *policyState) getUnaryInterceptor(isTesting bool) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req any,
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (any, error) {
-
-        command := cleanCommand(ctx, info.FullMethod, isTesting)
-        logger.Info().Str("command", command).Msg("received unary RPC request")
-		allowed, _, err := i.safeCheckAndTransit(ctx, command)
-        if allowed == false && err == nil {
-            logger.Error().Str("command", command).Str("state", i.currentState).Msg("command is not allowed in current state!")
-		    return nil, status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
-		} else if allowed == false && err != nil {
-            logger.Warn().Err(err).Msg("policy check failed, denying to be safe")
-            return nil, status.Errorf(codes.Internal, "policy check failed, denying to be safe")
-        }
-
-        logger.Info().Str("command", command).Msg("responding to unary RPC request")
-		return handler(ctx, req)
-	}
+    return fmt.Sprintf("%s%s", peer, fullName)
 }
 
 func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInterceptor {
@@ -91,7 +65,7 @@ func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInte
 	) error {
 
         command := cleanCommand(ss.Context(), info.FullMethod, isTesting)
-        logger.Info().Str("command", command).Msg("received stream RPC request")
+        logger.Info().Str("command", command).Msg("received RPC request")
 		allowed, _, err := i.safeCheckAndTransit(ss.Context(), command)
         if allowed == false && err == nil {
             logger.Error().Str("command", command).Str("state", i.currentState).Msg("command is not allowed in current state!")
@@ -101,7 +75,7 @@ func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInte
             return status.Errorf(codes.Internal, "error making policy request, denying to be safe")
         }
 
-        logger.Info().Str("command", command).Msg("responding to stream RPC request")
+        logger.Info().Str("command", command).Msg("responding to RPC request")
 		return handler(srv, ss)
 	}
 }

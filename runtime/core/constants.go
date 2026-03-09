@@ -24,11 +24,5 @@ const ApplicationName string = "steeleagle"
 //go:embed defaults/laws.toml
 var DefaultLaw []byte // DefaultLaw is the default control law if no user-specified law can be found.
 
-//go:embed defaults/config.toml
-var DefaultConfig []byte // DefaultConfig is the default daemon config if no user-specified config can be found.
-
 //go:embed defaults/check.rego
 var DefaultRego string // DefaultRego is the default Rego OPA config for law interceptors.
-
-//go:embed descriptors/proto.desc
-var DescriptorFile []byte

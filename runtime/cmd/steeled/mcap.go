@@ -6,6 +6,7 @@ import (
     "bytes"
     "time"
 
+    pb "github.com/cmusatyalab/steeleagle/runtime/protos"
     "github.com/foxglove/mcap/go/mcap"
     "go.nanomsg.org/mangos/v3"
 	"go.nanomsg.org/mangos/v3/protocol/sub"
@@ -69,7 +70,7 @@ func NewMCAPLogger(parentCtx context.Context, dataSockAddr string) (*MCAPLogger,
         ID: uint16(Telemetry),
         Name: "steeleagle.protocol.messages.Telemetry",
         Encoding: "protobuf",
-        Data: DescriptorFile,
+        Data: pb.DescriptorFile,
     }); err != nil {
         logger.Error().Err(err).Msg("couldn't create telemetry schema")
     }
@@ -86,7 +87,7 @@ func NewMCAPLogger(parentCtx context.Context, dataSockAddr string) (*MCAPLogger,
         ID: uint16(Imagery),
         Name: "steeleagle.protocol.messages.Frame",
         Encoding: "protobuf",
-        Data: DescriptorFile,
+        Data: pb.DescriptorFile,
     }); err != nil {
         logger.Error().Err(err).Msg("couldn't create imagery schema")
     }
@@ -103,7 +104,7 @@ func NewMCAPLogger(parentCtx context.Context, dataSockAddr string) (*MCAPLogger,
         ID: uint16(Results),
         Name: "steeleagle.protocol.results.ComputeResult",
         Encoding: "protobuf",
-        Data: DescriptorFile,
+        Data: pb.DescriptorFile,
     }); err != nil {
         logger.Error().Err(err).Msg("couldn't create result schema")
     }

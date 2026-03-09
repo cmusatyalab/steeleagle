@@ -5,6 +5,7 @@ import (
     "net/http"
     "context"
     "sync"
+    "encoding/json"
 
     "tailscale.com/tsnet"
     "github.com/rs/zerolog"
@@ -19,6 +20,7 @@ type daemonContext struct {
     mu          sync.Mutex
 	mcap		MCAPLogger
 	vehicles 	map[string]*core.Vehicle
+    vpn         TailscaleServer
 	// Context related attributes
 	ctx			context.Context
 	cancel		context.CancelFunc
@@ -27,30 +29,39 @@ type daemonContext struct {
 func (i *daemonContext) start(w http.ResponseWriter, r *http.Request) {
     i.mu.Lock()
     defer i.mu.Unlock()
+    defer r.Body.Close()
 
-    // TODO: Unmarshal config from JSON
+    var config RunConfig
+
+    if r.Body == nil {
+        http.Error(w, "Please send a valid run configuration in the request body", http.StatusBadRequest)
+		return
+    }
+
+    // Unmarshal run configuration from the JSON body
+    err := json.NewDecoder(r.Body).Decode(&config)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
     // Create a reader socket that will read from the vehicles dataOut
 
-    // Start vehicles
+    // Start vehicles, tying them to the global context
 }
 
 func (i *daemonContext) stop(w http.ResponseWriter, r *http.Request) {
     i.mu.Lock()
     defer i.mu.Unlock()
-
-}
-
-func (i *daemonContext) info(w http.ResponseWriter, r *http.Request) {
-    i.mu.Lock()
-    defer i.mu.Unlock()
-
+    
+    // TODO: Cancel the global context
 }
 
 func (i *daemonContext) cleanup() {
     i.mu.Lock()
     defer i.mu.Unlock()
-
+    
+    i.cancel()
 }
 
 var logger zerolog.Logger
@@ -75,5 +86,4 @@ func main() {
     // Set up HTTP listeners
     http.HandleFunc("/start", daemon.start)
 	http.HandleFunc("/stop", daemon.stop)
-    http.HandleFunc("/info", daemon.info)
 }

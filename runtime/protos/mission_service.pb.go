@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: mission_service.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -293,7 +293,7 @@ const file_mission_service_proto_rawDesc = "" +
 	"\x05Start\x121.steeleagle.protocol.mission_service.StartRequest\x1a$.steeleagle.protocol.common.Response\"\x00\x12`\n" +
 	"\x04Stop\x120.steeleagle.protocol.mission_service.StopRequest\x1a$.steeleagle.protocol.common.Response\"\x00\x12d\n" +
 	"\x06Notify\x122.steeleagle.protocol.mission_service.NotifyRequest\x1a$.steeleagle.protocol.common.Response\"\x00B\x9a\x02\n" +
-	"'com.steeleagle.protocol.mission_serviceB\x13MissionServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPM\xaa\x02\"Steeleagle.Protocol.MissionService\xca\x02\"Steeleagle\\Protocol\\MissionService\xe2\x02.Steeleagle\\Protocol\\MissionService\\GPBMetadata\xea\x02$Steeleagle::Protocol::MissionServiceb\x06proto3"
+	"'com.steeleagle.protocol.mission_serviceB\x13MissionServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPM\xaa\x02\"Steeleagle.Protocol.MissionService\xca\x02\"Steeleagle\\Protocol\\MissionService\xe2\x02.Steeleagle\\Protocol\\MissionService\\GPBMetadata\xea\x02$Steeleagle::Protocol::MissionServiceb\x06proto3"
 
 var (
 	file_mission_service_proto_rawDescOnce sync.Once

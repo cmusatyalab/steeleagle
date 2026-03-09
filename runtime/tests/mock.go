@@ -3,7 +3,7 @@ package test
 import (
     "context"
 
-    "github.com/cmusatyalab/steeleagle/runtime/pb"
+    pb "github.com/cmusatyalab/steeleagle/runtime/protos"
 )
 
 type controlServer struct {

@@ -33,10 +33,8 @@ type connectionState struct {
 }
 
 type Vehicle struct {
-    // Public
-    Name        string
-    Path        string
-    // Private
+    name        string
+    path        string
     test        bool
     services    serviceState
     connections connectionState
@@ -58,7 +56,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 
     // Set default input options and retrieve options
     vehicle := &Vehicle {
-        Name: uuid.New().String(),
+        name: uuid.New().String(),
         logCfg: LogConfig{
             Level: "info",
         },
@@ -73,32 +71,32 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     // Create the logger
     if vehicle.logCfg.Name == "" {
         // Name the logger if not named by the config
-        vehicle.logCfg.Name = vehicle.Name
+        vehicle.logCfg.Name = vehicle.name
     }
     logger = NewChannelLogger(vehicle.logCfg)
 
     // Create runtime directory if it doesn't exist
-    vehicle.Path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.Name)
-    logger.Debug().Str("filepath", vehicle.Path).Msg("starting vehicle in runtime directory")
-    err := os.MkdirAll(vehicle.Path, 0755)
+    vehicle.path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.name)
+    logger.Debug().Str("filepath", vehicle.path).Msg("starting vehicle in runtime directory")
+    err := os.MkdirAll(vehicle.path, 0755)
     if err != nil {
         logger.Error().Err(err).Msg("could not create runtime directory")
         return nil, err
     }
-    logger.Debug().Str("folder", vehicle.Path).Msg("vehicle folder configured")
+    logger.Debug().Str("folder", vehicle.path).Msg("vehicle folder configured")
 
     // Set up law handling
     vehicle.policy = getPolicy(vehicle.policyCfg)
     
     // Create UDS files for the Control and Mission services so that they
     // can be shared with any plugins at start time
-    err = os.MkdirAll(filepath.Join(vehicle.Path, "control"), os.ModePerm)
+    err = os.MkdirAll(filepath.Join(vehicle.path, "control"), os.ModePerm)
     if err != nil {
         logger.Error().Err(err).Msg("could not create control directory")
         return nil, err
     }
     vehicle.services.control, err = grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, "control", ControlSocket)),
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.path, "control", ControlSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
 	if err != nil {
@@ -106,13 +104,13 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
         return nil, err
 	}
 
-    err = os.MkdirAll(filepath.Join(vehicle.Path, "mission"), os.ModePerm)
+    err = os.MkdirAll(filepath.Join(vehicle.path, "mission"), os.ModePerm)
     if err != nil {
         logger.Error().Err(err).Msg("could not create mission directory")
         return nil, err
     }
     vehicle.services.mission, err = grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, "mission", MissionSocket)),
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.path, "mission", MissionSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
 	if err != nil {
@@ -126,7 +124,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
         logger.Error().Err(err).Msg("failed to create data out socket")
         return nil, err
 	}
-    err = vehicle.services.dataOut.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, DataOutSocket)))
+    err = vehicle.services.dataOut.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.path, DataOutSocket)))
 	if err != nil {
         logger.Error().Err(err).Msg("failed to bind data out socket")
         return nil, err
@@ -137,7 +135,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
         logger.Error().Err(err).Msg("failed to create data in socket")
         return nil, err
 	}
-    err = vehicle.services.dataIn.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, DataInSocket)))
+    err = vehicle.services.dataIn.Listen(fmt.Sprintf("ipc://%s", filepath.Join(vehicle.path, DataInSocket)))
 	if err != nil {
         logger.Error().Err(err).Msg("failed to bind data in socket")
         return nil, err
@@ -148,14 +146,10 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     
     // Set up gRPC server and set up interceptor chain
     vehicle.services.grpcServer = grpc.NewServer(
-        grpc.UnaryInterceptor(vehicle.policy.getUnaryInterceptor(vehicle.test)),
         grpc.StreamInterceptor(vehicle.policy.getStreamInterceptor(vehicle.test)),
         grpc.CustomCodec(proxy.Codec()),
         grpc.UnknownServiceHandler(proxy.TransparentHandler(
-            getProxyDirector(
-                vehicle.services.control, 
-                vehicle.services.mission,
-            ),
+            vehicle.getProxyDirector(),
         )),
     )
 
@@ -171,9 +165,9 @@ func (i *Vehicle) run() {
     // If a local connection cannot be established, the vehicle cannot
     // interact with any local services and thus it should abort
     var err error
-    i.connections.localGRPC, err = net.Listen("unix", filepath.Join(i.Path, MainSocket))
+    i.connections.localGRPC, err = net.Listen("unix", filepath.Join(i.path, MainSocket))
 	if err != nil {
-        logger.Error().Err(err).Str("file", filepath.Join(i.Path, MainSocket)).Msg("can't listen at file")
+        logger.Error().Err(err).Str("file", filepath.Join(i.path, MainSocket)).Msg("can't listen at file")
         logger.Error().Msg("failed to start main services, aborting!")
         return
 	}
@@ -211,6 +205,10 @@ func (i *Vehicle) run() {
     
     // Stop the gRPC server
     i.services.grpcServer.GracefulStop()
+}
+
+func (i *Vehicle) GetStatus() {
+
 }
 
 func (i *Vehicle) Stop() {

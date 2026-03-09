@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: messages.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1571,7 +1571,7 @@ const file_messages_proto_rawDesc = "" +
 	"\x12NO_COMPASS_WARNING\x10\x00\x12\x15\n" +
 	"\x11WEAK_HEADING_LOCK\x10\x01\x12\x13\n" +
 	"\x0fNO_HEADING_LOCK\x10\x02B\xf5\x01\n" +
-	" com.steeleagle.protocol.messagesB\rMessagesProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPM\xaa\x02\x1cSteeleagle.Protocol.Messages\xca\x02\x1cSteeleagle\\Protocol\\Messages\xe2\x02(Steeleagle\\Protocol\\Messages\\GPBMetadata\xea\x02\x1eSteeleagle::Protocol::Messagesb\x06proto3"
+	" com.steeleagle.protocol.messagesB\rMessagesProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPM\xaa\x02\x1cSteeleagle.Protocol.Messages\xca\x02\x1cSteeleagle\\Protocol\\Messages\xe2\x02(Steeleagle\\Protocol\\Messages\\GPBMetadata\xea\x02\x1eSteeleagle::Protocol::Messagesb\x06proto3"
 
 var (
 	file_messages_proto_rawDescOnce sync.Once

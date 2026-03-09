@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: data_service.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -317,7 +317,7 @@ const file_data_service_proto_rawDesc = "" +
 	"\x04Data\x12y\n" +
 	"\x12SetEnginesForTopic\x12;.steeleagle.protocol.data_service.SetEnginesForTopicRequest\x1a$.steeleagle.protocol.common.Response\"\x00\x12a\n" +
 	"\x06Report\x12/.steeleagle.protocol.data_service.ReportRequest\x1a$.steeleagle.protocol.common.Response\"\x00B\x88\x02\n" +
-	"$com.steeleagle.protocol.data_serviceB\x10DataServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPD\xaa\x02\x1fSteeleagle.Protocol.DataService\xca\x02\x1fSteeleagle\\Protocol\\DataService\xe2\x02+Steeleagle\\Protocol\\DataService\\GPBMetadata\xea\x02!Steeleagle::Protocol::DataServiceb\x06proto3"
+	"$com.steeleagle.protocol.data_serviceB\x10DataServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPD\xaa\x02\x1fSteeleagle.Protocol.DataService\xca\x02\x1fSteeleagle\\Protocol\\DataService\xe2\x02+Steeleagle\\Protocol\\DataService\\GPBMetadata\xea\x02!Steeleagle::Protocol::DataServiceb\x06proto3"
 
 var (
 	file_data_service_proto_rawDescOnce sync.Once

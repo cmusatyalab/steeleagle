@@ -8,7 +8,7 @@
 // 	protoc        (unknown)
 // source: control_service.proto
 
-package pb
+package protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1454,7 +1454,7 @@ const file_control_service_proto_rawDesc = "" +
 	"\x13SetGimbalPoseTarget\x12?.steeleagle.protocol.control_service.SetGimbalPoseTargetRequest\x1a$.steeleagle.protocol.common.Response\"\x00\x12\x90\x01\n" +
 	"\x1cConfigureImagingSensorStream\x12H.steeleagle.protocol.control_service.ConfigureImagingSensorStreamRequest\x1a$.steeleagle.protocol.common.Response\"\x00\x12\x88\x01\n" +
 	"\x18ConfigureTelemetryStream\x12D.steeleagle.protocol.control_service.ConfigureTelemetryStreamRequest\x1a$.steeleagle.protocol.common.Response\"\x00B\x9a\x02\n" +
-	"'com.steeleagle.protocol.control_serviceB\x13ControlServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/vehicle/pkg/pb\xa2\x02\x03SPC\xaa\x02\"Steeleagle.Protocol.ControlService\xca\x02\"Steeleagle\\Protocol\\ControlService\xe2\x02.Steeleagle\\Protocol\\ControlService\\GPBMetadata\xea\x02$Steeleagle::Protocol::ControlServiceb\x06proto3"
+	"'com.steeleagle.protocol.control_serviceB\x13ControlServiceProtoP\x01Z0github.com/cmusatyalab/steeleagle/runtime/protos\xa2\x02\x03SPC\xaa\x02\"Steeleagle.Protocol.ControlService\xca\x02\"Steeleagle\\Protocol\\ControlService\xe2\x02.Steeleagle\\Protocol\\ControlService\\GPBMetadata\xea\x02$Steeleagle::Protocol::ControlServiceb\x06proto3"
 
 var (
 	file_control_service_proto_rawDescOnce sync.Once
