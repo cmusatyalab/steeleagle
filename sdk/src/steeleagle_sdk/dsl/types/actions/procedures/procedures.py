@@ -129,7 +129,7 @@ class Track(Action):
     )
 
     # --- Compute / detection configuration ---
-    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold).")
+    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold)")
     leash_distance: float = Field(
         10, gt=0.0, description="leashing distance towards the tracked target"
     )
@@ -141,8 +141,15 @@ class Track(Action):
     follow_speed: float = Field(1.0, ge=0.0, description="Max forward speed (m/s)")
     yaw_speed: float = Field(10.0, ge=0.0, description="Max yaw rate (deg/s)")
     orbit_speed: float = Field(0.0, ge=0.0, description="Lateral (orbit) speed (m/s)")
+    descent_speed: float = Field(0.0, ge=0.0, description="Descent speed (m/s)")
     yaw_gain: float = Field(
         2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
+    )
+    target_altitude: float = Field(
+        0.0, ge=0.0, description="Target altitude to descend to while tracking"
+    )
+    altitude_tolerance: float = Field(
+        0.0, ge=0.0, description="Tolerance at which altitude will be checked for descending"
     )
 
     # --- private ---
@@ -227,21 +234,30 @@ class Track(Action):
         self,
         follow_vel: float,
         yaw_vel_deg: float,
+        descent_speed: float,
         gimbal_error_deg: float,
         orbit_speed: float,
         telemetry,
     ) -> None:
         logger.debug(
-            "actuating: follow_vel=%.3f, yaw_vel=%.3f, gimbal_error=%.3f, orbit_speed=%.3f",
+            "actuating: follow_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f, orbit_speed=%.3f",
             follow_vel,
             yaw_vel_deg,
+            descent_speed,
             gimbal_error_deg,
             orbit_speed,
         )
+
+        # Check to see if we need to descend any more
+        rel_alt = telemetry.position_info.relative_position.z
+        if rel_alt + self.altitude_tolerance <= self.target_altitude:
+            descent_speed = 0.0
+
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
         velocity_target=common.Velocity(
                 x_vel=follow_vel,
                 y_vel=orbit_speed,
+                z_vel=-1*descent_speed,
                 angular_vel= yaw_vel_deg * self.yaw_gain,
             )
         logger.debug("Actuate: velocity target: %s", velocity_target)
@@ -286,6 +302,7 @@ class Track(Action):
 
             box: BoundingBox | None = None
             if not res or not res.result:
+                logger.info("Track: no objects found")
                 continue  # no ComputeResult entries
             for compute in res.result:
                 det_result = compute.detection_result
@@ -325,9 +342,10 @@ class Track(Action):
                     continue
 
                 logger.debug(
-                    "Track: forward=%.3f, yaw=%.3f, gimbal=%.3f, orbit=%.3f",
+                    "Track: forward=%.3f, yaw=%.3f, descend=%.3f, gimbal=%.3f, orbit=%.3f",
                     follow_vel,
                     yaw_vel,
+                    self.descent_speed,
                     gimbal_err,
                     self.orbit_speed,
                 )
@@ -337,6 +355,7 @@ class Track(Action):
                     await self._actuate(
                         follow_vel=follow_vel,
                         yaw_vel_deg=yaw_vel,
+                        descent_speed=self.descent_speed,
                         gimbal_error_deg=gimbal_err,
                         orbit_speed=self.orbit_speed,
                         telemetry=telemetry,
