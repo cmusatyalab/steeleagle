@@ -47,7 +47,7 @@ function App() {
   const [tracking, setTracking] = useState(false);
   const [useLocalVehicle, setUseLocalVehicle] = useState(true);
   const [manualControl, setManualControl] = useState(false);
-  const [basePlanarVelocity, setBasePlanarVelocity] = useState(5);
+  const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
   const [showDetections, setShowDetections] = useState(true);
@@ -188,8 +188,11 @@ function App() {
 
   useEffect(() => {
     Object.entries(gamePadButton).forEach(([buttonIndex, state]) => {
-      if (buttonIndex == 16 && state.pressed) {
-        setManualControl(!manualControl);
+      console.log(`Button ${buttonIndex}, Pressed: ${state.pressed}`);
+      if (buttonIndex == 8 && state.pressed) {
+        setManualControl(false);
+      } else if (buttonIndex == 9 && state.pressed) {
+        setManualControl(true);
       }
       if (manualControl) {
         if (buttonIndex == 3 && state.pressed) {
@@ -214,6 +217,7 @@ function App() {
 
     if (manualControl) {
       Object.entries(gamePadAxis).forEach(([axisIndex, value]) => {
+        console.log(`Axis ${axisIndex}, Value: ${value}`);
         if (value != 0.0) {
           if (axisIndex == 0) {
             a = value;
@@ -224,15 +228,17 @@ function App() {
           else if (axisIndex == 2) {
             y = value;
           }
-          else if (axisIndex == 4) {
+          /*else if (axisIndex == 4) {
             y = value;
           }
+          */
           else if (axisIndex == 3) {
             x = value;
           }
-          else if (axisIndex == 5) {
+          /*else if (axisIndex == 5) {
             x = value;
           }
+          */
         }
       });
       onJoystick({ xvel: -1 * basePlanarVelocity * x, yvel: basePlanarVelocity * y, zvel: -1 * basePlanarVelocity * z, angularvel: baseAngularVelocity * a, duration: 1 });
