@@ -45,7 +45,7 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(false);
-  const [useLocalVehicle, setUseLocalVehicle] = useState(true);
+  const [useLocalVehicle, setUseLocalVehicle] = useState(false);
   const [manualControl, setManualControl] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
