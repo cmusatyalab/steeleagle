@@ -4,6 +4,7 @@ import os
 import subprocess
 import time
 import tomllib
+from pathlib import Path
 
 import requests
 
@@ -25,7 +26,7 @@ def start_services(log, info):
         running.append(task)
     # Start the driver
     startup = []
-    if info:
+    if info and info["path"] == '':
         # Get and read the cap file
         cap_request = requests.get(f"{ROOST_REPO}/{info['package']}/cap.toml")
         if cap_request.status_code == 200:
@@ -83,11 +84,45 @@ def start_services(log, info):
         task = subprocess.Popen(driver)
         running.append(task)
         time.sleep(5)
+    elif info and info["path"] != '': # Local run
+        path = Path(info["path"])
+        with open(str(path / "cap.toml")) as cap:
+            startup = tomllib.loads(cap.read())["startup"]
+        driver = [
+            "uv",
+            "run",
+            info["package"],
+            "--kwargs",
+            json.dumps(info["kwargs"]),
+            info["name"],
+            info["address"],
+            info["telemetry"],
+            info["imagery"],
+        ]
+        task = subprocess.Popen(driver, cwd=str(path))
+        running.append(task)
+        time.sleep(5)
+
     # Start the mission
-    # mission = ['python', 'mission/main.py']
-    # task = subprocess.Popen(mission)
-    # running.append(task)
-    # time.sleep(1)
+    if info and info['mission_package'] != '':
+        path = Path(info["mission_path"])
+        mission = [
+            "uv",
+            "run",
+            info["mission_package"],
+            "--json",
+            json.dumps({
+                "name": info["name"],
+                "kernel": info["kernel"],
+                "telemetry": info["telemetry"],
+                "results": info["results"],
+                "mission_sock": info["mission_address"],
+            }),
+        ]
+        task = subprocess.Popen(mission, cwd=str(path))
+        running.append(task)
+        time.sleep(1)
+
     # Start the kernel
     kernel = ["python", "kernel/main.py"]
     if len(startup) > 0:
@@ -173,10 +208,16 @@ if __name__ == "__main__":
         kwargs = query_config("vehicle.kwargs")
         driver_info = {
             "name": query_config("vehicle.name"),
+            "path": query_config("vehicle.path"),
             "package": query_config("vehicle.package"),
+            "mission_path": query_config("mission.path"),
+            "mission_package": query_config("mission.package"),
             "address": query_config("internal.services.driver"),
             "telemetry": query_config("internal.streams.driver_telemetry"),
             "imagery": query_config("internal.streams.imagery"),
+            "results": query_config("internal.streams.results"),
+            "kernel": query_config("internal.services.kernel"),
+            "mission_address": query_config("internal.services.mission"),
             "kwargs": kwargs if kwargs != {} else None,
         }
 
