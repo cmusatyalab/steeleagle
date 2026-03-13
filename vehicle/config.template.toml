@@ -1,9 +1,17 @@
 [vehicle]
 # Name of the vehicle reported through telemetry
 name = ''
+# If local, path to the package directory
+path = ''
 # Vehicle package (see https://git.cmusatyalab.org/steeleagle/roost for list of available vehicles)
 package = ''
 [vehicle.kwargs]
+
+[mission]
+# If local, path to the package directory
+path = ''
+# Mission package
+package = 'steeleagle-mission'
 
 [cloudlet]
 # Location of the swarm controller (typically runs on port 5003)

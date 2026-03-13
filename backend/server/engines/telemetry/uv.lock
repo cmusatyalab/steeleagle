@@ -187,6 +187,38 @@ wheels = [
 ]
 
 [[package]]
+name = "foxglove-sdk"
+version = "0.19.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/70/dda1ad3ca1c70abd2eca4622b3ea64081c978976a7caf54d40c764e01bc4/foxglove_sdk-0.19.0.tar.gz", hash = "sha256:9e0ce5007aa21b9f77495f921c1cf53f36efe577193a8e09b0a11311f035f2b8", size = 440650, upload-time = "2026-03-05T02:21:23.144Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/7b/112b4699b314a860040fa600ee8e4de779c7c52343e119b5e86052763a10/foxglove_sdk-0.19.0-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:a9f8b4bc08fea16945712598cba9587628436d84a2224aa6b96f7abd04f37784", size = 2012669, upload-time = "2026-03-05T02:20:16.72Z" },
+    { url = "https://files.pythonhosted.org/packages/be/8b/8f8123d68e640a77aa7072b72d83ff49d5c86dc658fbf25d42a0fbc208f3/foxglove_sdk-0.19.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b1f014d1435ab1a7696b3fbba8139f375901375b1b17a7a3080d60d73a2347d9", size = 1938572, upload-time = "2026-03-05T02:20:09.446Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/1b/73f5f5bf7d3efa7876327bfb75fbd7605f865c20d684d278e94dd5050b70/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7b6baae06ba3137f9557bf468e76b3a142708823e43355a8932db54f30e7abdc", size = 2149576, upload-time = "2026-03-05T02:18:51.238Z" },
+    { url = "https://files.pythonhosted.org/packages/13/62/b92f9b175fb990ef30536490006e2f103a579fbed1ca643a3d9bbd20ef09/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c6cd0e753a268a6eeff494844bec944607eb52360ffd7bc246719553e5a22a56", size = 2122731, upload-time = "2026-03-05T02:19:05.949Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/5b/f15d94f7efd603f7c9c5361920249cd1556c53e03d96d334f92579e5a5b0/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:95fe59ce61f03c6cbd6114e2cc190735dbd8cefacd358e0f4616e4fcfd95e2a3", size = 2292395, upload-time = "2026-03-05T02:19:50.353Z" },
+    { url = "https://files.pythonhosted.org/packages/06/49/76e14fed96efa7683ca69930dec15860dd40cffce05701abb1b956bf6047/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:93082e8b748f5efcb733a53aab21bf2ab61a79beff2b2052ceb38b5c7fdaa806", size = 2465586, upload-time = "2026-03-05T02:19:21.262Z" },
+    { url = "https://files.pythonhosted.org/packages/af/6a/ff68f9cbc5fcb17b4d2ca7b48cf29863beeeba1ae1dd7df0580318ade5a4/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:314eb1bd2e87570751dced8d98843c64594eccfbe802d264d2ba5c1be3e9e621", size = 2207432, upload-time = "2026-03-05T02:19:35.627Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/9a/5c3328042e0ee3bbfeeff25a8ef573175ca33f1efa6d4f5c49777a6ec668/foxglove_sdk-0.19.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cb0e4b1ed3a0536b180fcec097b404bb8edf0c5242b4e310e169476fa1263f91", size = 2137228, upload-time = "2026-03-05T02:20:00.166Z" },
+    { url = "https://files.pythonhosted.org/packages/32/1c/1255c34c1fb857c4e44152ffe2b528fdc4bb00ee6b5dd45dbff59adecd5e/foxglove_sdk-0.19.0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:33b3dce429c7a2985b333bb20629fcfed9b80667fdd19f069e0eae3817cea22c", size = 2377109, upload-time = "2026-03-05T02:20:23.676Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/50/8831e0a3d9083df7c873e560e82086d3f48dc1671abfde943514c93509b9/foxglove_sdk-0.19.0-cp311-cp311-musllinux_1_2_armv7l.whl", hash = "sha256:7991e090ca73572019bbcc2474b456802ab7031fda043ac3b10c1c5252a216f5", size = 2400244, upload-time = "2026-03-05T02:20:40.145Z" },
+    { url = "https://files.pythonhosted.org/packages/95/51/b60d1b5b8610e462e89cf72a3d2df3f24f2a65239c303350f548df993dff/foxglove_sdk-0.19.0-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:59f90cbc7a3e36a48332c8264385e60f2df5a8327e106211b12ec6ffbab26c15", size = 2440383, upload-time = "2026-03-05T02:20:54.45Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/e9/8c211d3af3c4e338d5c38da440b4ca3c326e9ff580031334281b75a1da08/foxglove_sdk-0.19.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:23b851d7c9d7f2e2fcdf751d62cf5fa9d7ad65ade1c9850f8129704ae8529dda", size = 2405223, upload-time = "2026-03-05T02:21:09.016Z" },
+    { url = "https://files.pythonhosted.org/packages/47/fd/4ea277a2de0e86dca058bf22cd02a413b96f8c93b8a2caff9bda70b37b03/foxglove_sdk-0.19.0-cp311-cp311-win32.whl", hash = "sha256:2b51aecb033529ad23431719e1775463ebbe9266a905b7d822d80523faad2869", size = 1534398, upload-time = "2026-03-05T02:21:25.581Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/83/0394c53ec3d100051cdc24171874dd84d88b87bd0caa2f56343b641fd4b9/foxglove_sdk-0.19.0-cp311-cp311-win_amd64.whl", hash = "sha256:fb1bf67ad01216a105a381e87d5ad6784a499c8a8becd7b9a4a3c1fb14c29a2c", size = 1696191, upload-time = "2026-03-05T02:21:34.165Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/15/70fc0e6904dbf88f651a95ccba4de006158cafb9d77b3b080b470facfd6f/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b8ed5a193fc891085827528d3607058655ea4783cc277270eba09371cd8158c6", size = 2149756, upload-time = "2026-03-05T02:19:03.382Z" },
+    { url = "https://files.pythonhosted.org/packages/36/30/0adcfd00d7f7bed36ed90a1d22184bffebbe1d482164c8fc0ac2a5a0df5f/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:b7db4ab3c70576b7a604159b398aac8615bacb4a442fdebd8d43d4760224f50b", size = 2122827, upload-time = "2026-03-05T02:19:17.314Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/8c/8c096d95052d2ac810248c59524bbd43c85fb3c6d82ff973ca503d6e4874/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:52003ddca9b98359a24c2e2de82340acc5fadfe6b17b91521e695549167ecffc", size = 2297700, upload-time = "2026-03-05T02:19:57.318Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/23/9d4e1a9080a56ce45a62ec873895138899706f07dedfc2f0f515f510f893/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:5577bb1d47104e699ecba30606dd76e5e85fa0adaa0fcfb2b6e789e1fbeeb8f4", size = 2464970, upload-time = "2026-03-05T02:19:33.082Z" },
+    { url = "https://files.pythonhosted.org/packages/59/9a/15951799c18ff4f7a5a504eacccb2db9559615bc20d2f4e228b05213df0e/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0665d4b84f2ec2d4005440e0e8923f4b0f86ff433e4e29fe3cbb63724b68b067", size = 2211498, upload-time = "2026-03-05T02:19:46.007Z" },
+    { url = "https://files.pythonhosted.org/packages/13/47/6c0ac0c56e63a8e44670ebe839253fd743ac683ca2f3e18b9da2c95c6856/foxglove_sdk-0.19.0-pp311-pypy311_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:30c0e035a0c48c1c62a3c4a23e30bea996b46fe2c88eab06be5b4915f4572a6e", size = 2137780, upload-time = "2026-03-05T02:20:05.573Z" },
+    { url = "https://files.pythonhosted.org/packages/66/73/9e7fb4741f087dfd07f23381817d04c1ccde8de5b27e994547f3b753dfec/foxglove_sdk-0.19.0-pp311-pypy311_pp73-musllinux_1_2_aarch64.whl", hash = "sha256:39a1a124fe0d3c4654ccb716f1f383e69663d05dc8a6db343807e75389927c08", size = 2377600, upload-time = "2026-03-05T02:20:37.239Z" },
+    { url = "https://files.pythonhosted.org/packages/05/74/282bc9c75c9856b66224dffe0aeb48e68ae2378f773b68ee4c519cd96461/foxglove_sdk-0.19.0-pp311-pypy311_pp73-musllinux_1_2_armv7l.whl", hash = "sha256:75c2a12c2538a4a8f6844902c98da25d582153f5e815575e89a91f2248fd4b74", size = 2401288, upload-time = "2026-03-05T02:20:51.445Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/ee/22d14a680f62b28eec3f528bc73bc9cbcd3c16b8770f3b820e7ce66460db/foxglove_sdk-0.19.0-pp311-pypy311_pp73-musllinux_1_2_i686.whl", hash = "sha256:46bf8fc49295581e4522579748039cdb3b566c09bef73df1d1ec21e6e3a226db", size = 2444352, upload-time = "2026-03-05T02:21:05.724Z" },
+    { url = "https://files.pythonhosted.org/packages/8b/4d/943c9b38299e7974167dded900581934cbfb0b581e87a2388c9fadd5ee91/foxglove_sdk-0.19.0-pp311-pypy311_pp73-musllinux_1_2_x86_64.whl", hash = "sha256:f2a253fcfcacd5b076260ed5f539b795c320733cbb656fbe0125bdd64d49a001", size = 2407108, upload-time = "2026-03-05T02:21:21.143Z" },
+]
+
+[[package]]
 name = "gabriel-protocol"
 version = "4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -652,6 +684,7 @@ name = "steeleagle-backend-telemetry"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "foxglove-sdk" },
     { name = "gabriel-server" },
     { name = "numpy" },
     { name = "opencv-python-headless" },
@@ -663,6 +696,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "foxglove-sdk" },
     { name = "gabriel-server", specifier = ">=4.1.2" },
     { name = "numpy" },
     { name = "opencv-python-headless", specifier = ">=3,<5" },

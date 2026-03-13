@@ -284,7 +284,7 @@ async def lifespan(app: FastAPI):
             remote_stub=remote_stub,
             redis_connection=red,
             webserver=webserver,
-            show_detections=False,
+            show_detections=True,
         )
         backend_connections[b] = bc
 

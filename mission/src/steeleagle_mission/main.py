@@ -1,4 +1,5 @@
 import argparse
+import json
 import asyncio
 import logging
 import sys
@@ -86,6 +87,13 @@ def cli():
         help="Path to TOML config file with drone definition. "
              "Example: -c config.toml",
     )
+    parser.add_argument(
+        '-j',
+        '--json',
+        type=json.loads,
+        default=None,
+        help='Config in json format'
+    )
     args = parser.parse_args()
 
     # Load drone config from file or use defaults
@@ -96,6 +104,8 @@ def cli():
         except Exception as e:
             print(f"Error loading config file {args.config}: {e}")
             sys.exit(1)
+    elif args.json:
+        drone_config = args.json
     else:
         # Default single drone configuration
         drone_config = {
