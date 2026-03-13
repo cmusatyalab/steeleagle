@@ -88,6 +88,10 @@ class Patrol(Action):
         1.0, ge=0.0, description="seconds to hover after each move"
     )
     waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
+    max_velocity: common.Velocity = Field(
+            common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0),
+            description="Maximum velocity to use while transiting between waypoints.",
+    )
 
     async def execute(self):
         map = self.waypoints.calculate()
@@ -104,9 +108,7 @@ class Patrol(Action):
                     ),
                     altitude_mode=AltitudeMode.RELATIVE,
                     heading_mode=HeadingMode.TO_TARGET,
-                    max_velocity=common.Velocity(
-                        x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0
-                    ),
+                    max_velocity=self.max_velocity,
                 )
                 await goto.execute()
 
