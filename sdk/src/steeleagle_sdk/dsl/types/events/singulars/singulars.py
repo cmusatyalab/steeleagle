@@ -320,6 +320,33 @@ class DetectionFound(Event):
         # If we got here, all provided constraints passed
         return True
 
+@register_event
+class AltitudeReached(Event):
+    """
+    True if telemetry reports being within tolerance of altitude.
+    """
+
+    altitude: float = Field(description="Target altitude.")
+    tol: float = Field(0.5, ge=0, description="Error tolerance around target altitude.")
+    use_absolute: bool = Field(False, description="Whether to use absolute altitude (MSL) instead of AGL altitude.")
+
+    async def check(self) -> bool:
+        while True:
+            tel: DriverTelemetry | None = await fetch_telemetry()
+            if not tel or not tel.position_info:
+                continue
+            if self.use_absolute:
+                cur = tel.position_info.global_position
+                if not cur:
+                    continue
+                if abs(cur.altitude - self.altitude) <= self.tol:
+                    return True
+            else:
+                cur = tel.position_info.relative_position
+                if not cur:
+                    continue
+                if abs(cur.z - self.altitude) <= self.tol:
+                    return True
 
 @register_event
 class HSVReached(Event):

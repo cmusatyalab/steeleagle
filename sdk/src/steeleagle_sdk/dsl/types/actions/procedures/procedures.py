@@ -133,16 +133,15 @@ class Track(Action):
     # --- Compute / detection configuration ---
     target: Detection = Field(description="Detection to track (class_name to match, optional score threshold)")
     leash_distance: float = Field(
-        10, gt=0.0, description="leashing distance towards the tracked target"
+        10, ge=0.0, description="leashing distance towards the tracked target"
     )
     target_lost_duration: float = Field(
         10.0, gt=0.0, description="Seconds without detection before exiting"
     )
 
     # --- actuation ---
-    follow_speed: float = Field(1.0, ge=0.0, description="Max forward speed (m/s)")
+    follow_speed: float = Field(1.0, ge=0.0, description="Max planar speed (m/s)")
     yaw_speed: float = Field(10.0, ge=0.0, description="Max yaw rate (deg/s)")
-    orbit_speed: float = Field(0.0, ge=0.0, description="Lateral (orbit) speed (m/s)")
     descent_speed: float = Field(0.0, ge=0.0, description="Descent speed (m/s)")
     yaw_gain: float = Field(
         2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
@@ -153,6 +152,8 @@ class Track(Action):
     altitude_tolerance: float = Field(
         0.0, ge=0.0, description="Tolerance at which altitude will be checked for descending"
     )
+    strafe: bool = Field(False, description="Whether or not to move left/right when following")
+    gimbal_lock: bool = Field(False, description="Whether or not to lock the gimbal in position")
 
     # --- private ---
     _poll_period: float = 0.05
@@ -228,26 +229,25 @@ class Track(Action):
         follow_vec = await self._estimate_distance(
             target_yaw_angle, target_bottom_pitch, telemetry
         )
-        follow_error = float(follow_vec[1])
 
-        return (follow_error, yaw_error, gimbal_error)
+        return (follow_vec, yaw_error, gimbal_error)
 
     async def _actuate(
         self,
-        follow_vel: float,
+        right_vel: float,
+        forward_vel: float,
         yaw_vel_deg: float,
         descent_speed: float,
         gimbal_error_deg: float,
-        orbit_speed: float,
         telemetry,
     ) -> None:
         logger.debug(
-            "actuating: follow_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f, orbit_speed=%.3f",
-            follow_vel,
+            "actuating: right_vel=%.3f, forward_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f",
+            right_vel,
+            forward_vel,
             yaw_vel_deg,
             descent_speed,
             gimbal_error_deg,
-            orbit_speed,
         )
 
         # Check to see if we need to descend any more
@@ -256,11 +256,19 @@ class Track(Action):
             descent_speed = 0.0
 
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
-        velocity_target=common.Velocity(
-                x_vel=follow_vel,
-                y_vel=orbit_speed,
-                z_vel=-1*descent_speed,
-                angular_vel= yaw_vel_deg * self.yaw_gain,
+        if not self.strafe:
+            velocity_target = common.Velocity(
+                    x_vel=forward_vel,
+                    y_vel=0.0,
+                    z_vel=-1*descent_speed,
+                    angular_vel= yaw_vel_deg * self.yaw_gain,
+            )
+        else:
+            velocity_target = common.Velocity(
+                    x_vel=forward_vel,
+                    y_vel=right_vel,
+                    z_vel=-1*descent_speed,
+                    angular_vel= yaw_vel_deg * self.yaw_gain,
             )
         logger.debug("Actuate: velocity target: %s", velocity_target)
         set_joystick = Joystick(
@@ -269,15 +277,16 @@ class Track(Action):
         await set_joystick.execute()
 
         # Gimbal pitch command
-        desired_pitch = (gimbal_error_deg * 0.5)
-        pose = common.Pose(
-            pitch=desired_pitch,
-            yaw=0.0,
-            roll=0.0,
-        )
-        # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
-        set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=PoseMode.OFFSET, frame=None)
-        await set_gimbal.execute()
+        if not self.gimbal_lock:
+            desired_pitch = (gimbal_error_deg * 0.5)
+            pose = common.Pose(
+                pitch=desired_pitch,
+                yaw=0.0,
+                roll=0.0,
+            )
+            # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
+            set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=PoseMode.OFFSET, frame=None)
+            await set_gimbal.execute()
 
     async def execute(self):
         last_seen: float | None = None
@@ -332,8 +341,12 @@ class Track(Action):
                     continue
 
                 try:
-                    follow_vel = self._clamp(
-                        follow_err, -self.follow_speed, self.follow_speed
+                    follow_vel = [0.0, 0.0]
+                    follow_vel[0] = self._clamp(
+                        follow_err[0], -self.follow_speed, self.follow_speed
+                    )
+                    follow_vel[1] = self._clamp(
+                        follow_err[1], -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
                     logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
@@ -344,22 +357,22 @@ class Track(Action):
                     continue
 
                 logger.debug(
-                    "Track: forward=%.3f, yaw=%.3f, descend=%.3f, gimbal=%.3f, orbit=%.3f",
-                    follow_vel,
+                    "Track: right=%.3f, forward=%.3f, yaw=%.3f, descend=%.3f, gimbal=%.3f",
+                    follow_vel[0],
+                    follow_vel[1],
                     yaw_vel,
                     self.descent_speed,
                     gimbal_err,
-                    self.orbit_speed,
                 )
 
                 try:
-                    # At/above desired altitude: follow + orbit
+                    # At/above desired altitude: follow
                     await self._actuate(
-                        follow_vel=follow_vel,
+                        right_vel=follow_vel[0],
+                        forward_vel=follow_vel[1],
                         yaw_vel_deg=yaw_vel,
                         descent_speed=self.descent_speed,
                         gimbal_error_deg=gimbal_err,
-                        orbit_speed=self.orbit_speed,
                         telemetry=telemetry,
                     )
                 except Exception as e:
