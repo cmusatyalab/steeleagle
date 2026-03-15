@@ -146,6 +146,9 @@ class Track(Action):
     yaw_gain: float = Field(
         2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
     )
+    strafe_gain: float = Field(
+        0.0, ge=0.0, description="Gain applied to strafe error before sending to FCU"
+    )
     target_altitude: float = Field(
         0.0, ge=0.0, description="Target altitude to descend to while tracking"
     )
@@ -241,7 +244,7 @@ class Track(Action):
         gimbal_error_deg: float,
         telemetry,
     ) -> None:
-        logger.debug(
+        logger.info(
             "actuating: right_vel=%.3f, forward_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f",
             right_vel,
             forward_vel,
@@ -260,15 +263,15 @@ class Track(Action):
             velocity_target = common.Velocity(
                     x_vel=forward_vel,
                     y_vel=0.0,
-                    z_vel=-1*descent_speed,
+                    z_vel=-1 * descent_speed,
                     angular_vel= yaw_vel_deg * self.yaw_gain,
             )
         else:
             velocity_target = common.Velocity(
-                    x_vel=forward_vel,
-                    y_vel=right_vel,
-                    z_vel=-1*descent_speed,
-                    angular_vel= yaw_vel_deg * self.yaw_gain,
+                    x_vel=gimbal_error_deg * self.strafe_gain,
+                    y_vel=yaw_vel_deg * self.strafe_gain,
+                    z_vel=-1 * descent_speed,
+                    angular_vel=0.0,
             )
         logger.debug("Actuate: velocity target: %s", velocity_target)
         set_joystick = Joystick(
