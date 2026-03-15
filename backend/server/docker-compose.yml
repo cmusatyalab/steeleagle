@@ -17,6 +17,7 @@ services:
     ports:
       - "8000:8000"
       - "9099:9099"
+      - "5555:5555"
     entrypoint: [ "./main.py", "-t", "${GABRIEL_TOKENS}", "-z"]
     restart: unless-stopped
     networks:
@@ -256,6 +257,26 @@ services:
     networks:
       - steeleagle-net
       - redis
+
+  aruco-engine:
+    image: cmusatyalab/steeleagle-aruco-marker-engine
+    container_name: aruco-engine
+    restart: on-failure:3
+    entrypoint:
+      [
+        "uv",
+        "run",
+        "/steeleagle/main.py",
+      ]
+    depends_on:
+      - gabriel-server
+    networks:
+      - steeleagle-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   steeleagle-net:
