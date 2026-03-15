@@ -214,6 +214,9 @@ class StreamHandler:
                 encode_param,
             )
             encoded_frame.data = encoded_img.tobytes()
+            encoded_frame.h_res = raw_frame.h_res
+            encoded_frame.v_res = raw_frame.v_res
+            encoded_frame.channels = raw_frame.channels
             encoded_frame.timestamp.CopyFrom(raw_frame.timestamp)
             encoded_frame.id = raw_frame.id
             encoded_frame.vehicle_info.CopyFrom(raw_frame.vehicle_info)
