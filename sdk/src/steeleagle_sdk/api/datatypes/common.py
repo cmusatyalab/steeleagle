@@ -84,9 +84,9 @@ class Pose(Datatype):
         yaw (Optional[float]): yaw [degrees]
     """
 
-    pitch: float | None
-    roll: float | None
-    yaw: float | None
+    pitch: float | None = 0.0
+    roll: float | None = 0.0
+    yaw: float | None = 0.0
 
 
 class Velocity(Datatype):
@@ -99,10 +99,10 @@ class Velocity(Datatype):
         angular_vel (Optional[float]): angular velocity [degrees/s]
     """
 
-    x_vel: float | None
-    y_vel: float | None
-    z_vel: float | None
-    angular_vel: float | None = None
+    x_vel: float | None = 0.0
+    y_vel: float | None = 0.0
+    z_vel: float | None = 0.0
+    angular_vel: float | None = 0.0
 
 
 class Position(Datatype):
@@ -115,10 +115,10 @@ class Position(Datatype):
         angle (Optional[float]): angular offset [degrees]
     """
 
-    x: float | None = None
-    y: float | None = None
-    z: float | None = None
-    angle: float | None = None
+    x: float | None = 0.0
+    y: float | None = 0.0
+    z: float | None = 0.0
+    angle: float | None = 0.0
 
 
 class Location(Datatype):
@@ -131,7 +131,7 @@ class Location(Datatype):
         heading (Optional[float]): global heading [degrees]
     """
 
-    latitude: float | None
-    longitude: float | None
-    altitude: float | None = None
-    heading: float | None = None
+    latitude: float | None = 0.0
+    longitude: float | None = 0.0
+    altitude: float | None = 0.0
+    heading: float | None = 0.0

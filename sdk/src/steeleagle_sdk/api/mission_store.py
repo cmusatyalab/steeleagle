@@ -118,7 +118,10 @@ class MissionStore:
                 msg = telem_proto.DriverTelemetry()
                 msg.ParseFromString(payload)
                 data = MessageToDict(
-                    msg, preserving_proto_field_name=True, use_integers_for_enums=True
+                    msg,
+                    always_print_fields_with_no_presence=True,
+                    preserving_proto_field_name=True,
+                    use_integers_for_enums=True,
                 )
                 data.get("telemetry_stream_info", {}).pop("uptime", None) # patch fix for duration field parsing issue
                 return DriverTelemetry.model_validate(data)
