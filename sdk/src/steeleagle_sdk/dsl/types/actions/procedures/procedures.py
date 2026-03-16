@@ -146,9 +146,6 @@ class Track(Action):
     yaw_gain: float = Field(
         2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
     )
-    strafe_gain: float = Field(
-        0.0, ge=0.0, description="Gain applied to strafe error before sending to FCU"
-    )
     target_altitude: float = Field(
         0.0, ge=0.0, description="Target altitude to descend to while tracking"
     )
@@ -244,7 +241,7 @@ class Track(Action):
         gimbal_error_deg: float,
         telemetry,
     ) -> None:
-        logger.info(
+        logger.debug(
             "actuating: right_vel=%.3f, forward_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f",
             right_vel,
             forward_vel,
@@ -268,8 +265,8 @@ class Track(Action):
             )
         else:
             velocity_target = common.Velocity(
-                    x_vel=gimbal_error_deg * self.strafe_gain,
-                    y_vel=yaw_vel_deg * self.strafe_gain,
+                    x_vel=forward_vel,
+                    y_vel=right_vel,
                     z_vel=-1 * descent_speed,
                     angular_vel=0.0,
             )
@@ -294,7 +291,7 @@ class Track(Action):
     async def execute(self):
         last_seen: float | None = None
         while True:
-            # --- Target lost check ---
+            #--- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 # Stop motion and exit
@@ -352,7 +349,9 @@ class Track(Action):
                         follow_err[1], -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
+                    logger.info("Follow Error is: " + follow_err)
                     logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
+                    logger.debug("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
 
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
