@@ -23,7 +23,7 @@ from gabriel_server.network_engine import engine_runner
 from aruco_marker_detector_engine import ArucoMarkerDetectorEngine
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -44,7 +44,7 @@ def main():
     )
 
     parser.add_argument(
-        "-src", "--engine_id", default="aruco-detector-engine", help="Engine identifier."
+        "-src", "--engine_id", default="aruco_detector_engine", help="Engine identifier."
     )
 
     args, _ = parser.parse_known_args()

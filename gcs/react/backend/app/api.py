@@ -412,15 +412,13 @@ async def _remote_imagery_broadcaster(vehicle: str):
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 img_bytes = response.content
+                nparr = np.frombuffer(img_bytes, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if conn.show_detections:
-                    bbox_img = maybe_add_bboxes(vehicle, img_bytes)
-                    if bbox_img is None:
-                        base64_image = base64.b64encode(img_bytes).decode("ascii")
-                    else:
-                        _, buffer = cv2.imencode(".jpg", bbox_img, [cv2.IMWRITE_JPEG_QUALITY, 90])
-                        base64_image = base64.b64encode(buffer).decode("ascii")
-                else:
-                    base64_image = base64.b64encode(img_bytes).decode("ascii")
+                    maybe_add_bboxes(vehicle, img)
+                add_watermark(img)
+                _, img_bytes = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                base64_image = base64.b64encode(img_bytes).decode("ascii")
                 await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
             await asyncio.sleep(0.1)
         except requests.exceptions.RequestException as e:
@@ -440,7 +438,6 @@ def get_latest_detections(vehicle_id):
     red = conn
 
     key = f"latest-detection:{vehicle_id}"
-    logger.info(f"Looking for {key} in redis")
     raw = red.lrange(key, 0, -1)
     if not raw:
         return []
@@ -455,12 +452,10 @@ def get_latest_detections(vehicle_id):
             return []
     return detections
 
-def maybe_add_bboxes(vehicle_id, img_bytes):
+def maybe_add_bboxes(vehicle_id, img):
     detections = get_latest_detections(vehicle_id)
     if len(detections) == 0:
-        return None
-    nparr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        return
     h, w = img.shape[:2]
 
     CLASS_COLORS = {
@@ -514,7 +509,14 @@ def maybe_add_bboxes(vehicle_id, img_bytes):
             lineType=cv2.LINE_AA,
         )
 
-    return img
+def add_watermark(img):
+    ts = time.strftime("%H:%M:%S")
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (0,0,0), 5, cv2.LINE_AA)
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (255,255,255), 2, cv2.LINE_AA)
 
 # API Routes
 @app.get("/api/remote/backends")
