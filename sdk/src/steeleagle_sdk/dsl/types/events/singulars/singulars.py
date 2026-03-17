@@ -8,6 +8,7 @@ from pydantic import Field
 from ....compiler.registry import register_event
 from ...base import Event
 from ...datatypes.common import Location, Pose, Position, Velocity
+from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.control import ReferenceFrame
 from ...datatypes.result import HSV, Detection, FrameResult
 from ...datatypes.telemetry import DriverTelemetry
@@ -346,6 +347,67 @@ class AltitudeReached(Event):
                 if not cur:
                     continue
                 if abs(cur.z - self.altitude) <= self.tol:
+                    return True
+
+@register_event
+class BoundingBoxCentered(Event):
+    """
+    True if the bounding box of the given class is centered in frame.
+    """
+
+    target: Detection = Field(description="Detection to check if centered")
+    compute_stream: str = Field("aruco_detector_engine", description="Name of compute stream to get results from")
+    v_tol: float = Field(1.0, ge=0.0, description="Vertical tolerance")
+    h_tol: float = Field(1.0, ge=0.0, description="Horizontal tolerance")
+
+    # --- Camera / image geometry ---
+    image_width: int = Field(1280, gt=0, description="Camera image width in pixels")
+    image_height: int = Field(720, gt=0, description="Camera image height in pixels")
+    hfov_deg: float = Field(69.0, gt=0, description="Horizontal FOV in degrees")
+    vfov_deg: float = Field(43.0, gt=0, description="Vertical FOV in degrees")
+
+    @property
+    def _pixel_center(self) -> tuple[float, float]:
+        logger.debug("pixel center: w=%d, h=%d", self.image_width, self.image_height)
+        return (self.image_width / 2.0, self.image_height / 2.0)
+
+    async def _compute_error(self, box: BoundingBox) -> tuple[float, float]:
+        img_w, img_h = self.image_width, self.image_height
+        cx, cy = self._pixel_center
+        y_min_pix = box.y_min * img_h
+        x_min_pix = box.x_min * img_w
+        y_max_pix = box.y_max * img_h
+        x_max_pix = box.x_max * img_w
+
+        target_x_pix = x_min_pix + (x_max_pix - x_min_pix) / 2.0
+        target_y_pix = y_min_pix + (y_max_pix - y_min_pix) / 2.0
+
+        h_err = ((target_x_pix - cx) / cx) * (self.hfov_deg / 2.0)
+        v_err = -1 * ((target_y_pix - cy) / cy) * (self.vfov_deg / 2.0)
+        return v_err, h_err
+
+    async def check(self) -> bool:
+        while True:
+            res: FrameResult = await fetch_results('object-engine')
+            box: BoundingBox | None = None
+            if not res or not res.result:
+                logger.info(f'{res=}')
+                continue
+            logger.info(res.result)
+            for compute in res.result:
+                det_result = compute.detection_result
+                if not det_result or not det_result.detections:
+                    continue
+                for det in det_result.detections:
+                    if det is None:
+                        continue
+                    if self.target.class_name is not None and (det.class_name == self.target.class_name):
+                        box = det.bbox
+                        break
+
+            if box is not None:
+                v_err, h_err = await self._compute_error(box)
+                if math.isclose(v_err, 0.0, abs_tol=self.v_tol) and math.isclose(h_err, 0.0, abs_tol=self.h_tol):
                     return True
 
 @register_event

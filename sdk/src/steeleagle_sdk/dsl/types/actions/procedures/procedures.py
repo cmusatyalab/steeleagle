@@ -247,7 +247,7 @@ class Track(Action):
         gimbal_error_deg: float,
         telemetry,
     ) -> None:
-        logger.info(
+        logger.debug(
             "actuating: right_vel=%.3f, forward_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f",
             right_vel,
             forward_vel,
@@ -355,9 +355,9 @@ class Track(Action):
                         follow_err[1], -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
-                    logger.info(f"follow_vel {follow_err}")
+                    logger.debug(f"follow_vel {follow_err}")
                     logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
-                    logger.info("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
+                    logger.debug("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
 
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
