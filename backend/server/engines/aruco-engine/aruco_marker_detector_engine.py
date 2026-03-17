@@ -5,6 +5,9 @@ from gabriel_protocol import gabriel_pb2
 from steeleagle_sdk.protocol.messages import result_pb2
 from google.protobuf.any_pb2 import Any
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
     def handle(self, input_frame):
@@ -21,26 +24,30 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
 
         np_data = np.frombuffer(frame.data, dtype=np.uint8)
         image = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+        height, width = image.shape[:2]
 
         arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
         arucoParams = cv2.aruco.DetectorParameters()
         detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
         corners, ids, _ = detector.detectMarkers(image)
-        print(ids)
 
         compute_result = result_pb2.ComputeResult()
         detection_result = result_pb2.DetectionResult()
         for i, corner in enumerate(corners):
             det_object = result_pb2.Detection()
             det_object.detection_id = i
-            det_object.class_name = f"aruco-{ids[i][0]}"
+            det_object.class_name = f"aruco_{ids[i][0]}"
             c = corner[0]
+            logger.info(f'{c=}')
+
             bbox = result_pb2.BoundingBox(
-                x_min = np.min(c[:, 0]),
-                y_min = np.min(c[:, 1]),
-                x_max = np.max(c[:, 0]),
-                y_max = np.max(c[:, 1]),
+                x_min = np.min(c[:, 0]) / width,
+                y_min = np.min(c[:, 1]) / height,
+                x_max = np.max(c[:, 0]) / width,
+                y_max = np.max(c[:, 1]) / height,
             )
+
+            logger.info(f'{bbox=}')
             det_object.bbox.CopyFrom(bbox)
             detection_result.detections.append(det_object)
         compute_result.detection_result.CopyFrom(detection_result)
