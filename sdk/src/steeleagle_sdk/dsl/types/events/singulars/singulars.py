@@ -388,7 +388,7 @@ class BoundingBoxCentered(Event):
 
     async def check(self) -> bool:
         while True:
-            res: FrameResult = await fetch_results('object-engine')
+            res: FrameResult = await fetch_results(self.compute_stream)
             box: BoundingBox | None = None
             if not res or not res.result:
                 logger.info(f'{res=}')
