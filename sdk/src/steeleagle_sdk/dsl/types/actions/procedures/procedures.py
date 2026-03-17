@@ -146,6 +146,9 @@ class Track(Action):
     yaw_gain: float = Field(
         2.0, ge=0.0, description="Gain applied to yaw error before sending to FCU"
     )
+    follow_gain: float = Field(
+        1.0, ge=0.0, description="Gain applied to follow error before sending to FCU"
+    )
     target_altitude: float = Field(
         0.0, ge=0.0, description="Target altitude to descend to while tracking"
     )
@@ -179,9 +182,7 @@ class Track(Action):
         if abs(denom) < 1e-6:
             return None
 
-        t = (plane_norm.dot(plane_pt) - plane_norm.dot(tracker_location)) / plane_norm.dot(
-            tracker_dir
-        )
+        t = (plane_norm.dot(plane_pt) - plane_norm.dot(tracker_location)) / denom
         return tracker_location + (t * tracker_dir)
 
     async def _estimate_distance(
@@ -226,22 +227,27 @@ class Track(Action):
         yaw_error = target_yaw_angle
         gimbal_error = target_pitch_angle
 
-        follow_vec = await self._estimate_distance(
-            target_yaw_angle, target_bottom_pitch, telemetry
-        )
+        if self.strafe:
+            follow_vec = await self._estimate_distance(
+                target_yaw_angle, target_pitch_angle, telemetry
+            )
+        else:
+            follow_vec = await self._estimate_distance(
+                target_yaw_angle, target_bottom_pitch, telemetry
+            )
 
         return (follow_vec, yaw_error, gimbal_error)
 
     async def _actuate(
         self,
-        right_vel: float,
         forward_vel: float,
+        right_vel: float,
         yaw_vel_deg: float,
         descent_speed: float,
         gimbal_error_deg: float,
         telemetry,
     ) -> None:
-        logger.debug(
+        logger.info(
             "actuating: right_vel=%.3f, forward_vel=%.3f, yaw_vel=%.3f, descent_speed: %.3f, gimbal_error=%.3f",
             right_vel,
             forward_vel,
@@ -258,15 +264,15 @@ class Track(Action):
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
         if not self.strafe:
             velocity_target = common.Velocity(
-                    x_vel=forward_vel,
+                    x_vel=forward_vel * self.follow_gain,
                     y_vel=0.0,
                     z_vel=-1 * descent_speed,
                     angular_vel= yaw_vel_deg * self.yaw_gain,
             )
         else:
             velocity_target = common.Velocity(
-                    x_vel=forward_vel,
-                    y_vel=right_vel,
+                    x_vel=forward_vel * self.follow_gain,
+                    y_vel=yaw_vel_deg * self.yaw_gain,
                     z_vel=-1 * descent_speed,
                     angular_vel=0.0,
             )
@@ -349,9 +355,9 @@ class Track(Action):
                         follow_err[1], -self.follow_speed, self.follow_speed
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
-                    logger.info("Follow Error is: " + follow_err)
+                    logger.info(f"follow_vel {follow_err}")
                     logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
-                    logger.debug("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
+                    logger.info("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
 
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
@@ -370,8 +376,8 @@ class Track(Action):
                 try:
                     # At/above desired altitude: follow
                     await self._actuate(
-                        right_vel=follow_vel[0],
                         forward_vel=follow_vel[1],
+                        right_vel=follow_vel[0],
                         yaw_vel_deg=yaw_vel,
                         descent_speed=self.descent_speed,
                         gimbal_error_deg=gimbal_err,
