@@ -13,13 +13,6 @@ import (
     "github.com/mwitkow/grpc-proxy/proxy"
 )
 
-type VehicleResult struct {
-    Name     string      `json:"name"`
-    Code     codes.Code  `json:"code"`
-    Message  string      `json:"message,omitempty"`
-    err      error
-}
-
 func (i *Vehicle) getProxyDirector() proxy.StreamDirector {
     return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
         if strings.Contains(method, ".Control/") {
@@ -84,27 +77,23 @@ func (i *Backend) getProxyHandler() grpc.StreamHandler {
                 ctx := ss.Context()
                 clientStream, err := cc.NewStream(ctx, &grpc.StreamDesc{}, fullMethod)
                 if err != nil {
-                    status, _ := status.FromError(err)
-                    results <- VehicleResult{Name: name, Code: status.Code(), Message: status.Message(), err: err}
                     return
                 }
 
                 // Forward the request frame
                 if err := clientStream.SendMsg(req); err != nil {
-                    status, _ := status.FromError(err)
-                    results <- VehicleResult{Name: name, Code: status.Code(), Message: status.Message(), err: err}
                     return
                 }
                 clientStream.CloseSend()
 
-                // Receive empty response
+                // Receive response
                 resp := make([]byte, 0)
                 if err := clientStream.RecvMsg(resp); err != nil {
-                    status, _ := status.FromError(err)
-                    results <- VehicleResult{Name: name, Code: status.Code(), Message: status.Message(), err: err}
                     return
                 }
-                results <- VehicleResult{Name: name, err: nil}
+
+                // Send back response frame
+
             }(name, conn)
         }
 
