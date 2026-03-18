@@ -238,8 +238,7 @@ class PrecisionLand(Action):
                         await Hold().execute()
                         if checked_count >= 5:
                             checked_count = 0
-                            mode += 1
-                            mode = mode % 3
+                            mode = 2
                             continue
                     else:
                         target.x_vel = self._clamp(forward_off, -self.forward_speed, self.forward_speed)
@@ -249,10 +248,13 @@ class PrecisionLand(Action):
                         logger.info(f'lateral check {lateral_off} {self.err_tol * altitude} {altitude}')
                         checked_count += 1
                         await Hold().execute()
-                        if checked_count >= 5:
+                        if checked_count >= 5 and math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
                             checked_count = 0
-                            mode += 1
-                            mode = mode % 3
+                            mode = 2
+                            continue
+                        elif checked_count >= 5:
+                            checked_count = 0
+                            mode = 0
                             continue
                     else:
                         target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
