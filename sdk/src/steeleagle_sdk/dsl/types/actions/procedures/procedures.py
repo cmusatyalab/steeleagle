@@ -139,7 +139,7 @@ class PrecisionLand(Action):
     forward_speed: float = Field(1.0, gt=0)
     lateral_speed: float = Field(1.0, gt=0)
     descent_speed: float = Field(1.0, gt=0)
-    descent_chunk: float = Field(0.5, gt=0)
+    altitude_ceil: float = Field(10.0, lt=20.0)
     target_altitude: float = Field(1.5, gt=1)
 
     @property
@@ -175,7 +175,6 @@ class PrecisionLand(Action):
         logger.info('Started the task')
         last_seen: float | None = None
         mode: int = 0
-        descent_start: int | None = None
         checked_count: int = 0
         # Pitch the gimbal
         await SetGimbalPose(
@@ -184,21 +183,22 @@ class PrecisionLand(Action):
         ).execute()
         # Descent loop
         while True:
-            #--- Target lost check ---
-            now = asyncio.get_event_loop().time()
-            if last_seen is not None and (now - last_seen) > self.target_lost_duration:
-                # Stop motion and exit
-                telemetry = await fetch_telemetry()
-                await Hold().execute()
-                logger.info(
-                    "PrecisionLand: target lost for %.1fs, exiting",
-                    now - last_seen,
-                )
-                break
-
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
             # logger.info("Track: telemetry fetched: %s", telemetry)
+
+            #--- Target lost check ---
+            now = asyncio.get_event_loop().time()
+            if last_seen is not None and (now - last_seen) > self.target_lost_duration:
+                if altitude >= self.altitude_ceil:
+                    await Hold().execute()
+                    logger.info(
+                        "PrecisionLand: target lost for %.1fs, exiting",
+                        now - last_seen,
+                    )
+                    break
+                else:
+                    await Joystick(velocity=Velocity(z_vel=-self.descent_speed)).execute()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
@@ -238,9 +238,10 @@ class PrecisionLand(Action):
                         await Hold().execute()
                         if checked_count >= 5:
                             checked_count = 0
-                            mode = 2
+                            mode = 1
                             continue
                     else:
+                        checked_count = 0
                         target.x_vel = self._clamp(forward_off, -self.forward_speed, self.forward_speed)
                 elif mode == 1: # lateral
                     logger.info(f'lateral step {lateral_off}')
@@ -257,25 +258,16 @@ class PrecisionLand(Action):
                             mode = 0
                             continue
                     else:
+                        checked_count = 0
                         target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
                 else: # descend
                     logger.info('descend step')
-                    if not descent_start:
-                        logger.info('set start descend')
-                        descent_start = altitude
-                    elif altitude > self.target_altitude:
+                    if altitude > self.target_altitude:
                         logger.info('set descend speed')
-                        target.z_vel = -1 * self.descent_speed
-                    else:
-                        if altitude <= self.target_altitude:
-                            logger.info('descend check')
-                            mode += 1
-                            mode = mode % 3
-                        elif descent_start - altitude > self.descent_chunk:
-                            logger.info('descend check 2')
-                            descent_start = None
-                            mode += 1
-                            mode = mode % 3
+                        if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
+                            target.z_vel = -1 * self.descent_speed
+                        else:
+                            mode = 0
                             await Hold().execute()
                             continue
                 logger.info('outer loop')
