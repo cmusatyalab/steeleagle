@@ -423,12 +423,11 @@ async def _remote_imagery_broadcaster(vehicle: str):
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 img_bytes = response.content
-                nparr = np.frombuffer(img_bytes, np.uint8)
-                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if conn.show_detections:
+                    nparr = np.frombuffer(img_bytes, np.uint8)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     maybe_add_bboxes(vehicle, img)
-                add_watermark(img)
-                _, img_bytes = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    _, img_bytes = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
                 base64_image = base64.b64encode(img_bytes).decode("ascii")
                 await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
             await asyncio.sleep(0.1)
@@ -449,8 +448,15 @@ def get_latest_detections(vehicle_id):
         conn = backend_connections[backend_key].redis_connection
     red = conn
 
-    key = f"latest-detection:{vehicle_id}"
-    raw = red.lrange(key, 0, -1)
+    key_obj = f"latest-detection:{vehicle_id}"
+    key_aruco = f"aruco-detection:{vehicle_id}"
+    pipe = red.pipeline()
+    pipe.lrange(key_obj, 0, -1)
+    pipe.lrange(key_aruco, 0, -1)
+    raw_obj, raw_aruco = pipe.execute()
+
+    raw = (raw_obj or []) + (raw_aruco or [])
+
     if not raw:
         return []
 

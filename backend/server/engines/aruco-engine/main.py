@@ -47,11 +47,29 @@ def main():
         "-src", "--engine_id", default="aruco_detector_engine", help="Engine identifier."
     )
 
+    parser.add_argument(
+        "-H",
+        "--redis_host",
+        type=str,
+        default='redis',
+        help="Set host name for redis connection [default: redis",
+    )
+
+    parser.add_argument(
+        "-R",
+        "--redis",
+        type=int,
+        default=6379,
+        help="Set port number for redis connection [default: 6379]",
+    )
+
+    parser.add_argument("-a", "--auth", default="", help="Share key for redis user.")
+
     args, _ = parser.parse_known_args()
 
     logger.info("Starting object detection cognitive engine..")
     runner = engine_runner.EngineRunner(
-        engine=ArucoMarkerDetectorEngine(),
+        engine=ArucoMarkerDetectorEngine(args),
         engine_id=args.engine_id,
         server_address=args.gabriel,
         all_responses_required=True,

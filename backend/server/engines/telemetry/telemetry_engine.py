@@ -256,6 +256,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             # store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+                add_watermark(img)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
@@ -303,6 +304,14 @@ class TelemetryEngine(cognitive_engine.Engine):
         )
         return cognitive_engine.Result(status, None)
 
+def add_watermark(img):
+    ts = time.strftime("%H:%M:%S")
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (0,0,0), 5, cv2.LINE_AA)
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (255,255,255), 2, cv2.LINE_AA)
 
 def main():
     """Starts the Gabriel server."""

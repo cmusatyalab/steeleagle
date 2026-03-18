@@ -6,10 +6,35 @@ from steeleagle_sdk.protocol.messages import result_pb2
 from google.protobuf.any_pb2 import Any
 import numpy as np
 import logging
+import redis
+import json
 
 logger = logging.getLogger(__name__)
 
 class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
+    def __init__(self, args):
+        self.r = redis.Redis(
+            host=args.redis_host,
+            port=args.redis,
+            username="steeleagle",
+            password=f"{args.auth}",
+            decode_responses=True,
+        )
+        self.r.ping()
+        logger.info(f"Connected to redis on port {args.redis}...")
+
+
+    def store_latest_drone_detection_db(self, detections):
+        vehicle_name = detections[0]["id"]
+        key = f"aruco-detection:{vehicle_name}"
+
+        pipe = self.r.pipeline()
+        pipe.delete(key)
+        pipe.rpush(key, *[json.dumps(d) for d in detections])
+        pipe.pexpire(key, 100)
+
+        pipe.execute()
+
     def handle(self, input_frame):
         if input_frame.payload_type != gabriel_pb2.PayloadType.IMAGE:
             status = gabriel_pb2.Status()
@@ -33,6 +58,10 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
 
         compute_result = result_pb2.ComputeResult()
         detection_result = result_pb2.DetectionResult()
+
+        detections = []
+        vehicle_info = frame.vehicle_info
+
         for i, corner in enumerate(corners):
             det_object = result_pb2.Detection()
             det_object.detection_id = i
@@ -50,6 +79,16 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
             logger.info(f'{bbox=}')
             det_object.bbox.CopyFrom(bbox)
             detection_result.detections.append(det_object)
+            box = [bbox.y_min, bbox.x_min, bbox.y_max, bbox.x_max]
+            detection = {
+                "id": vehicle_info.name,
+                "box": box,
+            }
+            detections.append(detection)
+
+        if len(detections) > 0:
+            self.store_latest_drone_detection_db(detections)
+
         compute_result.detection_result.CopyFrom(detection_result)
         frame_result = result_pb2.FrameResult()
         frame_result.type = "aruco-tag-detection"
