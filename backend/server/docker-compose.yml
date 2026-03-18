@@ -267,11 +267,14 @@ services:
         "uv",
         "run",
         "/steeleagle/main.py",
+        "-a",
+        "${REDIS_AUTH}",
       ]
     depends_on:
       - gabriel-server
     networks:
       - steeleagle-net
+      - redis
     logging:
       driver: "json-file"
       options:
