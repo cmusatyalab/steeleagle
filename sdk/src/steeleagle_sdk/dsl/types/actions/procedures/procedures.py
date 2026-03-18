@@ -175,7 +175,6 @@ class PrecisionLand(Action):
         logger.info('Started the task')
         last_seen: float | None = None
         mode: int = 0
-        checked_count: int = 0
         # Pitch the gimbal
         await SetGimbalPose(
             gimbal_id=0,
@@ -236,31 +235,19 @@ class PrecisionLand(Action):
                     logger.info(f'forward step {forward_off}')
                     if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
                         logger.info(f'forward check {forward_off} {self.err_tol * altitude} {altitude}')
-                        checked_count += 1
                         await Hold().execute()
-                        if checked_count >= 5:
-                            checked_count = 0
-                            mode = 1
-                            continue
+                        continue
                     else:
-                        checked_count = 0
                         target.x_vel = self._clamp(forward_off, -self.forward_speed, self.forward_speed)
                 elif mode == 1: # lateral
                     logger.info(f'lateral step {lateral_off}')
                     if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
                         logger.info(f'lateral check {lateral_off} {self.err_tol * altitude} {altitude}')
-                        checked_count += 1
                         await Hold().execute()
-                        if checked_count >= 5 and math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
-                            checked_count = 0
+                        if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
                             mode = 2
                             continue
-                        elif checked_count >= 5:
-                            checked_count = 0
-                            mode = 0
-                            continue
                     else:
-                        checked_count = 0
                         target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
                 else: # descend
                     logger.info('descend step')
