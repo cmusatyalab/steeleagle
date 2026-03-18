@@ -125,7 +125,7 @@ class PrecisionLand(Action):
     image_height: int = Field(720, gt=0, description="Camera image height in pixels")
     hfov_deg: float = Field(69.0, gt=0, description="Horizontal FOV in degrees")
     vfov_deg: float = Field(43.0, gt=0, description="Vertical FOV in degrees")
-    err_tol: float = Field(1.0, gt=0)
+    err_tol: float = Field(1.0, ge=0)
     compute_stream: str = Field(
         "object-engine",
         description="Name of compute stream to pull detections from",
@@ -139,14 +139,14 @@ class PrecisionLand(Action):
     forward_speed: float = Field(1.0, gt=0)
     lateral_speed: float = Field(1.0, gt=0)
     descent_speed: float = Field(1.0, gt=0)
-    descent_chunk: float = Field(1.0, gt=0)
+    descent_chunk: float = Field(0.5, gt=0)
     target_altitude: float = Field(1.5, gt=1)
 
     @property
     def _pixel_center(self) -> tuple[float, float]:
         logger.debug("pixel center: w=%d, h=%d", self.image_width, self.image_height)
         return (self.image_width / 2.0, self.image_height / 2.0)
-    
+
     @staticmethod
     def _clamp(value: float, minimum: float, maximum: float) -> float:
         logger.debug("clamping value=%f, min=%f, max=%f", value, minimum, maximum)
@@ -176,6 +176,7 @@ class PrecisionLand(Action):
         last_seen: float | None = None
         mode: int = 0
         descent_start: int | None = None
+        checked_count: int = 0
         # Pitch the gimbal
         await SetGimbalPose(
             gimbal_id=0,
@@ -226,25 +227,35 @@ class PrecisionLand(Action):
                 telemetry = await fetch_telemetry()
                 altitude = telemetry.position_info.relative_position.z
                 forward_err, lateral_err = await self._compute_error(box, telemetry)
+                forward_off = math.tan(math.radians(forward_err)) * altitude
+                lateral_off = math.tan(math.radians(lateral_err)) * altitude
                 target = common.Velocity()
                 if mode == 0: # forward
-                    logger.info('forward step')
-                    target.x_vel = self._clamp(self.forward_speed * forward_err, -self.forward_speed, self.forward_speed)
-                    if math.isclose(forward_err, 0.0, abs_tol=self.err_tol):
-                        logger.info('forward check')
-                        mode += 1
-                        mode = mode % 3
+                    logger.info(f'forward step {forward_off}')
+                    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
+                        logger.info(f'forward check {forward_off} {self.err_tol * altitude} {altitude}')
+                        checked_count += 1
                         await Hold().execute()
-                        continue
+                        if checked_count >= 5:
+                            checked_count = 0
+                            mode += 1
+                            mode = mode % 3
+                            continue
+                    else:
+                        target.x_vel = self._clamp(forward_off, -self.forward_speed, self.forward_speed)
                 elif mode == 1: # lateral
-                    logger.info('lateral step')
-                    target.y_vel = self._clamp(self.lateral_speed * lateral_err, -self.lateral_speed, self.lateral_speed)
-                    if math.isclose(lateral_err, 0.0, abs_tol=self.err_tol):
-                        logger.info('lateral check')
-                        mode += 1
-                        mode = mode % 3
+                    logger.info(f'lateral step {lateral_off}')
+                    if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
+                        logger.info(f'lateral check {lateral_off} {self.err_tol * altitude} {altitude}')
+                        checked_count += 1
                         await Hold().execute()
-                        continue
+                        if checked_count >= 5:
+                            checked_count = 0
+                            mode += 1
+                            mode = mode % 3
+                            continue
+                    else:
+                        target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
                 else: # descend
                     logger.info('descend step')
                     if not descent_start:
@@ -266,7 +277,7 @@ class PrecisionLand(Action):
                             await Hold().execute()
                             continue
                 logger.info('outer loop')
-                if math.isclose(forward_err, 0.0, abs_tol=self.err_tol) and math.isclose(lateral_err, 0.0, abs_tol=self.err_tol) and altitude <= self.target_altitude:
+                if math.isclose(forward_off, 0.0, abs_tol=self.err_tol) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol) and altitude <= self.target_altitude:
                     logger.info('land check')
                     await Land().execute()
                     return
