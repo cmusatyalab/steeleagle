@@ -50,6 +50,7 @@ function App() {
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
+  const [gimbalVelocity, setGimbalVelocity] = useState(15);
   const [showDetections, setShowDetections] = useState(true);
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
@@ -166,6 +167,12 @@ function App() {
       else if (e.code === 'Digit0') {
         onJoystick({ zvel: 0, yvel: 0, xvel: 0, angularvel: 0, duration: 1 });
       }
+      else if (e.code === 'KeyR') {
+        onGimbal({ pitch: gimbalVelocity, yaw: 0, roll: 0 });
+      }
+      else if (e.code === 'KeyF') {
+        onGimbal({ pitch: -1 * gimbalVelocity, yaw: 0, roll: 0 });
+      }
       //toast.current.show({ severity: 'success', summary: 'Key Pressed', detail: `'Pressed ${e.code}'` });
       setKey(e.key);
     }
@@ -203,6 +210,12 @@ function App() {
         }
         else if (buttonIndex == 4 && state.pressed) {
           onCommand({ rth: true });
+        }
+        else if (buttonIndex == 12 && state.pressed) {
+          onGimbal({ pitch: gimbalVelocity, yaw: 0, roll: 0 });
+        }
+        else if (buttonIndex == 13 && state.pressed) {
+          onGimbal({ pitch: -1* gimbalVelocity, yaw: 0, roll: 0 });
         }
 
       }
@@ -319,6 +332,35 @@ function App() {
 
   }, [squadList, useLocalVehicle, takeOffAltitude]);
 
+  const onGimbal = useCallback(async (body) => {
+    body.vehicles = squadList;
+    if (squadList == null || squadList.length == 0) {
+      toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
+      return;
+    } else {
+      const requestOptions = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      };
+
+      let response = null;
+      if (useLocalVehicle) {
+        response = await fetch(`${FASTAPI_URL}/api/gimbal`, requestOptions);
+      } else {
+        response = await fetch(`${FASTAPI_URL}/api/gimbal?sandbox_mode=0`, requestOptions);
+      }
+      if (!response.ok) {
+        const result = await response.json();
+        toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
+      }
+      else {
+        const result = await response.json();
+      }
+    }
+
+  }, [squadList, useLocalVehicle]);
+
   const items = useMemo(() => [
     {
       label: 'Monitor',
@@ -418,7 +460,7 @@ function App() {
       {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
-        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} />}
+        takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Toast ref={toast} />

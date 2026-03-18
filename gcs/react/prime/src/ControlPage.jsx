@@ -25,7 +25,7 @@ const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, classN
 function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand, useLocalVehicle,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
   baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
-  showDetections, onToggleDetections }) {
+  showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity }) {
   const [mapPanelSize, setMapPanelSize] = useState(0);
   const [armed, setArmed] = useState(false);
   const op = useRef(null);
@@ -176,6 +176,10 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
           <Knob className="flex align-items-center justify-content-center" value={baseAngularVelocity} onChange={(e) => setBaseAngularVelocity(e.value)} min={15} max={180} step={15} valueTemplate={'{value}°/s'} />
           <Chip className="flex align-items-center justify-content-center" label="Base Angular Velocity" icon="pi pi-chart-pie" />
         </div>
+        <div className="flex flex-column flex-wrap align-content-center m-2">
+          <Knob className="flex align-items-center justify-content-center" value={gimbalVelocity} onChange={(e) => setGimbalVelocity(e.value)} min={5} max={45} step={5} valueTemplate={'{value}°/s'} />
+          <Chip className="flex align-items-center justify-content-center" label="Gimbal Velocity" icon="pi pi-expand" />
+        </div>
       </div>
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap align-content-center m-2">
@@ -197,15 +201,13 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
             checked={showDetections} onChange={(e) => onToggleDetections(e.value)} className="flex" tooltip="When enabled, the video stream will show detection bounding boxes." />
         </div>
 
-        <div className="flex flex-column flex-wrap align-content-center m-2">
 
-        </div>
       </div>
     </>
 
   ), [baseAngularVelocity, setBaseAngularVelocity, basePlanarVelocity, setBasePlanarVelocity,
-      gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
-      showDetections, onToggleDetections]);
+    gamepadDeadzone, setGamepadDeadzone, tracking, setTracking, takeOffAltitude, setTakeOffAltitude,
+    showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity]);
 
   const swarmHeaderTemplate = (options) => {
     const className = `${options.className} justify-content-space-between`;

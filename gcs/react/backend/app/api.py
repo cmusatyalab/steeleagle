@@ -6,10 +6,10 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-import numpy as np
-import cv2
 
+import cv2
 import grpc
+import numpy as np
 import redis
 import requests
 import toml
@@ -28,7 +28,9 @@ from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
     JoystickRequest,
     LandRequest,
+    PoseMode,
     ReturnToHomeRequest,
+    SetGimbalPoseTargetRequest,
     TakeOffRequest,
 )
 from steeleagle_sdk.protocol.services.control_service_pb2_grpc import ControlStub
@@ -74,6 +76,13 @@ class Joystick(BaseModel):
     zvel: float = Field(default=0.0)
     angularvel: float = Field(default=0.0)
     duration: int = Field(default=1)
+    vehicles: list[str]
+
+
+class GimbalPose(BaseModel):
+    pitch: float = Field(default=0.0)
+    yaw: float = Field(default=0.0)
+    roll: float = Field(default=0.0)
     vehicles: list[str]
 
 
@@ -132,8 +141,10 @@ class BackendConnection(BaseModel):
     webserver: str
     show_detections: bool
 
+
 class ShowDetectionsConfig(BaseModel):
     show_detections: bool
+
 
 class ConnectionManager:
     """Manages WebSocket connections for broadcasting imagery to multiple websocket clients"""
@@ -430,6 +441,7 @@ async def _remote_imagery_broadcaster(vehicle: str):
 
     logger.debug(f"Stopping remote imagery broadcaster for '{vehicle}' (no clients)")
 
+
 def get_latest_detections(vehicle_id):
     if backend_key is None:
         conn = backend_connections[list(backend_connections)[0]].redis_connection
@@ -452,6 +464,7 @@ def get_latest_detections(vehicle_id):
             return []
     return detections
 
+
 def maybe_add_bboxes(vehicle_id, img):
     detections = get_latest_detections(vehicle_id)
     if len(detections) == 0:
@@ -459,7 +472,7 @@ def maybe_add_bboxes(vehicle_id, img):
     h, w = img.shape[:2]
 
     CLASS_COLORS = {
-        "person":  (0, 255, 120),
+        "person": (0, 255, 120),
     }
     DEFAULT_COLOR = (200, 200, 200)
 
@@ -476,7 +489,7 @@ def maybe_add_bboxes(vehicle_id, img):
         x2 = int(x_max_f * w)
         y2 = int(y_max_f * h)
 
-        cls   = det.get("class", "unknown")
+        cls = det.get("class", "unknown")
         score = det.get("score", 0.0)
         label = f"{cls} {score:.2f}"
         color = CLASS_COLORS.get(cls, DEFAULT_COLOR)
@@ -509,14 +522,23 @@ def maybe_add_bboxes(vehicle_id, img):
             lineType=cv2.LINE_AA,
         )
 
+
 def add_watermark(img):
     ts = time.strftime("%H:%M:%S")
-    cv2.putText(img, f"{ts}", (10,30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                (0,0,0), 5, cv2.LINE_AA)
-    cv2.putText(img, f"{ts}", (10,30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(
+        img, f"{ts}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 5, cv2.LINE_AA
+    )
+    cv2.putText(
+        img,
+        f"{ts}",
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA,
+    )
+
 
 # API Routes
 @app.get("/api/remote/backends")
@@ -636,6 +658,56 @@ async def websocket_endpoint(websocket: WebSocket, vehicle: str):
         logger.error(f"WebSocket error for vehicle '{vehicle}': {e}")
     finally:
         await connection_manager.disconnect(websocket, vehicle)
+
+
+@app.post("/api/gimbal")
+async def set_gimbal_pose(req: GimbalPose, sandbox_mode: bool = True) -> JSONResponse:
+    for v in req.vehicles:
+        if sandbox_mode:
+            conn = vehicle_connections[v]
+        else:
+            if backend_key is None:
+                conn = backend_connections[list(backend_connections)[0]]
+            else:
+                conn = backend_connections[backend_key]
+        _ = conn.grpc_channel.get_state(
+            try_to_connect=True
+        )  # attempt to reconnect to grpc endpoint
+        try:
+            g = SetGimbalPoseTargetRequest()
+            g.gimbal_id = 0
+            g.pose_mode = PoseMode.OFFSET
+            g.pose.pitch = req.pitch
+            g.pose.yaw = req.yaw
+            g.pose.roll = req.roll
+            if sandbox_mode:
+                call = conn.control_stub.SetGimbalPoseTarget(g, metadata=IDENTITY_MD)
+                asyncio.create_task(
+                    _send_unary(call, vehicle=v, command="control.SetGimbalPoseTarget")
+                )
+            else:
+                cmd = CommandRequest()
+                cmd.method_name = "Control.SetGimbalPoseTarget"
+                cmd.vehicle_id = v
+                cmd.request.Pack(g)
+                call = backend_connections[
+                    list(backend_connections)[0]
+                ].remote_stub.Command(cmd)
+                asyncio.create_task(
+                    _send_stream(call, vehicle=v, command="SetGimbalPoseTarget")
+                )
+
+        except grpc.aio.AioRpcError as e:
+            raise HTTPException(
+                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+            ) from e
+        except json.JSONDecodeError as e:
+            logger.error(e)
+            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+    return JSONResponse(status_code=200, content="Mission start sent!")
 
 
 @app.post("/api/start")
