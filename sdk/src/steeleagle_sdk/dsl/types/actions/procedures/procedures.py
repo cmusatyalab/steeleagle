@@ -200,7 +200,7 @@ class PrecisionLand(Action):
                     )
                     break
                 else:
-                    await Joystick(velocity=common.Velocity(z_vel=-self.descent_speed)).execute()
+                    await Joystick(velocity=common.Velocity(z_vel=self.descent_speed)).execute()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
