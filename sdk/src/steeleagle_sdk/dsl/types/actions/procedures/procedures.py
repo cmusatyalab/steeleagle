@@ -250,15 +250,21 @@ class PrecisionLand(Action):
                     else:
                         target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
                 else: # descend
-                    logger.info('descend step')
-                    if altitude > self.target_altitude:
-                        logger.info('set descend speed')
-                        if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
-                            target.z_vel = -1 * self.descent_speed
-                        else:
-                            mode = 0
-                            await Hold().execute()
-                            continue
+                    #logger.info('descend step')
+                    #if altitude > self.target_altitude:
+                    #    logger.info('set descend speed')
+                    #    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
+                    #        target.z_vel = -1 * self.descent_speed
+                    #    else:
+                    #        mode = 0
+                    #        await Hold().execute()
+                    #        continue
+                    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * self.target_altitude) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * self.target_altitude):
+                        logger.info('land check')
+                        await Land().execute()
+                        return
+                    else:
+                        mode = 0
                 logger.info('outer loop')
                 if math.isclose(forward_off, 0.0, abs_tol=self.err_tol) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol) and altitude <= self.target_altitude:
                     logger.info('land check')
