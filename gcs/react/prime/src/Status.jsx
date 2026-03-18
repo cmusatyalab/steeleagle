@@ -9,6 +9,11 @@ import { ProgressBar } from 'primereact/progressbar';
 function Status({ vehicle }) {
     if (vehicle) {
         let last_updated = `${Math.ceil(vehicle.last_updated)} sec` || 'Unknown'
+        let disconnected = false;
+        if (vehicle.last_updated > 5) {
+            disconnected = true;
+        }
+
         let battery_severity = "info";
         let gps_severity = "info";
         let compass_severity = "info";
@@ -46,8 +51,10 @@ function Status({ vehicle }) {
         return (
             <>
                 <Card style={{ backgroundColor: 'var(--surface-0)', width: '100%' }} subTitle={`${vehicle.name} (${vehicle.model})`}>
-                    <div className="flex flex-row gap-2 mb-2">
+                    <div className="flex flex-row gap-2 m-2">
                         <ProgressBar color={`var(--${battery_severity})`} className="w-full flex align-items-center justify-content-center" value={vehicle.battery} />
+                        {disconnected && <Tag icon="pi pi-times" severity="danger" value="Disconnected"></Tag>}
+                        {!disconnected && <Tag icon="pi pi-link" severity="info" value="Online"></Tag>}
                     </div>
                     <div className="flex flex-row flex-wrap justify-content-center gap-2">
                         <div className="flex flex-column align-items-center">
