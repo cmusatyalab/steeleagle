@@ -185,6 +185,9 @@ class PrecisionLand(Action):
         while True:
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
+            if not telemetry:
+                logger.error('Could not get telemetry, waiting!')
+                continue
             # logger.info("Track: telemetry fetched: %s", telemetry)
 
             #--- Target lost check ---
@@ -224,7 +227,6 @@ class PrecisionLand(Action):
 
             # --- Track procedure ---
             if box is not None:
-                telemetry = await fetch_telemetry()
                 altitude = telemetry.position_info.relative_position.z
                 forward_err, lateral_err = await self._compute_error(box, telemetry)
                 forward_off = math.tan(math.radians(forward_err)) * altitude
