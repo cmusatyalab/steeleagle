@@ -235,6 +235,7 @@ class PrecisionLand(Action):
                     logger.info(f'forward step {forward_off}')
                     if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
                         logger.info(f'forward check {forward_off} {self.err_tol * altitude} {altitude}')
+                        mode = 1
                         await Hold().execute()
                         continue
                     else:
@@ -243,9 +244,13 @@ class PrecisionLand(Action):
                     logger.info(f'lateral step {lateral_off}')
                     if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
                         logger.info(f'lateral check {lateral_off} {self.err_tol * altitude} {altitude}')
-                        await Hold().execute()
                         if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
                             mode = 2
+                            await Hold().execute()
+                            continue
+                        else:
+                            mode = 0
+                            await Hold().execute()
                             continue
                     else:
                         target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
