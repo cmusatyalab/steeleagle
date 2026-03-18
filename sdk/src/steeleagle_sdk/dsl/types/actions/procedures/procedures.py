@@ -1,6 +1,7 @@
 # tasks/actions/procedures.py
 import asyncio
 import logging
+import math
 
 from pydantic import Field
 
@@ -10,7 +11,7 @@ from ...datatypes import common as common
 from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame, PoseMode
 from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity, SetGimbalPoseTarget
+from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity, SetGimbalPoseTarget, Hold, Land
 
 logger = logging.getLogger(__name__)
 import numpy as np
@@ -114,6 +115,164 @@ class Patrol(Action):
 
                 if self.hover_time > 0:
                     await asyncio.sleep(self.hover_time)
+
+@register_action
+class PrecisionLand(Action):
+    """Land on an object using vision-based control."""
+
+    # --- Camera / image geometry ---
+    image_width: int = Field(1280, gt=0, description="Camera image width in pixels")
+    image_height: int = Field(720, gt=0, description="Camera image height in pixels")
+    hfov_deg: float = Field(69.0, gt=0, description="Horizontal FOV in degrees")
+    vfov_deg: float = Field(43.0, gt=0, description="Vertical FOV in degrees")
+    err_tol: float = Field(1.0, gt=0)
+    compute_stream: str = Field(
+        "object-engine",
+        description="Name of compute stream to pull detections from",
+    )
+
+    # --- Compute / detection configuration ---
+    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold)")
+    target_lost_duration: float = Field(1.0)
+
+    # --- Movement speeds ---
+    forward_speed: float = Field(1.0, gt=0)
+    lateral_speed: float = Field(1.0, gt=0)
+    descent_speed: float = Field(1.0, gt=0)
+    descent_chunk: float = Field(1.0, gt=0)
+    target_altitude: float = Field(1.5, gt=1)
+
+    @property
+    def _pixel_center(self) -> tuple[float, float]:
+        logger.debug("pixel center: w=%d, h=%d", self.image_width, self.image_height)
+        return (self.image_width / 2.0, self.image_height / 2.0)
+    
+    @staticmethod
+    def _clamp(value: float, minimum: float, maximum: float) -> float:
+        logger.debug("clamping value=%f, min=%f, max=%f", value, minimum, maximum)
+        return float(np.clip(value, minimum, maximum))
+
+    async def _compute_error(
+        self, box: BoundingBox, telemetry
+    ) -> tuple[float, float, float]:
+        logger.debug("computing error for box=%s", box)
+        img_w, img_h = self.image_width, self.image_height
+        cx, cy = self._pixel_center
+        y_min_pix = box.y_min * img_h
+        x_min_pix = box.x_min * img_w
+        y_max_pix = box.y_max * img_h
+        x_max_pix = box.x_max * img_w
+
+        target_x_pix = x_min_pix + (x_max_pix - x_min_pix) / 2.0
+        target_y_pix = y_min_pix + (y_max_pix - y_min_pix) / 2.0
+
+        lateral_error = ((target_x_pix - cx) / cx) * (self.hfov_deg / 2.0)
+        forward_error = -1 * ((target_y_pix - cy) / cy) * (self.vfov_deg / 2.0)
+
+        return forward_error, lateral_error
+
+    async def execute(self):
+        logger.info('Started the task')
+        last_seen: float | None = None
+        mode: int = 0
+        descent_start: int | None = None
+        # Pitch the gimbal
+        await SetGimbalPose(
+            gimbal_id=0,
+            pose=common.Pose(pitch=-90.0, roll=0.0, yaw=0.0)
+        ).execute()
+        # Descent loop
+        while True:
+            #--- Target lost check ---
+            now = asyncio.get_event_loop().time()
+            if last_seen is not None and (now - last_seen) > self.target_lost_duration:
+                # Stop motion and exit
+                telemetry = await fetch_telemetry()
+                await Hold().execute()
+                logger.info(
+                    "PrecisionLand: target lost for %.1fs, exiting",
+                    now - last_seen,
+                )
+                break
+
+            # --- Telemetry ---
+            telemetry = await fetch_telemetry()
+            # logger.info("Track: telemetry fetched: %s", telemetry)
+
+            # --- Detections ---
+            res: FrameResult = await fetch_results(self.compute_stream)
+            # logger.info("Track: fetched results from stream=%s", res)
+
+            box: BoundingBox | None = None
+            if not res or not res.result:
+                logger.info("PrecisionLand: no objects found")
+                continue  # no ComputeResult entries
+            for compute in res.result:
+                det_result = compute.detection_result
+                if not det_result or not det_result.detections:
+                    continue
+                for det in det_result.detections:
+                    if det is None:
+                        continue
+                    if self.target.class_name is not None and (
+                        det.class_name == self.target.class_name
+                    ):
+                        box = det.bbox
+                        last_seen = now
+                        break
+
+            # --- Track procedure ---
+            if box is not None:
+                telemetry = await fetch_telemetry()
+                altitude = telemetry.position_info.relative_position.z
+                forward_err, lateral_err = await self._compute_error(box, telemetry)
+                target = common.Velocity()
+                if mode == 0: # forward
+                    logger.info('forward step')
+                    target.x_vel = self._clamp(self.forward_speed * forward_err, -self.forward_speed, self.forward_speed)
+                    if math.isclose(forward_err, 0.0, abs_tol=self.err_tol):
+                        logger.info('forward check')
+                        mode += 1
+                        mode = mode % 3
+                        await Hold().execute()
+                        continue
+                elif mode == 1: # lateral
+                    logger.info('lateral step')
+                    target.y_vel = self._clamp(self.lateral_speed * lateral_err, -self.lateral_speed, self.lateral_speed)
+                    if math.isclose(lateral_err, 0.0, abs_tol=self.err_tol):
+                        logger.info('lateral check')
+                        mode += 1
+                        mode = mode % 3
+                        await Hold().execute()
+                        continue
+                else: # descend
+                    logger.info('descend step')
+                    if not descent_start:
+                        logger.info('set start descend')
+                        descent_start = altitude
+                    elif altitude > self.target_altitude:
+                        logger.info('set descend speed')
+                        target.z_vel = -1 * self.descent_speed
+                    else:
+                        if altitude <= self.target_altitude:
+                            logger.info('descend check')
+                            mode += 1
+                            mode = mode % 3
+                        elif descent_start - altitude > self.descent_chunk:
+                            logger.info('descend check 2')
+                            descent_start = None
+                            mode += 1
+                            mode = mode % 3
+                            await Hold().execute()
+                            continue
+                logger.info('outer loop')
+                if math.isclose(forward_err, 0.0, abs_tol=self.err_tol) and math.isclose(lateral_err, 0.0, abs_tol=self.err_tol) and altitude <= self.target_altitude:
+                    logger.info('land check')
+                    await Land().execute()
+                    return
+                else:
+                    logger.info('joystick')
+                    await Joystick(velocity=target).execute()
 
 
 @register_action
