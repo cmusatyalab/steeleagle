@@ -479,6 +479,7 @@ def maybe_add_bboxes(vehicle_id, img):
 
     CLASS_COLORS = {
         "person": (0, 255, 120),
+        "aruco_0": (255, 0, 255),
     }
     DEFAULT_COLOR = (200, 200, 200)
 
