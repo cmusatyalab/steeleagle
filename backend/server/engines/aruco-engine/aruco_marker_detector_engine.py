@@ -66,6 +66,7 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
             det_object = result_pb2.Detection()
             det_object.detection_id = i
             det_object.class_name = f"aruco_{ids[i][0]}"
+            det_object.score = 1
             c = corner[0]
 
             bbox = result_pb2.BoundingBox(
