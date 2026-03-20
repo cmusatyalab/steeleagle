@@ -90,7 +90,7 @@ class Patrol(Action):
     )
     waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
     max_velocity: common.Velocity = Field(
-            common.Velocity(x_vel=5.0, y_vel=5.0, z_vel=5.0, angular_vel=120.0),
+            common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0),
             description="Maximum velocity to use while transiting between waypoints.",
     )
 
