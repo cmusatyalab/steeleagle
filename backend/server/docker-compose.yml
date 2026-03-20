@@ -259,7 +259,7 @@ services:
       - redis
 
   aruco-engine:
-    image: cmusatyalab/steeleagle-aruco-marker-engine
+    image: cmusatyalab/steeleagle-aruco-marker-engine:${ARUCO_IMAGE_TAG}
     container_name: aruco-engine
     restart: on-failure:3
     entrypoint:
