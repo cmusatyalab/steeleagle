@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+import datetime
 import cv2
 import numpy as np
 import zmq
@@ -154,6 +154,12 @@ class StreamHandler:
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)
 
+    def log_timestamp_difference(self, proto_timstamp, name):
+        timestamp_dt_utc = proto_timestamp.ToDatetime().replace(tzinfo=datetime.timezone.utc)
+        current_dt_utc = datetime.datetime.now(datetime.timezone.utc)
+        time_difference = current_dt_utc - timestamp_dt_utc
+        logger.info(f"{name} -- {time_difference.total_seconds()}")
+
     def get_driver_telemetry_producer(self):
         driver_sock = zmq.asyncio.Context().socket(zmq.SUB)
         driver_sock.setsockopt(zmq.RCVHWM, 2)
@@ -207,6 +213,7 @@ class StreamHandler:
             encoded_frame = Frame()
             raw_frame = Frame()
             raw_frame.ParseFromString(data)
+            self.log_timestamp_difference(raw_frame.timestamp)
             frame_bytes = np.frombuffer(raw_frame.data, dtype=np.uint8)
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
             _, encoded_img = cv2.imencode(
@@ -256,6 +263,7 @@ class StreamHandler:
                 )
                 return None
             proto_class.ParseFromString(data)
+            self.log_timestamp_difference(proto_class.timestamp)
             input_frame.any_payload.Pack(proto_class)
             return input_frame
 
