@@ -124,7 +124,7 @@ class MissionStore:
                     use_integers_for_enums=True,
                 )
                 data.get("telemetry_stream_info", {}).pop("uptime", None) # patch fix for duration field parsing issue
-                return DriverTelemetry.model_validate(data), None
+                return DriverTelemetry.model_validate(data), "telemetry"
             elif source == "results":
                 msg = gabriel_pb2.Result()
                 msg.ParseFromString(payload)
@@ -139,11 +139,11 @@ class MissionStore:
                     use_integers_for_enums=True,
                 )
                 if len(data) == 0:
-                    return None
+                    return None, None
                 return FrameResult.model_validate(data), msg.target_engine_id
         except Exception:
             logger.exception("Parse failed for %s payload", source)
-        return None
+        return None, None
 
     async def _store_one(self, source: str, topic: str, ts: float, pj: str):
         # Atomic: either both event+latest write, or neither.
