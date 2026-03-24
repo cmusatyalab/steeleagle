@@ -179,6 +179,7 @@ class MissionStore:
                 if not payload:
                     continue
                 model = self._parse_payload(source, payload)
+                logger.info(f"Model: {model}")
                 if model is None:
                     continue
                 ts = time.time()
@@ -236,13 +237,11 @@ class MissionStore:
         await self.db.commit()
 
         self._telemetry = self.ctx.socket(zmq.SUB)
-        self._telemetry.setsockopt(zmq.SUBSCRIBE, b"")
-        self._telemetry.setsockopt(zmq.RCVHWM, 1000)
+        self._telemetry.setsockopt(zmq.CONFLATE, 1)
         self._telemetry.connect(self.telemetry_addr)
 
         self._results = self.ctx.socket(zmq.SUB)
-        self._results.setsockopt(zmq.SUBSCRIBE, b"")
-        self._results.setsockopt(zmq.RCVHWM, 1000)
+        self._results.setsockopt(zmq.CONFLATE, 1)
         self._results.connect(self.results_addr)
 
         self._tasks = [
