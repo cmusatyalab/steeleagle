@@ -175,6 +175,7 @@ class MissionStore:
                 #ts = time.time()
                 #pj = self._to_json(model)
                 #await self._store_one(source, topic, ts, pj)
+                logger.info('MISSION HELLO WORLD')
                 payload = await sock.recv()
                 if not payload:
                     continue
