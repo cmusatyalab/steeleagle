@@ -124,7 +124,7 @@ class MissionStore:
                     use_integers_for_enums=True,
                 )
                 data.get("telemetry_stream_info", {}).pop("uptime", None) # patch fix for duration field parsing issue
-                return DriverTelemetry.model_validate(data)
+                return DriverTelemetry.model_validate(data), None
             elif source == "results":
                 msg = gabriel_pb2.Result()
                 msg.ParseFromString(payload)
@@ -140,7 +140,7 @@ class MissionStore:
                 )
                 if len(data) == 0:
                     return None
-                return FrameResult.model_validate(data)
+                return FrameResult.model_validate(data), msg.target_engine_id
         except Exception:
             logger.exception("Parse failed for %s payload", source)
         return None
@@ -178,16 +178,16 @@ class MissionStore:
                 payload = await sock.recv()
                 if not payload:
                     continue
-                model = self._parse_payload(source, payload)
+                model, engine_id = self._parse_payload(source, payload)
                 logger.info(f"Model: {model}")
                 if model is None:
                     continue
                 ts = time.time()
                 pj = self._to_json(model)
-                if source == "results" and model.target_engine_id != "telemetry":
+                if source == "results" and engine_id != "telemetry":
                     logger.info('Result found!')
-                    logger.info('Mission got result from: %s', model.target_engine_id)
-                    await self._store_one(source, model['target_engine_id'], ts, pj)
+                    logger.info('Mission got result from: %s', engine_id)
+                    await self._store_one(source, engine_id, ts, pj)
                 else:
                     await self._store_one(source, "telemetry", ts, pj)
         except asyncio.CancelledError:
