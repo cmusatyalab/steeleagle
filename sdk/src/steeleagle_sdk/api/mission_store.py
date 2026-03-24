@@ -131,6 +131,7 @@ class MissionStore:
                 logger.debug(f"payload:  {msg}")
                 frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
+                frame_result.timestamp.GetCurrentTime()
                 logger.debug(f"frame_result:  {frame_result}")
                 data = MessageToDict(
                     frame_result,
