@@ -154,7 +154,7 @@ class StreamHandler:
     async def wait_for_termination(self):
         await asyncio.gather(self._lch_task, self._rch_task)
 
-    def log_timestamp_difference(self, proto_timstamp, name):
+    def log_timestamp_difference(self, proto_timestamp, name):
         timestamp_dt_utc = proto_timestamp.ToDatetime().replace(tzinfo=datetime.timezone.utc)
         current_dt_utc = datetime.datetime.now(datetime.timezone.utc)
         time_difference = current_dt_utc - timestamp_dt_utc
