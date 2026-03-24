@@ -175,7 +175,6 @@ class MissionStore:
                 #ts = time.time()
                 #pj = self._to_json(model)
                 #await self._store_one(source, topic, ts, pj)
-                logger.info('MISSION HELLO WORLD')
                 payload = await sock.recv()
                 if not payload:
                     continue
@@ -239,10 +238,12 @@ class MissionStore:
 
         self._telemetry = self.ctx.socket(zmq.SUB)
         self._telemetry.setsockopt(zmq.CONFLATE, 1)
+        self._telemetry.setsockopt(zmq.SUBSCRIBE, b"")
         self._telemetry.connect(self.telemetry_addr)
 
         self._results = self.ctx.socket(zmq.SUB)
         self._results.setsockopt(zmq.CONFLATE, 1)
+        self._results.setsockopt(zmq.SUBSCRIBE, b"")
         self._results.connect(self.results_addr)
 
         self._tasks = [
