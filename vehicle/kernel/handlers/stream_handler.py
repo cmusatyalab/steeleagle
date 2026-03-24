@@ -36,6 +36,7 @@ class StreamHandler:
         self.law_authority = law_authority
         # Create the result socket
         self._result_sock = zmq.Context().socket(zmq.PUB)
+        self._result_sock.setsockopt(zmq.CONFLATE, 1)
         socket_setup = False
         # Configure local compute handler
         self._local_compute_handler = None
@@ -242,9 +243,10 @@ class StreamHandler:
         """
         Send results from Gabriel over the result socket.
         """
-        self._result_sock.send_multipart(
-            [result.target_engine_id.encode("utf-8"), result.SerializeToString()]
-        )
+        #self._result_sock.send_multipart(
+        #    [result.target_engine_id.encode("utf-8"), result.SerializeToString()]
+        #)
+        self._result_sock.send(result.SerializeToString())
 
     def _base_producer(self, socket, proto_class, payload_type):
         """

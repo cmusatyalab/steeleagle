@@ -160,21 +160,34 @@ class MissionStore:
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
             while True:
-                frames = await sock.recv_multipart()
-                if not frames:
-                    continue
-                topic = self._norm_topic(frames[0])
-                if topic == "telemetry":
-                    continue  # ignore telmetry engine
-                payload = frames[-1]
+                #frames = await sock.recv_multipart()
+                #if not frames:
+                #    continue
+                #topic = self._norm_topic(frames[0])
+                #if topic == "telemetry":
+                #    continue  # ignore telmetry engine
+                #payload = frames[-1]
 
+                #model = self._parse_payload(source, payload)
+                #if model is None:
+                #    continue
+                ## ts = ts_to_unix_seconds(model.timestamp)  bug: time skew due to different clock sources between drone and vehicle module.
+                #ts = time.time()
+                #pj = self._to_json(model)
+                #await self._store_one(source, topic, ts, pj)
+                payload = await sock.recv()
+                if not payload:
+                    continue
                 model = self._parse_payload(source, payload)
                 if model is None:
                     continue
-                # ts = ts_to_unix_seconds(model.timestamp)  bug: time skew due to different clock sources between drone and vehicle module.
                 ts = time.time()
                 pj = self._to_json(model)
-                await self._store_one(source, topic, ts, pj)
+                if source == "results" and model['target_engine_id'] != "telemetry":
+                    await self._store_one(source, model['target_engine_id'], ts, pj)
+                else:
+                    await self._store_one(source, "telemetry", ts, pj)
+
         except asyncio.CancelledError:
             pass
         except Exception:
