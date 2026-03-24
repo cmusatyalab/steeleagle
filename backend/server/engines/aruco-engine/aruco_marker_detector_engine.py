@@ -66,8 +66,8 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
             det_object = result_pb2.Detection()
             det_object.detection_id = i
             det_object.class_name = f"aruco_{ids[i][0]}"
+            det_object.score = 1
             c = corner[0]
-            logger.info(f'{c=}')
 
             bbox = result_pb2.BoundingBox(
                 x_min = np.min(c[:, 0]) / width,
@@ -83,6 +83,8 @@ class ArucoMarkerDetectorEngine(cognitive_engine.Engine):
             detection = {
                 "id": vehicle_info.name,
                 "box": box,
+                "class": f"aruco_{ids[i][0]}",
+                "score": 1,
             }
             detections.append(detection)
 

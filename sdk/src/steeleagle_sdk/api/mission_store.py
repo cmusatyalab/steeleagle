@@ -171,7 +171,8 @@ class MissionStore:
                 model = self._parse_payload(source, payload)
                 if model is None:
                     continue
-                ts = ts_to_unix_seconds(model.timestamp)
+                # ts = ts_to_unix_seconds(model.timestamp)  bug: time skew due to different clock sources between drone and vehicle module.
+                ts = time.time()
                 pj = self._to_json(model)
                 await self._store_one(source, topic, ts, pj)
         except asyncio.CancelledError:
