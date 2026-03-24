@@ -162,7 +162,7 @@ class StreamHandler:
 
     def get_driver_telemetry_producer(self):
         driver_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        driver_sock.setsockopt(zmq.RCVHWM, 2)
+        driver_sock.setsockopt(zmq.CONFLATE, 1)
         driver_sock.setsockopt(zmq.SUBSCRIBE, b"")
         setup_zmq_socket(
             driver_sock, "internal.streams.driver_telemetry", SocketOperation.CONNECT
@@ -177,7 +177,7 @@ class StreamHandler:
 
     def get_mission_telemetry_producer(self):
         mission_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        mission_sock.setsockopt(zmq.RCVHWM, 2)
+        mission_sock.setsockopt(zmq.CONFLATE, 1)
         mission_sock.setsockopt(zmq.SUBSCRIBE, b"")
         setup_zmq_socket(
             mission_sock, "internal.streams.mission_telemetry", SocketOperation.CONNECT
@@ -192,7 +192,7 @@ class StreamHandler:
 
     def get_imagery_producer(self):
         imagery_sock = zmq.asyncio.Context().socket(zmq.SUB)
-        imagery_sock.setsockopt(zmq.RCVHWM, 2)
+        imagery_sock.setsockopt(zmq.CONFLATE, 1)
         imagery_sock.setsockopt(zmq.SUBSCRIBE, b"")
         setup_zmq_socket(
             imagery_sock, "internal.streams.imagery", SocketOperation.CONNECT
@@ -203,7 +203,7 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
             try:
-                _, data = await imagery_sock.recv_multipart()
+                data = await imagery_sock.recv()
             except Exception as e:
                 logger.error(
                     f"Exception when reading from producer {type(Frame())}, {e}"
@@ -256,7 +256,7 @@ class StreamHandler:
             input_frame = gabriel_pb2.InputFrame()
             input_frame.payload_type = payload_type
             try:
-                _, data = await socket.recv_multipart()
+                data = await socket.recv()
             except Exception as e:
                 logger.error(
                     f"Exception when reading from producer {type(proto_class)}, {e}"
