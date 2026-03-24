@@ -128,7 +128,8 @@ class MissionStore:
             elif source == "results":
                 msg = gabriel_pb2.Result()
                 msg.ParseFromString(payload)
-                logger.debug(f"payload:  {msg}")
+                logger.info(f"Engine id {msg.target_engine_id}")
+                logger.info(f"payload:  {MessageToDict(msg)}")
                 frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
                 frame_result.timestamp.GetCurrentTime()
@@ -187,10 +188,10 @@ class MissionStore:
                 pj = self._to_json(model)
                 if source == "results" and engine_id != "telemetry":
                     logger.info('Result found!')
-                    logger.info('Mission got result from: %s', engine_id)
+                    logger.info('Mission got result from ' + engine_id)
                     await self._store_one(source, engine_id, ts, pj)
                 else:
-                    await self._store_one(source, "telemetry", ts, pj)
+                    await self._store_one(source, "driver_telemetry", ts, pj)
         except asyncio.CancelledError:
             pass
         except Exception:
