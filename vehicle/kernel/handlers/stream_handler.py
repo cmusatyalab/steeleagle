@@ -213,7 +213,7 @@ class StreamHandler:
             encoded_frame = Frame()
             raw_frame = Frame()
             raw_frame.ParseFromString(data)
-            self.log_timestamp_difference(raw_frame.timestamp)
+            self.log_timestamp_difference(raw_frame.timestamp, "Frame")
             frame_bytes = np.frombuffer(raw_frame.data, dtype=np.uint8)
             encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
             _, encoded_img = cv2.imencode(
@@ -263,7 +263,7 @@ class StreamHandler:
                 )
                 return None
             proto_class.ParseFromString(data)
-            self.log_timestamp_difference(proto_class.timestamp)
+            self.log_timestamp_difference(proto_class.timestamp, "Telemetry")
             input_frame.any_payload.Pack(proto_class)
             return input_frame
 
