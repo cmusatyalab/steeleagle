@@ -345,9 +345,9 @@ async def _telemetry_subscriber(sock, name: str):
         if sock:
             try:
                 # Receive message from ZeroMQ (non-blocking)
-                message = await sock.recv_multipart(flags=zmq.NOBLOCK)
+                message = await sock.recv(flags=zmq.NOBLOCK)
                 tel = DriverTelemetry()
-                tel.ParseFromString(message[1])
+                tel.ParseFromString(message)
                 current = Location(
                     lat=tel.position_info.global_position.latitude,
                     long=tel.position_info.global_position.longitude,
@@ -386,9 +386,9 @@ async def _imagery_broadcaster(sock, name: str):
         if sock:
             try:
                 # Receive message from ZeroMQ (non-blocking)
-                message = await sock.recv_multipart(flags=zmq.DONTWAIT)
+                message = await sock.recv(flags=zmq.DONTWAIT)
                 frame = Frame()
-                frame.ParseFromString(message[1])
+                frame.ParseFromString(message)
                 encoded_img = Image.frombuffer(
                     mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
                 )

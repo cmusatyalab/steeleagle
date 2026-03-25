@@ -11,6 +11,7 @@ import zmq.asyncio
 from gabriel_protocol import gabriel_pb2
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.text_format import MessageToString
 from ..protocol.messages import result_pb2 as result_proto
 from ..protocol.messages import telemetry_pb2 as telem_proto
 
@@ -128,12 +129,11 @@ class MissionStore:
             elif source == "results":
                 msg = gabriel_pb2.Result()
                 msg.ParseFromString(payload)
-                logger.info(f"Engine id {msg.target_engine_id}")
-                logger.info(f"payload:  {MessageToDict(msg)}")
                 frame_result = result_proto.FrameResult()
                 msg.any_result.Unpack(frame_result)
                 frame_result.timestamp.GetCurrentTime()
-                logger.debug(f"frame_result:  {frame_result}")
+                if not frame_result.HasField('timestamp'):
+                    logger.error(f'Timestamp field absent; {MessageToString(frame_result)}')
                 data = MessageToDict(
                     frame_result,
                     always_print_fields_with_no_presence=True,
@@ -162,26 +162,10 @@ class MissionStore:
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
             while True:
-                #frames = await sock.recv_multipart()
-                #if not frames:
-                #    continue
-                #topic = self._norm_topic(frames[0])
-                #if topic == "telemetry":
-                #    continue  # ignore telmetry engine
-                #payload = frames[-1]
-
-                #model = self._parse_payload(source, payload)
-                #if model is None:
-                #    continue
-                ## ts = ts_to_unix_seconds(model.timestamp)  bug: time skew due to different clock sources between drone and vehicle module.
-                #ts = time.time()
-                #pj = self._to_json(model)
-                #await self._store_one(source, topic, ts, pj)
                 payload = await sock.recv()
                 if not payload:
                     continue
                 model, engine_id = self._parse_payload(source, payload)
-                logger.info(f"Model: {model}")
                 if model is None:
                     continue
                 ts = time.time()
