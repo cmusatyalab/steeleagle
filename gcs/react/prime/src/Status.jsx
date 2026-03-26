@@ -3,7 +3,7 @@ import { Tag } from 'primereact/tag';
 import { Card } from 'primereact/card';
 import { Avatar } from 'primereact/avatar';
 import { Knob } from 'primereact/knob';
-import { Chip } from 'primereact/chip';
+import { Badge } from 'primereact/badge';
 import { ProgressBar } from 'primereact/progressbar';
 
 function Status({ vehicle }) {
@@ -19,11 +19,11 @@ function Status({ vehicle }) {
         let compass_severity = "info";
 
         //consult protocol/telemetry.proto for enum mappings
-        if(vehicle.battery <= 25) {
+        if (vehicle.battery <= 25) {
             battery_severity = "red-500";
-        } else if(vehicle.battery <= 50) {
+        } else if (vehicle.battery <= 50) {
             battery_severity = "orange-500";
-        }  else {
+        } else {
             battery_severity = "green-500";
         }
 
@@ -56,7 +56,7 @@ function Status({ vehicle }) {
                         {disconnected && <Tag icon="pi pi-times" severity="danger" value="Disconnected"></Tag>}
                         {!disconnected && <Tag icon="pi pi-link" severity="info" value="Online"></Tag>}
                     </div>
-                    <div className="flex flex-row flex-wrap justify-content-center gap-2">
+                    <div className="flex flex-row flex-wrap justify-content-center gap-2 m-2">
                         <div className="flex flex-column align-items-center">
                             <Knob strokeWidth={5} size={60} value={vehicle.velocity.x_vel.toFixed(1)} min={-10} max={10} valueTemplate={'{value} m/s'} />
                             <Tag rounded value="X" icon="pi pi-gauge" />
@@ -76,6 +76,11 @@ function Status({ vehicle }) {
                             }} />
                             <Tag rounded value="Compass" icon="pi pi-compass" />
                         </div>
+                    </div>
+                    <div className="flex flex-row flex-wrap justify-content-center gap-2 m-2">
+                        <Tag value="Sats :" rounded>
+                            <Badge value={vehicle.sats} severity="info"></Badge>
+                        </Tag>
                     </div>
                 </Card >
             </>
