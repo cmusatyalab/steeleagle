@@ -151,10 +151,10 @@ class AvoidanceEngine(ABC):
         vector, depth_img = self.process_image(frame.data)
         status = gabriel_pb2.Status()
 
-        response = result_pb2.ComputeResult()
-        response.timestamp.GetCurrentTime()
-        response.engine_name = self.ENGINE_NAME
-        response.avoidance_result.actuation_vector = vector
+        compute_result = result_pb2.ComputeResult()
+        compute_result.timestamp.GetCurrentTime()
+        compute_result.engine_name = self.ENGINE_NAME
+        compute_result.avoidance_result.actuation_vector = vector
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
         if not self.unittest:
             self.store_vector(frame.vehicle_info.name, vector)
@@ -167,9 +167,12 @@ class AvoidanceEngine(ABC):
             self.print_inference_stats()
 
         self.lasttime = self.t1
-
+        frame_result = result_pb2.FrameResult()
+        frame_result.type = "obstacle-avoidance"
+        frame_result.result.append(compute_result)
+        frame_result.timestamp.GetCurrentTime()
         any_payload = Any()
-        any_payload.Pack(response)
+        any_payload.Pack(frame_result)
         return cognitive_engine.Result(status, any_payload)
 
 
