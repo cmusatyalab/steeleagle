@@ -55,11 +55,11 @@ function App() {
   const [gamePadAxis, setGamePadAxis] = useState({ 'index': -99, 'value': -99 });
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
-  const [tracking, setTracking] = useState(false);
+  const [tracking, setTracking] = useState(true);
   const [useLocalVehicle, setUseLocalVehicle] = useState(false);
   const [manualControl, setManualControl] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
-  const [baseAngularVelocity, setBaseAngularVelocity] = useState(45);
+  const [baseAngularVelocity, setBaseAngularVelocity] = useState(90);
   const [takeOffAltitude, setTakeOffAltitude] = useState(3);
   const [gimbalVelocity, setGimbalVelocity] = useState(15);
   const [showDetections, setShowDetections] = useState(true);
