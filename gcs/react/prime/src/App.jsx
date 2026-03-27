@@ -25,13 +25,24 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
-import { FASTAPI_URL, WEBSOCKET_URL } from './config.js';
-import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 const modeOptions = [
   { value: true, icon: 'pi pi-desktop' },
   { value: false, icon: 'pi pi-cloud' }
 ];
+
+function getWebSocketUrl(path) {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host; // includes port if present
+  return `${protocol}//${host}${path}`;
+}
+
+export function getApiUrl(path) {
+  const protocol = window.location.protocol;
+  const host = window.location.host; // includes port if present
+  return `${protocol}//${host}${path}`;
+}
+
 
 function App() {
   const appName = "SteelEagle";
@@ -62,9 +73,9 @@ function App() {
 
   useEffect(() => {
     if (useLocalVehicle) {
-      setSocketUrl(WEBSOCKET_URL + `/ws/imagery/${selectedVehicle}`);
+      setSocketUrl(getWebSocketUrl(`/ws/imagery/${selectedVehicle}`));
     } else {
-      setSocketUrl(WEBSOCKET_URL + `/ws/imagery/remote/${selectedVehicle}`);
+      setSocketUrl(getWebSocketUrl(`/ws/imagery/remote/${selectedVehicle}`));
     }
   }, [selectedVehicle, useLocalVehicle]);
 
@@ -96,10 +107,10 @@ function App() {
       try {
         let response = "";
         if (!useLocalVehicle) {
-          response = await fetch(`${FASTAPI_URL}/api/remote/vehicles`);
+          response = await fetch(getApiUrl('/api/remote/vehicles'));
         }
         else {
-          response = await fetch(`${FASTAPI_URL}/api/local/vehicles`);
+          response = await fetch(getApiUrl('/api/local/vehicles'));
         }
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -284,9 +295,9 @@ function App() {
       };
       let response = null;
       if (useLocalVehicle) {
-        response = await fetch(`${FASTAPI_URL}/api/joystick`, requestOptions);
+        response = await fetch(getApiUrl('/api/joystick'), requestOptions);
       } else {
-        response = await fetch(`${FASTAPI_URL}/api/joystick?sandbox_mode=0`, requestOptions);
+        response = await fetch(getApiUrl('/api/joystick?sandbox_mode=0'), requestOptions);
       }
       if (!response.ok) {
         const result = await response.json();
@@ -316,9 +327,9 @@ function App() {
 
       let response = null;
       if (useLocalVehicle) {
-        response = await fetch(`${FASTAPI_URL}/api/command`, requestOptions);
+        response = await fetch(getApiUrl('/api/command'), requestOptions);
       } else {
-        response = await fetch(`${FASTAPI_URL}/api/command?sandbox_mode=0`, requestOptions);
+        response = await fetch(getApiUrl('/api/command?sandbox_mode=0'), requestOptions);
       }
       if (!response.ok) {
         const result = await response.json();
@@ -346,9 +357,9 @@ function App() {
 
       let response = null;
       if (useLocalVehicle) {
-        response = await fetch(`${FASTAPI_URL}/api/gimbal`, requestOptions);
+        response = await fetch(getApiUrl('/api/gimbal'), requestOptions);
       } else {
-        response = await fetch(`${FASTAPI_URL}/api/gimbal?sandbox_mode=0`, requestOptions);
+        response = await fetch(getApiUrl('/api/gimbal?sandbox_mode=0'), requestOptions);
       }
       if (!response.ok) {
         const result = await response.json();
@@ -435,7 +446,7 @@ function App() {
       })
     };
 
-    const response = await fetch(`${FASTAPI_URL}/api/imagery/show_detections`, requestOptions);
+    const response = await fetch(getApiUrl('/api/imagery/show_detections'), requestOptions);
 
     if (!response.ok) {
       const result = await response.json();

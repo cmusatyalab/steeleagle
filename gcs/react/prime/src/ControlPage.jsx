@@ -14,7 +14,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import { Dropdown } from 'primereact/dropdown';
 import { Image } from 'primereact/image';
 import React from 'react';
-import { WEBSERVER_URL, FASTAPI_URL } from './config.js';
+import { getApiUrl } from './App.jsx';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
 
@@ -72,9 +72,9 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       };
       let response = null;
       if (useLocalVehicle) {
-        response = await fetch(`${FASTAPI_URL}/api/upload`, requestOptions);
+        response = await fetch(getApiUrl('/api/upload'), requestOptions);
       } else {
-        response = await fetch(`${FASTAPI_URL}/api/upload?sandbox_mode=0`, requestOptions);
+        response = await fetch(getApiUrl('/api/upload?sandbox_mode=0'), requestOptions);
       }
       if (!response.ok) {
         const result = await response.json();
@@ -108,9 +108,9 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       };
       let response = null;
       if (useLocalVehicle) {
-        response = await fetch(`${FASTAPI_URL}/api/start`, requestOptions);
+        response = await fetch(getApiUrl('/api/start'), requestOptions);
       } else {
-        response = await fetch(`${FASTAPI_URL}/api/start?sandbox_mode=0`, requestOptions);
+        response = await fetch(getApiUrl('/api/start?sandbox_mode=0'), requestOptions);
       }
       if (!response.ok) {
         const result = await response.json();
