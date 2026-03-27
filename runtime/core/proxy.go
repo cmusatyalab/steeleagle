@@ -54,22 +54,10 @@ func (i *Backend) getProxyHandler() grpc.StreamHandler {
             serviceName := fullMethod[:strings.LastIndex(fullMethod, "/")]
             v, ok := i.vehicles[name]
             if !ok {
-                results <- VehicleResult{
-                    Name: name,
-                    Code: codes.InvalidArgument,
-                    Message: fmt.Sprintf("vehicle %s does not exist", name),
-                    err: status.Errorf(codes.InvalidArgument, "vehicle %s does not exist", name),
-                }
                 continue
             }
             conn, ok := v.services[serviceName]
             if !ok {
-                results <- VehicleResult{
-                    Name: name, 
-                    Code: codes.InvalidArgument,
-                    Message: fmt.Sprintf("vehicle %s does not have service %s registered", name, serviceName),
-                    err: status.Errorf(codes.InvalidArgument, "vehicle %s does not have service %s registered", name, serviceName),
-                }
                 continue
             }
 

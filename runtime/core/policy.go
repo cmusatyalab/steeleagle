@@ -10,7 +10,7 @@ import (
 )
 
 type policyState struct {
-    mu sync.Mutex
+    mu sync.RWMutex
     currentState string
     query rego.PreparedEvalQuery
     lawMap map[string]ControlLawState

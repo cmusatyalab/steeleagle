@@ -32,7 +32,7 @@ func TestBasicCommands(t *testing.T) {
     s := grpc.NewServer()
     pb.RegisterControlServer(s, &controlServer{})
 
-    conn, err := net.Listen("unix", filepath.Join(vehicle.Path, "control", core.ControlSocket))
+    conn, err := net.Listen("unix", filepath.Join(vehicle.Path(), "control", core.ControlSocket))
     if err != nil {
         t.Fatalf("failed to listen on control socket: %v", err)
     }
@@ -43,7 +43,7 @@ func TestBasicCommands(t *testing.T) {
 	defer s.GracefulStop()
 	
     client, err := grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, core.MainSocket)),
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path(), core.MainSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
     if err != nil {
@@ -127,7 +127,7 @@ func TestStateTransition(t *testing.T) {
     control := grpc.NewServer()
     pb.RegisterControlServer(control, &controlServer{})
 
-    controlConn, err := net.Listen("unix", filepath.Join(vehicle.Path, "control", core.ControlSocket))
+    controlConn, err := net.Listen("unix", filepath.Join(vehicle.Path(), "control", core.ControlSocket))
     if err != nil {
         t.Fatalf("failed to listen on control socket: %v", err)
     }
@@ -140,7 +140,7 @@ func TestStateTransition(t *testing.T) {
     mission := grpc.NewServer()
     pb.RegisterMissionServer(mission, &missionServer{})
 
-    missionConn, err := net.Listen("unix", filepath.Join(vehicle.Path, "mission", core.MissionSocket))
+    missionConn, err := net.Listen("unix", filepath.Join(vehicle.Path(), "mission", core.MissionSocket))
     if err != nil {
         t.Fatalf("failed to listen on mission socket: %v", err)
     }
@@ -152,7 +152,7 @@ func TestStateTransition(t *testing.T) {
 
     // Configure clients
     client, err := grpc.NewClient(
-        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path, core.MainSocket)),
+        fmt.Sprintf("unix://%s", filepath.Join(vehicle.Path(), core.MainSocket)),
         grpc.WithTransportCredentials(insecure.NewCredentials()),
     )
     if err != nil {
@@ -176,6 +176,11 @@ func TestStateTransition(t *testing.T) {
         t.Fatalf("encountered error with mock service call: %v", err)
     } else if out.Status != 2 {
         t.Fatalf("mock service call did not return the expected value (2), instead: (%v)", out.Status)
+    }
+
+    // Check the current control state
+    if vehicle.ControlState() != "LOCAL" {
+        t.Fatalf("control state did not correctly transit into LOCAL")
     }
 
     // Send Arm with internal identity to ensure LOCAL control
@@ -224,6 +229,11 @@ func TestStateTransition(t *testing.T) {
     } else if out.Status != 2 {
         t.Fatalf("mock service call did not return the expected value (2), instead: (%v)", out.Status)
     }
+    
+    // Check the current control state
+    if vehicle.ControlState() != "REMOTE" {
+        t.Fatalf("control state did not correctly transit into REMOTE")
+    }
 
     // Send Arm with internal identity to ensure REMOTE control boundaries
     md = metadata.Pairs(
@@ -250,8 +260,9 @@ func TestDataplane(t *testing.T) {
     }
     defer vehicle.Stop()
 
-    frontend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, core.DataInSocket))
-    backend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path, core.DataOutSocket))
+    // Create the in and out dataplane sockets
+    frontend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path(), core.DataInSocket))
+    backend := fmt.Sprintf("ipc://%s", filepath.Join(vehicle.Path(), core.DataOutSocket))
     testSender, err := pub.NewSocket() 
     if err != nil {
         t.Fatalf("failed to open publisher test socket: %v", err)
@@ -273,16 +284,19 @@ func TestDataplane(t *testing.T) {
     }
     defer testReceiver.Close()
 
+    // Send a dummy payload through the frontend
     payload := "test" + " " + "helloworld"
     if err = testSender.Send([]byte(payload)); err != nil {
 		t.Fatalf("publisher send error: %v", err)
 	}
 
+    // Receive payload through the backend
     received, err := testReceiver.Recv()
     if err != nil {
 		t.Fatalf("subscriber could not receive: %v", err)
 	}
 
+    // Make sure the payload matches
     if string(received) != payload {
         t.Fatalf("received data did not match!")
     }

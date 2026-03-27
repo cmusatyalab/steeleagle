@@ -207,10 +207,21 @@ func (i *Vehicle) run() {
     i.services.grpcServer.GracefulStop()
 }
 
-func (i *Vehicle) GetStatus() {
-
-}
-
 func (i *Vehicle) Stop() {
     i.cancel()
+}
+
+// Status methods
+func (i *Vehicle) Name() string {
+    return i.name
+}
+
+func (i *Vehicle) Path() string {
+    return i.path
+}
+
+func (i *Vehicle) ControlState() string {
+    i.policy.mu.RLock()
+    defer i.policy.mu.RUnlock()
+    return i.policy.currentState
 }
