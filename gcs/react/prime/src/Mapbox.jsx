@@ -89,7 +89,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
       if (tracking && v.name === selectedVehicle) {
         mapRef.current.flyTo({
           center: [v.current.long, v.current.lat],
-          zoom: 18.03,
+          //zoom: 18.03,
           essential: true, // this animation is considered essential with respect to prefers-reduced-motion
         });
       }
@@ -103,7 +103,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
     if (v) {
       mapRef.current.flyTo({
         center: [v.current.long, v.current.lat],
-        zoom: 18.03,
+        //zoom: 18.03,
         essential: true, // this animation is considered essential with respect to prefers-reduced-motion
       });
     }
