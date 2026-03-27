@@ -78,9 +78,7 @@ function Status({ vehicle }) {
                         </div>
                     </div>
                     <div className="flex flex-row flex-wrap justify-content-center gap-2 m-2">
-                        <Tag value="Sats :" rounded>
-                            <Badge value={vehicle.sats} severity="info"></Badge>
-                        </Tag>
+                        <Tag value={`Sats: ${vehicle.sats}`} rounded />
                     </div>
                 </Card >
             </>
