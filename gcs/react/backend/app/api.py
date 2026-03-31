@@ -124,6 +124,19 @@ class Vehicle(BaseModel):
     velocity: Velocity | None = None
 
 
+class Detection(BaseModel):
+    id: str
+    cls: str
+    confidence: NonNegativeFloat
+    longitude: Longitude
+    latitude: Latitude
+    x_min: NonNegativeFloat
+    y_min: NonNegativeFloat
+    x_max: NonNegativeFloat
+    y_max: NonNegativeFloat
+    link: str | None = None
+
+
 class VehicleConnection(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     grpc_channel: grpc.aio.Channel
@@ -427,7 +440,9 @@ async def _remote_imagery_broadcaster(vehicle: str):
                     nparr = np.frombuffer(img_bytes, np.uint8)
                     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     maybe_add_bboxes(vehicle, img)
-                    _, img_bytes = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    _, img_bytes = cv2.imencode(
+                        ".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90]
+                    )
                 base64_image = base64.b64encode(img_bytes).decode("ascii")
                 await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
             await asyncio.sleep(0.1)
@@ -551,6 +566,35 @@ def add_watermark(img):
 @app.get("/api/remote/backends")
 async def get_backends() -> list[str]:
     return backend_connections.keys()
+
+
+@app.get("/api/remote/objects")
+async def get_objects() -> list[Detection]:
+    data = []
+    if backend_key is None:
+        conn = backend_connections[list(backend_connections)[0]].redis_connection
+    else:
+        conn = backend_connections[backend_key].redis_connection
+    red = conn
+    for obj in red.zrange("detections", 0, -1):
+        if len(red.keys(f"objects:{obj}")) > 0:
+            fields = red.hgetall(f"objects:{obj}")
+            data.append(
+                Detection(
+                    id=obj,
+                    cls=fields.get("cls", "unknown"),
+                    confidence=float(fields.get("confidence", 0.0)),
+                    longitude=Longitude(float(fields.get("longitude", 0.0))),
+                    latitude=Latitude(float(fields.get("latitude", 0.0))),
+                    x_min=NonNegativeFloat(float(fields.get("x_min", 0.0))),
+                    y_min=NonNegativeFloat(float(fields.get("y_min", 0.0))),
+                    x_max=NonNegativeFloat(float(fields.get("x_max", 0.0))),
+                    y_max=NonNegativeFloat(float(fields.get("y_max", 0.0))),
+                    link=fields.get("link", ""),
+                )
+            )
+
+    return data
 
 
 @app.get("/api/remote/vehicles")
