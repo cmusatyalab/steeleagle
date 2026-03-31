@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import os
+import random
 import time
 
 import cv2
@@ -98,8 +99,12 @@ class TestAdapter:
                 extras.channels = channels
                 extras.id = FRAME_ID
                 extras.vehicle_info.name = self.client_id
-                extras.position_info.global_position.latitude = self.latitude
-                extras.position_info.global_position.longitude = self.longitude
+                extras.position_info.global_position.latitude = (
+                    self.latitude + random.uniform(0.0005, 0.001)
+                )
+                extras.position_info.global_position.longitude = (
+                    self.longitude + random.uniform(0.0005, 0.001)
+                )
                 extras.position_info.relative_position.z = self.altitude
                 gimbal = telemetry.GimbalStatus()
                 gimbal.pose_body.pitch = self.gimbal_pitch
