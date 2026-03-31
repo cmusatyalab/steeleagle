@@ -54,8 +54,6 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True)],
 )
 logger = logging.getLogger("rich")
-uvicorn_access = logging.getLogger("uvicorn.access")
-uvicorn_access.disabled = True
 
 backend_key = os.getenv("BACKEND")
 
@@ -311,6 +309,10 @@ async def lifespan(app: FastAPI):
             show_detections=True,
         )
         backend_connections[b] = bc
+    if backend_key is not None:
+        logger.info(f"Using backend '{backend_key}' based on BACKEND env var")
+    else:
+        logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
     yield
     # Cleanup
