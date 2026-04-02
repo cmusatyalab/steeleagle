@@ -1,0 +1,44 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.protocol.v1;
+
+import "steeleagle/protocol/v1/common.proto";
+
+/*
+ * Used to start a new mission or stop an active mission.
+ *
+ * This service is hosted by the driver module and represents the
+ * mission interface for the vehicle. While a single vehicle will
+ * return an OK message as soon as a command is acked and sent,
+ * multiple vehicles will return a message stream when proxied.
+ */
+service MissionService {
+  // Upload a mission for execution
+  rpc Upload (UploadRequest)
+	returns (stream Response) {}
+  // Start an uploaded mission
+  rpc Start (StartRequest)
+	returns (stream Response) {}
+  // Stop the current mission
+  rpc Stop (StopRequest)
+	returns (stream Response) {}
+}
+
+message MissionData {
+  oneof content {
+    string json = 1;
+    bytes binary = 2;
+  }
+  bytes map = 3; // kml object
+}
+
+message UploadRequest {
+  MissionData mission = 1; // data of the target mission
+}
+
+message StartRequest {}
+
+message StopRequest {}

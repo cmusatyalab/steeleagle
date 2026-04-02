@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle.protocol.data_service;
+package steeleagle.protocol.v1;
 
-import "common.proto";
+import "steeleagle/protocol/v1/common.proto";
 
 /*
  * Used to manage downstream data consumption and transmission.
@@ -15,23 +15,18 @@ import "common.proto";
  * datasinks that the kernel broadcasts frames and telemetry to. RPC 
  * methods within this service allow for manipulation of this list. It also
  * is used to send reports downstream which can contain freeform data.
+ * While a single vehicle will return an OK message as soon as a command 
+ * is acked and sent, multiple vehicles will return a message stream
+ * when proxied.
  */
-service Data {
+service DataService {
   /*
    * Set the datasink consumer list.
    *
    * Takes a list of datasinks and replaces the current consumer list with them.
    */
   rpc SetEnginesForTopic (SetEnginesForTopicRequest)
-	returns (steeleagle.protocol.common.Response) {}
-  /*
-   * Send a report.
-   *
-   * Creates a report and distributes it to targeted engines. Must be used in
-   * tandem with `SetEnginesForTopic` in order to set engine targets.
-   */
-  rpc Report (ReportRequest)
-    returns (steeleagle.protocol.common.Response) {}
+	returns (stream Response) {}
 }
 
 // Denotes where an engine is located.
@@ -56,12 +51,10 @@ enum Topic {
 }
 
 message SetEnginesForTopicRequest {
-  steeleagle.protocol.common.Request request = 1; // request data
-  Topic topic = 2; // topic to forward  
-  repeated EngineInfo datasinks = 3; // name of target engines
+  Topic topic = 1; // topic to forward  
+  repeated EngineInfo datasinks = 2; // name of target engines
 }
 
 message ReportRequest {
-  steeleagle.protocol.common.Request request = 1; // request data
-  bytes report = 2; // report data, freeform
+  bytes report = 1; // report data, freeform
 }

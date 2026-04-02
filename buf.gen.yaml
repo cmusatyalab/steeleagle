@@ -16,4 +16,4 @@ plugins:
 #- remote: buf.build/grpc/python
 #  out: protocol/bindings/python
 inputs:
-  - directory: protocol
+  - directory: api
