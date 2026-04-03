@@ -472,7 +472,7 @@ def get_latest_detections(vehicle_id):
     pipe.lrange(key_aruco, 0, -1)
     raw_obj, raw_aruco = pipe.execute()
 
-    raw = (raw_obj or []) + (raw_aruco or [])
+    raw = raw_obj or []  # + (raw_aruco or [])
 
     if not raw:
         return []
