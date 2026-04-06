@@ -25,20 +25,19 @@ class ResolverException(Exception): ...
 # ---------- Type utilities ----------
 
 
+from types import UnionType
+
 def _unwrap_type(tp: Any) -> Any:
     origin = get_origin(tp)
 
     if origin is Annotated:
-        # Annotated[T, ...] -> T
         base = get_args(tp)[0]
         return _unwrap_type(base)
 
-    if origin is Union:
-        # Optional[T] -> Union[T, NoneType]
+    if origin in (Union, UnionType):
         non_none = [a for a in get_args(tp) if a is not type(None)]
         if len(non_none) == 1:
             return _unwrap_type(non_none[0])
-        # Multiple real choices: give up on unwrapping
         return tp
 
     return tp
@@ -64,6 +63,7 @@ def _iter_model_fields(model_cls: type[BaseModel]) -> list[tuple[str, Any]]:
 
 
 def _instantiate_data_from_ir(did: str, data: dict[str, DatumIR]) -> BaseModel | None:
+    logger.info("DATA KEYS: %s", list(data.keys()))
     dir_ = data.get(did)
     if not dir_:
         return None
