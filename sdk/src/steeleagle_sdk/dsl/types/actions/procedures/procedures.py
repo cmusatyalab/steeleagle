@@ -542,3 +542,18 @@ class Track(Action):
                     logger.error("Track: actuation failed: %s", e)
 
             await asyncio.sleep(self._poll_period)
+
+
+
+@register_action
+class Wait(Action):
+    """Wait for a specified duration."""
+
+    duration: float = Field(..., gt=0.0, description="Seconds to wait")
+
+    async def execute(self):
+        logger.info("Waiting for %.1f seconds", self.duration)
+        await Hold().execute()
+        logger.info("Hold command sent, now sleeping")
+        await asyncio.sleep(self.duration)
+        logger.info("Wait complete")
