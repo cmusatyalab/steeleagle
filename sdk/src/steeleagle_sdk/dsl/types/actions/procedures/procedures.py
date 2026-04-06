@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import math
+import time
 
 from pydantic import Field
 
@@ -43,16 +44,16 @@ class ElevateToAltitude(Action):
             rel_alt = tel.position_info.relative_position.z
 
             if rel_alt + self.tolerance >= self.target_altitude:
+                await Hold().execute()
                 break
 
-            set_vel = SetVelocity(
+            set_vel = Joystick(
                 velocity=common.Velocity(
                     x_vel=0.0,
                     y_vel=0.0,
                     z_vel=self.climb_speed,
                     angular_vel=0.0,
                 ),
-                frame=ReferenceFrame.NEU,  # or BODY
             )
             await set_vel.execute()
 
@@ -555,5 +556,10 @@ class Wait(Action):
         logger.info("Waiting for %.1f seconds", self.duration)
         await Hold().execute()
         logger.info("Hold command sent, now sleeping")
-        await asyncio.sleep(self.duration)
+        start = time.time()
+        while True:
+            awaited = time.time() - start
+            if awaited >= self.duration:
+                break
+            await asyncio.sleep(1)
         logger.info("Wait complete")
