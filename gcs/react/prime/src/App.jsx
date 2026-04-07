@@ -254,7 +254,7 @@ function App() {
           onGimbal({ pitch: gimbalVelocity, yaw: 0, roll: 0 });
         }
         else if (buttonIndex == 13 && state.pressed) {
-          onGimbal({ pitch: -1* gimbalVelocity, yaw: 0, roll: 0 });
+          onGimbal({ pitch: -1 * gimbalVelocity, yaw: 0, roll: 0 });
         }
 
       }
@@ -345,7 +345,10 @@ function App() {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
     } else {
-      setManualControl(false);
+      if (!body.hold) {
+        setManualControl(false);
+      }
+
       toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
       const requestOptions = {
         method: 'POST',
@@ -366,6 +369,9 @@ function App() {
       else {
         const result = await response.json();
         toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
+      }
+      if (body.hold) {
+        setManualControl(true);
       }
     }
 
