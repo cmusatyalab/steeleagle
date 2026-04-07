@@ -171,8 +171,8 @@ class MissionStore:
                 ts = time.time()
                 pj = self._to_json(model)
                 if source == "results" and engine_id != "telemetry":
-                    logger.info('Result found!')
-                    logger.info('Mission got result from ' + engine_id)
+                    logger.debug('Result found!')
+                    logger.debug('Mission got result from ' + engine_id)
                     await self._store_one(source, engine_id, ts, pj)
                 else:
                     await self._store_one(source, "driver_telemetry", ts, pj)
