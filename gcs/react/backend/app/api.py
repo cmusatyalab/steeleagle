@@ -380,7 +380,7 @@ async def _telemetry_subscriber(sock, name: str):
                     name=tel.vehicle_info.name,
                     model=tel.vehicle_info.model,
                     battery=tel.vehicle_info.battery_info.percentage,
-                    sats=tel.alert_info.gps_warning,
+                    sats=tel.vehicle_info.gps_info.satellites,
                     mag=tel.alert_info.magnetometer_warning,
                     last_updated=0,
                     current=current,
