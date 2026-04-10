@@ -366,7 +366,7 @@ async def _telemetry_subscriber(sock, name: str):
                 current = Location(
                     lat=tel.position_info.global_position.latitude,
                     long=tel.position_info.global_position.longitude,
-                    alt=max(0, float(tel.position_info.global_position.altitude)),
+                    alt=max(0, float(tel.position_info.relative_position.z)),
                 )
 
                 vel = Velocity(
@@ -405,7 +405,7 @@ async def _imagery_broadcaster(sock, name: str):
                 frame = Frame()
                 frame.ParseFromString(message)
                 encoded_img = Image.frombuffer(
-                    mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
+                    "RGB", (frame.h_res, frame.v_res), frame.data, "raw", "BGR", 0, 1
                 )
                 # resized = encoded_img.resize((320, 180))
                 img_bytes = io.BytesIO()
