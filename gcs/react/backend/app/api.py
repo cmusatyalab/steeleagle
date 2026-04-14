@@ -54,8 +54,6 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True)],
 )
 logger = logging.getLogger("rich")
-uvicorn_access = logging.getLogger("uvicorn.access")
-uvicorn_access.disabled = True
 
 backend_key = os.getenv("BACKEND")
 
@@ -122,6 +120,19 @@ class Vehicle(BaseModel):
     current: Location
     bearing: NonNegativeFloat
     velocity: Velocity | None = None
+
+
+class Detection(BaseModel):
+    id: str
+    cls: str
+    confidence: NonNegativeFloat
+    longitude: Longitude
+    latitude: Latitude
+    x_min: NonNegativeFloat
+    y_min: NonNegativeFloat
+    x_max: NonNegativeFloat
+    y_max: NonNegativeFloat
+    link: str | None = None
 
 
 class VehicleConnection(BaseModel):
@@ -298,6 +309,10 @@ async def lifespan(app: FastAPI):
             show_detections=True,
         )
         backend_connections[b] = bc
+    if backend_key is not None:
+        logger.info(f"Using backend '{backend_key}' based on BACKEND env var")
+    else:
+        logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
     yield
     # Cleanup
@@ -351,7 +366,7 @@ async def _telemetry_subscriber(sock, name: str):
                 current = Location(
                     lat=tel.position_info.global_position.latitude,
                     long=tel.position_info.global_position.longitude,
-                    alt=max(0, float(tel.position_info.global_position.altitude)),
+                    alt=max(0, float(tel.position_info.relative_position.z)),
                 )
 
                 vel = Velocity(
@@ -365,7 +380,7 @@ async def _telemetry_subscriber(sock, name: str):
                     name=tel.vehicle_info.name,
                     model=tel.vehicle_info.model,
                     battery=tel.vehicle_info.battery_info.percentage,
-                    sats=tel.alert_info.gps_warning,
+                    sats=tel.vehicle_info.gps_info.satellites,
                     mag=tel.alert_info.magnetometer_warning,
                     last_updated=0,
                     current=current,
@@ -390,7 +405,7 @@ async def _imagery_broadcaster(sock, name: str):
                 frame = Frame()
                 frame.ParseFromString(message)
                 encoded_img = Image.frombuffer(
-                    mode="RGB", size=(frame.h_res, frame.v_res), data=frame.data
+                    "RGB", (frame.h_res, frame.v_res), frame.data, "raw", "BGR", 0, 1
                 )
                 # resized = encoded_img.resize((320, 180))
                 img_bytes = io.BytesIO()
@@ -427,7 +442,9 @@ async def _remote_imagery_broadcaster(vehicle: str):
                     nparr = np.frombuffer(img_bytes, np.uint8)
                     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                     maybe_add_bboxes(vehicle, img)
-                    _, img_bytes = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    _, img_bytes = cv2.imencode(
+                        ".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90]
+                    )
                 base64_image = base64.b64encode(img_bytes).decode("ascii")
                 await connection_manager.broadcast(f"remote_{vehicle}", base64_image)
             await asyncio.sleep(0.1)
@@ -455,7 +472,7 @@ def get_latest_detections(vehicle_id):
     pipe.lrange(key_aruco, 0, -1)
     raw_obj, raw_aruco = pipe.execute()
 
-    raw = (raw_obj or []) + (raw_aruco or [])
+    raw = raw_obj or []  # + (raw_aruco or [])
 
     if not raw:
         return []
@@ -551,6 +568,35 @@ def add_watermark(img):
 @app.get("/api/remote/backends")
 async def get_backends() -> list[str]:
     return backend_connections.keys()
+
+
+@app.get("/api/remote/objects")
+async def get_objects() -> list[Detection]:
+    data = []
+    if backend_key is None:
+        conn = backend_connections[list(backend_connections)[0]].redis_connection
+    else:
+        conn = backend_connections[backend_key].redis_connection
+    red = conn
+    for obj in red.zrange("detections", 0, -1):
+        if len(red.keys(f"objects:{obj}")) > 0:
+            fields = red.hgetall(f"objects:{obj}")
+            data.append(
+                Detection(
+                    id=obj,
+                    cls=fields.get("cls", "unknown"),
+                    confidence=float(fields.get("confidence", 0.0)),
+                    longitude=Longitude(float(fields.get("longitude", 0.0))),
+                    latitude=Latitude(float(fields.get("latitude", 0.0))),
+                    x_min=NonNegativeFloat(float(fields.get("x_min", 0.0))),
+                    y_min=NonNegativeFloat(float(fields.get("y_min", 0.0))),
+                    x_max=NonNegativeFloat(float(fields.get("x_max", 0.0))),
+                    y_max=NonNegativeFloat(float(fields.get("y_max", 0.0))),
+                    link=fields.get("link", ""),
+                )
+            )
+
+    return data
 
 
 @app.get("/api/remote/vehicles")

@@ -5,7 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_TOKEN } from './config.js';
 import ColorHash from 'color-hash'
 
-function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
+function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking, detectedObjects, mapHeight }) {
   const mapRef = useRef()
   const mapContainerRef = useRef()
   const [currentLoc, setCurrentLoc] = useState(null);
@@ -78,7 +78,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
     vehicles.forEach(v => {
       let marker = new mapboxgl.Marker({ "color": colorHash.hex(v.name), rotation: v.bearing, rotationAlignment: 'map' })
         .setLngLat([v.current.long, v.current.lat])
-        .setPopup(new mapboxgl.Popup({focusAfterOpen: false}).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`)) // add popup
+        .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${v.name} (${v.current.alt.toFixed(2)} m)</strong>`))
         .addTo(mapRef.current);
       marker.togglePopup();
       const markerDiv = marker.getElement();
@@ -96,7 +96,37 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
       markerRefs.current.push(marker);
     });
 
-  }, [vehicles]);
+    if (detectedObjects != null) {
+      detectedObjects.forEach(d => {
+        // Create the SVG element
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        el.setAttribute('width', '16');
+        el.setAttribute('height', '16');
+        el.setAttribute('viewBox', '0 0 16 16');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '8');
+        circle.setAttribute('cy', '8');
+        circle.setAttribute('r', '7');
+        circle.setAttribute('fill', colorHash.hex(d.cls));
+        circle.setAttribute('stroke', '#fff');
+        circle.setAttribute('stroke-width', '2');
+
+        el.appendChild(circle);
+
+        let marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([d.longitude, d.latitude])
+          .setPopup(new mapboxgl.Popup({ focusAfterOpen: false }).setHTML(`<strong style="color:black">${d.id} (${d.confidence.toFixed(2) * 100}%)</strong><img src="${d.link}" style="width:100%;height:auto;margin-top:5px;" />`))
+          .addTo(mapRef.current);
+        const markerDiv = marker.getElement();
+
+        markerDiv.addEventListener('mouseenter', () => marker.togglePopup());
+        markerDiv.addEventListener('mouseleave', () => marker.togglePopup());
+        markerRefs.current.push(marker);
+      });
+    }
+
+  }, [vehicles, detectedObjects]);
 
   useEffect(() => {
     let v = vehicles.find(v => v.name === selectedVehicle);
@@ -112,7 +142,7 @@ function Mapbox({ selectedVehicle, vehicles, mapPanelSize, tracking }) {
   }, [selectedVehicle]);
 
   return (
-    <div id='map-container' ref={mapContainerRef} style={{ width: '100%', height: '20rem' }} />
+    <div id='map-container' ref={mapContainerRef} style={{ width: '100%', height: mapHeight || '20rem' }} />
   )
 }
 

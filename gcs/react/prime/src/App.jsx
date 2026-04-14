@@ -47,6 +47,7 @@ export function getApiUrl(path) {
 function App() {
   const appName = "SteelEagle";
   const [vehicles, setVehicles] = useState([]);
+  const [detectedObjects, setDetectedObjects] = useState([]);
   const toast = useRef(null);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
   const [keyPressed, setKeyPressed] = useState(false);
@@ -101,6 +102,33 @@ function App() {
       }
     }
   }, [lastMessage]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        let response = "";
+        if (!useLocalVehicle) {
+          response = await fetch(getApiUrl('/api/remote/objects'));
+        }
+        else {
+          return;
+        }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        setDetectedObjects(result);
+
+      } catch (error) {
+        setError(error);
+      }
+    };
+
+    fetchData();
+
+    const intervalId = setInterval(fetchData, 500);
+    return () => clearInterval(intervalId);
+  }, [useLocalVehicle]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -226,7 +254,7 @@ function App() {
           onGimbal({ pitch: gimbalVelocity, yaw: 0, roll: 0 });
         }
         else if (buttonIndex == 13 && state.pressed) {
-          onGimbal({ pitch: -1* gimbalVelocity, yaw: 0, roll: 0 });
+          onGimbal({ pitch: -1 * gimbalVelocity, yaw: 0, roll: 0 });
         }
 
       }
@@ -317,7 +345,10 @@ function App() {
       toast.current.show({ severity: 'warn', summary: 'No Vehicles in Squad', detail: `Please select at least one vehicle to control.` });
       return;
     } else {
-      setManualControl(false);
+      if (!body.hold) {
+        setManualControl(false);
+      }
+
       toast.current.show({ severity: 'info', summary: 'Command Sent', detail: `${JSON.stringify(body)}` });
       const requestOptions = {
         method: 'POST',
@@ -338,6 +369,9 @@ function App() {
       else {
         const result = await response.json();
         toast.current.show({ severity: 'success', summary: 'Command Success', detail: `${result}` });
+      }
+      if (body.hold) {
+        setManualControl(true);
       }
     }
 
@@ -472,7 +506,7 @@ function App() {
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
-      {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} />}
+      {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
       {selectedMenu == "Plan" && <PlanPage />}
       <Toast ref={toast} />
     </>
