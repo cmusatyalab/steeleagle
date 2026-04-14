@@ -173,8 +173,8 @@ async def results():
 
 @pytest_asyncio.fixture(scope="function")
 async def gabriel():
-    from gabriel_protocol.gabriel_pb2 import ResultWrapper
-    from gabriel_server.cognitive_engine import Engine, create_result_wrapper
+    from gabriel_protocol.gabriel_pb2 import Status
+    from gabriel_server.cognitive_engine import Result, Engine
     from gabriel_server.local_engine import LocalEngine
     from util.config import query_config
 
@@ -185,21 +185,18 @@ async def gabriel():
             self._name = name
 
         def handle(self, input_frame):
-            status = ResultWrapper.Status.SUCCESS
-            result_wrapper = create_result_wrapper(status)
-            result_wrapper.result_producer_name.value = self._name
-            result = ResultWrapper.Result()
-            result.payload_type = input_frame.payload_type
-            result_wrapper.results.append(result)
-            return result_wrapper
+            result = Result()
+            result.status = Status.SUCCESS
+            result.payload = self._name
+            return result
 
     # Run remote server
     remote_engine = LocalEngine(
         lambda: RepeaterEngine("REMOTE"),
         60,
-        query_config("cloudlet.remote_compute_service").split(":")[-1],
+        9099,
         2,
-        engine_name="engine",
+        engine_id="engine",
         use_zeromq=True,
     )
     remote_task = asyncio.create_task(remote_engine.run_async())
@@ -209,7 +206,7 @@ async def gabriel():
         60,
         None,
         2,
-        engine_name="engine",
+        engine_id="engine",
         use_zeromq=True,
         ipc_path=query_config("internal.streams.local_compute").replace("unix://", ""),
     )

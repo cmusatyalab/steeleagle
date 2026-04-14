@@ -2,9 +2,10 @@ import asyncio
 import logging
 
 import pytest
-import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
+from gabriel_protocol.gabriel_pb2 import Result
 
 # Protocol import
+import steeleagle_sdk.protocol.messages.telemetry_pb2 as telemetry_proto
 import steeleagle_sdk.protocol.services.compute_service_pb2 as compute_proto
 
 # Helper import
@@ -47,37 +48,18 @@ class Test_Stream:
         await send_requests(requests, swarm_controller, None)
 
         expected = {"REMOTE": 3, "LOCAL": 3}
-        (
-            await imagery.send_multipart(
-                [b"imagery", telemetry_proto.Frame().SerializeToString()]
-            ),
-        )
-        (
-            await driver_telemetry.send_multipart(
-                [
-                    b"driver_telemetry",
-                    telemetry_proto.DriverTelemetry().SerializeToString(),
-                ]
-            ),
-        )
-        await mission_telemetry.send_multipart(
-            [
-                b"mission_telemetry",
-                telemetry_proto.MissionTelemetry().SerializeToString(),
-            ]
-        )
+        await imagery.send(telemetry_proto.Frame().SerializeToString())
+        await driver_telemetry.send(telemetry_proto.DriverTelemetry().SerializeToString())
+        await mission_telemetry.send(telemetry_proto.MissionTelemetry().SerializeToString())
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
         for _i in range(6):
             try:
-                (
-                    topic,
-                    data,
-                ) = (
-                    await results.recv_multipart()
-                )  # This will timeout after half a second if nothing is received
-                received[topic.decode("utf-8")] += 1
-            except Exception:
+                data = await results.recv()
+                msg = Result()
+                msg.ParseFromString(data)
+                received[msg.string_result] += 1
+            except Exception as e:
                 pass
         assert expected == received
 
@@ -94,36 +76,17 @@ class Test_Stream:
         await send_requests(requests, swarm_controller, None)
 
         expected = {"REMOTE": 0, "LOCAL": 3}
-        (
-            await imagery.send_multipart(
-                [b"imagery", telemetry_proto.Frame().SerializeToString()]
-            ),
-        )
-        (
-            await driver_telemetry.send_multipart(
-                [
-                    b"driver_telemetry",
-                    telemetry_proto.DriverTelemetry().SerializeToString(),
-                ]
-            ),
-        )
-        await mission_telemetry.send_multipart(
-            [
-                b"mission_telemetry",
-                telemetry_proto.MissionTelemetry().SerializeToString(),
-            ]
-        )
+        await imagery.send(telemetry_proto.Frame().SerializeToString())
+        await driver_telemetry.send(telemetry_proto.DriverTelemetry().SerializeToString())
+        await mission_telemetry.send(telemetry_proto.MissionTelemetry().SerializeToString())
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
         for _i in range(6):
             try:
-                (
-                    topic,
-                    data,
-                ) = (
-                    await results.recv_multipart()
-                )  # This will timeout after half a second if nothing is received
-                received[topic.decode("utf-8")] += 1
+                data = await results.recv()
+                msg = Result()
+                msg.ParseFromString(data)
+                received[msg.string_result] += 1
             except Exception:
                 pass
         assert expected == received
@@ -141,36 +104,17 @@ class Test_Stream:
         await send_requests(requests, swarm_controller, None)
 
         expected = {"REMOTE": 3, "LOCAL": 3}
-        (
-            await imagery.send_multipart(
-                [b"imagery", telemetry_proto.Frame().SerializeToString()]
-            ),
-        )
-        (
-            await driver_telemetry.send_multipart(
-                [
-                    b"driver_telemetry",
-                    telemetry_proto.DriverTelemetry().SerializeToString(),
-                ]
-            ),
-        )
-        await mission_telemetry.send_multipart(
-            [
-                b"mission_telemetry",
-                telemetry_proto.MissionTelemetry().SerializeToString(),
-            ]
-        )
+        await imagery.send(telemetry_proto.Frame().SerializeToString())
+        await driver_telemetry.send(telemetry_proto.DriverTelemetry().SerializeToString())
+        await mission_telemetry.send(telemetry_proto.MissionTelemetry().SerializeToString())
         await asyncio.sleep(1)
         received = {"REMOTE": 0, "LOCAL": 0}
         for _i in range(6):
             try:
-                (
-                    topic,
-                    data,
-                ) = (
-                    await results.recv_multipart()
-                )  # This will timeout after half a second if nothing is received
-                received[topic.decode("utf-8")] += 1
+                data = await results.recv()
+                msg = Result()
+                msg.ParseFromString(data)
+                received[msg.string_result] += 1
             except Exception:
                 pass
         assert expected == received
