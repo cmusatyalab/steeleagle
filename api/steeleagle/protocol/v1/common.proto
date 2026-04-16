@@ -7,11 +7,6 @@ package steeleagle.protocol.v1;
 
 import "google/protobuf/timestamp.proto";
 
-// Response object for all SteelEagle services.
-message Response {
-  google.protobuf.Timestamp timestamp = 1;
-}
-
 // Angular offsets or poses in 3 dimensions.
 message Pose {
   optional double pitch = 1; // pitch [degrees]

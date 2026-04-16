@@ -1,0 +1,60 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.protocol.v1.services;
+
+import "steeleagle/protocol/v1/common.proto";
+import "steeleagle/protocol/v1/messages/results.proto";
+import "steeleagle/protocol/v1/messages/driver.proto";
+
+/*
+ * Used to get up-to-date results, telemetry, and video frames.
+ *
+ * This service is used to retrieve the most recent results, telemetry,
+ * and video frames from the driver or other publisher plugins.
+ */
+service DataService {
+  /*
+   * Get the most recent produced result.
+   *
+   * Retrieves the most recent produced result from the named engine.
+   */
+  rpc GetResult (GetResultRequest)
+    returns (GetResultResponse) {}
+  /*
+   * Get the most recent telemetry data.
+   *
+   * Retrieves the most recent telemetry data from the driver.
+   */
+  rpc GetTelemetry (GetTelemetryRequest)
+    returns (GetTelemetryResponse) {}
+  /*
+   * Get the most recent video frame.
+   *
+   * Retrieves the most recent video frame from the driver.
+   */
+  rpc GetFrame (GetFrameRequest)
+    returns (GetFrameResponse) {}
+}
+
+message GetResultRequest {
+  string name = 1; // name of the result producer to pull from
+}
+
+message GetResultResponse {
+  steeleagle.protocol.v1.messages.ComputeResult result = 1;
+}
+
+message GetTelemetryRequest {}
+
+message GetTelemetryResponse {
+  steeleagle.protocol.v1.messages.Telemetry telemetry = 1; // most recent telemetry
+}
+
+message GetFrameRequest {}
+
+message GetFrameResponse {
+  steeleagle.protocol.v1.messages.EncodedFrame frame = 1; // most recent frame
+}

@@ -3,17 +3,17 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/cmusatyalab/steeleagle/runtime/protos
+      value: github.com/cmusatyalab/steeleagle/api/gen/go
 plugins:
   - remote: buf.build/protocolbuffers/go
-    out: runtime/protos
+    out: api/gen/go
     opt: paths=source_relative
   - remote: buf.build/grpc/go
-    out: runtime/protos
+    out: api/gen/go
     opt: paths=source_relative
-#- remote: buf.build/protocolbuffers/python
-#  out: protocol/bindings/python
-#- remote: buf.build/grpc/python
-#  out: protocol/bindings/python
+  - remote: buf.build/protocolbuffers/python
+    out: api/gen/python/src
+  - remote: buf.build/grpc/python
+    out: api/gen/python/src
 inputs:
   - directory: api
