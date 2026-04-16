@@ -6,6 +6,7 @@ syntax = "proto3";
 package steeleagle.protocol.v1.services;
 
 import "steeleagle/protocol/v1/common.proto";
+import "steeleagle/protocol/v1/messages/driver.proto";
 
 /*
  * Used for low-level control of a vehicle.
@@ -14,7 +15,7 @@ import "steeleagle/protocol/v1/common.proto";
  * control interface for the vehicle. Most methods called here will result
  * in actuation of the vehicle if it is armed (be careful!).
  */
-service ControlService {
+service DriverService {
   /*
    * Order the vehicle to take off.
    *
@@ -146,6 +147,33 @@ service ControlService {
    */
   rpc SetGimbalPose (SetGimbalPoseRequest)
 	returns (SetGimbalPoseResponse) {}
+  /*
+   * Gets the video stream URL from the vehicle.
+   *
+   * Retrieves the video stream URL from the vehicle so that it can be
+   * broadcast to the rest of the system. This function should only
+   * be called by the OS, and not by any plugins.
+   */
+  rpc GetVideoURL (GetVideoURLRequest)
+    returns (GetVideoURLResponse) {}
+  /*
+   * Gets a stream of frames from the vehicle.
+   *
+   * Retrieves a direct stream of video frames from the vehicle. This
+   * is used when camera data is accessible without needing a stream.
+   * This function should only be called by the OS, and not by any
+   * plugins.
+   */
+  rpc GetFrameStream (GetFrameStreamRequest)
+    returns (GetFrameStreamResponse) {}
+  /*
+   * Gets a stream of telemetry from the vehicle.
+   *
+   * Retrieves a stream of up-to-date telemetry from the vehicle. This
+   * function should only be called by the OS, and not by any plugins.
+   */
+  rpc GetTelemetryStream (GetTelemetryStreamRequest)
+    returns (stream GetTelemetryStreamResponse) {}
 }
 
 message TakeOffRequest {
@@ -246,7 +274,7 @@ enum PoseMode {
   VELOCITY = 2; // rotational velocities
 }
 
-message SetGimbalPoseRequest{
+message SetGimbalPoseRequest {
   uint32 gimbal_id = 1; // ID of the target gimbal
   Pose pose = 2; // target pose
   optional PoseMode pose_mode = 3; // specifies how to interpret the target pose
@@ -255,3 +283,21 @@ message SetGimbalPoseRequest{
 }
 
 message SetGimbalPoseResponse {}
+
+message GetVideoURLRequest {}
+
+message GetVideoURLResponse {
+  string url = 1; // URL of the video stream
+}
+
+message GetFrameStreamRequest {}
+
+message GetFrameStreamResponse {
+  steeleagle.protocol.v1.messages.RawFrame frame = 1; // raw frame from the camera
+}
+
+message GetTelemetryStreamRequest {}
+
+message GetTelemetryStreamResponse {
+  steeleagle.protocol.v1.messages.Telemetry telemetry = 1; // telemetry from the driver
+}
