@@ -15,6 +15,7 @@ import requests
 import toml
 import zmq
 import zmq.asyncio
+from colorhash import ColorHash
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -494,12 +495,6 @@ def maybe_add_bboxes(vehicle_id, img):
         return
     h, w = img.shape[:2]
 
-    CLASS_COLORS = {
-        "person": (0, 255, 120),
-        "aruco_0": (255, 0, 255),
-    }
-    DEFAULT_COLOR = (200, 200, 200)
-
     for det in detections:
         try:
             y_min_f, x_min_f, y_max_f, x_max_f = det["box"]
@@ -516,7 +511,7 @@ def maybe_add_bboxes(vehicle_id, img):
         cls = det.get("class", "unknown")
         score = det.get("score", 0.0)
         label = f"{cls} {score:.2f}"
-        color = CLASS_COLORS.get(cls, DEFAULT_COLOR)
+        color = ColorHash(cls).rgb
 
         # Bounding box
         cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness=2)
@@ -867,6 +862,7 @@ async def joystick(req: Joystick, sandbox_mode: bool = True) -> JSONResponse:
             try_to_connect=True
         )  # attempt to reconnect to grpc endpoint
         try:
+            logger.info(f"Joystick: {req}")
             joy = JoystickRequest()
             joy.velocity.x_vel = req.xvel
             joy.velocity.y_vel = req.yvel
