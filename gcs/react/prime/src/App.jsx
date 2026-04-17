@@ -163,14 +163,12 @@ function App() {
 
   const onKeyDown = (e) => {
     if (e.code === 'Escape') {
-      setManualControl(!manualControl);
+      onCommand({ hold: true });
+      setManualControl(true);
     }
     if (manualControl) {
       setKeyPressed(true);
-      if (e.code === 'Space') {
-        onCommand({ hold: true });
-      }
-      else if (e.code === 'KeyT') {
+      if (e.code === 'KeyT') {
         onCommand({ takeoff: takeOffAltitude });
       }
       else if (e.code === 'KeyG') {
@@ -238,6 +236,7 @@ function App() {
       if (buttonIndex == 8 && state.pressed) {
         setManualControl(false);
       } else if (buttonIndex == 9 && state.pressed) {
+        onCommand({ hold: true });
         setManualControl(true);
       }
       if (manualControl) {
