@@ -4,21 +4,27 @@ import logging
 import math
 import time
 
+import numpy as np
 from pydantic import Field
+from scipy.spatial.transform import Rotation as R
 
 from ....compiler.registry import register_action
 from ...base import Action
 from ...datatypes import common as common
-from ...datatypes.control import AltitudeMode, HeadingMode, ReferenceFrame, PoseMode
+from ...datatypes.control import AltitudeMode, HeadingMode, PoseMode
 from ...datatypes.result import BoundingBox, Detection, FrameResult
 from ...datatypes.waypoint import Waypoints
-from ..primitives.vehicle import Joystick, SetGimbalPose, SetGlobalPosition, SetVelocity, SetGimbalPoseTarget, Hold, Land
+from ...utils import fetch_results, fetch_telemetry
+from ..primitives.vehicle import (
+    Hold,
+    Joystick,
+    Land,
+    SetGimbalPose,
+    SetGimbalPoseTarget,
+    SetGlobalPosition,
+)
 
 logger = logging.getLogger(__name__)
-import numpy as np
-from scipy.spatial.transform import Rotation as R
-
-from ...utils import fetch_results, fetch_telemetry
 
 
 @register_action
@@ -77,8 +83,7 @@ class PrePatrolSequence(Action):
     async def execute(self):
         await ElevateToAltitude(target_altitude=self.altitude).execute()
         await SetGimbalPose(
-            gimbal_id=0,
-            pose=common.Pose(pitch=self.gimbal_pitch, roll=0.0, yaw=0.0)
+            gimbal_id=0, pose=common.Pose(pitch=self.gimbal_pitch, roll=0.0, yaw=0.0)
         ).execute()
 
 
@@ -89,10 +94,12 @@ class Patrol(Action):
     hover_time: float = Field(
         1.0, ge=0.0, description="seconds to hover after each move"
     )
-    waypoints: Waypoints = Field(description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).")
+    waypoints: Waypoints = Field(
+        description="Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance)."
+    )
     max_velocity: common.Velocity = Field(
-            common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0),
-            description="Maximum velocity to use while transiting between waypoints.",
+        common.Velocity(x_vel=3.0, y_vel=3.0, z_vel=3.0, angular_vel=120.0),
+        description="Maximum velocity to use while transiting between waypoints.",
     )
 
     async def execute(self):
@@ -117,6 +124,7 @@ class Patrol(Action):
                 if self.hover_time > 0:
                     await asyncio.sleep(self.hover_time)
 
+
 @register_action
 class PrecisionLand(Action):
     """Land on an object using vision-based control."""
@@ -133,7 +141,9 @@ class PrecisionLand(Action):
     )
 
     # --- Compute / detection configuration ---
-    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold)")
+    target: Detection = Field(
+        description="Detection to track (class_name to match, optional score threshold)"
+    )
     target_lost_duration: float = Field(1.0)
 
     # --- Movement speeds ---
@@ -173,24 +183,23 @@ class PrecisionLand(Action):
         return forward_error, lateral_error
 
     async def execute(self):
-        logger.info('Started the task')
+        logger.info("Started the task")
         last_seen: float | None = None
         mode: int = 0
         # Pitch the gimbal
         await SetGimbalPose(
-            gimbal_id=0,
-            pose=common.Pose(pitch=-90.0, roll=0.0, yaw=0.0)
+            gimbal_id=0, pose=common.Pose(pitch=-90.0, roll=0.0, yaw=0.0)
         ).execute()
         # Descent loop
         while True:
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
             if not telemetry:
-                logger.error('Could not get telemetry, waiting!')
+                logger.error("Could not get telemetry, waiting!")
                 continue
             # logger.info("Track: telemetry fetched: %s", telemetry)
-
-            #--- Target lost check ---
+            altitude = telemetry.relative_position.z
+            # --- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 if altitude >= self.altitude_ceil:
@@ -201,7 +210,9 @@ class PrecisionLand(Action):
                     )
                     break
                 else:
-                    await Joystick(velocity=common.Velocity(z_vel=self.descent_speed)).execute()
+                    await Joystick(
+                        velocity=common.Velocity(z_vel=self.descent_speed)
+                    ).execute()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
@@ -232,20 +243,28 @@ class PrecisionLand(Action):
                 forward_off = math.tan(math.radians(forward_err)) * altitude
                 lateral_off = math.tan(math.radians(lateral_err)) * altitude
                 target = common.Velocity()
-                if mode == 0: # forward
-                    logger.info(f'forward step {forward_off}')
+                if mode == 0:  # forward
+                    logger.info(f"forward step {forward_off}")
                     if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(f'forward check {forward_off} {self.err_tol * altitude} {altitude}')
+                        logger.info(
+                            f"forward check {forward_off} {self.err_tol * altitude} {altitude}"
+                        )
                         mode = 1
                         await Hold().execute()
                         continue
                     else:
-                        target.x_vel = self._clamp(forward_off, -self.forward_speed, self.forward_speed)
-                elif mode == 1: # lateral
-                    logger.info(f'lateral step {lateral_off}')
+                        target.x_vel = self._clamp(
+                            forward_off, -self.forward_speed, self.forward_speed
+                        )
+                elif mode == 1:  # lateral
+                    logger.info(f"lateral step {lateral_off}")
                     if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(f'lateral check {lateral_off} {self.err_tol * altitude} {altitude}')
-                        if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
+                        logger.info(
+                            f"lateral check {lateral_off} {self.err_tol * altitude} {altitude}"
+                        )
+                        if math.isclose(
+                            forward_off, 0.0, abs_tol=self.err_tol * altitude
+                        ):
                             mode = 2
                             await Hold().execute()
                             continue
@@ -254,21 +273,31 @@ class PrecisionLand(Action):
                             await Hold().execute()
                             continue
                     else:
-                        target.y_vel = self._clamp(lateral_off, -self.lateral_speed, self.lateral_speed)
-                else: # descend
-                    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * self.target_altitude) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * self.target_altitude):
-                        logger.info('land check')
+                        target.y_vel = self._clamp(
+                            lateral_off, -self.lateral_speed, self.lateral_speed
+                        )
+                else:  # descend
+                    if math.isclose(
+                        forward_off, 0.0, abs_tol=self.err_tol * self.target_altitude
+                    ) and math.isclose(
+                        lateral_off, 0.0, abs_tol=self.err_tol * self.target_altitude
+                    ):
+                        logger.info("land check")
                         await Land().execute()
                         return
                     else:
                         mode = 0
-                logger.info('outer loop')
-                if math.isclose(forward_off, 0.0, abs_tol=self.err_tol) and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol) and altitude <= self.target_altitude:
-                    logger.info('land check')
+                logger.info("outer loop")
+                if (
+                    math.isclose(forward_off, 0.0, abs_tol=self.err_tol)
+                    and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
+                    and altitude <= self.target_altitude
+                ):
+                    logger.info("land check")
                     await Land().execute()
                     return
                 else:
-                    logger.info('joystick')
+                    logger.info("joystick")
                     await Joystick(velocity=target).execute()
 
 
@@ -287,7 +316,9 @@ class Track(Action):
     )
 
     # --- Compute / detection configuration ---
-    target: Detection = Field(description="Detection to track (class_name to match, optional score threshold)")
+    target: Detection = Field(
+        description="Detection to track (class_name to match, optional score threshold)"
+    )
     leash_distance: float = Field(
         10, ge=0.0, description="leashing distance towards the tracked target"
     )
@@ -309,10 +340,16 @@ class Track(Action):
         0.0, ge=0.0, description="Target altitude to descend to while tracking"
     )
     altitude_tolerance: float = Field(
-        0.0, ge=0.0, description="Tolerance at which altitude will be checked for descending"
+        0.0,
+        ge=0.0,
+        description="Tolerance at which altitude will be checked for descending",
     )
-    strafe: bool = Field(False, description="Whether or not to move left/right when following")
-    gimbal_lock: bool = Field(False, description="Whether or not to lock the gimbal in position")
+    strafe: bool = Field(
+        False, description="Whether or not to move left/right when following"
+    )
+    gimbal_lock: bool = Field(
+        False, description="Whether or not to lock the gimbal in position"
+    )
 
     # --- private ---
     _poll_period: float = 0.05
@@ -330,7 +367,9 @@ class Track(Action):
     def _find_intersection(
         self, tracker_dir: np.ndarray, tracker_location: np.ndarray
     ) -> np.ndarray | None:
-        logger.debug("finding intersection for dir=%s, insct=%s", tracker_dir, tracker_location)
+        logger.debug(
+            "finding intersection for dir=%s, insct=%s", tracker_dir, tracker_location
+        )
         plane_pt = np.array([0, 0, 0])
         plane_norm = np.array([0, 0, 1])
 
@@ -420,40 +459,40 @@ class Track(Action):
         # Body-frame velocities: forward (x), lateral (y), vertical (z), yaw rate
         if not self.strafe:
             velocity_target = common.Velocity(
-                    x_vel=forward_vel * self.follow_gain,
-                    y_vel=0.0,
-                    z_vel=-1 * descent_speed,
-                    angular_vel= yaw_vel_deg * self.yaw_gain,
+                x_vel=forward_vel * self.follow_gain,
+                y_vel=0.0,
+                z_vel=-1 * descent_speed,
+                angular_vel=yaw_vel_deg * self.yaw_gain,
             )
         else:
             velocity_target = common.Velocity(
-                    x_vel=forward_vel * self.follow_gain,
-                    y_vel=yaw_vel_deg * self.yaw_gain,
-                    z_vel=-1 * descent_speed,
-                    angular_vel=0.0,
+                x_vel=forward_vel * self.follow_gain,
+                y_vel=yaw_vel_deg * self.yaw_gain,
+                z_vel=-1 * descent_speed,
+                angular_vel=0.0,
             )
         logger.debug("Actuate: velocity target: %s", velocity_target)
-        set_joystick = Joystick(
-            velocity=velocity_target
-        )
+        set_joystick = Joystick(velocity=velocity_target)
         await set_joystick.execute()
 
         # Gimbal pitch command
         if not self.gimbal_lock:
-            desired_pitch = (gimbal_error_deg * 0.5)
+            desired_pitch = gimbal_error_deg * 0.5
             pose = common.Pose(
                 pitch=desired_pitch,
                 yaw=0.0,
                 roll=0.0,
             )
             # gimbal_id = telemetry.gimbal_info.gimbals[0].gimbal_id
-            set_gimbal = SetGimbalPoseTarget(gimbal_id = 0, pose = pose, pose_mode=PoseMode.OFFSET, frame=None)
+            set_gimbal = SetGimbalPoseTarget(
+                gimbal_id=0, pose=pose, pose_mode=PoseMode.OFFSET, frame=None
+            )
             await set_gimbal.execute()
 
     async def execute(self):
         last_seen: float | None = None
         while True:
-            #--- Target lost check ---
+            # --- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
                 # Stop motion and exit
@@ -512,8 +551,17 @@ class Track(Action):
                     )
                     yaw_vel = self._clamp(yaw_err, -self.yaw_speed, self.yaw_speed)
                     logger.debug(f"follow_vel {follow_err}")
-                    logger.debug("yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f", self.yaw_speed, yaw_err, yaw_vel)
-                    logger.debug("follow_err_forward=%.3f, follow_err_right=%.3f", follow_vel[0], follow_vel[1])
+                    logger.debug(
+                        "yaw_speed=%s yaw_err=%.3f yaw_vel(after clamp)=%.3f",
+                        self.yaw_speed,
+                        yaw_err,
+                        yaw_vel,
+                    )
+                    logger.debug(
+                        "follow_err_forward=%.3f, follow_err_right=%.3f",
+                        follow_vel[0],
+                        follow_vel[1],
+                    )
 
                 except Exception as e:
                     logger.error("Track: error clamping velocities: %s", e)
@@ -545,7 +593,6 @@ class Track(Action):
             await asyncio.sleep(self._poll_period)
 
 
-
 @register_action
 class Wait(Action):
     """Wait for a specified duration."""
@@ -563,3 +610,59 @@ class Wait(Action):
                 break
             await asyncio.sleep(1)
         logger.info("Wait complete")
+
+
+@register_action
+class AvoidTask(Action):
+    # --- actuation ---
+    pitch_speed: float = Field(1.5, ge=0.0, description="Max forward speed (m/s)")
+    roll_speed: float = Field(1.0, ge=0.0, description="Max horizontal speed (m/s)")
+    compute_stream: str = Field(
+        "depth-engine",
+        description="Name of compute stream to pull detections from",
+    )
+
+    # --- private ---
+    _poll_period: float = 0.05
+
+    @staticmethod
+    def _clamp(value: float, minimum: float, maximum: float) -> float:
+        logger.debug("clamping value=%f, min=%f, max=%f", value, minimum, maximum)
+        return float(np.clip(value, minimum, maximum))
+
+    async def execute(self):
+        logger.info("[AvoidTask] Started run")
+        await SetGimbalPose(
+            gimbal_id=0, pose=common.Pose(pitch=0.0, roll=0.0, yaw=0.0)
+        ).execute()
+        while True:
+            res: FrameResult = await fetch_results(self.compute_stream)
+            offset = 0
+            try:
+                logger.info(f"[AvoidTask] result: {res}")
+                if not res or not res.result:
+                    logger.info("Track: no depth result")
+                    continue  # no ComputeResult entries
+                for compute in res.result:
+                    result = compute.avoidance_result
+                    offset = result.actuation_vector
+                    if offset != 0.0:
+                        await Joystick(
+                            velocity=common.Velocity(
+                                y_vel=self._clamp(
+                                    offset, -self.roll_speed, self.roll_speed
+                                )
+                            )
+                        )
+                    else:
+                        await Joystick(
+                            velocity=common.Velocity(
+                                x_vel=self._clamp(
+                                    offset, -self.pitch_speed, self.pitch_speed
+                                )
+                            )
+                        )
+            except Exception as e:
+                logger.error("[AvoidTask] Threw an exception")
+                logger.error(e)
+            await asyncio.sleep(self._poll_period)
