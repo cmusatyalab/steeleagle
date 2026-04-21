@@ -34,6 +34,7 @@ class TestAdapter:
         self.heading = args.heading
         self.gimbal_pitch = args.pitch
         self.model = args.model
+        self.engine_id = args.engine
 
         image_path = args.image
         # Setup image source
@@ -128,7 +129,7 @@ class TestAdapter:
             InputProducer(
                 producer=producer,
                 producer_name=self.source_name,
-                target_engine_ids=["object-engine"],
+                target_engine_ids=[self.engine_id],
             )
         ]
 
@@ -158,6 +159,12 @@ def main():
     ap.add_argument("-n", "--source", default="telemetry", help="source name")
     ap.add_argument(
         "-c", "--client_id", default="canary", help="client id for drone_id"
+    )
+    ap.add_argument(
+        "-e",
+        "--engine",
+        default="object-engine",
+        help="Target engine id [default=object-engine]",
     )
     args = ap.parse_args()
 
