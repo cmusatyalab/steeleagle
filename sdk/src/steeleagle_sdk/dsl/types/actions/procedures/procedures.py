@@ -618,7 +618,7 @@ class AvoidTask(Action):
     pitch_speed: float = Field(1.5, ge=0.0, description="Max forward speed (m/s)")
     roll_speed: float = Field(1.0, ge=0.0, description="Max horizontal speed (m/s)")
     compute_stream: str = Field(
-        "depth-engine",
+        "obstacle-avoidance",
         description="Name of compute stream to pull detections from",
     )
 
@@ -639,9 +639,7 @@ class AvoidTask(Action):
             res: FrameResult = await fetch_results(self.compute_stream)
             offset = 0
             try:
-                logger.info(f"[AvoidTask] result: {res}")
                 if not res or not res.result:
-                    logger.info("Track: no depth result")
                     continue  # no ComputeResult entries
                 for compute in res.result:
                     result = compute.avoidance_result
@@ -654,6 +652,7 @@ class AvoidTask(Action):
                                 )
                             )
                         )
+                        logger.info(f"[AvoidTask] result: {offset}")
                     else:
                         await Joystick(
                             velocity=common.Velocity(
