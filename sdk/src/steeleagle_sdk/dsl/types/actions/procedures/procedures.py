@@ -618,7 +618,7 @@ class AvoidTask(Action):
     pitch_speed: float = Field(1.5, ge=0.0, description="Max forward speed (m/s)")
     roll_speed: float = Field(1.0, ge=0.0, description="Max horizontal speed (m/s)")
     compute_stream: str = Field(
-        "obstacle-avoidance",
+        "obstacle-engine",
         description="Name of compute stream to pull detections from",
     )
 
@@ -645,6 +645,7 @@ class AvoidTask(Action):
                     result = compute.avoidance_result
                     offset = result.actuation_vector
                     if offset != 0.0:
+                        logger.info(f"Obstacle Detected, actuation vector: {offset}...")
                         await Joystick(
                             velocity=common.Velocity(
                                 y_vel=self._clamp(
@@ -652,8 +653,8 @@ class AvoidTask(Action):
                                 )
                             )
                         )
-                        logger.info(f"[AvoidTask] result: {offset}")
                     else:
+                        logger.info("No obstacles detected, moving forward...")
                         await Joystick(
                             velocity=common.Velocity(
                                 x_vel=self._clamp(
