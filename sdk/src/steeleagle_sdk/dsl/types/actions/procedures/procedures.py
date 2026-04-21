@@ -636,7 +636,8 @@ class AvoidTask(Action):
             gimbal_id=0, pose=common.Pose(pitch=0.0, roll=0.0, yaw=0.0)
         ).execute()
         offset = 0.0
-        hold_sent = False
+        moving_forward = True
+        moving_lateral = False
         while True:
             res: FrameResult = await fetch_results(self.compute_stream)
             try:
@@ -645,23 +646,33 @@ class AvoidTask(Action):
                 for compute in res.result:
                     result = compute.avoidance_result
                     offset = result.actuation_vector
-                    if offset != 0.0:
+                    if not math.isclose(offset, 0.0, abs_tol=1e-1):
+                        if moving_forward:
+                            moving_lateral = True
+                            moving_forward = False
+                            logger.info("Path is OBSTRUCTED, holding...")
+                            await Hold().execute()
                         logger.info(f"Obstacle Detected, actuation vector: {offset}...")
+                        vel = (
+                            min(offset * self.roll_speed, 0.5)
+                            if offset > 0.0
+                            else min(offset * self.roll_speed, -0.5)
+                        )
                         await Joystick(
                             velocity=common.Velocity(
                                 y_vel=self._clamp(
-                                    offset * self.roll_speed,
+                                    vel,
                                     -self.roll_speed,
                                     self.roll_speed,
                                 )
                             )
                         ).execute()
-                        hold_sent = False
                     else:
-                        if not hold_sent:
-                            logger.info("Path is clear, holding...")
+                        if moving_lateral:
+                            moving_lateral = False
+                            moving_forward = True
+                            logger.info("Path is CLEAR, holding...")
                             await Hold().execute()
-                            hold_sent = True
                         logger.info("No obstacles detected, moving forward...")
                         await Joystick(
                             velocity=common.Velocity(x_vel=self.pitch_speed)
