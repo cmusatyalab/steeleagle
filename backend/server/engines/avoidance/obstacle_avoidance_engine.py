@@ -152,7 +152,6 @@ class AvoidanceEngine(ABC):
         status = gabriel_pb2.Status()
 
         compute_result = result_pb2.ComputeResult()
-        compute_result.timestamp.GetCurrentTime()
         compute_result.engine_name = self.ENGINE_NAME
         compute_result.avoidance_result.actuation_vector = vector
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
