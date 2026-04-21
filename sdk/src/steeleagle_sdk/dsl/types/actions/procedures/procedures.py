@@ -635,9 +635,10 @@ class AvoidTask(Action):
         await SetGimbalPose(
             gimbal_id=0, pose=common.Pose(pitch=0.0, roll=0.0, yaw=0.0)
         ).execute()
+        offset = 0.0
+        hold_sent = False
         while True:
             res: FrameResult = await fetch_results(self.compute_stream)
-            offset = 0
             try:
                 if not res or not res.result:
                     continue  # no ComputeResult entries
@@ -649,19 +650,22 @@ class AvoidTask(Action):
                         await Joystick(
                             velocity=common.Velocity(
                                 y_vel=self._clamp(
-                                    offset, -self.roll_speed, self.roll_speed
+                                    offset * self.roll_speed,
+                                    -self.roll_speed,
+                                    self.roll_speed,
                                 )
                             )
-                        )
+                        ).execute()
+                        hold_sent = False
                     else:
+                        if not hold_sent:
+                            logger.info("Path is clear, holding...")
+                            await Hold().execute()
+                            hold_sent = True
                         logger.info("No obstacles detected, moving forward...")
                         await Joystick(
-                            velocity=common.Velocity(
-                                x_vel=self._clamp(
-                                    offset, -self.pitch_speed, self.pitch_speed
-                                )
-                            )
-                        )
+                            velocity=common.Velocity(x_vel=self.pitch_speed)
+                        ).execute()
             except Exception as e:
                 logger.error("[AvoidTask] Threw an exception")
                 logger.error(e)
