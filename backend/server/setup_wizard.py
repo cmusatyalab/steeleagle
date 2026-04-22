@@ -204,7 +204,7 @@ def main():
                 ("", "\n\n"),
                 (
                     "#111111 bold",
-                    "NOTE: If not, the Streamlit GCS will not display images from vehicles/engines.",
+                    "NOTE: If not, the GCS will not display images from vehicles/engines.",
                 ),
             ]
         )
@@ -507,7 +507,11 @@ def main():
         [
             (
                 "#111111 bold",
-                "The SteelEagle GCS requires a Mapbox API key to render maps. An API access token can be created at the following URL, after creating/logging in to an account: https://console.mapbox.com/account/access-tokens/\n\n",
+                "The SteelEagle GCS requires a Mapbox API key to render maps.\n",
+            ),
+            (
+                "#111111 bold",
+                "An API access token can be created at the following URL, after creating/logging in to an account: https://console.mapbox.com/account/access-tokens/\n\n",
             ),
             (
                 "#111111",
@@ -519,7 +523,6 @@ def main():
         title="GCS - Mapbox API Key",
         text=txt,
         default="",
-        password=True,
         style=GLOBAL_STYLE,
     ).run()
 
