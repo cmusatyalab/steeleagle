@@ -25,7 +25,8 @@ CONTAINERS = {
 TEMPLATES = {
     "template.env": ".env",
     "redis.conf.template": "./redis/redis.conf",
-    "secrets.toml.template": "../../gcs/streamlit/.streamlit/secrets.toml",
+    "gcs.frontend.template": "../../gcs/react/prime/src/config.js",
+    "gcs.backend.template": "../../gcs/react/backend/config.toml",
 }
 
 DEFAULTS = [
@@ -502,9 +503,21 @@ def main():
         style=GLOBAL_STYLE,
     ).run()
 
-    CONTEXT["streamlit_pw"] = input_dialog(
-        title="Streamlit - Password",
-        text="Enter a secure password to access Streamlit:",
+    txt = FormattedText(
+        [
+            (
+                "#111111 bold",
+                "The SteelEagle GCS requires a Mapbox API key to render maps. An API access token can be created at the following URL, after creating/logging in to an account: https://console.mapbox.com/account/access-tokens/\n\n",
+            ),
+            (
+                "#111111",
+                "Please enter the Mapbox API token:\n",
+            ),
+        ]
+    )
+    CONTEXT["mapbox_apikey"] = input_dialog(
+        title="GCS - Mapbox API Key",
+        text=txt,
         default="",
         password=True,
         style=GLOBAL_STYLE,
