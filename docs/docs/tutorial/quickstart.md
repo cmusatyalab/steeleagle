@@ -56,7 +56,7 @@ Most backend components have published [Docker image](https://hub.docker.com) th
 
 #### Prerequisites
 
-First, install [NVIDIA CUDA/drivers](https://developer.nvidia.com/cuda-downloads) and the [NVIDIA Container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian).
+First, install [NVIDIA CUDA/drivers](https://developer.nvidia.com/cuda-downloads) and the [NVIDIA Container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian). These are required for the cognitive engines to leverage the GPU.
 
 Then install Docker and Docker Compose:
 
@@ -98,15 +98,16 @@ The wizard will first ask if the default configuration should be used. The defau
 ![Setup Wizard Additional](/img/wizard/setup_wizard2.png)
 </div>
 
-Once the wizard is complete, 3 configuration files will be written:
+Once the wizard is complete, several configuration files will be written:
 
 * `backend/server/.env` - This file contains the majority of the variables for each of the containers in the docker-compose.yml file
 * `backend/server/redis/redis.conf` - configuration for the redis db
-* `gcs/streamlit/.streamlit/secrets.toml` - Streamlit uses these secrets to connect to the other components of the backend
+* `gcs/react/prime/src/config.js` - GCS Frontend configuration
+* `gcs/react/backend/config.toml` - GCS FastAPI backend configuration
 
 :::note
 
-In the default values are used, the setup wizard will download a YOLOv5m COCO model for use by the detection engine. If you want to use a custom object detection model, place it in the `backend/server/models` directory and enter the filename when prompted during the setup wizard.
+If the default values are used, the setup wizard will download a YOLOv5m COCO model for use by the detection engine. If you want to use a custom object detection model, place it in the `backend/server/models` directory and enter the filename when prompted during the setup wizard.
 
 :::
 
@@ -161,17 +162,21 @@ enter = ['Compute.AddDatasinks|{"datasinks": [{"id": "telemetry"}]}']
 ```
 :::
 
-#### Start Streamlit GCS
+#### GCS Setup
 
-The Streamlit app can be launched using `uv`. We specify overview.py as the entrypoint to the Streamlit application.
+The GCS is built using React/FastAPI. The install script will install nvm/npm, build the frontend application, and then install use uv to install the FastAPI backend requirements.
 
 ```bash
-cd ~/steeleagle/gcs/streamlit
-uv run streamlit run overview.py
+cd ~/steeleagle/gcs/react/
+sh -x install.sh
 ```
 
-Once Streamlit is running, the app will run at `http://localhost:8501`. Enter the password that was configured during the setup wizard.
+Once installed, the GCS can be launched using uv run:
 
+```bash
+cd ~/steeleagle/gcs/react/backend/
+uv run main.py
+```
 ### Vehicle Setup
 
 Navigate to the `vehicle/` directory within `steeleagle`. Then, copy the `config.template.toml` file to `config.toml`.
@@ -217,8 +222,52 @@ log_level = 'INFO'
 
 Once done, run `uv run launch.py` and the vehicle should start!
 
-## Controlling the Vehicle
+## Controlling the Vehicle with the GCS
 
-After the vehicle connects to the backend, open the GCS by going to your browser and navigating to the URL of your backend, port 8501.
-Then, switch to the Control tab. You should see your vehicle in the list of available vehicles. Select it, arm, then takeoff by pressing `T`.
-You can control the vehicle using `W`, `A`, `S`, `D` for planar movement, `J`, `K` for rotation, and `I`, `K` for elevation.
+First open a web browser and navigate to the GCS by entering the URL of the webserver. The GCS uses port 8002. (e.g. http://localhost:8002).
+
+The Control tab of the GCS allows you to view the stream/telemetry of one particular vehicle, but also allows for control of multiple vehicles in a swarm using a gamepad, keyboard, or by uploading an mission to execute.
+
+<div style={{textAlign: 'center'}}>
+![GCS Monitor Tab](/img/gcs/gcs_control.png)
+</div>
+
+:::note
+
+Keyboard Controls:
+
+T - Takeoff
+L - Land
+R/F - Pitch Gimbal Up/Down
+W/A/S/D - Planar movement
+I/K - Elevation
+J/L - Rotation
+Escape - Cancel Mission/Enable Manual Control
+
+
+Gamepad Controls (PS4/PS5):
+
+Left Stick Up/Down - Elevation
+Left Stick Left/Right - Rotation
+Right Stick Up/Down - Pitch
+Right Stick Left/Right - Roll
+Triangle - Takeoff
+X - Land
+D-Pad Up/Down - Pitch Gimbal
+L1 - Return to Home
+Options Button - Cancel Mission/Enable Manual Control
+Share Button - Disable Manual Control
+
+:::
+
+The Monitor tab presents and overview of the locations of all vehicles in a single map as well as all the telemetry for all vehicles. It will also display an detected objects on the map.
+
+<div style={{textAlign: 'center'}}>
+![GCS Monitor Tab](/img/gcs/gcs_monitor.png)
+</div>
+
+:::note
+
+Please see the [**GCS Guide**](gcs/) for more detailed information on how to use the GCS.
+
+:::
