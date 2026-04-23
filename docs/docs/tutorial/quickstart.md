@@ -226,37 +226,37 @@ Once done, run `uv run launch.py` and the vehicle should start!
 
 First open a web browser and navigate to the GCS by entering the URL of the webserver. The GCS uses port 8002. (e.g. http://localhost:8002).
 
-The Control tab of the GCS allows you to view the stream/telemetry of one particular vehicle, but also allows for control of multiple vehicles in a swarm using a gamepad, keyboard, or by uploading an mission to execute.
+The Control tab of the GCS allows you to view the stream/telemetry of one particular vehicle, but also allows for control of multiple vehicles in a swarm using a gamepad, keyboard, or by uploading an mission to execute. The dropdown near the top bar controls which vehicle is currently viewed. The Squad Selection dropdown allows a user to select multiple vehicles for manual control or autonomous missions.
 
 <div style={{textAlign: 'center'}}>
 ![GCS Monitor Tab](/img/gcs/gcs_control.png)
 </div>
 
-:::note
+:::note[Manual Controls]
 
 Keyboard Controls:
 
-T - Takeoff
-L - Land
-R/F - Pitch Gimbal Up/Down
-W/A/S/D - Planar movement
-I/K - Elevation
-J/L - Rotation
-Escape - Cancel Mission/Enable Manual Control
+* T - Takeoff
+* L - Land
+* R/F - Pitch Gimbal Up/Down
+* W/A/S/D - Planar movement
+* I/K - Elevation
+* J/L - Rotation
+* Escape - Cancel Mission/Enable Manual Control
 
 
 Gamepad Controls (PS4/PS5):
 
-Left Stick Up/Down - Elevation
-Left Stick Left/Right - Rotation
-Right Stick Up/Down - Pitch
-Right Stick Left/Right - Roll
-Triangle - Takeoff
-X - Land
-D-Pad Up/Down - Pitch Gimbal
-L1 - Return to Home
-Options Button - Cancel Mission/Enable Manual Control
-Share Button - Disable Manual Control
+* Left Stick Up/Down - Elevation
+* Left Stick Left/Right - Rotation
+* Right Stick Up/Down - Pitch
+* Right Stick Left/Right - Roll
+* Triangle - Takeoff
+* X - Land
+* D-Pad Up/Down - Pitch Gimbal
+* L1 - Return to Home
+* Options Button - Cancel Mission/Enable Manual Control
+* Share Button - Disable Manual Control
 
 :::
 
