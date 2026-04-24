@@ -162,9 +162,9 @@ enter = ['Compute.AddDatasinks|{"datasinks": [{"id": "telemetry"}]}']
 ```
 :::
 
-#### GCS Setup
+### GCS Setup
 
-The GCS is built using React/FastAPI. The install script will install nvm/npm, build the frontend application, and then install use uv to install the FastAPI backend requirements.
+The GCS is built using React/FastAPI. The install script will install nvm/npm, build the frontend application, and then use uv to install the FastAPI  requirements.
 
 ```bash
 cd ~/steeleagle/gcs/react/
@@ -177,6 +177,7 @@ Once installed, the GCS can be launched using uv run:
 cd ~/steeleagle/gcs/react/backend/
 uv run main.py
 ```
+
 ### Vehicle Setup
 
 Navigate to the `vehicle/` directory within `steeleagle`. Then, copy the `config.template.toml` file to `config.toml`.
