@@ -1,6 +1,8 @@
 package vehicle
 
 import (
+    "fmt"
+    "path/filepath"
     "strings"
     "context"
     
@@ -10,14 +12,23 @@ import (
     "github.com/mwitkow/grpc-proxy/proxy"
 )
 
-func (i *Vehicle) getProxyDirector() proxy.StreamDirector {
+func (i *Vehicle) getLocalProxyDirector() proxy.StreamDirector {
     return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
-        if strings.Contains(method, ".Control/") {
-            return ctx, i.services.control, nil
-        } else if strings.Contains(method, ".Mission/") {
-            return ctx, i.services.mission, nil
+        if strings.Contains(method, ".ControlService/") {
+            return ctx, i.connections.control, nil
+        } else if strings.Contains(method, ".MissionService/") {
+            return ctx, i.connections.mission, nil
         }
         
         return nil, nil, status.Errorf(codes.Unimplemented, "Unknown method")
+    }
+}
+
+func (i *Vehicle) getGlobalProxyDirector() proxy.StreamDirector {
+    return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
+        conn, err := grpc.DialContext(ctx, fmt.Sprintf("unix://%s", filepath.Join(i.path, MainSocket)),
+            grpc.WithTransportCredentials(insecure.NewCredentials()),
+        )
+        return ctx, conn, err
     }
 }

@@ -1,7 +1,6 @@
 package vehicle
 
 import (
-    "fmt"
     "os"
     "path/filepath"
     "net"
@@ -13,36 +12,37 @@ import (
     "github.com/mwitkow/grpc-proxy/proxy"
     "github.com/adrg/xdg"
     "github.com/rs/zerolog/log"
+    "github.com/cmusatyalab/steeleagle/core/plugin"
 )
 
 type serviceState struct {
-    extServer  *grpc.Server
-    intServer  *grpc.Server
-    driver     *grpc.ClientConn
-    mission     *grpc.ClientConn
+    wanSrv       *grpc.Server
+    missionSrv   *grpc.Server
+    mainSrv      *grpc.Server
+    // TODO: add Data and Compute services here, which are vehicle hosted
 }
 
 type connectionState struct {
-    externGRPC  []net.Listener
-    localGRPC   net.Listener
+    ipListener   IPListener
+    unixListener UnixListener
+    // Proxied gRPC connections
+    control      *grpc.ClientConn
+    stream       *grpc.ClientConn
+    mission      *grpc.ClientConn
 }
 
 type Vehicle struct {
-    name        string
-    path        string
-    test        bool
-    services    serviceState
-    connections connectionState
-    // Plugins
-    driver      Plugin
-    mission     Plugin
-    plugins     []Plugin
+    name         string
+    path         string
+    services     serviceState
+    connections  connectionState
+    plugins      []plugin.Plugin
     // Policy
-    policyCfg   PolicyConfig
-    policy      policyState
+    policyCfg    PolicyConfig
+    policy       policyState
     // Context related attributes
-    ctx         context.Context
-    cancel      context.CancelFunc
+    ctx          context.Context
+    cancel       context.CancelFunc
 }
 
 func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, error) {
@@ -55,13 +55,14 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
         ctx: ctx,
         cancel: cancel,
     }
-
     for _, option := range options {
         option(vehicle)
     }
 
-    // Create runtime directory if it doesn't exist
-    vehicle.path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.name)
+    // Configure the vehicle runtime directory
+    if vehicle.path == "" {
+        vehicle.path = filepath.Join(xdg.RuntimeDir, ApplicationName, vehicle.name)
+    }
     log.Debug().Str("filepath", vehicle.path).Msg("starting vehicle in runtime directory")
     err := os.MkdirAll(vehicle.path, 0755)
     if err != nil {
@@ -70,23 +71,43 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     }
     log.Debug().Str("folder", vehicle.path).Msg("vehicle folder configured")
 
+    // Configure the main socket for vehicle services, if not specified
+    if vehicle.spath == "" {
+        vehicle.spath = filepath.Join(vehicle.path, MainSocket)
+        log.Debug().Str("filepath", vehicle.spath).Msg("setting main services filepath")
+    }
+    
     // Set up law handling
     vehicle.policy = getPolicy(vehicle.policyCfg)
+
+    // Build the authenticator PID lookup table, add own PID
+    // TODO: whitelist other PIDs
     
-    // Set up gRPC server and set up interceptor chain
-    vehicle.services.grpcServer = grpc.NewServer(
-        grpc.StreamInterceptor(vehicle.policy.getStreamInterceptor(vehicle.test)),
+    // Create a new credential service that assigns auth codes
+
+    // Pass these to the corresponding servers
+    
+    // Set up gRPC servers and set up auth interceptor chain
+    vehicle.services.localServer = grpc.NewServer(
+        grpc.StreamInterceptor(vehicle.wlist.getLocalInterceptor()),
         grpc.CustomCodec(proxy.Codec()),
         grpc.UnknownServiceHandler(proxy.TransparentHandler(
-            vehicle.getProxyDirector(),
+            vehicle.getLocalProxyDirector(),
+        )),
+    )
+    
+    vehicle.services.externServer = grpc.NewServer(
+        grpc.StreamInterceptor(vehicle.wlist.getExternalInterceptor()),
+        grpc.CustomCodec(proxy.Codec()),
+        grpc.UnknownServiceHandler(proxy.TransparentHandler(
+            vehicle.getExternalProxyDirector(),
         )),
     )
 
-    go vehicle.run()
     return vehicle, nil
 }
 
-func (i *Vehicle) run() {
+func (i *Vehicle) Start() error {
     // If a local connection cannot be established, the vehicle cannot
     // interact with any local services and thus it should abort
     var err error
@@ -101,7 +122,7 @@ func (i *Vehicle) run() {
     if len(i.connections.externGRPC) > 0 {
         for _, conn := range(i.connections.externGRPC) { 
             go func() {
-                e := i.services.grpcServer.Serve(conn)
+                e := i.services.externServer.Serve(conn)
                 defer conn.Close()
                 if e != nil {
                     log.Error().Err(err).Msg("external connection closed unexpectedly")
@@ -111,22 +132,19 @@ func (i *Vehicle) run() {
     }
 
     go func() {
-        e := i.services.grpcServer.Serve(i.connections.localGRPC)
+        e := i.services.localServer.Serve(i.connections.localGRPC)
         defer i.connections.localGRPC.Close()
         if e != nil {
             log.Error().Err(err).Msg("local connection closed unexpectedly")
         }
     }()
 
+    // Stop the gRPC servers
+    defer i.services.externServer.GracefulStop()
+    defer i.services.localServer.GracefulStop()
+    
     // Wait for context to be cancelled
     <-i.ctx.Done()
-    
-    // Stop the gRPC server
-    i.services.grpcServer.GracefulStop()
-}
-
-func (i *Vehicle) Stop() {
-    i.cancel()
 }
 
 // Status methods

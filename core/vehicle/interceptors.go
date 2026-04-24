@@ -13,27 +13,8 @@ import (
     "github.com/rs/zerolog/log"
 )
 
-func getPeer(ctx context.Context) string {
-	p, ok := peer.FromContext(ctx)
-	if !ok || p.Addr == nil {
-		return "unknown"
-	}
-
-	switch addr := p.Addr.(type) {
-	case *net.TCPAddr:
-		if addr.IP.IsLoopback() {
-			return "internal"
-		}
-		return "server"
-	case *net.UnixAddr:
-		return "internal"
-	default:
-		if addr.Network() == "pipe" {
-            return "kernel"
-        } else {
-            return "unknown"
-        }
-	}
+type identityMeta struct {
+    source      
 }
 
 func cleanCommand(ctx context.Context, fullName string, isTesting bool) string {
@@ -57,14 +38,13 @@ func cleanCommand(ctx context.Context, fullName string, isTesting bool) string {
     return fmt.Sprintf("%s%s", peer, fullName)
 }
 
-func (i *policyState) getStreamInterceptor(isTesting bool) grpc.StreamServerInterceptor {
+func (i *policyState) getIdentityInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-
         command := cleanCommand(ss.Context(), info.FullMethod, isTesting)
         log.Info().Str("command", command).Msg("received RPC request")
 		allowed, _, err := i.safeCheckAndTransit(ss.Context(), command)

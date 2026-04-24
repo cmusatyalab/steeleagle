@@ -1,0 +1,251 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.api.v1.services;
+
+import "v1/common.proto";
+import "v1/services/control.proto";
+import "v1/services/mission.proto";
+
+/*
+ * Used for swarm-level control over multiple vehicles.
+ *
+ * This service is hosted by the swarm controller module and represents the
+ * teleoperation interface for groups of vehicles. Most methods called here 
+ * will result in actuation of targeted vehicles (be careful!). Each method
+ * will return a stream of result objects. Each result object contains the
+ * associated vehicle name and a copy of its response, response code, and
+ * response string if applicable. Even if one or more vehicles fails its
+ * call, the overall call will _still succeed_. To check for errors, each
+ * response should be inspected manually for failures.
+ */
+service SwarmService {
+  /*
+   * Order multiple vehicles to take off.
+   *
+   * Causes vehicles to take off to a specified take off altitude.
+   * Implicitly arms the vehicles.
+   */
+  rpc SwarmTakeOff (SwarmTakeOffRequest) 
+	returns (stream SwarmTakeOffResponse) {}
+  /*
+   * Order multiple vehicle to land.
+   *
+   * Causes vehicles to land at its current location. Implicitly
+   * disarms the vehicles.
+   */
+  rpc SwarmLand (SwarmLandRequest) 
+	returns (stream SwarmLandResponse) {}
+  /*
+   * Order multiple vehicle to hold/loiter.
+   *
+   * Causes vehicles to hold at their current locations and to
+   * cancel any ongoing movement commands (`SwarmReturnToHome` e.g.).
+   */
+  rpc SwarmHold (SwarmHoldRequest) 
+	returns (stream SwarmHoldResponse) {}
+  /*
+   * Orders an emergency shutdown of multiple vehicles.
+   *
+   * Causes vehicles to immediately turn off their motors. _This will
+   * result in the vehicles going into freefall, only for emergencies!_
+   */
+  rpc SwarmKill (SwarmKillRequest) 
+	returns (stream SwarmKillResponse) {}
+  /*
+   * Order multiple vehicles to return to their home positions.
+   *
+   * Causes vehicles to return to their home positions. Vehicles with no
+   * home position set will return to their start position (defaults to
+   * their takeoff position). Vehicles with home positions set will return
+   * there instead. If `return_altitude` is set, the vehicle will ascend
+   * to that altitude before transit.
+   *
+   * Each vehicle will interpret `end_behavior` as follows:
+   * - `HOVER` -> hover at `final_altitude` above home position
+   * - `LAND` -> land at home position
+   */
+  rpc SwarmReturnToHome (SwarmReturnToHomeRequest) 
+	returns (stream SwarmReturnToHomeResponse) {}
+  /*
+   * Order multiple vehicles to accelerate to a velocity.
+   *
+   * Causes vehicles to accelerate until they reache a provided velocity. Each
+   * vehicle will interpret the input velocity according to `frame` as follows:
+   * - `BODY` -> (`x_vel`, `y_vel`, `z_vel`) = (forward velocity, right velocity, up velocity)
+   * - `NEU` -> (`x_vel`, `y_vel`, `z_vel`) = (north velocity, east velocity, up velocity)
+   */
+  rpc SwarmSetVelocity (SwarmSetVelocityRequest)
+	returns (stream SwarmSetVelocityResponse) {}
+  /*
+   * Order multiple vehicles to set the pose of a gimbal.
+   *
+   * Causes vehicles to actuate a gimbal to a new pose. Each vehicle
+   * will interpret the new pose type from `pose_mode` as follows: 
+   * - `ABSOLUTE` -> absolute angle
+   * - `RELATIVE` -> angle relative to current position
+   * - `VELOCITY` -> angular velocities
+   * 
+   * Each vehicle will interpret the new pose angles according to `frame` 
+   * as follows:
+   * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
+   * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
+   */
+  rpc SwarmSetGimbalPose (SwarmSetGimbalPoseRequest)
+	returns (stream SwarmSetGimbalPoseResponse) {}
+  /*
+   * Order multiple vehicles to start a mission.
+   *
+   * Causes vehicles to start their uploaded mission. This will enable autonomous
+   * control mode, which can be interrupted by sending a `SwarmStopMission` or
+   * `SwarmHold`.
+   */
+  rpc SwarmStartMission (SwarmStartMissionRequest)
+    returns (stream SwarmStartMissionResponse) {}
+  /*
+   * Upload a mission to multiple vehicles.
+   *
+   * Uploads a mission to targeted vehicles. Can be started by sending a subsequent
+   * `SwarmStartMission` command.
+   */
+  rpc SwarmUploadMission (SwarmUploadMissionRequest)
+    returns (stream SwarmUploadMissionResponse) {}
+  /*
+   * Order multiple vehicles to stop a mission.
+   *
+   * Causes vehicles to stop their running mission. This will enable manual
+   * control mode.
+   */
+  rpc SwarmStopMission (SwarmStopMissionRequest)
+    returns (stream SwarmStopMissionResponse) {}
+}
+
+message SwarmTakeOffRequest {
+  repeated string vehicles = 1; // target vehicles
+  // take off height in relative altitude [meters]
+  float take_off_altitude = 2;
+}
+
+message SwarmTakeOffResponse {
+  string vehicle = 1; // ID of vehicle
+  TakeOffResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmLandRequest {
+  repeated string vehicles = 1; // target vehicles
+}
+
+message SwarmLandResponse {
+  string vehicle = 1; // ID of vehicle
+  LandResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmHoldRequest {
+  repeated string vehicles = 1; // target vehicles
+}
+
+message SwarmHoldResponse {
+  string vehicle = 1; // ID of vehicle
+  HoldResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmKillRequest {
+  repeated string vehicles = 1; // target vehicles
+}
+
+message SwarmKillResponse {
+  string vehicle = 1; // ID of vehicle
+  KillResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmReturnToHomeRequest {
+  repeated string vehicles = 1; // target vehicles
+  // what the vehicle should do after returning home
+  ReturnToHomeEndBehavior end_behavior = 2;
+  // altitude that the vehicle should move at while reurning home
+  uint32 return_altitude = 3;
+  // altitude that the vehicle should hover at _(HOVER end behavior only)_
+  uint32 final_altitude = 4; 
+}
+
+message SwarmReturnToHomeResponse {
+  string vehicle = 1; // ID of vehicle
+  ReturnToHomeResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmSetVelocityRequest {
+  repeated string vehicles = 1; // target vehicles
+  // target velocity
+  Velocity velocity = 2;
+  // frame of reference
+  optional ReferenceFrame frame = 3;
+}
+
+message SwarmSetVelocityResponse {
+  string vehicle = 1; // ID of vehicle
+  SetVelocityResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmSetGimbalPoseRequest{
+  repeated string vehicles = 1; // target vehicles
+  uint32 gimbal_id = 2; // ID of the target gimbal
+  Pose pose = 3; // target pose
+  optional PoseMode pose_mode = 4; // specifies how to interpret the target pose
+  // frame of reference
+  optional ReferenceFrame frame = 5;
+}
+
+message SwarmSetGimbalPoseResponse {
+  string vehicle = 1; // ID of vehicle
+  SetGimbalPoseResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmUploadMissionRequest {
+  repeated string vehicles = 1; // target vehicles
+  MissionData mission = 2; // data of the target mission
+}
+
+message SwarmUploadMissionResponse {
+  string vehicle = 1; // ID of vehicle
+  UploadMissionResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmStartMissionRequest {
+  repeated string vehicles = 1; // target vehicles
+}
+
+message SwarmStartMissionResponse {
+  string vehicle = 1; // ID of vehicle
+  StartMissionResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}
+
+message SwarmStopMissionRequest {
+  repeated string vehicles = 1; // target vehicles
+}
+
+message SwarmStopMissionResponse {
+  string vehicle = 1; // ID of vehicle
+  StopMissionResponse response = 2; // proxied response object
+  uint32 code = 3; // gRPC status code
+  string details = 4; // error details, if applicable
+}

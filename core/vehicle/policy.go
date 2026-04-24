@@ -10,11 +10,19 @@ import (
     "github.com/rs/zerolog/log"
 )
 
+type PolicyConfig struct {
+    // Control laws to use for RPC authorization policy
+    Server      string
+    ExternalIPs []string
+    Law         ControlLaw
+}
+
 type policyState struct {
     mu sync.RWMutex
     currentState string
     query rego.PreparedEvalQuery
     lawMap map[string]ControlLawState
+    acl    map[string]
 }
 
 type policyDecision struct {

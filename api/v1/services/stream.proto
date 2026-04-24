@@ -1,0 +1,63 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.api.v1.services;
+
+import "v1/messages/stream.proto";
+
+/*
+ * Used to get streams from the driver.
+ *
+ * This is an internal service used to retrieve imagery and telemetry
+ * from the driver. These are processed by the OS and then served as
+ * the `DataService` to other connected plugins.
+ */
+service StreamService {
+  /*
+   * Gets the video stream URL from the vehicle.
+   *
+   * Retrieves the video stream URL from the vehicle so that it can be
+   * broadcast to the rest of the system. This function should only
+   * be called by the OS, and not by any plugins.
+   */
+  rpc GetVideoURL (GetVideoURLRequest)
+    returns (GetVideoURLResponse) {}
+  /*
+   * Gets a stream of frames from the vehicle.
+   *
+   * Retrieves a direct stream of video frames from the vehicle. This
+   * is used when camera data is accessible without needing a stream.
+   * This function should only be called by the OS, and not by any
+   * plugins.
+   */
+  rpc GetFrameStream (GetFrameStreamRequest)
+    returns (GetFrameStreamResponse) {}
+  /*
+   * Gets a stream of telemetry from the vehicle.
+   *
+   * Retrieves a stream of up-to-date telemetry from the vehicle. This
+   * function should only be called by the OS, and not by any plugins.
+   */
+  rpc GetTelemetryStream (GetTelemetryStreamRequest)
+    returns (stream GetTelemetryStreamResponse) {}
+}
+
+message GetVideoURLRequest {}
+
+message GetVideoURLResponse {
+  string url = 1; // URL of the video stream
+}
+
+message GetFrameStreamRequest {}
+
+message GetFrameStreamResponse {
+  steeleagle.api.v1.messages.RawFrame frame = 1; // raw frame from the camera
+}
+
+message GetTelemetryStreamRequest {}
+
+message GetTelemetryStreamResponse {
+  steeleagle.api.v1.messages.Telemetry telemetry = 1; // telemetry from the driver
+}
