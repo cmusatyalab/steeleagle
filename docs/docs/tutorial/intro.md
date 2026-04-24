@@ -10,4 +10,5 @@ SteelEagle provides a simulated environment which can end-to-end test missions u
 
 ## Contents
 - [**Quickstart**](quickstart/): how to configure and run the SteelEagle as fast as possible
-- In depth guides to come...
+- [**Ground Control System**](gcs/): how to build, run, and use the SteelEagle GCS
+- More in depth guides to come...

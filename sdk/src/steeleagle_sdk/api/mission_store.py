@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
-import asyncio, time, json, logging
-from typing import Optional, Any
+import asyncio
+import json
+import logging
+import time
+from typing import Any
+
 import aiosqlite
-import zmq, zmq.asyncio
+import zmq
+import zmq.asyncio
+from gabriel_protocol import gabriel_pb2
 from google.protobuf.json_format import MessageToDict
+from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.text_format import MessageToString
+from ..protocol.messages import result_pb2 as result_proto
+from ..protocol.messages import telemetry_pb2 as telem_proto
 
 # --- your types/protos ---
 from .datatypes._base import Datatype
-from .datatypes.telemetry import DriverTelemetry
 from .datatypes.result import FrameResult
-from ..protocol.messages import telemetry_pb2 as telem_proto
-from ..protocol.messages import result_pb2 as result_proto
-from gabriel_protocol import gabriel_pb2
+from .datatypes.telemetry import DriverTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +34,38 @@ CREATE TABLE IF NOT EXISTS latest (
   payload_json TEXT NOT NULL,
   PRIMARY KEY (source, topic)
 );
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,
+  topic  TEXT NOT NULL,
+  ts     REAL NOT NULL,
+  payload_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_stt ON events(source, topic, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 """
 
-SQL_UPSERT_LATEST = """
+SQL_INSERT_LATEST = """
 INSERT INTO latest(source, topic, ts, payload_json) VALUES(?,?,?,?)
 ON CONFLICT(source, topic) DO UPDATE SET
   ts=excluded.ts,
   payload_json=excluded.payload_json
 """
+SQL_INSERT_EVENT = "INSERT INTO events(source, topic, ts, payload_json) VALUES(?,?,?,?)"
 
-SQL_SELECT_LATEST = "SELECT payload_json FROM latest WHERE source=? AND topic=?"
+SQL_SELECT_LATEST = "SELECT ts, payload_json FROM latest WHERE source=? AND topic=?"
+SQL_SELECT_RANGE = """
+SELECT ts, payload_json
+FROM events
+WHERE source=? AND topic=? AND ts BETWEEN ? AND ?
+ORDER BY ts ASC
+"""
+SQL_DELETE_OLD_EVENTS = "DELETE FROM events WHERE ts < ?"
+
+
+def ts_to_unix_seconds(ts: Timestamp) -> float:
+    return float(ts.seconds) + (ts.nanos / 1e9)
+
 
 class MissionStore:
     # ---------- utils ----------
@@ -67,91 +96,146 @@ class MissionStore:
             logger.exception("Decode failed for %s", source)
         return None
 
-    def __init__(self, telemetry_addr: str, results_addr: str, db_path: str = "mission.db"):
+    def __init__(
+        self, telemetry_addr: str, results_addr: str, db_path: str = "mission.db"
+    ):
         self.telemetry_addr = telemetry_addr
         self.results_addr = results_addr
         self.db_path = db_path
 
-        self.db: Optional[aiosqlite.Connection] = None
+        self.db: aiosqlite.Connection | None = None
         self.ctx = zmq.asyncio.Context(io_threads=2)
 
         self._telemetry = None
         self._results = None
         self._tasks: list[asyncio.Task] = []
 
+        self._db_lock = asyncio.Lock()
+
     # ---------- store ----------
     def _parse_payload(self, source: str, payload: bytes):
         try:
             if source == "telemetry":
-                msg = telem_proto.DriverTelemetry(); msg.ParseFromString(payload)
-                data = MessageToDict(msg, preserving_proto_field_name=True)
-                return DriverTelemetry.model_validate(data)
+                msg = telem_proto.DriverTelemetry()
+                msg.ParseFromString(payload)
+                data = MessageToDict(
+                    msg,
+                    always_print_fields_with_no_presence=True,
+                    preserving_proto_field_name=True,
+                    use_integers_for_enums=True,
+                )
+                data.get("telemetry_stream_info", {}).pop("uptime", None) # patch fix for duration field parsing issue
+                return DriverTelemetry.model_validate(data), "telemetry"
             elif source == "results":
-                msg = gabriel_pb2.ResultWrapper(); msg.ParseFromString(payload)
-                logger.info(f'payload:  {msg}')
-                frame_result  = msg.extras
-                logger.info(f'frame_result:  {frame_result}')
-                data = MessageToDict(frame_result, preserving_proto_field_name=True)
-                return FrameResult.model_validate(data)
+                msg = gabriel_pb2.Result()
+                msg.ParseFromString(payload)
+                frame_result = result_proto.FrameResult()
+                msg.any_result.Unpack(frame_result)
+                frame_result.timestamp.GetCurrentTime()
+                if not frame_result.HasField('timestamp'):
+                    logger.error(f'Timestamp field absent; {MessageToString(frame_result)}')
+                data = MessageToDict(
+                    frame_result,
+                    always_print_fields_with_no_presence=True,
+                    preserving_proto_field_name=True,
+                    use_integers_for_enums=True,
+                )
+                if len(data) == 0:
+                    return None, None
+                return FrameResult.model_validate(data), msg.target_engine_id
         except Exception:
             logger.exception("Parse failed for %s payload", source)
-        return None
-    
+        return None, None
+
+    async def _store_one(self, source: str, topic: str, ts: float, pj: str):
+        # Atomic: either both event+latest write, or neither.
+        async with self._db_lock:
+            await self.db.execute("BEGIN IMMEDIATE")
+            try:
+                await self.db.execute(SQL_INSERT_EVENT, (source, topic, ts, pj))
+                await self.db.execute(SQL_INSERT_LATEST, (source, topic, ts, pj))
+                await self.db.commit()
+            except Exception:
+                await self.db.rollback()
+                raise
+
     async def _receive_and_store(self, source: str, sock: zmq.asyncio.Socket):
         try:
             while True:
-                frames = await sock.recv_multipart()
-                if not frames:
+                payload = await sock.recv()
+                if not payload:
                     continue
-                topic = self._norm_topic(frames[0])
-                if topic == 'telemetry':
-                    continue # ignore telmetry engine
-                payload = frames[-1]
-
-                model = self._parse_payload(source, payload)
+                model, engine_id = self._parse_payload(source, payload)
+                if model is None:
+                    continue
                 ts = time.time()
                 pj = self._to_json(model)
-
-                try:
-                    await self.db.execute(SQL_UPSERT_LATEST, (source, topic, ts, pj))
-                    await self.db.commit()
-                except Exception:
-                    logger.exception("DB upsert failed for %s/%s", source, topic)
+                if source == "results" and engine_id != "telemetry":
+                    logger.debug('Result found!')
+                    logger.debug('Mission got result from ' + engine_id)
+                    await self._store_one(source, engine_id, ts, pj)
+                else:
+                    await self._store_one(source, "driver_telemetry", ts, pj)
         except asyncio.CancelledError:
             pass
         except Exception:
             logger.exception("Consumer crashed (%s)", source)
-    
+
     # ---------- reads ----------
-    async def get_latest(self, source: str, topic: str) -> Datatype:
-        """Read latest from DB and return decoded model (no cache)."""
-        await asyncio.sleep(0)
-        async with self.db.execute(SQL_SELECT_LATEST, (source, topic)) as cur:
-            row = await cur.fetchone()
-            if not row:
-                return None
-            (payload_json,) = row
-            return self._from_json(source, payload_json)
+    async def get_latest(self, source: str, topic: str, max_age_s: float = 1.0):
+        async with self._db_lock:
+            async with self.db.execute(SQL_SELECT_LATEST, (source, topic)) as cur:
+                row = await cur.fetchone()
+                if not row:
+                    return None
+                ts, payload_json = row
+                if max_age_s is not None and (time.time() - ts) > max_age_s:
+                    return None
+                return self._from_json(source, payload_json)
+
+    async def get_range(self, source: str, topic: str, t0: float, t1: float):
+        out = []
+        async with self._db_lock:
+            async with self.db.execute(SQL_SELECT_RANGE, (source, topic, t0, t1)) as cur:
+                async for ts, payload_json in cur:
+                    out.append((ts, self._from_json(source, payload_json)))
+            return out
 
     # ---------- lifecycle ----------
+    async def _cleanup_loop(self, retention_s: float, every_s: float = 30.0):
+        try:
+            while True:
+                cutoff = time.time() - retention_s
+                try:
+                    async with self._db_lock:
+                        await self.db.execute(SQL_DELETE_OLD_EVENTS, (cutoff,))
+                        await self.db.commit()
+                except Exception:
+                    logger.exception("Retention cleanup failed")
+                await asyncio.sleep(every_s)
+        except asyncio.CancelledError:
+            pass
+
     async def start(self):
         self.db = await aiosqlite.connect(self.db_path)
         await self.db.executescript(INIT_SQL)
+        await self.db.execute("DELETE FROM latest")
         await self.db.commit()
 
         self._telemetry = self.ctx.socket(zmq.SUB)
+        self._telemetry.setsockopt(zmq.CONFLATE, 1)
         self._telemetry.setsockopt(zmq.SUBSCRIBE, b"")
-        self._telemetry.setsockopt(zmq.RCVHWM, 1000)
         self._telemetry.connect(self.telemetry_addr)
 
         self._results = self.ctx.socket(zmq.SUB)
+        self._results.setsockopt(zmq.CONFLATE, 1)
         self._results.setsockopt(zmq.SUBSCRIBE, b"")
-        self._results.setsockopt(zmq.RCVHWM, 1000)
         self._results.connect(self.results_addr)
 
         self._tasks = [
             asyncio.create_task(self._receive_and_store("telemetry", self._telemetry)),
             asyncio.create_task(self._receive_and_store("results", self._results)),
+            asyncio.create_task(self._cleanup_loop(retention_s=600.0))
         ]
 
     async def stop(self):
@@ -160,6 +244,12 @@ class MissionStore:
         await asyncio.gather(*self._tasks, return_exceptions=True)
         self._tasks.clear()
 
-        if self._telemetry: self._telemetry.close(0); self._telemetry = None
-        if self._results:   self._results.close(0);   self._results = None
-        if self.db:         await self.db.close();    self.db = None
+        if self._telemetry:
+            self._telemetry.close(0)
+            self._telemetry = None
+        if self._results:
+            self._results.close(0)
+            self._results = None
+        if self.db:
+            await self.db.close()
+            self.db = None

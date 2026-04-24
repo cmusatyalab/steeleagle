@@ -80,7 +80,7 @@ action is a datatype. All datatypes are derived from the [`Datatype`](/sdk/pytho
 
 Actions represent actions or tasks which can be executed by the vehicle. For example, to order a
 vehicle to take off, use the [`TakeOff`](/sdk/python/steeleagle_sdk/api/actions/primitives/control#class-takeoff) action.
-The fields of the action class represent its paramters. For the `TakeOff` example, it has one parameter, `take_off_altitude`
+The fields of the action class represent its parameters. For the `TakeOff` example, it has one parameter, `take_off_altitude`
 which denotes the altitude the vehicle will ascend to. To modify this parameter, construct the object and set
 the field to the desired value: 
 
@@ -152,7 +152,7 @@ Data: # Definitions of datatypes
     Bar bar(foo = Foo())
 ```
 
-The Data Stanza can contain special [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint) objects. These types refer to a set of global coordinates (lattitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml). 
+The Data Stanza can contain special [`Waypoints`](/sdk/python/steeleagle_sdk/api/datatypes/waypoint#class-waypoint) objects. These types refer to a set of global coordinates (latitude, longitude) which represent a shape or line. This set of coordinates is contained in a KML file which is referenced by the waypoint object. More details on waypoint configuration can be found [in the next section](kml). 
 
 ```dsl
 Data: # Definitions of datatypes

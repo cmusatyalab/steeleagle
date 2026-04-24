@@ -1,12 +1,20 @@
 import logging
+
 import folium
-from folium.plugins import MousePosition, MeasureControl, Fullscreen
+from folium.plugins import Fullscreen, MeasureControl, MousePosition
 
 logger = logging.getLogger(__name__)
 
+
 def visualize(raw_map, geopoints_map, out_file="map.html"):
     all_latlons = []
-    m = folium.Map(location=(0, 0), zoom_start=2, control_scale=True, tiles="OpenStreetMap", max_zoom=22)
+    m = folium.Map(
+        location=(0, 0),
+        zoom_start=2,
+        control_scale=True,
+        tiles="OpenStreetMap",
+        max_zoom=22,
+    )
 
     Fullscreen().add_to(m)
     MeasureControl(position="topleft", primary_length_unit="meters").add_to(m)
@@ -16,7 +24,7 @@ def visualize(raw_map, geopoints_map, out_file="map.html"):
         empty_string="",
         lng_first=False,  # show as lat, lon
         num_digits=6,
-        prefix="Cursor (lat, lon):"
+        prefix="Cursor (lat, lon):",
     ).add_to(m)
 
     # Draw raw areas (blue)

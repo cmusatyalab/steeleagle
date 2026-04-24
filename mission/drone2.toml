@@ -1,0 +1,8 @@
+# Mission module configuration for a single drone
+
+[drone]
+name = "test2"
+kernel = "unix:///tmp/test2-kernel.sock"
+telemetry = "ipc:///tmp/test2-driver_telem.sock"
+results = "ipc:///tmp/test2-results.sock"
+mission_sock = "unix:///tmp/test2-mission.sock"

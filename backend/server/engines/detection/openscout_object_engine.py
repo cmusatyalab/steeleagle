@@ -18,29 +18,29 @@
 #
 #
 
+import argparse
 import json
 import logging
 import os
 import time
 import traceback
-import argparse
+
 import cv2
 import numpy as np
 import redis
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
+from google.protobuf.any_pb2 import Any
 from PIL import Image
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
-from ultralytics import YOLO
-from google.protobuf.any_pb2 import Any
-
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
+from ultralytics import YOLO
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -191,19 +191,34 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             % 360,  # % 360 to adjust for the cases when we wrap around 0 degrees due to the target_yaw_angle
         )
 
-    def estimate_gps(self, lat, lon, pitch, yaw, alt):
+    def estimate_gps(self, lat_deg, lon_deg, pitch_deg, yaw_deg, altitude):
         EARTH_RADIUS = 6378137.0
-        vf = [0, 1, 0]
-        r = R.from_euler("ZYX", [yaw, 0, pitch], degrees=True)
+
+        vf = np.array([0, 1, 0])
+        r = R.from_euler("ZYX", [yaw_deg, 0, pitch_deg], degrees=True)
         target_dir = r.as_matrix().dot(vf)
-        target_vec = self.find_intersection(target_dir, np.array([0, 0, alt]))
+
+        drone_pos = np.array([0, 0, altitude])
+        target_vec = self.find_intersection(target_dir, drone_pos)
+
+        if target_vec is None:
+            logger.warning("Could not find intersection with ground plane")
+            return lat_deg, lon_deg
 
         logger.info(
             f"Intersection with ground plane: ({target_vec[0]}, {target_vec[1]}, {target_vec[2]})"
         )
 
-        est_lat = lat + (180 / np.pi) * (target_vec[1] / EARTH_RADIUS)
-        est_lon = lon + (180 / np.pi) * (target_vec[0] / EARTH_RADIUS) / np.cos(lat)
+        north_offset = target_vec[1]
+        east_offset = target_vec[0]
+
+        lat_rad = np.deg2rad(lat_deg)
+        lat_offset = north_offset / EARTH_RADIUS
+        lon_offset = east_offset / (EARTH_RADIUS * np.cos(lat_rad))
+
+        est_lat = lat_deg + np.rad2deg(lat_offset)
+        est_lon = lon_deg + np.rad2deg(lon_offset)
+
         logger.info(f"Estimated GPS location: ({est_lat}, {est_lon})")
         return est_lat, est_lon
 
@@ -221,22 +236,43 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             return
         self.r.zadd("detections", objects)
 
+    def store_latest_drone_detection_db(self, detections):
+        vehicle_name = detections[0]["id"]
+        key = f"latest-detection:{vehicle_name}"
+
+        pipe = self.r.pipeline()
+        pipe.delete(key)
+        pipe.rpush(key, *[json.dumps(d) for d in detections])
+        pipe.pexpire(key, 100)
+
+        pipe.execute()
+
     def store_detection_db(
-        self, vehicle, lat, lon, cls, conf, link="", object_name=None
+        self, detection, link="", object_name=None
     ):
         if object_name is None:
-            object_name = f"{cls}-{os.urandom(2).hex()}"
+            object_name = f"{detection['class']}-{os.urandom(2).hex()}"
+        lon = detection["lon"]
+        lat = detection["lat"]
         logger.info(f"Adding detection {lon=} {lat=} {object_name=}")
         self.r.geoadd("detections", [lon, lat, object_name])
 
         object_key = f"objects:{object_name}"
-        self.r.hset(object_key, "last_seen", f"{time.time()}")
-        self.r.hset(object_key, "id", f"{vehicle}")
-        self.r.hset(object_key, "cls", f"{cls}")
-        self.r.hset(object_key, "confidence", f"{conf}")
-        self.r.hset(object_key, "link", f"{link}")
-        self.r.hset(object_key, "longitude", f"{lon}")
-        self.r.hset(object_key, "latitude", f"{lat}")
+        y1, x1, y2, x2 = detection["box"]
+
+        self.r.hset(object_key, mapping={
+            "last_seen": time.time(),
+            "id": detection["id"],
+            "cls": detection["class"],
+            "confidence": detection["score"],
+            "link": link,
+            "longitude": lon,
+            "latitude": lat,
+            "x_min": x1,
+            "y_min": y1,
+            "x_max": x2,
+            "y_max": y2,
+        })
         self.r.expire(object_key, self.ttl_secs)
         logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
 
@@ -244,8 +280,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         self,
         image,
         bbox,
-        hsv_min=[30, 100, 100],
-        hsv_max=[50, 255, 255],
+        hsv_min=(30, 100, 100),
+        hsv_max=(50, 255, 255),
         threshold=5.0,
     ) -> bool:
         cropped = image[
@@ -298,22 +334,34 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             )
 
         compute_result = result_pb2.ComputeResult()
-        compute_result.timestamp.GetCurrentTime()
         compute_result.engine_name = self.ENGINE_NAME
 
-        if detections is not None:
-            compute_result.generic_result = detections
+        try:
+            if detections is not None:
+                detection_result = result_pb2.DetectionResult()
+                for i, d in enumerate(detections):
+                    det_object = result_pb2.Detection()
+                    det_object.detection_id = i
+                    det_object.class_name = d["class"]
+                    det_object.score = d["score"] * 100
+                    bbox = result_pb2.BoundingBox(
+                        x_min=float(np.clip(d["box"][1], 0.0001, 1.0)),
+                        y_min=float(np.clip(d["box"][0], 0.0001, 1.0)),
+                        x_max=float(np.clip(d["box"][3], 0.0001, 1.0)),
+                        y_max=float(np.clip(d["box"][2], 0.0001, 1.0)),
+                    )
+                    det_object.bbox.CopyFrom(bbox)
+                    detection_result.detections.append(det_object)
+                compute_result.detection_result.CopyFrom(detection_result)
+            frame_result = result_pb2.FrameResult()
+            frame_result.type = "object-detection"
+            frame_result.result.append(compute_result)
+            frame_result.timestamp.GetCurrentTime()
 
-        frame_result = result_pb2.FrameResult()
-        frame_result.type = 'object-detection'
-        frame_result.result.append(compute_result)
-        # TODO: if we want to use the Detections message in
-        # telemetry.proto, then we need to add some fields
-        # such as lat/lon/passes_hsv_filter
-        # if detections is not None:
-        #    response.detection_result = detections
-        any_payload = Any()
-        any_payload.Pack(frame_result)
+            any_payload = Any()
+            any_payload.Pack(frame_result)
+        except Exception as e:
+            logger.error(e)
 
         self.count += 1
 
@@ -328,7 +376,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
     def process_results(
         self, image_np, results, vehicle_info, position_info, gimbal_info
     ):
-        df = results[0].to_df()  # polars dataframe
+        df = results[0].to_df(normalize=True)  # polars dataframe
 
         exclusions = self.exclusions or []
         if not df.is_empty():
@@ -357,27 +405,31 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
             box = row["box"]
             box = [box["y1"], box["x1"], box["y2"], box["x2"]]
-            #target_pitch, target_yaw = self.calculate_target_pitch_yaw(
-            #    box, image_np, position_info, gimbal_info
-            #)
+            global_pos = position_info.global_position
+            if gimbal_info.num_gimbals == 0:
+                logger.warning(
+                    "Number of gimbals is zero, using the vehicle global location for target coordinates"
+                )
+                lon = global_pos.longitude
+                lat = global_pos.latitude
+                p = LatLon(lat, lon)
+            else:
+                target_pitch, target_yaw = self.calculate_target_pitch_yaw(
+                    box, image_np, position_info, gimbal_info
+                )
 
-            ## Estimate GPS coordinates of detected object
-            #global_pos = position_info.global_position
-            #rel_pos = position_info.relative_position
-            #lat, lon = self.estimate_gps(
-            #    global_pos.latitude,
-            #    global_pos.longitude,
-            #    target_pitch,
-            #    target_yaw,
-            #    rel_pos.z,
-            #)
+                rel_pos = position_info.relative_position
+                lat, lon = self.estimate_gps(
+                    global_pos.latitude,
+                    global_pos.longitude,
+                    target_pitch,
+                    target_yaw,
+                    rel_pos.z,
+                )
 
-            lon = 42.0
-            lat = 42.0
-
-            lon = float(np.clip(lon, -180, 180))
-            lat = float(np.clip(lat, -85, 85))
-            p = LatLon(lat, lon)
+                lon = float(np.clip(lon, -180, 180))
+                lat = float(np.clip(lat, -85, 85))
+                p = LatLon(lat, lon)
 
             hsv_filter_passed = False
             if run_hsv_filter:
@@ -404,39 +456,34 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 "hsv_filter": hsv_filter_passed,
             }
 
-            if not self.geofence_enabled:
-                detections.append(detection)
-                if not self.unittest:
-                    self.store_detection_db(
-                        vehicle_info.name,
-                        lat,
-                        lon,
-                        row["name"],
-                        row["confidence"],
-                        detection_url,
-                    )
+            # Ignore this detection if geofence is enabled and this detection
+            # is not within the geofence
+            if (
+                self.geofence_enabled
+                and len(self.geofence) != 0
+                and not p.isenclosedBy(self.geofence)
+            ):
                 continue
 
-            # if there is no geofence, or the estimated object location is within the geofence...
-            if len(self.geofence) == 0 or p.isenclosedBy(self.geofence):
-                passed, prev_obj = self.geofilter_passed(detection)
-                if passed:
-                    detections.append(detection)
-                    if not self.unittest:
-                        self.store_detection_db(
-                            vehicle_info.name,
-                            lat,
-                            lon,
-                            row["name"],
-                            row["confidence"],
-                            detection_url,
-                            prev_obj,
-                        )
+            passed, prev_obj = self.geofilter_passed(detection)
+            if not passed:
+                continue
+
+            detections.append(detection)
+
+            if self.unittest:
+                continue
+            self.store_detection_db(
+                detection,
+                detection_url,
+                prev_obj,
+            )
 
         if len(detections) == 0:
             return None
 
         logger.info(json.dumps(detections, sort_keys=True, indent=4))
+        self.store_latest_drone_detection_db(detections)
 
         if run_hsv_filter and not self.unittest:
             logger.info("TODO: need to get hsv bounds")
@@ -453,6 +500,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
                 logger.error(
                     f"IndexError while getting bounding boxes [{traceback.format_exc()}]"
                 )
+
+        now_secs = time.time()
+        if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
+            self.geodb_garbage_collection()
+            self.last_geodb_gc_time = now_secs
 
         return detections if not df.is_empty() else None
 
@@ -523,11 +575,6 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         cls = detection["class"]
         vehicle_id = detection["id"]
 
-        now_secs = time.time()
-        if now_secs - self.last_geodb_gc_time >= self.ttl_secs:
-            self.geodb_garbage_collection()
-            self.last_geodb_gc_time = now_secs
-
         # first do a geosearch to see if there is a match within radius
         objects = self.r.geosearch(
             "detections",
@@ -549,13 +596,11 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             if d and d["cls"] == cls:
                 if d["id"] == vehicle_id:
                     logger.debug(
-                        f"Vehicle {d['vehicle_id']} detected {obj} in same area, updating obj location"
+                        f"Vehicle {vehicle_id} detected {obj} in same area, updating obj location"
                     )
                     return (True, obj)
                 else:
-                    logger.info(
-                        f"Ignoring detection, {obj} already found by {d['vehicle_id']}"
-                    )
+                    logger.info(f"Ignoring detection, {obj} already found by {d['id']}")
                     return (False, None)
         return (True, None)
 
@@ -676,7 +721,7 @@ def main():
         "--unittest",
         action="store_true",
         default=False,
-        help="When enabled, will not connect to redis nor store images to disk.",
+        help="When enabled, will not connect to redis nor store images to disk",
     )
 
     args, _ = parser.parse_known_args()

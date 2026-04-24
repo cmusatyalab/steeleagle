@@ -17,6 +17,7 @@ services:
     ports:
       - "8000:8000"
       - "9099:9099"
+      - "5555:5555"
     entrypoint: [ "./main.py", "-t", "${GABRIEL_TOKENS}", "-z"]
     restart: unless-stopped
     networks:
@@ -229,6 +230,56 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PWD}
 
+  takserver:
+    build:
+      context: ./tak
+      dockerfile: Dockerfile.taky
+    container_name: takserver
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    networks:
+      - steeleagle-net
+
+  steeleagle-tak:
+    build: ./tak
+    container_name: steeleagle-tak
+    restart: unless-stopped
+    environment:
+      - "COT_URL=${COT_URL}"
+      - "REDIS_HOST=redis"
+      - "REDIS_PORT=6379"
+      - "REDIS_USERNAME=steeleagle"
+      - "REDIS_PASSWORD=${REDIS_AUTH}"
+    depends_on:
+      - redis
+      - takserver
+    networks:
+      - steeleagle-net
+      - redis
+
+  aruco-engine:
+    image: cmusatyalab/steeleagle-aruco-marker-engine:${ARUCO_IMAGE_TAG}
+    container_name: aruco-engine
+    restart: on-failure:3
+    entrypoint:
+      [
+        "uv",
+        "run",
+        "/steeleagle/main.py",
+        "-a",
+        "${REDIS_AUTH}",
+      ]
+    depends_on:
+      - gabriel-server
+    networks:
+      - steeleagle-net
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   steeleagle-net:

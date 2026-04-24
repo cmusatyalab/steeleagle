@@ -187,6 +187,22 @@ class SetHeadingRequest(_message.Message):
     def __init__(self, request: _Optional[_Union[_common_pb2.Request, _Mapping]]=..., location: _Optional[_Union[_common_pb2.Location, _Mapping]]=..., heading_mode: _Optional[_Union[HeadingMode, str]]=...) -> None:
         ...
 
+class SetGimbalPoseTargetRequest(_message.Message):
+    __slots__ = ('request', 'gimbal_id', 'pose', 'pose_mode', 'frame')
+    REQUEST_FIELD_NUMBER: _ClassVar[int]
+    GIMBAL_ID_FIELD_NUMBER: _ClassVar[int]
+    POSE_FIELD_NUMBER: _ClassVar[int]
+    POSE_MODE_FIELD_NUMBER: _ClassVar[int]
+    FRAME_FIELD_NUMBER: _ClassVar[int]
+    request: _common_pb2.Request
+    gimbal_id: int
+    pose: _common_pb2.Pose
+    pose_mode: PoseMode
+    frame: ReferenceFrame
+
+    def __init__(self, request: _Optional[_Union[_common_pb2.Request, _Mapping]]=..., gimbal_id: _Optional[int]=..., pose: _Optional[_Union[_common_pb2.Pose, _Mapping]]=..., pose_mode: _Optional[_Union[PoseMode, str]]=..., frame: _Optional[_Union[ReferenceFrame, str]]=...) -> None:
+        ...
+
 class SetGimbalPoseRequest(_message.Message):
     __slots__ = ('request', 'gimbal_id', 'pose', 'pose_mode', 'frame')
     REQUEST_FIELD_NUMBER: _ClassVar[int]

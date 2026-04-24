@@ -1,24 +1,24 @@
 import asyncio
-import grpc
+import logging
 
+import grpc
+from google.protobuf import text_format
 from steeleagle_sdk.protocol.services import remote_service_pb2 as remote_pb
 from steeleagle_sdk.protocol.services import remote_service_pb2_grpc as remote_grpc
-from dataclasses import asdict
-from google.protobuf import text_format
 
-import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class SwarmControllerClient:
     def __init__(self):
-        target  = "localhost:5004"
+        target = "localhost:5004"
         self._channel = grpc.aio.insecure_channel(target)
         self._stub = remote_grpc.RemoteStub(self._channel)
-        self._md = [('identity', 'sc_client')]
-    
+        self._md = [("identity", "sc_client")]
+
     async def CompileMission(self, path: str):
-        dsl = open(path, "r", encoding="utf-8").read()
+        dsl = open(path, encoding="utf-8").read()
         logger.info(f"Uploading: {dsl}")
         req = remote_pb.CompileMissionRequest(dsl_content=dsl)
         return await self._stub.CompileMission(req, metadata=self._md)
@@ -47,6 +47,7 @@ async def main():
                 logger.warning("Unknown command")
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,15 +1,18 @@
-import zmq
 import asyncio
+import logging
 import time
 from dataclasses import dataclass
 from typing import Any
-import logging
+
 # Protocol import
 import steeleagle_sdk.protocol.testing.testing_pb2 as test_proto
+import zmq
+
 # Sequencer import
 from test.message_sequencer import Topic
 
 logger = logging.getLogger(__name__)
+
 
 # Test request holder
 @dataclass
@@ -17,11 +20,14 @@ class Request:
     method_name: str = None
     request: Any = None
     status: int = 2
-    identity: str = 'server'
+    identity: str = "server"
 
-'''
+
+"""
 Helper methods.
-'''
+"""
+
+
 async def wait_for_services(required, command_socket, timeout=5.0):
     # Wait for the necessary services to spin up
     start = time.time()
@@ -37,28 +43,38 @@ async def wait_for_services(required, command_socket, timeout=5.0):
         except (KeyboardInterrupt, asyncio.exceptions.CancelledError):
             return
     if len(required):
-        raise TimeoutError(f"Services did not report in!")
+        raise TimeoutError("Services did not report in!")
+
 
 async def send_requests(requests, swarm_controller, mission):
     # Send messages and read the output
     output = []
-    output.append((Topic.DRIVER_CONTROL_SERVICE, 'ConnectRequest'))
+    output.append((Topic.DRIVER_CONTROL_SERVICE, "ConnectRequest"))
     for req in requests:
         identity = req.identity
-        if identity == 'internal':
-            assert(await mission.send_recv_command(req))
+        if identity == "internal":
+            assert await mission.send_recv_command(req)
             output.append((Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name))
-            service, method = req.method_name.split('.')
-            if service == 'Control' and req.status == 2:
-                output.append((Topic.DRIVER_CONTROL_SERVICE, req.request.DESCRIPTOR.name))
-            output.append((Topic.MISSION_SERVICE, 'Response'))
-            if service == 'Report' and method == 'SendReport' and req.status == 2:
+            service, method = req.method_name.split(".")
+            if service == "Control" and req.status == 2:
+                output.append(
+                    (Topic.DRIVER_CONTROL_SERVICE, req.request.DESCRIPTOR.name)
+                )
+            output.append((Topic.MISSION_SERVICE, "Response"))
+            if service == "Report" and method == "SendReport" and req.status == 2:
                 output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
-                assert(await swarm_controller.recv_report(req.request))
-        elif identity == 'external' or identity == 'server':
-            assert(await swarm_controller.send_recv_command(req))
+                assert await swarm_controller.recv_report(req.request)
+        elif identity == "external" or identity == "server":
+            assert await swarm_controller.send_recv_command(req)
             output.append((Topic.SWARM_CONTROLLER, req.request.DESCRIPTOR.name))
-            service, name = req.method_name.split('.')
-            output.append((Topic.DRIVER_CONTROL_SERVICE if service == 'Control' else Topic.MISSION_SERVICE, req.request.DESCRIPTOR.name))
-            output.append((Topic.SWARM_CONTROLLER, 'Response'))
+            service, name = req.method_name.split(".")
+            output.append(
+                (
+                    Topic.DRIVER_CONTROL_SERVICE
+                    if service == "Control"
+                    else Topic.MISSION_SERVICE,
+                    req.request.DESCRIPTOR.name,
+                )
+            )
+            output.append((Topic.SWARM_CONTROLLER, "Response"))
     return output

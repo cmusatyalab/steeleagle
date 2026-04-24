@@ -16,6 +16,7 @@ venv/
 .venv
 *.jar
 *swp
+*.egg-info/
 
 # Protocol
 # *_pb2.py
@@ -47,6 +48,7 @@ sdk/build/src/
 *.db
 *.db-shm
 *.db-wal
+mission/*.config.toml
 
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
@@ -59,7 +61,9 @@ vehicle/config.toml
 vehicle/configs
 vehicle/docker-compose.*
 vehicle/drivers/proto_build/
-
+vehicle/*.internal.toml
+vehicle/*.config.toml
+!vehicle/.internal.toml
 
 # Secrets
 secrets.toml
@@ -88,7 +92,8 @@ docs/yarn-debug.log*
 docs/yarn-error.log*
 
 # React
-
+gcs/react/prime/src/config.js
+gcs/react/backend/config.toml
 # Dependencies
 */node_modules
 */.pnp
@@ -110,3 +115,7 @@ docs/yarn-error.log*
 */yarn-error.log*
 
 gcs/vscode-client/node_modules/*
+gcs/cli/mission.json
+gcs/cli/drones.toml
+
+mcp/test/config.toml

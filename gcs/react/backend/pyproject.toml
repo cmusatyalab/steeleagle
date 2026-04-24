@@ -1,0 +1,22 @@
+[project]
+name = "gcs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic",
+    "pydantic-extra-types",
+    "zmq",
+    "grpcio>=1.74.0",
+    "toml",
+    "redis",
+    "fastapi",
+    "uvicorn",
+    "steeleagle_sdk",
+    "websockets",
+    "rich",
+    "opencv-python",
+    "numpy",
+    "colorhash",
+]

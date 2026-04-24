@@ -4,15 +4,13 @@ import argparse
 import asyncio
 import logging
 import os
+import random
 import time
 
 import cv2
-from steeleagle_sdk.protocol.messages import result_pb2
-from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 from gabriel_client.zeromq_client import InputProducer, ZeroMQClient
 from gabriel_protocol import gabriel_pb2
-from gabriel_server import cognitive_engine
-from google.protobuf import text_format
+from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,6 +34,7 @@ class TestAdapter:
         self.heading = args.heading
         self.gimbal_pitch = args.pitch
         self.model = args.model
+        self.engine_id = args.engine
 
         image_path = args.image
         # Setup image source
@@ -58,24 +57,17 @@ class TestAdapter:
                 raise ValueError(f"Cannot read {image_path}")
             self.is_dir = False
 
-    def process_results(self, result_wrapper):
-        if len(result_wrapper.results) == 0:
+    def process_results(self, result):
+        if not result:
             return
 
         # Get engine ID
-        engine_id = result_wrapper.result_producer_name.value
-        logger.info(
-            f"Received {len(result_wrapper.results)} results from engine: {engine_id}"
-        )
+        engine_id = result.target_engine_id
+        logger.info(f"Received result from engine: {engine_id}")
 
-        extras = cognitive_engine.unpack_extras(
-            result_pb2.ComputeResult, result_wrapper
-        )
-        logger.info(f"=====Extras=====\t{text_format.MessageToString(extras)}")
-        for result in result_wrapper.results:
-            if result.payload_type == gabriel_pb2.PayloadType.TEXT:
-                payload = result.payload.decode("utf-8")
-                logger.info(f"=====result.payload=====\t{payload}")
+        if result.string_result:
+            payload = result.string_result.decode("utf-8")
+            logger.info(f"=====result.payload=====\t{payload}")
 
     def get_producer_wrappers(self):
         async def producer():
@@ -96,7 +88,7 @@ class TestAdapter:
 
                 _, jpg_buffer = cv2.imencode(".jpg", img)
                 input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
-                input_frame.payloads.append(jpg_buffer.tobytes())
+                # input_frame.byte_payload =jpg_buffer.tobytes()
 
                 extras = telemetry.Frame()
                 extras.data = jpg_buffer.tobytes()
@@ -108,8 +100,12 @@ class TestAdapter:
                 extras.channels = channels
                 extras.id = FRAME_ID
                 extras.vehicle_info.name = self.client_id
-                extras.position_info.global_position.latitude = self.latitude
-                extras.position_info.global_position.longitude = self.longitude
+                extras.position_info.global_position.latitude = (
+                    self.latitude + random.uniform(0.0005, 0.001)
+                )
+                extras.position_info.global_position.longitude = (
+                    self.longitude + random.uniform(0.0005, 0.001)
+                )
                 extras.position_info.relative_position.z = self.altitude
                 gimbal = telemetry.GimbalStatus()
                 gimbal.pose_body.pitch = self.gimbal_pitch
@@ -117,23 +113,23 @@ class TestAdapter:
 
                 FRAME_ID += 1
                 # Pack extras into the input frame
-                input_frame.extras.Pack(extras)
+                input_frame.any_payload.Pack(extras)
 
                 logger.debug(
                     f"Image producer: finished preparing frame at {time.time()}"
                 )
-            except Exception as e:
+            except AttributeError as e:
                 input_frame.payload_type = gabriel_pb2.PayloadType.TEXT
-                input_frame.payloads.append(f"Unable to produce a frame: {e}".encode())
-                logger.error(f"Image producer: unable to produce a frame: {type(e)}")
+                input_frame.string_payload = f"Unable to produce a frame: {e}"
+                raise e
 
             return input_frame
 
         return [
             InputProducer(
                 producer=producer,
-                source_name=self.source_name,
-                target_engine_ids="openscout-object",
+                producer_name=self.source_name,
+                target_engine_ids=[self.engine_id],
             )
         ]
 
@@ -164,12 +160,18 @@ def main():
     ap.add_argument(
         "-c", "--client_id", default="canary", help="client id for drone_id"
     )
+    ap.add_argument(
+        "-e",
+        "--engine",
+        default="object-engine",
+        help="Target engine id [default=object-engine]",
+    )
     args = ap.parse_args()
 
     test_adapter = TestAdapter(args)
 
     client = ZeroMQClient(
-        f"tcp://localhost:{args.port}",
+        f"tcp://{args.server}:{args.port}",
         test_adapter.get_producer_wrappers(),
         test_adapter.process_results,
     )

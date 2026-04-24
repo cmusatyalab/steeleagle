@@ -5,24 +5,24 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 
+import argparse
 import datetime
 import logging
 import os
 import signal
 import time
-import cv2
-import argparse
+from io import BytesIO
 
-# import foxglove
+import cv2
+import foxglove
+import google.protobuf.json_format as json_format
 import numpy as np
 import pytz
 import redis
-
-# from foxglove.schemas import CompressedImage, LocationFix
+from foxglove.schemas import CompressedImage, LocationFix
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from PIL import Image
-
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 logger = logging.getLogger(__name__)
@@ -54,16 +54,16 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         self.publish = args.publish
         self.ttl_secs = args.ttl * 24 * 3600
-        # now = datetime.datetime.now(pytz.timezone("America/New_York"))
-        # self.mcap = foxglove.open_mcap(
-        #    f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
-        # )
-        # self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
+        now = datetime.datetime.now(pytz.timezone("America/New_York"))
+        self.mcap = foxglove.open_mcap(
+            f"{self.storage_path}/backend_{now.strftime('%d-%b-%Y-%H-%M')}.mcap"
+        )
+        self.fg_server = foxglove.start_server(name="SteelEagle", host="0.0.0.0")
 
     def cleanup(self, signum, frame):
         logger.info("Stopping WS server and flushing MCAP file...")
-        # self.fg_server.stop()
-        # self.mcap.close()
+        self.fg_server.stop()
+        self.mcap.close()
 
     """
     Stores vehicle data in Redis. Less volatile data is stored in a HASH set, while
@@ -127,6 +127,23 @@ class TelemetryEngine(cognitive_engine.Engine):
         self.r.expire(f"telemetry:{extras.vehicle_info.name}", self.ttl_secs)
         logger.debug(
             f"Updated status of {extras.vehicle_info.name} in redis under stream telemetry at key {key}"
+        )
+        foxglove.log(
+            f"/{extras.vehicle_info.name}/location",
+            LocationFix(
+                latitude=global_pos.latitude,
+                longitude=global_pos.longitude,
+                altitude=global_pos.altitude,
+            ),
+            log_time=time.time_ns(),
+        )
+        foxglove.log(
+            f"/{extras.vehicle_info.name}/telemetry",
+            json_format.MessageToJson(
+                extras,
+                always_print_fields_with_no_presence=True,
+            ),
+            log_time=time.time_ns(),
         )
 
         vehicle_key = f"vehicle:{extras.vehicle_info.name}"
@@ -209,9 +226,7 @@ class TelemetryEngine(cognitive_engine.Engine):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
             tel = telemetry.DriverTelemetry()
             assert input_frame.WhichOneof("payload") == "any_payload"
-            assert input_frame.any_payload.Is(
-                telemetry.DriverTelemetry.DESCRIPTOR
-            )
+            assert input_frame.any_payload.Is(telemetry.DriverTelemetry.DESCRIPTOR)
             input_frame.any_payload.Unpack(tel)
 
             logger.info(tel.vehicle_info.name)
@@ -241,6 +256,7 @@ class TelemetryEngine(cognitive_engine.Engine):
             # store images in the shared volume
             try:
                 img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+                add_watermark(img)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = Image.fromarray(img)
 
@@ -264,7 +280,15 @@ class TelemetryEngine(cognitive_engine.Engine):
                 os.rename(
                     f"{vehicle_raw_dir}/temp.jpg", f"{vehicle_raw_dir}/latest.jpg"
                 )
-
+                resampled_out = BytesIO()
+                img.thumbnail((320, 240), Image.LANCZOS)
+                img.save(resampled_out, format="JPEG")
+                thumbnail = resampled_out.getvalue()
+                foxglove.log(
+                    f"/{frame.vehicle_info.name}/imagery",
+                    CompressedImage(data=thumbnail, format="jpeg"),
+                    log_time=time.time_ns(),
+                )
                 logger.debug(f"Updated latest image for {frame.vehicle_info.name}")
                 return cognitive_engine.Result(status, "Telemetry updated")
             except Exception as e:
@@ -275,8 +299,19 @@ class TelemetryEngine(cognitive_engine.Engine):
 
         logger.error(f"Engine received wrong input format: {input_frame.payload_type}")
         status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
-        status.message = f"Engine received wrong input format: {input_frame.payload_type}"
+        status.message = (
+            f"Engine received wrong input format: {input_frame.payload_type}"
+        )
         return cognitive_engine.Result(status, None)
+
+def add_watermark(img):
+    ts = time.strftime("%H:%M:%S")
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (0,0,0), 5, cv2.LINE_AA)
+    cv2.putText(img, f"{ts}", (10,30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                (255,255,255), 2, cv2.LINE_AA)
 
 def main():
     """Starts the Gabriel server."""

@@ -208,6 +208,22 @@ service Control {
   rpc SetGimbalPose (SetGimbalPoseRequest)
 	returns (stream steeleagle.protocol.common.Response) {}
   /*
+   * Order the vehicle to set the pose of a gimbal asynchronously.
+   *
+   * Causes the vehicle to actuate a gimbal to a new pose. The vehicle
+   * will interpret the new pose type from `pose_mode` as follows: 
+   * - `ABSOLUTE` -> absolute angle
+   * - `RELATIVE` -> angle relative to current position
+   * - `VELOCITY` -> angular velocities
+   * 
+   * The vehicle will interpret the new pose angles according to `frame` 
+   * as follows:
+   * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
+   * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
+   */
+  rpc SetGimbalPoseTarget (SetGimbalPoseTargetRequest)
+	returns (steeleagle.protocol.common.Response) {}
+  /*
    * Configure the vehicle imaging stream.
    *
    * Sets which imaging sensors are streaming and sets their target
@@ -335,6 +351,15 @@ enum PoseMode {
   ANGLE = 0; // absolute angle
   OFFSET = 1; // request data // Offset from current
   VELOCITY = 2; // rotational velocities
+}
+
+message SetGimbalPoseTargetRequest{
+  steeleagle.protocol.common.Request request = 1; // request data
+  uint32 gimbal_id = 2; // ID of the target gimbal
+  steeleagle.protocol.common.Pose pose = 3; // target pose
+  optional PoseMode pose_mode = 4; // specifies how to interpret the target pose
+  // frame of reference
+  optional ReferenceFrame frame = 5;
 }
 
 message SetGimbalPoseRequest {

@@ -22,6 +22,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -35,8 +36,7 @@ def main():
     )
 
     parser.add_argument(
-        "-q"
-        "--queue",
+        "-q--queue",
         type=int,
         default=INPUT_QUEUE_MAXSIZE,
         help="Max input queue size",
@@ -52,7 +52,7 @@ def main():
         client_endpoint=args.port,
         engine_zmq_endpoint="tcp://*:5555",
         num_tokens=args.tokens,
-        input_queue_maxsize=INPUT_QUEUE_MAXSIZE, #TODO: Don't hardcode this
+        input_queue_maxsize=INPUT_QUEUE_MAXSIZE,  # TODO: Don't hardcode this
         use_zeromq=args.zmq,
     )
     server_runner.run()

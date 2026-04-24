@@ -1,15 +1,18 @@
-from prompt_toolkit.shortcuts import message_dialog, input_dialog, yes_no_dialog
-from prompt_toolkit.validation import Validator
-from prompt_toolkit.styles import Style
-from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.shortcuts import radiolist_dialog
-from prompt_toolkit.shortcuts import ProgressBar
-from prompt_toolkit import print_formatted_text, HTML
+from os import mkdir
+from urllib.request import urlretrieve
 
 from jinja2 import Environment, PackageLoader
-
-from urllib.request import urlretrieve
-from os import mkdir
+from prompt_toolkit import HTML, print_formatted_text
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.shortcuts import (
+    ProgressBar,
+    input_dialog,
+    message_dialog,
+    radiolist_dialog,
+    yes_no_dialog,
+)
+from prompt_toolkit.styles import Style
+from prompt_toolkit.validation import Validator
 
 CONTAINERS = {
     "gabriel": "Gabriel Server",
@@ -22,7 +25,8 @@ CONTAINERS = {
 TEMPLATES = {
     "template.env": ".env",
     "redis.conf.template": "./redis/redis.conf",
-    "secrets.toml.template": "../../gcs/streamlit/.streamlit/secrets.toml",
+    "gcs.frontend.template": "../../gcs/react/prime/src/config.js",
+    "gcs.backend.template": "../../gcs/react/backend/config.toml",
 }
 
 DEFAULTS = [
@@ -66,7 +70,10 @@ FORMATTED_TEXT_STYLE = Style.from_dict(
 
 
 def write_files(CONTEXT):
-    mkdir("redis")
+    try:
+        mkdir("redis")
+    except FileExistsError:
+        pass
     env = Environment(
         loader=PackageLoader("setup_wizard"),
     )
@@ -81,7 +88,7 @@ def write_files(CONTEXT):
 
 
 def download_coco_model():
-    # download yolov5 coco model
+    # download yolov26 coco model
     try:
         mkdir("models")
         print_formatted_text(
@@ -94,12 +101,12 @@ def download_coco_model():
             style=FORMATTED_TEXT_STYLE,
         )
     path, _ = urlretrieve(
-        "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5m.pt",
+        "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26m.pt",
         "./models/coco.pt",
     )
     CONTEXT["detection_model"] = "coco"
     print_formatted_text(
-        HTML("<note>Downloaded YOLOv5m model to ./models/coco.pt!</note>"),
+        HTML("<note>Downloaded YOLOv26m model to ./models/coco.pt!</note>"),
         style=FORMATTED_TEXT_STYLE,
     )
 
@@ -197,7 +204,7 @@ def main():
                 ("", "\n\n"),
                 (
                     "#111111 bold",
-                    "NOTE: If not, the Streamlit GCS will not display images from vehicles/engines.",
+                    "NOTE: If not, the GCS will not display images from vehicles/engines.",
                 ),
             ]
         )
@@ -496,11 +503,26 @@ def main():
         style=GLOBAL_STYLE,
     ).run()
 
-    CONTEXT["streamlit_pw"] = input_dialog(
-        title="Streamlit - Password",
-        text="Enter a secure password to access Streamlit:",
+    txt = FormattedText(
+        [
+            (
+                "#111111 bold",
+                "The SteelEagle GCS requires a Mapbox API key to render maps.\n",
+            ),
+            (
+                "#111111 bold",
+                "An API access token can be created at the following URL, after creating/logging in to an account: https://console.mapbox.com/account/access-tokens/\n\n",
+            ),
+            (
+                "#111111",
+                "Please enter the Mapbox API token:\n",
+            ),
+        ]
+    )
+    CONTEXT["mapbox_apikey"] = input_dialog(
+        title="GCS - Mapbox API Key",
+        text=txt,
         default="",
-        password=True,
         style=GLOBAL_STYLE,
     ).run()
 

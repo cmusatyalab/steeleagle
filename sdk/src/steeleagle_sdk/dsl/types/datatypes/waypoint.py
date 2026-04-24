@@ -1,110 +1,131 @@
-from typing import Any, Dict, List, Literal, Optional, Union
 import logging
+from typing import Literal
+
+from pydantic import Field, model_validator
 
 from ....api.datatypes.common import Location
-from ...compiler.registry import register_data
 from ....api.map.partitioner.algos.corridor import CorridorPartition
 from ....api.map.partitioner.algos.edge import EdgePartition
 from ....api.map.partitioner.algos.survey import SurveyPartition
 from ....api.map.partitioner.geopoints import GeoPoints
 from ....api.map.partitioner.utils import parse_kml_file
+from ...compiler.registry import register_data
 from ..base import Datatype
 
 logger = logging.getLogger(__name__)
 
-from ...runtime import MAP
+from .. import MAP
+
 
 class RelativeWaypoints(Datatype):
-    pass 
+    pass
+
 
 @register_data
 class Waypoints(Datatype):
-    """Datatype representing a list of geolocation waypoints.
+    """A list of geolocation waypoints with a slicing algorithm for coverage patterns."""
 
-    Takes in a list of geolocations and transforms them into waypoints given
-    a slicing algorithm. The slicing algorithm determines how the waypoints
-    will be visited; `edge` visits the exact geolocations and `survey`/`corridor`
-    divide the geolocations into lines which are traversed in order. These
-    are used to scan over an area.
+    area: str | list[Location] = Field(description="KML area name (string) or list of Location points defining the area.")
+    alt: float = Field(description="Altitude at which waypoints are visited [meters]. Altitudes in Location objects are ignored.")
+    algo: Literal["edge", "corridor", "survey"] | None = Field(default="edge", description="Slicing algorithm: 'edge' follows points in order, 'survey'/'corridor' cover the enclosed area.")
+    spacing: float | None = Field(default=None, description="Spacing between survey/corridor columns [meters]. Required for survey/corridor.")
+    angle_degrees: float | None = Field(default=None, description="Angle of survey/corridor columns [degrees]. Required for survey/corridor.")
+    trigger_distance: float | None = Field(default=None, description="Distance before snapshot trigger [meters]. Required for survey only.")
 
-    Attributes:
-        area (Union[str, List[Location]]): can be either a KML reference or a list
-            of geolocation points; if a KML reference, use the name of the polyshape, otherwise
-            provide a list of `Location` objects
-        alt (float): altitude at which the waypoints will be visited; _altitudes provided by Location objects are ignored_
-        algo (Optional[Literal["edge", "corridor", "survey"]]): determines how the waypoints are sliced, `edge`
-            follows the points in order and `survey`/`corridor` attempt to cover the area enclosed by the points (default: `edge`)
-        spacing (Optional[float]): must be set for `survey` and `corridor`, ignored otherwise; spacing in between survey columns [meters]
-        angle_degrees (Optional[float]): must be set for `survey` and `corridor`, ignored otherwise; the angle of the survey columns [degrees]
-        trigger_distance (Optional[float]): must be set for `survey`, ignored otherwise; the distance before a snapshot is triggered
-    """
-    area: Union[str, List[Location]]
-    alt: float
-    algo: Optional[Literal["edge", "corridor", "survey"]] = "edge"
-    spacing: Optional[float] = None
-    angle_degrees: Optional[float] = None
-    trigger_distance: Optional[float] = None
+    @model_validator(mode='after')
+    def validate_algo_requirements(self):
+        """Validate that required parameters are present based on the selected algorithm."""
+        if self.algo == "survey":
+            missing = []
+            if self.spacing is None:
+                missing.append("spacing")
+            if self.angle_degrees is None:
+                missing.append("angle_degrees")
+            if self.trigger_distance is None:
+                missing.append("trigger_distance")
+            if missing:
+                raise ValueError(
+                    f"For 'survey' algo, the following parameters are required: {', '.join(missing)}"
+                )
+        elif self.algo == "corridor":
+            missing = []
+            if self.spacing is None:
+                missing.append("spacing")
+            if self.angle_degrees is None:
+                missing.append("angle_degrees")
+            if missing:
+                raise ValueError(
+                    f"For 'corridor' algo, the following parameters are required: {', '.join(missing)}"
+                )
+        return self
 
-    def calculate(self) -> Dict[str, List[Dict[str, float]]]:
-        raw = None # Raw geopoints
+    def calculate(self) -> dict[str, list[dict[str, float]]]:
+        raw = None  # Raw geopoints
 
         # Check to see if a KML map has been sent or if Locations have been provided
-        if MAP is None and type(self.area) == str:
-            raise ValueError("MAP is not set. Set map_mod.MAP to a fastkml.kml.KML before calling calculate().")
+        if MAP is None and isinstance(self.area, str):
+            raise ValueError(
+                "MAP is not set. Set map_mod.MAP to a fastkml.kml.KML before calling calculate()."
+            )
         elif MAP:
-            raw_map: Dict[str, GeoPoints] = parse_kml_file(MAP)
+            raw_map: dict[str, GeoPoints] = parse_kml_file(MAP)
             if not raw_map:
                 logger.warning("No valid areas found in mission map (KML).")
                 return {}
-    
+
             if self.area not in raw_map:
                 available = ", ".join(sorted(raw_map.keys()))
-                raise ValueError(f"Area '{self.area}' not found in mission map. Available areas: {available}")
-    
+                raise ValueError(
+                    f"Area '{self.area}' not found in mission map. Available areas: {available}"
+                )
+
             raw = raw_map[self.area]
             if len(raw) < 3:
                 logger.warning("Area %s has < 3 points; skipping.", self.area)
                 return {}
         else:
-            raw = GeoPoints([(p.latitude, p.longitude) for p in self.area])
+            raw = GeoPoints([(p.longitude, p.latitude) for p in self.area])
 
-        # Choose partitioner
+        # Choose partitioner (validation already done by @model_validator)
         if self.algo == "edge":
             partition = EdgePartition()
         elif self.algo == "survey":
-            if self.spacing is None or self.angle_degrees is None or self.trigger_distance is None:
-                raise ValueError("For 'survey' algo, 'spacing', 'angle_degrees', and 'trigger_distance' must be set.")
             partition = SurveyPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
                 trigger_distance=self.trigger_distance,
             )
         elif self.algo == "corridor":
-            if self.spacing is None or self.angle_degrees is None:
-                raise ValueError("For 'corridor' algo, 'spacing' and 'angle_degrees' must be set.")
             partition = CorridorPartition(
                 spacing=self.spacing,
                 angle_degrees=self.angle_degrees,
             )
         else:
-            raise ValueError("Unknown algo '%s'. Expected one of: 'edge', 'survey', 'corridor'." % self.algo)
+            # This should never happen due to Literal type, but keep for safety
+            msg = f"Unknown algo '{self.algo}'. Expected one of: 'edge', 'survey', 'corridor'."
+            raise ValueError(msg)
 
         origin_wgs = raw.centroid()
         projected = raw.convert_to_projected()
         poly = projected.to_polygon()
 
-        parts_m = partition.generate_partitioned_geopoints(poly)  
+        parts_m = partition.generate_partitioned_geopoints(poly)
         parts_wgs = [GeoPoints(p).inverse_project_from(origin_wgs) for p in parts_m]
 
         # Flatten segments to per-point waypoints
-        waypoints: List[Dict[str, float]] = []
+        waypoints: list[dict[str, float]] = []
         for gp in parts_wgs:
             for lon, lat in gp:
-                waypoints.append({"lat": float(lat), "lon": float(lon), "alt": float(self.alt)})
+                waypoints.append(
+                    {"lat": float(lat), "lon": float(lon), "alt": float(self.alt)}
+                )
 
         logger.info(
             "Partitioned '%s' with %s: %d segment(s), %d point(s)",
-            self.area, self.algo, len(parts_wgs), len(waypoints),
+            self.area,
+            self.algo,
+            len(parts_wgs),
+            len(waypoints),
         )
-
-        return {self.area: waypoints}
+        key = self.area if isinstance(self.area, str) else "inline_area"
+        return {key: waypoints}

@@ -1,10 +1,17 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Tuple
-from shapely.geometry import Point, LineString, Polygon
-from ..partition import Partition
+
+from shapely.geometry import LineString, Point, Polygon
+
 from ..geopoints import GeoPoints
-from ..utils import rotated_infinite_transects, line_polygon_intersection_points, round_xy
+from ..partition import Partition
+from ..utils import (
+    line_polygon_intersection_points,
+    rotated_infinite_transects,
+    round_xy,
+)
+
 
 @dataclass
 class SurveyPartition(Partition):
@@ -12,9 +19,11 @@ class SurveyPartition(Partition):
     angle_degrees: float
     trigger_distance: float
 
-    def generate_partitioned_geopoints(self, polygon: Polygon) -> List[GeoPoints]:
-        results: List[GeoPoints] = []
-        for line in rotated_infinite_transects(polygon, self.spacing, self.angle_degrees):
+    def generate_partitioned_geopoints(self, polygon: Polygon) -> list[GeoPoints]:
+        results: list[GeoPoints] = []
+        for line in rotated_infinite_transects(
+            polygon, self.spacing, self.angle_degrees
+        ):
             pts = line_polygon_intersection_points(line, polygon)
             if len(pts) >= 2:
                 for a, b in zip(pts[0::2], pts[1::2]):
@@ -26,7 +35,7 @@ class SurveyPartition(Partition):
                         continue
                     ux, uy = (bx - ax) / length, (by - ay) / length
                     npts = max(1, int(length // self.trigger_distance))
-                    line_points: List[Tuple[float, float]] = []
+                    line_points: list[tuple[float, float]] = []
                     for i in range(npts + 1):
                         d = i * self.trigger_distance
                         px = ax + d * ux

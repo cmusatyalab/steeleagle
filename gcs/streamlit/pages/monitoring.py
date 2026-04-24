@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-2.0-only
 import time
+
 import streamlit as st
-from util import stream_to_dataframe, connect_redis, menu, authenticated
+from util import authenticated, connect_redis, menu, stream_to_dataframe
 
 st.set_page_config(
     page_title="Commander",

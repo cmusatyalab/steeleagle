@@ -30,11 +30,10 @@ import redis
 import torch
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
+from google.protobuf.any_pb2 import Any
 from metric3d_models import Metric3DModelLoader
 from metric3d_utils import Metric3DInference
 from PIL import Image, ImageDraw
-from google.protobuf.any_pb2 import Any
-
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
@@ -152,10 +151,9 @@ class AvoidanceEngine(ABC):
         vector, depth_img = self.process_image(frame.data)
         status = gabriel_pb2.Status()
 
-        response = result_pb2.ComputeResult()
-        response.timestamp.GetCurrentTime()
-        response.engine_name = self.ENGINE_NAME
-        response.avoidance_result.actuation_vector = vector
+        compute_result = result_pb2.ComputeResult()
+        compute_result.engine_name = self.ENGINE_NAME
+        compute_result.avoidance_result.actuation_vector = vector
         logger.info(f"Vector returned by obstacle avoidance algorithm: {vector}")
         if not self.unittest:
             self.store_vector(frame.vehicle_info.name, vector)
@@ -168,9 +166,12 @@ class AvoidanceEngine(ABC):
             self.print_inference_stats()
 
         self.lasttime = self.t1
-
+        frame_result = result_pb2.FrameResult()
+        frame_result.type = "obstacle-avoidance"
+        frame_result.result.append(compute_result)
+        frame_result.timestamp.GetCurrentTime()
         any_payload = Any()
-        any_payload.Pack(response)
+        any_payload.Pack(frame_result)
         return cognitive_engine.Result(status, any_payload)
 
 

@@ -1,0 +1,30 @@
+[project]
+name = "steeleagle-mcp"
+version = "0.1.0"
+description = "MCP server and client for SteelEagle drone control via natural language"
+authors = [
+    { name = "Anthony Chen", email = "xianglic@andrew.cmu.edu" },
+]
+requires-python = ">=3.11"
+dependencies = [
+    "steeleagle-sdk",
+    "mcp[cli]>=1.0.0",
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
+]
+
+[project.scripts]
+steeleagle-mcp-server = "steeleagle_mcp.server:cli"
+steeleagle-mcp-client = "steeleagle_mcp.client:cli"
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+steeleagle-sdk = {path = "../sdk", editable = true}
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

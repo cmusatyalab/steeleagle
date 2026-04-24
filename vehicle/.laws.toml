@@ -1,9 +1,9 @@
 # NOTE: Do not change these unless you *really* know
 # what you are doing!
 [__BASE__]
-enter = ['Compute.AddDatasinks|{"datasinks": [{"id": "telemetry"}, {"id": "object-engine"}, {"id": "obstacle-engine"}]}']
+enter = ['Control.ConfigureTelemetryStream|{"frequency": 10}', 'Control.ConfigureImagingSensorStream', 'Compute.AddDatasinks|{"datasinks": [{"id": "telemetry", "sources": [1,3]}, {"id": "object-engine", "sources": [3]}, {"id": "aruco_detector_engine", "sources": [3]}]}']
 [__BASE__.rules]
-allowed = ['server.*']
+allowed = ['server.*', 'internal.*']
 match = [
   ['server.Control.*', 'REMOTE'],
   ['server.Mission.Start', 'LOCAL']
