@@ -24,6 +24,7 @@ from fastapi.responses import StreamingResponse
 from rich.logging import RichHandler
 
 from .container_manager import ContainerManager
+from .docker_compose_manager import DockerComposeManager
 from .process_manager import ProcessManager
 from .process_pool import ProcessPool
 
@@ -42,10 +43,6 @@ logger = logging.getLogger("rich")
 # expose: start(), stop(), status(), get_logs(tail), subscribe(), unsubscribe()
 # ---------------------------------------------------------------------------
 
-GCS_EXECUTABLE = (
-    Path("/home/teiszler/steeleagle") / "gcs" / "react" / "backend" / "main.py"
-)
-
 CONFIGS: dict[str, Path] = {
     "gcs": Path("~/.steeleagle/gcs.toml").expanduser(),
     "backend": Path("~/.steeleagle/.env").expanduser(),
@@ -53,28 +50,48 @@ CONFIGS: dict[str, Path] = {
     "simulator": Path("~/.steeleagle/aviary.toml").expanduser(),
 }
 
-SERVICES: dict[str, ProcessManager | ContainerManager | ProcessPool] = {
+MAIN_REPO_PATH = Path("~/steeleagle").expanduser()
+ROOST_REPO_PATH = Path("~/roost").expanduser()
+
+SERVICES: dict[
+    str, ProcessManager | ContainerManager | ProcessPool | DockerComposeManager
+] = {
     "gcs": ProcessManager(
         name="gcs",
         command=[
             "uv",
             "run",
             "--directory",
-            "/home/teiszler/steeleagle/gcs/react/backend",
+            str(MAIN_REPO_PATH / "gcs" / "react" / "backend"),
             "main.py",
         ],
-        # command="[sys.executable, str(GCS_EXECUTABLE)]",
     ),
-    "redis": ContainerManager(
-        name="redis",
-        image="redis:7-alpine",
-        ports={"6379/tcp": 6379},
+    "sim": ProcessManager(
+        name="sim",
+        command=[
+            "uv",
+            "run",
+            "--directory",
+            str(ROOST_REPO_PATH / "aviary" / "src" / "steeleagle_aviary"),
+            "simulator.py",
+        ],
     ),
-    "gabriel-server": ContainerManager(
-        name="gabriel-server",
-        image="cmusatyalab/gabriel-server:latest",
-        environment={"POSTGRES_PASSWORD": "secret"},
-        ports={"9099/tcp": 9099, "5000/tcp": 5000},
+    "backend": DockerComposeManager(
+        name="backend",
+        compose_files=[
+            Path("~/steeleagle/backend/server/docker-compose.yml").expanduser()
+        ],
+        environment=[Path("~/steeleagle/backend/server/.env").expanduser()],
+    ),
+    "vehicle": ProcessPool(
+        name="vehicle",
+        command=[
+            "uv",
+            "run",
+            "--directory",
+            "/home/teiszler/steeleagle/vehicle",
+            "launch.py",
+        ],
     ),
 }
 
@@ -86,9 +103,15 @@ SERVICES: dict[str, ProcessManager | ContainerManager | ProcessPool] = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # check if ~/.steeleagle conf dir exists, and create it
+    logger.info("Checking for .steeleagle conf dir (and optionally creating)...")
+    Path("~/.steeleagle").expanduser().mkdir(exist_ok=True)
+    logger.info("Waiting for API calls from CLI...")
     yield
-    # Graceful shutdown: stop all process-based services.
+    # Graceful shutdown: stop all services.
+    logger.info("Stopping services...")
     for svc in SERVICES.values():
+        logger.info(f"Stopping '{svc.name}'...")
         if isinstance(svc, ProcessManager):
             await svc.stop()
         elif isinstance(svc, ProcessPool):
@@ -108,19 +131,23 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 
 
-def _get(name: str) -> ProcessManager | ContainerManager:
+def _get(
+    name: str,
+) -> ProcessManager | ContainerManager | ProcessPool | DockerComposeManager:
     svc = SERVICES.get(name)
     if svc is None:
         raise HTTPException(status_code=404, detail=f"Unknown service: '{name}'")
     return svc
 
 
-def _require_single(name: str) -> ProcessManager | ContainerManager:
+def _require_single(
+    name: str,
+) -> ProcessManager | ContainerManager | DockerComposeManager:
     svc = _get(name)
     if isinstance(svc, ProcessPool):
         raise HTTPException(
             status_code=400,
-            detail=f"'{name}' is a pool — use /services/{name}/instances/... routes.",
+            detail=f"'{name}' is not a ProcessManager/ContainerManager.",
         )
     return svc
 
@@ -130,39 +157,67 @@ def _require_pool(name: str) -> ProcessPool:
     if not isinstance(svc, ProcessPool):
         raise HTTPException(
             status_code=400,
-            detail=f"'{name}' is not a pool — use /services/{name}/start.",
+            detail=f"'{name}' is not a ProcessPool.",
         )
     return svc
 
 
 async def _call(svc: ProcessManager | ContainerManager, method: str, **kwargs):
-    """Calls start()/stop() handling the fact that ProcessManager is async."""
     fn = getattr(svc, method)
     if asyncio.iscoroutinefunction(fn):
         return await fn(**kwargs)
-    # ContainerManager methods are synchronous — run in thread pool so we
-    # don't block the event loop during Docker API calls.
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, lambda: fn(**kwargs))
 
 
+async def _log_stream(
+    get_logs,  # callable() → list[str]
+    subscribe,  # callable() → asyncio.Queue
+    unsubscribe,  # callable(q) → None
+    tail: int,
+) -> AsyncIterator[str]:
+    for line in get_logs(tail):
+        yield f"data: {line}\n\n"
+    q = subscribe()
+    try:
+        while True:
+            try:
+                line = await asyncio.wait_for(q.get(), timeout=15.0)
+                yield f"data: {line}"
+            except TimeoutError:
+                yield ": keep-alive\n\n"
+    except asyncio.CancelledError:
+        pass
+    finally:
+        unsubscribe(q)
+
+
 def _get_repo() -> git.Repo:
-    local_dir = "~/roost"
-    exists = Path(local_dir).expanduser().exists()
+    roost_dir = "~/roost"
+    exists = Path(roost_dir).expanduser().exists()
     if not exists:
         repo_url = "https://git.cmusatyalab.org/steeleagle/roost"
-        repo = git.Repo.clone_from(repo_url, local_dir)
+        repo = git.Repo.clone_from(repo_url, roost_dir)
     else:
-        repo = git.Repo(local_dir)
+        repo = git.Repo(roost_dir)
     return repo
 
 
-async def _execute_async_subprocess(command: list[str]):
-    proc = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT,  # merge stderr → stdout
-    )
+async def _execute_async_subprocess(command: list[str] | str, use_shell: bool = False):
+    """If use_shell is True, create_subprocess_shell is used and command should be a str."""
+    """If use_shell is False (the default), create_subprocess_exec is used and command should be list[str]."""
+    if use_shell:
+        proc = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,  # merge stderr → stdout
+        )
+    else:
+        proc = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,  # merge stderr → stdout
+        )
     output, _ = await proc.communicate()
     return proc.returncode, output
 
@@ -177,9 +232,7 @@ def list_services():
             {
                 "name": name,
                 "type": type(svc).__name__,
-                "command_or_image": svc.command
-                if type(svc) is ProcessManager
-                else svc.image,
+                "entrypoint": svc.entrypoint(),
             }
             for name, svc in SERVICES.items()
         ]
@@ -188,36 +241,26 @@ def list_services():
 
 @app.post("/services/{name}/start", summary="Start a service")
 async def start_service(name: str):
-    svc = _get(name)
-    result = await _call(svc, "start")
-    return {"service": name, **result}
+    svc = _require_single(name)
+    return {"service": name, **await _call(svc, "start")}
 
 
 @app.post("/services/{name}/stop", summary="Stop a service")
 async def stop_service(name: str):
-    svc = _get(name)
-    result = await _call(svc, "stop")
-    return {"service": name, **result}
+    svc = _require_single(name)
+    return {"service": name, **await _call(svc, "stop")}
 
 
 @app.get("/services/{name}/status", summary="Get service status")
 async def service_status(name: str):
-    svc = _get(name)
-    result = await _call(svc, "status")
-    return {"service": name, **result}
+    svc = _require_single(name)
+    return {"service": name, **await _call(svc, "status")}
 
 
 @app.get("/services/{name}/logs", summary="Get or stream service logs")
 async def service_logs(name: str, tail: int = 100, stream: bool = False):
-    """
-    Without `?stream=true` returns the last `tail` lines as JSON.
-    With `?stream=true` opens a Server-Sent Events stream that pushes new
-    lines in real time until the client disconnects.
-    """
-    svc = _get(name)
-
+    svc = _require_single(name)
     if not stream:
-        # Snapshot — works the same for both manager types.
         if isinstance(svc, ProcessManager):
             lines = svc.get_logs(tail=tail)
         else:
@@ -225,38 +268,81 @@ async def service_logs(name: str, tail: int = 100, stream: bool = False):
             lines = await loop.run_in_executor(None, lambda: svc.get_logs(tail=tail))
         return {"service": name, "logs": lines}
 
-    # ---- SSE streaming ----
-    async def event_stream() -> AsyncIterator[str]:
-        # First, replay the existing buffer so the client isn't starting blind.
-        if isinstance(svc, ProcessManager):
-            initial = svc.get_logs(tail=tail)
-        else:
-            loop = asyncio.get_running_loop()
-            initial = await loop.run_in_executor(None, lambda: svc.get_logs(tail=tail))
-
-        for line in initial:
-            yield f"data: {line}\n\n"
-
-        # Then subscribe for live lines.
-        q = svc.subscribe()
-        try:
-            while True:
-                try:
-                    line = await asyncio.wait_for(q.get(), timeout=15.0)
-                    yield f"data: {line}\n\n"
-                except TimeoutError:
-                    # Send a keep-alive comment so the connection stays open.
-                    yield ": keep-alive\n\n"
-        except asyncio.CancelledError:
-            pass
-        finally:
-            svc.unsubscribe(q)
-
     return StreamingResponse(
-        event_stream(),
+        _log_stream(
+            get_logs=lambda t: svc.get_logs(tail=t)
+            if isinstance(svc, ProcessManager)
+            else svc.get_logs(tail=t),
+            subscribe=svc.subscribe,
+            unsubscribe=svc.unsubscribe,
+            tail=tail,
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ---------------------------------------------------------------------------
+# ProcessPool routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/services/{name}/pool")
+def list_instances(name: str):
+    pool = _require_pool(name)
+    return {"service": name, "instances": pool.list_instances()}
+
+
+@app.post("/services/{name}/pool")
+async def start_instance(name: str, label: str | None = None):
+    pool = _require_pool(name)
+    result = await pool.start_instance(label=label)
+    return {"service": name, **result}
+
+
+@app.post("/services/{name}/pool/{instance_id}/stop")
+async def stop_instance(name: str, instance_id: str):
+    pool = _require_pool(name)
+    try:
+        result = await pool.stop_instance(instance_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return {"service": name, **result}
+
+
+@app.get("/services/{name}/pool/{instance_id}/status")
+def instance_status(name: str, instance_id: str):
+    pool = _require_pool(name)
+    try:
+        return {"service": name, **pool.instance_status(instance_id)}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.get("/services/{name}/pool/{instance_id}/logs")
+async def instance_logs(
+    name: str, instance_id: str, tail: int = 100, stream: bool = False
+):
+    pool = _require_pool(name)
+    try:
+        if not stream:
+            return {
+                "service": name,
+                "instance_id": instance_id,
+                "logs": pool.get_logs(instance_id, tail=tail),
+            }
+        return StreamingResponse(
+            _log_stream(
+                get_logs=lambda t: pool.get_logs(instance_id, tail=t),
+                subscribe=lambda: pool.subscribe(instance_id),
+                unsubscribe=lambda q: pool.unsubscribe(instance_id, q),
+                tail=tail,
+            ),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.get("/drivers", summary="List all available drivers")
@@ -336,11 +422,28 @@ def inspect_config(name: str):
 
 @app.post(
     "/gcs/build",
-    summary="Build the frontend React app for the GCS (if necessary, installs nvm/npm tools)",
+    summary="Build the frontend React app for the GCS using npm",
 )
 async def gcs_build():
-    path = Path("~/.steeleagle/gcs/react/install.sh").expanduser()
-    returncode, output = await _execute_async_subprocess(["sh", "-x", path])
+    path = Path(" ~/steeleagle/gcs/react/prime").expanduser()
+    returncode, output = await _execute_async_subprocess(
+        ["npm", "run", "build", "--prefix", path]
+    )
+    return {
+        "status": "build_successful" if returncode == 0 else "build_failed",
+        "log": output,
+    }
+
+
+@app.post(
+    "/gcs/install",
+    summary="Installs required nvm/npm tools for building React GCS",
+)
+async def gcs_install():
+    returncode, output = await _execute_async_subprocess(
+        "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash",
+        use_shell=True,
+    )
     return {
         "status": "installed" if returncode == 0 else "installation_failed",
         "log": output,
