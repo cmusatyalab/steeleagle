@@ -32,6 +32,9 @@ class ProcessManager:
         self._subscribers: list[asyncio.Queue] = []
         self._reader_task: asyncio.Task | None = None
 
+    def entrypoint(self) -> str:
+        return " ".join(self.command)
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------

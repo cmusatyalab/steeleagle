@@ -26,6 +26,9 @@ class ProcessPool:
         self._instances: dict[str, ProcessManager] = {}
         self._counter = 0
 
+    def entrypoint(self) -> str:
+        return " ".join(self.command)
+
     # ------------------------------------------------------------------
     # Instance lifecycle
     # ------------------------------------------------------------------
@@ -38,7 +41,7 @@ class ProcessPool:
         """
         if label is None:
             self._counter += 1
-            instance_id = str(self._counter)
+            instance_id = f"{self.name}-{str(self._counter)}"
         else:
             instance_id = label
 
