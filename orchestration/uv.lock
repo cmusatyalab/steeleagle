@@ -478,6 +478,19 @@ wheels = [
 ]
 
 [[package]]
+name = "python-on-whales"
+version = "0.81.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e9/81/4b545de811e41ff90762a1c7045fcae215f20f4114eebddedab8eab6f63e/python_on_whales-0.81.0.tar.gz", hash = "sha256:bb6172014e3fe949f908092748bddf34df758cb92c2c3d0536b75bf236abce1b", size = 115066, upload-time = "2026-03-09T14:17:43.534Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/cb/5049e041a1d0e6f6cb6ac8737a8215fb4e67cb147f140ef31e67361dc61a/python_on_whales-0.81.0-py3-none-any.whl", hash = "sha256:6d5f81f56d0f95fd311a7cce29a01a1a60841074e4936000dc5f2dc9a7ffafac", size = 119240, upload-time = "2026-03-09T14:17:42.195Z" },
+]
+
+[[package]]
 name = "pywin32"
 version = "311"
 source = { registry = "https://pypi.org/simple" }
@@ -619,6 +632,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "gitpython" },
     { name = "httpx" },
+    { name = "python-on-whales" },
     { name = "rich" },
     { name = "toml" },
     { name = "trogon" },
@@ -632,6 +646,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "gitpython" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "python-on-whales" },
     { name = "rich", specifier = ">=13.0" },
     { name = "toml" },
     { name = "trogon" },

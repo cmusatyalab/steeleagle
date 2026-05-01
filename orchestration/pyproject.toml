@@ -12,6 +12,7 @@ dependencies = [
     "GitPython",
     "toml",
     "trogon",
+    "python-on-whales"
 ]
 
 [project.scripts]
