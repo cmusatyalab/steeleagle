@@ -44,6 +44,9 @@ class ContainerManager:
         # can safely schedule puts onto asyncio Queues.
         self._loop: asyncio.AbstractEventLoop | None = None
 
+    def entrypoint(self) -> str:
+        return self.image
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
@@ -109,7 +112,7 @@ class ContainerManager:
         container = self._find()
         if not container:
             return []
-        raw = container.logs(tail=tail, timestamps=True).decode(errors="replace")
+        raw = container.logs(tail=tail, timestamps=False).decode(errors="replace")
         return [line for line in raw.splitlines() if line]
 
     def subscribe(self) -> asyncio.Queue:
