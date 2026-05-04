@@ -141,7 +141,7 @@ def daemon(
         False, help="Enable reload on source changes (dev mode)"
     ),
     loglevel: str = typer.Option(
-        "critical", help="Uvicorn log level: critical, error, warning, info, debug"
+        "error", help="Uvicorn log level: critical, error, warning, info, debug"
     ),
 ):
     """Start the orchestrator daemon (blocking)."""
@@ -234,7 +234,6 @@ def status(
     def show_status(name):
         with _client() as c:
             data = _check(c.get(f"/services/{name}/status"))
-        rprint(data)
 
         table = Table(title=f"Status: {name}", show_header=False, show_lines=False)
         table.add_column("Key", style="dim")
@@ -540,6 +539,15 @@ def sim_status():
     status("sim")
 
 
+@sim_app.command("logs")
+def sim_logs(
+    tail: int = typer.Option(50, "--tail", "-n", help="Number of lines to show"),
+    stream: bool = typer.Option(False, "--stream", "-f", help="Follow live output"),
+):
+    """Retrieve logs for Aviary."""
+    logs("sim", tail, stream)
+
+
 # ---------------------------------------------------------------------------
 # Pool / instance sub-commands
 # ---------------------------------------------------------------------------
@@ -658,6 +666,11 @@ def backend_start():
         data = _check(c.post("/services/backend/start"))
 
     rprint(f"[bold]Backend[/bold]  → {_status_color(data.get('status', '?'))}")
+    containers = data.get("containers", False)
+
+    if containers:
+        running = sum(1 for c in containers if c.get("status") == "running")
+        rprint(f"[bold red]{running}/{len(containers)} backend containers running")
 
 
 @backend_app.command("stop")
@@ -669,6 +682,11 @@ def backend_stop():
     ):
         data = _check(c.post("/services/backend/stop"))
     rprint(f"Backend Containers → {_status_color(data.get('status', '?'))}")
+    containers = data.get("containers", False)
+
+    if containers:
+        running = sum(1 for c in containers if c.get("status") == "running")
+        rprint(f"[bold red]{running}/{len(containers)} backend containers running")
 
 
 @backend_app.command("list")

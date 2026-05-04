@@ -51,21 +51,25 @@ class DockerComposeManager:
         self._client.compose.up(pull="missing", detach=True)
         containers = self._client.compose.ps()
         return {
+            "status": "started",
             "containers": [
                 {"id": container.config.hostname, "status": container.state.status}
                 for container in containers
-            ]
+            ],
         }
 
     def stop(self) -> dict:
         self._client.compose.down()
         containers = self._client.compose.ps()
-        return {
-            "containers": [
-                {"id": container.config.hostname, "status": container.state.status}
-                for container in containers
-            ]
-        }
+        if len(containers) == 0:
+            return {"status": "stopped"}
+        else:
+            return {
+                "containers": [
+                    {"id": container.config.hostname, "status": container.state.status}
+                    for container in containers
+                ]
+            }
 
     # ------------------------------------------------------------------
     # Status & logs
