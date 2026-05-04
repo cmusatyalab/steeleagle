@@ -12,7 +12,8 @@ dependencies = [
     "GitPython",
     "toml",
     "trogon",
-    "python-on-whales"
+    "python-on-whales",
+    "pytest"
 ]
 
 [project.scripts]
@@ -30,3 +31,8 @@ packages = ["daemon", "cli", "worker"]
 # rather than using import hooks. Required for uv + hatchling to find
 # local packages (cli, daemon, worker) at runtime.
 #mode = "compat"
+
+[tool.pytest]
+markers = [
+    "gcs: test all gcs related functions start/stop/restart/install",
+]
