@@ -26,14 +26,16 @@ type connectionState struct {
 	missionList net.Listener
 	mainList    net.Listener
 	// Proxied gRPC connections
-	control *grpc.ClientConn
-	stream  *grpc.ClientConn
-	mission *grpc.ClientConn
+	control    *grpc.ClientConn
+	stream     *grpc.ClientConn
+	mission    *grpc.ClientConn
+	externGRPC []net.Listener
 }
 
 type Vehicle struct {
 	name        string
 	path        string
+	spath       string
 	services    serviceState
 	connections connectionState
 	driver      plugin.Plugin
@@ -42,8 +44,10 @@ type Vehicle struct {
 	policyCfg PolicyConfig
 	policy    policyState
 	// Context related attributes
-	ctx    context.Context
-	cancel context.CancelFunc
+	ctx     context.Context
+	cancel  context.CancelFunc
+	test    bool
+	backend string
 }
 
 func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, error) {
