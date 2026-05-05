@@ -22,7 +22,6 @@ type policyState struct {
     currentState string
     query rego.PreparedEvalQuery
     lawMap map[string]ControlLawState
-    acl    map[string]
 }
 
 type policyDecision struct {

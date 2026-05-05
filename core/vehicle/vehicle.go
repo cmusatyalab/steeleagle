@@ -23,8 +23,9 @@ type serviceState struct {
 }
 
 type connectionState struct {
-    ipListener   IPListener
-    unixListener UnixListener
+    wanList      net.Listener
+    missionList  net.Listener
+    mainList     net.Listener
     // Proxied gRPC connections
     control      *grpc.ClientConn
     stream       *grpc.ClientConn
@@ -36,7 +37,8 @@ type Vehicle struct {
     path         string
     services     serviceState
     connections  connectionState
-    plugins      []plugin.Plugin
+    driver       plugin.Plugin
+    mission      plugin.Plugin
     // Policy
     policyCfg    PolicyConfig
     policy       policyState
@@ -88,7 +90,7 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
     // Pass these to the corresponding servers
     
     // Set up gRPC servers and set up auth interceptor chain
-    vehicle.services.localServer = grpc.NewServer(
+    vehicle.services.missionServer = grpc.NewServer(
         grpc.StreamInterceptor(vehicle.wlist.getLocalInterceptor()),
         grpc.CustomCodec(proxy.Codec()),
         grpc.UnknownServiceHandler(proxy.TransparentHandler(
@@ -111,37 +113,17 @@ func (i *Vehicle) Start() error {
     // If a local connection cannot be established, the vehicle cannot
     // interact with any local services and thus it should abort
     var err error
-    i.connections.localGRPC, err = net.Listen("unix", filepath.Join(i.path, MainSocket))
+    i.connections.mainList, err = net.Listen("unix", filepath.Join(i.path, MainSocket))
 	if err != nil {
         log.Error().Err(err).Str("file", filepath.Join(i.path, MainSocket)).Msg("can't listen at file")
         log.Error().Msg("failed to start main services, aborting!")
         return
 	}
 
-    // Serve any attached external listeners
-    if len(i.connections.externGRPC) > 0 {
-        for _, conn := range(i.connections.externGRPC) { 
-            go func() {
-                e := i.services.externServer.Serve(conn)
-                defer conn.Close()
-                if e != nil {
-                    log.Error().Err(err).Msg("external connection closed unexpectedly")
-                }
-            }()
-        }
-    }
-
-    go func() {
-        e := i.services.localServer.Serve(i.connections.localGRPC)
-        defer i.connections.localGRPC.Close()
-        if e != nil {
-            log.Error().Err(err).Msg("local connection closed unexpectedly")
-        }
-    }()
-
     // Stop the gRPC servers
-    defer i.services.externServer.GracefulStop()
-    defer i.services.localServer.GracefulStop()
+    defer i.services.wanServer.GracefulStop()
+    defer i.services.missionServer.GracefulStop()
+    defer i.services.mainServer.GracefulStop()
     
     // Wait for context to be cancelled
     <-i.ctx.Done()
