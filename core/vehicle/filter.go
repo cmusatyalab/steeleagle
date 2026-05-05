@@ -1,7 +1,6 @@
 package vehicle
 
 import (
-	"fmt"
 	"net"
 	"strings"
 )
@@ -10,7 +9,7 @@ import (
 // from non-whitelisted IPs before they reach gRPC.
 type filterListener struct {
 	listener net.Listener
-	allowed []string
+	allowed  []string
 }
 
 // NewFilterListener creates a FilterListener from any net.Listener.

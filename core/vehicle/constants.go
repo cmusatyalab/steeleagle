@@ -9,12 +9,12 @@ import _ "embed"
 type AuthCode string
 
 const (
-    Server  AuthCode = "server"
-    Kernel  AuthCode = "kernel"
-    Driver  AuthCode = "driver"
-    Mission AuthCode = "mission"
-    Extra   AuthCode = "extra"
-    Unknown AuthCode = "unknown"
+	Server  AuthCode = "server"
+	Kernel  AuthCode = "kernel"
+	Driver  AuthCode = "driver"
+	Mission AuthCode = "mission"
+	Extra   AuthCode = "extra"
+	Unknown AuthCode = "unknown"
 )
 
 // Script within a plugin package that runs the plugin
