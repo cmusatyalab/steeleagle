@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"net"
 
 	"tailscale.com/tsnet"
 )
 
 type TailscaleServer struct {
-	server		tsnet.Server
+	server tsnet.Server
 }
 
 func NewTailscaleServer(hostname string) (*TailscaleServer, error) {

@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,16 +16,14 @@ import (
 )
 
 type serviceState struct {
-	wanSrv     *grpc.Server
-	missionSrv *grpc.Server
-	mainSrv    *grpc.Server
+	wanSrv  *grpc.Server
+	mainSrv *grpc.Server
 	// TODO: add Data and Compute services here, which are vehicle hosted
 }
 
 type connectionState struct {
-	wanList     net.Listener
-	missionList net.Listener
-	mainList    net.Listener
+	wanLn  net.Listener
+	mainLn net.Listener
 	// Proxied gRPC connections
 	control    *grpc.ClientConn
 	stream     *grpc.ClientConn
@@ -43,22 +42,14 @@ type Vehicle struct {
 	// Policy
 	policyCfg PolicyConfig
 	policy    policyState
-	// Context related attributes
-	ctx     context.Context
-	cancel  context.CancelFunc
-	test    bool
-	backend string
+	test      bool
+	backend   string
 }
 
-func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, error) {
-	// Set up new context
-	ctx, cancel := context.WithCancel(parentCtx)
-
+func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		name:   uuid.New().String(),
-		ctx:    ctx,
-		cancel: cancel,
+		name: uuid.New().String(),
 	}
 	for _, option := range options {
 		option(vehicle)
@@ -93,15 +84,15 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 	// Pass these to the corresponding servers
 
 	// Set up gRPC servers and set up auth interceptor chain
-	vehicle.services.missionServer = grpc.NewServer(
-		grpc.StreamInterceptor(vehicle.wlist.getLocalInterceptor()),
+	vehicle.services.wanSrv = grpc.NewServer(
+		grpc.StreamInterceptor(vehicle.wlist.getExternalInterceptor()),
 		grpc.CustomCodec(proxy.Codec()),
 		grpc.UnknownServiceHandler(proxy.TransparentHandler(
-			vehicle.getLocalProxyDirector(),
+			vehicle.getExternalProxyDirector(),
 		)),
 	)
 
-	vehicle.services.externServer = grpc.NewServer(
+	vehicle.services.mainSrv = grpc.NewServer(
 		grpc.StreamInterceptor(vehicle.wlist.getExternalInterceptor()),
 		grpc.CustomCodec(proxy.Codec()),
 		grpc.UnknownServiceHandler(proxy.TransparentHandler(
@@ -112,37 +103,62 @@ func NewVehicle(parentCtx context.Context, options ...VehicleOption) (*Vehicle, 
 	return vehicle, nil
 }
 
-func (i *Vehicle) Start() error {
+func (v *Vehicle) Start(ctx context.Context) error {
+	// Set up new context
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// If a local connection cannot be established, the vehicle cannot
 	// interact with any local services and thus it should abort
 	var err error
-	i.connections.mainList, err = net.Listen("unix", filepath.Join(i.path, MainSocket))
+	v.connections.mainLn, err =
+		net.Listen("unix", filepath.Join(v.path, MainSocket))
 	if err != nil {
-		log.Error().Err(err).Str("file", filepath.Join(i.path, MainSocket)).Msg("can't listen at file")
-		log.Error().Msg("failed to start main services, aborting!")
-		return
+		return fmt.Errorf(
+			"can't listen at file %s: %w",
+			filepath.Join(v.path, MainSocket),
+			err,
+		)
 	}
 
 	// Stop the gRPC servers
-	defer i.services.wanServer.GracefulStop()
-	defer i.services.missionServer.GracefulStop()
-	defer i.services.mainServer.GracefulStop()
+	defer v.services.wanSrv.GracefulStop()
+	defer v.services.mainSrv.GracefulStop()
 
-	// Wait for context to be cancelled
-	<-i.ctx.Done()
+	errCh := make(chan error, 2)
+	go func() {
+		if err := v.services.wanSrv.Serve(v.connections.wanLn); err != nil {
+			errCh <- fmt.Errorf("wanSrv: %w", err)
+		}
+	}()
+
+	go func() {
+		if err := v.services.mainSrv.Serve(v.connections.mainLn); err != nil {
+			errCh <- fmt.Errorf("mainSrv: %w", err)
+		}
+	}()
+
+	// Wait for the context to be cancelled or an error to be returned from a
+	// server
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	}
 }
 
 // Status methods
-func (i *Vehicle) Name() string {
-	return i.name
+func (v *Vehicle) Name() string {
+	return v.name
 }
 
-func (i *Vehicle) Path() string {
-	return i.path
+func (v *Vehicle) Path() string {
+	return v.path
 }
 
-func (i *Vehicle) ControlState() string {
-	i.policy.mu.RLock()
-	defer i.policy.mu.RUnlock()
-	return i.policy.currentState
+func (v *Vehicle) ControlState() string {
+	v.policy.mu.RLock()
+	defer v.policy.mu.RUnlock()
+	return v.policy.currentState
 }
