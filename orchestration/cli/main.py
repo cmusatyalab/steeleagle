@@ -11,6 +11,7 @@ from typing import Annotated
 import httpx
 import typer
 import uvicorn
+from rich import box
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
@@ -167,7 +168,7 @@ def services():
     with _client() as c:
         data = _check(c.get("/services"))
 
-    table = Table(title="Registered Services", show_lines=True)
+    table = Table(title="Registered Services", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold cyan")
     table.add_column("Type", style="dim")
     table.add_column("Entrypoint", style="dark_orange3")
@@ -308,13 +309,12 @@ def ps():
     with _client() as c:
         svc_list = _check(c.get("/services"))["services"]
 
-    table = Table(title="Service Status", show_lines=True)
-    table.add_column("Service", style="bold cyan")
-    table.add_column("Type", style="dim")
-    table.add_column("Status / Instances")
-    table.add_column("Details", style="dim")
+        table = Table(title="Service Status", show_lines=False, box=box.SIMPLE_HEAVY)
+        table.add_column("Service", style="bold cyan")
+        table.add_column("Type", style="dim")
+        table.add_column("Status / Instances")
+        table.add_column("Details", style="dim", justify="right")
 
-    with _client() as c:
         for svc in svc_list:
             name, stype = svc["name"], svc["type"]
             match stype:
@@ -322,7 +322,7 @@ def ps():
                     data = _check(c.get(f"/services/{name}/status"))
                     containers = data.get("containers", [])
                     running = sum(1 for c in containers if c.get("status") == "running")
-                    extras = Table(show_lines=True)
+                    extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
                     extras.add_column("Name", style="bold cyan")
                     extras.add_column("Image", style="dim")
                     extras.add_column("Status")
@@ -338,11 +338,11 @@ def ps():
                         "backend", stype, f"{running}/{len(containers)} running", extras
                     )
                 case "ProcessPool":
-                    data = _check(c.get("/services/vehicle/pool"))
+                    data = _check(c.get(f"/services/{name}/pool"))
                     instances = data.get("instances", [])
                     running = sum(1 for i in instances if i.get("status") == "running")
                     extras = " ".join(
-                        f"{k}={v}"
+                        f"{k}: {v}"
                         for d in instances
                         for k, v in d.items()
                         if k in ["instance_id", "status"]
@@ -353,8 +353,8 @@ def ps():
                 case _:
                     data = _check(c.get(f"/services/{name}/status"))
                     st = data.get("status", "?")
-                    extras = "  ".join(
-                        f"{k}={v}"
+                    extras = " ".join(
+                        f"{k}: {v}"
                         for k, v in data.items()
                         if k not in {"service", "status"}
                     )
@@ -604,8 +604,8 @@ def instance_list():
     for inst in data.get("instances", []):
         iid = inst.get("instance_id", "?")
         st = inst.get("status", "?")
-        extras = "  ".join(
-            f"{k}={v}" for k, v in inst.items() if k not in {"instance_id", "status"}
+        extras = " ".join(
+            f"{k}: {v}" for k, v in inst.items() if k not in {"instance_id", "status"}
         )
         table.add_row(iid, _status_color(st), extras)
 
@@ -691,24 +691,26 @@ def backend_stop():
 
 @backend_app.command("list")
 def backend_list():
-    """List all instances in the vehicle pool."""
+    """List services in the backend docker-compose.yml file."""
     with _client() as c:
-        data = _check(c.get("/services/backend/list"))
+        data = _check(c.get("/backend/list"))
 
-    table = Table(title="Backend Containers", show_lines=True)
-    table.add_column("ID", style="bold cyan")
-    table.add_column("Status")
-    table.add_column("Details", style="dim")
+    table = Table(title="Backend Containers", show_lines=True, box=box.SIMPLE_HEAVY)
+    table.add_column("Name", style="bold cyan")
+    table.add_column("Image/Dockerfile", style="dim")
+    # table.add_column("Entrypoint", style="dark_orange3")
+    for _s, props in data["services"].items():
+        name = props.get("container_name", "?")
+        image = props.get("image", None)
+        if image is None:
+            build = props.get("build")
+            image = build.get("context") + "/" + build.get("dockerfile")
+        table.add_row(
+            name,
+            image,
+        )
 
-    rprint(f"{data}")
-    # for inst in data.get("containers", []):
-    #     iid = inst.get("instance_id", "?")
-    #     st = inst.get("status", "?")
-    #     extras = "  ".join(f"{k}={v}" for k, v in inst.items()
-    #                        if k not in {"instance_id", "status"})
-    #     table.add_row(iid, _status_color(st), extras)
-
-    # console.print(table)
+    console.print(table)
 
 
 @backend_app.command("status")
@@ -720,7 +722,7 @@ def backend_status(
         data = _check(c.get("/services/backend/status"))
     containers = data.get("containers", [])
     running = sum(1 for c in containers if c.get("status") == "running")
-    extras = Table(show_lines=True)
+    extras = Table(show_lines=True, box=box.SIMPLE_HEAVY)
     extras.add_column("Name", style="bold cyan")
     extras.add_column("Image", style="dim")
     extras.add_column("Status")

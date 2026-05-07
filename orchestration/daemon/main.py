@@ -89,7 +89,7 @@ SERVICES: dict[
             "uv",
             "run",
             "--directory",
-            "/home/teiszler/steeleagle/vehicle",
+            str(MAIN_REPO_PATH / "vehicle"),
             "launch.py",
         ],
     ),
@@ -448,3 +448,12 @@ async def gcs_install():
         "status": "installed" if returncode == 0 else "installation_failed",
         "log": output,
     }
+
+
+@app.get(
+    "/backend/list",
+    summary="List the services in the Docker Compose YAML file.",
+)
+async def backend_list():
+    svc = _require_single("backend")
+    return {**await _call(svc, "list")}

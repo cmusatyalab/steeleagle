@@ -106,3 +106,7 @@ class DockerComposeManager:
             self._subscribers.remove(q)
         except ValueError:
             pass
+
+    def list(self) -> dict:
+        conf = self._client.compose.config(return_json=True)
+        return conf
