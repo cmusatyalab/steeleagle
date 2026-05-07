@@ -12,27 +12,36 @@ type filterListener struct {
 	allowed  []string
 }
 
-// NewFilterListener creates a FilterListener from any net.Listener.
-// A FilterListener filters incoming WAN gRPC connections based on the
+// NewFilterListener creates a filterListener from any net.Listener.
+// A filterListener filters incoming WAN gRPC connections based on the
 // current vehicle policy.
-func (i *policyState) NewFilterListener(listener net.Listener) (*FilterListener, error) {
-	return &FilterListener{listener: listener, allowed: allowed}, nil
+func (s *policyState) NewFilterListener(listener net.Listener) (*filterListener, error) {
+	// TODO: figure out how to populate 'allowed'
+	return &filterListener{listener: listener}, nil
 }
 
-func (i *FilterListener) Accept() (net.Conn, error) {
+func (l *filterListener) Accept() (net.Conn, error) {
 	for {
-		conn, err := i.listener.Accept()
+		conn, err := l.listener.Accept()
 		if err != nil {
 			return nil, err
 		}
-		if i.isAllowed(conn.RemoteAddr()) {
+		if l.isAllowed(conn.RemoteAddr()) {
 			return conn, nil
 		}
 		conn.Close() // Drop the connection if the IP is not on the whitelist
 	}
 }
 
-func (i *FilterListener) isAllowed(addr net.Addr) bool {
+func (l *filterListener) Close() error {
+	return l.listener.Close()
+}
+
+func (l *filterListener) Addr() net.Addr {
+	return l.listener.Addr()
+}
+
+func (l *filterListener) isAllowed(addr net.Addr) bool {
 	host, _, err := net.SplitHostPort(addr.String())
 	if err != nil {
 		return false
@@ -42,7 +51,7 @@ func (i *FilterListener) isAllowed(addr net.Addr) bool {
 		return false
 	}
 
-	for _, entry := range i.allowed {
+	for _, entry := range l.allowed {
 		if strings.Contains(entry, "/") {
 			// CIDR range check
 			_, network, err := net.ParseCIDR(entry)
@@ -58,3 +67,5 @@ func (i *FilterListener) isAllowed(addr net.Addr) bool {
 	}
 	return false
 }
+
+var _ net.Listener = (*filterListener)(nil)

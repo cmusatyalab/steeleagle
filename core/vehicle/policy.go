@@ -52,26 +52,26 @@ func getRegoQuery() rego.PreparedEvalQuery {
 	return query
 }
 
-func (i *policyState) safeCheckAndTransit(ctx context.Context, command string) (bool, string, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func (p *policyState) safeCheckAndTransit(ctx context.Context, command string) (bool, string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	allow, nextState, err := i.check(ctx, command)
+	allow, nextState, err := p.check(ctx, command)
 	if err != nil {
 		return false, "", err
 	} else if nextState != "" {
-		return allow, nextState, i.transit(nextState)
+		return allow, nextState, p.transit(nextState)
 	}
 
 	return allow, nextState, nil
 }
 
-func (i *policyState) check(ctx context.Context, command string) (bool, string, error) {
+func (p *policyState) check(ctx context.Context, command string) (bool, string, error) {
 	log.Debug().Str("command", command).Msg("command check started")
-	results, err := i.query.Eval(ctx, rego.EvalInput(map[string]any{
+	results, err := p.query.Eval(ctx, rego.EvalInput(map[string]any{
 		"command": command,
-		"state":   i.currentState,
-		"law":     i.lawMap,
+		"state":   p.currentState,
+		"law":     p.lawMap,
 	}))
 
 	if len(results) == 0 {
@@ -93,11 +93,11 @@ func (i *policyState) check(ctx context.Context, command string) (bool, string, 
 	return d.Allowed, d.NextState, nil
 }
 
-func (i *policyState) transit(nextState string) error {
-	_, ok := i.lawMap[nextState]
+func (p *policyState) transit(nextState string) error {
+	_, ok := p.lawMap[nextState]
 	if ok {
 		log.Info().Str("state", nextState).Msg("transitioning to new control state")
-		i.currentState = nextState
+		p.currentState = nextState
 	} else {
 		return fmt.Errorf("failed to transition to state %s, not in law!", nextState)
 	}

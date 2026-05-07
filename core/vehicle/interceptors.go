@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (i *policyState) getWanInterceptor() grpc.StreamServerInterceptor {
+func (p *policyState) getWanInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -18,7 +18,7 @@ func (i *policyState) getWanInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (i *policyState) getMissionInterceptor() grpc.StreamServerInterceptor {
+func (p *policyState) getMissionInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -29,7 +29,7 @@ func (i *policyState) getMissionInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (i *policyState) getMainInterceptor() grpc.StreamServerInterceptor {
+func (p *policyState) getMainInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -38,10 +38,10 @@ func (i *policyState) getMainInterceptor() grpc.StreamServerInterceptor {
 	) error {
 		command := //TODO: Clean the command
 			log.Info().Str("command", command).Msg("received RPC request")
-		allowed, _, err := i.safeCheckAndTransit(ss.Context(), command)
+		allowed, _, err := p.safeCheckAndTransit(ss.Context(), command)
 		if allowed == false && err == nil {
-			log.Error().Str("command", command).Str("state", i.currentState).Msg("command is not allowed in current state!")
-			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, i.currentState)
+			log.Error().Str("command", command).Str("state", p.currentState).Msg("command is not allowed in current state!")
+			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, p.currentState)
 		} else if allowed == false && err != nil {
 			log.Warn().Err(err).Msg("policy check failed, denying to be safe")
 			return status.Errorf(codes.Internal, "error making policy request, denying to be safe")

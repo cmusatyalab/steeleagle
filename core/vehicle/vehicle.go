@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	services_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services"
+
 	"github.com/adrg/xdg"
 	"github.com/cmusatyalab/steeleagle/core/plugin"
 	"github.com/google/uuid"
@@ -18,6 +20,7 @@ import (
 type serviceState struct {
 	wanSrv  *grpc.Server
 	mainSrv *grpc.Server
+	dataSrv *grpc.Server
 	// TODO: add Data and Compute services here, which are vehicle hosted
 }
 
@@ -85,20 +88,23 @@ func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 
 	// Set up gRPC servers and set up auth interceptor chain
 	vehicle.services.wanSrv = grpc.NewServer(
-		grpc.StreamInterceptor(vehicle.wlist.getExternalInterceptor()),
+		grpc.StreamInterceptor(vehicle.policy.getWanInterceptor()),
 		grpc.CustomCodec(proxy.Codec()),
 		grpc.UnknownServiceHandler(proxy.TransparentHandler(
-			vehicle.getExternalProxyDirector(),
+			vehicle.getGlobalProxyDirector(),
 		)),
 	)
 
 	vehicle.services.mainSrv = grpc.NewServer(
-		grpc.StreamInterceptor(vehicle.wlist.getExternalInterceptor()),
+		grpc.StreamInterceptor(vehicle.policy.getMainInterceptor()),
 		grpc.CustomCodec(proxy.Codec()),
 		grpc.UnknownServiceHandler(proxy.TransparentHandler(
-			vehicle.getExternalProxyDirector(),
+			vehicle.getLocalProxyDirector(),
 		)),
 	)
+
+	vehicle.services.dataSrv = grpc.NewServer()
+	services_pb.RegisterDataServiceServer(vehicle.services.dataSrv, &DataService{})
 
 	return vehicle, nil
 }
@@ -124,8 +130,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Stop the gRPC servers
 	defer v.services.wanSrv.GracefulStop()
 	defer v.services.mainSrv.GracefulStop()
+	defer v.services.dataSrv.GracefulStop()
 
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 3)
 	go func() {
 		if err := v.services.wanSrv.Serve(v.connections.wanLn); err != nil {
 			errCh <- fmt.Errorf("wanSrv: %w", err)
@@ -135,6 +142,12 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	go func() {
 		if err := v.services.mainSrv.Serve(v.connections.mainLn); err != nil {
 			errCh <- fmt.Errorf("mainSrv: %w", err)
+		}
+	}()
+
+	go func() {
+		if err := v.services.dataSrv.Serve(v.connections.mainLn); err != nil {
+			errCh <- fmt.Errorf("dataSrv: %w", err)
 		}
 	}()
 
