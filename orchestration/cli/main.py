@@ -73,8 +73,6 @@ def _client() -> httpx.Client:
 
 
 def _check(resp: httpx.Response) -> dict:
-    if resp is None:
-        return {}
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("detail", resp.text)
@@ -313,7 +311,7 @@ def ps():
         table.add_column("Service", style="bold cyan")
         table.add_column("Type", style="dim")
         table.add_column("Status / Instances")
-        table.add_column("Details", style="dim", justify="right")
+        table.add_column("Details", style="dim", justify="center")
 
         for svc in svc_list:
             name, stype = svc["name"], svc["type"]
@@ -327,12 +325,12 @@ def ps():
                     extras.add_column("Image", style="dim")
                     extras.add_column("Status")
                     extras.add_column("Short Id", style="dim")
-                    for c in containers:
+                    for container in containers:
                         extras.add_row(
-                            f"{c['name']}",
-                            c["image"],
-                            _status_color(c["status"]),
-                            c["id"],
+                            f"{container['name']}",
+                            container["image"],
+                            _status_color(container["status"]),
+                            container["id"],
                         )
                     table.add_row(
                         "backend", stype, f"{running}/{len(containers)} running", extras
@@ -341,12 +339,15 @@ def ps():
                     data = _check(c.get(f"/services/{name}/pool"))
                     instances = data.get("instances", [])
                     running = sum(1 for i in instances if i.get("status") == "running")
-                    extras = " ".join(
-                        f"{k}: {v}"
-                        for d in instances
-                        for k, v in d.items()
-                        if k in ["instance_id", "status"]
-                    )
+                    extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
+                    extras.add_column("Instance Name", style="bold cyan")
+                    extras.add_column("Status")
+                    rprint(instances)
+                    for d in instances:
+                        extras.add_row(
+                            f"{d['instance_id']}",
+                            _status_color(d["status"]),
+                        )
                     table.add_row(
                         name, stype, f"{running}/{len(instances)} running", extras
                     )
@@ -374,7 +375,7 @@ def drivers():
     with _client() as c:
         data = _check(c.get("/drivers"))
 
-    table = Table(title="Roost Drivers", show_lines=True)
+    table = Table(title="Roost Drivers", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold cyan")
     table.add_column("Description", style="dark_orange3")
     table.add_column("Installation Status", style="dim")
@@ -417,7 +418,7 @@ def list_configs():
     with _client() as c:
         data = _check(c.get("/configs"))
 
-    table = Table(title="Config Files", show_lines=True)
+    table = Table(title="Config Files", show_lines=False)
     table.add_column("Name", style="bold cyan")
     table.add_column("Path", style="dim")
 
@@ -596,7 +597,7 @@ def instance_list():
     with _client() as c:
         data = _check(c.get("/services/vehicle/pool"))
 
-    table = Table(title="Vehicle Instances", show_lines=True)
+    table = Table(title="Vehicle Instances", show_lines=False)
     table.add_column("ID", style="bold cyan")
     table.add_column("Status")
     table.add_column("Details", style="dim")
@@ -695,7 +696,7 @@ def backend_list():
     with _client() as c:
         data = _check(c.get("/backend/list"))
 
-    table = Table(title="Backend Containers", show_lines=True, box=box.SIMPLE_HEAVY)
+    table = Table(title="Backend Containers", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold cyan")
     table.add_column("Image/Dockerfile", style="dim")
     # table.add_column("Entrypoint", style="dark_orange3")
@@ -722,7 +723,7 @@ def backend_status(
         data = _check(c.get("/services/backend/status"))
     containers = data.get("containers", [])
     running = sum(1 for c in containers if c.get("status") == "running")
-    extras = Table(show_lines=True, box=box.SIMPLE_HEAVY)
+    extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
     extras.add_column("Name", style="bold cyan")
     extras.add_column("Image", style="dim")
     extras.add_column("Status")
