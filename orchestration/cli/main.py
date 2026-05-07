@@ -699,17 +699,23 @@ def backend_list():
     table = Table(title="Backend Containers", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold cyan")
     table.add_column("Image/Dockerfile", style="dim")
-    # table.add_column("Entrypoint", style="dark_orange3")
+    table.add_column("Ports", style="dark_orange3")
     for _s, props in data["services"].items():
         name = props.get("container_name", "?")
         image = props.get("image", None)
         if image is None:
             build = props.get("build")
-            image = build.get("context") + "/" + build.get("dockerfile")
-        table.add_row(
-            name,
-            image,
-        )
+            image = (
+                f"[magenta]{build.get('context')}/{build.get('dockerfile')}[/magenta]"
+            )
+        ports = props.get("ports", None)
+        mappings = ""
+        if ports is not None:
+            for p in ports:
+                mappings += (
+                    f"{p['target']} :right_arrow: {p['published']} {p['protocol']}, "
+                )
+        table.add_row(name, image, mappings)
 
     console.print(table)
 
