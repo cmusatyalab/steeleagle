@@ -33,7 +33,9 @@ class ProcessPool:
     # Instance lifecycle
     # ------------------------------------------------------------------
 
-    async def start_instance(self, label: str | None = None) -> dict:
+    async def start_instance(
+        self, label: str | None = None, kwargs: list[str] | None = None
+    ) -> dict:
         """
         Start a new instance.  If `label` is given and an instance with that
         label already exists (even if stopped), it is restarted rather than
@@ -44,11 +46,10 @@ class ProcessPool:
             instance_id = f"{self.name}-{str(self._counter)}"
         else:
             instance_id = label
-
         if instance_id not in self._instances:
             self._instances[instance_id] = ProcessManager(
                 name=f"{self.name}.{instance_id}",
-                command=self.command,
+                command=self.command + kwargs,
             )
 
         result = await self._instances[instance_id].start()

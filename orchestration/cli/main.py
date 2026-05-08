@@ -14,6 +14,7 @@ import uvicorn
 from rich import box
 from rich import print as rprint
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 from trogon.typer import init_tui
 
@@ -117,7 +118,7 @@ def _follow_sse(url: str, params: dict, prefix: str = "") -> None:
                 raise typer.Exit(1)
             for raw in resp.iter_lines():
                 if raw.startswith("data: "):
-                    rprint(f"{raw[6:]}")
+                    rprint(f"{escape(raw[6:])}")
     except KeyboardInterrupt:
         rprint("\n[dim]Stream closed.[/dim]")
 
@@ -275,7 +276,7 @@ def logs(
     with _client() as c:
         data = _check(c.get(f"/services/{name}/logs", params={"tail": tail}))
     for line in data.get("logs", []):
-        rprint(f"{line}")
+        rprint(f"{escape(line)}")
 
 
 # ---------------------------------------------------------------------------
@@ -342,7 +343,6 @@ def ps():
                     extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
                     extras.add_column("Instance Name", style="bold cyan")
                     extras.add_column("Status")
-                    rprint(instances)
                     for d in instances:
                         extras.add_row(
                             f"{d['instance_id']}",
@@ -353,11 +353,14 @@ def ps():
                     )
                 case _:
                     data = _check(c.get(f"/services/{name}/status"))
+                    rprint(data)
                     st = data.get("status", "?")
-                    extras = " ".join(
-                        f"{k}: {v}"
-                        for k, v in data.items()
-                        if k not in {"service", "status"}
+                    extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
+                    extras.add_column("PID/Exit Code", style="bold cyan")
+                    extras.add_column("Started At")
+                    extras.add_row(
+                        f"{data.get('pid', data.get('exit_code'))}",
+                        data["started_at"],
                     )
                     table.add_row(name, stype, _status_color(st), extras)
 
@@ -554,12 +557,16 @@ def sim_logs(
 # ---------------------------------------------------------------------------
 
 
-@vehicle_app.command("start")
+@vehicle_app.command(
+    "start", context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
 def instance_start(
+    ctx: typer.Context,
     name: str | None = typer.Option(None, "--name", "-n", help="Optional vehicle name"),
 ):
-    """Start a new vehicle in a pool."""
-    params = {"label": name} if name else {}
+    """Start a new vehicle in a pool. Any options other than --name will be passed as keyword arguments to the launch script. (e.g. --config canary.toml)"""
+
+    params = {"label": name, "q": ctx.args} if name else {ctx.args}
     with (
         console.status(
             "Starting instance of [bold]vehicle[/bold]…", spinner="aesthetic"
@@ -648,8 +655,9 @@ def instance_logs(
         data = _check(
             c.get(f"/services/vehicle/pool/{instance_id}/logs", params={"tail": tail})
         )
+    console.rule(title=f"[bold]Logs of: [cyan]vehicle.{instance_id}[/cyan][/bold]")
     for line in data.get("logs", []):
-        rprint(f"[dim]vehicle.{instance_id}[/dim] {line}")
+        rprint(f"{escape(line)}")
 
 
 # ---------------------------------------------------------------------------
@@ -756,7 +764,7 @@ def compose_logs(
     with _client() as c:
         data = _check(c.get("/services/backend/logs", params={"tail": tail}))
     for line in data.get("logs", []):
-        rprint(f"{line}")
+        rprint(f"{escape(line)}")
 
 
 if __name__ == "__main__":

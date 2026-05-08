@@ -16,10 +16,11 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Annotated
 
 import git
 import toml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from rich.logging import RichHandler
 
@@ -294,9 +295,11 @@ def list_instances(name: str):
 
 
 @app.post("/services/{name}/pool")
-async def start_instance(name: str, label: str | None = None):
+async def start_instance(
+    name: str, label: str | None = None, q: Annotated[list[str] | None, Query()] = None
+):
     pool = _require_pool(name)
-    result = await pool.start_instance(label=label)
+    result = await pool.start_instance(label=label, kwargs=q)
     return {"service": name, **result}
 
 
