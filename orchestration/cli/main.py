@@ -235,7 +235,12 @@ def status(
         with _client() as c:
             data = _check(c.get(f"/services/{name}/status"))
 
-        table = Table(title=f"Status: {name}", show_header=False, show_lines=False)
+        table = Table(
+            title=f"Status: {name}",
+            show_header=False,
+            show_lines=False,
+            box=box.SIMPLE_HEAVY,
+        )
         table.add_column("Key", style="dim")
         table.add_column("Value")
 
@@ -303,7 +308,11 @@ def restart(name: str = typer.Argument(..., help="Service name")):
 
 
 @app.command()
-def ps():
+def ps(
+    details: Annotated[
+        bool, typer.Option(help="Display detailed information about each service.")
+    ] = False,
+):
     """Status of every service."""
     with _client() as c:
         svc_list = _check(c.get("/services"))["services"]
@@ -312,7 +321,8 @@ def ps():
         table.add_column("Service", style="bold cyan")
         table.add_column("Type", style="dim")
         table.add_column("Status / Instances")
-        table.add_column("Details", style="dim", justify="center")
+        if details:
+            table.add_column("Details", style="dim", justify="center")
 
         for svc in svc_list:
             name, stype = svc["name"], svc["type"]
@@ -333,8 +343,17 @@ def ps():
                             _status_color(container["status"]),
                             container["id"],
                         )
+                    if running == len(containers):
+                        color = "green"
+                    elif running == 0:
+                        color = "red"
+                    else:
+                        color = "yellow"
                     table.add_row(
-                        "backend", stype, f"{running}/{len(containers)} running", extras
+                        "backend",
+                        stype,
+                        f"[{color}]{running}/{len(containers)} running[/{color}]",
+                        extras if details else None,
                     )
                 case "ProcessPool":
                     data = _check(c.get(f"/services/{name}/pool"))
@@ -348,12 +367,20 @@ def ps():
                             f"{d['instance_id']}",
                             _status_color(d["status"]),
                         )
+                    if running == len(instances):
+                        color = "green"
+                    elif running == 0:
+                        color = "red"
+                    else:
+                        color = "yellow"
                     table.add_row(
-                        name, stype, f"{running}/{len(instances)} running", extras
+                        name,
+                        stype,
+                        f"[{color}]{running}/{len(instances)} running[/{color}]",
+                        extras if details else None,
                     )
                 case _:
                     data = _check(c.get(f"/services/{name}/status"))
-                    rprint(data)
                     st = data.get("status", "?")
                     extras = Table(show_lines=False, box=box.SIMPLE_HEAVY)
                     extras.add_column("PID/Exit Code", style="bold cyan")
@@ -362,7 +389,9 @@ def ps():
                         f"{data.get('pid', data.get('exit_code'))}",
                         data["started_at"],
                     )
-                    table.add_row(name, stype, _status_color(st), extras)
+                    table.add_row(
+                        name, stype, _status_color(st), extras if details else None
+                    )
 
     console.print(table)
 
@@ -421,7 +450,7 @@ def list_configs():
     with _client() as c:
         data = _check(c.get("/configs"))
 
-    table = Table(title="Config Files", show_lines=False)
+    table = Table(title="Config Files", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold cyan")
     table.add_column("Path", style="dim")
 
@@ -604,7 +633,7 @@ def instance_list():
     with _client() as c:
         data = _check(c.get("/services/vehicle/pool"))
 
-    table = Table(title="Vehicle Instances", show_lines=False)
+    table = Table(title="Vehicle Instances", show_lines=False, box=box.SIMPLE_HEAVY)
     table.add_column("ID", style="bold cyan")
     table.add_column("Status")
     table.add_column("Details", style="dim")
@@ -627,7 +656,9 @@ def instance_status(
     """Status of a specific vehicle instance."""
     with _client() as c:
         data = _check(c.get(f"/services/vehicle/pool/{instance_id}/status"))
-    table = Table(title=f"Vehicle instance {instance_id}", show_header=False)
+    table = Table(
+        title=f"Vehicle instance {instance_id}", show_header=False, box=box.SIMPLE_HEAVY
+    )
     table.add_column("Key", style="dim")
     table.add_column("Value")
     for k, v in data.items():
