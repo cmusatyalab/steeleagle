@@ -33,24 +33,24 @@ type BatteryWarning int32
 
 const (
 	// the vehicle is above 30% battery
-	BatteryWarning_NONE BatteryWarning = 0
+	BatteryWarning_BATTERY_WARNING_NONE BatteryWarning = 0
 	// the vehicle is below 30% battery
-	BatteryWarning_LOW BatteryWarning = 1
+	BatteryWarning_BATTERY_WARNING_LOW BatteryWarning = 1
 	// the vehicle is below 15% battery
-	BatteryWarning_CRITICAL BatteryWarning = 2
+	BatteryWarning_BATTERY_WARNING_CRITICAL BatteryWarning = 2
 )
 
 // Enum value maps for BatteryWarning.
 var (
 	BatteryWarning_name = map[int32]string{
-		0: "NONE",
-		1: "LOW",
-		2: "CRITICAL",
+		0: "BATTERY_WARNING_NONE",
+		1: "BATTERY_WARNING_LOW",
+		2: "BATTERY_WARNING_CRITICAL",
 	}
 	BatteryWarning_value = map[string]int32{
-		"NONE":     0,
-		"LOW":      1,
-		"CRITICAL": 2,
+		"BATTERY_WARNING_NONE":     0,
+		"BATTERY_WARNING_LOW":      1,
+		"BATTERY_WARNING_CRITICAL": 2,
 	}
 )
 
@@ -86,24 +86,24 @@ type GPSWarning int32
 
 const (
 	// GPS readings are nominal and a fix has been achieved
-	GPSWarning_NO_GPS_WARNING GPSWarning = 0
+	GPSWarning_GPS_WARNING_NONE GPSWarning = 0
 	// weak GPS fix, expect errant global position data
-	GPSWarning_WEAK_SIGNAL GPSWarning = 1
+	GPSWarning_GPS_WARNING_WEAK_SIGNAL GPSWarning = 1
 	// no GPS fix
-	GPSWarning_NO_FIX GPSWarning = 2
+	GPSWarning_GPS_WARNING_NO_FIX GPSWarning = 2
 )
 
 // Enum value maps for GPSWarning.
 var (
 	GPSWarning_name = map[int32]string{
-		0: "NO_GPS_WARNING",
-		1: "WEAK_SIGNAL",
-		2: "NO_FIX",
+		0: "GPS_WARNING_NONE",
+		1: "GPS_WARNING_WEAK_SIGNAL",
+		2: "GPS_WARNING_NO_FIX",
 	}
 	GPSWarning_value = map[string]int32{
-		"NO_GPS_WARNING": 0,
-		"WEAK_SIGNAL":    1,
-		"NO_FIX":         2,
+		"GPS_WARNING_NONE":        0,
+		"GPS_WARNING_WEAK_SIGNAL": 1,
+		"GPS_WARNING_NO_FIX":      2,
 	}
 )
 
@@ -139,20 +139,20 @@ type MagnetometerWarning int32
 
 const (
 	// magnetometer readings are nominal
-	MagnetometerWarning_NO_MAGNETOMETER_WARNING MagnetometerWarning = 0
+	MagnetometerWarning_MAGNETOMETER_WARNING_NONE MagnetometerWarning = 0
 	// the vehicle is experiencing magnetic perturbations
-	MagnetometerWarning_PERTURBATION MagnetometerWarning = 1
+	MagnetometerWarning_MAGNETOMETER_WARNING_PERTURBATIONS MagnetometerWarning = 1
 )
 
 // Enum value maps for MagnetometerWarning.
 var (
 	MagnetometerWarning_name = map[int32]string{
-		0: "NO_MAGNETOMETER_WARNING",
-		1: "PERTURBATION",
+		0: "MAGNETOMETER_WARNING_NONE",
+		1: "MAGNETOMETER_WARNING_PERTURBATIONS",
 	}
 	MagnetometerWarning_value = map[string]int32{
-		"NO_MAGNETOMETER_WARNING": 0,
-		"PERTURBATION":            1,
+		"MAGNETOMETER_WARNING_NONE":          0,
+		"MAGNETOMETER_WARNING_PERTURBATIONS": 1,
 	}
 )
 
@@ -188,24 +188,24 @@ type ConnectionWarning int32
 
 const (
 	// connection to remote server is nominal
-	ConnectionWarning_NO_CONNECTION_WARNING ConnectionWarning = 0
+	ConnectionWarning_CONNECTION_WARNING_NONE ConnectionWarning = 0
 	// contact has been lost with the remote server
-	ConnectionWarning_DISCONNECTED ConnectionWarning = 1
+	ConnectionWarning_CONNECTION_WARNING_DISCONNECTED ConnectionWarning = 1
 	// connection is experiencing interference or is weak
-	ConnectionWarning_WEAK_CONNECTION ConnectionWarning = 2
+	ConnectionWarning_CONNECTION_WARNING_WEAK_CONNECTION ConnectionWarning = 2
 )
 
 // Enum value maps for ConnectionWarning.
 var (
 	ConnectionWarning_name = map[int32]string{
-		0: "NO_CONNECTION_WARNING",
-		1: "DISCONNECTED",
-		2: "WEAK_CONNECTION",
+		0: "CONNECTION_WARNING_NONE",
+		1: "CONNECTION_WARNING_DISCONNECTED",
+		2: "CONNECTION_WARNING_WEAK_CONNECTION",
 	}
 	ConnectionWarning_value = map[string]int32{
-		"NO_CONNECTION_WARNING": 0,
-		"DISCONNECTED":          1,
-		"WEAK_CONNECTION":       2,
+		"CONNECTION_WARNING_NONE":            0,
+		"CONNECTION_WARNING_DISCONNECTED":    1,
+		"CONNECTION_WARNING_WEAK_CONNECTION": 2,
 	}
 )
 
@@ -241,24 +241,24 @@ type CompassWarning int32
 
 const (
 	// absolute heading is nominal
-	CompassWarning_NO_COMPASS_WARNING CompassWarning = 0
+	CompassWarning_COMPASS_WARNING_NONE CompassWarning = 0
 	// absolute heading is available but may be incorrect
-	CompassWarning_WEAK_HEADING_LOCK CompassWarning = 1
+	CompassWarning_COMPASS_WARNING_WEAK_LOCK CompassWarning = 1
 	// no absolute heading available from the vehicle
-	CompassWarning_NO_HEADING_LOCK CompassWarning = 2
+	CompassWarning_COMPASS_WARNING_NO_LOCK CompassWarning = 2
 )
 
 // Enum value maps for CompassWarning.
 var (
 	CompassWarning_name = map[int32]string{
-		0: "NO_COMPASS_WARNING",
-		1: "WEAK_HEADING_LOCK",
-		2: "NO_HEADING_LOCK",
+		0: "COMPASS_WARNING_NONE",
+		1: "COMPASS_WARNING_WEAK_LOCK",
+		2: "COMPASS_WARNING_NO_LOCK",
 	}
 	CompassWarning_value = map[string]int32{
-		"NO_COMPASS_WARNING": 0,
-		"WEAK_HEADING_LOCK":  1,
-		"NO_HEADING_LOCK":    2,
+		"COMPASS_WARNING_NONE":      0,
+		"COMPASS_WARNING_WEAK_LOCK": 1,
+		"COMPASS_WARNING_NO_LOCK":   2,
 	}
 )
 
@@ -698,35 +698,35 @@ func (x *AlertInfo) GetBatteryWarning() BatteryWarning {
 	if x != nil {
 		return x.BatteryWarning
 	}
-	return BatteryWarning_NONE
+	return BatteryWarning_BATTERY_WARNING_NONE
 }
 
 func (x *AlertInfo) GetGpsWarning() GPSWarning {
 	if x != nil {
 		return x.GpsWarning
 	}
-	return GPSWarning_NO_GPS_WARNING
+	return GPSWarning_GPS_WARNING_NONE
 }
 
 func (x *AlertInfo) GetMagnetometerWarning() MagnetometerWarning {
 	if x != nil {
 		return x.MagnetometerWarning
 	}
-	return MagnetometerWarning_NO_MAGNETOMETER_WARNING
+	return MagnetometerWarning_MAGNETOMETER_WARNING_NONE
 }
 
 func (x *AlertInfo) GetConnectionWarning() ConnectionWarning {
 	if x != nil {
 		return x.ConnectionWarning
 	}
-	return ConnectionWarning_NO_CONNECTION_WARNING
+	return ConnectionWarning_CONNECTION_WARNING_NONE
 }
 
 func (x *AlertInfo) GetCompassWarning() CompassWarning {
 	if x != nil {
 		return x.CompassWarning
 	}
-	return CompassWarning_NO_COMPASS_WARNING
+	return CompassWarning_COMPASS_WARNING_NONE
 }
 
 // Telemetry message for the vehicle, originating from the driver module.
@@ -1126,28 +1126,27 @@ const file_v1_messages_stream_proto_rawDesc = "" +
 	"\rposition_info\x18\x04 \x01(\v2(.steeleagle.api.v1.messages.PositionInfoR\fpositionInfo\x12I\n" +
 	"\vgimbal_info\x18\x05 \x01(\v2(.steeleagle.api.v1.messages.GimbalStatusR\n" +
 	"gimbalInfo\x12\x1b\n" +
-	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*1\n" +
-	"\x0eBatteryWarning\x12\b\n" +
-	"\x04NONE\x10\x00\x12\a\n" +
-	"\x03LOW\x10\x01\x12\f\n" +
-	"\bCRITICAL\x10\x02*=\n" +
+	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*a\n" +
+	"\x0eBatteryWarning\x12\x18\n" +
+	"\x14BATTERY_WARNING_NONE\x10\x00\x12\x17\n" +
+	"\x13BATTERY_WARNING_LOW\x10\x01\x12\x1c\n" +
+	"\x18BATTERY_WARNING_CRITICAL\x10\x02*W\n" +
 	"\n" +
-	"GPSWarning\x12\x12\n" +
-	"\x0eNO_GPS_WARNING\x10\x00\x12\x0f\n" +
-	"\vWEAK_SIGNAL\x10\x01\x12\n" +
-	"\n" +
-	"\x06NO_FIX\x10\x02*D\n" +
-	"\x13MagnetometerWarning\x12\x1b\n" +
-	"\x17NO_MAGNETOMETER_WARNING\x10\x00\x12\x10\n" +
-	"\fPERTURBATION\x10\x01*U\n" +
-	"\x11ConnectionWarning\x12\x19\n" +
-	"\x15NO_CONNECTION_WARNING\x10\x00\x12\x10\n" +
-	"\fDISCONNECTED\x10\x01\x12\x13\n" +
-	"\x0fWEAK_CONNECTION\x10\x02*T\n" +
-	"\x0eCompassWarning\x12\x16\n" +
-	"\x12NO_COMPASS_WARNING\x10\x00\x12\x15\n" +
-	"\x11WEAK_HEADING_LOCK\x10\x01\x12\x13\n" +
-	"\x0fNO_HEADING_LOCK\x10\x02B\xf3\x01\n" +
+	"GPSWarning\x12\x14\n" +
+	"\x10GPS_WARNING_NONE\x10\x00\x12\x1b\n" +
+	"\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n" +
+	"\x12GPS_WARNING_NO_FIX\x10\x02*\\\n" +
+	"\x13MagnetometerWarning\x12\x1d\n" +
+	"\x19MAGNETOMETER_WARNING_NONE\x10\x00\x12&\n" +
+	"\"MAGNETOMETER_WARNING_PERTURBATIONS\x10\x01*}\n" +
+	"\x11ConnectionWarning\x12\x1b\n" +
+	"\x17CONNECTION_WARNING_NONE\x10\x00\x12#\n" +
+	"\x1fCONNECTION_WARNING_DISCONNECTED\x10\x01\x12&\n" +
+	"\"CONNECTION_WARNING_WEAK_CONNECTION\x10\x02*f\n" +
+	"\x0eCompassWarning\x12\x18\n" +
+	"\x14COMPASS_WARNING_NONE\x10\x00\x12\x1d\n" +
+	"\x19COMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n" +
+	"\x17COMPASS_WARNING_NO_LOCK\x10\x02B\xf3\x01\n" +
 	"\x1ecom.steeleagle.api.v1.messagesB\vStreamProtoP\x01Z8github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages\xa2\x02\x04SAVM\xaa\x02\x1aSteeleagle.Api.V1.Messages\xca\x02\x1aSteeleagle\\Api\\V1\\Messages\xe2\x02&Steeleagle\\Api\\V1\\Messages\\GPBMetadata\xea\x02\x1dSteeleagle::Api::V1::Messagesb\x06proto3"
 
 var (
