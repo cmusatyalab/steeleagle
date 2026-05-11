@@ -16,9 +16,9 @@ func WithPath(path string) VehicleOption {
 	}
 }
 
-func WithServicePath(path string) VehicleOption {
+func WithSocketPath(path string) VehicleOption {
 	return func(k *Vehicle) {
-		k.spath = path
+		k.socketPath = path
 	}
 }
 
@@ -34,9 +34,9 @@ func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 	}
 }
 
-func WithNetListeners(listeners []net.Listener) VehicleOption {
+func WithConnectionConfig(connCfg ConnectionConfig) VehicleOption {
 	return func(k *Vehicle) {
-		k.connections.externGRPC = listeners
+		k.connCfg = connCfg
 	}
 }
 

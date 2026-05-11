@@ -1,0 +1,106 @@
+package util
+
+import (
+	"net"
+	"strings"
+)
+
+// Embedded address that holds the AuthCode
+type addr struct {
+    net.Addr
+    code AuthCode
+}
+
+type conn struct {
+    net.Conn
+    addr *addr
+}
+
+func (c *conn) RemoteAddr() net.Addr { return c.addr }
+
+type listener struct {
+	net.Listener
+    code     AuthCode     
+    // Connection for single-connection socket pair listeners, if applicable
+    socket   net.Conn
+    // ACL for checking incoming IP addresses, if applicable
+    acl      *ACL
+}
+
+func NewListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
+    return &listener{
+        Listener: ln,
+        code: code,
+        acl: acl
+    }
+}
+
+func NewSocketPairListener(sock net.Conn, code AuthCode) net.Listener {
+    return &listener{
+        socket: sock,
+        code: code,
+        // Event signaling channel
+        done: make(chan struct{}),
+    }
+}
+
+func (l *listener) Accept() (net.Conn, error) {
+    if l.socket != nil {
+        return l.acceptSocketPair()
+    } else {
+        return l.acceptBase()
+    }
+}
+
+func (l *listener) acceptBase() (net.Conn, error) {
+    for {
+        // Block until we get a connection
+        c, err := l.Listener.Accept()
+        if err != nil {
+            return nil, err
+        }
+        // If our access control list is set, check the incoming IP
+        if l.acl != nil {
+            if tc, ok := c.RemoteAddr().(*net.TCPAddr); ok {
+                if !l.acl.Allows(tc.IP) {
+                    c.Close()
+                    continue
+                }
+            }
+        }
+        return &conn{
+            Conn: c,
+            addr: &addr{Addr: c.RemoteAddr(), code: l.code},
+        }, nil
+    }
+}
+
+func (l *listener) acceptSocketPair() (net.Conn, error) {
+    var c net.Conn
+    // Return the connection exactly once to not spawn spurious handlers
+    l.once.Do(func() { c = l.socket })
+    if c != nil {
+        return &conn{
+            Conn: c,
+            addr: &addr{Addr: c.RemoteAddr(), tag: l.tag},
+        }, nil
+    }
+    // Wait until the socket closes, then exit
+    <-l.done
+    return nil, fmt.Errorf("listener closed")
+}
+
+func (l *listener) Close() error {
+    if l.socket != nil {
+        close(l.done)
+        return l.socket.Close()
+    }
+    return l.Listener.Close()
+}
+
+func (l *listener) Addr() net.Addr {
+    if l.socket != nil {
+        return l.socket.LocalAddr()
+    }
+    return l.Listener.Addr()
+}

@@ -1,43 +1,40 @@
 package vehicle
 
 import (
+    "fmt"
+
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func (p *policyState) getWanInterceptor() grpc.StreamServerInterceptor {
-	return func(
-		srv any,
-		ss grpc.ServerStream,
-		info *grpc.StreamServerInfo,
-		handler grpc.StreamHandler,
-	) error {
-
-	}
+func qualifyCommand(ctx context.Context, fullName string) {
+    var code AuthCode
+    // Extract code from the connection address (packed by listener)
+    if p, ok := peer.FromContext(ctx); ok {
+        if a, ok := p.Addr.(*addr); ok {
+            code = a.code
+        }
+    }
+    // If code is not available, set to unknown identity
+    if !ok {
+        code = Unknown
+    }
+    // Qualify command for law checking
+    return fmt.Sprintf("%s%s", code, fullName)
 }
 
-func (p *policyState) getMissionInterceptor() grpc.StreamServerInterceptor {
+func (p *policyState) getInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-
-	}
-}
-
-func (p *policyState) getMainInterceptor() grpc.StreamServerInterceptor {
-	return func(
-		srv any,
-		ss grpc.ServerStream,
-		info *grpc.StreamServerInfo,
-		handler grpc.StreamHandler,
-	) error {
-		command := //TODO: Clean the command
-			log.Info().Str("command", command).Msg("received RPC request")
+		command := qualifyCommand(ss.Context(), info.FullMethod)
+		log.Info().Str("command", command).Msg("received RPC request")
+        // Check if command is allowed by laws, and transit to new state if necessary
 		allowed, _, err := p.safeCheckAndTransit(ss.Context(), command)
 		if allowed == false && err == nil {
 			log.Error().Str("command", command).Str("state", p.currentState).Msg("command is not allowed in current state!")

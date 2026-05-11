@@ -8,14 +8,8 @@ import (
 
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/rs/zerolog/log"
+    "github.com/cmusatyalab/steeleagle/core/util"
 )
-
-type PolicyConfig struct {
-	// Control laws to use for RPC authorization policy
-	Server      string
-	ExternalIPs []string
-	Law         ControlLaw
-}
 
 type policyState struct {
 	mu           sync.RWMutex
@@ -32,10 +26,12 @@ type policyDecision struct {
 func getPolicy(policyCfg PolicyConfig) policyState {
 	laws, first := getLaw(&policyCfg.Law)
 	regoQuery := getRegoQuery()
+    acl := util.GetACL(policyCfg.AllowedIPs)
 	return policyState{
 		currentState: first,
 		query:        regoQuery,
 		lawMap:       laws,
+        acl:          acl,
 	}
 }
 
