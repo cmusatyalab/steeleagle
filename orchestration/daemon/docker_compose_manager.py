@@ -40,7 +40,7 @@ class DockerComposeManager:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    def start(self) -> dict:
+    def start(self, kwargs: list[str] | None = None) -> dict:
         # Capture the running event loop at start time (called from an
         # async context via run_in_executor, so the loop is active).
         try:

@@ -46,13 +46,15 @@ class ProcessPool:
             instance_id = f"{self.name}-{str(self._counter)}"
         else:
             instance_id = label
+        if kwargs is None:
+            kwargs = []
         if instance_id not in self._instances:
             self._instances[instance_id] = ProcessManager(
                 name=f"{self.name}.{instance_id}",
                 command=self.command + kwargs,
             )
 
-        result = await self._instances[instance_id].start()
+        result = await self._instances[instance_id].start(kwargs=kwargs)
         return {"instance_id": instance_id, **result}
 
     async def stop_instance(self, instance_id: str) -> dict:
