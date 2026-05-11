@@ -130,6 +130,7 @@ func (p ProcessPlugin) Start(ctx context.Context) error {
 	// Start the process
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
 	if err != nil {
+		log.Error().Err(err).Str("plugin", p.Name).Msg("could not run process for plugin")
 		return err
 	}
 

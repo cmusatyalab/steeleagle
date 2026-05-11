@@ -81,6 +81,18 @@ func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 	// Set up law handling
 	vehicle.policy = getPolicy(vehicle.policyCfg)
 
+	// Set up gRPC servers and set up auth interceptor chain
+	vehicle.server = grpc.NewServer(
+		grpc.StreamInterceptor(vehicle.policy.getInterceptor()),
+		grpc.CustomCodec(proxy.Codec()),
+		grpc.UnknownServiceHandler(proxy.TransparentHandler(
+			vehicle.getProxyDirector(),
+		)),
+	)
+
+    // Register data service
+    services_pb.RegisterDataServiceServer(v.server, &DataService{vehicle: vehicle})
+
 	return vehicle, nil
 }
 
@@ -124,32 +136,20 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}
 	}
 
-	// Start mission/driver plugins, and retrieve associated ClientConn and
-	// Listener objects
-	_, driverConn, err := v.driver.Start()
-	if err != nil {
-		log.Error().Err(err).Msg("could not start driver plugin, aborting")
-	}
-	v.conns.driverPxy = driverconn
-	missionLn, missionConn, err := v.mission.Start()
-	if err != nil {
-		log.Error().Err(err).Msg("could not start mission plugin, aborting")
-	}
-	v.listeners.missionLn = missionLn
+    // Start mission/driver plugins, and retrieve associated ClientConn and
+    // Listener objects
+    _, driverConn, err := v.driver.Start(ctx)
+    if err != nil {
+        log.Error().Err(err).Msg("could not start driver plugin, aborting")
+    }
+    v.conns.driverPxy = driverconn
+    missionLn, missionConn, err := v.mission.Start(ctx) 
+    if err != nil {
+        log.Error().Err(err).Msg("could not start mission plugin, aborting")
+    }
+    v.listeners.missionLn = missionLn
 
-	// Set up gRPC servers and set up auth interceptor chain
-	vehicle.server = grpc.NewServer(
-		grpc.StreamInterceptor(vehicle.policy.getInterceptor()),
-		grpc.CustomCodec(proxy.Codec()),
-		grpc.UnknownServiceHandler(proxy.TransparentHandler(
-			vehicle.getProxyDirector(),
-		)),
-	)
-
-	// Register data service
-	services_pb.RegisterDataServiceServer(v.server, &DataService{vehicle: v})
-
-	// Serve the gRPC server at all listeners
+    // Serve the gRPC server at all listeners
 	errCh := make(chan error, 3)
 	go func() {
 		if err := v.server.Serve(v.conns.mainLn); err != nil {

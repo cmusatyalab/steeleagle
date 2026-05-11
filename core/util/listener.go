@@ -3,6 +3,8 @@ package util
 import (
 	"net"
 	"strings"
+    "fmt"
+    "sync"
 )
 
 // Embedded address that holds the AuthCode
@@ -20,18 +22,21 @@ func (c *conn) RemoteAddr() net.Addr { return c.addr }
 
 type listener struct {
 	net.Listener
-    code     AuthCode
+    code     AuthCode     
     // Connection for single-connection socket pair listeners, if applicable
     socket   net.Conn
     // ACL for checking incoming IP addresses, if applicable
     acl      *ACL
+    // Synchronization members
+    once     sync.Once
+    done     chan struct{}
 }
 
 func NewListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
     return &listener{
         Listener: ln,
         code: code,
-        acl: acl
+        acl: acl,
     }
 }
 
@@ -82,7 +87,7 @@ func (l *listener) acceptSocketPair() (net.Conn, error) {
     if c != nil {
         return &conn{
             Conn: c,
-            addr: &addr{Addr: c.RemoteAddr(), tag: l.tag},
+            addr: &addr{Addr: c.RemoteAddr(), code: l.code},
         }, nil
     }
     // Wait until the socket closes, then exit

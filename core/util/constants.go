@@ -7,9 +7,9 @@ package util
 type AuthCode string
 
 const (
-	ServerCode   authCode = "server"
-	AdminCode    authCode = "admin"
-	MissionCode  authCode = "mission"
-	ExternalCode authCode = "external"
-	UnknownCode  authCode = "unknown"
+	ServerCode   AuthCode = "server"
+	AdminCode    AuthCode = "admin"
+	MissionCode  AuthCode = "mission"
+	ExternalCode AuthCode = "external"
+	UnknownCode  AuthCode = "unknown"
 )
