@@ -13,9 +13,9 @@ import (
 func (v *Vehicle) getProxyDirector() proxy.StreamDirector {
 	return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
 		if strings.Contains(method, ".ControlService/") {
-			return ctx, v.connections.control, nil
+			return ctx, v.conns.control, nil
 		} else if strings.Contains(method, ".MissionService/") {
-			return ctx, v.connections.mission, nil
+			return ctx, v.conns.mission, nil
 		}
 		return nil, nil, status.Errorf(codes.Unimplemented, "Unknown method")
 	}
