@@ -117,6 +117,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await svc.stop()
         elif isinstance(svc, ProcessPool):
             await svc.stop_all()
+        elif isinstance(svc, DockerComposeManager):
+            svc.stop()
 
 
 app = FastAPI(
