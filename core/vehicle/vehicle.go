@@ -18,18 +18,18 @@ import (
 )
 
 type listenerState struct {
-	mainLn    net.Listener
-	adminLn   net.Listener
-	wanLn     net.Listener
-	missionLn net.Listener
+	mainLn     net.Listener
+	adminLn    net.Listener
+	wanLn      net.Listener
+	missionLn  net.Listener
 }
 
 type connectionState struct {
 	// Admin gRPC connections
-	admin *grpc.ClientConn
+	admin      *grpc.ClientConn
 	// Proxied gRPC connections
-	driverPxy  *grpc.ClientConn
-	missionPxy *grpc.ClientConn
+	driver     *grpc.ClientConn
+	mission    *grpc.ClientConn
 }
 
 type Vehicle struct {
@@ -37,18 +37,18 @@ type Vehicle struct {
 	path       string
 	socketPath string // path to main services socket
 	// Plugins
-	driver  util.Plugin
-	mission util.Plugin
+	driver     util.Plugin
+	mission    util.Plugin
 	// Connections
-	connCfg   ConnectionConfig
-	server    *grpc.Server
-	listeners listenerState
-	conns     connectionState
+	connCfg    ConnectionConfig
+	server     *grpc.Server
+	listeners  listenerState
+	conns      connectionState
 	// Policy
-	policyCfg PolicyConfig
-	policy    policyState
-	test      bool
-	backend   string
+	policyCfg  PolicyConfig
+	policy     policyState
+	test       bool
+	backend    string
 }
 
 func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
@@ -135,6 +135,14 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			return fmt.Errorf("can't listen at WAN endpoint: %w", err)
 		}
 	}
+    
+    // Create admin connection, so internal RPC methods can be
+    // authorized with Admin codes
+    v.conns.admin, err = util.NewSocketPairClient(net.FileConn(adminProxy))
+    if err != nil {
+        log.Error().Err(err).Str("file", "admin-proxy").Msg("could not set up admin client")
+        return fmt.Errorf("can't create client at file %s: %w", "admin-proxy", err)
+    }
 
     // Start mission/driver plugins, and retrieve associated ClientConn and
     // Listener objects
@@ -148,6 +156,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
         log.Error().Err(err).Msg("could not start mission plugin, aborting")
     }
     v.listeners.missionLn = missionLn
+    v.conns.mission = missionConn
 
     // Serve the gRPC server at all listeners
 	errCh := make(chan error, 3)

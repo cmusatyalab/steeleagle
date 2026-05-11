@@ -3,7 +3,7 @@ package test
 import (
     "context"
 
-    pb "github.com/cmusatyalab/steeleagle/runtime/protos"
+    pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1"
 )
 
 type controlServer struct {

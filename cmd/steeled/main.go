@@ -9,17 +9,13 @@ import (
 
     "tailscale.com/tsnet"
     "github.com/rs/zerolog"
-    "github.com/cmusatyalab/steeleagle/runtime/core"
-    "go.nanomsg.org/mangos/v3"
-	"go.nanomsg.org/mangos/v3/protocol/sub"
-    _ "go.nanomsg.org/mangos/v3/transport/all"
+    "github.com/cmusatyalab/steeleagle/core/vehicle"
 )
 
 type daemonContext struct {
 	channel		chan<- core.LogMessage
     mu          sync.Mutex
-	mcap		MCAPLogger
-	vehicles 	map[string]*core.Vehicle
+	vehicles 	map[string]*vehicle.Vehicle
     vpn         TailscaleServer
 	// Context related attributes
 	ctx			context.Context

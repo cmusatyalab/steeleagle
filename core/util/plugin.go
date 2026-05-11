@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containers/podman/pkg/bindings/images"
 	"github.com/containers/podman/v5/pkg/bindings"
+	"github.com/containers/podman/v5/pkg/bindings/images"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/rs/zerolog/log"
 )
