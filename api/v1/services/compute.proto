@@ -25,16 +25,17 @@ service ComputeService {
 
 // Denotes where an engine is located.
 enum EngineLocation {
-  AUTO = 0; // prioritize local, but select remote if no local
-  BOTH = 1; // send to both
-  REMOTE = 2; // remote location only (network hop required)
-  LOCAL = 3; // local location only (IPC)
+  ENGINE_LOCATION_UNSPECIFIED = 0; // send to all available locations
+  ENGINE_LOCATION_BOTH = 1; // send to both
+  ENGINE_LOCATION_REMOTE = 2; // remote location only (network hop required)
+  ENGINE_LOCATION_LOCAL = 3; // local location only (IPC)
 }
 
 // Denotes which type of data to forward.
 enum Topic {
-  TELEMETRY = 0; // telemetry from the driver
-  FRAMES = 1; // video frames from the driver
+  TOPIC_UNSPECIFIED = 0; // defaults to all topics
+  TOPIC_TELEMETRY = 1; // telemetry from the driver
+  TOPIC_FRAMES = 2; // video frames from the driver
 }
 
 // Information about an engine.

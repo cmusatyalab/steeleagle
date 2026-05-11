@@ -29,19 +29,22 @@ const (
 type ReturnToHomeEndBehavior int32
 
 const (
-	ReturnToHomeEndBehavior_HOVER ReturnToHomeEndBehavior = 0 // hover upon return to home
-	ReturnToHomeEndBehavior_LAND  ReturnToHomeEndBehavior = 1 // land upon return to home
+	ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED ReturnToHomeEndBehavior = 0 // defaults to `HOVER`
+	ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_HOVER       ReturnToHomeEndBehavior = 1 // hover upon return to home
+	ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_LAND        ReturnToHomeEndBehavior = 2 // land upon return to home
 )
 
 // Enum value maps for ReturnToHomeEndBehavior.
 var (
 	ReturnToHomeEndBehavior_name = map[int32]string{
-		0: "HOVER",
-		1: "LAND",
+		0: "RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED",
+		1: "RETURN_TO_HOME_END_BEHAVIOR_HOVER",
+		2: "RETURN_TO_HOME_END_BEHAVIOR_LAND",
 	}
 	ReturnToHomeEndBehavior_value = map[string]int32{
-		"HOVER": 0,
-		"LAND":  1,
+		"RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED": 0,
+		"RETURN_TO_HOME_END_BEHAVIOR_HOVER":       1,
+		"RETURN_TO_HOME_END_BEHAVIOR_LAND":        2,
 	}
 )
 
@@ -76,19 +79,22 @@ func (ReturnToHomeEndBehavior) EnumDescriptor() ([]byte, []int) {
 type AltitudeMode int32
 
 const (
-	AltitudeMode_ABSOLUTE AltitudeMode = 0 // meters above Mean Sea Level
-	AltitudeMode_RELATIVE AltitudeMode = 1 // meters above takeoff position
+	AltitudeMode_ALTITUDE_MODE_UNSPECIFIED AltitudeMode = 0 // defaults to `ABSOLUTE`
+	AltitudeMode_ALTITUDE_MODE_ABSOLUTE    AltitudeMode = 1 // meters above Mean Sea Level
+	AltitudeMode_ALTITUDE_MODE_RELATIVE    AltitudeMode = 2 // meters above takeoff position
 )
 
 // Enum value maps for AltitudeMode.
 var (
 	AltitudeMode_name = map[int32]string{
-		0: "ABSOLUTE",
-		1: "RELATIVE",
+		0: "ALTITUDE_MODE_UNSPECIFIED",
+		1: "ALTITUDE_MODE_ABSOLUTE",
+		2: "ALTITUDE_MODE_RELATIVE",
 	}
 	AltitudeMode_value = map[string]int32{
-		"ABSOLUTE": 0,
-		"RELATIVE": 1,
+		"ALTITUDE_MODE_UNSPECIFIED": 0,
+		"ALTITUDE_MODE_ABSOLUTE":    1,
+		"ALTITUDE_MODE_RELATIVE":    2,
 	}
 )
 
@@ -123,19 +129,22 @@ func (AltitudeMode) EnumDescriptor() ([]byte, []int) {
 type HeadingMode int32
 
 const (
-	HeadingMode_TO_TARGET     HeadingMode = 0 // orient towards the target location
-	HeadingMode_HEADING_START HeadingMode = 1 // orient towards the given heading
+	HeadingMode_HEADING_MODE_UNSPECIFIED HeadingMode = 0 // defaults to `TO_TARGET`
+	HeadingMode_HEADING_MODE_TO_TARGET   HeadingMode = 1 // orient towards the target location
+	HeadingMode_HEADING_MODE_START       HeadingMode = 2 // orient towards the given heading
 )
 
 // Enum value maps for HeadingMode.
 var (
 	HeadingMode_name = map[int32]string{
-		0: "TO_TARGET",
-		1: "HEADING_START",
+		0: "HEADING_MODE_UNSPECIFIED",
+		1: "HEADING_MODE_TO_TARGET",
+		2: "HEADING_MODE_START",
 	}
 	HeadingMode_value = map[string]int32{
-		"TO_TARGET":     0,
-		"HEADING_START": 1,
+		"HEADING_MODE_UNSPECIFIED": 0,
+		"HEADING_MODE_TO_TARGET":   1,
+		"HEADING_MODE_START":       2,
 	}
 )
 
@@ -170,19 +179,22 @@ func (HeadingMode) EnumDescriptor() ([]byte, []int) {
 type ReferenceFrame int32
 
 const (
-	ReferenceFrame_BODY ReferenceFrame = 0 // vehicle reference frame
-	ReferenceFrame_NEU  ReferenceFrame = 1 // NEU (North, East, Up) reference frame
+	ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED ReferenceFrame = 0 // defaults to `BODY`
+	ReferenceFrame_REFERENCE_FRAME_BODY        ReferenceFrame = 1 // vehicle reference frame
+	ReferenceFrame_REFERENCE_FRAME_NEU         ReferenceFrame = 2 // NEU (North, East, Up) reference frame
 )
 
 // Enum value maps for ReferenceFrame.
 var (
 	ReferenceFrame_name = map[int32]string{
-		0: "BODY",
-		1: "NEU",
+		0: "REFERENCE_FRAME_UNSPECIFIED",
+		1: "REFERENCE_FRAME_BODY",
+		2: "REFERENCE_FRAME_NEU",
 	}
 	ReferenceFrame_value = map[string]int32{
-		"BODY": 0,
-		"NEU":  1,
+		"REFERENCE_FRAME_UNSPECIFIED": 0,
+		"REFERENCE_FRAME_BODY":        1,
+		"REFERENCE_FRAME_NEU":         2,
 	}
 )
 
@@ -217,22 +229,25 @@ func (ReferenceFrame) EnumDescriptor() ([]byte, []int) {
 type PoseMode int32
 
 const (
-	PoseMode_ANGLE    PoseMode = 0 // absolute angle
-	PoseMode_OFFSET   PoseMode = 1 // offset from current
-	PoseMode_VELOCITY PoseMode = 2 // rotational velocities
+	PoseMode_POSE_MODE_UNSPECIFIED PoseMode = 0 // defaults to `ANGLE`
+	PoseMode_POSE_MODE_ANGLE       PoseMode = 1 // absolute angle
+	PoseMode_POSE_MODE_OFFSET      PoseMode = 2 // offset from current
+	PoseMode_POSE_MODE_VELOCITY    PoseMode = 3 // rotational velocities
 )
 
 // Enum value maps for PoseMode.
 var (
 	PoseMode_name = map[int32]string{
-		0: "ANGLE",
-		1: "OFFSET",
-		2: "VELOCITY",
+		0: "POSE_MODE_UNSPECIFIED",
+		1: "POSE_MODE_ANGLE",
+		2: "POSE_MODE_OFFSET",
+		3: "POSE_MODE_VELOCITY",
 	}
 	PoseMode_value = map[string]int32{
-		"ANGLE":    0,
-		"OFFSET":   1,
-		"VELOCITY": 2,
+		"POSE_MODE_UNSPECIFIED": 0,
+		"POSE_MODE_ANGLE":       1,
+		"POSE_MODE_OFFSET":      2,
+		"POSE_MODE_VELOCITY":    3,
 	}
 )
 
@@ -646,7 +661,7 @@ type ReturnToHomeRequest struct {
 	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle.api.v1.services.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
 	// altitude that the vehicle should move at while reurning home
 	ReturnAltitude uint32 `protobuf:"varint,2,opt,name=return_altitude,json=returnAltitude,proto3" json:"return_altitude,omitempty"`
-	// altitude that the vehicle should hover at _(HOVER end behavior only)_
+	// altitude that the vehicle should hover at, for hover end behavior
 	FinalAltitude uint32 `protobuf:"varint,3,opt,name=final_altitude,json=finalAltitude,proto3" json:"final_altitude,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -686,7 +701,7 @@ func (x *ReturnToHomeRequest) GetEndBehavior() ReturnToHomeEndBehavior {
 	if x != nil {
 		return x.EndBehavior
 	}
-	return ReturnToHomeEndBehavior_HOVER
+	return ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
 }
 
 func (x *ReturnToHomeRequest) GetReturnAltitude() uint32 {
@@ -793,14 +808,14 @@ func (x *GoToGlobalPositionRequest) GetHeadingMode() HeadingMode {
 	if x != nil && x.HeadingMode != nil {
 		return *x.HeadingMode
 	}
-	return HeadingMode_TO_TARGET
+	return HeadingMode_HEADING_MODE_UNSPECIFIED
 }
 
 func (x *GoToGlobalPositionRequest) GetAltitudeMode() AltitudeMode {
 	if x != nil && x.AltitudeMode != nil {
 		return *x.AltitudeMode
 	}
-	return AltitudeMode_ABSOLUTE
+	return AltitudeMode_ALTITUDE_MODE_UNSPECIFIED
 }
 
 func (x *GoToGlobalPositionRequest) GetMaxVelocity() *v1.Velocity {
@@ -906,7 +921,7 @@ func (x *GoToRelativePositionRequest) GetFrame() ReferenceFrame {
 	if x != nil && x.Frame != nil {
 		return *x.Frame
 	}
-	return ReferenceFrame_BODY
+	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
 type GoToRelativePositionResponse struct {
@@ -996,7 +1011,7 @@ func (x *SetVelocityRequest) GetFrame() ReferenceFrame {
 	if x != nil && x.Frame != nil {
 		return *x.Frame
 	}
-	return ReferenceFrame_BODY
+	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
 type SetVelocityResponse struct {
@@ -1094,14 +1109,14 @@ func (x *SetGimbalPoseRequest) GetPoseMode() PoseMode {
 	if x != nil && x.PoseMode != nil {
 		return *x.PoseMode
 	}
-	return PoseMode_ANGLE
+	return PoseMode_POSE_MODE_UNSPECIFIED
 }
 
 func (x *SetGimbalPoseRequest) GetFrame() ReferenceFrame {
 	if x != nil && x.Frame != nil {
 		return *x.Frame
 	}
-	return ReferenceFrame_BODY
+	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
 type SetGimbalPoseResponse struct {
@@ -1191,24 +1206,28 @@ const file_v1_services_control_proto_rawDesc = "" +
 	"\n" +
 	"_pose_modeB\b\n" +
 	"\x06_frame\"\x17\n" +
-	"\x15SetGimbalPoseResponse*.\n" +
-	"\x17ReturnToHomeEndBehavior\x12\t\n" +
-	"\x05HOVER\x10\x00\x12\b\n" +
-	"\x04LAND\x10\x01**\n" +
-	"\fAltitudeMode\x12\f\n" +
-	"\bABSOLUTE\x10\x00\x12\f\n" +
-	"\bRELATIVE\x10\x01*/\n" +
-	"\vHeadingMode\x12\r\n" +
-	"\tTO_TARGET\x10\x00\x12\x11\n" +
-	"\rHEADING_START\x10\x01*#\n" +
-	"\x0eReferenceFrame\x12\b\n" +
-	"\x04BODY\x10\x00\x12\a\n" +
-	"\x03NEU\x10\x01*/\n" +
-	"\bPoseMode\x12\t\n" +
-	"\x05ANGLE\x10\x00\x12\n" +
-	"\n" +
-	"\x06OFFSET\x10\x01\x12\f\n" +
-	"\bVELOCITY\x10\x022\xe8\b\n" +
+	"\x15SetGimbalPoseResponse*\x93\x01\n" +
+	"\x17ReturnToHomeEndBehavior\x12+\n" +
+	"'RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED\x10\x00\x12%\n" +
+	"!RETURN_TO_HOME_END_BEHAVIOR_HOVER\x10\x01\x12$\n" +
+	" RETURN_TO_HOME_END_BEHAVIOR_LAND\x10\x02*e\n" +
+	"\fAltitudeMode\x12\x1d\n" +
+	"\x19ALTITUDE_MODE_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16ALTITUDE_MODE_ABSOLUTE\x10\x01\x12\x1a\n" +
+	"\x16ALTITUDE_MODE_RELATIVE\x10\x02*_\n" +
+	"\vHeadingMode\x12\x1c\n" +
+	"\x18HEADING_MODE_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16HEADING_MODE_TO_TARGET\x10\x01\x12\x16\n" +
+	"\x12HEADING_MODE_START\x10\x02*d\n" +
+	"\x0eReferenceFrame\x12\x1f\n" +
+	"\x1bREFERENCE_FRAME_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14REFERENCE_FRAME_BODY\x10\x01\x12\x17\n" +
+	"\x13REFERENCE_FRAME_NEU\x10\x02*h\n" +
+	"\bPoseMode\x12\x19\n" +
+	"\x15POSE_MODE_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fPOSE_MODE_ANGLE\x10\x01\x12\x14\n" +
+	"\x10POSE_MODE_OFFSET\x10\x02\x12\x16\n" +
+	"\x12POSE_MODE_VELOCITY\x10\x032\xe8\b\n" +
 	"\x0eControlService\x12d\n" +
 	"\aTakeOff\x12*.steeleagle.api.v1.services.TakeOffRequest\x1a+.steeleagle.api.v1.services.TakeOffResponse\"\x00\x12[\n" +
 	"\x04Land\x12'.steeleagle.api.v1.services.LandRequest\x1a(.steeleagle.api.v1.services.LandResponse\"\x00\x12[\n" +

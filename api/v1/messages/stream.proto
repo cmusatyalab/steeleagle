@@ -65,7 +65,7 @@ message GimbalInfo {
 // Battery warnings and alerts.
 enum BatteryWarning {
   // the vehicle is above 30% battery
-  BATTERY_WARNING_NONE = 0;
+  BATTERY_WARNING_UNSPECIFIED = 0;
   // the vehicle is below 30% battery
   BATTERY_WARNING_LOW = 1;
   // the vehicle is below 15% battery
@@ -75,7 +75,7 @@ enum BatteryWarning {
 // GPS fix warnings and alerts.
 enum GPSWarning {
   // GPS readings are nominal and a fix has been achieved
-  GPS_WARNING_NONE = 0;
+  GPS_WARNING_UNSPECIFIED = 0;
   // weak GPS fix, expect errant global position data
   GPS_WARNING_WEAK_SIGNAL = 1;
   // no GPS fix
@@ -85,7 +85,7 @@ enum GPSWarning {
 // Magnetometer warnings and alerts.
 enum MagnetometerWarning {
   // magnetometer readings are nominal
-  MAGNETOMETER_WARNING_NONE = 0;
+  MAGNETOMETER_WARNING_UNSPECIFIED = 0;
   // the vehicle is experiencing magnetic perturbations
   MAGNETOMETER_WARNING_PERTURBATIONS = 1;
 }
@@ -93,7 +93,7 @@ enum MagnetometerWarning {
 // Connection warnings and alerts.
 enum ConnectionWarning {
   // connection to remote server is nominal
-  CONNECTION_WARNING_NONE = 0;
+  CONNECTION_WARNING_UNSPECIFIED = 0;
   // contact has been lost with the remote server
   CONNECTION_WARNING_DISCONNECTED = 1;
   // connection is experiencing interference or is weak
@@ -103,7 +103,7 @@ enum ConnectionWarning {
 // Compass warnings and alerts.
 enum CompassWarning {
   // absolute heading is nominal
-  COMPASS_WARNING_NONE = 0;
+  COMPASS_WARNING_UNSPECIFIED = 0;
   // absolute heading is available but may be incorrect
   COMPASS_WARNING_WEAK_LOCK = 1;
   // no absolute heading available from the vehicle

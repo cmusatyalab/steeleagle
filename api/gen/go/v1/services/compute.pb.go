@@ -29,25 +29,25 @@ const (
 type EngineLocation int32
 
 const (
-	EngineLocation_AUTO   EngineLocation = 0 // prioritize local, but select remote if no local
-	EngineLocation_BOTH   EngineLocation = 1 // send to both
-	EngineLocation_REMOTE EngineLocation = 2 // remote location only (network hop required)
-	EngineLocation_LOCAL  EngineLocation = 3 // local location only (IPC)
+	EngineLocation_ENGINE_LOCATION_UNSPECIFIED EngineLocation = 0 // send to all available locations
+	EngineLocation_ENGINE_LOCATION_BOTH        EngineLocation = 1 // send to both
+	EngineLocation_ENGINE_LOCATION_REMOTE      EngineLocation = 2 // remote location only (network hop required)
+	EngineLocation_ENGINE_LOCATION_LOCAL       EngineLocation = 3 // local location only (IPC)
 )
 
 // Enum value maps for EngineLocation.
 var (
 	EngineLocation_name = map[int32]string{
-		0: "AUTO",
-		1: "BOTH",
-		2: "REMOTE",
-		3: "LOCAL",
+		0: "ENGINE_LOCATION_UNSPECIFIED",
+		1: "ENGINE_LOCATION_BOTH",
+		2: "ENGINE_LOCATION_REMOTE",
+		3: "ENGINE_LOCATION_LOCAL",
 	}
 	EngineLocation_value = map[string]int32{
-		"AUTO":   0,
-		"BOTH":   1,
-		"REMOTE": 2,
-		"LOCAL":  3,
+		"ENGINE_LOCATION_UNSPECIFIED": 0,
+		"ENGINE_LOCATION_BOTH":        1,
+		"ENGINE_LOCATION_REMOTE":      2,
+		"ENGINE_LOCATION_LOCAL":       3,
 	}
 )
 
@@ -82,19 +82,22 @@ func (EngineLocation) EnumDescriptor() ([]byte, []int) {
 type Topic int32
 
 const (
-	Topic_TELEMETRY Topic = 0 // telemetry from the driver
-	Topic_FRAMES    Topic = 1 // video frames from the driver
+	Topic_TOPIC_UNSPECIFIED Topic = 0 // defaults to all topics
+	Topic_TOPIC_TELEMETRY   Topic = 1 // telemetry from the driver
+	Topic_TOPIC_FRAMES      Topic = 2 // video frames from the driver
 )
 
 // Enum value maps for Topic.
 var (
 	Topic_name = map[int32]string{
-		0: "TELEMETRY",
-		1: "FRAMES",
+		0: "TOPIC_UNSPECIFIED",
+		1: "TOPIC_TELEMETRY",
+		2: "TOPIC_FRAMES",
 	}
 	Topic_value = map[string]int32{
-		"TELEMETRY": 0,
-		"FRAMES":    1,
+		"TOPIC_UNSPECIFIED": 0,
+		"TOPIC_TELEMETRY":   1,
+		"TOPIC_FRAMES":      2,
 	}
 )
 
@@ -177,7 +180,7 @@ func (x *EngineInfo) GetLocation() EngineLocation {
 	if x != nil {
 		return x.Location
 	}
-	return EngineLocation_AUTO
+	return EngineLocation_ENGINE_LOCATION_UNSPECIFIED
 }
 
 type SetEnginesForTopicRequest struct {
@@ -222,7 +225,7 @@ func (x *SetEnginesForTopicRequest) GetTopic() Topic {
 	if x != nil {
 		return x.Topic
 	}
-	return Topic_TELEMETRY
+	return Topic_TOPIC_UNSPECIFIED
 }
 
 func (x *SetEnginesForTopicRequest) GetDatasinks() []*EngineInfo {
@@ -280,17 +283,16 @@ const file_v1_services_compute_proto_rawDesc = "" +
 	"\x19SetEnginesForTopicRequest\x127\n" +
 	"\x05topic\x18\x01 \x01(\x0e2!.steeleagle.api.v1.services.TopicR\x05topic\x12D\n" +
 	"\tdatasinks\x18\x02 \x03(\v2&.steeleagle.api.v1.services.EngineInfoR\tdatasinks\"\x1c\n" +
-	"\x1aSetEnginesForTopicResponse*;\n" +
-	"\x0eEngineLocation\x12\b\n" +
-	"\x04AUTO\x10\x00\x12\b\n" +
-	"\x04BOTH\x10\x01\x12\n" +
-	"\n" +
-	"\x06REMOTE\x10\x02\x12\t\n" +
-	"\x05LOCAL\x10\x03*\"\n" +
-	"\x05Topic\x12\r\n" +
-	"\tTELEMETRY\x10\x00\x12\n" +
-	"\n" +
-	"\x06FRAMES\x10\x012\x98\x01\n" +
+	"\x1aSetEnginesForTopicResponse*\x82\x01\n" +
+	"\x0eEngineLocation\x12\x1f\n" +
+	"\x1bENGINE_LOCATION_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14ENGINE_LOCATION_BOTH\x10\x01\x12\x1a\n" +
+	"\x16ENGINE_LOCATION_REMOTE\x10\x02\x12\x19\n" +
+	"\x15ENGINE_LOCATION_LOCAL\x10\x03*E\n" +
+	"\x05Topic\x12\x15\n" +
+	"\x11TOPIC_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fTOPIC_TELEMETRY\x10\x01\x12\x10\n" +
+	"\fTOPIC_FRAMES\x10\x022\x98\x01\n" +
 	"\x0eComputeService\x12\x85\x01\n" +
 	"\x12SetEnginesForTopic\x125.steeleagle.api.v1.services.SetEnginesForTopicRequest\x1a6.steeleagle.api.v1.services.SetEnginesForTopicResponse\"\x00B\xf4\x01\n" +
 	"\x1ecom.steeleagle.api.v1.servicesB\fComputeProtoP\x01Z8github.com/cmusatyalab/steeleagle/api/gen/go/v1/services\xa2\x02\x04SAVS\xaa\x02\x1aSteeleagle.Api.V1.Services\xca\x02\x1aSteeleagle\\Api\\V1\\Services\xe2\x02&Steeleagle\\Api\\V1\\Services\\GPBMetadata\xea\x02\x1dSteeleagle::Api::V1::Servicesb\x06proto3"

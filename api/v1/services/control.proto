@@ -174,8 +174,9 @@ message SetHomeRequest {
 message SetHomeResponse {}
 
 enum ReturnToHomeEndBehavior {
-  HOVER = 0; // hover upon return to home
-  LAND = 1; // land upon return to home
+  RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED = 0; // defaults to `HOVER`
+  RETURN_TO_HOME_END_BEHAVIOR_HOVER = 1; // hover upon return to home
+  RETURN_TO_HOME_END_BEHAVIOR_LAND = 2; // land upon return to home
 }
 
 message ReturnToHomeRequest {
@@ -183,7 +184,7 @@ message ReturnToHomeRequest {
   ReturnToHomeEndBehavior end_behavior = 1;
   // altitude that the vehicle should move at while reurning home
   uint32 return_altitude = 2;
-  // altitude that the vehicle should hover at _(HOVER end behavior only)_
+  // altitude that the vehicle should hover at, for hover end behavior
   uint32 final_altitude = 3; 
 }
 
@@ -191,14 +192,16 @@ message ReturnToHomeResponse {}
 
 // Altitude mode switch.
 enum AltitudeMode {
-  ABSOLUTE = 0; // meters above Mean Sea Level
-  RELATIVE = 1; // meters above takeoff position
+  ALTITUDE_MODE_UNSPECIFIED = 0; // defaults to `ABSOLUTE`
+  ALTITUDE_MODE_ABSOLUTE = 1; // meters above Mean Sea Level
+  ALTITUDE_MODE_RELATIVE = 2; // meters above takeoff position
 }
 
 // Heading mode switch.
 enum HeadingMode {
-  TO_TARGET = 0; // orient towards the target location
-  HEADING_START = 1; // orient towards the given heading
+  HEADING_MODE_UNSPECIFIED = 0; // defaults to `TO_TARGET`
+  HEADING_MODE_TO_TARGET = 1; // orient towards the target location
+  HEADING_MODE_START = 2; // orient towards the given heading
 }
 
 message GoToGlobalPositionRequest {
@@ -215,8 +218,9 @@ message GoToGlobalPositionResponse {}
 
 // Reference frame mode switch.
 enum ReferenceFrame {
-  BODY = 0; // vehicle reference frame
-  NEU = 1; // NEU (North, East, Up) reference frame
+  REFERENCE_FRAME_UNSPECIFIED = 0; // defaults to `BODY`
+  REFERENCE_FRAME_BODY = 1; // vehicle reference frame
+  REFERENCE_FRAME_NEU = 2; // NEU (North, East, Up) reference frame
 }
 
 message GoToRelativePositionRequest {
@@ -241,9 +245,10 @@ message SetVelocityResponse {}
 
 // Pose mode switch.
 enum PoseMode {
-  ANGLE = 0; // absolute angle
-  OFFSET = 1; // offset from current
-  VELOCITY = 2; // rotational velocities
+  POSE_MODE_UNSPECIFIED = 0; // defaults to `ANGLE`
+  POSE_MODE_ANGLE = 1; // absolute angle
+  POSE_MODE_OFFSET = 2; // offset from current
+  POSE_MODE_VELOCITY = 3; // rotational velocities
 }
 
 message SetGimbalPoseRequest {

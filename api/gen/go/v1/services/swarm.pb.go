@@ -537,7 +537,7 @@ func (x *SwarmReturnToHomeRequest) GetEndBehavior() ReturnToHomeEndBehavior {
 	if x != nil {
 		return x.EndBehavior
 	}
-	return ReturnToHomeEndBehavior_HOVER
+	return ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
 }
 
 func (x *SwarmReturnToHomeRequest) GetReturnAltitude() uint32 {
@@ -681,7 +681,7 @@ func (x *SwarmSetVelocityRequest) GetFrame() ReferenceFrame {
 	if x != nil && x.Frame != nil {
 		return *x.Frame
 	}
-	return ReferenceFrame_BODY
+	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
 type SwarmSetVelocityResponse struct {
@@ -819,14 +819,14 @@ func (x *SwarmSetGimbalPoseRequest) GetPoseMode() PoseMode {
 	if x != nil && x.PoseMode != nil {
 		return *x.PoseMode
 	}
-	return PoseMode_ANGLE
+	return PoseMode_POSE_MODE_UNSPECIFIED
 }
 
 func (x *SwarmSetGimbalPoseRequest) GetFrame() ReferenceFrame {
 	if x != nil && x.Frame != nil {
 		return *x.Frame
 	}
-	return ReferenceFrame_BODY
+	return ReferenceFrame_REFERENCE_FRAME_UNSPECIFIED
 }
 
 type SwarmSetGimbalPoseResponse struct {
