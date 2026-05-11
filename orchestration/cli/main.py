@@ -183,14 +183,17 @@ def services():
 # ---------------------------------------------------------------------------
 
 
-# @service_app.command()
-def start(name: str = typer.Argument(..., help="Service name")):
+@app.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def start(ctx: typer.Context, name: str = typer.Argument(..., help="Service name")):
     """Start a service."""
     with (
         console.status(f"Starting [bold]{name}[/bold]…", spinner="aesthetic"),
         _client() as c,
     ):
-        data = _check(c.post(f"/services/{name}/start"))
+        params = {"q": ctx.args}
+        data = _check(c.post(f"/services/{name}/start", params=params))
 
     status = data.get("status", "unknown")
     rprint(f"[bold]{name}[/bold] → {_status_color(status)}", end="")
@@ -387,7 +390,7 @@ def ps(
                     extras.add_column("Started At")
                     extras.add_row(
                         f"{data.get('pid', data.get('exit_code'))}",
-                        data["started_at"],
+                        data.get("started_at", None),
                     )
                     table.add_row(
                         name, stype, _status_color(st), extras if details else None
@@ -510,10 +513,12 @@ def gcs_install():
         build()
 
 
-@gcs_app.command("start")
-def gcs_start():
+@gcs_app.command(
+    "start", context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def gcs_start(ctx: typer.Context):
     """Start React-based GCS via FastAPI."""
-    start("gcs")
+    start(ctx, "gcs")
 
 
 @gcs_app.command("stop")
@@ -548,10 +553,12 @@ def gcs_logs(
 # ---------------------------------------------------------------------------
 
 
-@sim_app.command("start")
-def sim_start():
+@sim_app.command(
+    "start", context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def sim_start(ctx: typer.Context):
     """Start Aviary simulator."""
-    start("sim")
+    start(ctx, "sim")
 
 
 @sim_app.command("stop")

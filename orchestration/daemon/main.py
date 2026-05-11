@@ -241,9 +241,9 @@ def list_services():
 
 
 @app.post("/services/{name}/start", summary="Start a service")
-async def start_service(name: str):
+async def start_service(name: str, q: Annotated[list[str] | None, Query()] = None):
     svc = _require_single(name)
-    return {"service": name, **await _call(svc, "start")}
+    return {"service": name, **await _call(svc, "start", kwargs=q if q else [])}
 
 
 @app.post("/services/{name}/stop", summary="Stop a service")

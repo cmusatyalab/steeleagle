@@ -39,12 +39,12 @@ class ProcessManager:
     # Lifecycle
     # ------------------------------------------------------------------
 
-    async def start(self) -> dict:
+    async def start(self, kwargs: list[str] | None = None) -> dict:
         if self._is_running():
             return {"status": "already_running", "pid": self._process.pid}
 
         self._process = await asyncio.create_subprocess_exec(
-            *self.command,
+            *self.command + kwargs,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,  # merge stderr → stdout
         )
