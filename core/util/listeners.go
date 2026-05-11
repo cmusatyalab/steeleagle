@@ -20,7 +20,7 @@ func (c *conn) RemoteAddr() net.Addr { return c.addr }
 
 type listener struct {
 	net.Listener
-    code     AuthCode     
+    code     AuthCode
     // Connection for single-connection socket pair listeners, if applicable
     socket   net.Conn
     // ACL for checking incoming IP addresses, if applicable

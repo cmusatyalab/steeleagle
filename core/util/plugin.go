@@ -1,10 +1,17 @@
-package plugin
+package util
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"os/exec"
-	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
 
+	"github.com/containers/podman/pkg/bindings/images"
+	"github.com/containers/podman/v5/pkg/bindings"
+	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,117 +34,198 @@ func (pr PluginRuntime) String() string {
 }
 
 type Plugin interface {
-	Start() error
-	Stop()
+	Name() string
+	Runtime() PluginRuntime
+	Start(context.Context, map[string]string) error
+	Stop() error
 	IsRunning() bool
 	Path() string
 }
 
 type BasePlugin struct {
-	name string
-	path string
-	// Runtime attributes
-	spath string  // socket path, if running as a server connection type
-	start float64 // plugin start time
+	name     string
+	path     string
+	runtime  PluginRuntime
+	sockFile *os.File
+	start    int64 // plugin start time
+	running  bool
 }
 
 type ProcessPlugin struct {
 	BasePlugin
-	pid  int
-	proc *exec.Cmd
+	pid int
+	cmd *exec.Cmd
 }
 
 type ContainerPlugin struct {
 	BasePlugin
-	cid string
+	cid      string
+	imageTag string
+	connCtx  context.Context
+	cmd      *exec.Cmd
 }
 
 type PluginOption func(*BasePlugin)
 
-func CreateProcessPlugin(name, path, spath string) (*ProcessPlugin, error) {
-	return nil, nil
-}
+func CreateProcessPlugin(name, path string) (*ProcessPlugin, error) {
 
-func CreateContainerPlugin(name, path, spath, image_tag string) (*ContainerPlugin, error) {
-	return nil, nil
-}
-
-//func CreatePlugin(options ...PluginOption) (*Plugin, error) {
-//	// Set the path to the plugin directory
-//	if i.path == "" {
-//		i.path = filepath.Join(xdg.DataDir, ApplicationName, i.Name)
-//	}
-//}
-
-func (p ProcessPlugin) Start(ctx context.Context, envVarsmap map[string]string) error {
-	// Start the process
-	cmd := exec.Command(filepath.Join(p.path, PluginRunScript))
-	err := cmd.Run()
+	info, err := os.Stat(path)
 	if err != nil {
-		log.Error().Err(err).Str("plugin", i.Name).Msg("could not run process for plugin")
+		if os.IsNotExist(err) {
+			return nil, err
+		}
+		return nil, err
+	}
+
+	if info.IsDir() {
+		// find run hook
+	}
+
+	p := &ProcessPlugin{
+		BasePlugin: BasePlugin{
+			name:    name,
+			path:    path,
+			runtime: Process,
+		},
+	}
+	if info.Mode()&0o111 != 0 {
+		p.cmd = exec.Command(path)
+	}
+
+	return p, nil
+}
+
+func CreateContainerPlugin(ctx context.Context, name, path, imageTag string) (*ContainerPlugin, error) {
+	// Get Podman socket location
+	sock_dir := os.Getenv("XDG_RUNTIME_DIR")
+	socket := "unix:" + sock_dir + "/podman/podman.sock"
+
+	// Connect to Podman socket
+	connCtx, err := bindings.NewConnection(ctx, socket)
+	if err != nil {
+		return nil, err
+	}
+
+	exists, err := images.Exists(connCtx, imageTag, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Image %q not found", imageTag)
+	}
+
+	p := &ContainerPlugin{
+		BasePlugin: BasePlugin{
+			name:    name,
+			path:    path,
+			runtime: Container,
+		},
+		connCtx:  connCtx,
+		imageTag: imageTag,
+	}
+	return p, nil
+}
+
+func (p ProcessPlugin) Start(ctx context.Context) error {
+	// Start the process
+	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
 		return err
 	}
 
-	//switch i.Runtime {
-	//case PluginRuntime.Process:
-	//	// Start the process
-	//	cmd := exec.Command(filepath.Join(i.Path, PluginRunScript))
-	//	err := cmd.Run()
-	//	if err != nil {
-	//		log.Error().Err(err).Str("plugin", i.Name).Msg("could not run process for plugin")
-	//		return err
-	//	}
-	//case PluginRuntime.Container:
-	//	// Check if image exists locally
-	//	exists, err := images.Exists(ctx, i.name, nil)
-	//	if err != nil {
-	//		log.Error().Err(err).Str("plugin", i.name).Msg("could not check for container images")
-	//		return err
-	//	}
-	//	if !exists {
-	//		log.Warn().Str("plugin", i.name).Msg("could not find container locally, attempting to pull")
-	//	}
+	file := os.NewFile(uintptr(fds[1]), "socket")
+	p.cmd.ExtraFiles = []*os.File{file}
+	err = p.cmd.Run()
+	if err != nil {
+		log.Error().Err(err).Str("plugin", p.name).Msg("could not run process for plugin")
+		return err
+	}
+	syscall.Close(fds[1])
 
-	//	// Proceed to create + start as normal
-	//	s := specgen.NewSpecGenerator(i.name, false)
+	return nil
+}
 
-	//	// Create mounts for the right files
-
-	//	resp, err := containers.CreateWithSpec(ctx, s, nil)
-	//	if err != nil {
-	//		log.Error().Err(err).Str("plugin", i.name).Msg("could not create container, aborting")
-	//		return err
-	//	}
-	//	// Set the container ID
-	//	i.cid = resp.ID
-
-	//	// TODO: look up PID from CID
-	//case PluginRuntime.Sandbox:
-	//}
+func (p *ProcessPlugin) Stop() {
 
 }
 
-// Status methods
-func (i *Plugin) Name() string {
-	return i.name
+func (p *ContainerPlugin) Start(ctx context.Context) error {
+	// write container id to a tmp file
+	cidFile, _ := os.CreateTemp("", "cid-*")
+	cidFile.Close()
+	defer os.Remove(cidFile.Name())
+
+	// create a socket pair to communicate with the plugin
+	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		return err
+	}
+	p.sockFile = os.NewFile(uintptr(fds[0]), fmt.Sprintf("kernel-%s", p.name))
+	pluginFile := os.NewFile(uintptr(fds[1]), fmt.Sprintf("plugin-%s", p.name))
+
+	// run the container
+	cmd := exec.CommandContext(ctx, "podman", "run", "--rm",
+		"--cidfile", cidFile.Name(),
+		"--preserve-fd", "3",
+		p.imageTag)
+	cmd.ExtraFiles = []*os.File{pluginFile}
+	pluginFile.Close()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	p.start = time.Now().UnixMilli()
+
+	// get container id
+	data, _ := os.ReadFile(cidFile.Name())
+	p.cid = strings.TrimSpace(string(data))
+	p.waitForRunning()
+	return nil
 }
 
-func (i *Plugin) Path() string {
-	return i.path
+func (p *ContainerPlugin) waitForRunning() error {
+	for {
+		running, err := p.isRunning()
+		if err != nil {
+			return err
+		}
+		if running {
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }
 
-func (i *Plugin) Runtime() PluginRuntime {
-	return i.runtime
+func (p *ContainerPlugin) isRunning() (bool, error) {
+	data, err := containers.Inspect(p.connCtx, p.cid, nil)
+	if err != nil {
+		return false, err
+	}
+	return data.State.Running, nil
 }
 
-func (i *Plugin) ConnType() PluginConnType {
-	return i.connType
+func (p *ContainerPlugin) Stop() err {
+	if err := containers.Stop(p.connCtx, p.cid, nil); err != nil {
+		return err
+	}
+	return p.c
 }
 
-func (i *Plugin) PID() int {
-	return i.pid
+func (p *BasePlugin) Name() string {
+	return p.name
 }
 
-func (i *Plugin) IsRunning() bool {
-	return i.pid != 0
+func (p *BasePlugin) Path() string {
+	return p.path
 }
+
+func (p *BasePlugin) Runtime() PluginRuntime {
+	return p.runtime
+}
+
+func (p *BasePlugin) IsRunning() bool {
+	return p.running
+}
+
+var _ Plugin = (*ProcessPlugin)(nil)
+var _ Plugin = (*ContainerPlugin)(nil)
