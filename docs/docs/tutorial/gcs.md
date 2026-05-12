@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 ## Installation
 
-The SteelEagle GCS is comprised of two components: a frontend browser application written in React (JSX) and a FastAPI backend (python) that acts returns data to the frontend by interfacing with the other backend components.
+The SteelEagle GCS is comprised of two components: a frontend browser application written in React (JSX) and a FastAPI backend (python) that returns data to the frontend by interfacing with the other backend components.
 
 :::info
 
@@ -37,7 +37,7 @@ __~/steeleagle/gcs/react/prime/src/config.js__
 
 
 __~/steeleagle/gcs/react/backend/config.toml__
-* The FastAPI .toml manages two primary sets of configuration: backends and vehicles. The GCS can either get data directly from local vehicles (the [vehicles] stanza) or by talking to a backend server ([backend] stanza). A sample config.toml is displayed below that defines two different backends and two local vehicles. The GCS can connect to multiple local vehicles simultaneously, but can only be connected to a single backend at runtime. Which backend to use from the config.toml can be controlled by passing the __BACKEND__ environment variable when launching the GCS.
+* This FastAPI file manages two primary sets of configuration: backends and vehicles. The GCS can either get data directly from local vehicles (the [vehicles] stanza) or by talking to a backend server (the [backend] stanza). A sample config.toml is displayed below that defines two different backends and two local vehicles. The GCS can connect to multiple local vehicles simultaneously, but can only be connected to a single backend at runtime. Which backend to use from the config.toml can be controlled by passing the __BACKEND__ environment variable when launching the GCS.
 * For local vehicles, a [vehicle.name] stanza needs to be created that defines the local socket endpoints for that vehicle.
 * For backends, a [backend.name] stanza needs to be created that defines where the various backend components can be found (swarm controller, redis db, etc).
 

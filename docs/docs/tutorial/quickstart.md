@@ -131,7 +131,7 @@ To stop __ALL__ the containers:
 docker compose down
 ```
 
-To stop and individual container:
+To stop an individual container:
 ```bash
 docker compose stop <container_name>
 ```
