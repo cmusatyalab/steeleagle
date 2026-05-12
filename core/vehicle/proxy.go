@@ -12,8 +12,8 @@ import (
 
 func (v *Vehicle) getProxyDirector() proxy.StreamDirector {
 	return func(ctx context.Context, method string) (context.Context, grpc.ClientConnInterface, error) {
-		if strings.Contains(method, ".ControlService/") {
-			return ctx, v.conns.control, nil
+		if strings.Contains(method, ".ControlService/") || strings.Contains(method, ".StreamService/") {
+			return ctx, v.conns.driver, nil
 		} else if strings.Contains(method, ".MissionService/") {
 			return ctx, v.conns.mission, nil
 		}

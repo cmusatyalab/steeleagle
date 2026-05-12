@@ -6,25 +6,25 @@ import (
 	"sync"
 )
 
-// Embedded address that holds the AuthCode
-type addr struct {
+// Embedded Address that holds the AuthCode
+type Addr struct {
 	net.Addr
-	code AuthCode
+	Code AuthCode
 }
 
-type conn struct {
+type Conn struct {
 	net.Conn
-	addr *addr
+	Addr *Addr
 }
 
-func (c *conn) RemoteAddr() net.Addr { return c.addr }
+func (c *Conn) RemoteAddr() net.Addr { return c.Addr }
 
 type listener struct {
 	net.Listener
 	code AuthCode
-	// Connection for single-connection socket pair listeners, if applicable
+	// Connection for single-Connection socket pair listeners, if applicable
 	socket net.Conn
-	// ACL for checking incoming IP addresses, if applicable
+	// ACL for checking incoming IP Addresses, if applicable
 	acl *ACL
 	// Synchronization members
 	once sync.Once
@@ -58,7 +58,7 @@ func (l *listener) Accept() (net.Conn, error) {
 
 func (l *listener) acceptBase() (net.Conn, error) {
 	for {
-		// Block until we get a connection
+		// Block until we get a Connection
 		c, err := l.Listener.Accept()
 		if err != nil {
 			return nil, err
@@ -72,21 +72,21 @@ func (l *listener) acceptBase() (net.Conn, error) {
 				}
 			}
 		}
-		return &conn{
+		return &Conn{
 			Conn: c,
-			addr: &addr{Addr: c.RemoteAddr(), code: l.code},
+			Addr: &Addr{Addr: c.RemoteAddr(), Code: l.code},
 		}, nil
 	}
 }
 
 func (l *listener) acceptSocketPair() (net.Conn, error) {
 	var c net.Conn
-	// Return the connection exactly once to not spawn spurious handlers
+	// Return the Connection exactly once to not spawn spurious handlers
 	l.once.Do(func() { c = l.socket })
 	if c != nil {
-		return &conn{
+		return &Conn{
 			Conn: c,
-			addr: &addr{Addr: c.RemoteAddr(), code: l.code},
+			Addr: &Addr{Addr: c.RemoteAddr(), Code: l.code},
 		}, nil
 	}
 	// Wait until the socket closes, then exit

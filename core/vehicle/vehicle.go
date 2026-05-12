@@ -162,7 +162,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	//v.conns.mission = missionConn
 
 	// Serve the gRPC server at all listeners
-	errCh := make(chan error, 3)
+	errCh := make(chan error, 4)
 	go func() {
 		if err := v.server.Serve(v.listeners.mainLn); err != nil {
 			errCh <- fmt.Errorf("main listener: %w", err)
@@ -194,6 +194,20 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	case err := <-errCh:
 		return err
 	}
+}
+
+func (v *Vehicle) CreatePlugins() error {
+	var err error
+	v.driver, err = util.CreateProcessPlugin("a", "b")
+	if err != nil {
+		return err
+	}
+
+	v.mission, err = util.CreateProcessPlugin("a", "b")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Status methods

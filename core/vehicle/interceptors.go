@@ -15,9 +15,10 @@ import (
 func qualifyCommand(ctx context.Context, fullName string) string {
 	var code util.AuthCode
 	// Extract code from the connection address (packed by listener)
+	var ok bool
 	if p, ok := peer.FromContext(ctx); ok {
-		if a, ok := p.Addr.(*addr); ok {
-			code = a.code
+		if a, ok := p.Addr.(*util.Addr); ok {
+			code = a.Code
 		}
 	}
 	// If code is not available, set to unknown identity

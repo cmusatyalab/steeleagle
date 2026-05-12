@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -46,6 +47,7 @@ type BasePlugin struct {
 	sockFile *os.File
 	start    int64 // plugin start time
 	running  bool
+	ln       net.Listener
 }
 
 type ProcessPlugin struct {
