@@ -60,6 +60,7 @@ class ProcessPool:
     async def stop_instance(self, instance_id: str) -> dict:
         mgr = self._get(instance_id)
         result = await mgr.stop()
+        self._instances.pop(instance_id)
         return {"instance_id": instance_id, **result}
 
     async def stop_all(self) -> list[dict]:

@@ -183,9 +183,9 @@ def services():
 # ---------------------------------------------------------------------------
 
 
-@app.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
-)
+# @app.command(
+#    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+# )
 def start(ctx: typer.Context, name: str = typer.Argument(..., help="Service name")):
     """Start a service."""
     with (
