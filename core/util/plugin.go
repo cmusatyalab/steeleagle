@@ -129,6 +129,8 @@ func (p ProcessPlugin) Start(ctx context.Context) error {
 		return err
 	}
 	syscall.Close(fds[1])
+	p.start = time.Now().UnixMilli()
+	p.running = true
 
 	return nil
 }
@@ -162,12 +164,13 @@ func (p *ContainerPlugin) Start(ctx context.Context) error {
 		return err
 	}
 
-	p.start = time.Now().UnixMilli()
-
 	// get container id
 	data, _ := os.ReadFile(cidFile.Name())
 	p.cid = strings.TrimSpace(string(data))
 	p.waitForRunning()
+	p.start = time.Now().UnixMilli()
+	p.running = true
+
 	return nil
 }
 
