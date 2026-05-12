@@ -153,20 +153,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// Start mission/driver plugins, and retrieve associated ClientConn and
-	// Listener objects
-	err = v.driver.Start(ctx)
+	err = v.startPlugins(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("could not start driver plugin, aborting")
+		return err
 	}
-	//v.conns.driver = driverconn
-	err = v.mission.Start(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("could not start mission plugin, aborting")
-	}
-	//v.listeners.missionLn = missionLn
-	//v.conns.mission = missionConn
 
 	// Serve the gRPC server at all listeners
 	errCh := make(chan error, 4)
@@ -230,6 +220,19 @@ func (v *Vehicle) createPlugins() error {
 			return err
 		}
 		v.plugins = append(v.plugins, p)
+	}
+	return nil
+}
+
+func (v *Vehicle) startPlugins(ctx context.Context) error {
+	plugins := []util.Plugin{v.driver, v.mission}
+	plugins = append(plugins, v.plugins...)
+
+	for _, p := range plugins {
+		err := p.Start(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
