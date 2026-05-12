@@ -37,30 +37,28 @@ type Plugin interface {
 	Start(context.Context) error
 	Stop() error
 	IsRunning() bool
-	Path() string
+	Target() string
 }
 
 type BasePlugin struct {
-	name     string
-	path     string
-	runtime  PluginRuntime
-	sockFile *os.File
-	start    int64 // plugin start time
-	running  bool
-	ln       net.Listener
+	name    string
+	target  string
+	runtime PluginRuntime
+	conn    net.Conn
+	start   int64 // plugin start time
+	running bool
+	ln      net.Listener
+	cmd     *exec.Cmd
 }
 
 type ProcessPlugin struct {
 	BasePlugin
 	pid int
-	cmd *exec.Cmd
 }
 
 type ContainerPlugin struct {
 	BasePlugin
-	cid      string
-	imageTag string
-	cmd      *exec.Cmd
+	cid string
 }
 
 type PluginOption func(*BasePlugin)
@@ -82,7 +80,7 @@ func CreateProcessPlugin(name, path string) (*ProcessPlugin, error) {
 	p := &ProcessPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
-			path:    path,
+			target:  path,
 			runtime: Process,
 		},
 	}
@@ -93,9 +91,9 @@ func CreateProcessPlugin(name, path string) (*ProcessPlugin, error) {
 	return p, nil
 }
 
-func CreateContainerPlugin(ctx context.Context, name, path, imageTag string) (*ContainerPlugin, error) {
+func CreateContainerPlugin(name, imageRef string) (*ContainerPlugin, error) {
 
-	err := exec.Command("podman", "image", "exists", imageTag).Run()
+	err := exec.Command("podman", "image", "exists", imageRef).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -107,33 +105,26 @@ func CreateContainerPlugin(ctx context.Context, name, path, imageTag string) (*C
 	p := &ContainerPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
-			path:    path,
 			runtime: Container,
+			target:  imageRef,
 		},
-		imageTag: imageTag,
 	}
 	return p, nil
 }
 
 func (p ProcessPlugin) Start(ctx context.Context) error {
 	// Start the process
-	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	pluginFile, err := p.createSocketpair()
 	if err != nil {
-		log.Error().Err(err).Str("plugin", p.name).Msg("could not run process for plugin")
 		return err
 	}
-
-	file := os.NewFile(uintptr(fds[1]), "socket")
-	p.cmd.ExtraFiles = []*os.File{file}
+	p.cmd.ExtraFiles = []*os.File{pluginFile}
 	err = p.cmd.Run()
 	if err != nil {
 		log.Error().Err(err).Str("plugin", p.name).Msg("could not run process for plugin")
 		return err
 	}
-	syscall.Close(fds[1])
-	p.start = time.Now().UnixMilli()
-	p.running = true
-
+	p.postStart()
 	return nil
 }
 
@@ -147,31 +138,28 @@ func (p *ContainerPlugin) Start(ctx context.Context) error {
 	cidFile.Close()
 	defer os.Remove(cidFile.Name())
 
-	// create a socket pair to communicate with the plugin
-	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	pluginFile, err := p.createSocketpair()
 	if err != nil {
 		return err
 	}
-	p.sockFile = os.NewFile(uintptr(fds[0]), fmt.Sprintf("kernel-%s", p.name))
-	pluginFile := os.NewFile(uintptr(fds[1]), fmt.Sprintf("plugin-%s", p.name))
 
 	// run the container
 	cmd := exec.CommandContext(ctx, "podman", "run", "--rm",
 		"--cidfile", cidFile.Name(),
 		"--preserve-fd", "3",
-		p.imageTag)
+		p.target)
 	cmd.ExtraFiles = []*os.File{pluginFile}
-	pluginFile.Close()
 	if err := cmd.Run(); err != nil {
 		return err
 	}
+	pluginFile.Close()
 
 	// get container id
 	data, _ := os.ReadFile(cidFile.Name())
 	p.cid = strings.TrimSpace(string(data))
 	p.waitForRunning()
-	p.start = time.Now().UnixMilli()
-	p.running = true
+
+	p.postStart()
 
 	return nil
 }
@@ -207,12 +195,34 @@ func (p *ContainerPlugin) Stop() error {
 	return p.cmd.Wait()
 }
 
+func (p *BasePlugin) createSocketpair() (*os.File, error) {
+	// create a socket pair to communicate with the plugin
+	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		return nil, err
+	}
+	hostFile := os.NewFile(uintptr(fds[0]), fmt.Sprintf("host-%s", p.name))
+	pluginFile := os.NewFile(uintptr(fds[1]), fmt.Sprintf("plugin-%s", p.name))
+
+	p.conn, err = net.FileConn(hostFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return pluginFile, nil
+}
+
+func (p *BasePlugin) postStart() {
+	p.running = true
+	p.start = time.Now().UnixMilli()
+}
+
 func (p *BasePlugin) Name() string {
 	return p.name
 }
 
-func (p *BasePlugin) Path() string {
-	return p.path
+func (p *BasePlugin) Target() string {
+	return p.target
 }
 
 func (p *BasePlugin) Runtime() PluginRuntime {

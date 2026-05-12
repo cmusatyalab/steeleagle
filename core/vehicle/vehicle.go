@@ -37,8 +37,10 @@ type Vehicle struct {
 	path       string
 	socketPath string // path to main services socket
 	// Plugins
-	driver  util.Plugin
-	mission util.Plugin
+	pluginConfig PluginConfig
+	driver       util.Plugin
+	mission      util.Plugin
+	plugins      []util.Plugin
 	// Connections
 	connCfg   ConnectionConfig
 	server    *grpc.Server
@@ -147,13 +149,18 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		return fmt.Errorf("can't create client at file %s: %w", "admin-proxy", err)
 	}
 
+	err = v.createPlugins()
+	if err != nil {
+		return err
+	}
+
 	// Start mission/driver plugins, and retrieve associated ClientConn and
 	// Listener objects
 	err = v.driver.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start driver plugin, aborting")
 	}
-	//v.conns.driverPxy = driverconn
+	//v.conns.driver = driverconn
 	err = v.mission.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start mission plugin, aborting")
@@ -196,16 +203,33 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 }
 
-func (v *Vehicle) CreatePlugins() error {
+func createPlugin(r Runnable) (util.Plugin, error) {
+	switch r.runtime {
+	case util.Container:
+		return util.CreateContainerPlugin("driver", r.target)
+	case util.Process:
+		return util.CreateProcessPlugin("driver", r.target)
+	default:
+		return nil, fmt.Errorf("plugin type not implemented")
+	}
+}
+
+func (v *Vehicle) createPlugins() error {
 	var err error
-	v.driver, err = util.CreateProcessPlugin("a", "b")
+	v.driver, err = createPlugin(v.pluginConfig.driver)
 	if err != nil {
 		return err
 	}
-
-	v.mission, err = util.CreateProcessPlugin("a", "b")
+	v.mission, err = createPlugin(v.pluginConfig.mission)
 	if err != nil {
 		return err
+	}
+	for _, r := range v.pluginConfig.plugins {
+		p, err := createPlugin(r)
+		if err != nil {
+			return err
+		}
+		v.plugins = append(v.plugins, p)
 	}
 	return nil
 }
