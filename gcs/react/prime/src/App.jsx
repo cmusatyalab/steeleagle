@@ -12,7 +12,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { OverlayPanel } from 'primereact/overlaypanel';
-import { ToggleButton } from 'primereact/togglebutton';
+import { SelectButton } from 'primereact/selectbutton';
 import { Knob } from 'primereact/knob';
 import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
@@ -430,21 +430,28 @@ function App() {
 
   ], []);
 
+  const modeOptions = [
+    { icon: 'pi pi-server', label: 'Via Swarm Controller', value: false },
+    { icon: 'pi pi-car', label: 'Direct to Local Vehicles', value: true },
+  ];
+
+  const modeTemplate = (option) => {
+    return <><i className={option.icon}></i><div className="m-2"> {option.label}</div></>;
+  }
   const overlayContent = useMemo(() => (
     <>
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap align-content-center m-2">
-          <ToggleButton onLabel="Use Local Vehicles (dev)" offLabel="Use Swarm Controller (prod)" onIcon="pi pi-desktop" offIcon="pi pi-cloud"
-            checked={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} className="flex align-items-center justify-content-center" />
+          <Chip className="flex align-items-center justify-content-center" label="Connection Mode" icon="pi pi-link" />
         </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
+        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
         </div>
       </div>
       <div className="flex flex-row gap-2">
         <div className="flex flex-column flex-wrap align-content-center m-2">
-
+          <SelectButton value={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} itemTemplate={modeTemplate} options={modeOptions} optionLabel="label" className="flex align-items-center justify-content-center" />
         </div>
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
+        <div className="flex flex-column flex-wrap align-content-center m-2">
         </div>
       </div>
     </>
