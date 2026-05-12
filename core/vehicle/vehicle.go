@@ -205,16 +205,9 @@ func createPlugin(r Runnable) (util.Plugin, error) {
 }
 
 func (v *Vehicle) createPlugins() error {
-	var err error
-	v.driver, err = createPlugin(v.pluginConfig.driver)
-	if err != nil {
-		return err
-	}
-	v.mission, err = createPlugin(v.pluginConfig.mission)
-	if err != nil {
-		return err
-	}
-	for _, r := range v.pluginConfig.plugins {
+	runnables := []Runnable{v.pluginConfig.driver, v.pluginConfig.mission}
+	runnables = append(runnables, v.pluginConfig.plugins...)
+	for _, r := range runnables {
 		p, err := createPlugin(r)
 		if err != nil {
 			return err
