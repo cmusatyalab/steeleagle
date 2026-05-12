@@ -9,9 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containers/podman/v5/pkg/bindings"
-	"github.com/containers/podman/v5/pkg/bindings/images"
-	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/rs/zerolog/log"
 )
 
@@ -36,7 +33,7 @@ func (pr PluginRuntime) String() string {
 type Plugin interface {
 	Name() string
 	Runtime() PluginRuntime
-	Start(context.Context, map[string]string) error
+	Start(context.Context) error
 	Stop() error
 	IsRunning() bool
 	Path() string
@@ -61,7 +58,6 @@ type ContainerPlugin struct {
 	BasePlugin
 	cid      string
 	imageTag string
-	connCtx  context.Context
 	cmd      *exec.Cmd
 }
 
@@ -96,31 +92,22 @@ func CreateProcessPlugin(name, path string) (*ProcessPlugin, error) {
 }
 
 func CreateContainerPlugin(ctx context.Context, name, path, imageTag string) (*ContainerPlugin, error) {
-	// Get Podman socket location
-	sock_dir := os.Getenv("XDG_RUNTIME_DIR")
-	socket := "unix:" + sock_dir + "/podman/podman.sock"
 
-	// Connect to Podman socket
-	connCtx, err := bindings.NewConnection(ctx, socket)
+	err := exec.Command("podman", "image", "exists", imageTag).Run()
 	if err != nil {
 		return nil, err
 	}
-
-	exists, err := images.Exists(connCtx, imageTag, nil)
-	if err != nil {
-		return nil, err
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if exitErr.ExitCode() == 1 {
+			return nil, fmt.Errorf("Container image not found")
+		}
 	}
-	if !exists {
-		return nil, fmt.Errorf("Image %q not found", imageTag)
-	}
-
 	p := &ContainerPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
 			path:    path,
 			runtime: Container,
 		},
-		connCtx:  connCtx,
 		imageTag: imageTag,
 	}
 	return p, nil
@@ -130,7 +117,7 @@ func (p ProcessPlugin) Start(ctx context.Context) error {
 	// Start the process
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
 	if err != nil {
-		log.Error().Err(err).Str("plugin", p.Name).Msg("could not run process for plugin")
+		log.Error().Err(err).Str("plugin", p.name).Msg("could not run process for plugin")
 		return err
 	}
 
@@ -146,8 +133,8 @@ func (p ProcessPlugin) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *ProcessPlugin) Stop() {
-
+func (p *ProcessPlugin) Stop() error {
+	return nil
 }
 
 func (p *ContainerPlugin) Start(ctx context.Context) error {
@@ -198,18 +185,21 @@ func (p *ContainerPlugin) waitForRunning() error {
 }
 
 func (p *ContainerPlugin) isRunning() (bool, error) {
-	data, err := containers.Inspect(p.connCtx, p.cid, nil)
+	out, err := exec.Command("podman", "inspect",
+		"--format", "{{.State.Running}}",
+		p.cid,
+	).Output()
 	if err != nil {
 		return false, err
 	}
-	return data.State.Running, nil
+	return strings.TrimSpace(string(out)) == "true", nil
 }
 
-func (p *ContainerPlugin) Stop() err {
-	if err := containers.Stop(p.connCtx, p.cid, nil); err != nil {
+func (p *ContainerPlugin) Stop() error {
+	if err := exec.Command("podman", "stop", p.cid).Run(); err != nil {
 		return err
 	}
-	return p.c
+	return p.cmd.Wait()
 }
 
 func (p *BasePlugin) Name() string {

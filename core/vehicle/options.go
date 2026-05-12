@@ -1,7 +1,5 @@
 package vehicle
 
-import "net"
-
 type VehicleOption func(*Vehicle)
 
 func WithName(name string) VehicleOption {
