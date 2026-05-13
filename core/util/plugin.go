@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type PluginRuntime int
@@ -38,16 +40,16 @@ type Plugin interface {
 	Stop() error
 	IsRunning() bool
 	Target() string
+	Conn() *grpc.ClientConn
 }
 
 type BasePlugin struct {
 	name    string
 	target  string
 	runtime PluginRuntime
-	conn    net.Conn
+	conn    *grpc.ClientConn
 	start   int64 // plugin start time
 	running bool
-	ln      net.Listener
 	cmd     *exec.Cmd
 }
 
@@ -204,11 +206,18 @@ func (p *BasePlugin) createSocketpair() (*os.File, error) {
 	hostFile := os.NewFile(uintptr(fds[0]), fmt.Sprintf("host-%s", p.name))
 	pluginFile := os.NewFile(uintptr(fds[1]), fmt.Sprintf("plugin-%s", p.name))
 
-	p.conn, err = net.FileConn(hostFile)
+	fileConn, err := net.FileConn(hostFile)
+	hostFile.Close()
 	if err != nil {
 		return nil, err
 	}
 
+	p.conn, err = grpc.NewClient("passthrough:///",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
+			return fileConn, nil
+		},
+		))
 	return pluginFile, nil
 }
 
@@ -231,6 +240,10 @@ func (p *BasePlugin) Runtime() PluginRuntime {
 
 func (p *BasePlugin) IsRunning() bool {
 	return p.running
+}
+
+func (p *BasePlugin) Conn() *grpc.ClientConn {
+	return p.conn
 }
 
 var _ Plugin = (*ProcessPlugin)(nil)

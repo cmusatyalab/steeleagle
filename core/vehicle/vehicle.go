@@ -227,6 +227,8 @@ func (v *Vehicle) startPlugins(ctx context.Context) error {
 			return err
 		}
 	}
+	v.conns.driver = v.driver.Conn()
+	v.conns.mission = v.mission.Conn()
 	return nil
 }
 
