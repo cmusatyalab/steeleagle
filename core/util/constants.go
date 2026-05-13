@@ -13,3 +13,6 @@ const (
 	ExternalCode AuthCode = "external"
 	UnknownCode  AuthCode = "unknown"
 )
+
+// The run hook that processes are started from 
+const runhook string = "run.sh"

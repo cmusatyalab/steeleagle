@@ -18,10 +18,10 @@ import (
 )
 
 type listenerState struct {
-	mainLn    net.Listener
-	adminLn   net.Listener
-	wanLn     net.Listener
-	missionLn net.Listener
+	main    net.Listener
+	admin   net.Listener
+	wan     net.Listener
+	mission net.Listener
 }
 
 type connectionState struct {
@@ -113,7 +113,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Create a main socket listener with AuthCode External
 	mainSocket := filepath.Join(v.path, MainSocket)
 	ln, err := net.Listen("unix", mainSocket)
-	v.listeners.mainLn =
+	v.listeners.main =
 		util.NewListener(ln, util.ExternalCode, nil)
 	if err != nil {
 		log.Error().Err(err).Str("file", mainSocket).Msg("could not listen on main socket, aborting")
@@ -121,7 +121,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 	// Create a socket pair listener with AuthCode Admin
 	c, err := net.FileConn(adminEndpoint)
-	v.listeners.adminLn =
+	v.listeners.admin =
 		util.NewSocketPairListener(c, util.AdminCode)
 	adminEndpoint.Close() // close the file since we don't need it anymore
 	if err != nil {
@@ -130,7 +130,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
-		v.listeners.wanLn =
+		v.listeners.wan =
 			util.NewListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs))
 		if err != nil {
 			log.Error().Err(err).Msg("could not listen on WAN endpoint, aborting")
@@ -149,39 +149,38 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Start mission/driver plugins, and retrieve associated ClientConn and
 	// Listener objects
-	err = v.driver.Start(ctx)
+	_, v.conns.driver, err = v.driver.Spawn(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start driver plugin, aborting")
+		return err
 	}
-	//v.conns.driverPxy = driverconn
-	err = v.mission.Start(ctx)
+	v.listeners.mission, v.conns.mission, err = v.mission.Spawn(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start mission plugin, aborting")
+		return err
 	}
-	//v.listeners.missionLn = missionLn
-	//v.conns.mission = missionConn
 
 	// Serve the gRPC server at all listeners
 	errCh := make(chan error, 4)
 	go func() {
-		if err := v.server.Serve(v.listeners.mainLn); err != nil {
+		if err := v.server.Serve(v.listeners.main); err != nil {
 			errCh <- fmt.Errorf("main listener: %w", err)
 		}
 	}()
 	go func() {
-		if err := v.server.Serve(v.listeners.adminLn); err != nil {
+		if err := v.server.Serve(v.listeners.admin); err != nil {
 			errCh <- fmt.Errorf("admin listener: %w", err)
 		}
 	}()
 	go func() {
-		if err := v.server.Serve(v.listeners.wanLn); err != nil {
+		if err := v.server.Serve(v.listeners.wan); err != nil {
 			errCh <- fmt.Errorf("WAN listener: %w", err)
 		}
 	}()
 	go func() {
 		// TODO: may want to restart the mission plugin instead of
 		// returning with an error here
-		if err := v.server.Serve(v.listeners.missionLn); err != nil {
+		if err := v.server.Serve(v.listeners.mission); err != nil {
 			errCh <- fmt.Errorf("mission listener: %w", err)
 		}
 	}()
@@ -194,20 +193,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	case err := <-errCh:
 		return err
 	}
-}
-
-func (v *Vehicle) CreatePlugins() error {
-	var err error
-	v.driver, err = util.CreateProcessPlugin("a", "b")
-	if err != nil {
-		return err
-	}
-
-	v.mission, err = util.CreateProcessPlugin("a", "b")
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Status methods
