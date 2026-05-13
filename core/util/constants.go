@@ -14,7 +14,7 @@ const (
 	UnknownCode  AuthCode = "unknown"
 )
 
-// The run hook that processes are started from 
+// The run hook that processes are started from
 const runhook string = "run.sh"
 
 // Used to determine how to run a plugin
