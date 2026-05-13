@@ -22,6 +22,7 @@ type Plugin interface {
 	Stop() error
 	IsRunning() bool
 	Target() string
+	Conn() *grpc.ClientConn
 }
 
 type BasePlugin struct {
@@ -232,6 +233,3 @@ func (p *BasePlugin) spawnAndCreateConns() (net.Listener, *grpc.ClientConn, erro
 
     return NewSocketPairListener(lnConn, p.code), spClient, nil
 }
-
-var _ Plugin = (*ProcessPlugin)(nil)
-var _ Plugin = (*ContainerPlugin)(nil)
