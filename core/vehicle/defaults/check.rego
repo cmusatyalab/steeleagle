@@ -9,7 +9,7 @@ allowed if {
 }
 
 allowed if {
-    startswith(input.command, "kernel/")
+    startswith(input.command, "admin/")
 }
 
 allowed if {

@@ -19,11 +19,11 @@ func CreateDriverTestPlugin() (*DriverTestPlugin, error) {
 
 }
 
-func (p *DriverTestPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *DriverTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 
 }
 
-func (p *DriverTestPlugin) Stop() {
+func (p *DriverTestPlugin) Stop() error {
 
 }
 
@@ -39,6 +39,10 @@ func CreateMissionTestPlugin() (*MissionTestPlugin, error) {
 
 }
 
-func (p *MissionTestPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *MissionTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+
+}
+
+func (p *MissionTestPlugin) Stop() error {
 
 }
