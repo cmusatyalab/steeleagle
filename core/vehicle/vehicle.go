@@ -37,8 +37,10 @@ type Vehicle struct {
 	path       string
 	socketPath string // path to main services socket
 	// Plugins
-	driver  util.Plugin
-	mission util.Plugin
+	pluginConfig PluginConfig
+	driver       util.Plugin
+	mission      util.Plugin
+	plugins      []util.Plugin
 	// Connections
 	connCfg   ConnectionConfig
 	server    *grpc.Server

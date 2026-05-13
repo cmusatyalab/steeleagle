@@ -16,3 +16,12 @@ const (
 
 // The run hook that processes are started from 
 const runhook string = "run.sh"
+
+// Used to determine how to run a plugin
+type PluginRuntime string
+
+const (
+	Process   PluginRuntime = "Process"
+	Container PluginRuntime = "Container"
+	Sandbox   PluginRuntime = "Sandbox"
+)

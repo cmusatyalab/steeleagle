@@ -15,89 +15,77 @@ import (
 	"google.golang.org/grpc"
 )
 
-type PluginRuntime string
-
-const (
-	Process   PluginRuntime = "Process"
-	Container PluginRuntime = "Container"
-	Sandbox   PluginRuntime = "Sandbox"
-)
-
 type Plugin interface {
 	Name() string
 	Runtime() PluginRuntime
 	Spawn(context.Context) (net.Listener, *grpc.ClientConn, error)
 	Stop() error
 	IsRunning() bool
-	Path() string
+	Target() string
 }
 
 type BasePlugin struct {
 	name    string
-	path    string
+	target    string
 	runtime PluginRuntime
 	start   int64 // plugin start time
 	running bool
     code    AuthCode
+	cmd     *exec.Cmd
 }
 
 type ProcessPlugin struct {
 	BasePlugin
-	cmd *exec.Cmd
 }
 
 type ContainerPlugin struct {
 	BasePlugin
 	cid string
 	tag string
-	cmd *exec.Cmd
 }
 
-type PluginOption func(*BasePlugin)
-
-func CreateProcessPlugin(code AuthCode, name, path string) (*ProcessPlugin, error) {
-    // Check that the process path exists
-	info, err := os.Stat(path)
+func CreateProcessPlugin(code AuthCode, name, target string) (*ProcessPlugin, error) {
+    // Check that the process target exists
+	info, err := os.Stat(target)
 	if err != nil {
 		if os.IsNotExist(err) {
             log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't find plugin, have you installed it?")
 			return nil, err
 		}
-        log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't stat plugin path")
+        log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't stat plugin target")
 		return nil, err
 	}
 
     // If the plugin is a directory, then attach the runhook
 	if info.IsDir() {
-        // Set info and path to the runhook
-	    path = filepath.Join(path, runhook)
-        info, err = os.Stat(path)
+        // Set info and target to the runhook
+	    target = filepath.Join(target, runhook)
+        info, err = os.Stat(target)
         if err != nil {
             log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't stat plugin run hook, is it there?")
         }
     }
+    // Ensure that the plugin is runnable
+	if info.Mode() & 0o111 == 0 {
+        return nil, fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", name)
+    }
+    
+    // Create the plugin
 	p := &ProcessPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
-			path:    path,
+			target:  target,
 			runtime: Process,
             code:    code,
 		},
 	}
 
-    // Ensure that the plugin is runnable
-	if info.Mode() & 0o111 != 0 {
-		p.cmd = exec.Command(path)
-    } else {
-        return nil, fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", name)
-    }
-
 	return p, nil
 }
 
-func CreateContainerPlugin(code AuthCode, name, path, tag string) (*ContainerPlugin, error) {
+func CreateContainerPlugin(code AuthCode, name, target, tag string) (*ContainerPlugin, error) {
     // Make sure podman is installed
-    path, err := exec.LookPath("podman")
+    target, err := exec.LookPath("podman")
     if err != nil {
         log.Error().Err(err).Msg("couldn't find podman, have you installed it?")
         return nil, err
@@ -114,57 +102,32 @@ func CreateContainerPlugin(code AuthCode, name, path, tag string) (*ContainerPlu
 			return nil, fmt.Errorf("container image %s not found", tag)
 		}
 	}
+	
+    // Create the command and plugin 
 	p := &ContainerPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
-			path:    path,
 			runtime: Container,
             code:    code,
 		},
 		tag: tag,
 	}
+
 	return p, nil
 }
 
 func (p *ProcessPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Create a socket pair to communicate with the plugin
-	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-	if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open socket pair for plugin")
-		return nil, nil, err
-	}
-    ln := os.NewFile(uintptr(fds[0]), fmt.Sprintf("listener-%s", p.name))
-	client := os.NewFile(uintptr(fds[1]), fmt.Sprintf("client-%s", p.name))
-    defer ln.Close()
-    defer client.Close()
+    // Create the command
+    p.cmd = exec.CommandContext(ctx, p.target)
+    
+    // Run the plugin
+    ln, c, err := p.spawnAndCreateConns()
 
-    // Spawn the process
-	p.cmd.ExtraFiles = []*os.File{client}
-	err = p.cmd.Run()
-	if err != nil {
-		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't run process for plugin")
-		return nil, nil, err
-	}
-	syscall.Close(fds[1])
+    // Populate the plugin information
 	p.start = time.Now().UnixMilli()
 	p.running = true
 
-    lnConn, err := net.FileConn(ln)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open listener socket")
-        return nil, nil, err
-    }
-    clientConn, err := net.FileConn(ln)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open client socket")
-        return nil, nil, err
-    }
-    spClient, err := NewSocketPairClient(clientConn)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't create socket pair client")
-        return nil, nil, err
-    }
-	return NewSocketPairListener(lnConn, p.code), spClient, nil
+    return ln, c, err
 }
 
 func (p *ProcessPlugin) Stop() error {
@@ -176,28 +139,15 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
 	cidFile, _ := os.CreateTemp("", "cid-*")
 	cidFile.Close()
 	defer os.Remove(cidFile.Name())
-
-	// Create a socket pair to communicate with the plugin
-	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-	if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open socket pair for plugin")
-		return nil, nil, err
-	}
-    ln := os.NewFile(uintptr(fds[0]), fmt.Sprintf("listener-%s", p.name))
-	client := os.NewFile(uintptr(fds[1]), fmt.Sprintf("client-%s", p.name))
-    defer ln.Close()
-    defer client.Close()
-
-	// Run the container
-	cmd := exec.CommandContext(ctx, "podman", "run", "--rm",
+    
+    // Create the command
+	p.cmd = exec.CommandContext(ctx, "podman", "run", "--rm",
 		"--cidfile", cidFile.Name(),
 		"--preserve-fd", "3",
 		p.tag)
-	cmd.ExtraFiles = []*os.File{client}
-	if err := cmd.Run(); err != nil {
-		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't run container for plugin")
-		return nil, nil, err
-	}
+
+    // Run the plugin
+    ln, c, err := p.spawnAndCreateConns()
 
 	// Get container id from the temporary file
 	data, _ := os.ReadFile(cidFile.Name())
@@ -205,22 +155,7 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
 	p.start = time.Now().UnixMilli()
 	p.running = true
 
-    lnConn, err := net.FileConn(ln)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open listener socket")
-        return nil, nil, err
-    }
-    clientConn, err := net.FileConn(ln)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open client socket")
-        return nil, nil, err
-    }
-    spClient, err := NewSocketPairClient(clientConn)
-    if err != nil {
-        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't create socket pair client")
-        return nil, nil, err
-    }
-	return NewSocketPairListener(lnConn, p.code), spClient, nil
+	return ln, c, err
 }
 
 func (p *ContainerPlugin) isRunning() (bool, error) {
@@ -245,8 +180,8 @@ func (p *BasePlugin) Name() string {
 	return p.name
 }
 
-func (p *BasePlugin) Path() string {
-	return p.path
+func (p *BasePlugin) Target() string {
+	return p.target
 }
 
 func (p *BasePlugin) Runtime() PluginRuntime {
@@ -255,6 +190,47 @@ func (p *BasePlugin) Runtime() PluginRuntime {
 
 func (p *BasePlugin) IsRunning() bool {
 	return p.running
+}
+
+func (p *BasePlugin) spawnAndCreateConns() (net.Listener, *grpc.ClientConn, error) {
+	// Create a socket pair to communicate with the plugin
+	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open socket pair for plugin")
+		return nil, nil, err
+	}
+
+    // Create internal files
+    ln := os.NewFile(uintptr(fds[0]), fmt.Sprintf("listener-%s", p.name))
+	client := os.NewFile(uintptr(fds[1]), fmt.Sprintf("client-%s", p.name))
+    defer ln.Close()
+    defer client.Close()
+	p.cmd.ExtraFiles = []*os.File{client}
+    
+    // Build the file connections
+    lnConn, err := net.FileConn(ln)
+    if err != nil {
+        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open listener socket")
+        return nil, nil, err
+    }
+    clientConn, err := net.FileConn(ln)
+    if err != nil {
+        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't open client socket")
+        return nil, nil, err
+    }
+    spClient, err := NewSocketPairClient(clientConn)
+    if err != nil {
+        log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't create socket pair client")
+        return nil, nil, err
+    }
+	
+    // Run target
+    if err := p.cmd.Run(); err != nil {
+		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't run target for plugin")
+		return nil, nil, err
+	}
+
+    return NewSocketPairListener(lnConn, p.code), spClient, nil
 }
 
 var _ Plugin = (*ProcessPlugin)(nil)
