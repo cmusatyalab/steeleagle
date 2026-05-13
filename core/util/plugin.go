@@ -33,7 +33,6 @@ type BasePlugin struct {
 	running bool
 	code    AuthCode
 	cmd     *exec.Cmd
-	conn    *grpc.ClientConn
 }
 
 type ProcessPlugin struct {
@@ -194,10 +193,6 @@ func (p *BasePlugin) IsRunning() bool {
 	return p.running
 }
 
-func (p *BasePlugin) Conn() *grpc.ClientConn {
-	return p.conn
-}
-
 func (p *BasePlugin) spawnAndCreateConns() (net.Listener, *grpc.ClientConn, error) {
 	// Create a socket pair to communicate with the plugin
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
@@ -229,7 +224,6 @@ func (p *BasePlugin) spawnAndCreateConns() (net.Listener, *grpc.ClientConn, erro
 		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't create socket pair client")
 		return nil, nil, err
 	}
-	p.conn = spClient
 
 	// Run target
 	if err := p.cmd.Run(); err != nil {
