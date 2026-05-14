@@ -13,9 +13,12 @@ import (
 struct DriverTestPlugin struct {
     util.BasePlugin
     server  *grpc.Server
+    channel chan CallType 
 } 
 
 func CreateDriverTestPlugin() (*DriverTestPlugin, error) {
+    s := grpc.NewServer()
+    services_pb.RegisterControlServiceServer(s, &ControlTestService{})
     return &DriverTestPlugin{
         server: grpc.NewServer(),
     }
@@ -44,17 +47,19 @@ func (p *DriverTestPlugin) Stop() error {
     p.server.GracefulStop()
 }
 
-
 // Mock mission plugin to act as an endpoint for test clients
 struct MissionTestPlugin struct {
     util.BasePlugin
     server  *grpc.Server
     client  *grpc.ClientConn
+    channel chan CallType 
 }
 
 func CreateMissionTestPlugin() (*MissionTestPlugin, error) {
+    s := grpc.NewServer()
+    services_pb.RegisterControlServiceServer(s, &MissionTestService{})
     return &MissionTestPlugin{
-        server: grpc.NewServer(),
+        server: s,
     }
 }
 

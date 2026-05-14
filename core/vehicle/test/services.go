@@ -12,29 +12,52 @@ const (
     TakeOff CallType = iota
     Hold
     StartMission
+    GetVideoURL
+    GetTelemetryStream
+    Error
 )
 
-type ControlService struct {
+type ControlTestService struct {
     services_pb.UnimplementedControlServiceServer
     channel chan CallType
 }
 
-type MissionService struct {
+type StreamTestService struct {
+    services_pb.UnimplementedStreamServiceServer
+    channel chan CallType
+}
+
+type MissionTestService struct {
     services_pb.UnimplementedMissionServiceServer
     channel chan CallType
 }
 
-func (s *ControlService) TakeOff(ctx context.Context, request *services_pb.TakeOffRequest) (*services_pb.TakeOffResponse, error) {
+func (s *ControlTestService) TakeOff(ctx context.Context, request *services_pb.TakeOffRequest) (*services_pb.TakeOffResponse, error) {
     s.channel <- TakeOff
-    return &services_pb.TakeOffRequest{}, nil
+    return &services_pb.TakeOffResponse{}, nil
 }
 
-func (s *ControlService) Hold(ctx context.Context, request *services_pb.HoldRequest) (*services_pb.HoldResponse, error) {
+func (s *ControlTestService) Hold(ctx context.Context, request *services_pb.HoldRequest) (*services_pb.HoldResponse, error) {
     s.channel <- Hold
-    return &services_pb.HoldRequest{}, nil
+    return &services_pb.HoldResponse{}, nil
 }
 
-func (s *MissionService) StartMission(ctx context.Context, request *services_pb.StartMissionRequest) (*services_pb.StartMissionResponse, error) {
+func (s *StreamTestService) GetVideoURL(ctx context.Context, request *services_pb.GetVideoURLRequest) (*services_pb.GetVideoURLResponse, error) {
+    s.channel <- GetVideoURL
+    return &services_pb.GetVideoURLResponse{}, nil
+}
+
+func (s *StreamTestService) GetTelemetryStream(request *services_pb.GetTelemetryStreamRequest, srv pb.StreamService_GetTelemetryStreamServer) error {
+    s.channel <- GetTelemetryStream
+    for i = 0; i < 5; i++ {
+        if err = srv.Send(&services_pb.GetTelemetryStreamResponse{}); err != nil {
+            s.channel <- Error
+            return err
+        }
+    }
+}
+
+func (s *MissionTestService) StartMission(ctx context.Context, request *services_pb.StartMissionRequest) (*services_pb.StartMissionResponse, error) {
     s.channel <- StartMission
-    return &services_pb.StartMissionRequest{}, nil
+    return &services_pb.StartMissionResponse{}, nil
 }
