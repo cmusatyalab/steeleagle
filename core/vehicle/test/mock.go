@@ -16,15 +16,32 @@ struct DriverTestPlugin struct {
 } 
 
 func CreateDriverTestPlugin() (*DriverTestPlugin, error) {
-
+    return &DriverTestPlugin{
+        server: grpc.NewServer(),
+    }
 }
 
 func (p *DriverTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+    lnFile, clientFile, err := util.CreateSocketPairFiles()
+    if err != nil {
+        return err
+    }
+    ln, client, err := util.CreateEndpoints(lnFile, clientFile)
+    if err != nil {
+        return err
+    }
 
+    go func() {
+        if err := p.server.Serve(ln); err != nil {
+            return err
+        }
+    }()
+
+    return nil
 }
 
 func (p *DriverTestPlugin) Stop() error {
-
+    p.server.GracefulStop()
 }
 
 
@@ -36,13 +53,31 @@ struct MissionTestPlugin struct {
 }
 
 func CreateMissionTestPlugin() (*MissionTestPlugin, error) {
-
+    return &MissionTestPlugin{
+        server: grpc.NewServer(),
+    }
 }
 
 func (p *MissionTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+    lnFile, clientFile, err := util.CreateSocketPairFiles()
+    if err != nil {
+        return err
+    }
+    ln, client, err := util.CreateEndpoints(lnFile, clientFile)
+    if err != nil {
+        return err
+    }
+    p.client = client
 
+    go func() {
+        if err := p.server.Serve(ln); err != nil {
+            return err
+        }
+    }()
+
+    return nil
 }
 
 func (p *MissionTestPlugin) Stop() error {
-
+    p.server.GracefulStop()
 }

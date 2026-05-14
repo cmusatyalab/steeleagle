@@ -22,7 +22,6 @@ type Plugin interface {
 	Stop() error
 	IsRunning() bool
 	Target() string
-	Conn() *grpc.ClientConn
 }
 
 type BasePlugin struct {
