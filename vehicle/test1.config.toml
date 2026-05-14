@@ -9,7 +9,7 @@ package = ''
 
 [mission]
 # If local, path to the package directory
-path = ''
+path = '../mission'
 # Mission package
 package = 'steeleagle-mission'
 
