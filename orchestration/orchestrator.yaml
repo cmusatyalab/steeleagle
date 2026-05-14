@@ -1,0 +1,65 @@
+# orchestrator.yaml
+#
+# Define every service the daemon should know about.
+# The daemon loads this file at startup.
+#
+# Managed flag (useful for environments where not all services need to be run):
+#   true - this service will be managed by the daemon
+#   false - the daemon will ignore the service on launch
+#
+# Supported service types:
+#
+#   process   — a long-running Python (or any) subprocess
+#   pool      — a group of identically-configured processes, each
+#               launched on demand with optional per-instance extra args
+#   container — an individual Docker container
+#   compose   — a group of containers defined by docker compose yaml/env files
+#
+# NOTE: Directories for commands must map to the directory where the repositories were created.
+# e.g. If SteelEagle was cloned with Git to 'se' instead of the default 'steeleagle' directory,
+# the commands below would need to be updated to point at '~/se/...'.
+# User expansion will be performed on these paths, so ~ is valid to specify the user's home directory.
+
+services:
+  # Aviary Simulator (from git.cmusatyalab.org/steeleagle/roost)
+  sim:
+    managed: false
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/roost/aviary/src/steeleagle_aviary",
+                "simulator.py",
+            ]
+
+  # React/FastAPI Ground Control System
+  gcs:
+    managed: true
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/gcs/react/backend",
+                "main.py",
+            ]
+
+  # Backend containers including swarm controller and cognitive engines
+  backend:
+    managed: false
+    type: compose
+    compose_files: ["~/steeleagle/backend/server/docker-compose.yml"]
+    environment: ["~/steeleagle/backend/server/.env"]
+
+  # Vehicle (kernel, driver, mission) instances
+  vehicle:
+    managed: true
+    type: pool
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/vehicle",
+                "launch.py",
+            ]

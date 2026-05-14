@@ -13,6 +13,7 @@ Or via the CLI:
 
 import asyncio
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -24,6 +25,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from rich.logging import RichHandler
 
+from .config import load_services
 from .container_manager import ContainerManager
 from .docker_compose_manager import DockerComposeManager
 from .process_manager import ProcessManager
@@ -51,50 +53,9 @@ CONFIGS: dict[str, Path] = {
     "simulator": Path("~/.steeleagle/aviary.toml").expanduser(),
 }
 
-MAIN_REPO_PATH = Path("~/steeleagle").expanduser()
-ROOST_REPO_PATH = Path("~/roost").expanduser()
-
 SERVICES: dict[
     str, ProcessManager | ContainerManager | ProcessPool | DockerComposeManager
-] = {
-    "gcs": ProcessManager(
-        name="gcs",
-        command=[
-            "uv",
-            "run",
-            "--directory",
-            str(MAIN_REPO_PATH / "gcs" / "react" / "backend"),
-            "main.py",
-        ],
-    ),
-    "sim": ProcessManager(
-        name="sim",
-        command=[
-            "uv",
-            "run",
-            "--directory",
-            str(ROOST_REPO_PATH / "aviary" / "src" / "steeleagle_aviary"),
-            "simulator.py",
-        ],
-    ),
-    "backend": DockerComposeManager(
-        name="backend",
-        compose_files=[
-            Path("~/steeleagle/backend/server/docker-compose.yml").expanduser()
-        ],
-        environment=[Path("~/steeleagle/backend/server/.env").expanduser()],
-    ),
-    "vehicle": ProcessPool(
-        name="vehicle",
-        command=[
-            "uv",
-            "run",
-            "--directory",
-            str(MAIN_REPO_PATH / "vehicle"),
-            "launch.py",
-        ],
-    ),
-}
+] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +68,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # check if ~/.steeleagle conf dir exists, and create it
     logger.info("Checking for .steeleagle conf dir (and optionally creating)...")
     Path("~/.steeleagle").expanduser().mkdir(exist_ok=True)
+
+    config_path = Path(os.environ.get("ORCH_CONFIG", "orchestrator.yaml"))
+    logger.info(f"Loading config from: {config_path.resolve()}")
+    try:
+        SERVICES.update(load_services(config_path))
+    except FileNotFoundError as exc:
+        logger.error(f"Configuration file not found: {config_path}")
+        raise SystemExit(1) from exc
+    except Exception as exc:
+        logger.error(f"ERROR loading configuration: {exc}")
+        raise SystemExit(1) from exc
+
+    logger.info(f"Registered services: {list(SERVICES)}")
+
     logger.info("Waiting for API calls from CLI...")
     yield
     # Graceful shutdown: stop all services.
@@ -185,7 +160,7 @@ async def _log_stream(
     try:
         while True:
             try:
-                line = await asyncio.wait_for(q.get(), timeout=15.0)
+                line = await asyncio.wait_for(q.get(), timeout=1.0)
                 yield f"data: {line}"
             except TimeoutError:
                 yield ": keep-alive\n\n"
