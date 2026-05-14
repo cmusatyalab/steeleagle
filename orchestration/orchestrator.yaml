@@ -23,7 +23,7 @@
 services:
   # Aviary Simulator (from git.cmusatyalab.org/steeleagle/roost)
   sim:
-    managed: false
+    managed: true
     type: process
     command: [
                 "uv",
@@ -47,7 +47,7 @@ services:
 
   # Backend containers including swarm controller and cognitive engines
   backend:
-    managed: false
+    managed: true
     type: compose
     compose_files: ["~/steeleagle/backend/server/docker-compose.yml"]
     environment: ["~/steeleagle/backend/server/.env"]
