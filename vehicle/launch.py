@@ -29,6 +29,7 @@ def wait_on_service(address, timeout=10, interval=0.5):
         except grpc.FutureTimeoutError:
             continue
     channel.close()
+    print("Timeout waiting for service to start!")
     raise Exception("Service failed to start by deadline!")
 
 def start_services(log, info):
@@ -97,6 +98,10 @@ def start_services(log, info):
                 ]
             task = subprocess.Popen(driver)
             running.append(task)
+
+            # Wait on the driver to start
+            wait_on_service(info["address"])
+            print("Finished waiting for driver, service is ready")
         elif info and info["path"] != '': # Local run
             path = Path(info["path"])
             with open(str(path / "cap.toml")) as cap:
@@ -115,9 +120,9 @@ def start_services(log, info):
             task = subprocess.Popen(driver, cwd=str(path))
             running.append(task)
 
-        # Wait on the driver to start
-        wait_on_service(info["address"])
-        print("Finished waiting for driver, service is ready")
+            # Wait on the driver to start
+            wait_on_service(info["address"])
+            print("Finished waiting for driver, service is ready")
 
         # Start the mission
         if info and info['mission_package'] != '':
@@ -138,9 +143,9 @@ def start_services(log, info):
             task = subprocess.Popen(mission, cwd=str(path))
             running.append(task)
 
-        # Wait on the mission to start
-        wait_on_service(info["mission_address"])
-        print("Finished waiting for mission, service is ready")
+            # Wait on the mission to start
+            wait_on_service(info["mission_address"])
+            print("Finished waiting for mission, service is ready")
 
         # Start the kernel
         kernel = ["python", "kernel/main.py"]
