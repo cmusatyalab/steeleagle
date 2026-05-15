@@ -39,12 +39,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("rich")
 
-# ---------------------------------------------------------------------------
-# Service registry
-#
-# Add / remove entries here to manage more services. Both manager types
-# expose: start(), stop(), status(), get_logs(tail), subscribe(), unsubscribe()
-# ---------------------------------------------------------------------------
 
 CONFIGS: dict[str, Path] = {
     "gcs": Path("~/.steeleagle/gcs.toml").expanduser(),
@@ -65,23 +59,20 @@ SERVICES: dict[
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # check if ~/.steeleagle conf dir exists, and create it
-    logger.info("Checking for .steeleagle conf dir (and optionally creating)...")
-    Path("~/.steeleagle").expanduser().mkdir(exist_ok=True)
-
-    config_path = Path(os.environ.get("ORCH_CONFIG", "orchestrator.yaml"))
+    config_path = Path(
+        os.environ.get("ORCH_CONFIG", "~/.steeleagle/orchestrator.yaml")
+    ).expanduser()
     logger.info(f"Loading config from: {config_path.resolve()}")
     try:
         SERVICES.update(load_services(config_path))
     except FileNotFoundError as exc:
-        logger.error(f"Configuration file not found: {config_path}")
+        logger.error(f"Configuration file not found: {config_path}.")
         raise SystemExit(1) from exc
     except Exception as exc:
         logger.error(f"ERROR loading configuration: {exc}")
         raise SystemExit(1) from exc
 
     logger.info(f"Registered services: {list(SERVICES)}")
-
     logger.info("Waiting for API calls from CLI...")
     yield
     # Graceful shutdown: stop all services.
@@ -161,7 +152,7 @@ async def _log_stream(
         while True:
             try:
                 line = await asyncio.wait_for(q.get(), timeout=1.0)
-                yield f"data: {line}"
+                yield f"data: {line}\n\n"
             except TimeoutError:
                 yield ": keep-alive\n\n"
     except asyncio.CancelledError:

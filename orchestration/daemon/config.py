@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from .container_manager import ContainerManager
 from .docker_compose_manager import DockerComposeManager
@@ -50,26 +50,10 @@ class ProcessServiceConfig(ServiceConfig):
     type: Literal["process"]
     command: list[str]
 
-    @field_validator("command")
-    @classmethod
-    def _resolve_command(cls, v: list[str]) -> list[str]:
-        return [
-            OrchestratorConfig.repos["roost"] if part == "{main_repo}" else part
-            for part in v
-        ]
-
 
 class PoolServiceConfig(ServiceConfig):
     type: Literal["pool"]
     command: list[str]
-
-    @field_validator("command")
-    @classmethod
-    def _resolve_command(cls, v: list[str]) -> list[str]:
-        return [
-            OrchestratorConfig.repos["roost"] if part == "{main_repo}" else part
-            for part in v
-        ]
 
 
 class ContainerServiceConfig(ServiceConfig):

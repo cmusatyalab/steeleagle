@@ -15,6 +15,18 @@
 #   container — an individual Docker container
 #   compose   — a group of containers defined by docker compose yaml/env files
 #
+# Additional type-specific fields:
+#   process,pool:
+#     command - list of strings that specify the command to run with its arguments
+#   compose:
+#     compose_files - list of strings to the paths of Docker compose files to start
+#     environment - list of strings to the paths of any environment files to include
+#   container:
+#     image - Docker image to run
+#     ports: dict[str, int]
+#     environment: dict[str, str]
+#     volumes: dict[str, str]
+#
 # NOTE: Directories for commands must map to the directory where the repositories were created.
 # e.g. If SteelEagle was cloned with Git to 'se' instead of the default 'steeleagle' directory,
 # the commands below would need to be updated to point at '~/se/...'.

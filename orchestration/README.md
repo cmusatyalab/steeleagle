@@ -19,14 +19,72 @@ cd ~/steeleagle/orchestration
 uv tool install . -e
 ```
 
+## Service Configuration
+
+The orchestration.yaml file lists the services that the daemon should manage and the paths to those services. Modify this file to remove any services that don't need to be managed (e.g. set sim, gcs, and backend to managed: false if you are only plan to run the vehicle on this system) and to set the paths to those services. By default, the configuration will assume the main SteelEagle repository is at ~/steeleagle and the Roost repository at ~/roost. If these repositories were cloned to other locations, update orchestrator.yaml to reflect accordingly.
+
+```yaml
+services:
+  # Aviary Simulator (from git.cmusatyalab.org/steeleagle/roost)
+  sim:
+    managed: true
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/roost/aviary/src/steeleagle_aviary",
+                "simulator.py",
+            ]
+
+  # React/FastAPI Ground Control System
+  gcs:
+    managed: true
+    type: process
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/gcs/react/backend",
+                "main.py",
+            ]
+
+  # Backend containers including swarm controller and cognitive engines
+  backend:
+    managed: true
+    type: compose
+    compose_files: ["~/steeleagle/backend/server/docker-compose.yml"]
+    environment: ["~/steeleagle/backend/server/.env"]
+
+  # Vehicle (kernel, driver, mission) instances
+  vehicle:
+    managed: true
+    type: pool
+    command: [
+                "uv",
+                "run",
+                "--directory",
+                "~/steeleagle/vehicle",
+                "launch.py",
+            ]
+```
 
 ## Start the CLI daemon
 
-Before any other commands can be executed, the daemon must be launched. This command is blocking, so it will need to be run in a separate terminal, or pushed into the background (with &).
+Before any other commands can be executed, the daemon must be launched. The first time the daemon is run, it must be run with the --configure flag. This will create a .steeleagle subdirectory in the user's home directory and copy the service definitions from the local source tree into this directory.
+
+```bash
+steele daemon --configure
+```
+
+After the daemon has been configured, the 'steele' command can be run from any directory. It will load the service definitions from `~/.steeleagle/orchestrator.yaml`. Start the daemon with:
 
 ```bash
 steele daemon
 ```
+
+> [!NOTE]
+> This command is blocking, so it will need to be run in a separate terminal, or pushed into the background (with &).
 
 ## Install zero or more drivers
 

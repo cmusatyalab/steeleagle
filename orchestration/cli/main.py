@@ -6,6 +6,8 @@ to the daemon. Start the daemon first with `steele daemon`.
 
 """
 
+import shutil
+from pathlib import Path
 from typing import Annotated
 
 import httpx
@@ -117,8 +119,8 @@ def _follow_sse(url: str, params: dict, prefix: str = "") -> None:
                 rprint(f"[red]Error {resp.status_code}[/red]")
                 raise typer.Exit(1)
             for raw in resp.iter_lines():
-                if raw.startswith("data: "):
-                    rprint(f"{escape(raw[6:])}")
+                if raw.startswith("data:"):
+                    rprint(f"{escape(raw[5:])}")
     except KeyboardInterrupt:
         rprint("\n[dim]Stream closed.[/dim]")
 
@@ -137,6 +139,10 @@ def main(daemon_url: str = "http://127.0.0.1:8765"):
 def daemon(
     host: str = typer.Option("127.0.0.1", help="Bind host"),
     port: int = typer.Option(8765, help="Bind port"),
+    configure: bool = typer.Option(
+        False,
+        help="RUN FIRST! Creates .steeleagle directory and copies initial configuration from current working directory.",
+    ),
     reload: bool = typer.Option(
         False, help="Enable reload on source changes (dev mode)"
     ),
@@ -145,15 +151,31 @@ def daemon(
     ),
 ):
     """Start the orchestrator daemon (blocking)."""
-
-    rprint(f"[bold green]Starting orchestrator daemon[/bold green] on {host}:{port}")
-    uvicorn.run(
-        "daemon.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level=loglevel,
-    )
+    if configure:
+        # check if ~/.steeleagle conf dir exists or create it
+        rprint(
+            f"Checking for {Path('~/.steeleagle').expanduser()} dir and creating if necessary…"
+        )
+        Path("~/.steeleagle").expanduser().mkdir(exist_ok=True)
+        # copy orchestrator.yaml if necessary
+        if not Path("~/.steeleagle/orchestrator.yaml").expanduser().exists():
+            shutil.copy("orchestrator.yaml", Path("~/.steeleagle").expanduser())
+            rprint("Copied daemon configuration.")
+        else:
+            rprint(
+                f"{Path('~/.steeleagle/orchestrator.yaml').expanduser()} already exists."
+            )
+    else:
+        rprint(
+            f"[bold green]Starting orchestrator daemon[/bold green] on {host}:{port}"
+        )
+        uvicorn.run(
+            "daemon.main:app",
+            host=host,
+            port=port,
+            reload=reload,
+            log_level=loglevel,
+        )
 
 
 # ---------------------------------------------------------------------------
