@@ -75,3 +75,5 @@ services:
                 "~/steeleagle/vehicle",
                 "launch.py",
             ]
+# Roost (git.cmusatyalab.org/steeleagle/roost) will be pulled into this directory by the daemon on launch
+roost: "~/roost"

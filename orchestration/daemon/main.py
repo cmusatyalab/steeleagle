@@ -25,7 +25,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from rich.logging import RichHandler
 
-from .config import load_services
+from .config import get_roost_repo, load_services
 from .container_manager import ContainerManager
 from .docker_compose_manager import DockerComposeManager
 from .process_manager import ProcessManager
@@ -65,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info(f"Loading config from: {config_path.resolve()}")
     try:
         SERVICES.update(load_services(config_path))
+        _get_roost_repo()
     except FileNotFoundError as exc:
         logger.error(f"Configuration file not found: {config_path}.")
         raise SystemExit(1) from exc
@@ -161,9 +162,12 @@ async def _log_stream(
         unsubscribe(q)
 
 
-def _get_repo() -> git.Repo:
-    roost_dir = "~/roost"
-    exists = Path(roost_dir).expanduser().exists()
+def _get_roost_repo() -> git.Repo:
+    config_path = Path(
+        os.environ.get("ORCH_CONFIG", "~/.steeleagle/orchestrator.yaml")
+    ).expanduser()
+    roost_dir = Path(get_roost_repo(config_path)).expanduser()
+    exists = roost_dir.exists()
     if not exists:
         repo_url = "https://git.cmusatyalab.org/steeleagle/roost"
         repo = git.Repo.clone_from(repo_url, roost_dir)
@@ -318,7 +322,7 @@ async def instance_logs(
 
 @app.get("/drivers", summary="List all available drivers")
 async def list_drivers():
-    repo = _get_repo()
+    repo = _get_roost_repo()
     tree = repo.head.commit.tree
     drivers = []
     for entry in tree["drivers"]:
@@ -343,7 +347,7 @@ async def list_drivers():
 
 @app.post("/drivers/{name}/install", summary="Install a driver from roost")
 async def install_driver(name: str):
-    repo = _get_repo()
+    repo = _get_roost_repo()
     tree = repo.head.commit.tree
     try:
         target = tree["drivers"] / name

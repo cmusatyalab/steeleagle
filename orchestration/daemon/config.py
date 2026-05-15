@@ -81,6 +81,7 @@ AnyServiceConfig = Annotated[
 
 
 class OrchestratorConfig(BaseModel):
+    roost: str = "~/roost"
     services: dict[str, AnyServiceConfig] = {}
 
 
@@ -149,3 +150,8 @@ def load_services(path: Path) -> ServiceRegistry:
     """Convenience wrapper: load config and build registry in one call."""
     config = load_config(path)
     return build_registry(config)
+
+
+def get_roost_repo(path: Path) -> Path:
+    config = load_config(path)
+    return Path(config.roost)
