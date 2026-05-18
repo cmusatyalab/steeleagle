@@ -1,5 +1,18 @@
 package util
 
+import (
+	"fmt"
+    "net"
+    "context"
+    "os"
+    "os/exec"
+    "strings"
+    "time"
+	
+    "github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+)
+
 type ContainerPlugin struct {
 	BasePlugin
 	cid string
@@ -71,7 +84,7 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
 	p.start = time.Now().UnixMilli()
 	p.running = true
 
-	return CreateEndpoints(ln, c)
+	return CreateEndpoints(p.code, ln, c)
 }
 
 func (p *ContainerPlugin) isRunning() (bool, error) {

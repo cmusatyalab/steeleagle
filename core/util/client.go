@@ -23,5 +23,5 @@ func NewSocketPairClient(c net.Conn, opts ...grpc.DialOption) (*grpc.ClientConn,
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-	return grpc.NewClient("passthrough://ignored", opts...)
+	return grpc.NewClient("passthrough:///socket", opts...)
 }

@@ -3,6 +3,7 @@ package util_test
 import (
 	"net"
 	"testing"
+    "time"
 )
 
 type spoofedConn struct {
@@ -34,13 +35,25 @@ func (l *spoofedListener) SetFakeIP(fakeIP string) {
     }
 }
 
-func newSpoofedListener(t *testing.T) net.Listener {
+func newSpoofedListener(t *testing.T, l net.Listener) *spoofedListener {
 	t.Helper()
-	inner, err := net.Listen("tcp", "127.0.0.1:50051")
-	if err != nil {
-		t.Fatalf("failed to create listener: %v", err)
-	}
 	return &spoofedListener{
-		Listener: inner,
+		Listener: l,
 	}
+}
+
+func isConnClosed(t *testing.T, conn net.Conn) bool {
+    t.Helper()
+    if conn == nil {
+        return true
+    }
+    conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+    _, err := conn.Read(make([]byte, 1))
+    if err == nil {
+        return false
+    }
+    if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+        return false
+    }
+    return true
 }

@@ -1,12 +1,32 @@
 package util
 
-type ProcessPlugin struct {
+import (
+	"fmt"
+    "net"
+    "context"
+    "os"
+    "os/exec"
+    "time"
+    "path/filepath"
+	
+    "github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
+)
+
+type SandboxPlugin struct {
 	BasePlugin
 	cmd     *exec.Cmd
 }
 
-func CreateProcessPlugin(code AuthCode, name, target string) (*ProcessPlugin, error) {
-	// Check that the process target exists
+func CreateSandboxPlugin(code AuthCode, name, target string) (*SandboxPlugin, error) {
+	// Make sure bubblewrap is installed
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+		log.Error().Err(err).Msg("couldn't find bubblewrap (bwrap), have you installed it?")
+		return nil, err
+	}
+
+    // Check that the target exists
 	info, err := os.Stat(target)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -27,16 +47,16 @@ func CreateProcessPlugin(code AuthCode, name, target string) (*ProcessPlugin, er
 		}
 	}
 	// Ensure that the plugin is runnable
-	if info.Mode()&0o111 == 0 {
+	if info.Mode() & 0o111 == 0 {
 		return nil, fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", name)
 	}
 
 	// Create the plugin
-	p := &ProcessPlugin{
+	p := &SandboxPlugin{
 		BasePlugin: BasePlugin{
 			name:    name,
 			target:  target,
-			runtime: Process,
+			runtime: Sandbox,
 			code:    code,
 		},
 	}
@@ -44,7 +64,7 @@ func CreateProcessPlugin(code AuthCode, name, target string) (*ProcessPlugin, er
 	return p, nil
 }
 
-func (p *ProcessPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *SandboxPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
     // Get socket files
 	ln, c, err := CreateSocketPairFiles()
     if err != nil {
@@ -65,9 +85,9 @@ func (p *ProcessPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientCo
 	p.start = time.Now().UnixMilli()
 	p.running = true
 
-	return CreateEndpoints(ln, c)
+	return CreateEndpoints(p.code, ln, c)
 }
 
-func (p *ProcessPlugin) Stop() error {
+func (p *SandboxPlugin) Stop() error {
 	return nil
 }

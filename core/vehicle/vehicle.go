@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/adrg/xdg"
 	services_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services"
@@ -106,11 +105,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Stop the gRPC server once done
 	defer v.server.GracefulStop()
 
-	// Create a socket pair for admin-only connections to the main server
-	adminFds, _ := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
-	adminEndpoint := os.NewFile(uintptr(adminFds[0]), "admin-endpoint")
-	adminProxy := os.NewFile(uintptr(adminFds[1]), "admin-proxy")
-
 	var err error
 	// Create a main socket listener with AuthCode External
 	mainSocket := filepath.Join(v.path, MainSocket)
@@ -120,15 +114,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		log.Error().Err(err).Str("file", mainSocket).Msg("could not listen on main socket, aborting")
 		return fmt.Errorf("can't listen at file %s: %w", mainSocket, err)
-	}
-	// Create a socket pair listener with AuthCode Admin
-	c, err := net.FileConn(adminEndpoint)
-	v.listeners.admin =
-		util.NewSocketPairListener(c, util.AdminCode)
-	adminEndpoint.Close() // close the file since we don't need it anymore
-	if err != nil {
-		log.Error().Err(err).Str("file", "admin-endpoint").Msg("could not listen on admin socket, aborting")
-		return fmt.Errorf("can't listen at file %s: %w", "admin-endpoint", err)
 	}
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
@@ -142,11 +127,15 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Create admin connection, so internal RPC methods can be
 	// authorized with Admin codes
-	c, err = net.FileConn(adminProxy)
-	v.conns.admin, err = util.NewSocketPairClient(c)
+    adminLn, adminClient, err := util.CreateSocketPairFiles()
 	if err != nil {
-		log.Error().Err(err).Str("file", "admin-proxy").Msg("could not set up admin client")
-		return fmt.Errorf("can't create client at file %s: %w", "admin-proxy", err)
+		log.Error().Err(err).Msg("could not set up admin socket pairs")
+        return fmt.Errorf("can't create admin socket pairs: %v", err)
+	}
+	v.listeners.admin, v.conns.admin, err = util.CreateEndpoints(util.AdminCode, adminLn, adminClient)
+	if err != nil {
+		log.Error().Err(err).Msg("could not set up admin socket endpoints")
+        return fmt.Errorf("can't create admin socket endpoints: %v", err)
 	}
 
 	// Start mission/driver plugins, and retrieve associated ClientConn and

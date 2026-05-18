@@ -86,3 +86,5 @@ func (p *MissionTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Clie
 func (p *MissionTestPlugin) Stop() error {
     p.server.GracefulStop()
 }
+
+// Service definitions
