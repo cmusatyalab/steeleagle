@@ -198,7 +198,7 @@ class PrecisionLand(Action):
                 logger.error("Could not get telemetry, waiting!")
                 continue
             # logger.info("Track: telemetry fetched: %s", telemetry)
-            altitude = telemetry.relative_position.z
+            altitude = telemetry.position_info.relative_position.z
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
