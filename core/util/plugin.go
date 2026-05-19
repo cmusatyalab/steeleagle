@@ -3,6 +3,7 @@ package util
 import (
 	"net"
     "context"
+    "fmt"
 
 	"google.golang.org/grpc"
 )
@@ -29,12 +30,12 @@ func (p *BasePlugin) Name() string {
 	return p.name
 }
 
-func (p *BasePlugin) Target() string {
-	return p.target
-}
-
 func (p *BasePlugin) Runtime() PluginRuntime {
 	return p.runtime
+}
+
+func (p *BasePlugin) Target() string {
+	return p.target
 }
 
 func (p *BasePlugin) IsRunning() bool {

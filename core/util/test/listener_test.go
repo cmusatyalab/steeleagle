@@ -38,9 +38,9 @@ func TestSocketPair(t *testing.T) {
 }
 
 func TestACL(t *testing.T) {
-    base, err := net.Listen("tcp", "127.0.0.1:50051")
+    base, err := net.Listen("tcp", "127.0.0.1:8080")
     if err != nil {
-        t.Fatalf("couldn't listen on localhost port 50051")
+        t.Fatalf("couldn't listen on localhost port 8080")
     }
     defer base.Close()
 
