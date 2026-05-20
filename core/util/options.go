@@ -4,4 +4,4 @@ package util
 type ListenerOption func (*listener)
 
 // Plugin options
-type PluginOption func (*basePlugin)
+type PluginOption func (*Plugin)

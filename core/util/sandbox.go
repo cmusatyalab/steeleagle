@@ -1,93 +1,46 @@
 package util
 
 import (
-	"fmt"
-    "net"
-    "context"
-    "os"
     "os/exec"
-    "time"
-    "path/filepath"
 	
     "github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
 )
 
 type SandboxPlugin struct {
-	BasePlugin
-	cmd     *exec.Cmd
+	Plugin
 }
 
-func CreateSandboxPlugin(code AuthCode, name, target string) (*SandboxPlugin, error) {
+func CreateSandboxPlugin(options ...PluginOption) SandboxPlugin {
+	// Create the plugin
+	p := &SandboxPlugin{
+        Plugin: CreatePlugin(options...),
+	}
+
+	return p
+}
+
+func (p *SandboxPlugin) SetTarget() error {
 	// Make sure bubblewrap is installed
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
 		log.Error().Err(err).Msg("couldn't find bubblewrap (bwrap), have you installed it?")
-		return nil, err
+		return err
 	}
 
-    // Check that the target exists
-	info, err := os.Stat(target)
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't find plugin, have you installed it?")
-			return nil, err
-		}
-		log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't stat plugin target")
-		return nil, err
-	}
+    // Add the correct bubblewrap permissions
+    p.target = append(p.target,
+        "--ro-bind", "/usr", "/usr",
+        "--ro-bind", "/lib", "/lib",
+        "--ro-bind", "/lib64", "/lib64",
+        "--ro-bind", "/bin", "/bin",
+        "--proc", "/proc",
+        "--dev", "/dev",
+        "--unshare-all",
+        "--share-net",
+        "--die-with-parent",
+        "--fd", "3", "3",
+        "--fd", "4", "4",
+    )
 
-	// If the plugin is a directory, then attach the runhook
-	if info.IsDir() {
-		// Set info and target to the runhook
-		target = filepath.Join(target, runhook)
-		info, err = os.Stat(target)
-		if err != nil {
-			log.Error().Err(err).Str("name", name).Str("code", string(code)).Msg("couldn't stat plugin run hook, is it there?")
-		}
-	}
-	// Ensure that the plugin is runnable
-	if info.Mode() & 0o111 == 0 {
-		return nil, fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", name)
-	}
-
-	// Create the plugin
-	p := &SandboxPlugin{
-		BasePlugin: BasePlugin{
-			name:    name,
-			target:  target,
-			runtime: Sandbox,
-			code:    code,
-		},
-	}
-
-	return p, nil
-}
-
-func (p *SandboxPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-    // Get socket files
-	ln, c, err := CreateSocketPairFiles()
-    if err != nil {
-        return nil, nil, err
-    }
-	
-    // Create the command
-	p.cmd = exec.CommandContext(ctx, p.target)
-    p.cmd.ExtraFiles = []*os.File{c}
-	
-    // Run the plugin
-	if err := p.cmd.Run(); err != nil {
-		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't run target for plugin")
-		return nil, nil, err
-	}
-
-	// Populate the plugin information
-	p.start = time.Now().UnixMilli()
-	p.running = true
-
-	return CreateEndpoints(p.code, ln, c)
-}
-
-func (p *SandboxPlugin) Stop() error {
-	return nil
+    return p.SetTarget()
 }
