@@ -110,7 +110,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	mainSocket := filepath.Join(v.path, MainSocket)
 	ln, err := net.Listen("unix", mainSocket)
 	v.listeners.main =
-		util.NewListener(ln, util.ExternalCode, nil)
+		util.NewCodedListener(ln, util.ExternalCode, nil)
 	if err != nil {
 		log.Error().Err(err).Str("file", mainSocket).Msg("could not listen on main socket, aborting")
 		return fmt.Errorf("can't listen at file %s: %w", mainSocket, err)
@@ -118,7 +118,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
 		v.listeners.wan =
-			util.NewListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs))
+			util.NewCodedListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs))
 		if err != nil {
 			log.Error().Err(err).Msg("could not listen on WAN endpoint, aborting")
 			return fmt.Errorf("can't listen at WAN endpoint: %w", err)

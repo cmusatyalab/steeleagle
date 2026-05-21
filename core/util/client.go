@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func NewSocketPairClient(c net.Conn, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func NewSocketClient(c net.Conn, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	var once sync.Once
 	opts = append(opts,
 		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {

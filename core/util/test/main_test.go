@@ -1,31 +1,24 @@
 package util_test
 
 import (
-    "testing"
-    "os"
-    "os/exec"
+	"os"
+	"os/exec"
+	"testing"
 )
 
-var binary string
+const binary string = "helper-binary"
 
-func TestMain(m *testing.Main) {
-    bin, err := os.CreateTemp("", "binary-*")
-    if err != nil {
-        panic(err)
-    }
-    bin.Close()
-    binary = bin.Name()
+func TestMain(m *testing.M) {
+	// Build testdata/main.go into a plugin binary that we can test with
+	out, err := exec.Command("go", "build", "-o", binary, "./mock_plugin").CombinedOutput()
+	if err != nil {
+		panic(string(out))
+	}
 
-    // Build testdata/main.go into a plugin binary that we can test with
-    out, err := exec.Command("go", "build", "-o", binary, "./testdata").CombinedOutput()
-    if err != nil {
-        panic(string(out))
-    }
+	// Run test cases
+	code := m.Run()
 
-    // Run test cases
-    code := m.Run()
-
-    // Cleanup
-    os.Remove(binary)
-    os.Exit(code)
+	// Cleanup
+	os.Remove(binary)
+	os.Exit(code)
 }

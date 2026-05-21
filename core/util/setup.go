@@ -1,13 +1,13 @@
 package util
 
 import (
-    "os"
-    "net"
-    "fmt"
-    "syscall"
-	
+	"fmt"
+	"net"
+	"os"
+	"syscall"
+
 	"github.com/google/uuid"
-    "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -20,13 +20,13 @@ func CreateSocketPairFiles() (*os.File, *os.File, error) {
 	}
 
 	// Create internal files
-    id := uuid.New().String()
-	ln := os.NewFile(uintptr(fds[0]), fmt.Sprintf("listened-%s", id))
-	client := os.NewFile(uintptr(fds[1]), fmt.Sprintf("client-%s", id))
-    return ln, client, nil
+	id := uuid.New().String()
+	inner := os.NewFile(uintptr(fds[0]), fmt.Sprintf("inner-%s", id))
+	outer := os.NewFile(uintptr(fds[1]), fmt.Sprintf("outer-%s", id))
+	return inner, outer, nil
 }
 
-func CreateEndpoints(code AuthCode, lnFile, clientFile *os.File) (net.Listener, *grpc.ClientConn, error) {
+func CreateSocketPairEndpoints(code AuthCode, lnFile, clientFile *os.File) (net.Listener, *grpc.ClientConn, error) {
 	// Build the file connections
 	lnConn, err := net.FileConn(lnFile)
 	if err != nil {
@@ -38,11 +38,11 @@ func CreateEndpoints(code AuthCode, lnFile, clientFile *os.File) (net.Listener, 
 		log.Error().Err(err).Msg("couldn't open client socket")
 		return nil, nil, err
 	}
-	spClient, err := NewSocketPairClient(clientConn)
+	spClient, err := NewSocketClient(clientConn)
 	if err != nil {
 		log.Error().Msg("couldn't create socket pair client")
 		return nil, nil, err
 	}
 
-	return NewSocketPairListener(lnConn, code), spClient, nil
+	return NewSocketCodedListener(lnConn, code), spClient, nil
 }

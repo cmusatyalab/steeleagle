@@ -2,22 +2,22 @@ package util
 
 import (
 	"fmt"
-    "os/exec"
-	
-    "github.com/rs/zerolog/log"
+	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 type ContainerPlugin struct {
 	Plugin
-	tag  string
+	tag string
 }
 
 func CreateContainerPlugin(tag string, options ...PluginOption) ContainerPlugin {
 	// Create the plugin
-    p := ContainerPlugin{
-        Plugin: CreatePlugin(options...),
-        tag: tag,
-    }
+	p := ContainerPlugin{
+		Plugin: CreatePlugin(options...),
+		tag:    tag,
+	}
 
 	return p
 }
@@ -42,25 +42,30 @@ func (p *ContainerPlugin) SetTarget() error {
 		}
 	}
 
-    // Check if path is set; if so, bind runhook in
-    // otherwise, use existing runhook in container
-    p.target = append(p.target,
-        "podman",
-        "run",
-        "--rm",
-        "--preserve-fd=3,4",
-    )
-    if p.path != "" {
-        p.target = append(p.target, "-v")
-        if err = p.SetTarget(); err != nil {
-            return err
-        }
-        // Bind the file
-        p.target[len(p.target) - 1] = fmt.Sprintf("%s:/%s:Z", p.target[len(p.target) - 1], runhook)
-        p.target = append(p.target, p.tag, "sh", fmt.Sprintf("/%s", runhook))
-    } else {
-        p.target = append(p.target, p.tag, "sh", fmt.Sprintf("/%s", runhook))
-    }
+	// Check if path is set; if so, bind runhook in
+	// otherwise, use existing runhook in container
+	p.args = append(p.args,
+		"run",
+		"--rm",
+		"--preserve-fd=3,4",
+	)
+	if p.path != "" {
+		p.args = append(p.args, "-v")
+		if err = p.SetTarget(); err != nil {
+			return err
+		}
+		// Bind the file
+		p.args = append(p.args,
+			fmt.Sprintf("%s:/%s:Z", p.target, runhook),
+			p.tag,
+			"sh",
+			fmt.Sprintf("/%s", runhook),
+		)
+	} else {
+		p.args = append(p.args, p.tag, "sh", fmt.Sprintf("/%s", runhook))
+	}
+	// Overwrite the target to be podman
+	p.target = "podman"
 
-    return nil
+	return nil
 }

@@ -1,9 +1,9 @@
 package util
 
 import (
-    "os/exec"
-	
-    "github.com/rs/zerolog/log"
+	"os/exec"
+
+	"github.com/rs/zerolog/log"
 )
 
 type SandboxPlugin struct {
@@ -12,8 +12,8 @@ type SandboxPlugin struct {
 
 func CreateSandboxPlugin(options ...PluginOption) SandboxPlugin {
 	// Create the plugin
-	p := &SandboxPlugin{
-        Plugin: CreatePlugin(options...),
+	p := SandboxPlugin{
+		Plugin: CreatePlugin(options...),
 	}
 
 	return p
@@ -27,20 +27,27 @@ func (p *SandboxPlugin) SetTarget() error {
 		return err
 	}
 
-    // Add the correct bubblewrap permissions
-    p.target = append(p.target,
-        "--ro-bind", "/usr", "/usr",
-        "--ro-bind", "/lib", "/lib",
-        "--ro-bind", "/lib64", "/lib64",
-        "--ro-bind", "/bin", "/bin",
-        "--proc", "/proc",
-        "--dev", "/dev",
-        "--unshare-all",
-        "--share-net",
-        "--die-with-parent",
-        "--fd", "3", "3",
-        "--fd", "4", "4",
-    )
+	// Add the correct bubblewrap permissions
+	p.args = append(p.args,
+		"--ro-bind", "/usr", "/usr",
+		"--ro-bind", "/lib", "/lib",
+		"--ro-bind", "/lib64", "/lib64",
+		"--ro-bind", "/bin", "/bin",
+		"--proc", "/proc",
+		"--dev", "/dev",
+		"--unshare-all",
+		"--share-net",
+		"--die-with-parent",
+		"--fd", "3", "3",
+		"--fd", "4", "4",
+	)
 
-    return p.SetTarget()
+	if err = p.SetTarget(); err != nil {
+		return err
+	}
+	p.args = append(p.args, p.target)
+	// Overwrite target to be bubblewrap
+	p.target = "bwrap"
+
+	return nil
 }
