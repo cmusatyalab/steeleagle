@@ -620,9 +620,9 @@ def sim_logs(
 )
 def instance_start(
     ctx: typer.Context,
-    name: str | None = typer.Option(None, "--name", "-n", help="Optional vehicle name"),
+    name: str = typer.Argument(..., help="Vehicle name"),
 ):
-    """Start a new vehicle in a pool. Any options other than --name will be passed as keyword arguments to the launch script. (e.g. --config canary.toml)"""
+    """Start a new vehicle in a pool. Any additional options will be passed as keyword arguments to the launch script. (e.g. --config canary.toml)"""
 
     params = {"label": name, "q": ctx.args} if name else {ctx.args}
     with (

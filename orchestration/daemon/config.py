@@ -95,7 +95,7 @@ ServiceRegistry = dict[
 
 
 def load_config(path: Path) -> OrchestratorConfig:
-    """Parse and validate a YAML config file, raising clear errors on bad input."""
+    """Parse and validate the YAML config file"""
     if not path.exists():
         raise FileNotFoundError
     with path.open() as fh:
@@ -147,7 +147,6 @@ def build_registry(config: OrchestratorConfig) -> ServiceRegistry:
 
 
 def load_services(path: Path) -> ServiceRegistry:
-    """Convenience wrapper: load config and build registry in one call."""
     config = load_config(path)
     return build_registry(config)
 
