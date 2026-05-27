@@ -7,13 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	health_pb "google.golang.org/grpc/health/grpc_health_v1"
+    "github.com/cmusatyalab/steeleagle/core/util"
 )
 
 // This code pairs the ack check in mock_plugin/main.go
-func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn) error {
+func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code util.AuthCode) error {
 	t.Helper()
 	// Create notification channel for RPC calls
 	done := make(chan struct{})
@@ -23,6 +25,17 @@ func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn) error 
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
+        p, ok := peer.FromContext(ctx)
+        if !ok {
+            return nil, fmt.Errorf("couldn't get peer from context")
+        }
+        a, ok := p.Addr.(*util.Addr)
+        if !ok {
+            return nil, fmt.Errorf("couldn't get auth code from peer")
+        }
+        if a.Code != code {
+            return nil, fmt.Errorf("cannot call this RPC without code: mission")
+        }
 		close(done)
 		return handler(ctx, req)
 	}

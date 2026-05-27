@@ -7,7 +7,6 @@ import (
     "net"
     "errors"
 
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -26,11 +25,11 @@ func CreateContainerPlugin(tag string, options ...PluginOption) ContainerPlugin 
 	return p
 }
 
-func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Make sure podman is installed
 	_, err := exec.LookPath("podman")
 	if err != nil {
-		log.Error().Err(err).Msg("couldn't find podman, have you installed it?")
+		p.logError(err, "couldn't find podman, have you installed it?")
 		return nil, nil, err
 	}
 
@@ -40,13 +39,13 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
     if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
         err = exec.Command("podman", "pull", p.tag).Run()
         if err != nil {
-            log.Error().Err(err).Msg("couldn't run pull with podman")
+            p.logError(err, "couldn't run pull with podman")
 		    return nil, nil, err
         } else {
             return nil, nil, fmt.Errorf("podman exited unexpectedly")
         }
     } else if err != nil {
-		log.Error().Err(err).Msg("couldn't run image check with podman")
+		p.logError(err, "couldn't run image check with podman")
         return nil, nil, err
     }
 
@@ -59,7 +58,7 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
 	)
 	if p.path != "" {
 		p.args = append(p.args, "-v")
-        if err = p.Plugin.SetTarget(); err != nil {
+        if err = p.SetTarget(); err != nil {
 			return nil, nil, err
 		}
 		// Bind the file
@@ -74,5 +73,5 @@ func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Client
 	// Overwrite the target to be podman
 	p.target = "podman"
 
-	return p.Plugin.Spawn(ctx)
+	return p.Plugin.Start(ctx)
 }

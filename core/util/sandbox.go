@@ -5,7 +5,6 @@ import (
 	"os/exec"
     "net"
 
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -22,11 +21,11 @@ func CreateSandboxPlugin(options ...PluginOption) SandboxPlugin {
 	return p
 }
 
-func (p *SandboxPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Make sure bubblewrap is installed
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-		log.Error().Err(err).Msg("couldn't find bubblewrap (bwrap), have you installed it?")
+		p.logError(err, "couldn't find bubblewrap (bwrap), have you installed it?")
 		return nil, nil, err
 	}
 
@@ -49,5 +48,5 @@ func (p *SandboxPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientCo
 	// Overwrite target to be bubblewrap
 	p.target = "bwrap"
 
-    return p.Plugin.Spawn(ctx)
+    return p.Plugin.Start(ctx)
 }

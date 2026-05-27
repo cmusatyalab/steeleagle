@@ -42,10 +42,10 @@ func (p *Plugin) SetTarget() error {
 	info, err := os.Stat(p.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Error().Err(err).Str("name", p.name).Str("code", string(p.code)).Msg("couldn't find plugin, have you installed it?")
+			p.logError(err, "couldn't find plugin, have you installed it?")
 			return err
 		}
-		log.Error().Err(err).Str("name", p.name).Str("code", string(p.code)).Msg("couldn't stat plugin path")
+		p.logError(err, "couldn't stat plugin path")
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (p *Plugin) SetTarget() error {
 		target = filepath.Join(p.path, runhook)
 		info, err = os.Stat(target)
 		if err != nil {
-			log.Error().Err(err).Str("name", p.name).Str("code", string(p.code)).Msg("couldn't stat plugin run hook, is it there?")
+			p.logError(err, "couldn't stat plugin run hook, is it there?")
 			return err
 		}
 	} else {
@@ -74,7 +74,7 @@ func (p *Plugin) SetTarget() error {
 	return nil
 }
 
-func (p *Plugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// If target isn't already set, set it now
 	if p.target == "" {
 		err := p.SetTarget()
@@ -99,7 +99,7 @@ func (p *Plugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, err
 
 	// Run the plugin
 	if err := p.cmd.Start(); err != nil {
-		log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg("couldn't run target for plugin")
+        p.logError(err, "couldn't run target for plugin")
 		return nil, nil, err
 	}
 
@@ -118,6 +118,18 @@ func (p *Plugin) Stop() error {
 	return p.cmd.Process.Kill()
 }
 
+func (p *Plugin) Watch() <-chan error {
+    ch := make(chan error, 1)
+    go func() {
+        ch <- p.cmd.Wait()
+    }()
+    return ch
+}
+
 func (p *Plugin) GetCommand() *exec.Cmd {
 	return p.cmd
+}
+
+func (p *Plugin) logError(err error, message string) {
+    log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg(message)
 }

@@ -15,7 +15,6 @@ import (
 )
 
 func TestAuthCode(t *testing.T) {
-    t.Skip("TODO")
 	lnFile, clientFile, err := util.CreateSocketPairFiles()
 	if err != nil {
 		t.Errorf("couldn't create socket pairs: %v", err)
@@ -34,18 +33,15 @@ func TestAuthCode(t *testing.T) {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-        var code util.AuthCode
-	    var ok bool
-	    if p, ok := peer.FromContext(ctx); ok {
-	    	if a, ok := p.Addr.(*util.Addr); ok {
-	    		code = a.Code
-	    	}
-	    }
-	    // If code is not available, set to unknown identity
-	    if !ok {
-            return nil, fmt.Errorf("couldn't get code")
-	    }
-        if code != util.MissionCode {
+        p, ok := peer.FromContext(ctx)
+        if !ok {
+            return nil, fmt.Errorf("couldn't get peer from context")
+        }
+        a, ok := p.Addr.(*util.Addr)
+        if !ok {
+            return nil, fmt.Errorf("couldn't get auth code from peer")
+        }
+        if a.Code != util.MissionCode {
             return nil, fmt.Errorf("cannot call this RPC without code: mission")
         }
 		return handler(ctx, req)
