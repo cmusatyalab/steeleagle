@@ -10,7 +10,11 @@ const binary string = "helper-binary"
 
 func TestMain(m *testing.M) {
 	// Build testdata/main.go into a plugin binary that we can test with
-	out, err := exec.Command("go", "build", "-o", binary, "./mock_plugin").CombinedOutput()
+    env := os.Environ()
+    env = append(env, "CGO_ENABLED=0", "GOOS=linux")
+    cmd := exec.Command("go", "build", "-o", binary, "./mock_plugin")
+    cmd.Env = env
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		panic(string(out))
 	}

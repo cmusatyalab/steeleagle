@@ -1,10 +1,14 @@
 package util
 
 import (
+    "context"
 	"fmt"
 	"os/exec"
+    "net"
+    "errors"
 
 	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 )
 
 type ContainerPlugin struct {
@@ -22,50 +26,53 @@ func CreateContainerPlugin(tag string, options ...PluginOption) ContainerPlugin 
 	return p
 }
 
-func (p *ContainerPlugin) SetTarget() error {
+func (p *ContainerPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Make sure podman is installed
 	_, err := exec.LookPath("podman")
 	if err != nil {
 		log.Error().Err(err).Msg("couldn't find podman, have you installed it?")
-		return err
+		return nil, nil, err
 	}
 
 	// Check whether the image exists
 	err = exec.Command("podman", "image", "exists", p.tag).Run()
-	if err != nil {
+    var exitErr *exec.ExitError
+    if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+        err = exec.Command("podman", "pull", p.tag).Run()
+        if err != nil {
+            log.Error().Err(err).Msg("couldn't run pull with podman")
+		    return nil, nil, err
+        } else {
+            return nil, nil, fmt.Errorf("podman exited unexpectedly")
+        }
+    } else if err != nil {
 		log.Error().Err(err).Msg("couldn't run image check with podman")
-		return err
-	}
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		if exitErr.ExitCode() == 1 {
-			return fmt.Errorf("container image %s not found", p.tag)
-		}
-	}
+        return nil, nil, err
+    }
 
 	// Check if path is set; if so, bind runhook in
 	// otherwise, use existing runhook in container
 	p.args = append(p.args,
 		"run",
 		"--rm",
-		"--preserve-fd=3,4",
+		"--preserve-fds=2",
 	)
 	if p.path != "" {
 		p.args = append(p.args, "-v")
-		if err = p.SetTarget(); err != nil {
-			return err
+        if err = p.Plugin.SetTarget(); err != nil {
+			return nil, nil, err
 		}
 		// Bind the file
 		p.args = append(p.args,
 			fmt.Sprintf("%s:/%s:Z", p.target, runhook),
 			p.tag,
-			"sh",
-			fmt.Sprintf("/%s", runhook),
+			fmt.Sprintf("./%s", runhook),
 		)
 	} else {
-		p.args = append(p.args, p.tag, "sh", fmt.Sprintf("/%s", runhook))
+		p.args = append(p.args, p.tag, fmt.Sprintf("./%s", runhook))
 	}
 	// Overwrite the target to be podman
 	p.target = "podman"
 
-	return nil
+	return p.Plugin.Spawn(ctx)
 }

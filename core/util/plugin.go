@@ -27,15 +27,15 @@ type Plugin struct {
 
 func CreatePlugin(options ...PluginOption) Plugin {
 	// Set default input options and retrieve options
-	plugin := Plugin{
+	p := Plugin{
 		name: uuid.New().String(),
 		code: UnknownCode,
 	}
 	for _, option := range options {
-		option(&plugin)
+		option(&p)
 	}
 
-	return plugin
+	return p
 }
 
 func (p *Plugin) SetTarget() error {

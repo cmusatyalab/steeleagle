@@ -11,12 +11,12 @@ import (
 func TestProcessPlugin(t *testing.T) {
 	path, err := filepath.Abs(binary)
 	if err != nil {
-		t.Errorf("couldn't stat mock_plugin helper binary: %v", err)
+		t.Fatalf("couldn't stat mock_plugin helper binary: %v", err)
 	}
 	plugin := util.CreatePlugin(util.WithPath(path))
 	ln, conn, err := plugin.Spawn(context.Background())
 	if err != nil {
-		t.Errorf("encountered error spawning plugin: %v", err)
+		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
 	err = pluginRPCCheck(t, ln, conn)
@@ -30,15 +30,14 @@ func TestProcessPlugin(t *testing.T) {
 }
 
 func TestContainerPlugin(t *testing.T) {
-	// TODO: figure out the right container tags
 	path, err := filepath.Abs(binary)
 	if err != nil {
-		t.Errorf("couldn't stat mock_plugin helper binary: %v", err)
+		t.Fatalf("couldn't stat mock_plugin helper binary: %v", err)
 	}
 	plugin := util.CreateContainerPlugin("alpine", util.WithPath(path))
 	ln, conn, err := plugin.Spawn(context.Background())
 	if err != nil {
-		t.Errorf("encountered error spawning plugin: %v", err)
+		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
 	err = pluginRPCCheck(t, ln, conn)
@@ -54,12 +53,12 @@ func TestContainerPlugin(t *testing.T) {
 func TestSandboxPlugin(t *testing.T) {
 	path, err := filepath.Abs(binary)
 	if err != nil {
-		t.Errorf("couldn't stat mock_plugin helper binary: %v", err)
+		t.Fatalf("couldn't stat mock_plugin helper binary: %v", err)
 	}
 	plugin := util.CreateSandboxPlugin(util.WithPath(path))
 	ln, conn, err := plugin.Spawn(context.Background())
 	if err != nil {
-		t.Errorf("encountered error spawning plugin: %v", err)
+		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
 	err = pluginRPCCheck(t, ln, conn)
