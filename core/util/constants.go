@@ -14,8 +14,8 @@ const (
 	UnknownCode  AuthCode = "unknown"
 )
 
-// The run hook that processes are started from
-const runhook string = "run.sh"
+// The run hook that processes are started from within containers
+const runhook string = "main"
 
 // Used to determine how to run a plugin
 type PluginRuntime string

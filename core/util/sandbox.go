@@ -4,8 +4,6 @@ import (
     "context"
 	"os/exec"
     "net"
-    "errors"
-    "syscall"
 
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -51,11 +49,5 @@ func (p *SandboxPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientCo
 	// Overwrite target to be bubblewrap
 	p.target = "bwrap"
 
-    l, c, err := p.Plugin.Spawn(ctx)
-    if err != nil {
-        if errors.Is(err, syscall.EACCES) {
-            log.Error().Err(err).Msg("bubblewrap (bwrap) has insufficient permissions, likely due to AppArmor (see: https://developers.openai.com/codex/concepts/sandboxing)")
-        }
-    }
-    return l, c, err
+    return p.Plugin.Spawn(ctx)
 }
