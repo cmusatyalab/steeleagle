@@ -15,7 +15,7 @@ const (
 )
 
 // The run hook that processes are started from within containers
-const runhook string = "main"
+const runhook string = "run.sh"
 
 // Used to determine how to run a plugin
 type PluginRuntime string

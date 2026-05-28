@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net"
 	"os"
+    "context"
 	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func CreateSocketPairFiles() (*os.File, *os.File, error) {
@@ -38,11 +40,40 @@ func CreateSocketPairEndpoints(code AuthCode, lnFile, clientFile *os.File) (net.
 		log.Error().Err(err).Msg("couldn't open client socket")
 		return nil, nil, err
 	}
-	spClient, err := NewSocketClient(clientConn)
+	spClient, err := NewSocketPairClient(clientConn)
 	if err != nil {
 		log.Error().Msg("couldn't create socket pair client")
 		return nil, nil, err
 	}
 
-	return NewSocketCodedListener(lnConn, code), spClient, nil
+	return NewSocketPairCodedListener(lnConn, code), spClient, nil
+}
+
+func CreateAbstractSocketEndpoints(code AuthCode, pid int, lnid, cid string) (net.Listener, *grpc.ClientConn, error) {
+    // Listen on the server abstract socket
+	ln, err := net.Listen("unix", fmt.Sprintf("@%s", lnid))
+	if err != nil {
+		log.Error().Err(err).Msg("couldn't listen on abstract socket")
+		return nil, nil, err
+	}
+
+	// Connect to the client abstract socket
+    target := fmt.Sprintf("unix-abstract:%s", cid)
+	client, err := grpc.NewClient(target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			// Prepend a null byte for Linux abstract sockets
+			abstractAddr := "\x00" + cid
+			var d net.Dialer
+			return d.DialContext(ctx, "unix", abstractAddr)
+		}),
+	)
+	if err != nil {
+		log.Error().Msg("couldn't create abstract client")
+		ln.Close()
+		return nil, nil, err
+	}
+
+    acl := GetACL([]string{}, []int{pid})
+	return NewCodedListener(ln, code, acl), client, nil
 }

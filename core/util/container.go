@@ -6,6 +6,7 @@ import (
 	"os/exec"
     "net"
     "errors"
+    "strings"
 
 	"google.golang.org/grpc"
 )
@@ -63,12 +64,16 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		}
 		// Bind the file
 		p.args = append(p.args,
-			fmt.Sprintf("%s:/%s:Z", p.target, runhook),
+			fmt.Sprintf("%s:/%s:Z", p.target, p.target),
 			p.tag,
-			fmt.Sprintf("./%s", runhook),
 		)
+        if strings.Contains(p.target, ".sh") {
+            p.args = append(p.args, "sh", p.target)
+        } else {
+            p.args = append(p.args, fmt.Sprintf("./%s", p.target))
+        }
 	} else {
-		p.args = append(p.args, p.tag, fmt.Sprintf("./%s", runhook))
+		p.args = append(p.args, p.tag, runhook)
 	}
 	// Overwrite the target to be podman
 	p.target = "podman"

@@ -3,15 +3,17 @@ package util
 import (
 	"net"
 	"strings"
+    "slices"
 
 	"github.com/rs/zerolog/log"
 )
 
 type ACL struct {
 	nets []*net.IPNet
+    pids []int
 }
 
-func GetACL(cidrs []string) *ACL {
+func GetACL(cidrs []string, pids []int) *ACL {
 	nets := make([]*net.IPNet, 0, len(cidrs))
 	for _, cidr := range cidrs {
 		if !strings.Contains(cidr, "/") {
@@ -33,14 +35,18 @@ func GetACL(cidrs []string) *ACL {
 		}
 		nets = append(nets, ipnet)
 	}
-	return &ACL{nets: nets}
+    return &ACL{nets: nets, pids: pids}
 }
 
-func (a *ACL) Allows(ip net.IP) bool {
+func (a *ACL) AllowsIP(ip net.IP) bool {
 	for _, n := range a.nets {
 		if n.Contains(ip) {
 			return true
 		}
 	}
 	return false
+}
+
+func (a *ACL) AllowsPID(pid int) bool {
+    return slices.Contains(a.pids, pid)
 }

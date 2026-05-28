@@ -19,8 +19,10 @@ type Plugin struct {
 	path    string
 	target  string // executable target
 	args    []string
+    pargs   []string // plugin runtime args
 	start   int64 // plugin start time
 	running bool
+    use_uds bool
 	code    AuthCode
 	cmd     *exec.Cmd
 }
@@ -64,7 +66,7 @@ func (p *Plugin) SetTarget() error {
 		target = p.path
 	}
 	// Ensure that the target is runnable
-	if info.Mode()&0o111 == 0 {
+	if info.Mode() & 0o111 == 0 {
 		return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.name)
 	}
 
@@ -76,38 +78,62 @@ func (p *Plugin) SetTarget() error {
 
 func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// If target isn't already set, set it now
+    var err error
 	if p.target == "" {
-		err := p.SetTarget()
+		err = p.SetTarget()
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
-	// Get socket files, one for vehicle->plugin, one for plugin->vehicle
-	ln, pc, err := CreateSocketPairFiles()
-	if err != nil {
-		return nil, nil, err
-	}
-	c, pln, err := CreateSocketPairFiles()
-	if err != nil {
-		return nil, nil, err
-	}
+    var listener net.Listener
+    var client *grpc.ClientConn
+    if p.use_uds {
+        // Create two uuids for the abstract sockets
+        lnid := uuid.New().String()
+        cid := uuid.New().String()
 
-	// Create the command
-	p.cmd = exec.CommandContext(ctx, p.target, p.args...)
-	p.cmd.ExtraFiles = []*os.File{pln, pc}
+        // Create the command
+        p.args = append(p.args, p.pargs...)
+	    p.cmd = exec.CommandContext(ctx, p.target, p.args...)
+        // Reverse the listener and client; the plugin connects
+        // in the opposite way
+        p.cmd.Env = append(os.Environ(),
+            fmt.Sprintf("LISTEN_SOCKET=%s", cid),
+            fmt.Sprintf("CLIENT_SOCKET=%s", lnid),
+        )
+        err = p.run()
+        if err != nil {
+            return nil, nil, err
+        }
 
-	// Run the plugin
-	if err := p.cmd.Start(); err != nil {
-        p.logError(err, "couldn't run target for plugin")
-		return nil, nil, err
-	}
+        listener, client, err = CreateAbstractSocketEndpoints(p.code, p.cmd.Process.Pid, lnid, cid)
+    } else {
+	    // Get socket files, one for vehicle->plugin, one for plugin->vehicle
+	    ln, pc, err := CreateSocketPairFiles()
+	    if err != nil {
+	    	return nil, nil, err
+	    }
+	    c, pln, err := CreateSocketPairFiles()
+	    if err != nil {
+	    	return nil, nil, err
+	    }
 
-	// Populate the plugin information
-	p.start = time.Now().UnixMilli()
-	p.running = true
+	    // Create the command
+        p.args = append(p.args, p.pargs...)
+	    p.cmd = exec.CommandContext(ctx, p.target, p.args...)
+        // Reverse the listener and client; the plugin connects
+        // in the opposite way
+	    p.cmd.ExtraFiles = []*os.File{pln, pc}
+        err = p.run()
+        if err != nil {
+            return nil, nil, err
+        }
 
-	return CreateSocketPairEndpoints(p.code, ln, c)
+        listener, client, err = CreateSocketPairEndpoints(p.code, ln, c)
+    }
+
+    return listener, client, err
 }
 
 func (p *Plugin) Name() string {
@@ -128,6 +154,20 @@ func (p *Plugin) Watch() <-chan error {
 
 func (p *Plugin) GetCommand() *exec.Cmd {
 	return p.cmd
+}
+
+func (p *Plugin) run() error {
+	// Run the plugin
+	if err := p.cmd.Start(); err != nil {
+        p.logError(err, "couldn't run target for plugin")
+		return err
+	}
+
+	// Populate the plugin information
+	p.start = time.Now().UnixMilli()
+	p.running = true
+
+    return nil
 }
 
 func (p *Plugin) logError(err error, message string) {

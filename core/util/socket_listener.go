@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-type socketCodedListener struct {
+type socketPairCodedListener struct {
 	// Dummy listener for embedding
 	net.Listener
 	code   AuthCode
@@ -16,15 +16,15 @@ type socketCodedListener struct {
 	done chan struct{}
 }
 
-func NewSocketCodedListener(sock net.Conn, code AuthCode) net.Listener {
-	return &socketCodedListener{
+func NewSocketPairCodedListener(sock net.Conn, code AuthCode) net.Listener {
+	return &socketPairCodedListener{
 		socket: sock,
 		code:   code,
 		done:   make(chan struct{}),
 	}
 }
 
-func (l *socketCodedListener) Accept() (net.Conn, error) {
+func (l *socketPairCodedListener) Accept() (net.Conn, error) {
 	var c net.Conn
 	// Return the Connection exactly once to not spawn spurious handlers
 	l.once.Do(func() { c = l.socket })
@@ -39,11 +39,11 @@ func (l *socketCodedListener) Accept() (net.Conn, error) {
 	return nil, fmt.Errorf("listener closed")
 }
 
-func (l *socketCodedListener) Close() error {
+func (l *socketPairCodedListener) Close() error {
 	close(l.done)
 	return l.socket.Close()
 }
 
-func (l *socketCodedListener) Addr() net.Addr {
+func (l *socketPairCodedListener) Addr() net.Addr {
 	return l.socket.LocalAddr()
 }

@@ -19,3 +19,21 @@ func WithAuthCode(code AuthCode) PluginOption {
 		k.code = code
 	}
 }
+
+func WithTargetArgs(args []string) PluginOption {
+    return func(k *Plugin) {
+        k.args = append(k.args, args...)
+    }
+}
+
+func WithPluginArgs(args []string) PluginOption {
+    return func(k *Plugin) {
+        k.pargs = args
+    }
+}
+
+func WithNamedSockets() PluginOption {
+    return func(k *Plugin) {
+        k.use_uds = true
+    }
+}

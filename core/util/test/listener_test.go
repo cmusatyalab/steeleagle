@@ -92,7 +92,7 @@ func TestACL(t *testing.T) {
 
 	lis := newSpoofedListener(t, base)
 	allowed := []string{"100.64.0.0/10"}
-	aclLn := util.NewCodedListener(lis, util.ServerCode, util.GetACL(allowed))
+	aclLn := util.NewCodedListener(lis, util.ServerCode, util.GetACL(allowed, []int{}))
 	defer aclLn.Close()
 
 	accepted := make(chan net.Conn)
