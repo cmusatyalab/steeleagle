@@ -1,18 +1,28 @@
 """
 cli/main.py
 
-The SteelEagle CLI. Every command is a thin wrapper around an HTTP call
-to the daemon. Start the daemon first with `steele daemon`.
+The SteelEagle CLI. Every command is a thin wrapper around a REST call
+to the daemon.
 
 """
 
+import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Annotated
 
 import httpx
 import typer
 import uvicorn
+from daemon.systemd import (
+    UnitConfig,
+    current_user,
+    install,
+    render_unit,
+    uninstall,
+    unit_path,
+)
 from rich import box
 from rich import print as rprint
 from rich.console import Console
@@ -20,10 +30,11 @@ from rich.markup import escape
 from rich.table import Table
 from trogon.typer import init_tui
 
+_CLI_NAME = "steele"
 state = {"daemon_url": "http://127.0.0.1:8765"}
 
 app = typer.Typer(
-    name="steele",
+    name=_CLI_NAME,
     help="SteelEagle Orchestrator — manage local/remote services, containers, and drivers.",
     no_args_is_help=True,
 )
@@ -53,7 +64,10 @@ app.add_typer(backend_app, name="backend")
 
 sim_app = typer.Typer(name="sim", help="Manage Aviary simulator.", no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
-
+daemon_app = typer.Typer(
+    name="daemon", help="Manage the daemon as a systemd service.", no_args_is_help=True
+)
+app.add_typer(daemon_app, name="daemon")
 
 console = Console()
 
@@ -71,7 +85,9 @@ def _client() -> httpx.Client:
         return httpx.Client(base_url=state["daemon_url"], timeout=None)
     except Exception as exc:
         rprint(f"[red]Cannot connect to daemon at {state['daemon_url']}:[/red] {exc}")
-        rprint("[yellow]Is the daemon running? Try: steele daemon[/yellow]")
+        rprint(
+            f"[yellow]Is the daemon running? Start with: `{_CLI_NAME} daemon` or install as systemd service.[/yellow]"
+        )
         raise typer.Exit(1) from exc
 
 
@@ -125,23 +141,40 @@ def _follow_sse(url: str, params: dict, prefix: str = "") -> None:
         rprint("\n[dim]Stream closed.[/dim]")
 
 
+def _orch_executable() -> str:
+    """
+    Find the installed `orch` binary.  Prefers the PATH entry so it works
+    whether installed as a uv tool or via pip.
+    """
+    found = shutil.which(_CLI_NAME)
+    if found:
+        return found
+    raise RuntimeError(
+        f"Cannot find the `{_CLI_NAME}` executable on PATH.\n"
+        "Install it first with: uv tool install -e ."
+    )
+
+
 @app.callback()
 def main(daemon_url: str = "http://127.0.0.1:8765"):
     state["daemon_url"] = daemon_url
 
 
 # ---------------------------------------------------------------------------
-# daemon — start the FastAPI server
+# daemon — start the FastAPI server, install it as a systemd service
 # ---------------------------------------------------------------------------
 
 
-@app.command()
+@daemon_app.command("start")
 def daemon(
     host: str = typer.Option("127.0.0.1", help="Bind host"),
     port: int = typer.Option(8765, help="Bind port"),
-    configure: bool = typer.Option(
-        False,
-        help="RUN FIRST! Creates .steeleagle directory and copies initial configuration from current working directory.",
+    config: str = typer.Option(
+        "orchestrator.yaml",
+        "--config",
+        "-c",
+        help="Path to the YAML service config file.",
+        show_default=True,
     ),
     reload: bool = typer.Option(
         False, help="Enable reload on source changes (dev mode)"
@@ -151,31 +184,172 @@ def daemon(
     ),
 ):
     """Start the orchestrator daemon (blocking)."""
-    if configure:
-        # check if ~/.steeleagle conf dir exists or create it
+    os.environ.setdefault("ORCH_CONFIG", str(Path(config)))
+    rprint(f"[bold green]Starting orchestrator daemon[/bold green] on {host}:{port}")
+    uvicorn.run(
+        "daemon.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=loglevel,
+    )
+
+
+@daemon_app.command("install")
+def systemd_install(
+    config: Annotated[
+        Path,
+        typer.Option(
+            "--config",
+            "-c",
+            help="Path to the YAML service config (stored in the unit file).",
+        ),
+    ] = "orchestrator.yaml",
+    service_name: str = typer.Option(
+        f"{_CLI_NAME}d",
+        "--name",
+        "-n",
+        help="Systemd unit name (without .service).",
+    ),
+    description: str = typer.Option(
+        "SteelEagle Daemon",
+        "--description",
+        help="Service to manage the orchestration of SteelEagle services.",
+    ),
+    working_dir: Annotated[
+        Path,
+        typer.Option(
+            None,
+            "--working-dir",
+            "-w",
+            help="Working directory for the unit. Defaults to the current directory.",
+        ),
+    ]
+    | None = None,
+    user_service: bool = typer.Option(
+        False,
+        "--user",
+        help=(
+            "Install as a user-level service (~/.config/systemd/user/) "
+            "instead of a system-level service (/etc/systemd/system/). "
+            "Does not require root, but needs `loginctl enable-linger <user>` "
+            "to start at boot."
+        ),
+    ),
+    enable: bool = typer.Option(
+        True, "--enable/--no-enable", help="Enable the service to start at boot."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Print the unit file without writing it."
+    ),
+):
+    """
+    Generate and install a systemd unit file for the orchestrator daemon.
+    """
+
+    try:
+        executable = _orch_executable()
+    except RuntimeError as exc:
+        rprint(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from RuntimeError
+
+    cwd = Path(working_dir) or Path.cwd()
+    abs_config = config if config.is_absolute() else (cwd / config).resolve()
+
+    run_user, run_group = ("", "") if user_service else current_user()
+
+    exec_start = f"{executable} daemon start --config {abs_config}"
+
+    cfg = UnitConfig(
+        service_name=service_name,
+        description=description,
+        exec_start=exec_start,
+        working_directory=str(cwd.resolve()),
+        config_path=str(abs_config),
+        user_service=user_service,
+        run_as_user=run_user,
+        run_as_group=run_group,
+    )
+
+    if dry_run:
         rprint(
-            f"Checking for {Path('~/.steeleagle').expanduser()} dir and creating if necessary…"
+            f"[dim]# Would write to: {__import__('daemon.systemd', fromlist=['unit_path']).unit_path(service_name, user_service)}[/dim]"
         )
-        Path("~/.steeleagle").expanduser().mkdir(exist_ok=True)
-        # copy orchestrator.yaml if necessary
-        if not Path("~/.steeleagle/orchestrator.yaml").expanduser().exists():
-            shutil.copy("orchestrator.yaml", Path("~/.steeleagle").expanduser())
-            rprint("Copied daemon configuration.")
-        else:
-            rprint(
-                f"{Path('~/.steeleagle/orchestrator.yaml').expanduser()} already exists."
-            )
-    else:
+        rprint(render_unit(cfg))
+        return
+
+    try:
+        dest = install(cfg, enable=enable)
+    except PermissionError:
         rprint(
-            f"[bold green]Starting orchestrator daemon[/bold green] on {host}:{port}"
+            f"[red]Permission denied writing to {__import__('daemon.systemd', fromlist=['unit_path']).unit_path(service_name, user_service)}[/red]\n"
+            "[yellow]Re-run with sudo, or use --user for a user-level service.[/yellow]"
         )
-        uvicorn.run(
-            "daemon.main:app",
-            host=host,
-            port=port,
-            reload=reload,
-            log_level=loglevel,
+        raise typer.Exit(1) from PermissionError
+
+    rprint(f"[green]✓[/green] Unit file written to [bold]{dest}[/bold]")
+    if enable:
+        rprint(
+            f"[green]✓[/green] Enabled: will start at {'next login' if user_service else 'boot'}"
         )
+    rprint()
+    rprint("Useful commands:")
+    scope = "--user " if user_service else ""
+    rprint(f"  [cyan]systemctl {scope}start {service_name}[/cyan]   # start now")
+    rprint(f"  [cyan]systemctl {scope}stop {service_name}[/cyan]   # stop")
+    rprint(f"  [cyan]systemctl {scope}status {service_name}[/cyan]   # check status")
+    rprint(f"  [cyan]journalctl {scope}-u {service_name} -f[/cyan]   # follow logs")
+
+
+@daemon_app.command("uninstall")
+def systemd_uninstall(
+    service_name: str = typer.Option(f"{_CLI_NAME}d", "--name", "-n"),
+    user_service: bool = typer.Option(False, "--user"),
+):
+    """Stop, disable, and remove the systemd unit file."""
+
+    dest = unit_path(service_name, user_service)
+    if not dest.exists():
+        rprint(f"[yellow]Unit file not found: {dest}[/yellow]")
+        raise typer.Exit(1)
+
+    confirm = typer.confirm(f"Remove {dest} and disable {service_name}?")
+    if not confirm:
+        raise typer.Abort()
+
+    try:
+        uninstall(service_name, user_service)
+    except PermissionError:
+        rprint("[red]Permission denied. Re-run with sudo.[/red]")
+        raise typer.Exit(1) from PermissionError
+
+    rprint(f"[green]✓[/green] {service_name} stopped, disabled, and removed.")
+
+
+@daemon_app.command("status")
+def systemd_status(
+    service_name: str = typer.Option(f"{_CLI_NAME}d", "--name", "-n"),
+    user_service: bool = typer.Option(False, "--user"),
+):
+    """Show the systemd status of the daemon service."""
+    cmd = ["systemctl"]
+    if user_service:
+        cmd.append("--user")
+    cmd += ["status", service_name]
+    subprocess.run(cmd)  # let systemctl handle its own formatting
+
+
+@daemon_app.command("show")
+def systemd_show(
+    service_name: str = typer.Option("steeld", "--name", "-n"),
+    user_service: bool = typer.Option(False, "--user"),
+):
+    """Print the installed unit file contents."""
+    dest = unit_path(service_name, user_service)
+    if not dest.exists():
+        rprint(f"[red]Unit file not found: {dest}[/red]")
+        raise typer.Exit(1)
+    rprint(dest.read_text())
 
 
 # ---------------------------------------------------------------------------

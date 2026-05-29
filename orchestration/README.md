@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-
-* Follow the instructions the [quickstart](https://cmusatyalab.github.io/steeleagle/tutorial/quickstart) to install uv, docker, and NVIDIA drivers.
-__NOTE: If uv, docker, and NVIDIA drivers are already present on the system, only the setup wizard needs to be run.__
+* Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
+* If planning to manage and run the backend SteelEagle services, follow the instructions the [quickstart](https://cmusatyalab.github.io/steeleagle/tutorial/quickstart) to install docker, CUDA/NVIDIA drivers, and the container toolkit.
+__NOTE: If docker and CUDA are already present on the system, only the setup wizard needs to be run.__
 
 * Run the [setup_wizard.py](https://cmusatyalab.github.io/steeleagle/tutorial/quickstart#environment-setup) to generate the configuration files for the backend.
 
@@ -12,16 +12,27 @@ Once the setup wizard is complete, the rest of the Quickstart guide can be ignor
 
 ## Tool Installation
 
-To install the orchestration CLI, referred to as "steele", use uv:
+To install the orchestration CLI for the __current user__, referred to as "steele", use uv:
 
 ```bash
 cd ~/steeleagle/orchestration
 uv tool install . -e
 ```
 
+To install the CLI __system-wide__ (requires sudo privilege):
+
+```bash
+cd ~/steeleagle/orchestration
+sudo UV_TOOL_DIR="/usr/local/share/uv/tools" UV_TOOL_BIN_DIR="/usr/local/bin" uv tool install -e .
+```
+
 ## Service Configuration
 
 The orchestration.yaml file lists the services that the daemon should manage and the paths to those services. Modify this file to remove any services that don't need to be managed (e.g. set sim, gcs, and backend to managed: false if you are only plan to run the vehicle on this system) and to set the paths to those services. By default, the configuration will assume the main SteelEagle repository is at ~/steeleagle and the Roost repository at ~/roost. If these repositories were cloned to other locations, update orchestrator.yaml to reflect accordingly.
+
+> [!WARNING]
+> If you plan to install the daemon as system-wide service (i.e. running as root), the paths to the services should be absolute, lest they
+> point at /root after use expansion instead of the user's home directory.
 
 ```yaml
 services:
@@ -69,18 +80,47 @@ services:
             ]
 ```
 
-## Start the CLI daemon
+## Install as a systemd service
 
-Before any other commands can be executed, the daemon must be launched. The first time the daemon is run, it must be run with the --configure flag. This will create a .steeleagle subdirectory in the user's home directory and copy the service definitions from the local source tree into this directory.
+The orchestrator daemon can be installed as a systemd service, either system-wide (with root permission) or at the user level. The CLI can be used to install the systemd unit file:
+
+At user-level:
 
 ```bash
-steele daemon --configure
+steele daemon install --user
 ```
 
-After the daemon has been configured, the 'steele' command can be run from any directory. It will load the service definitions from `~/.steeleagle/orchestrator.yaml`. Start the daemon with:
+System-wide (sudo required):
 
 ```bash
-steele daemon
+sudo steele daemon install
+```
+
+> [!NOTE]
+> Use the --dry-run flag to view the unit file that would be written without making any changes.
+
+## Start the CLI daemon
+
+### Using systemd
+
+If the orchestator has been installed as a systemd unit, it can be started using systemctl:
+
+
+```bash
+# if installed at user level
+systemctl --user start steeld
+# system-wide service
+sudo systemctl start steeld
+```
+
+
+
+### Manually
+
+If the orchestartor is not installed as a service, it can be launched manually:
+
+```bash
+steele daemon --config /path/to/orchestrator.yaml
 ```
 
 > [!NOTE]

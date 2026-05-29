@@ -31,7 +31,11 @@
 # e.g. If SteelEagle was cloned with Git to 'se' instead of the default 'steeleagle' directory,
 # the commands below would need to be updated to point at '~/se/...'.
 # User expansion will be performed on these paths, so ~ is valid to specify the user's home directory.
-
+#
+# WARNING: When installing the daemon as a system service, please use absolute paths to the repositories.
+# e.g. /home/ubuntu/steeleagle
+# Otherwise user expansion will cause the commands listed below to point at /root/steeleagle which
+# is likely not where the repositories were cloned to.
 services:
   # Aviary Simulator (from git.cmusatyalab.org/steeleagle/roost)
   sim:
