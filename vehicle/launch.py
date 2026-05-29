@@ -5,8 +5,8 @@ import subprocess
 import time
 import tomllib
 from pathlib import Path
-import grpc
 
+import grpc
 import requests
 
 # Utility imports
@@ -17,6 +17,7 @@ register_cleanup_handler()
 ROOST_REPO = "https://git.cmusatyalab.org/steeleagle/roost/-/raw/main/drivers/"
 ROOST_PYPI = "https://git.cmusatyalab.org/api/v4/projects/85/packages/pypi/simple"
 PYTHON_DEFAULT = "3.12"  # Default Python used by the vehicle driver
+
 
 def wait_on_service(address, timeout=10, interval=0.5):
     channel = grpc.insecure_channel(address)
@@ -32,7 +33,8 @@ def wait_on_service(address, timeout=10, interval=0.5):
     print("Timeout waiting for service to start!")
     raise Exception("Service failed to start by deadline!")
 
-def start_services(log, info):
+
+def start_services(log, info, headless: bool = False):
     running = []
     try:
         logger = ["python", "logger/main.py"]
@@ -41,7 +43,7 @@ def start_services(log, info):
             running.append(task)
         # Start the driver
         startup = []
-        if info and info["path"] == '':
+        if not headless and info and info["path"] == "":
             # Get and read the cap file
             cap_request = requests.get(f"{ROOST_REPO}/{info['package']}/cap.toml")
             if cap_request.status_code == 200:
@@ -60,9 +62,13 @@ def start_services(log, info):
             if py_request.status_code == 200:
                 try:
                     # Attempt to get the requires-python string
-                    python = tomllib.loads(py_request.text)["project"]["requires-python"]
+                    python = tomllib.loads(py_request.text)["project"][
+                        "requires-python"
+                    ]
                 except Exception:
-                    print("WARNING: Could not read Python version for driver, ignoring...")
+                    print(
+                        "WARNING: Could not read Python version for driver, ignoring..."
+                    )
             else:
                 print(
                     "ERROR: Could not find associated pyproject.toml, are you sure the package exists?"
@@ -102,7 +108,7 @@ def start_services(log, info):
             # Wait on the driver to start
             wait_on_service(info["address"])
             print("Finished waiting for driver, service is ready")
-        elif info and info["path"] != '': # Local run
+        elif not headless and info and info["path"] != "":  # Local run
             path = Path(info["path"])
             with open(str(path / "cap.toml")) as cap:
                 startup = tomllib.loads(cap.read())["startup"]
@@ -125,20 +131,22 @@ def start_services(log, info):
             print("Finished waiting for driver, service is ready")
 
         # Start the mission
-        if info and info['mission_package'] != '':
+        if info and info["mission_package"] != "":
             path = Path(info["mission_path"])
             mission = [
                 "uv",
                 "run",
                 info["mission_package"],
                 "--json",
-                json.dumps({
-                    "name": info["name"],
-                    "kernel": info["kernel"],
-                    "telemetry": info["telemetry"],
-                    "results": info["results"],
-                    "mission_sock": info["mission_address"],
-                }),
+                json.dumps(
+                    {
+                        "name": info["name"],
+                        "kernel": info["kernel"],
+                        "telemetry": info["telemetry"],
+                        "results": info["results"],
+                        "mission_sock": info["mission_address"],
+                    }
+                ),
             ]
             task = subprocess.Popen(mission, cwd=str(path))
             running.append(task)
@@ -227,7 +235,7 @@ if __name__ == "__main__":
     log = query_config("logging.generate_flight_log")
 
     driver_info = None
-    if not args.headless and not args.test:
+    if not args.test:
         kwargs = query_config("vehicle.kwargs")
         driver_info = {
             "name": query_config("vehicle.name"),
@@ -236,9 +244,11 @@ if __name__ == "__main__":
             "mission_path": query_config("mission.path"),
             "mission_package": query_config("mission.package"),
             "address": query_config("internal.services.driver"),
-            "telemetry": query_config("internal.streams.driver_telemetry").replace('unix', 'ipc'),
-            "imagery": query_config("internal.streams.imagery").replace('unix', 'ipc'),
-            "results": query_config("internal.streams.results").replace('unix', 'ipc'),
+            "telemetry": query_config("internal.streams.driver_telemetry").replace(
+                "unix", "ipc"
+            ),
+            "imagery": query_config("internal.streams.imagery").replace("unix", "ipc"),
+            "results": query_config("internal.streams.results").replace("unix", "ipc"),
             "kernel": query_config("internal.services.kernel"),
             "mission_address": query_config("internal.services.mission"),
             "kwargs": kwargs if kwargs != {} else None,
@@ -247,4 +257,4 @@ if __name__ == "__main__":
     if args.test:
         test_services(args.test, log)
     else:
-        start_services(log, driver_info)
+        start_services(log, driver_info, args.headless)
