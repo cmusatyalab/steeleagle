@@ -1,6 +1,7 @@
 package util_test
 
 import (
+    "os/exec"
 	"context"
 	"path/filepath"
 	"testing"
@@ -8,12 +9,16 @@ import (
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
 
-func TestPlugin(t *testing.T) {
+func TestContainerPlugin(t *testing.T) {
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
 	path, err := filepath.Abs(go_binary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path))
+	plugin := util.CreateContainerPlugin("alpine", util.WithPath(path))
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -29,12 +34,12 @@ func TestPlugin(t *testing.T) {
 	}
 }
 
-func TestPluginRunhook(t *testing.T) {
+func TestContainerPluginRunhook(t *testing.T) {
 	path, err := filepath.Abs(go_pkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path))
+	plugin := util.CreateContainerPlugin("alpine", util.WithPath(path))
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -50,23 +55,18 @@ func TestPluginRunhook(t *testing.T) {
 	}
 }
 
-func TestPluginWrongAuthCode(t *testing.T) {
+func TestContainerPluginWrongTag(t *testing.T) {
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
 	path, err := filepath.Abs(go_binary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
-	ln, conn, err := plugin.Start(context.Background())
-	if err != nil {
-		t.Fatalf("encountered error spawning plugin: %v", err)
-	}
-
-	err = pluginRPCCheck(t, ln, conn, util.AdminCode)
+	plugin := util.CreateContainerPlugin("foobar", util.WithPath(path))
+	_, _, err = plugin.Start(context.Background())
 	if err == nil {
-		t.Errorf("rpc succeeded when it should have failed")
-	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
+		t.Fatalf("expected an error due to a bogus tag")
 	}
 }

@@ -15,6 +15,7 @@ const (
 )
 
 // The run hook that processes are started from within containers
+const rundir string = "/steeleagle"
 const runhook string = "run.sh"
 
 // Used to determine how to run a plugin

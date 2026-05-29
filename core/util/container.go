@@ -6,7 +6,7 @@ import (
 	"os/exec"
     "net"
     "errors"
-    "strings"
+    "path/filepath"
 
 	"google.golang.org/grpc"
 )
@@ -54,26 +54,44 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	// otherwise, use existing runhook in container
 	p.args = append(p.args,
 		"run",
-		"--rm",
 		"--preserve-fds=2",
 	)
 	if p.path != "" {
-		p.args = append(p.args, "-v")
-        if err = p.SetTarget(); err != nil {
+        // Set this to be an ephemeral container and
+        // mount the script as a volume
+		p.args = append(p.args, "--rm", "-v")
+        if err = p.setTarget(); err != nil {
 			return nil, nil, err
 		}
-		// Bind the file
-		p.args = append(p.args,
-			fmt.Sprintf("%s:/%s:Z", p.target, p.target),
-			p.tag,
-		)
-        if strings.Contains(p.target, ".sh") {
-            p.args = append(p.args, "sh", p.target)
+
+		// Mount the file and set the target/script
+        if p.target == "sh" && p.script != "" {
+            // Runhook case
+		    p.args = append(p.args,
+		    	fmt.Sprintf("%s:%s:Z", p.path, rundir),
+                "-w",
+                rundir,
+		    	p.tag,
+                "sh",
+                filepath.Base(p.script),
+		    )
+            // Reset script so base plugin doesn't append it
+            p.script = ""
+        } else if p.target != "" {
+            // Binary case
+		    p.args = append(p.args,
+		    	fmt.Sprintf("%s:%s/%s:Z", p.target, rundir, filepath.Base(p.target)),
+                "-w",
+                rundir,
+		    	p.tag,
+                fmt.Sprintf("./%s", filepath.Base(p.target)),
+		    )
         } else {
-            p.args = append(p.args, fmt.Sprintf("./%s", p.target))
+            return nil, nil, fmt.Errorf("incorrectly formatted command, target is not sh and script is set")
         }
 	} else {
-		p.args = append(p.args, p.tag, runhook)
+        // Pre-existing runhook case
+		p.args = append(p.args, p.tag, "sh", runhook)
 	}
 	// Overwrite the target to be podman
 	p.target = "podman"

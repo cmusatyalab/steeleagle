@@ -26,9 +26,9 @@ func WithTargetArgs(args []string) PluginOption {
     }
 }
 
-func WithPluginArgs(args []string) PluginOption {
+func WithScriptArgs(args []string) PluginOption {
     return func(k *Plugin) {
-        k.pargs = args
+        k.sargs = args
     }
 }
 

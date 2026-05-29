@@ -3,9 +3,10 @@ package util
 import (
 	"net"
 	"strings"
-    "slices"
+    "fmt"
 
 	"github.com/rs/zerolog/log"
+    "github.com/shirou/gopsutil/v3/process"
 )
 
 type ACL struct {
@@ -48,5 +49,54 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 }
 
 func (a *ACL) AllowsPID(pid int) bool {
-    return slices.Contains(a.pids, pid)
+    var err error
+    for _, p := range a.pids {
+        if ok, err := isPIDDescendant(int32(p), int32(pid)); err != nil && ok {
+            return true
+        }
+        if err != nil {
+            log.Warn().Err(err).Int("ppid", p).Int("pid", pid).Msg("pid heritage could not be validated")
+        }
+    }
+    return false
+}
+
+// parentOf returns the PPID of pid using gopsutil.
+func parentOf(pid int32) (int32, error) {
+	p, err := process.NewProcess(pid)
+	if err != nil {
+		return -1, fmt.Errorf("process %d not found: %w", pid, err)
+	}
+	ppid, err := p.Ppid()
+	if err != nil {
+		return -1, fmt.Errorf("could not get ppid of %d: %w", pid, err)
+	}
+	return ppid, nil
+}
+
+// isPIDDescendant reports whether target is a descendant of ancestor.
+// It walks upward through parent PIDs until it finds ancestor (true)
+// or reaches PID 1 / an error (false).
+func isPIDDescendant(ancestor, target int32) (bool, error) {
+	visited := make(map[int32]bool)
+
+	current := target
+	for {
+		ppid, err := parentOf(current)
+		if err != nil {
+			return false, err
+		}
+
+		if ppid == ancestor {
+			return true, nil
+		}
+		if ppid <= 1 {
+			return false, nil
+		}
+		if visited[ppid] {
+			return false, fmt.Errorf("cycle detected in process tree at pid %d", ppid)
+		}
+		visited[ppid] = true
+		current = ppid
+	}
 }

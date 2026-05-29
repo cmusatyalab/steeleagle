@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+    "slices"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -18,13 +19,48 @@ type Plugin struct {
 	name    string
 	path    string
 	target  string // executable target
-	args    []string
-    pargs   []string // plugin runtime args
+    script  string // script target
+	args    []string // executable args
+    sargs   []string // script args
 	start   int64 // plugin start time
 	running bool
     use_uds bool
 	code    AuthCode
 	cmd     *exec.Cmd
+}
+
+func (p *Plugin) setTarget() error {
+	info, err := os.Stat(p.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			p.logError(err, "couldn't find plugin, have you installed it?")
+			return err
+		}
+		p.logError(err, "couldn't stat plugin path")
+		return err
+	}
+
+	// If the plugin is a directory, then use the runhook as the
+	// target executable
+	if info.IsDir() {
+		// Set info and target to the runhook
+		p.script = filepath.Join(p.path, runhook)
+		info, err = os.Stat(p.script)
+		if err != nil {
+			p.logError(err, "couldn't stat plugin run hook, is it there?")
+			return err
+		}
+        p.target = "sh"
+	} else {
+        // A statically linked binary is both the target and script
+		p.target = p.path
+	    // Ensure that the target is runnable
+	    if info.Mode() & 0o111 == 0 {
+	    	return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
+	    }
+	}
+
+	return nil
 }
 
 func CreatePlugin(options ...PluginOption) Plugin {
@@ -40,51 +76,31 @@ func CreatePlugin(options ...PluginOption) Plugin {
 	return p
 }
 
-func (p *Plugin) SetTarget() error {
-	info, err := os.Stat(p.path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			p.logError(err, "couldn't find plugin, have you installed it?")
-			return err
-		}
-		p.logError(err, "couldn't stat plugin path")
-		return err
-	}
-
-	// If the plugin is a directory, then use the runhook as the
-	// target executable
-	var target string
-	if info.IsDir() {
-		// Set info and target to the runhook
-		target = filepath.Join(p.path, runhook)
-		info, err = os.Stat(target)
-		if err != nil {
-			p.logError(err, "couldn't stat plugin run hook, is it there?")
-			return err
-		}
-	} else {
-		target = p.path
-	}
-	// Ensure that the target is runnable
-	if info.Mode() & 0o111 == 0 {
-		return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.name)
-	}
-
-	// Assign target
-	p.target = target
-
-	return nil
-}
 
 func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// If target isn't already set, set it now
     var err error
 	if p.target == "" {
-		err = p.SetTarget()
+		err = p.setTarget()
 		if err != nil {
 			return nil, nil, err
 		}
-	}
+    }
+    // For non-statically linked binary, add the script as the
+    // first script arg
+    if p.script != "" {
+        p.sargs = slices.Insert(p.sargs, 0, p.script)
+    }
+
+    // Create the command
+    p.args = append(p.args, p.sargs...)
+	p.cmd = exec.CommandContext(ctx, p.target, p.args...)
+
+    // If we are running a script, change the process directory
+    // so that we are in the local plugin path scope
+    if p.script != "" {
+        p.cmd.Dir = filepath.Dir(p.script)
+    }
 
     var listener net.Listener
     var client *grpc.ClientConn
@@ -93,9 +109,6 @@ func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, err
         lnid := uuid.New().String()
         cid := uuid.New().String()
 
-        // Create the command
-        p.args = append(p.args, p.pargs...)
-	    p.cmd = exec.CommandContext(ctx, p.target, p.args...)
         // Reverse the listener and client; the plugin connects
         // in the opposite way
         p.cmd.Env = append(os.Environ(),
@@ -119,9 +132,6 @@ func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, err
 	    	return nil, nil, err
 	    }
 
-	    // Create the command
-        p.args = append(p.args, p.pargs...)
-	    p.cmd = exec.CommandContext(ctx, p.target, p.args...)
         // Reverse the listener and client; the plugin connects
         // in the opposite way
 	    p.cmd.ExtraFiles = []*os.File{pln, pc}
