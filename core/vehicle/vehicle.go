@@ -118,7 +118,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
 		v.listeners.wan =
-			util.NewCodedListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs))
+			util.NewCodedListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs, nil))
 		if err != nil {
 			log.Error().Err(err).Msg("could not listen on WAN endpoint, aborting")
 			return fmt.Errorf("can't listen at WAN endpoint: %w", err)
@@ -127,25 +127,25 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Create admin connection, so internal RPC methods can be
 	// authorized with Admin codes
-    adminLn, adminClient, err := util.CreateSocketPairFiles()
+	adminLn, adminClient, err := util.CreateSocketPairFiles()
 	if err != nil {
 		log.Error().Err(err).Msg("could not set up admin socket pairs")
-        return fmt.Errorf("can't create admin socket pairs: %v", err)
+		return fmt.Errorf("can't create admin socket pairs: %v", err)
 	}
-	v.listeners.admin, v.conns.admin, err = util.CreateEndpoints(util.AdminCode, adminLn, adminClient)
+	v.listeners.admin, v.conns.admin, err = util.CreateSocketPairEndpoints(util.AdminCode, adminLn, adminClient)
 	if err != nil {
 		log.Error().Err(err).Msg("could not set up admin socket endpoints")
-        return fmt.Errorf("can't create admin socket endpoints: %v", err)
+		return fmt.Errorf("can't create admin socket endpoints: %v", err)
 	}
 
 	// Start mission/driver plugins, and retrieve associated ClientConn and
 	// Listener objects
-	_, v.conns.driver, err = v.driver.Spawn(ctx)
+	_, v.conns.driver, err = v.driver.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		return err
 	}
-	v.listeners.mission, v.conns.mission, err = v.mission.Spawn(ctx)
+	v.listeners.mission, v.conns.mission, err = v.mission.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start mission plugin, aborting")
 		return err
