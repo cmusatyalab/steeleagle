@@ -162,6 +162,10 @@ func (p *Plugin) Watch() <-chan error {
     return ch
 }
 
+func (p *Plugin) Wait() error {
+    return p.cmd.Wait()
+}
+
 func (p *Plugin) GetCommand() *exec.Cmd {
 	return p.cmd
 }

@@ -9,8 +9,6 @@ import (
 const go_pkg string = "./mocks/go_test/"
 const go_binary string = "./mocks/go_test/binary"
 const py_pkg string = "./mocks/py_test/"
-const err_pkg string = "./mocks/error_test/"
-const err_binary string = "./mocks/error_test/binary"
 
 func TestMain(m *testing.M) {
 	// Build testdata/main.go into a plugin binary that we can test with
