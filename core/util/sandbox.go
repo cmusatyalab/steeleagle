@@ -1,11 +1,11 @@
 package util
 
 import (
-    "context"
+	"context"
+	"fmt"
+	"net"
 	"os/exec"
-    "net"
-    "fmt"
-    "path/filepath"
+	"path/filepath"
 
 	"google.golang.org/grpc"
 )
@@ -43,40 +43,40 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		"--die-with-parent",
 	)
 
-    // Bind the file and set the target/script
+	// Bind the file and set the target/script
 	if err = p.Plugin.setTarget(); err != nil {
 		return nil, nil, err
 	}
 
-    // Mount the file and set the target/script
-    if p.target == "sh" && p.script != "" {
-        // Runhook case
-	    p.args = append(p.args,
-            "--ro-bind",
-            p.path,
-            rundir,
-            "--chdir",
-            rundir,
-            "sh",
-            filepath.Base(p.script),
-        )
-        // Reset script so base plugin doesn't append it
-        p.script = ""
-    } else if p.target != "" {
-        // Binary case
-	    p.args = append(p.args,
-            "--ro-bind",
-            p.target,
-            fmt.Sprintf("%s/%s", rundir, filepath.Base(p.target)),
-            "--chdir",
-            rundir,
-            fmt.Sprintf("./%s", filepath.Base(p.target)),
-        )
-    } else {
-        return nil, nil, fmt.Errorf("incorrectly formatted command, target is not sh and script is set")
-    }
+	// Mount the file and set the target/script
+	if p.target == "sh" && p.script != "" {
+		// Runhook case
+		p.args = append(p.args,
+			"--ro-bind",
+			p.path,
+			rundir,
+			"--chdir",
+			rundir,
+			"sh",
+			filepath.Base(p.script),
+		)
+		// Reset script so base plugin doesn't append it
+		p.script = ""
+	} else if p.target != "" {
+		// Binary case
+		p.args = append(p.args,
+			"--ro-bind",
+			p.target,
+			fmt.Sprintf("%s/%s", rundir, filepath.Base(p.target)),
+			"--chdir",
+			rundir,
+			fmt.Sprintf("./%s", filepath.Base(p.target)),
+		)
+	} else {
+		return nil, nil, fmt.Errorf("incorrectly formatted command, target is not sh and script is set")
+	}
 	// Overwrite target to be bubblewrap
 	p.target = "bwrap"
 
-    return p.Plugin.Start(ctx)
+	return p.Plugin.Start(ctx)
 }

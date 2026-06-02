@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -54,8 +55,16 @@ func run() error {
 }
 
 func main() {
+	errPtr := flag.Bool("error", false, "produce an error")
+	flag.Parse()
+
+	if *errPtr {
+		fmt.Println("asked to exit with error")
+		os.Exit(1)
+	}
+
 	if err := run(); err != nil {
-        fmt.Printf("got the following error %v", err)
+		fmt.Printf("got the following error %v", err)
 		os.Exit(1)
 	}
 }
