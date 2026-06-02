@@ -22,6 +22,11 @@ func CreateContainerPlugin(tag string, options ...PluginOption) ContainerPlugin 
 		Plugin: CreatePlugin(options...),
 		tag:    tag,
 	}
+    // If we are running directly from a container, then
+    // set the plugin name to the tag
+    if p.path == "" {
+        p.name = tag
+    }
 
 	return p
 }

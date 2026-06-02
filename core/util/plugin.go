@@ -67,12 +67,17 @@ func (p *Plugin) setTarget() error {
 func CreatePlugin(options ...PluginOption) Plugin {
 	// Set default input options and retrieve options
 	p := Plugin{
-		name: uuid.New().String(),
 		code: UnknownCode,
 	}
 	for _, option := range options {
 		option(&p)
 	}
+    // Set name to base of filepath
+    if p.name == "" && p.path != "" {
+        p.name = filepath.Base(p.path)
+    } else {
+        p.name = uuid.New().String()
+    }
 
 	return p
 }

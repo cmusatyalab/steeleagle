@@ -37,7 +37,7 @@ func TestSandboxPlugin(t *testing.T) {
 func TestSandboxPluginRunhook(t *testing.T) {
 	path, err := filepath.Abs(go_pkg)
 	if err != nil {
-		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
+		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin := util.CreateSandboxPlugin(util.WithPath(path))
 	ln, conn, err := plugin.Start(context.Background())

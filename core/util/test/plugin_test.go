@@ -32,7 +32,28 @@ func TestPlugin(t *testing.T) {
 func TestPluginRunhook(t *testing.T) {
 	path, err := filepath.Abs(go_pkg)
 	if err != nil {
-		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
+		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
+	}
+	plugin := util.CreatePlugin(util.WithPath(path))
+	ln, conn, err := plugin.Start(context.Background())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+
+	err = pluginRPCCheck(t, ln, conn, util.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
+	}
+	err = plugin.Stop()
+	if err != nil {
+		t.Errorf("encountered error while stopping plugin: %v", err)
+	}
+}
+
+func TestPluginPython(t *testing.T) {
+	path, err := filepath.Abs(py_pkg)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin := util.CreatePlugin(util.WithPath(path))
 	ln, conn, err := plugin.Start(context.Background())

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-    "context"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -59,17 +58,12 @@ func CreateAbstractSocketEndpoints(code AuthCode, pid int, lnid, cid string) (ne
 
 	// Connect to the client abstract socket
     target := fmt.Sprintf("unix-abstract:%s", cid)
-	client, err := grpc.NewClient(target,
+    client, err := grpc.NewClient(
+		target,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			// Prepend a null byte for Linux abstract sockets
-			abstractAddr := "\x00" + cid
-			var d net.Dialer
-			return d.DialContext(ctx, "unix", abstractAddr)
-		}),
 	)
 	if err != nil {
-		log.Error().Msg("couldn't create abstract client")
+		log.Error().Err(err).Msg("couldn't connect client to abstract socket")
 		ln.Close()
 		return nil, nil, err
 	}
