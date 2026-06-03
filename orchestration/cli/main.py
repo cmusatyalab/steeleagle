@@ -253,7 +253,7 @@ def systemd_install(
         rprint(f"[red]{exc}[/red]")
         raise typer.Exit(1) from RuntimeError
 
-    cwd = Path(working_dir) or Path.cwd()
+    cwd = Path(working_dir) if working_dir else Path.cwd()
     abs_config = config if config.is_absolute() else (cwd / config).resolve()
 
     run_user, run_group = ("", "") if user_service else current_user()
