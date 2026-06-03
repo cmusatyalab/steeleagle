@@ -46,6 +46,8 @@ services:
                 "run",
                 "--directory",
                 "~/roost/aviary/src/steeleagle_aviary",
+                "--env-file",
+                ".env",
                 "simulator.py",
             ]
 
@@ -63,7 +65,7 @@ services:
 
   # Backend containers including swarm controller and cognitive engines
   backend:
-    managed: true
+    managed: false
     type: compose
     compose_files: ["~/steeleagle/backend/server/docker-compose.yml"]
     environment: ["~/steeleagle/backend/server/.env"]
