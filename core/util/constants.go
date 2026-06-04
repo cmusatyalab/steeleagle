@@ -14,9 +14,18 @@ const (
 	UnknownCode  AuthCode = "unknown"
 )
 
+// Directories where the runtime files live
+const runtimeDir string = "steeleagle"
+const vehicleDir string = "vehicles"
+const pluginDir string = "plugins"
+
 // The run hook that processes are started from within containers
-const rundir string = "/steeleagle"
-const runhook string = "run.sh"
+const runDir string = "steeleagle"
+const runHook string = "run.sh"
+
+// Environment variable names passed to the subprocess
+const ClientSockEnv string = "CLIENT_SOCKET"
+const ListenSockEnv string = "LISTEN_SOCKET"
 
 // Used to determine how to run a plugin
 type PluginRuntime string

@@ -28,10 +28,7 @@ func TestSandboxPlugin(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestSandboxPluginRunhook(t *testing.T) {
@@ -49,8 +46,5 @@ func TestSandboxPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }

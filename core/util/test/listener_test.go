@@ -6,25 +6,26 @@ import (
 	"testing"
     "fmt"
 	"time"
+    "os"
 
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	health_pb "google.golang.org/grpc/health/grpc_health_v1"
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
 
 func TestAuthCode(t *testing.T) {
-	lnFile, clientFile, err := util.CreateSocketPairFiles()
+    ln, err := net.Listen("unix", "listener")
 	if err != nil {
-		t.Errorf("couldn't create socket pairs: %v", err)
+		t.Fatalf("failed to listen: %v", err)
 	}
-	ln, conn, err := util.CreateSocketPairEndpoints(util.MissionCode, lnFile, clientFile)
+	conn, err := grpc.NewClient("unix://listener", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		t.Errorf("couldn't create endpoints: %v", err)
+		t.Fatalf("failed to create new client: %v", err)
 	}
-	lnFile.Close()
-	clientFile.Close()
+    defer os.Remove("listener")
 
     // Define a mock auth interceptor
     authInt := func(
@@ -48,30 +49,6 @@ func TestAuthCode(t *testing.T) {
 	}
 
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(authInt))
-	defer server.GracefulStop()
-	health_pb.RegisterHealthServer(server, health.NewServer())
-	go server.Serve(ln)
-
-	client := health_pb.NewHealthClient(conn)
-	_, err = client.Check(context.Background(), &health_pb.HealthCheckRequest{})
-	if err != nil {
-		t.Errorf("rpc failed when it was expected to succeed: %v", err)
-	}
-}
-
-func TestSocketPair(t *testing.T) {
-	lnFile, clientFile, err := util.CreateSocketPairFiles()
-	if err != nil {
-		t.Errorf("couldn't create socket pairs: %v", err)
-	}
-	ln, conn, err := util.CreateSocketPairEndpoints(util.AdminCode, lnFile, clientFile)
-	if err != nil {
-		t.Errorf("couldn't create endpoints: %v", err)
-	}
-	lnFile.Close()
-	clientFile.Close()
-
-	server := grpc.NewServer()
 	defer server.GracefulStop()
 	health_pb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)

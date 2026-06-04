@@ -14,23 +14,108 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-type Plugin struct {
-	name    string
-	path    string
-	target  string   // executable target
-	script  string   // script target
-	args    []string // executable args
-	sargs   []string // script args
-	start   int64    // plugin start time
-	running bool
-	use_uds bool
-	code    AuthCode
-	cmd     *exec.Cmd
+type Plugin interface {
+    Start(context.Context) (net.Listener, *grpc.ClientConn, error)
+    Stop()
+    Watch() <-chan error
+    Wait() error
+    Name() string
 }
 
-func (p *Plugin) setTarget() error {
+type BasePlugin struct {
+	name    string
+	path    string   // path to plugin
+    rdir    string   // runtime directory path
+    runner  string   // runner target (e.g. bwrap, podman)
+    rargs   []string // runner args
+	exec    string   // executable target (e.g. sh)
+	eargs   []string // executable args
+	script  string   // script target (actual script)
+	sargs   []string // script args
+	start   int64    // plugin start time
+    server  bool     // whether or not the plugin hosts a server
+    timout  int      // timeout in seconds waiting for the server to start
+	running bool
+	code    AuthCode
+	cmd     *exec.Cmd
+    ctx     context.Context
+    cancel  context.CancelFunc
+}
+
+func CreateBasePlugin(options ...PluginOption) BasePlugin {
+	// Set default input options and retrieve options
+	p := BasePlugin{
+		code: UnknownCode,
+        name: uuid.New().String(),
+	}
+	for _, option := range options {
+		option(&p)
+	}
+
+	return p
+}
+
+func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+    // Create a new context with a cancel function
+    p.ctx, p.cancel = context.WithCancel(ctx)
+
+	// Create the command
+	p.args = append(p.args, p.sargs...)
+	p.cmd = exec.CommandContext(ctx, p.target, p.args...)
+	log.Debug().Msg("Starting plugin " + p.name + ": " + p.target + " " + strings.Join(p.args, " "))
+
+	// If we are running a script, change the process directory
+	// so that we are in the local plugin path scope
+	if p.script != "" {
+		p.cmd.Dir = filepath.Dir(p.script)
+	}
+
+	// Reverse the listener and client; the plugin connects
+	// in the opposite way
+	p.cmd.Env = append(os.Environ(),
+		fmt.Sprintf("%s=%s", ListenSockEnv, filepath.Base(p.cFile.Name())),
+		fmt.Sprintf("%s=%s", ClientSockEnv, filepath.Base(p.lnFile.Name())),
+	)
+	err = p.run()
+	if err != nil {
+		return nil, nil, err
+	}
+
+    // Cleanup goroutine 
+    go func() {
+        <-ctx.Done()
+        p.cleanup()
+    }()
+
+    return p.createSocketEndpoints()
+}
+
+func (p *BasePlugin) Stop() {
+    if p.cancel != nil {
+        p.cancel()
+    }
+}
+
+func (p *BasePlugin) Watch() <-chan error {
+	ch := make(chan error, 1)
+	go func() {
+		ch <- p.cmd.Wait()
+	}()
+	return ch
+}
+
+func (p *BasePlugin) Wait() error {
+    return p.cmd.Wait()
+}
+
+func (p *BasePlugin) Name() string {
+	return p.name
+}
+
+func (p *BasePlugin) setTarget() error {
 	info, err := os.Stat(p.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -53,10 +138,9 @@ func (p *Plugin) setTarget() error {
 		}
 		p.target = "sh"
 	} else {
-		// A statically linked binary is both the target and script
-		p.target = p.path
-		// Ensure that the target is runnable
-		if info.Mode()&0o111 == 0 {
+		p.script = p.path
+		// Ensure that the script is runnable
+		if info.Mode() & 0o111 == 0 {
 			return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
 		}
 	}
@@ -64,120 +148,37 @@ func (p *Plugin) setTarget() error {
 	return nil
 }
 
-func CreatePlugin(options ...PluginOption) Plugin {
-	// Set default input options and retrieve options
-	p := Plugin{
-		code: UnknownCode,
-	}
-	for _, option := range options {
-		option(&p)
-	}
-    // Set name to base of filepath
-    if p.name == "" && p.path != "" {
-        p.name = filepath.Base(p.path)
-    } else {
-        p.name = uuid.New().String()
-    }
-
-	return p
-}
-
-func (p *Plugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// If target isn't already set, set it now
-	var err error
-	if p.target == "" {
-		err = p.setTarget()
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	// For non-statically linked binary, add the script as the
-	// first script arg
-	if p.script != "" {
-		p.sargs = slices.Insert(p.sargs, 0, p.script)
+func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, error) {
+    // Listen on the server socket
+	ln, err := net.Listen("unix", p.lnFile.Name())
+	if err != nil {
+		log.Error().Err(err).Msg("couldn't listen on domain socket")
+		return nil, nil, err
 	}
 
-	// Create the command
-	p.args = append(p.args, p.sargs...)
-	p.cmd = exec.CommandContext(ctx, p.target, p.args...)
-
-	log.Debug().Msg("Starting plugin " + p.name + ": " + p.target + " " + strings.Join(p.args, " "))
-
-	// If we are running a script, change the process directory
-	// so that we are in the local plugin path scope
-	if p.script != "" {
-		p.cmd.Dir = filepath.Dir(p.script)
+	// Connect to the client socket
+    target := fmt.Sprintf("unix:%s", p.cFile.Name())
+    client, err := grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Error().Err(err).Msg("couldn't connect client to domain socket")
+		ln.Close()
+		return nil, nil, err
 	}
 
-	var listener net.Listener
-	var client *grpc.ClientConn
-	if p.use_uds {
-		// Create two uuids for the abstract sockets
-		lnid := uuid.New().String()
-		cid := uuid.New().String()
-
-		// Reverse the listener and client; the plugin connects
-		// in the opposite way
-		p.cmd.Env = append(os.Environ(),
-			fmt.Sprintf("LISTEN_SOCKET=%s", cid),
-			fmt.Sprintf("CLIENT_SOCKET=%s", lnid),
-		)
-		err = p.run()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		listener, client, err = CreateAbstractSocketEndpoints(p.code, p.cmd.Process.Pid, lnid, cid)
-	} else {
-		// Get socket files, one for vehicle->plugin, one for plugin->vehicle
-		ln, pc, err := CreateSocketPairFiles()
-		if err != nil {
-			return nil, nil, err
-		}
-		c, pln, err := CreateSocketPairFiles()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// Reverse the listener and client; the plugin connects
-		// in the opposite way
-		p.cmd.ExtraFiles = []*os.File{pln, pc}
-		err = p.run()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		listener, client, err = CreateSocketPairEndpoints(p.code, ln, c)
-	}
-
-	return listener, client, err
+    acl := GetACL([]string{}, []int{p.cmd.Process.Pid})
+	return NewCodedListener(ln, p.code, acl), client, nil
 }
 
-func (p *Plugin) Name() string {
-	return p.name
+func (p *BasePlugin) cleanup() {
+    p.cFile.Close()
+    p.lnFile.Close()
+    p.cancel()
 }
 
-func (p *Plugin) Stop() error {
-	return p.cmd.Process.Kill()
-}
-
-func (p *Plugin) Watch() <-chan error {
-	ch := make(chan error, 1)
-	go func() {
-		ch <- p.cmd.Wait()
-	}()
-	return ch
-}
-
-func (p *Plugin) Wait() error {
-    return p.cmd.Wait()
-}
-
-func (p *Plugin) GetCommand() *exec.Cmd {
-	return p.cmd
-}
-
-func (p *Plugin) run() error {
+func (p *BasePlugin) run() error {
 	// Run the plugin
 	if err := p.cmd.Start(); err != nil {
 		p.logError(err, "couldn't run target for plugin")
@@ -191,6 +192,6 @@ func (p *Plugin) run() error {
 	return nil
 }
 
-func (p *Plugin) logError(err error, message string) {
-	log.Error().Err(err).Str("plugin", p.name).Str("code", string(p.code)).Msg(message)
+func (p *BasePlugin) logError(err error, message string) {
+	log.Error().Err(err).Str("plugin", p.path).Str("code", string(p.code)).Msg(message)
 }

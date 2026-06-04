@@ -12,21 +12,16 @@ import (
 )
 
 type ContainerPlugin struct {
-	Plugin
+	BasePlugin
 	tag string
 }
 
 func CreateContainerPlugin(tag string, options ...PluginOption) ContainerPlugin {
 	// Create the plugin
 	p := ContainerPlugin{
-		Plugin: CreatePlugin(options...),
+		BasePlugin: CreateBasePlugin(options...),
 		tag:    tag,
 	}
-    // If we are running directly from a container, then
-    // set the plugin name to the tag
-    if p.path == "" {
-        p.name = tag
-    }
 
 	return p
 }
@@ -55,12 +50,13 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		return nil, nil, err
 	}
 
-	// Check if path is set; if so, bind runhook in
-	// otherwise, use existing runhook in container
+	// Check if path is set; if so, bind runhook in otherwise,
+    // use existing runhook in container
 	p.args = append(p.args,
-		"run",
-		"--preserve-fds=2",
-	)
+        "run", 
+        fmt.Sprintf("%s:%s/%s:Z", p.lnFile.Name(), rundir, filepath.Base(p.lnFile.Name())),
+        fmt.Sprintf("%s:%s/%s:Z", p.cFile.Name(), rundir, filepath.Base(p.cFile.Name())),
+    )
 	if p.path != "" {
 		// Set this to be an ephemeral container and
 		// mount the script as a volume
@@ -101,5 +97,5 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	// Overwrite the target to be podman
 	p.target = "podman"
 
-	return p.Plugin.Start(ctx)
+	return p.BasePlugin.Start(ctx)
 }

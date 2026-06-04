@@ -28,10 +28,7 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+    plugin.Stop()
 }
 
 func TestContainerPluginRunhook(t *testing.T) {
@@ -49,10 +46,7 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestContainerPluginWrongTag(t *testing.T) {

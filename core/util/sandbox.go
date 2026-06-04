@@ -11,13 +11,13 @@ import (
 )
 
 type SandboxPlugin struct {
-	Plugin
+	BasePlugin
 }
 
 func CreateSandboxPlugin(options ...PluginOption) SandboxPlugin {
 	// Create the plugin
 	p := SandboxPlugin{
-		Plugin: CreatePlugin(options...),
+		BasePlugin: CreateBasePlugin(options...),
 	}
 
 	return p
@@ -37,6 +37,8 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/bin", "/bin",
+        "--ro-bind", p.lnFile.Name(), filepath.Join(rundir, filepath.Base(p.lnFile.Name())),
+        "--ro-bind", p.cFile.Name(), filepath.Join(rundir, filepath.Base(p.cFile.Name())),
 		"--proc", "/proc",
 		"--dev", "/dev",
 		"--unshare-all",
@@ -44,7 +46,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 	)
 
 	// Bind the file and set the target/script
-	if err = p.Plugin.setTarget(); err != nil {
+	if err = p.BasePlugin.setTarget(); err != nil {
 		return nil, nil, err
 	}
 
@@ -78,5 +80,5 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 	// Overwrite target to be bubblewrap
 	p.target = "bwrap"
 
-	return p.Plugin.Start(ctx)
+	return p.BasePlugin.Start(ctx)
 }

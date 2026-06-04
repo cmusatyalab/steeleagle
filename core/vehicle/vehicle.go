@@ -35,17 +35,14 @@ type Vehicle struct {
 	name       string
 	path       string
 	socketPath string // path to main services socket
-	// Plugins
 	pluginConfig PluginConfig
 	driver       util.Plugin
 	mission      util.Plugin
 	plugins      []util.Plugin
-	// Connections
 	connCfg   ConnectionConfig
 	server    *grpc.Server
 	listeners listenerState
 	conns     connectionState
-	// Policy
 	policyCfg PolicyConfig
 	policy    policyState
 	test      bool

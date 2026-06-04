@@ -23,10 +23,7 @@ func TestPlugin(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestPluginRunhook(t *testing.T) {
@@ -44,10 +41,7 @@ func TestPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestPluginPython(t *testing.T) {
@@ -65,10 +59,7 @@ func TestPluginPython(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestPluginWrongAuthCode(t *testing.T) {
@@ -86,10 +77,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	if err == nil {
 		t.Fatalf("rpc succeeded when it should have failed")
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }
 
 func TestPluginArgs(t *testing.T) {
@@ -107,8 +95,5 @@ func TestPluginArgs(t *testing.T) {
 	if err == nil {
 		t.Fatalf("rpc succeeded when it should have failed")
 	}
-	err = plugin.Stop()
-	if err != nil {
-		t.Errorf("encountered error while stopping plugin: %v", err)
-	}
+	plugin.Stop()
 }

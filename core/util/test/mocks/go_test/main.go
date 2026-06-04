@@ -6,20 +6,30 @@ import (
 	"fmt"
 	"os"
 	"time"
+    "net"
 
-	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	health_pb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func run() error {
 	// Know that FD3 is the server file, FD4 is the client file
-	lnFile := os.NewFile(3, "listener-file")
-	clientFile := os.NewFile(4, "client-file")
-	ln, conn, err := util.CreateSocketPairEndpoints(util.AdminCode, lnFile, clientFile)
+    listenSocket := os.Getenv("LISTEN_SOCKET")
+	clientSocket := os.Getenv("CLIENT_SOCKET")
+	if listenSocket == "" || clientSocket == "" {
+		return fmt.Errorf("LISTEN_SOCKET and CLIENT_SOCKET environment variables must be set")
+	}
+
+    // Create the connections
+    ln, err := net.Listen("unix", listenSocket)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to listen on %s: %w", listenSocket, err)
+	}
+	conn, err := grpc.NewClient("unix://"+clientSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to create new client %s: %w", clientSocket, err)
 	}
 
 	// Create notification channel for RPC calls
