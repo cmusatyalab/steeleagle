@@ -62,22 +62,32 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
     // Create a new context with a cancel function
     p.ctx, p.cancel = context.WithCancel(ctx)
 
-	// Create the command
-	p.args = append(p.args, p.sargs...)
-	p.cmd = exec.CommandContext(ctx, p.target, p.args...)
-	log.Debug().Msg("Starting plugin " + p.name + ": " + p.target + " " + strings.Join(p.args, " "))
+    // Set a target
 
-	// If we are running a script, change the process directory
-	// so that we are in the local plugin path scope
-	if p.script != "" {
-		p.cmd.Dir = filepath.Dir(p.script)
-	}
+	// Create the command
+    finalExec := ""
+    finalArgs := []string{}
+    if p.script != "" {
+		p.cmd.Dir = filepath.Dir(p.script) // change to script dir
+        finalExec = p.script
+        finalArgs = p.sargs
+    }
+    if p.exec != "" {
+        finalExec = p.exec
+        finalArgs = append(p.eargs, finalArgs...)
+    }
+    if p.runner != "" {
+        finalExec = p.runner
+        finalArgs = append(p.rargs, finalArgs...)
+    }
+	p.cmd = exec.CommandContext(ctx, finalExec, finalArgs...)
+    // TODO: debug log here about starting the command
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
 	p.cmd.Env = append(os.Environ(),
-		fmt.Sprintf("%s=%s", ListenSockEnv, filepath.Base(p.cFile.Name())),
-		fmt.Sprintf("%s=%s", ClientSockEnv, filepath.Base(p.lnFile.Name())),
+		fmt.Sprintf("%s=%s", ListenSockEnv, //TODO),
+		fmt.Sprintf("%s=%s", ClientSockEnv, //TODO),
 	)
 	err = p.run()
 	if err != nil {
