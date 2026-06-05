@@ -1019,7 +1019,9 @@ def dsl_compile(
         _client() as c,
     ):
         data = _check(
-            c.post("/dsl/compile", params={"dsl_file": dsl_file_abs, "output": output_abs})
+            c.post(
+                "/dsl/compile", params={"dsl_file": dsl_file_abs, "output": output_abs}
+            )
         )
 
     console.rule(title="[bold]DSL compiler output[/bold]")

@@ -410,7 +410,16 @@ def inspect_config(name: str):
 async def dsl_compile(dsl_file: str, output: str = "mission.json"):
     sdk_dir = _get_steeleagle_dir() / "sdk"
     returncode, out = await _execute_async_subprocess(
-        ["uv", "run", "--directory", str(sdk_dir), "dsl-compile", dsl_file, "-o", output]
+        [
+            "uv",
+            "run",
+            "--directory",
+            str(sdk_dir),
+            "dsl-compile",
+            dsl_file,
+            "-o",
+            output,
+        ]
     )
     return {
         "status": "compiled" if returncode == 0 else "compilation_failed",
