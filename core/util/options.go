@@ -21,13 +21,13 @@ func WithAuthCode(code AuthCode) PluginOption {
 }
 
 func WithTargetArgs(args []string) PluginOption {
-    return func(k *BasePlugin) {
-        k.args = append(k.args, args...)
-    }
+	return func(k *BasePlugin) {
+		k.eargs = append(k.eargs, args...)
+	}
 }
 
 func WithScriptArgs(args []string) PluginOption {
-    return func(k *BasePlugin) {
-        k.sargs = args
-    }
+	return func(k *BasePlugin) {
+		k.sargs = args
+	}
 }

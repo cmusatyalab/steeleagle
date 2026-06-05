@@ -17,14 +17,29 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// Plugin defines the behavior required of all plugin implementations.
 type Plugin interface {
+	// Start launches the plugin and returns a listener for the plugin's server
+	// side and a client connection to the plugin. The returned listener
+	// and connection are both bound to the plugin's lifetime. Canceling ctx
+	// or calling Stop tears them down.
     Start(context.Context) (net.Listener, *grpc.ClientConn, error)
+
+	// Stop cancels the plugin's context, triggering shutdown.
     Stop()
+
+	// Watch returns a channel that receives the plugin's exit error when it
+	// terminates.
     Watch() <-chan error
+
+	// Wait blocks until the plugin process exits and returns its exit error.
     Wait() error
+
     Name() string
 }
 
+// BasePlugin provides common attributes shared across all plugins. It is
+// intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
 	name    string
 	path    string   // path to plugin
@@ -38,13 +53,14 @@ type BasePlugin struct {
 	start   int64    // plugin start time
     server  bool     // whether or not the plugin hosts a server
     timout  int      // timeout in seconds waiting for the server to start
-	running bool
-	code    AuthCode
-	cmd     *exec.Cmd
-    ctx     context.Context
-    cancel  context.CancelFunc
+	running bool	 // whether the plugin is currently running
+	code    AuthCode // authentication level
+	cmd     *exec.Cmd // command to run
+    ctx     context.Context // context
+    cancel  context.CancelFunc // cancellation function
 }
 
+// CreateBasePlugin creates an instance of a BasePlugin.
 func CreateBasePlugin(options ...PluginOption) BasePlugin {
 	// Set default input options and retrieve options
 	p := BasePlugin{
@@ -94,7 +110,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 
-    // Cleanup goroutine 
+    // Cleanup goroutine
     go func() {
         <-ctx.Done()
         p.cleanup()
