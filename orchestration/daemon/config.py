@@ -82,6 +82,7 @@ AnyServiceConfig = Annotated[
 
 class OrchestratorConfig(BaseModel):
     roost: str = "~/roost"
+    steeleagle: str = "~/steeleagle"
     services: dict[str, AnyServiceConfig] = {}
 
 
@@ -154,3 +155,8 @@ def load_services(path: Path) -> ServiceRegistry:
 def get_roost_repo(path: Path) -> Path:
     config = load_config(path)
     return Path(config.roost)
+
+
+def get_steeleagle_dir(path: Path) -> Path:
+    config = load_config(path)
+    return Path(config.steeleagle)

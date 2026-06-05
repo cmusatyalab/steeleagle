@@ -64,6 +64,9 @@ app.add_typer(backend_app, name="backend")
 
 sim_app = typer.Typer(name="sim", help="Manage Aviary simulator.", no_args_is_help=True)
 app.add_typer(sim_app, name="sim")
+
+dsl_app = typer.Typer(name="dsl", help="DSL compiler tools.", no_args_is_help=True)
+app.add_typer(dsl_app, name="dsl")
 daemon_app = typer.Typer(
     name="daemon", help="Manage the daemon as a systemd service.", no_args_is_help=True
 )
@@ -999,6 +1002,31 @@ def compose_logs(
         data = _check(c.get("/services/backend/logs", params={"tail": tail}))
     for line in data.get("logs", []):
         rprint(f"{escape(line)}")
+
+
+@dsl_app.command("compile")
+def dsl_compile(
+    dsl_file: str = typer.Argument(..., help="Path to the .dsl source file"),
+    output: str = typer.Option(
+        "mission.json", "--output", "-o", help="Output mission JSON file path"
+    ),
+):
+    """Compile a DSL file into a mission JSON."""
+    dsl_file_abs = str(Path(dsl_file).resolve())
+    output_abs = str(Path(output).resolve())
+    with (
+        console.status("Compiling DSL…", spinner="aesthetic"),
+        _client() as c,
+    ):
+        data = _check(
+            c.post("/dsl/compile", params={"dsl_file": dsl_file_abs, "output": output_abs})
+        )
+
+    console.rule(title="[bold]DSL compiler output[/bold]")
+    rprint(f"{data.get('log', 'No log data')}")
+    rprint(f"[bold]dsl-compile[/bold] → {_status_color(data.get('status', 'unknown'))}")
+    if data.get("status") == "compiled":
+        rprint(f"[green]Mission written to:[/green] {data.get('output')}")
 
 
 if __name__ == "__main__":

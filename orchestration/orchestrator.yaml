@@ -47,7 +47,7 @@ services:
                 "--directory",
                 "~/roost/aviary/src/steeleagle_aviary",
                 "--env-file",
-                ".env",
+                "~/roost/aviary/src/steeleagle_aviary/.env",
                 "simulator.py",
             ]
 
@@ -81,5 +81,8 @@ services:
                 "~/steeleagle/vehicle",
                 "launch.py",
             ]
+
 # Roost (git.cmusatyalab.org/steeleagle/roost) will be pulled into this directory by the daemon on launch
 roost: "~/roost"
+# Root of the SteelEagle repository clone
+steeleagle: "~/steeleagle"

@@ -14,6 +14,7 @@ Or via the CLI:
 import asyncio
 import logging
 import os
+import shutil
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -25,7 +26,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from rich.logging import RichHandler
 
-from .config import get_roost_repo, load_services
+from .config import get_roost_repo, get_steeleagle_dir, load_services
 from .container_manager import ContainerManager
 from .docker_compose_manager import DockerComposeManager
 from .process_manager import ProcessManager
@@ -160,6 +161,13 @@ async def _log_stream(
         pass
     finally:
         unsubscribe(q)
+
+
+def _get_steeleagle_dir() -> Path:
+    config_path = Path(
+        os.environ.get("ORCH_CONFIG", "~/.steeleagle/orchestrator.yaml")
+    ).expanduser()
+    return Path(get_steeleagle_dir(config_path)).expanduser()
 
 
 def _get_roost_repo() -> git.Repo:
@@ -396,13 +404,39 @@ def inspect_config(name: str):
 
 
 @app.post(
+    "/dsl/compile",
+    summary="Compile a DSL file to a mission JSON using dsl-compile",
+)
+async def dsl_compile(dsl_file: str, output: str = "mission.json"):
+    sdk_dir = _get_steeleagle_dir() / "sdk"
+    returncode, out = await _execute_async_subprocess(
+        ["uv", "run", "--directory", str(sdk_dir), "dsl-compile", dsl_file, "-o", output]
+    )
+    return {
+        "status": "compiled" if returncode == 0 else "compilation_failed",
+        "output": output,
+        "log": out.decode(errors="replace"),
+    }
+
+
+@app.post(
     "/gcs/build",
     summary="Build the frontend React app for the GCS using npm",
 )
 async def gcs_build():
-    path = Path(" ~/steeleagle/gcs/react/prime").expanduser()
+    npm = shutil.which("npm")
+    if npm is None:
+        # npm doesn't work in places without shells (like via systemd service)
+        # so the user needs to create symlinks that point to the binaries that
+        # nvm has installed
+        # This is not required if running the daemon directly
+        raise HTTPException(
+            status_code=500,
+            detail='npm not found on PATH. Run the following to create symlinks for systemd:\nsudo ln -sf "$(which npm)" /usr/local/bin/npm\nsudo ln -sf "$(which node)" /usr/local/bin/node',
+        )
+    path = _get_steeleagle_dir() / "gcs" / "react" / "prime"
     returncode, output = await _execute_async_subprocess(
-        ["npm", "run", "build", "--prefix", path]
+        [npm, "run", "build", "--prefix", str(path)],
     )
     return {
         "status": "build_successful" if returncode == 0 else "build_failed",
