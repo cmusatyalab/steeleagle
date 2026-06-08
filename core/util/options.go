@@ -2,10 +2,16 @@ package util
 
 type PluginOption func(*BasePlugin)
 
-func WithName(name string) PluginOption {
-	return func(k *BasePlugin) {
-		k.name = name
-	}
+func WithoutServer() PluginOption {
+    return func(k *BasePlugin) {
+        k.server = false
+    }
+}
+
+func WithTimeout(timeout int) PluginOption {
+    return func(k *BasePlugin) {
+        k.timeout = timeout
+    }
 }
 
 func WithPath(path string) PluginOption {
@@ -20,10 +26,34 @@ func WithAuthCode(code AuthCode) PluginOption {
 	}
 }
 
-func WithTargetArgs(args []string) PluginOption {
+func WithRunner(runner string) PluginOption {
+    return func(k *BasePlugin) {
+        k.runner = runner
+    }
+}
+
+func WithRunnerArgs(args []string) PluginOption {
+	return func(k *BasePlugin) {
+		k.rargs = append(k.rargs, args...)
+	}
+}
+
+func WithExecutable(exec string) PluginOption {
+    return func(k *BasePlugin) {
+        k.exec = exec
+    }
+}
+
+func WithExecutableArgs(args []string) PluginOption {
 	return func(k *BasePlugin) {
 		k.eargs = append(k.eargs, args...)
 	}
+}
+
+func WithScript(script string) PluginOption {
+    return func(k *BasePlugin) {
+        k.script = script
+    }
 }
 
 func WithScriptArgs(args []string) PluginOption {

@@ -20,7 +20,7 @@ const vehicleDir string = "vehicles"
 const pluginDir string = "plugins"
 
 // The run hook that processes are started from within containers
-const runDir string = "steeleagle"
+const bindDir string = "steeleagle"
 const runHook string = "run.sh"
 
 // Environment variable names passed to the subprocess

@@ -2,6 +2,7 @@ package util
 
 import (
     "os"
+    "errors"
     "path/filepath"
 
 	"github.com/adrg/xdg"
@@ -15,7 +16,7 @@ func CreateRuntimeDirs() error {
         return err
     }
     pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir)
-    err := os.MkdirAll(pluginPath, 0755)
+    err = os.MkdirAll(pluginPath, 0755)
     if err != nil {
         return err
     }
@@ -23,16 +24,16 @@ func CreateRuntimeDirs() error {
     return nil
 }
 
-func GetRuntimeDir() (string, error) {
+func GetRuntimeDir() string {
     return xdg.RuntimeDir
 }
 
 func GetPluginRuntimeDir() (string, error) {
     pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir)
-    info, err := os.Stat(pluginPath)
+    _, err := os.Stat(pluginPath)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
-            return pluginPath, CreateRuntimeDirst()
+            return pluginPath, CreateRuntimeDirs()
         } else {
             return "", nil
         }
@@ -43,7 +44,7 @@ func GetPluginRuntimeDir() (string, error) {
 
 func GetVehicleRuntimeDir() (string, error) {
     vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir)
-    info, err := os.Stat(vehiclePath)
+    _, err := os.Stat(vehiclePath)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
             return vehiclePath, CreateRuntimeDirs()
@@ -55,9 +56,9 @@ func GetVehicleRuntimeDir() (string, error) {
     return vehiclePath, nil
 }
 
-func GetPluginDirByName(name string) (string, error) {
-    pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir, name)
-    info, err := os.Stat(pluginPath)
+func GetPluginDirByID(id string) (string, error) {
+    pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir, id)
+    _, err := os.Stat(pluginPath)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
             return pluginPath, os.MkdirAll(pluginPath, 0755)
@@ -66,12 +67,12 @@ func GetPluginDirByName(name string) (string, error) {
         }
     }
 
-    return pluginPath
+    return pluginPath, nil
 }
 
 func GetVehicleDirByName(name string) (string, error) {
     vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir, name)
-    info, err := os.Stat(vehiclePath)
+    _, err := os.Stat(vehiclePath)
     if err != nil {
         if errors.Is(err, os.ErrNotExist) {
             return vehiclePath, os.MkdirAll(vehiclePath, 0755)
