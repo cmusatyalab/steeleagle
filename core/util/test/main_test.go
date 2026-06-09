@@ -21,13 +21,11 @@ func TestMain(m *testing.M) {
 		panic(string(out))
 	}
 
-	// TODO create package in the normal search path and remove it after
-
 	// Run test cases
 	code := m.Run()
 
 	// Cleanup
 	os.Remove(go_binary)
-	// TODO remove error binary
-	os.Exit(code)
+	
+    os.Exit(code)
 }

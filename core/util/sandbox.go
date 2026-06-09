@@ -45,14 +45,17 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 
 	// Add the correct bubblewrap args
     args := []string{
+        "--unshare-all",
+        "--share-net",
 		"--ro-bind", "/usr", "/usr",
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",
 		"--ro-bind", "/bin", "/bin",
         "--bind", p.runDir, p.runDir,
+        "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
+        "--ro-bind", "/etc/nsswitch.conf", "/etc/nsswitch.conf",
 		"--proc", "/proc",
 		"--dev", "/dev",
-		"--unshare-all",
 		"--die-with-parent",
     }
     // Append the existing runner args onto these args,
