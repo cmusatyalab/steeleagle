@@ -12,6 +12,7 @@ import '@xyflow/react/dist/style.css';
 import tokml from 'tokml';
 import MapDraw from './MapDraw.jsx';
 import TaskNode from './TaskNode.jsx';
+import SelfLoopEdge from './SelfLoopEdge.jsx';
 import TaskNodePanel from './TaskNodePanel.jsx';
 import EdgePanel from './EdgePanel.jsx';
 import FsmPalette from './FsmPalette.jsx';
@@ -19,6 +20,7 @@ import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './App.jsx';
 
 const nodeTypes = { taskNode: TaskNode };
+const edgeTypes = { selfLoop: SelfLoopEdge };
 
 let _nodeIdCounter = 1;
 function nextNodeId() { return `node-${_nodeIdCounter++}`; }
@@ -54,8 +56,10 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     }, [setPanelEdgeId]);
 
     function confirmConnect(connection, eventId) {
+        const isSelfLoop = connection.source === connection.target;
         setEdges(es => addEdge({
             ...connection,
+            type: isSelfLoop ? 'selfLoop' : undefined,
             data: { eventId },
             label: eventId,
             animated: eventId !== 'done',
@@ -141,6 +145,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
