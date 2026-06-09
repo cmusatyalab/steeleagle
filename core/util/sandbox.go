@@ -65,7 +65,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 	}
 
     // Bind in the right files
-    if p.isPkg {
+    if p.pkg {
         p.rargs = append(p.rargs, 
             "--bind",
             p.path, bindDir,

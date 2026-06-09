@@ -23,6 +23,10 @@ const pluginDir string = "plugins"
 const bindDir string = "steeleagle"
 const runHook string = "run.sh"
 
+// Socket names for server/client
+const clientSockName string = "out.sock"
+const listenSockName string = "in.sock"
+
 // Environment variable names passed to the subprocess
 const ClientSockEnv string = "CLIENT_SOCKET"
 const ListenSockEnv string = "LISTEN_SOCKET"

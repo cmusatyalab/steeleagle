@@ -27,7 +27,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", listenSocket, err)
 	}
-	conn, err := grpc.NewClient("unix:"+clientSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("unix://"+clientSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to create new client %s: %w", clientSocket, err)
 	}
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	if err := run(); err != nil {
-		fmt.Printf("got the following error %v", err)
+		fmt.Println("got the following error %v", err)
 		os.Exit(1)
 	}
 }

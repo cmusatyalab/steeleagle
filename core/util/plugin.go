@@ -40,7 +40,7 @@ type Plugin interface {
 type BasePlugin struct {
 	id      string   // auto-generated ID for path disambiguation
 	code    AuthCode // authentication entity
-    isPkg   bool     // determines whether the plugin is a package or not
+    pkg     bool     // determines whether the plugin is a package or not
 	path    string   // path to plugin
     runner  string   // runner target (e.g. bwrap, podman)
     rargs   []string // runner args
@@ -56,6 +56,7 @@ type BasePlugin struct {
     lnSock  string   // listener socket file path
     server  bool     // whether or not the plugin hosts a server
     timeout int      // timeout for plugin to start (seconds)
+    allowed []int    // extra pid trees allowed distinct from the command
 	cmd     *exec.Cmd // command to run
     ctx     context.Context // context
     cancel  context.CancelFunc // cancellation function
@@ -82,7 +83,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
             return nil, err
         }
         if info.IsDir() {
-            p.isPkg = true
+            p.pkg = true
         }
     }
 
@@ -93,8 +94,8 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
         return nil, err
     }
     p.runDir = dir
-    p.cSock = filepath.Join(p.runDir, uuid.New().String())
-    p.lnSock = filepath.Join(p.runDir, uuid.New().String())
+    p.cSock = filepath.Join(p.runDir, clientSockName)
+    p.lnSock = filepath.Join(p.runDir, listenSockName)
 
 	return p, nil
 }
@@ -144,6 +145,10 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
     }
     p.logDebug(fmt.Sprintf("starting: %v", final))
 
+    // TODO: for testing, bind stdout and stderr
+    p.cmd.Stdout = os.Stdout
+	p.cmd.Stderr = os.Stderr
+
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
 	p.cmd.Env = append(os.Environ(),
@@ -158,7 +163,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 
     // Cleanup goroutine
     go func() {
-        <-ctx.Done()
+        <-p.ctx.Done()
         p.cleanup()
     }()
 
@@ -236,7 +241,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
         }
 
 	    // Connect to the client socket
-        target := fmt.Sprintf("unix:%s", p.cSock)
+        target := fmt.Sprintf("unix://%s", p.cSock)
         client, err = grpc.NewClient(
 	    	target,
 	    	grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -264,7 +269,6 @@ func (p *BasePlugin) waitForSocket(path string) error {
 }
 
 func (p *BasePlugin) cleanup() {
-    p.cancel()
     // Remove the plugin run directory
     err := os.RemoveAll(p.runDir)
     if err != nil {

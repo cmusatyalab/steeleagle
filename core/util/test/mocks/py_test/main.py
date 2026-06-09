@@ -10,40 +10,28 @@ def run():
     listen_addr = os.environ["LISTEN_SOCKET"]
     client_addr = os.environ["CLIENT_SOCKET"]
 
-    done = threading.Event()
+    class NotifyInterceptor(grpc.ServerInterceptor):
+        def __init__(self):
+            self.done = threading.Event()
 
-    def notify_interceptor(continuation, handler_call_details):
-        handler = continuation(handler_call_details)
-        if handler is None:
-            return None
+        def intercept_service(self, continuation, handler_call_details):
+            self.done.set()
+            return continuation(handler_call_details)
 
-        orig = handler.unary_unary
-        if orig is None:
-            return handler
-
-        def wrapped(request, context):
-            done.set()
-            return orig(request, context)
-
-        return grpc.unary_unary_rpc_method_handler(
-            wrapped,
-            request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer,
-        )
-
+    interceptor = NotifyInterceptor()
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=4),
-        interceptors=[notify_interceptor],
+        interceptors=[interceptor],
     )
     health_pb2_grpc.add_HealthServicer_to_server(health.HealthServicer(), server)
-    server.add_insecure_port(f"unix:{listen_addr}")
+    server.add_insecure_port(f"unix://{listen_addr}")
     server.start()
 
     try:
-        if not done.wait(timeout=15.0):
+        if not interceptor.done.wait(timeout=15.0):
             raise TimeoutError("expected rpc call, but none arrived")
 
-        channel = grpc.insecure_channel(f"unix:{client_addr}")
+        channel = grpc.insecure_channel(f"unix://{client_addr}")
         stub = health_pb2_grpc.HealthStub(channel)
         stub.Check(health_pb2.HealthCheckRequest())
         channel.close()

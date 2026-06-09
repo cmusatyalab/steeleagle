@@ -1,10 +1,14 @@
 package util
 
 import (
+    "os"
+    "time"
+    "strings"
 	"context"
 	"errors"
 	"fmt"
 	"net"
+    "strconv"
 	"os/exec"
 	"path/filepath"
 
@@ -14,6 +18,7 @@ import (
 type ContainerPlugin struct {
 	*BasePlugin
 	tag string
+    cid string
 }
 
 func CreateContainerPlugin(tag string, options ...PluginOption) (*ContainerPlugin, error) {
@@ -77,13 +82,18 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
         return nil, nil, err
     }
 
+    // Create a cid file to capture the container ID
+    // which is needed to get the container PID
+    cidFile := filepath.Join(p.runDir, ".cid")
+    p.rargs = append(p.rargs, "--cidfile", cidFile)
+
     if !runnable {
 	    // Set the executable/script
 	    if err = p.BasePlugin.findExecutable(); err != nil {
 	    	return nil, nil, err
 	    }
         // Bind in the right files
-        if p.isPkg {
+        if p.pkg {
             p.rargs = append(
                 p.rargs, "-v",
                 fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
@@ -104,7 +114,47 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
         p.script = fmt.Sprintf("/%s/%s", bindDir, runHook)
     }
 	
-    return p.BasePlugin.Start(ctx)
+    // Append the podman PID namespace to the allowed PIDs
+    ln, conn, err := p.BasePlugin.Start(ctx)
+    if err != nil {
+        return nil, nil, err
+    }
+    err = p.setCID(cidFile)
+    if err != nil {
+        return nil, nil, err
+    }
+    pid, err := p.getPID()
+    cl, ok := ln.(*codedListener)
+    if ok {
+        cl.acl.pids = append(cl.acl.pids, pid)
+    }
+    return ln, conn, err
+}
+
+func (p *ContainerPlugin) setCID(cidPath string) error {
+    // Retry reads to give container time to write to cid file
+    deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
+    for time.Now().Before(deadline) {
+        data, err := os.ReadFile(cidPath)
+        if err == nil && len(strings.TrimSpace(string(data))) > 0 {
+            p.cid = strings.TrimSpace(string(data))
+            return nil
+        }
+        time.Sleep(50 * time.Millisecond)
+    }
+    return fmt.Errorf("timed out waiting for container ID file: %s", cidPath)
+}
+
+func (p *ContainerPlugin) getPID() (int, error) {
+    out, err := exec.Command("podman", "inspect", "--format", "{{.State.Pid}}", p.cid).Output()
+    if err != nil {
+        return -1, fmt.Errorf("couldn't inspect container %s: %w", p.cid, err)
+    }
+    pid, err := strconv.Atoi(strings.TrimSpace(string(out)))
+    if err != nil {
+        return -1, fmt.Errorf("couldn't parse container pid: %w", err)
+    }
+    return pid, nil
 }
 
 func isContainerRunnable(tag string) (bool, error) {

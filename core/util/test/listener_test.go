@@ -17,15 +17,17 @@ import (
 )
 
 func TestAuthCode(t *testing.T) {
-    ln, err := net.Listen("unix", "listener")
+    sock, err := net.Listen("unix", "/tmp/listener.sock")
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
 	}
-	conn, err := grpc.NewClient("unix://listener", grpc.WithTransportCredentials(insecure.NewCredentials()))
+    ln := util.NewCodedListener(sock, util.MissionCode, util.GetACL([]string{}, []int{os.Getpid()}))
+    
+	conn, err := grpc.NewClient("unix:///tmp/listener.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("failed to create new client: %v", err)
 	}
-    defer os.Remove("listener")
+    defer os.Remove("/tmp/listener.sock")
 
     // Define a mock auth interceptor
     authInt := func(

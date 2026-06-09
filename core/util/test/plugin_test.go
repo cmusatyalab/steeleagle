@@ -56,6 +56,7 @@ func TestPluginPython(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -68,7 +69,6 @@ func TestPluginPython(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	plugin.Stop()
 }
 
 func TestPluginWrongAuthCode(t *testing.T) {
@@ -77,6 +77,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
+    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -89,7 +90,6 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	if err == nil {
 		t.Fatalf("rpc succeeded when it should have failed")
 	}
-	plugin.Stop()
 }
 
 func TestPluginArgs(t *testing.T) {
@@ -98,6 +98,7 @@ func TestPluginArgs(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}))
+    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -110,5 +111,4 @@ func TestPluginArgs(t *testing.T) {
 	if err == nil {
 		t.Fatalf("rpc succeeded when it should have failed")
 	}
-	plugin.Stop()
 }

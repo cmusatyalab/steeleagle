@@ -19,6 +19,7 @@ func TestSandboxPlugin(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
+	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -31,7 +32,6 @@ func TestSandboxPlugin(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	plugin.Stop()
 }
 
 func TestSandboxPluginRunhook(t *testing.T) {
@@ -40,6 +40,7 @@ func TestSandboxPluginRunhook(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
+	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -52,5 +53,4 @@ func TestSandboxPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	plugin.Stop()
 }

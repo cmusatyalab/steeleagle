@@ -19,6 +19,7 @@ func TestContainerPlugin(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin("alpine", util.WithPath(path))
+    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -31,7 +32,6 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-    plugin.Stop()
 }
 
 func TestContainerPluginRunhook(t *testing.T) {
@@ -40,6 +40,7 @@ func TestContainerPluginRunhook(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin("alpine", util.WithPath(path))
+    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -52,7 +53,6 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
-	plugin.Stop()
 }
 
 func TestContainerPluginWrongTag(t *testing.T) {
