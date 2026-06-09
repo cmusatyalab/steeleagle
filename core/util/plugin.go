@@ -189,6 +189,11 @@ func (p *BasePlugin) Wait() error {
 }
 
 func (p *BasePlugin) findExecutable() error {
+    // Check if script or exec have already been manually set
+    if p.exec != "" || p.script != "" {
+        return nil
+    }
+
     // Make sure the plugin path exists
 	info, err := os.Stat(p.path)
 	if err != nil {

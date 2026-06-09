@@ -53,10 +53,8 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		if err != nil {
 			p.logError(err, "couldn't run pull with podman: "+p.tag)
 			return nil, nil, err
-		} else {
-			return nil, nil, fmt.Errorf("podman exited unexpectedly")
-		}
-	} else if err != nil {
+		}  
+    } else if err != nil {
 		p.logError(err, "couldn't run image check with podman")
 		return nil, nil, err
 	}
