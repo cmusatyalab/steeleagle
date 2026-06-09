@@ -513,7 +513,7 @@ function App() {
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
-      {selectedMenu == "Plan" && <PlanPage />}
+      {selectedMenu == "Plan" && <PlanPage vehicles={vehicles} squadList={squadList} />}
       <Toast ref={toast} />
     </>
   );
