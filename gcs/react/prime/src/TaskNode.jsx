@@ -58,7 +58,7 @@ function FieldInput({ field, value, onChange, namedAreas }) {
 }
 
 function TaskNode({ data, selected }) {
-    const { type_name, instance_id, params, isStart, schema, namedAreas, onUpdate, onOpenPanel } = data;
+    const { type_name, instance_id, params, isStart, _hasError, schema, namedAreas, onUpdate, onOpenPanel } = data;
     const [expanded, setExpanded] = useState(false);
 
     const icon = TYPE_ICONS[type_name] || '⚙';
@@ -85,7 +85,7 @@ function TaskNode({ data, selected }) {
             onClick={handleClick}
             style={{
                 background: '#1e3040',
-                border: `2px solid ${isStart ? '#e88080' : '#4a7a9b'}`,
+                border: `2px solid ${_hasError ? '#ff4444' : isStart ? '#e88080' : '#4a7a9b'}`,
                 borderRadius: 8,
                 padding: '8px 12px',
                 minWidth: 120,

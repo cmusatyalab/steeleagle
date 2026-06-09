@@ -80,7 +80,9 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
             fields.filter(f => 'default' in f).map(f => [f.name, f.default])
         );
 
-        const instanceId = typeName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '') + '_1';
+        const base = typeName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+        const count = nodes.filter(n => n.data.type_name === typeName).length;
+        const instanceId = `${base}_${count + 1}`;
 
         const newNode = {
             id,
@@ -95,7 +97,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 namedAreas,
                 onUpdate: (params) => setNodes(ns => ns.map(n => n.id === id ? { ...n, data: { ...n.data, params } } : n)),
                 onUpdateId: (newId) => setNodes(ns => ns.map(n => n.id === id ? { ...n, data: { ...n.data, instance_id: newId } } : n)),
-                onOpenPanel: () => setPanelNode(newNode),
+                onOpenPanel: () => setPanelNode(id),
             },
         };
 
@@ -197,7 +199,8 @@ function PlanPage({ vehicles, squadList }) {
     const [schema, setSchema] = useState({ actions: {}, events: {} });
     const [compiledMission, setCompiledMission] = useState(null);
     const [features, setFeatures] = useState(JSON.stringify({ type: 'FeatureCollection', features: [] }));
-    const [panelNode, setPanelNode] = useState(null);
+    const [panelNodeId, setPanelNodeId] = useState(null);
+    const panelNode = panelNodeId ? nodes.find(n => n.id === panelNodeId) : null;
     const [compiling, setCompiling] = useState(false);
     const [deploying, setDeploying] = useState(false);
     const toast = useRef(null);
@@ -241,6 +244,7 @@ function PlanPage({ vehicles, squadList }) {
                 })));
             } else {
                 setCompiledMission(result.mission);
+                setNodes(ns => ns.map(n => ({ ...n, data: { ...n.data, _hasError: false } })));
                 toast.current.show({ severity: 'success', summary: 'Compiled', detail: 'mission.json ready.' });
             }
         } catch (e) {
@@ -272,10 +276,11 @@ function PlanPage({ vehicles, squadList }) {
         }
         setDeploying(true);
         try {
+            const utf8ToB64 = (str) => btoa(unescape(encodeURIComponent(str)));
             const featObj = typeof features === 'string' ? JSON.parse(features) : features;
             const kmlString = tokml(featObj);
-            const kml = btoa(kmlString);
-            const dsl = btoa(JSON.stringify(compiledMission));
+            const kml = utf8ToB64(kmlString);
+            const dsl = utf8ToB64(JSON.stringify(compiledMission));
             const resp = await fetch(getApiUrl('/api/upload'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -317,7 +322,7 @@ function PlanPage({ vehicles, squadList }) {
                                     eventInstances={eventInstances} setEventInstances={setEventInstances}
                                     startNodeId={startNodeId} setStartNodeId={setStartNodeId}
                                     schema={schema} features={features}
-                                    panelNode={panelNode} setPanelNode={setPanelNode}
+                                    panelNode={panelNode} setPanelNode={setPanelNodeId}
                                     toast={toast}
                                 />
                             </ReactFlowProvider>
@@ -361,7 +366,7 @@ function PlanPage({ vehicles, squadList }) {
                     {/* Slide-in panel for parameter-heavy nodes */}
                     <TaskNodePanel
                         visible={!!panelNode}
-                        onHide={() => setPanelNode(null)}
+                        onHide={() => setPanelNodeId(null)}
                         node={panelNode}
                         schema={panelNode ? schema.actions[panelNode.data.type_name] : null}
                         namedAreas={getNamedAreas(features)}
