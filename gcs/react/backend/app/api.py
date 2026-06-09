@@ -22,7 +22,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
-from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, NonNegativeInt
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeFloat,
+    NonNegativeInt,
+    ValidationError,
+)
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
 from steeleagle_sdk.dsl.compiler.ir import ActionIR, EventIR, MissionIR
@@ -1128,10 +1135,30 @@ class CompileRequest(BaseModel):
 
 def compile_mission(request: CompileRequest) -> dict:
     """Pure function — safe to call from tests without the full app running."""
-    from pydantic import ValidationError
-
     _dsl_load_all()
     errors: list[dict] = []
+
+    # Check for duplicate instance_ids
+    seen_ids: set[str] = set()
+    for node in request.nodes:
+        if node.instance_id in seen_ids:
+            errors.append(
+                {
+                    "node_id": node.instance_id,
+                    "message": f"Duplicate node instance_id: '{node.instance_id}'",
+                }
+            )
+        seen_ids.add(node.instance_id)
+    seen_event_ids: set[str] = set()
+    for ev in request.events:
+        if ev.instance_id in seen_event_ids:
+            errors.append(
+                {
+                    "node_id": ev.instance_id,
+                    "message": f"Duplicate event instance_id: '{ev.instance_id}'",
+                }
+            )
+        seen_event_ids.add(ev.instance_id)
 
     # Validate all type_names exist and params are valid
     for node in request.nodes:
@@ -1154,7 +1181,7 @@ def compile_mission(request: CompileRequest) -> dict:
         if cls is None:
             errors.append(
                 {
-                    "node_id": ev.instance_id,
+                    "event_id": ev.instance_id,
                     "message": f"Unknown event type: {ev.type_name}",
                 }
             )
@@ -1162,7 +1189,42 @@ def compile_mission(request: CompileRequest) -> dict:
         try:
             cls(**ev.params)
         except (ValidationError, TypeError) as exc:
-            errors.append({"node_id": ev.instance_id, "message": str(exc)})
+            errors.append({"event_id": ev.instance_id, "message": str(exc)})
+
+    # Validate start_id refers to a known node
+    node_ids = {n.instance_id for n in request.nodes}
+    if request.start_id not in node_ids:
+        errors.append(
+            {
+                "node_id": request.start_id,
+                "message": f"start_id '{request.start_id}' does not refer to any node",
+            }
+        )
+
+    # Validate edge referential integrity
+    event_ids = {ev.instance_id for ev in request.events} | {"done"}
+    for edge in request.edges:
+        if edge.source not in node_ids:
+            errors.append(
+                {
+                    "node_id": edge.source,
+                    "message": f"Edge source '{edge.source}' does not refer to any node",
+                }
+            )
+        if edge.target not in node_ids:
+            errors.append(
+                {
+                    "node_id": edge.target,
+                    "message": f"Edge target '{edge.target}' does not refer to any node",
+                }
+            )
+        if edge.event_id not in event_ids:
+            errors.append(
+                {
+                    "node_id": edge.event_id,
+                    "message": f"Edge event_id '{edge.event_id}' does not refer to any declared event",
+                }
+            )
 
     if errors:
         return {"errors": errors}

@@ -115,3 +115,81 @@ def test_compile_invalid_params_returns_error():
     )
     result = compile_mission(req)
     assert "errors" in result
+
+
+def test_compile_collects_multiple_errors():
+    req = CompileRequest(
+        nodes=[
+            CompileNode(instance_id="bad1", type_name="DoesNotExist", params={}),
+            CompileNode(instance_id="bad2", type_name="AlsoWrong", params={}),
+        ],
+        events=[
+            CompileEvent(instance_id="bad_ev", type_name="UnknownEvent", params={}),
+        ],
+        edges=[],
+        start_id="bad1",
+    )
+    result = compile_mission(req)
+    assert "errors" in result
+    assert len(result["errors"]) >= 3  # two node errors + one event error
+
+
+def test_compile_invalid_start_id_returns_error():
+    req = CompileRequest(
+        nodes=[
+            CompileNode(
+                instance_id="take_off",
+                type_name="TakeOff",
+                params={"take_off_altitude": 10.0},
+            )
+        ],
+        events=[],
+        edges=[],
+        start_id="nonexistent",
+    )
+    result = compile_mission(req)
+    assert "errors" in result
+    assert any("nonexistent" in e["message"] for e in result["errors"])
+
+
+def test_compile_dangling_edge_returns_error():
+    req = CompileRequest(
+        nodes=[
+            CompileNode(
+                instance_id="patrol",
+                type_name="Patrol",
+                params={"waypoints": {"area": "AreaB", "alt": 15.0, "algo": "edge"}},
+            )
+        ],
+        events=[],
+        edges=[
+            CompileEdge(source="patrol", event_id="done", target="ghost_target"),
+        ],
+        start_id="patrol",
+    )
+    result = compile_mission(req)
+    assert "errors" in result
+    assert any("ghost_target" in e["message"] for e in result["errors"])
+
+
+def test_compile_duplicate_instance_id_returns_error():
+    req = CompileRequest(
+        nodes=[
+            CompileNode(
+                instance_id="patrol",
+                type_name="Patrol",
+                params={"waypoints": {"area": "AreaB", "alt": 15.0, "algo": "edge"}},
+            ),
+            CompileNode(
+                instance_id="patrol",
+                type_name="TakeOff",
+                params={"take_off_altitude": 10.0},
+            ),
+        ],
+        events=[],
+        edges=[],
+        start_id="patrol",
+    )
+    result = compile_mission(req)
+    assert "errors" in result
+    assert any("patrol" in e["message"] for e in result["errors"])
