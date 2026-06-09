@@ -1025,29 +1025,35 @@ def _resolve_ref(prop: dict, defs: dict) -> dict:
 
 
 def _unwrap_anyof(prop: dict) -> dict:
-    """Unwrap anyOf that represents an Optional type (exactly one non-null branch)."""
+    """Unwrap anyOf by selecting the best non-null branch.
+
+    - If exactly one non-null branch exists (Optional pattern), return it.
+    - If multiple non-null branches exist, prefer a scalar type branch
+      (string, number, integer, boolean) over array/object.
+    """
     if "anyOf" in prop:
         non_null = [t for t in prop["anyOf"] if t.get("type") != "null"]
         if len(non_null) == 1:
             return non_null[0]
+        if len(non_null) > 1:
+            _SCALAR_TYPES = ("string", "number", "integer", "boolean")
+            scalar = next((t for t in non_null if t.get("type") in _SCALAR_TYPES), None)
+            if scalar is not None:
+                return scalar
     return prop
 
 
-def _extract_fields(cls) -> list[dict]:
-    """Return a flat field list from a Pydantic model class."""
-    schema = cls.model_json_schema()
-    defs = schema.get("$defs", {})
+def _extract_fields_from_schema(schema: dict, defs: dict, depth: int = 0) -> list[dict]:
+    """Extract fields from a raw JSON Schema dict. Recurses into $defs for nested object types."""
     properties = schema.get("properties", {})
     required_set = set(schema.get("required", []))
-
     fields = []
     for name, raw_prop in properties.items():
         prop = _resolve_ref(raw_prop, defs)
         prop = _unwrap_anyof(prop)
-        prop = _resolve_ref(prop, defs)  # resolve after unwrapping
+        prop = _resolve_ref(prop, defs)
 
         field_type = prop.get("type", "object")
-        # Treat anything that still lacks a scalar type as object
         if field_type not in ("string", "number", "integer", "boolean", "array"):
             field_type = "object"
 
@@ -1057,11 +1063,9 @@ def _extract_fields(cls) -> list[dict]:
             "required": name in required_set,
             "description": raw_prop.get("description", prop.get("description", "")),
         }
-        # Propagate default if present on the raw property (Pydantic puts it there)
         if "default" in raw_prop:
             entry["default"] = raw_prop["default"]
 
-        # Tag Waypoints objects so the frontend can show the area dropdown
         if field_type == "object":
             ref_raw = (
                 raw_prop
@@ -1071,10 +1075,22 @@ def _extract_fields(cls) -> list[dict]:
             ref_name = ref_raw.get("$ref", "").split("/")[-1]
             if ref_name:
                 entry["object_type"] = ref_name
+                if depth < 2:
+                    nested_schema = defs.get(ref_name, {})
+                    if nested_schema:
+                        entry["nested_fields"] = _extract_fields_from_schema(
+                            nested_schema, defs, depth + 1
+                        )
 
         fields.append(entry)
-
     return fields
+
+
+def _extract_fields(cls) -> list[dict]:
+    """Return a flat field list from a Pydantic model class."""
+    schema = cls.model_json_schema()
+    defs = schema.get("$defs", {})
+    return _extract_fields_from_schema(schema, defs, depth=0)
 
 
 def build_schema_response() -> dict:
