@@ -317,6 +317,8 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"Using default backend '{list(backend_connections.keys())[0]}'")
 
+    _dsl_load_all()
+
     yield
     # Cleanup
     for _name, conn in backend_connections.items():
@@ -1009,10 +1011,11 @@ def _resolve_ref(prop: dict, defs: dict) -> dict:
 
 
 def _unwrap_anyof(prop: dict) -> dict:
-    """Unwrap anyOf that represents an Optional type (drop the null branch)."""
+    """Unwrap anyOf that represents an Optional type (exactly one non-null branch)."""
     if "anyOf" in prop:
         non_null = [t for t in prop["anyOf"] if t.get("type") != "null"]
-        return non_null[0] if non_null else prop
+        if len(non_null) == 1:
+            return non_null[0]
     return prop
 
 
@@ -1062,7 +1065,6 @@ def _extract_fields(cls) -> list[dict]:
 
 def build_schema_response() -> dict:
     """Pure function — safe to call from tests without the full app running."""
-    _dsl_load_all()
     result: dict = {"actions": {}, "events": {}}
     for _type_name, cls in _ACTIONS.items():
         display = cls.__name__  # original CamelCase name
@@ -1080,6 +1082,10 @@ def build_schema_response() -> dict:
             else "",
             "fields": _extract_fields(cls),
         }
+    if not result["actions"] and not result["events"]:
+        raise HTTPException(
+            status_code=500, detail="Schema registry is empty — DSL load failed"
+        )
     return result
 
 
