@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
-import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
+import FieldInput from './FieldInput.jsx';
 
 function NewEventForm({ schema, onAdd }) {
     const eventTypes = Object.keys(schema.events || {});
@@ -44,21 +44,14 @@ function NewEventForm({ schema, onAdd }) {
             </div>
             {fields.map(f => (
                 <div key={f.name} className="mb-2">
-                    <label style={{ fontSize: 9, color: '#aaa', display: 'block' }}>{f.name}</label>
-                    {(f.type === 'number' || f.type === 'integer') ? (
-                        <InputNumber
-                            value={params[f.name] ?? f.default ?? 0}
-                            onValueChange={e => updateParam(f.name, e.value)}
-                            className="p-inputtext-sm w-full"
-                            useGrouping={false}
-                        />
-                    ) : (
-                        <InputText
-                            value={params[f.name] ?? f.default ?? ''}
-                            onChange={e => updateParam(f.name, e.target.value)}
-                            className="p-inputtext-sm w-full"
-                        />
-                    )}
+                    <label style={{ fontSize: 9, color: '#aaa', display: 'block' }}>
+                        {f.name}{f.required && <span style={{ color: '#e88' }}> *</span>}
+                    </label>
+                    <FieldInput
+                        field={f}
+                        value={params[f.name]}
+                        onChange={val => updateParam(f.name, val)}
+                    />
                 </div>
             ))}
             <Button label="Add event" size="small" onClick={handleAdd} disabled={!typeName || !instanceId.trim()} />

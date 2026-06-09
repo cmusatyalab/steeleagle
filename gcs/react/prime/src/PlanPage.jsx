@@ -13,6 +13,7 @@ import tokml from 'tokml';
 import MapDraw from './MapDraw.jsx';
 import TaskNode from './TaskNode.jsx';
 import TaskNodePanel from './TaskNodePanel.jsx';
+import EdgePanel from './EdgePanel.jsx';
 import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './App.jsx';
@@ -34,7 +35,7 @@ function getNamedAreas(featuresStr) {
 
 function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
                      startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
-                     toast }) {
+                     setPanelEdgeId, toast }) {
     const { screenToFlowPosition } = useReactFlow();
     const [connectModal, setConnectModal] = useState({ visible: false, connection: null });
     const [contextMenu, setContextMenu] = useState(null);
@@ -47,6 +48,10 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     const onConnect = useCallback((connection) => {
         setConnectModal({ visible: true, connection });
     }, []);
+
+    const onEdgeClick = useCallback((event, edge) => {
+        setPanelEdgeId(edge.id);
+    }, [setPanelEdgeId]);
 
     function confirmConnect(connection, eventId) {
         setEdges(es => addEdge({
@@ -139,6 +144,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onEdgeClick={onEdgeClick}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onNodeContextMenu={onNodeContextMenu}
@@ -201,6 +207,11 @@ function PlanPage({ vehicles, squadList }) {
     const [features, setFeatures] = useState(JSON.stringify({ type: 'FeatureCollection', features: [] }));
     const [panelNodeId, setPanelNodeId] = useState(null);
     const panelNode = panelNodeId ? nodes.find(n => n.id === panelNodeId) : null;
+    const [panelEdgeId, setPanelEdgeId] = useState(null);
+    const panelEdge = panelEdgeId ? edges.find(e => e.id === panelEdgeId) : null;
+    const panelEventInstance = panelEdge ? eventInstances.find(ev => ev.instance_id === panelEdge.data?.eventId) : null;
+    const panelEdgeSourceLabel = panelEdge ? (nodes.find(n => n.id === panelEdge.source)?.data.instance_id ?? panelEdge.source) : '';
+    const panelEdgeTargetLabel = panelEdge ? (nodes.find(n => n.id === panelEdge.target)?.data.instance_id ?? panelEdge.target) : '';
     const [compiling, setCompiling] = useState(false);
     const [deploying, setDeploying] = useState(false);
     const toast = useRef(null);
@@ -307,6 +318,14 @@ function PlanPage({ vehicles, squadList }) {
         setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, instance_id: newId } } : n));
     }
 
+    function updateEventParams(instanceId, params) {
+        setEventInstances(evs => evs.map(ev => ev.instance_id === instanceId ? { ...ev, params } : ev));
+    }
+
+    function deleteEdge(edgeId) {
+        setEdges(es => es.filter(e => e.id !== edgeId));
+    }
+
     return (
         <>
             <Toast ref={toast} />
@@ -323,6 +342,7 @@ function PlanPage({ vehicles, squadList }) {
                                     startNodeId={startNodeId} setStartNodeId={setStartNodeId}
                                     schema={schema} features={features}
                                     panelNode={panelNode} setPanelNode={setPanelNodeId}
+                                    setPanelEdgeId={setPanelEdgeId}
                                     toast={toast}
                                 />
                             </ReactFlowProvider>
@@ -363,7 +383,6 @@ function PlanPage({ vehicles, squadList }) {
                         </div>
                     </div>
 
-                    {/* Slide-in panel for parameter-heavy nodes */}
                     <TaskNodePanel
                         visible={!!panelNode}
                         onHide={() => setPanelNodeId(null)}
@@ -372,6 +391,18 @@ function PlanPage({ vehicles, squadList }) {
                         namedAreas={getNamedAreas(features)}
                         onUpdate={updateNodeParams}
                         onUpdateId={updateNodeId}
+                    />
+
+                    <EdgePanel
+                        visible={!!panelEdge}
+                        onHide={() => setPanelEdgeId(null)}
+                        edge={panelEdge}
+                        eventInstance={panelEventInstance}
+                        eventSchema={panelEventInstance ? schema.events[panelEventInstance.type_name] : null}
+                        sourceLabel={panelEdgeSourceLabel}
+                        targetLabel={panelEdgeTargetLabel}
+                        onUpdateEvent={updateEventParams}
+                        onDeleteEdge={deleteEdge}
                     />
                 </TabPanel>
 
