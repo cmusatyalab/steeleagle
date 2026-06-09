@@ -25,6 +25,120 @@ const edgeTypes = { selfLoop: SelfLoopEdge };
 let _nodeIdCounter = 1;
 function nextNodeId() { return `node-${_nodeIdCounter++}`; }
 
+// BFS layout: place nodes in grid columns by distance from start
+function bfsLayout(nodeIds, startId, edges) {
+    const adj = {};
+    nodeIds.forEach(id => { adj[id] = []; });
+    edges.forEach(e => {
+        if (e.source !== e.target && adj[e.source]) adj[e.source].push(e.target);
+    });
+
+    const visited = new Set();
+    const levels = {};
+    const queue = startId ? [startId] : nodeIds.slice(0, 1);
+    let level = 0;
+    queue.forEach(id => { visited.add(id); levels[id] = 0; });
+
+    while (queue.length) {
+        const next = [];
+        queue.forEach(id => {
+            (adj[id] || []).forEach(t => {
+                if (!visited.has(t)) { visited.add(t); levels[t] = level + 1; next.push(t); }
+            });
+        });
+        queue.length = 0;
+        queue.push(...next);
+        if (next.length) level++;
+    }
+    // any unreachable nodes get appended after
+    nodeIds.forEach(id => { if (!(id in levels)) levels[id] = level + 1; });
+
+    const colCounts = {};
+    const positions = {};
+    nodeIds.forEach(id => {
+        const col = levels[id] ?? 0;
+        const row = colCounts[col] ?? 0;
+        colCounts[col] = row + 1;
+        positions[id] = { x: col * 260, y: row * 130 };
+    });
+    return positions;
+}
+
+// Generate a DSL string from canvas state
+function generateDsl(nodes, edges, eventInstances, startNodeId, schema) {
+    const dataEntries = [];
+    const usedDataIds = new Set();
+
+    function dataId(instanceId, paramName) {
+        let id = `${instanceId}_${paramName}`;
+        let n = 2;
+        while (usedDataIds.has(id)) id = `${instanceId}_${paramName}_${n++}`;
+        usedDataIds.add(id);
+        return id;
+    }
+
+    function serializeVal(val, fieldSchema) {
+        if (val === undefined || val === null) return null;
+        if (typeof val === 'object' && !Array.isArray(val) && fieldSchema?.nested_fields?.length) {
+            const typeName = fieldSchema.object_type || 'Object';
+            const did = dataId(fieldSchema._ownerInstanceId || 'item', fieldSchema.name);
+            const attrParts = Object.entries(val)
+                .filter(([, v]) => v !== undefined && v !== null && v !== '')
+                .map(([k, v]) => `${k} = ${v}`);
+            dataEntries.push(`    ${typeName} ${did}(${attrParts.join(', ')})`);
+            return did;
+        }
+        if (typeof val === 'boolean') return val ? 'true' : 'false';
+        if (val === '') return null;
+        return String(val);
+    }
+
+    function buildAttrStr(params, fields, instanceId) {
+        const parts = [];
+        for (const [k, v] of Object.entries(params || {})) {
+            const fs = fields?.find(f => f.name === k);
+            const fsWithOwner = fs ? { ...fs, _ownerInstanceId: instanceId } : null;
+            const sv = serializeVal(v, fsWithOwner);
+            if (sv !== null) parts.push(`${k} = ${sv}`);
+        }
+        return parts.length ? `(${parts.join(', ')})` : '';
+    }
+
+    const actionLines = nodes.map(n => {
+        const fields = schema.actions[n.data.type_name]?.fields ?? [];
+        return `    ${n.data.type_name} ${n.data.instance_id}${buildAttrStr(n.data.params, fields, n.data.instance_id)}`;
+    });
+
+    const eventLines = (eventInstances || []).map(ev => {
+        const fields = schema.events[ev.type_name]?.fields ?? [];
+        return `    ${ev.type_name} ${ev.instance_id}${buildAttrStr(ev.params, fields, ev.instance_id)}`;
+    });
+
+    const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+    const startNode = nodes.find(n => n.id === startNodeId);
+    const startInstId = startNode?.data.instance_id ?? '';
+
+    const duringBlocks = nodes.map(n => {
+        const nodeEdges = edges.filter(e => e.source === n.id);
+        if (!nodeEdges.length) return null;
+        const transLines = nodeEdges.map(e => {
+            const evId = e.data?.eventId ?? 'done';
+            const target = nodeById[e.target]?.data.instance_id ?? e.target;
+            return `        ${evId} -> ${target}`;
+        });
+        return `    During ${n.data.instance_id}:\n${transLines.join('\n')}`;
+    }).filter(Boolean);
+
+    const parts = [];
+    if (dataEntries.length) parts.push(`Data:\n${dataEntries.join('\n')}`);
+    parts.push(`Actions:\n${actionLines.join('\n')}`);
+    if (eventLines.length) parts.push(`Events:\n${eventLines.join('\n')}`);
+    const missionContent = [`    Start ${startInstId}`, ...duringBlocks].join('\n');
+    parts.push(`Mission:\n${missionContent}`);
+
+    return parts.join('\n\n');
+}
+
 // Extract named areas from GeoJSON features string
 function getNamedAreas(featuresStr) {
     try {
@@ -249,6 +363,8 @@ function PlanPage({ vehicles, squadList }) {
     const panelEdgeTargetLabel = panelEdge ? (nodes.find(n => n.id === panelEdge.target)?.data.instance_id ?? panelEdge.target) : '';
     const [compiling, setCompiling] = useState(false);
     const [deploying, setDeploying] = useState(false);
+    const [loadingDsl, setLoadingDsl] = useState(false);
+    const fileInputRef = useRef(null);
     const toast = useRef(null);
 
     const startNode = nodes.find(n => n.id === startNodeId);
@@ -368,6 +484,92 @@ function PlanPage({ vehicles, squadList }) {
         setPanelNodeId(null);
     }
 
+    function loadFromParsed(parsed) {
+        // Build events lookup
+        const evMap = Object.fromEntries(parsed.events.map(ev => [ev.instance_id, ev]));
+
+        // Use instance_id as the React Flow node id for simplicity
+        const rfNodes = parsed.nodes.map(n => ({
+            id: n.instance_id,
+            type: 'taskNode',
+            position: { x: 0, y: 0 },
+            data: {
+                type_name: n.type_name,
+                instance_id: n.instance_id,
+                params: n.params,
+                isStart: n.instance_id === parsed.start_id,
+                schema: schema.actions[n.type_name],
+                onOpenPanel: () => setPanelNodeId(n.instance_id),
+            },
+        }));
+
+        const rfEdges = parsed.edges.map(e => {
+            const isSelfLoop = e.source === e.target;
+            const evId = e.event_id;
+            const isDone = evId === 'done';
+            return {
+                id: `e-${e.source}-${evId}-${e.target}`,
+                source: e.source,
+                target: e.target,
+                type: isSelfLoop ? 'selfLoop' : undefined,
+                data: { eventId: evId },
+                label: evId,
+                animated: !isDone,
+                style: { stroke: isDone ? '#a3e8a0' : '#c47aff' },
+                labelStyle: { fill: isDone ? '#a3e8a0' : '#c47aff', fontSize: 10 },
+            };
+        });
+
+        const nodeIds = rfNodes.map(n => n.id);
+        const positions = bfsLayout(nodeIds, parsed.start_id, parsed.edges);
+        rfNodes.forEach(n => { n.position = positions[n.id] || { x: 0, y: 0 }; });
+
+        setNodes(rfNodes);
+        setEdges(rfEdges);
+        setEventInstances(parsed.events);
+        setStartNodeId(parsed.start_id ?? (rfNodes[0]?.id ?? null));
+        setCompiledMission(null);
+    }
+
+    async function handleLoadDsl(file) {
+        if (!file) return;
+        setLoadingDsl(true);
+        try {
+            const text = await file.text();
+            const resp = await fetch(getApiUrl('/api/parse_dsl'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dsl: text }),
+            });
+            if (!resp.ok) {
+                const err = await resp.json();
+                toast.current.show({ severity: 'error', summary: 'DSL parse error', detail: err.detail });
+                return;
+            }
+            const parsed = await resp.json();
+            loadFromParsed(parsed);
+            toast.current.show({ severity: 'success', summary: 'DSL loaded', detail: `${parsed.nodes.length} actions, ${parsed.events.length} events` });
+        } catch (e) {
+            toast.current.show({ severity: 'error', summary: 'Load failed', detail: e.message });
+        } finally {
+            setLoadingDsl(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    }
+
+    function handleExportDsl() {
+        const dsl = generateDsl(nodes, edges, eventInstances, startNodeId, schema);
+        const blob = new Blob([dsl], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mission.dsl';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
+
     return (
         <>
             <Toast ref={toast} />
@@ -392,6 +594,29 @@ function PlanPage({ vehicles, squadList }) {
 
                         {/* Toolbar */}
                         <div className="flex gap-2 align-items-center p-2" style={{ borderTop: '1px solid #2a3a4a', flexShrink: 0 }}>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".dsl,.txt"
+                                style={{ display: 'none' }}
+                                onChange={e => handleLoadDsl(e.target.files[0])}
+                            />
+                            <Button
+                                label="Load DSL"
+                                icon="pi pi-folder-open"
+                                size="small"
+                                outlined
+                                loading={loadingDsl}
+                                onClick={() => fileInputRef.current?.click()}
+                            />
+                            <Button
+                                label="Export DSL"
+                                icon="pi pi-file-export"
+                                size="small"
+                                outlined
+                                disabled={nodes.length === 0}
+                                onClick={handleExportDsl}
+                            />
                             <Button
                                 label="Compile"
                                 icon="pi pi-cog"
@@ -455,12 +680,33 @@ function PlanPage({ vehicles, squadList }) {
                     </div>
                 </TabPanel>
 
-                <TabPanel header="JSON Output" leftIcon="pi pi-code mr-2">
-                    <InputTextarea
-                        style={{ width: '100%', height: 'calc(100vh - 200px)', fontFamily: 'monospace', fontSize: 12 }}
-                        readOnly
-                        value={compiledMission ? JSON.stringify(compiledMission, null, 2) : '// compile a mission to see output'}
-                    />
+                <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2">
+                    <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
+                        <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a', flexShrink: 0 }}>
+                            <Button
+                                label="Export DSL"
+                                icon="pi pi-file-export"
+                                size="small"
+                                outlined
+                                disabled={nodes.length === 0}
+                                onClick={handleExportDsl}
+                            />
+                            {compiledMission && (
+                                <Button
+                                    label="Download .json"
+                                    icon="pi pi-download"
+                                    size="small"
+                                    outlined
+                                    onClick={handleDownload}
+                                />
+                            )}
+                        </div>
+                        <InputTextarea
+                            style={{ flex: 1, width: '100%', fontFamily: 'monospace', fontSize: 12, resize: 'none' }}
+                            readOnly
+                            value={liveDsl}
+                        />
+                    </div>
                 </TabPanel>
             </TabView>
         </>
