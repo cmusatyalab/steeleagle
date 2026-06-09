@@ -13,7 +13,10 @@ func TestPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path))
+	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -31,7 +34,10 @@ func TestPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path))
+	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -49,7 +55,10 @@ func TestPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path))
+	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -67,7 +76,10 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
+	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -85,7 +97,10 @@ func TestPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreatePlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}))
+	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

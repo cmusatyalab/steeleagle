@@ -18,7 +18,10 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreateContainerPlugin("alpine", util.WithPath(path))
+	plugin, err := util.CreateContainerPlugin("alpine", util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -36,7 +39,10 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	plugin := util.CreateContainerPlugin("alpine", util.WithPath(path))
+	plugin, err := util.CreateContainerPlugin("alpine", util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -58,7 +64,10 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreateContainerPlugin("foobar", util.WithPath(path))
+	plugin, err := util.CreateContainerPlugin("foobar", util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	_, _, err = plugin.Start(context.Background())
 	if err == nil {
 		t.Fatalf("expected an error due to a bogus tag")

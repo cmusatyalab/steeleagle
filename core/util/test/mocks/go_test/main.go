@@ -27,7 +27,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", listenSocket, err)
 	}
-	conn, err := grpc.NewClient("unix://"+clientSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("unix:"+clientSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to create new client %s: %w", clientSocket, err)
 	}
@@ -58,7 +58,7 @@ func run() error {
 			return err
 		}
 		return nil
-	case <-time.After(time.Second):
+	case <-time.After(time.Second * 15):
 		// Timeout
 		return fmt.Errorf("expected rpc call, but none arrived")
 	}

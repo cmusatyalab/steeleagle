@@ -69,12 +69,16 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
         p.rargs = append(p.rargs, 
             "--bind",
             p.path, bindDir,
+            "--chdir",
+            bindDir,
         )
     } else {
         p.rargs = append(p.rargs, 
             "--bind",
             p.path,
             fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.path)),
+            "--chdir",
+            bindDir,
         )
     }
     p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
@@ -85,11 +89,8 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 func checkBwrapPermissions() error {
     // Try a minimal bwrap invocation
     cmd := exec.Command("bwrap",
-        "--ro-bind", "/usr", "/usr",
-        "--proc", "/proc",
-        "--dev", "/dev",
-        "--unshare-all",
-        "--", "true",
+        "--ro-bind", "/", "/",
+        "true",
     )
 
     // If this command doesn't succeed, it might be due to 

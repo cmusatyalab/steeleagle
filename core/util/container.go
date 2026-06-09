@@ -59,14 +59,17 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	// Check if path is set; if so, bind runhook in otherwise,
     // use existing runhook in container
     args := []string{
-        "run", "-v",
-        fmt.Sprintf("%s:/%s:Z", p.runDir, p.runDir),
-        "-w", bindDir,
+        "run",
+        "-e",
+        fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
+        "-e",
+        fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
+        "-v",
+        fmt.Sprintf("%s:%s:Z", p.runDir, p.runDir),
     }
     // Append the existing runner args onto these args,
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
-    p.rargs = append(p.rargs, p.tag)
 
     // Check if the container itself is runnable
     runnable, err := isContainerRunnable(p.tag)
@@ -79,7 +82,6 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	    if err = p.BasePlugin.findExecutable(); err != nil {
 	    	return nil, nil, err
 	    }
-
         // Bind in the right files
         if p.isPkg {
             p.rargs = append(
@@ -91,12 +93,13 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
                 p.rargs, "-v",
                 fmt.Sprintf("%s:/%s/%s:Z", p.path, bindDir, filepath.Base(p.path)),
             )
-
         } else {
             return nil, nil, fmt.Errorf("podman couldn't find a valid path, runhook, or package")
         }
-
+        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag)
+        p.script = "./"+filepath.Base(p.script)
     } else {
+        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag)
         p.exec = "sh"
         p.script = fmt.Sprintf("/%s/%s", bindDir, runHook)
     }

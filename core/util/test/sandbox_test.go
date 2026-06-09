@@ -18,7 +18,10 @@ func TestSandboxPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin := util.CreateSandboxPlugin(util.WithPath(path))
+	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -36,7 +39,10 @@ func TestSandboxPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	plugin := util.CreateSandboxPlugin(util.WithPath(path))
+	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

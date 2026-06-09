@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+    "slices"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -114,22 +115,34 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	// Create the command; check in sequence whether the script,
     // executable, and then runner are set, and prepend the arguments
     // for each into one executable string
-    finalExec := ""
-    finalArgs := []string{}
+    final := []string{}
     if p.script != "" {
-		p.cmd.Dir = filepath.Dir(p.script) // change to script dir
-        finalExec = p.script
-        finalArgs = p.sargs
+        final = slices.Insert(p.sargs, 0, p.script)
     }
     if p.exec != "" {
-        finalExec = p.exec
-        finalArgs = append(p.eargs, finalArgs...)
+        final = append(p.eargs, final...)
+        final = slices.Insert(final, 0, p.exec)
     }
     if p.runner != "" {
-        finalExec = p.runner
-        finalArgs = append(p.rargs, finalArgs...)
+        final = append(p.rargs, final...)
+        final = slices.Insert(final, 0, p.runner)
     }
-	p.cmd = exec.CommandContext(ctx, finalExec, finalArgs...)
+
+    // Check for argument count
+    if len(final) >= 2 {
+        p.cmd = exec.CommandContext(ctx, final[0], final[1:]...)
+    } else if len(final) == 1 {
+        p.cmd = exec.CommandContext(ctx, final[0])
+    } else {
+        err := fmt.Errorf("no arguments provided to plugin")
+        p.logError(err, "insufficient arguments to start plugin")
+        return nil, nil, err
+    }
+    if p.script != "" {
+        // Set the working directory for the command
+	    p.cmd.Dir = filepath.Dir(p.script)
+    }
+    p.logDebug(fmt.Sprintf("starting: %v", final))
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
@@ -271,6 +284,10 @@ func (p *BasePlugin) run() error {
 	p.running = true
 
 	return nil
+}
+
+func (p *BasePlugin) logDebug(message string) {
+	log.Debug().Str("plugin", p.path).Str("code", string(p.code)).Msg(message)
 }
 
 func (p *BasePlugin) logError(err error, message string) {
