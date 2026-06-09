@@ -82,7 +82,11 @@ function MapDraw({ features, setFeatures }) {
         mapRef.current.on('draw.selectionchange', selectFeature);
 
         const timer = setTimeout(() => { mapRef.current?.resize(); }, 100);
-        return () => { clearTimeout(timer); mapRef.current.remove(); };
+
+        const ro = new ResizeObserver(() => { mapRef.current?.resize(); });
+        ro.observe(mapContainerRef.current);
+
+        return () => { clearTimeout(timer); ro.disconnect(); mapRef.current.remove(); };
     }, []);
 
     function applyName() {

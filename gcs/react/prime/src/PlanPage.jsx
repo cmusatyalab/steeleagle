@@ -329,7 +329,7 @@ function PlanPage({ vehicles, squadList }) {
     return (
         <>
             <Toast ref={toast} />
-            <TabView>
+            <TabView renderActiveOnly={false}>
                 <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         <div className="flex flex-1" style={{ overflow: 'hidden' }}>

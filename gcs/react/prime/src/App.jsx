@@ -50,6 +50,7 @@ function App() {
   const [detectedObjects, setDetectedObjects] = useState([]);
   const toast = useRef(null);
   const [selectedMenu, setSeletectedMenu] = useState('Control');
+  const [planMounted, setPlanMounted] = useState(false);
   const [keyPressed, setKeyPressed] = useState(false);
   const [key, setKey] = useState('');
   const [gamePadButton, setGamePadButton] = useState(-99);
@@ -71,6 +72,10 @@ function App() {
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
+
+  useEffect(() => {
+    if (selectedMenu === 'Plan') setPlanMounted(true);
+  }, [selectedMenu]);
 
   useEffect(() => {
     if (useLocalVehicle) {
@@ -513,7 +518,9 @@ function App() {
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
-      {selectedMenu == "Plan" && <PlanPage vehicles={vehicles} squadList={squadList} />}
+      <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
+        {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} />}
+      </div>
       <Toast ref={toast} />
     </>
   );
