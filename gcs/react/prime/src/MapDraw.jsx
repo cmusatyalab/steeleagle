@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import mapboxgl from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
-import ColorHash from 'color-hash'
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 
@@ -13,19 +12,10 @@ function MapDraw({ features, setFeatures }) {
     const mapContainerRef = useRef();
     const draw = useRef();
     const numFeaturesRef = useRef(0);
-    const colorHash = new ColorHash();
 
     // Selected feature for naming
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [nameInput, setNameInput] = useState('');
-
-    // Parse features to object once
-    const featuresObj = typeof features === 'string' ? JSON.parse(features) : features;
-
-    const pushFeatures = useCallback(() => {
-        const data = draw.current.getAll();
-        setFeatures(JSON.stringify(data));
-    }, [setFeatures]);
 
     useEffect(() => {
         mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
