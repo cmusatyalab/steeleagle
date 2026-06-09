@@ -24,6 +24,8 @@ from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, NonNegativeInt
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
+from steeleagle_sdk.dsl.compiler.loader import load_all as _dsl_load_all
+from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
@@ -996,6 +998,94 @@ async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
             logger.error(e)
             raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
     return response
+
+
+def _resolve_ref(prop: dict, defs: dict) -> dict:
+    """Follow a single $ref pointer in a JSON Schema fragment."""
+    if "$ref" in prop:
+        ref_name = prop["$ref"].split("/")[-1]
+        return defs.get(ref_name, prop)
+    return prop
+
+
+def _unwrap_anyof(prop: dict) -> dict:
+    """Unwrap anyOf that represents an Optional type (drop the null branch)."""
+    if "anyOf" in prop:
+        non_null = [t for t in prop["anyOf"] if t.get("type") != "null"]
+        return non_null[0] if non_null else prop
+    return prop
+
+
+def _extract_fields(cls) -> list[dict]:
+    """Return a flat field list from a Pydantic model class."""
+    schema = cls.model_json_schema()
+    defs = schema.get("$defs", {})
+    properties = schema.get("properties", {})
+    required_set = set(schema.get("required", []))
+
+    fields = []
+    for name, raw_prop in properties.items():
+        prop = _resolve_ref(raw_prop, defs)
+        prop = _unwrap_anyof(prop)
+        prop = _resolve_ref(prop, defs)  # resolve after unwrapping
+
+        field_type = prop.get("type", "object")
+        # Treat anything that still lacks a scalar type as object
+        if field_type not in ("string", "number", "integer", "boolean", "array"):
+            field_type = "object"
+
+        entry: dict = {
+            "name": name,
+            "type": field_type,
+            "required": name in required_set,
+            "description": raw_prop.get("description", prop.get("description", "")),
+        }
+        # Propagate default if present on the raw property (Pydantic puts it there)
+        if "default" in raw_prop:
+            entry["default"] = raw_prop["default"]
+
+        # Tag Waypoints objects so the frontend can show the area dropdown
+        if field_type == "object":
+            ref_raw = (
+                raw_prop
+                if "$ref" in raw_prop
+                else (next((t for t in raw_prop.get("anyOf", []) if "$ref" in t), {}))
+            )
+            ref_name = ref_raw.get("$ref", "").split("/")[-1]
+            if ref_name:
+                entry["object_type"] = ref_name
+
+        fields.append(entry)
+
+    return fields
+
+
+def build_schema_response() -> dict:
+    """Pure function — safe to call from tests without the full app running."""
+    _dsl_load_all()
+    result: dict = {"actions": {}, "events": {}}
+    for _type_name, cls in _ACTIONS.items():
+        display = cls.__name__  # original CamelCase name
+        result["actions"][display] = {
+            "description": (cls.__doc__ or "").strip().splitlines()[0]
+            if cls.__doc__
+            else "",
+            "fields": _extract_fields(cls),
+        }
+    for _type_name, cls in _EVENTS.items():
+        display = cls.__name__
+        result["events"][display] = {
+            "description": (cls.__doc__ or "").strip().splitlines()[0]
+            if cls.__doc__
+            else "",
+            "fields": _extract_fields(cls),
+        }
+    return result
+
+
+@app.get("/api/schema")
+async def get_schema():
+    return build_schema_response()
 
 
 # Serve Vite static files

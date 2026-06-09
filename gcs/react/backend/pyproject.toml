@@ -23,3 +23,8 @@ dependencies = [
 
 [tool.uv.sources]
 steeleagle_sdk = { path = "../../../sdk", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
