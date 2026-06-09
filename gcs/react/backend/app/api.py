@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 
 import cv2
 import grpc
@@ -24,8 +25,14 @@ from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, NonNegativeInt
 from pydantic_extra_types.coordinate import Latitude, Longitude
 from rich.logging import RichHandler
+from steeleagle_sdk.dsl.compiler.ir import ActionIR, EventIR, MissionIR
 from steeleagle_sdk.dsl.compiler.loader import load_all as _dsl_load_all
-from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
+from steeleagle_sdk.dsl.compiler.registry import (
+    _ACTIONS,
+    _EVENTS,
+    get_action,
+    get_event,
+)
 from steeleagle_sdk.protocol.messages.telemetry_pb2 import DriverTelemetry, Frame
 from steeleagle_sdk.protocol.services.control_service_pb2 import (
     HoldRequest,
@@ -1092,6 +1099,109 @@ def build_schema_response() -> dict:
 @app.get("/api/schema")
 async def get_schema():
     return build_schema_response()
+
+
+class CompileNode(BaseModel):
+    instance_id: str
+    type_name: str
+    params: dict = {}
+
+
+class CompileEvent(BaseModel):
+    instance_id: str
+    type_name: str
+    params: dict = {}
+
+
+class CompileEdge(BaseModel):
+    source: str
+    event_id: str
+    target: str
+
+
+class CompileRequest(BaseModel):
+    nodes: list[CompileNode]
+    events: list[CompileEvent]
+    edges: list[CompileEdge]
+    start_id: str
+
+
+def compile_mission(request: CompileRequest) -> dict:
+    """Pure function — safe to call from tests without the full app running."""
+    from pydantic import ValidationError
+
+    _dsl_load_all()
+    errors: list[dict] = []
+
+    # Validate all type_names exist and params are valid
+    for node in request.nodes:
+        cls = get_action(node.type_name)
+        if cls is None:
+            errors.append(
+                {
+                    "node_id": node.instance_id,
+                    "message": f"Unknown action type: {node.type_name}",
+                }
+            )
+            continue
+        try:
+            cls(**node.params)
+        except (ValidationError, TypeError) as exc:
+            errors.append({"node_id": node.instance_id, "message": str(exc)})
+
+    for ev in request.events:
+        cls = get_event(ev.type_name)
+        if cls is None:
+            errors.append(
+                {
+                    "node_id": ev.instance_id,
+                    "message": f"Unknown event type: {ev.type_name}",
+                }
+            )
+            continue
+        try:
+            cls(**ev.params)
+        except (ValidationError, TypeError) as exc:
+            errors.append({"node_id": ev.instance_id, "message": str(exc)})
+
+    if errors:
+        return {"errors": errors}
+
+    # Build MissionIR
+    actions = {
+        n.instance_id: ActionIR(
+            type_name=n.type_name,
+            action_id=n.instance_id,
+            attributes=n.params,
+        )
+        for n in request.nodes
+    }
+    events = {
+        e.instance_id: EventIR(
+            type_name=e.type_name,
+            event_id=e.instance_id,
+            attributes=e.params,
+        )
+        for e in request.events
+    }
+
+    transitions: dict[str, dict[str, str]] = {}
+    for edge in request.edges:
+        transitions.setdefault(edge.source, {})[edge.event_id] = edge.target
+
+    mission_ir = MissionIR(
+        actions=actions,
+        events=events,
+        data={},
+        start_action_id=request.start_id,
+        transitions=transitions,
+    )
+    return {"mission": asdict(mission_ir)}
+
+
+@app.post("/api/compile")
+async def compile_mission_route(request: CompileRequest) -> dict:
+    return compile_mission(request)
 
 
 # Serve Vite static files
