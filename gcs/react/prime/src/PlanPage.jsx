@@ -120,6 +120,12 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
         setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
     }, []);
 
+    // Right-click context menu on an edge
+    const onEdgeContextMenu = useCallback((event, edge) => {
+        event.preventDefault();
+        setContextMenu({ x: event.clientX, y: event.clientY, edgeId: edge.id });
+    }, []);
+
     function setAsStart(nodeId) {
         setStartNodeId(nodeId);
         setNodes(ns => ns.map(n => ({ ...n, data: { ...n.data, isStart: n.id === nodeId } })));
@@ -153,6 +159,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onNodeContextMenu={onNodeContextMenu}
+                onEdgeContextMenu={onEdgeContextMenu}
                 fitView
             >
                 <Controls />
@@ -160,7 +167,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                 <Background variant="dots" gap={12} size={1} />
             </ReactFlow>
 
-            {/* Context menu */}
+            {/* Context menu — shared by nodes and edges */}
             {contextMenu && (
                 <div
                     style={{
@@ -170,22 +177,45 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                     }}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div
-                        style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                        onMouseLeave={e => e.currentTarget.style.background = ''}
-                        onClick={() => setAsStart(contextMenu.nodeId)}
-                    >
-                        ▶ Set as Start State
-                    </div>
-                    <div
-                        style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
-                        onMouseLeave={e => e.currentTarget.style.background = ''}
-                        onClick={() => deleteNode(contextMenu.nodeId)}
-                    >
-                        🗑 Delete
-                    </div>
+                    {contextMenu.nodeId ? (
+                        <>
+                            <div
+                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
+                                onMouseLeave={e => e.currentTarget.style.background = ''}
+                                onClick={() => setAsStart(contextMenu.nodeId)}
+                            >
+                                ▶ Set as Start State
+                            </div>
+                            <div
+                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
+                                onMouseLeave={e => e.currentTarget.style.background = ''}
+                                onClick={() => deleteNode(contextMenu.nodeId)}
+                            >
+                                🗑 Delete node
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div
+                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
+                                onMouseLeave={e => e.currentTarget.style.background = ''}
+                                onClick={() => { setPanelEdgeId(contextMenu.edgeId); setContextMenu(null); }}
+                            >
+                                ✏ Edit transition
+                            </div>
+                            <div
+                                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
+                                onMouseLeave={e => e.currentTarget.style.background = ''}
+                                onClick={() => { setEdges(es => es.filter(e => e.id !== contextMenu.edgeId)); setContextMenu(null); }}
+                            >
+                                🗑 Delete transition
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -331,6 +361,13 @@ function PlanPage({ vehicles, squadList }) {
         setEdges(es => es.filter(e => e.id !== edgeId));
     }
 
+    function deleteNodeById(nodeId) {
+        setNodes(ns => ns.filter(n => n.id !== nodeId));
+        setEdges(es => es.filter(e => e.source !== nodeId && e.target !== nodeId));
+        if (startNodeId === nodeId) setStartNodeId(null);
+        setPanelNodeId(null);
+    }
+
     return (
         <>
             <Toast ref={toast} />
@@ -396,6 +433,7 @@ function PlanPage({ vehicles, squadList }) {
                         namedAreas={getNamedAreas(features)}
                         onUpdate={updateNodeParams}
                         onUpdateId={updateNodeId}
+                        onDelete={deleteNodeById}
                     />
 
                     <EdgePanel

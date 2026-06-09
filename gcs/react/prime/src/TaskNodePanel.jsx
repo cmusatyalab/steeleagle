@@ -1,8 +1,9 @@
 import { Sidebar } from 'primereact/sidebar';
 import { InputText } from 'primereact/inputtext';
+import { Button } from 'primereact/button';
 import FieldInput from './FieldInput.jsx';
 
-function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, onUpdateId }) {
+function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, onUpdateId, onDelete }) {
     if (!node) return null;
     const { type_name, instance_id, params } = node.data;
     const fields = schema?.fields ?? [];
@@ -45,6 +46,16 @@ function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, on
                         />
                     </div>
                 ))}
+
+                <hr style={{ borderColor: '#2a3a4a', margin: '4px 0' }} />
+                <Button
+                    label="Delete node"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    outlined
+                    size="small"
+                    onClick={() => { onDelete(node.id); onHide(); }}
+                />
             </div>
         </Sidebar>
     );
