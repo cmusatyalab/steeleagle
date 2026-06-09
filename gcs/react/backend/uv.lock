@@ -479,7 +479,7 @@ requires-dist = [
     { name = "pydantic-extra-types" },
     { name = "redis" },
     { name = "rich" },
-    { name = "steeleagle-sdk" },
+    { name = "steeleagle-sdk", editable = "../../../sdk" },
     { name = "toml" },
     { name = "uvicorn" },
     { name = "websockets" },
@@ -1476,8 +1476,8 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.16"
-source = { registry = "https://pypi.org/simple" }
+version = "3.1.0"
+source = { editable = "../../../sdk" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "folium" },
@@ -1492,10 +1492,25 @@ dependencies = [
     { name = "scipy" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/82/b1/be11c18d027261197aa6da73b4581f7275911e7b717448d41287bdc0d88b/steeleagle_sdk-1.0.16.tar.gz", hash = "sha256:f443a7f1383276f8a325b24e244b654c78a577a6a06b6972be08d9822bb46016", size = 76237, upload-time = "2026-01-12T16:38:19.341Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/f4/31e6518a1094430cbe90246c36325eb5e7649ccff155940b575b78291080/steeleagle_sdk-1.0.16-py3-none-any.whl", hash = "sha256:67ebf6bd6030faa65712d07eaa06d3ad7c7e63064bfa593671bca48c78cbcb0f", size = 106781, upload-time = "2026-01-12T16:38:18.126Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "folium", specifier = ">=0.20.0" },
+    { name = "gabriel-protocol", specifier = ">=4.0" },
+    { name = "grpcio", specifier = ">=1.74.0" },
+    { name = "grpcio-tools", marker = "extra == 'dev'" },
+    { name = "lark", specifier = ">=1.2.2" },
+    { name = "matplotlib", specifier = ">=3.10.6" },
+    { name = "protobuf", specifier = ">=3.12" },
+    { name = "protoletariat", marker = "extra == 'dev'" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "pygls" },
+    { name = "pyzmq", specifier = ">=27.1.0" },
+    { name = "scipy", specifier = ">=1.16.3" },
+    { name = "shapely", specifier = ">=2.1.1" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "toml"
