@@ -1,6 +1,7 @@
 package util
 
 import (
+    "os"
 	"context"
 	"fmt"
 	"net"
@@ -58,6 +59,44 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		"--dev", "/dev",
 		"--die-with-parent",
     }
+    
+    // Link in files
+    for f, w := range p.files {
+        if w == 2 { // executable
+            path, err := exec.LookPath(f)
+            if err != nil {
+                p.logError(err, "couldn't find executable file")
+                return nil, nil, err
+            }
+            args = append(args,
+                "--ro-bind",
+                path, path,
+            )
+        } else { // normal file
+            _, err := os.Stat(f) // ensure the file exists
+            if err != nil {
+                p.logError(err, "couldn't stat linked file")
+                return nil, nil, err
+            }
+            path, err := filepath.Abs(f)
+            if err != nil {
+                p.logError(err, "couldn't get absolute filepath")
+                return nil, nil, err
+            }
+            if w == 1 { // read-write
+                args = append(args,
+                    "--bind",
+                    path, path,
+                )
+            } else { // read-only
+                args = append(args,
+                    "--ro-bind",
+                    path, path,
+                )
+            }
+        }
+    }
+    
     // Append the existing runner args onto these args,
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
@@ -67,7 +106,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		return nil, nil, err
 	}
 
-    // Bind in the right files
+    // Bind in the plugin files
     if p.pkg {
         p.rargs = append(p.rargs, 
             "--bind",

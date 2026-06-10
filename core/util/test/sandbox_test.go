@@ -61,12 +61,12 @@ func TestSandboxPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-    uvPath, err := exec.LookPath("uv")
+    _, err = exec.LookPath("uv")
     if err != nil {
         t.Skip("couldn't find uv, skipping this test")
     }
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path),
-        util.WithRunnerArgs([]string{"--ro-bind", uvPath, uvPath}),
+        util.WithExecutableFiles([]string{"uv"}),
     )
     defer plugin.Stop()
 	if err != nil {

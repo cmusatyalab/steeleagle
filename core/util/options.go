@@ -20,6 +20,30 @@ func WithPath(path string) PluginOption {
 	}
 }
 
+func WithExecutableFiles(files []string) PluginOption {
+    return func(k *BasePlugin) {
+        for _, f := range(files) {
+            k.files[f] = 2
+        } 
+    }
+}
+
+func WithFiles(files []string) PluginOption {
+    return func(k *BasePlugin) {
+        for _, f := range(files) {
+            k.files[f] = 1
+        } 
+    }
+} 
+
+func WithReadOnlyFiles(files []string) PluginOption {
+    return func(k *BasePlugin) {
+        for _, f := range(files) {
+            k.files[f] = 0
+        } 
+    }
+}
+
 func WithAuthCode(code AuthCode) PluginOption {
 	return func(k *BasePlugin) {
 		k.code = code

@@ -48,6 +48,7 @@ type BasePlugin struct {
 	eargs   []string // executable args
 	script  string   // script target (plugin script)
 	sargs   []string // script args
+    files   map[string]int // linked files (only applicable to sandboxes/containers)
 	start   int64    // plugin start time
     timout  int      // timeout in seconds waiting for the server to start
 	running bool	 // whether or not the plugin is currently running
@@ -56,7 +57,6 @@ type BasePlugin struct {
     lnSock  string   // listener socket file path
     server  bool     // whether or not the plugin hosts a server
     timeout int      // timeout for plugin to start (seconds)
-    allowed []int    // extra pid trees allowed distinct from the command
 	cmd     *exec.Cmd // command to run
     ctx     context.Context // context
     cancel  context.CancelFunc // cancellation function
@@ -70,6 +70,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
         id: uuid.New().String(),
         timeout: 15,
         server: true,
+        files: make(map[string]int),
 	}
 	for _, option := range options {
 		option(p)

@@ -70,6 +70,44 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
         "-v",
         fmt.Sprintf("%s:%s:Z", p.runDir, p.runDir),
     }
+
+    // Link in files
+    for f, w := range p.files {
+        if w == 2 { // executable
+            path, err := exec.LookPath(f)
+            if err != nil {
+                p.logError(err, "couldn't find executable file")
+                return nil, nil, err
+            }
+            args = append(args,
+                "-v",
+                fmt.Sprintf("%s:%s:ro", path, path),
+            )
+        } else { // normal file
+            _, err := os.Stat(f) // ensure the file exists
+            if err != nil {
+                p.logError(err, "couldn't stat linked file")
+                return nil, nil, err
+            }
+            path, err := filepath.Abs(f)
+            if err != nil {
+                p.logError(err, "couldn't get absolute filepath")
+                return nil, nil, err
+            }
+            if w == 1 { // read-write
+                args = append(args,
+                    "-v",
+                    fmt.Sprintf("%s:%s:Z", path, path),
+                )
+            } else { // read-only
+                args = append(args,
+                    "-v",
+                    fmt.Sprintf("%s:%s:ro", path, path),
+                )
+            }
+        }
+    }
+
     // Append the existing runner args onto these args,
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
@@ -77,6 +115,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     // Check if the container itself is runnable
     runnable, err := isContainerRunnable(p.tag)
     if err != nil {
+        p.logError(err, "couldn't check if container was runnable")
         return nil, nil, err
     }
 
@@ -88,9 +127,10 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     if !runnable {
 	    // Set the executable/script
 	    if err = p.BasePlugin.findExecutable(); err != nil {
+            p.logError(err, "couldn't find executable")
 	    	return nil, nil, err
 	    }
-        // Bind in the right files
+        // Bind in the plugin files
         if p.pkg {
             p.rargs = append(
                 p.rargs, "-v",
@@ -102,6 +142,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
                 fmt.Sprintf("%s:/%s/%s:Z", p.path, bindDir, filepath.Base(p.path)),
             )
         } else {
+            p.logError(nil, "no valid runnable found")
             return nil, nil, fmt.Errorf("podman couldn't find a valid path, runhook, or package")
         }
         p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag)
@@ -115,10 +156,12 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     // Append the podman PID namespace to the allowed PIDs
     ln, conn, err := p.BasePlugin.Start(ctx)
     if err != nil {
+        p.logError(err, "couldn't start container plugin")
         return nil, nil, err
     }
     err = p.setCID(cidFile)
     if err != nil {
+        p.logError(err, "couldn't get container cid")
         return nil, nil, err
     }
     pid, err := p.getPID()
