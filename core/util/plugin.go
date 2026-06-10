@@ -56,6 +56,7 @@ type BasePlugin struct {
     cSock   string   // client socket file path
     lnSock  string   // listener socket file path
     server  bool     // whether or not the plugin hosts a server
+    check   bool     // whether or not to check existence of files
     timeout int      // timeout for plugin to start (seconds)
 	cmd     *exec.Cmd // command to run
     ctx     context.Context // context
@@ -68,23 +69,21 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	p := &BasePlugin{
 		code: UnknownCode,
         id: uuid.New().String(),
-        timeout: 15,
-        server: true,
         files: make(map[string]int),
+        server: true,
+        check: true,
+        timeout: 15, // default to 15s timeout
 	}
 	for _, option := range options {
 		option(p)
 	}
-
-    // Check if the plugin is a package
-    if p.path != "" {
-        info, err := os.Stat(p.path)
+    
+    // Find and validate script if checks are on 
+    if p.check {
+        err := p.validateScript()
         if err != nil {
-            p.logError(err, "malformed plugin path")
+            p.logError(err, "couldn't find a script")
             return nil, err
-        }
-        if info.IsDir() {
-            p.pkg = true
         }
     }
 
@@ -104,15 +103,6 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
     // Create a new context with a cancel function
     p.ctx, p.cancel = context.WithCancel(ctx)
-
-    // Set a script and executable automatically if none has been set
-    if p.script == "" && p.exec == "" {
-        err := p.findExecutable()
-        if err != nil {
-            p.logError(err, "couldn't find an executable")
-            return nil, nil, err
-        }
-    }
 
 	// Create the command; check in sequence whether the script,
     // executable, and then runner are set, and prepend the arguments
@@ -146,7 +136,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
     }
     p.logDebug(fmt.Sprintf("starting: %v", final))
 
-    // TODO: for testing, bind stdout and stderr
+    // Bind in stdout and stderr
     p.cmd.Stdout = os.Stdout
 	p.cmd.Stderr = os.Stderr
 
@@ -189,9 +179,14 @@ func (p *BasePlugin) Wait() error {
     return p.cmd.Wait()
 }
 
-func (p *BasePlugin) findExecutable() error {
-    // Check if script or exec have already been manually set
-    if p.exec != "" || p.script != "" {
+func (p *BasePlugin) validateScript() error {
+    // Check if script has already been manually set
+    if p.script != "" {
+        _, err := os.Stat(p.script)
+		if err != nil {
+			p.logError(err, "couldn't stat plugin script, is it there?")
+			return err
+		}
         return nil
     }
 
@@ -210,6 +205,7 @@ func (p *BasePlugin) findExecutable() error {
 	// target executable
 	if info.IsDir() {
 		// Set info and target to the runhook
+        p.pkg = true
 		p.script = filepath.Join(p.path, runHook)
 		info, err = os.Stat(p.script)
 		if err != nil {
@@ -221,6 +217,7 @@ func (p *BasePlugin) findExecutable() error {
 		p.script = p.path
 		// Ensure that the script is runnable
 		if info.Mode() & 0o111 == 0 {
+            p.logError(nil, "couldn't find runnable script")
 			return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
 		}
 	}
@@ -297,9 +294,9 @@ func (p *BasePlugin) run() error {
 }
 
 func (p *BasePlugin) logDebug(message string) {
-	log.Debug().Str("plugin", p.path).Str("code", string(p.code)).Msg(message)
+	log.Debug().Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
 }
 
 func (p *BasePlugin) logError(err error, message string) {
-	log.Error().Err(err).Str("plugin", p.path).Str("code", string(p.code)).Msg(message)
+	log.Error().Err(err).Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
 }

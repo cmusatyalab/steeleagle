@@ -83,6 +83,33 @@ func TestSandboxPluginPython(t *testing.T) {
 	}
 }
 
+func TestSandboxPluginFileBinding(t *testing.T) {
+    _, err := exec.LookPath("uv")
+    if err != nil {
+        t.Skip("couldn't find uv, skipping this test")
+    }
+	plugin, err := util.CreateSandboxPlugin(util.WithoutServer(),
+        util.WithFiles([]string{file_write}),
+        util.WithReadOnlyFiles([]string{file_read}),
+        util.WithExecutableFiles([]string{"uv"}),
+        util.WithExecutable("uv"),
+        util.WithExecutableArgs([]string{"run"}),
+        util.WithScript(file_main),
+    )
+    defer plugin.Stop()
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(context.Background())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+    err = plugin.Wait()
+    if err != nil {
+        t.Fatalf("plugin exited with error unexpectedly: %v", err)
+    }
+}
+
 func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	path, err := filepath.Abs(go_binary)
 	if err != nil {

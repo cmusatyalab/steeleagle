@@ -48,6 +48,7 @@ func run() error {
 	defer server.GracefulStop()
 	health_pb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)
+    fmt.Println("go_test: starting server")
 
 	// Wait to receive a request, then send another as an ack
 	select {
@@ -57,6 +58,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
+        fmt.Println("go_test: client check succeeded")
 		return nil
 	case <-time.After(time.Second * 15):
 		// Timeout
@@ -69,12 +71,12 @@ func main() {
 	flag.Parse()
 
 	if *errPtr {
-		fmt.Println("asked to exit with error")
+        fmt.Println("go_test: asked to exit with error")
 		os.Exit(1)
 	}
 
 	if err := run(); err != nil {
-		fmt.Println("got the following error %v", err)
+        fmt.Println("go_test: got the following error %v", err)
 		os.Exit(1)
 	}
 }

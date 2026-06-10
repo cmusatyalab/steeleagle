@@ -25,25 +25,27 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 		BasePlugin: internal,
 	}
 	p.runner = "bwrap"
-
-	return p, nil
-}
-
-func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Make sure bubblewrap is installed
-	_, err := exec.LookPath("bwrap")
+	
+    // Make sure bubblewrap is installed
+	_, err = exec.LookPath("bwrap")
 	if err != nil {
 		p.logError(err, "couldn't find bubblewrap (bwrap), have you installed it?")
-		return nil, nil, err
+        p.cleanup()
+		return nil, err
 	}
 
     // Make sure bubblerap has the right permissions
     err = checkBwrapPermissions()
     if err != nil {
         p.logError(err, "bubblewrap couldn't run")
-        return nil, nil, err
+        p.cleanup()
+        return nil, err
     }
 
+	return p, nil
+}
+
+func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Add the correct bubblewrap args
     args := []string{
         "--unshare-all",
@@ -62,17 +64,17 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
     
     // Link in files
     for f, w := range p.files {
-        if w == 2 { // executable
+        if w == 2 { // executables
             path, err := exec.LookPath(f)
             if err != nil {
-                p.logError(err, "couldn't find executable file")
+                p.logError(err, "couldn't get path to executable")
                 return nil, nil, err
             }
             args = append(args,
                 "--ro-bind",
-                path, path,
+                path, path, // bind to exact path for executables
             )
-        } else { // normal file
+        } else {
             _, err := os.Stat(f) // ensure the file exists
             if err != nil {
                 p.logError(err, "couldn't stat linked file")
@@ -86,12 +88,14 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
             if w == 1 { // read-write
                 args = append(args,
                     "--bind",
-                    path, path,
+                    path,
+                    fmt.Sprintf("/%s/%s", bindDir, filepath.Base(path)),
                 )
             } else { // read-only
                 args = append(args,
                     "--ro-bind",
-                    path, path,
+                    path,
+                    fmt.Sprintf("/%s/%s", bindDir, filepath.Base(path)),
                 )
             }
         }
@@ -100,11 +104,6 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
     // Append the existing runner args onto these args,
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
-
-	// Set the executable/script
-	if err = p.BasePlugin.findExecutable(); err != nil {
-		return nil, nil, err
-	}
 
     // Bind in the plugin files
     if p.pkg {
@@ -117,8 +116,8 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
     } else {
         p.rargs = append(p.rargs, 
             "--bind",
-            p.path,
-            fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.path)),
+            p.script,
+            fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.script)),
             "--chdir",
             bindDir,
         )

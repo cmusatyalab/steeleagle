@@ -32,16 +32,13 @@ func CreateContainerPlugin(tag string, options ...PluginOption) (*ContainerPlugi
 		tag:    tag,
 	}
     p.runner = "podman"
-
-	return p, nil
-}
-
-func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-	// Make sure podman is installed
-	_, err := exec.LookPath("podman")
+	
+    // Make sure podman is installed
+	_, err = exec.LookPath("podman")
 	if err != nil {
 		p.logError(err, "couldn't find podman, have you installed it?")
-		return nil, nil, err
+        p.cleanup()
+		return nil, err
 	}
 
 	// Check whether the image exists
@@ -52,15 +49,20 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		err = exec.Command("podman", "pull", p.tag).Run()
 		if err != nil {
 			p.logError(err, "couldn't run pull with podman: "+p.tag)
-			return nil, nil, err
+            p.cleanup()
+			return nil, err
 		}  
     } else if err != nil {
 		p.logError(err, "couldn't run image check with podman")
-		return nil, nil, err
+        p.cleanup()
+		return nil, err
 	}
 
-	// Check if path is set; if so, bind runhook in otherwise,
-    // use existing runhook in container
+	return p, nil
+}
+
+func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+    // Set environment variables and link in the plugin runtime folder
     args := []string{
         "run",
         "-e",
@@ -73,17 +75,17 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 
     // Link in files
     for f, w := range p.files {
-        if w == 2 { // executable
+        if w == 2 { // executables
             path, err := exec.LookPath(f)
             if err != nil {
-                p.logError(err, "couldn't find executable file")
+                p.logError(err, "couldn't get path to executable")
                 return nil, nil, err
             }
             args = append(args,
                 "-v",
-                fmt.Sprintf("%s:%s:ro", path, path),
+                fmt.Sprintf("%s:%s:Z", path, path), // bind to exact path for executable
             )
-        } else { // normal file
+        } else {
             _, err := os.Stat(f) // ensure the file exists
             if err != nil {
                 p.logError(err, "couldn't stat linked file")
@@ -97,12 +99,12 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
             if w == 1 { // read-write
                 args = append(args,
                     "-v",
-                    fmt.Sprintf("%s:%s:Z", path, path),
+                    fmt.Sprintf("%s:/%s/%s:Z", path, bindDir, filepath.Base(path)),
                 )
             } else { // read-only
                 args = append(args,
                     "-v",
-                    fmt.Sprintf("%s:%s:ro", path, path),
+                    fmt.Sprintf("%s:/%s/%s:ro", path, bindDir, filepath.Base(path)),
                 )
             }
         }
@@ -125,32 +127,26 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     p.rargs = append(p.rargs, "--cidfile", cidFile)
 
     if !runnable {
-	    // Set the executable/script
-	    if err = p.BasePlugin.findExecutable(); err != nil {
-            p.logError(err, "couldn't find executable")
-	    	return nil, nil, err
-	    }
         // Bind in the plugin files
         if p.pkg {
+            // Bind in the plugin directory
             p.rargs = append(
                 p.rargs, "-v",
                 fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
             )
-        } else if p.path != "" {
+        } else {
+            // Bind in the script
             p.rargs = append(
                 p.rargs, "-v",
-                fmt.Sprintf("%s:/%s/%s:Z", p.path, bindDir, filepath.Base(p.path)),
+                fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
             )
-        } else {
-            p.logError(nil, "no valid runnable found")
-            return nil, nil, fmt.Errorf("podman couldn't find a valid path, runhook, or package")
         }
-        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag)
+        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
         p.script = "./"+filepath.Base(p.script)
     } else {
-        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag)
+        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
         p.exec = "sh"
-        p.script = fmt.Sprintf("/%s/%s", bindDir, runHook)
+        p.script = fmt.Sprintf("/%s/%s", bindDir, runHook) // use runhook
     }
 	
     // Append the podman PID namespace to the allowed PIDs
@@ -165,6 +161,10 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
         return nil, nil, err
     }
     pid, err := p.getPID()
+    if err != nil {
+        p.logError(err, "couldn't get container pid")
+        return nil, nil, err
+    }
     cl, ok := ln.(*codedListener)
     if ok {
         cl.acl.pids = append(cl.acl.pids, pid)

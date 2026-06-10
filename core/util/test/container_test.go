@@ -92,7 +92,7 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin("ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
-        util.WithPath(path),
+        util.WithReadOnlyFiles([]string{path+"/pyproject.toml"}),
         util.WithScript(path+"/main.py"),
         util.WithExecutable("uv"),
         util.WithExecutableArgs([]string{"run"}),
@@ -175,15 +175,11 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("foobar",
+	_, err = util.CreateContainerPlugin("foobar",
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-	if err != nil {
-		t.Fatalf("encountered error creating plugin: %v", err)
-	}
-	_, _, err = plugin.Start(context.Background())
 	if err == nil {
-		t.Fatalf("expected an error due to a bogus tag")
+		t.Fatalf("no error creating plugin when it was expected")
 	}
 }
