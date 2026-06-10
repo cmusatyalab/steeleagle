@@ -1,6 +1,7 @@
 import os
 import sys
 
+# checks read and write permissions of linked files.
 if __name__ == "__main__":
     try:
         with open("read.txt", "r") as f:

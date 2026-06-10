@@ -15,6 +15,8 @@ type ACL struct {
     pids  []int
 }
 
+// GetACL constructs an ACL from a list of CIDR strings and allowed process IDs.
+// Plain IP addresses without a prefix length are treated as /32 (IPv4) or /128 (IPv6).
 func GetACL(cidrs []string, pids []int) *ACL {
 	nets := make([]*net.IPNet, 0, len(cidrs))
 	for _, cidr := range cidrs {
@@ -40,6 +42,7 @@ func GetACL(cidrs []string, pids []int) *ACL {
     return &ACL{nets: nets, cidrs: cidrs, pids: pids}
 }
 
+// AllowsIP reports whether the given IP address is permitted by the ACL.
 func (a *ACL) AllowsIP(ip net.IP) bool {
 	for _, n := range a.nets {
 		if n.Contains(ip) {
@@ -51,6 +54,7 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 	return false
 }
 
+// AllowsPID reports whether pid is a descendant of any PID in the ACL's allowed list.
 func (a *ACL) AllowsPID(pid int) bool {
     var err error
     for _, p := range a.pids {

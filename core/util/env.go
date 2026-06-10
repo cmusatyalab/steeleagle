@@ -8,6 +8,7 @@ import (
 	"github.com/adrg/xdg"
 )
 
+// CreateRuntimeDirs creates the XDG runtime directories for plugins and vehicles.
 func CreateRuntimeDirs() error {
     // Create plugin and vehicle paths
     vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir)
@@ -24,10 +25,12 @@ func CreateRuntimeDirs() error {
     return nil
 }
 
+// GetRuntimeDir returns the XDG runtime directory root.
 func GetRuntimeDir() string {
     return xdg.RuntimeDir
 }
 
+// GetPluginRuntimeDir returns the plugin runtime directory, creating it if it does not exist.
 func GetPluginRuntimeDir() (string, error) {
     pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir)
     _, err := os.Stat(pluginPath)
@@ -42,6 +45,7 @@ func GetPluginRuntimeDir() (string, error) {
     return pluginPath, nil
 }
 
+// GetVehicleRuntimeDir returns the vehicle runtime directory, creating it if it does not exist.
 func GetVehicleRuntimeDir() (string, error) {
     vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir)
     _, err := os.Stat(vehiclePath)
@@ -56,6 +60,7 @@ func GetVehicleRuntimeDir() (string, error) {
     return vehiclePath, nil
 }
 
+// GetPluginDirByID returns the runtime directory for the plugin with the given ID, creating it if it does not exist.
 func GetPluginDirByID(id string) (string, error) {
     pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir, id)
     _, err := os.Stat(pluginPath)
@@ -70,6 +75,7 @@ func GetPluginDirByID(id string) (string, error) {
     return pluginPath, nil
 }
 
+// GetVehicleDirByName returns the runtime directory for the vehicle with the given name, creating it if it does not exist.
 func GetVehicleDirByName(name string) (string, error) {
     vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir, name)
     _, err := os.Stat(vehiclePath)

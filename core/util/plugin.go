@@ -100,6 +100,8 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	return p, nil
 }
 
+// Start builds the command from the configured runner/executable/script chain, launches the subprocess,
+// and returns the listener and gRPC client connection.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
     // Create a new context with a cancel function
     p.ctx, p.cancel = context.WithCancel(ctx)
@@ -161,12 +163,14 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
     return p.createSocketEndpoints()
 }
 
+// Stop cancels the plugin's context, signaling the subprocess to shut down.
 func (p *BasePlugin) Stop() {
     if p.cancel != nil {
         p.cancel()
     }
 }
 
+// Watch returns a channel that receives the subprocess exit error when the process terminates.
 func (p *BasePlugin) Watch() <-chan error {
 	ch := make(chan error, 1)
 	go func() {
@@ -175,10 +179,12 @@ func (p *BasePlugin) Watch() <-chan error {
 	return ch
 }
 
+// Wait blocks until the plugin subprocess exits and returns its exit error.
 func (p *BasePlugin) Wait() error {
     return p.cmd.Wait()
 }
 
+// validateScript resolves and validates the plugin's script path, setting pkg and exec fields as needed.
 func (p *BasePlugin) validateScript() error {
     // Check if script has already been manually set
     if p.script != "" {
@@ -225,6 +231,7 @@ func (p *BasePlugin) validateScript() error {
 	return nil
 }
 
+// createSocketEndpoints listens on the server socket and, when server mode is enabled, dials the client socket.
 func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, error) {
     // Listen on the server socket
 	ln, err := net.Listen("unix", p.lnSock)
@@ -260,6 +267,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	return NewCodedListener(ln, p.code, acl), client, nil
 }
 
+// waitForSocket polls path until the socket file exists or the plugin timeout elapses.
 func (p *BasePlugin) waitForSocket(path string) error {
     deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
     for time.Now().Before(deadline) {
@@ -271,6 +279,7 @@ func (p *BasePlugin) waitForSocket(path string) error {
     return fmt.Errorf("timed out waiting for socket: %s", path)
 }
 
+// cleanup removes the plugin's runtime directory.
 func (p *BasePlugin) cleanup() {
     // Remove the plugin run directory
     err := os.RemoveAll(p.runDir)
@@ -279,6 +288,7 @@ func (p *BasePlugin) cleanup() {
     }
 }
 
+// run starts the plugin command and records the start time.
 func (p *BasePlugin) run() error {
 	// Run the plugin
 	if err := p.cmd.Start(); err != nil {
@@ -293,10 +303,12 @@ func (p *BasePlugin) run() error {
 	return nil
 }
 
+// logDebug emits a debug log event annotated with the plugin ID, path, and auth code.
 func (p *BasePlugin) logDebug(message string) {
 	log.Debug().Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
 }
 
+// logError emits an error log event annotated with the plugin ID, path, and auth code.
 func (p *BasePlugin) logError(err error, message string) {
 	log.Error().Err(err).Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
 }

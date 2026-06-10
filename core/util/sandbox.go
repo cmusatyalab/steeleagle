@@ -15,6 +15,7 @@ type SandboxPlugin struct {
 	*BasePlugin
 }
 
+// CreateSandboxPlugin creates a SandboxPlugin backed by bubblewrap (bwrap).
 func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	// Create the plugin
     internal, err := CreateBasePlugin(options...)
@@ -45,6 +46,7 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	return p, nil
 }
 
+// Start assembles the bubblewrap arguments, binds in the plugin files, and delegates to BasePlugin.Start.
 func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Add the correct bubblewrap args
     args := []string{
@@ -105,28 +107,33 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
 
-    // Bind in the plugin files
-    if p.pkg {
-        p.rargs = append(p.rargs, 
-            "--bind",
-            p.path, bindDir,
-            "--chdir",
-            bindDir,
-        )
-    } else {
-        p.rargs = append(p.rargs, 
-            "--bind",
-            p.script,
-            fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.script)),
-            "--chdir",
-            bindDir,
-        )
+    // Only bind in the plugin files if checks are enabled,
+    // otherwise blindly use the script/exec set by the user
+    if p.check {
+        // Bind in the plugin files
+        if p.pkg {
+            p.rargs = append(p.rargs, 
+                "--bind",
+                p.path, bindDir,
+                "--chdir",
+                bindDir,
+            )
+        } else {
+            p.rargs = append(p.rargs, 
+                "--bind",
+                p.script,
+                fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.script)),
+                "--chdir",
+                bindDir,
+            )
+        }
+        p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
     }
-    p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
 
 	return p.BasePlugin.Start(ctx)
 }
 
+// checkBwrapPermissions verifies that bwrap can run a minimal sandbox, returning an error if permissions are insufficient.
 func checkBwrapPermissions() error {
     // Try a minimal bwrap invocation
     cmd := exec.Command("bwrap",

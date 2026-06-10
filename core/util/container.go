@@ -21,6 +21,7 @@ type ContainerPlugin struct {
     cid string
 }
 
+// CreateContainerPlugin creates a ContainerPlugin backed by podman, pulling the image if it is not already present.
 func CreateContainerPlugin(tag string, options ...PluginOption) (*ContainerPlugin, error) {
 	// Create the plugin
     internal, err := CreateBasePlugin(options...)
@@ -61,6 +62,8 @@ func CreateContainerPlugin(tag string, options ...PluginOption) (*ContainerPlugi
 	return p, nil
 }
 
+// Start launches the container with the appropriate volume mounts and socket bindings,
+// then returns the listener and gRPC client connection to the caller.
 func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
     // Set environment variables and link in the plugin runtime folder
     args := []string{
@@ -126,27 +129,31 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     cidFile := filepath.Join(p.runDir, ".cid")
     p.rargs = append(p.rargs, "--cidfile", cidFile)
 
-    if !runnable {
-        // Bind in the plugin files
-        if p.pkg {
-            // Bind in the plugin directory
-            p.rargs = append(
-                p.rargs, "-v",
-                fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
-            )
-        } else {
-            // Bind in the script
-            p.rargs = append(
-                p.rargs, "-v",
-                fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
-            )
+    // Only bind in the plugin files if checks are enabled,
+    // otherwise blindly use the script/exec set by the user
+    if p.check {
+        if !runnable {
+            // Bind in the plugin files
+            if p.pkg {
+                // Bind in the plugin directory
+                p.rargs = append(
+                    p.rargs, "-v",
+                    fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
+                )
+            } else {
+                // Bind in the script
+                p.rargs = append(
+                    p.rargs, "-v",
+                    fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
+                )
+            }
+            p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
+            p.script = "./"+filepath.Base(p.script)
+        } else if runnable {
+            p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
+            p.exec = "sh"
+            p.script = fmt.Sprintf("/%s/%s", bindDir, runHook) // use runhook
         }
-        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
-        p.script = "./"+filepath.Base(p.script)
-    } else {
-        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
-        p.exec = "sh"
-        p.script = fmt.Sprintf("/%s/%s", bindDir, runHook) // use runhook
     }
 	
     // Append the podman PID namespace to the allowed PIDs
@@ -172,6 +179,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     return ln, conn, err
 }
 
+// setCID polls cidPath until the container ID is written or the plugin timeout elapses.
 func (p *ContainerPlugin) setCID(cidPath string) error {
     // Retry reads to give container time to write to cid file
     deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
@@ -186,6 +194,7 @@ func (p *ContainerPlugin) setCID(cidPath string) error {
     return fmt.Errorf("timed out waiting for container ID file: %s", cidPath)
 }
 
+// getPID returns the host PID of the running container by inspecting it with podman.
 func (p *ContainerPlugin) getPID() (int, error) {
     out, err := exec.Command("podman", "inspect", "--format", "{{.State.Pid}}", p.cid).Output()
     if err != nil {
@@ -198,6 +207,7 @@ func (p *ContainerPlugin) getPID() (int, error) {
     return pid, nil
 }
 
+// isContainerRunnable reports whether the container image already has a run hook at the expected path.
 func isContainerRunnable(tag string) (bool, error) {
     // Check if a runhook exists in the container
     cmd := exec.Command("podman", "run", "--rm", tag, "test", "-f", fmt.Sprintf("/%s/%s", bindDir, runHook))

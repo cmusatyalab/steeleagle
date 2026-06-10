@@ -27,8 +27,9 @@ const runHook string = "run.sh"
 const clientSockName string = "out.sock"
 const listenSockName string = "in.sock"
 
-// Environment variable names passed to the subprocess
+// CLient socket environment variable names passed to the subprocess
 const ClientSockEnv string = "CLIENT_SOCKET"
+// Listener socket environment variable names passed to the subprocess
 const ListenSockEnv string = "LISTEN_SOCKET"
 
 // Used to determine how to run a plugin

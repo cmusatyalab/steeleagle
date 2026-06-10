@@ -14,6 +14,8 @@ import (
 	health_pb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// run establishes the gRPC server and client sockets, serves a health check,
+// and sends an acknowledgement Check back to the test harness.
 func run() error {
 	// Know that FD3 is the server file, FD4 is the client file
     listenSocket := os.Getenv("LISTEN_SOCKET")
@@ -66,6 +68,7 @@ func run() error {
 	}
 }
 
+// main parses the --error flag and delegates to run.
 func main() {
 	errPtr := flag.Bool("error", false, "produce an error")
 	flag.Parse()

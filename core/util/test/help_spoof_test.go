@@ -11,6 +11,7 @@ type spoofedConn struct {
 	remoteAddr net.Addr
 }
 
+// RemoteAddr returns the spoofed remote address.
 func (c *spoofedConn) RemoteAddr() net.Addr {
 	return c.remoteAddr
 }
@@ -20,6 +21,7 @@ type spoofedListener struct {
 	fakeAddr net.Addr
 }
 
+// Accept returns the next connection with its remote address replaced by fakeAddr.
 func (l *spoofedListener) Accept() (net.Conn, error) {
 	conn, err := l.Listener.Accept()
 	if err != nil {
@@ -28,6 +30,7 @@ func (l *spoofedListener) Accept() (net.Conn, error) {
 	return &spoofedConn{Conn: conn, remoteAddr: l.fakeAddr}, nil
 }
 
+// SetFakeIP sets the IP address that will be reported as the remote address for all accepted connections.
 func (l *spoofedListener) SetFakeIP(fakeIP string) {
 	l.fakeAddr = &net.TCPAddr{
 		IP:   net.ParseIP(fakeIP),
@@ -35,6 +38,7 @@ func (l *spoofedListener) SetFakeIP(fakeIP string) {
 	}
 }
 
+// newSpoofedListener wraps l in a spoofedListener for use in tests.
 func newSpoofedListener(t *testing.T, l net.Listener) *spoofedListener {
 	t.Helper()
 	return &spoofedListener{
@@ -42,6 +46,7 @@ func newSpoofedListener(t *testing.T, l net.Listener) *spoofedListener {
 	}
 }
 
+// isConnClosed reports whether conn has been closed by attempting a read with a short deadline.
 func isConnClosed(t *testing.T, conn net.Conn) bool {
 	t.Helper()
 	if conn == nil {

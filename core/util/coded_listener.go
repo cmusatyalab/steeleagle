@@ -16,6 +16,7 @@ type Conn struct {
 	Addr *Addr
 }
 
+// RemoteAddr returns the remote address of the connection, including the embedded AuthCode.
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.Addr
 }
@@ -26,6 +27,9 @@ type codedListener struct {
 	acl  *ACL
 }
 
+// NewCodedListener wraps ln with AuthCode tagging and optional ACL enforcement.
+// Every accepted connection is wrapped in a Conn whose RemoteAddr carries code.
+// If acl is non-nil, connections that fail the ACL check are silently closed.
 func NewCodedListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
 	return &codedListener{
 		Listener: ln,
@@ -34,6 +38,7 @@ func NewCodedListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
 	}
 }
 
+// Accept waits for and returns the next connection, rejecting any that fail the ACL check.
 func (l *codedListener) Accept() (net.Conn, error) {
 	for {
 		// Block until we get a Connection
