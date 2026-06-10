@@ -173,7 +173,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
         const isSelfLoop = connection.source === connection.target;
         setEdges(es => addEdge({
             ...connection,
-            type: isSelfLoop ? 'selfLoop' : undefined,
+            type: isSelfLoop ? 'selfLoop' : 'smoothstep',
             data: { eventId },
             label: eventId,
             animated: eventId !== 'done',
@@ -511,7 +511,7 @@ function PlanPage({ vehicles, squadList }) {
                 id: `e-${e.source}-${evId}-${e.target}`,
                 source: e.source,
                 target: e.target,
-                type: isSelfLoop ? 'selfLoop' : undefined,
+                type: isSelfLoop ? 'selfLoop' : 'smoothstep',
                 data: { eventId: evId },
                 label: evId,
                 animated: !isDone,

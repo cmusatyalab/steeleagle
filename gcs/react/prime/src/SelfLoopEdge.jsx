@@ -6,14 +6,18 @@ function SelfLoopEdge({ id, source, sourceX, sourceY, targetX, targetY, label, s
     const nodeWidth = node?.measured?.width ?? 120;
     // Extend far enough right to clear the node edge with breathing room
     const offset = nodeWidth / 2 + 50;
+    const r = 8; // corner radius
 
-    // D-shaped cubic bezier going to the right of the node.
-    // sourceX === targetX (same node center); sourceY > targetY (bottom vs top handle).
+    // Smoothstep-style right-angle loop going to the right of the node.
+    // sourceX === targetX; sourceY > targetY (bottom handle below top handle).
+    const rx = sourceX + offset; // rightmost x
     const path = [
         `M ${sourceX},${sourceY}`,
-        `C ${sourceX + offset},${sourceY}`,
-        `  ${targetX + offset},${targetY}`,
-        `  ${targetX},${targetY}`,
+        `L ${rx - r},${sourceY}`,
+        `Q ${rx},${sourceY} ${rx},${sourceY - r}`,
+        `L ${rx},${targetY + r}`,
+        `Q ${rx},${targetY} ${rx - r},${targetY}`,
+        `L ${targetX},${targetY}`,
     ].join(' ');
 
     // Place the label at the rightmost point of the curve, vertically centred
