@@ -10,7 +10,7 @@ import (
 )
 
 func TestPlugin(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestPlugin(t *testing.T) {
 }
 
 func TestPluginRunhook(t *testing.T) {
-	path, err := filepath.Abs(go_pkg)
+	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestPluginRunhook(t *testing.T) {
 }
 
 func TestPluginPython(t *testing.T) {
-	path, err := filepath.Abs(py_pkg)
+	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestPluginPython(t *testing.T) {
 }
 
 func TestPluginWrongAuthCode(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 }
 
 func TestPluginArgs(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}

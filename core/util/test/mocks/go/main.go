@@ -79,7 +79,7 @@ func main() {
 	}
 
 	if err := run(); err != nil {
-        fmt.Println("go_test: got the following error %v", err)
+        fmt.Printf("go_test: got the following error %v\n", err)
 		os.Exit(1)
 	}
 }

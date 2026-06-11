@@ -7,6 +7,7 @@ import (
     "fmt"
 	"time"
     "os"
+    "os/exec"
 
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc"
@@ -62,7 +63,7 @@ func TestAuthCode(t *testing.T) {
 	}
 }
 
-func TestACL(t *testing.T) {
+func TestACLIP(t *testing.T) {
 	base, err := net.Listen("tcp", "127.0.0.1:8080")
 	if err != nil {
 		t.Errorf("couldn't listen on localhost port 8080")
@@ -106,4 +107,37 @@ func TestACL(t *testing.T) {
 		t.Errorf("timed out waiting for allowed connection")
 	}
 	client2.Close()
+}
+
+func TestACLPID(t *testing.T) {
+	base, err := net.Listen("unix", "/tmp/listener.sock")
+	if err != nil {
+		t.Errorf("couldn't listen on localhost port 8080")
+	}
+	defer base.Close()
+
+    acl := util.GetACL([]string{}, []int{})
+	aclLn := util.NewCodedListener(base, util.ServerCode, acl)
+	defer aclLn.Close()
+
+    cmd := exec.Command(pidBinary)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    err = cmd.Run()
+    if err == nil {
+        t.Errorf("pid accepted incorrectly")
+    }
+
+    cmd = exec.Command(pidBinary)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    err = cmd.Start()
+    acl.AddPID(cmd.Process.Pid)
+    if err != nil {
+        t.Errorf("couldn't start command")
+    }
+    err = cmd.Wait()
+    if err != nil {
+        t.Errorf("pid rejected incorrectly")
+    }
 }

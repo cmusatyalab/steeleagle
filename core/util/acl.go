@@ -4,6 +4,7 @@ import (
 	"net"
 	"strings"
     "fmt"
+    "sync"
 
 	"github.com/rs/zerolog/log"
     "github.com/shirou/gopsutil/v3/process"
@@ -13,6 +14,7 @@ type ACL struct {
 	nets  []*net.IPNet
     cidrs []string
     pids  []int
+    mu    sync.Mutex
 }
 
 // GetACL constructs an ACL from a list of CIDR strings and allowed process IDs.
@@ -20,19 +22,7 @@ type ACL struct {
 func GetACL(cidrs []string, pids []int) *ACL {
 	nets := make([]*net.IPNet, 0, len(cidrs))
 	for _, cidr := range cidrs {
-		if !strings.Contains(cidr, "/") {
-			ip := net.ParseIP(cidr)
-			if ip == nil {
-				log.Warn().Str("ip", cidr).Msg("couldn't parse ip, ignoring")
-				continue
-			}
-			if ip.To4() != nil {
-				cidr += "/32"
-			} else {
-				cidr += "/128"
-			}
-		}
-		_, ipnet, err := net.ParseCIDR(cidr)
+        ipnet, err := parseCIDR(cidr)
 		if err != nil {
 			log.Warn().Err(err).Str("cidr", cidr).Msg("couldn't parse cidr, ignoring")
 			continue
@@ -44,6 +34,8 @@ func GetACL(cidrs []string, pids []int) *ACL {
 
 // AllowsIP reports whether the given IP address is permitted by the ACL.
 func (a *ACL) AllowsIP(ip net.IP) bool {
+    a.mu.Lock()
+    defer a.mu.Unlock()
 	for _, n := range a.nets {
 		if n.Contains(ip) {
             log.Debug().Str("ip", ip.String()).Strs("allowed", a.cidrs).Msg("ip accepted")
@@ -56,6 +48,8 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 
 // AllowsPID reports whether pid is a descendant of any PID in the ACL's allowed list.
 func (a *ACL) AllowsPID(pid int) bool {
+    a.mu.Lock()
+    defer a.mu.Unlock()
     var err error
     for _, p := range a.pids {
         if ok, err := isPIDDescendant(int32(p), int32(pid)); err == nil && ok {
@@ -68,6 +62,43 @@ func (a *ACL) AllowsPID(pid int) bool {
     }
     log.Debug().Int("pid", pid).Ints("allowed", a.pids).Msg("pid rejected")
     return false
+}
+
+// AddIP parses a CIDR and adds it to the ACL.
+func (a *ACL) AddIP(cidr string) error {
+    a.mu.Lock()
+    defer a.mu.Unlock()
+    ipnet, err := parseCIDR(cidr)
+    if err != nil {
+        return err
+    }
+    a.nets = append(a.nets, ipnet)
+    a.cidrs = append(a.cidrs, cidr)
+    return nil
+}
+
+// AddPID adds an allowed PID to the ACL.
+func (a *ACL) AddPID(pid int) {
+    a.mu.Lock()
+    defer a.mu.Unlock()
+    a.pids = append(a.pids, pid)
+}
+
+// parseCIDR parses a CIDR string into a net.IPNet for easier checking.
+func parseCIDR(cidr string) (*net.IPNet, error) {
+    if !strings.Contains(cidr, "/") {
+		ip := net.ParseIP(cidr)
+		if ip == nil {
+            return nil, fmt.Errorf("cidr couldn't be parsed: %s", cidr)
+		}
+		if ip.To4() != nil {
+			cidr += "/32"
+		} else {
+			cidr += "/128"
+		}
+	}
+	_, ipnet, err := net.ParseCIDR(cidr)
+    return ipnet, err
 }
 
 // parentOf returns the PPID of pid using gopsutil.

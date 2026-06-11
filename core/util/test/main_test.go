@@ -6,20 +6,28 @@ import (
 	"testing"
 )
 
-const go_pkg string = "./mocks/go_test/"
-const go_binary string = "./mocks/go_test/binary"
-const py_pkg string = "./mocks/py_test/"
-const file_main string = "./mocks/file_test/main.py"
-const file_read string = "./mocks/file_test/read.txt"
-const file_write string = "./mocks/file_test/write.txt"
+const goPkg string = "./mocks/go/"
+const goBinary string = "./mocks/go/binary"
+const pidPkg string = "./mocks/pid/"
+const pidBinary string = "./mocks/pid/binary"
+const pyPkg string = "./mocks/py/"
+const fileMain string = "./mocks/file/main.py"
+const fileRead string = "./mocks/file/read.txt"
+const fileWrite string = "./mocks/file/write.txt"
 
 func TestMain(m *testing.M) {
 	// Build testdata/main.go into a plugin binary that we can test with
 	env := os.Environ()
 	env = append(env, "CGO_ENABLED=0", "GOOS=linux")
-	cmd := exec.Command("go", "build", "-o", go_binary, "./mocks/go_test/")
+	cmd := exec.Command("go", "build", "-o", goBinary, goPkg)
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(string(out))
+	}
+	cmd = exec.Command("go", "build", "-o", pidBinary, pidPkg)
+	cmd.Env = env
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		panic(string(out))
 	}
@@ -28,7 +36,8 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// Cleanup
-	os.Remove(go_binary)
+	os.Remove(goBinary)
+	os.Remove(pidBinary)
 	
     os.Exit(code)
 }

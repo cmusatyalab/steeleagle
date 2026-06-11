@@ -15,7 +15,7 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
         t.Skip("podman not found, skipping test")
 	}
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -39,7 +39,11 @@ func TestContainerPlugin(t *testing.T) {
 }
 
 func TestContainerPluginRunhook(t *testing.T) {
-	path, err := filepath.Abs(go_pkg)
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
@@ -63,7 +67,11 @@ func TestContainerPluginRunhook(t *testing.T) {
 }
 
 func TestContainerPluginPython(t *testing.T) {
-	path, err := filepath.Abs(py_pkg)
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
@@ -87,7 +95,11 @@ func TestContainerPluginPython(t *testing.T) {
 }
 
 func TestContainerPluginPythonCustomExec(t *testing.T) {
-	path, err := filepath.Abs(py_pkg)
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
@@ -113,8 +125,39 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 	}
 }
 
+func TestContainerPluginFileBinding(t *testing.T) {
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	plugin, err := util.CreateContainerPlugin("ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+        util.WithoutServer(),
+        util.WithFiles([]string{fileWrite}),
+        util.WithReadOnlyFiles([]string{fileRead}),
+        util.WithExecutable("uv"),
+        util.WithExecutableArgs([]string{"run"}),
+        util.WithScript(fileMain),
+    )
+    defer plugin.Stop()
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(context.Background())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+    err = plugin.Wait()
+    if err != nil {
+        t.Fatalf("plugin exited with error unexpectedly: %v", err)
+    }
+}
+
 func TestContainerPluginWrongAuthCode(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -139,7 +182,11 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 }
 
 func TestContainerPluginArgs(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	_, err := exec.LookPath("podman")
+	if err != nil {
+        t.Skip("podman not found, skipping test")
+	}
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -171,7 +218,7 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
         t.Skip("podman not found, skipping test")
 	}
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}

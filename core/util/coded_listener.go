@@ -42,7 +42,7 @@ func NewCodedListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
 func (l *codedListener) Accept() (net.Conn, error) {
 	for {
 		// Block until we get a Connection
-		c, err := l.Listener.Accept()
+        c, err := l.Listener.Accept()
 		if err != nil {
 			return nil, err
 		}

@@ -15,7 +15,7 @@ func TestSandboxPlugin(t *testing.T) {
 	if err != nil {
         t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
-	path, err := filepath.Abs(go_binary)
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -36,7 +36,11 @@ func TestSandboxPlugin(t *testing.T) {
 }
 
 func TestSandboxPluginRunhook(t *testing.T) {
-	path, err := filepath.Abs(go_pkg)
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+        t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
@@ -57,7 +61,11 @@ func TestSandboxPluginRunhook(t *testing.T) {
 }
 
 func TestSandboxPluginPython(t *testing.T) {
-	path, err := filepath.Abs(py_pkg)
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+        t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
@@ -84,17 +92,21 @@ func TestSandboxPluginPython(t *testing.T) {
 }
 
 func TestSandboxPluginFileBinding(t *testing.T) {
-    _, err := exec.LookPath("uv")
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+        t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+    _, err = exec.LookPath("uv")
     if err != nil {
         t.Skip("couldn't find uv, skipping this test")
     }
 	plugin, err := util.CreateSandboxPlugin(util.WithoutServer(),
-        util.WithFiles([]string{file_write}),
-        util.WithReadOnlyFiles([]string{file_read}),
+        util.WithFiles([]string{fileWrite}),
+        util.WithReadOnlyFiles([]string{fileRead}),
         util.WithExecutableFiles([]string{"uv"}),
         util.WithExecutable("uv"),
         util.WithExecutableArgs([]string{"run"}),
-        util.WithScript(file_main),
+        util.WithScript(fileMain),
     )
     defer plugin.Stop()
 	if err != nil {
@@ -111,7 +123,11 @@ func TestSandboxPluginFileBinding(t *testing.T) {
 }
 
 func TestSandboxPluginWrongAuthCode(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+        t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
@@ -132,7 +148,11 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 }
 
 func TestSandboxPluginArgs(t *testing.T) {
-	path, err := filepath.Abs(go_binary)
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+        t.Skip("bubblewrap (bwrap) not found, skipping test")
+	}
+	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
