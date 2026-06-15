@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
@@ -673,12 +673,18 @@ function PlanPage({ vehicles, squadList }) {
 
     const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
 
-    const nodesWithWarnings = nodes.map(n => ({
-        ...n,
-        data: { ...n.data, _warnings: validationIssues[n.id] ?? [] },
-    }));
+    const nodesWithWarnings = useMemo(
+        () => nodes.map(n => ({
+            ...n,
+            data: { ...n.data, _warnings: validationIssues[n.id] ?? [] },
+        })),
+        [nodes, validationIssues]
+    );
 
-    const totalWarnings = Object.values(validationIssues).reduce((s, arr) => s + arr.length, 0);
+    const totalWarnings = useMemo(
+        () => Object.values(validationIssues).reduce((s, arr) => s + arr.length, 0),
+        [validationIssues]
+    );
 
     return (
         <>
