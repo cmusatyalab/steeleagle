@@ -18,6 +18,7 @@ import EdgePanel from './EdgePanel.jsx';
 import FsmPalette from './FsmPalette.jsx';
 import ConnectModal from './ConnectModal.jsx';
 import { getApiUrl } from './App.jsx';
+import { runValidation } from './validation.js';
 
 const nodeTypes = { taskNode: TaskNode };
 const edgeTypes = { selfLoop: SelfLoopEdge };
@@ -370,6 +371,7 @@ function PlanPage({ vehicles, squadList }) {
     const [loadingDsl, setLoadingDsl] = useState(false);
     const fileInputRef = useRef(null);
     const toast = useRef(null);
+    const [validationIssues, setValidationIssues] = useState({});
 
     // Undo / redo history
     const pastRef = useRef([]);
@@ -378,6 +380,14 @@ function PlanPage({ vehicles, squadList }) {
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
     useEffect(() => { schemaRef.current = schema; }, [schema]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const { issues } = runValidation(nodes, schema, startNodeId);
+            setValidationIssues(issues);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [nodes, startNodeId, schema]);
 
     function snapshotCurrent() {
         return {
@@ -663,6 +673,13 @@ function PlanPage({ vehicles, squadList }) {
 
     const liveDsl = nodes.length > 0 ? generateDsl(nodes, edges, eventInstances, startNodeId, schema) : '# Add nodes to see DSL preview';
 
+    const nodesWithWarnings = nodes.map(n => ({
+        ...n,
+        data: { ...n.data, _warnings: validationIssues[n.id] ?? [] },
+    }));
+
+    const totalWarnings = Object.values(validationIssues).reduce((s, arr) => s + arr.length, 0);
+
     return (
         <>
             <Toast ref={toast} />
@@ -673,7 +690,7 @@ function PlanPage({ vehicles, squadList }) {
                             <FsmPalette onSchemaLoaded={setSchema} />
                             <ReactFlowProvider>
                                 <FsmCanvas
-                                    nodes={nodes} edges={edges}
+                                    nodes={nodesWithWarnings} edges={edges}
                                     setNodes={setNodes} setEdges={setEdges}
                                     eventInstances={eventInstances} setEventInstances={setEventInstances}
                                     startNodeId={startNodeId} setStartNodeId={setStartNodeId}
@@ -753,11 +770,14 @@ function PlanPage({ vehicles, squadList }) {
                                 loading={deploying}
                                 onClick={handleDeploy}
                             />
-                            <span className="text-sm text-color-secondary ml-auto">
+                            <span className="text-sm ml-auto" style={{ color: '#888' }}>
                                 {nodes.length} actions · {eventInstances.length} events
                                 {startNode
                                     ? ` · start: ${startNode.data.instance_id}`
-                                    : ' · ⚠ no start set'}
+                                    : <span style={{ color: '#e8c87a' }}> · ⚠ no start set</span>}
+                                {totalWarnings > 0 && (
+                                    <span style={{ color: '#e8c87a' }}> · ⚠ {totalWarnings} warning{totalWarnings !== 1 ? 's' : ''}</span>
+                                )}
                             </span>
                         </div>
                     </div>
