@@ -38,7 +38,7 @@ export function runValidation(nodes, schema, startNodeId) {
     }
 
     // Check 3: no start state
-    const noStart = !startNodeId;
+    const noStart = !startNodeId || !nodes.some(n => n.id === startNodeId);
 
     return { issues, noStart };
 }

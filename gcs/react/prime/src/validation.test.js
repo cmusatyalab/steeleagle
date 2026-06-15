@@ -97,4 +97,10 @@ describe('runValidation — no start state', () => {
         const { noStart } = runValidation(nodes, schema, 'n1');
         expect(noStart).toBe(false);
     });
+
+    it('sets noStart=true when startNodeId refers to a node not in the graph', () => {
+        const nodes = [makeNode('n1', 'Wait', 'w1', { duration: 5 })];
+        const { noStart } = runValidation(nodes, schema, 'nonexistent_id');
+        expect(noStart).toBe(true);
+    });
 });
