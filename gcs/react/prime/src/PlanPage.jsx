@@ -692,32 +692,17 @@ function PlanPage({ vehicles, squadList }) {
             <TabView renderActiveOnly={false}>
                 <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
-                        <div className="flex flex-1" style={{ overflow: 'hidden' }}>
-                            <FsmPalette onSchemaLoaded={setSchema} />
-                            <ReactFlowProvider>
-                                <FsmCanvas
-                                    nodes={nodesWithWarnings} edges={edges}
-                                    setNodes={setNodes} setEdges={setEdges}
-                                    eventInstances={eventInstances} setEventInstances={setEventInstances}
-                                    startNodeId={startNodeId} setStartNodeId={setStartNodeId}
-                                    schema={schema} features={features}
-                                    panelNode={panelNode} setPanelNode={setPanelNodeId}
-                                    setPanelEdgeId={setPanelEdgeId}
-                                    pushSnapshot={pushSnapshot}
-                                    toast={toast}
-                                />
-                            </ReactFlowProvider>
-                        </div>
+                        {/* Hidden file input — outside toolbar div */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".dsl,.txt"
+                            style={{ display: 'none' }}
+                            onChange={e => handleLoadDsl(e.target.files[0])}
+                        />
 
-                        {/* Toolbar */}
-                        <div className="flex gap-2 align-items-center p-2" style={{ borderTop: '1px solid #2a3a4a', flexShrink: 0 }}>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".dsl,.txt"
-                                style={{ display: 'none' }}
-                                onChange={e => handleLoadDsl(e.target.files[0])}
-                            />
+                        {/* Toolbar — now at top with borderBottom */}
+                        <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a', flexShrink: 0 }}>
                             <Button
                                 icon="pi pi-undo"
                                 size="small"
@@ -776,6 +761,28 @@ function PlanPage({ vehicles, squadList }) {
                                 loading={deploying}
                                 onClick={handleDeploy}
                             />
+                        </div>
+
+                        {/* Canvas — middle */}
+                        <div className="flex flex-1" style={{ overflow: 'hidden' }}>
+                            <FsmPalette onSchemaLoaded={setSchema} />
+                            <ReactFlowProvider>
+                                <FsmCanvas
+                                    nodes={nodesWithWarnings} edges={edges}
+                                    setNodes={setNodes} setEdges={setEdges}
+                                    eventInstances={eventInstances} setEventInstances={setEventInstances}
+                                    startNodeId={startNodeId} setStartNodeId={setStartNodeId}
+                                    schema={schema} features={features}
+                                    panelNode={panelNode} setPanelNode={setPanelNodeId}
+                                    setPanelEdgeId={setPanelEdgeId}
+                                    pushSnapshot={pushSnapshot}
+                                    toast={toast}
+                                />
+                            </ReactFlowProvider>
+                        </div>
+
+                        {/* Status bar — separate div at bottom with borderTop */}
+                        <div className="flex align-items-center px-2 py-1" style={{ borderTop: '1px solid #2a3a4a', flexShrink: 0 }}>
                             <span className="text-sm ml-auto" style={{ color: '#888' }}>
                                 {nodes.length} actions · {eventInstances.length} events
                                 {startNode
