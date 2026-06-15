@@ -61,7 +61,7 @@ function TaskNode({ data }) {
                     <span style={{
                         fontSize: 8, background: '#a3e8a0', color: '#000',
                         padding: '1px 4px', borderRadius: 3,
-                        marginLeft: _warnings?.length ? 4 : 'auto',
+                        marginLeft: 'auto',
                     }}>
                         START
                     </span>
@@ -71,7 +71,8 @@ function TaskNode({ data }) {
                         title={_warnings.join('\n')}
                         style={{
                             fontSize: 8, background: '#e8c87a', color: '#000',
-                            padding: '1px 4px', borderRadius: 3, marginLeft: 'auto',
+                            padding: '1px 4px', borderRadius: 3,
+                            marginLeft: isStart ? undefined : 'auto',
                         }}
                     >
                         ⚠ {_warnings.length}
