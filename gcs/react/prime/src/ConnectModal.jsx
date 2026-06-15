@@ -25,21 +25,19 @@ function NewEventForm({ schema, onAdd }) {
     return (
         <div style={{ border: '1px solid #2a3a4a', borderRadius: 6, padding: 10, marginTop: 8 }}>
             <p style={{ fontSize: 11, color: '#7ecfff', marginBottom: 8 }}>Define new event</p>
-            <div className="flex gap-2 mb-2">
+            <div className="flex flex-column gap-2 mb-2">
                 <Dropdown
                     value={typeName}
                     options={eventTypes.map(t => ({ label: t, value: t }))}
                     onChange={e => { setTypeName(e.value); setParams({}); }}
                     placeholder="Event type"
-                    style={{ flex: 1 }}
-                    className="p-inputtext-sm"
+                    className="p-inputtext-sm w-full"
                 />
                 <InputText
                     value={instanceId}
                     onChange={e => setInstanceId(e.target.value)}
                     placeholder="instance_id"
-                    className="p-inputtext-sm"
-                    style={{ flex: 1 }}
+                    className="p-inputtext-sm w-full"
                 />
             </div>
             {fields.map(f => (

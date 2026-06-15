@@ -574,7 +574,7 @@ function PlanPage({ vehicles, squadList }) {
         <>
             <Toast ref={toast} />
             <TabView renderActiveOnly={false}>
-                <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2">
+                <TabPanel header="FSM Builder" leftIcon="pi pi-share-alt mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         <div className="flex flex-1" style={{ overflow: 'hidden' }}>
                             <FsmPalette onSchemaLoaded={setSchema} />
@@ -674,13 +674,13 @@ function PlanPage({ vehicles, squadList }) {
                     />
                 </TabPanel>
 
-                <TabPanel header="Map" leftIcon="pi pi-map mr-2">
+                <TabPanel header="Map" leftIcon="pi pi-map mr-2" headerClassName="mr-2">
                     <div style={{ height: 'calc(100vh - 180px)' }}>
                         <MapDraw features={features} setFeatures={setFeatures} />
                     </div>
                 </TabPanel>
 
-                <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2">
+                <TabPanel header="DSL Preview" leftIcon="pi pi-code mr-2" headerClassName="mr-2">
                     <div className="flex flex-column" style={{ height: 'calc(100vh - 180px)' }}>
                         <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a', flexShrink: 0 }}>
                             <Button

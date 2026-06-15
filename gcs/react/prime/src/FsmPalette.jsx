@@ -13,7 +13,6 @@ const TYPE_ICONS = {
 function FsmPalette({ onSchemaLoaded }) {
     const [schema, setSchema] = useState({ actions: {}, events: {} });
     const [actionsOpen, setActionsOpen] = useState(true);
-    const [eventsOpen, setEventsOpen] = useState(true);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -38,14 +37,13 @@ function FsmPalette({ onSchemaLoaded }) {
 
     return (
         <div style={{ width: 180, background: '#1a2530', height: '100%', overflowY: 'auto', borderRight: '1px solid #2a3a4a' }}>
-            {/* Actions section */}
             <div
                 className="flex align-items-center gap-2 p-2"
                 style={{ cursor: 'pointer', borderBottom: '1px solid #2a3a4a', userSelect: 'none' }}
                 onClick={() => setActionsOpen(o => !o)}
             >
                 <i className={`pi pi-${actionsOpen ? 'chevron-down' : 'chevron-right'}`} style={{ fontSize: 10 }} />
-                <span style={{ fontSize: 11, color: '#7ecfff', textTransform: 'uppercase', letterSpacing: 1 }}>Actions</span>
+                <span style={{ fontSize: 12, color: '#7ecfff', textTransform: 'uppercase', letterSpacing: 1 }}>Actions</span>
             </div>
             {actionsOpen && Object.keys(schema.actions).map(typeName => (
                 <div
@@ -55,7 +53,7 @@ function FsmPalette({ onSchemaLoaded }) {
                     title={schema.actions[typeName].description}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '5px 10px', cursor: 'grab', fontSize: 11,
+                        padding: '5px 10px', cursor: 'grab', fontSize: 13,
                         borderBottom: '1px solid #1e2a38',
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = '#1e3040'}
@@ -63,28 +61,6 @@ function FsmPalette({ onSchemaLoaded }) {
                 >
                     <span>{TYPE_ICONS[typeName] || '⚙'}</span>
                     <span style={{ color: '#fff' }}>{typeName}</span>
-                </div>
-            ))}
-
-            {/* Events section (reference only) */}
-            <div
-                className="flex align-items-center gap-2 p-2"
-                style={{ cursor: 'pointer', borderBottom: '1px solid #2a3a4a', userSelect: 'none', marginTop: 8 }}
-                onClick={() => setEventsOpen(o => !o)}
-            >
-                <i className={`pi pi-${eventsOpen ? 'chevron-down' : 'chevron-right'}`} style={{ fontSize: 10 }} />
-                <span style={{ fontSize: 11, color: '#c47aff', textTransform: 'uppercase', letterSpacing: 1 }}>Events</span>
-            </div>
-            {eventsOpen && Object.keys(schema.events).map(typeName => (
-                <div
-                    key={typeName}
-                    title={schema.events[typeName].description}
-                    style={{
-                        padding: '4px 10px', fontSize: 11,
-                        borderBottom: '1px solid #1e2a38', color: '#c47aff',
-                    }}
-                >
-                    {typeName}
                 </div>
             ))}
         </div>

@@ -22,7 +22,7 @@ function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, on
         >
             <div className="flex flex-column gap-3 p-2">
                 <div>
-                    <label className="text-sm text-color-secondary block mb-1">Instance ID</label>
+                    <label style={{ fontSize: 13, color: 'var(--text-color-secondary)', display: 'block', marginBottom: 4 }}>Instance ID</label>
                     <InputText
                         value={instance_id}
                         onChange={e => onUpdateId(node.id, e.target.value)}
@@ -31,11 +31,11 @@ function TaskNodePanel({ visible, onHide, node, schema, namedAreas, onUpdate, on
                 </div>
                 {fields.map(f => (
                     <div key={f.name}>
-                        <label className="text-sm text-color-secondary block mb-1">
+                        <label style={{ fontSize: 13, color: 'var(--text-color-secondary)', display: 'block', marginBottom: 4 }}>
                             {f.name}
                             {f.required && <span style={{ color: '#e88' }}> *</span>}
                             {f.description && (
-                                <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{f.description}</span>
+                                <span style={{ fontSize: 12, color: '#666', marginLeft: 6 }}>{f.description}</span>
                             )}
                         </label>
                         <FieldInput

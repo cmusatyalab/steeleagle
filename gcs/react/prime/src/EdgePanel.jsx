@@ -33,23 +33,23 @@ function EdgePanel({ visible, onHide, edge, eventInstance, eventSchema, sourceLa
                     <span style={{ color: '#aaa' }}>Event: </span>
                     <span style={{ color: isDone ? '#a3e8a0' : '#c47aff', fontWeight: 'bold' }}>{eventId}</span>
                     {eventInstance && (
-                        <span style={{ color: '#666', fontSize: 11, marginLeft: 6 }}>({eventInstance.type_name})</span>
+                        <span style={{ color: '#666', fontSize: 12, marginLeft: 6 }}>({eventInstance.type_name})</span>
                     )}
                 </div>
 
                 {isDone && (
-                    <p style={{ fontSize: 11, color: '#666', margin: 0 }}>
+                    <p style={{ fontSize: 12, color: '#666', margin: 0 }}>
                         "done" is the built-in completion event and has no parameters.
                     </p>
                 )}
 
                 {!isDone && fields.map(f => (
                     <div key={f.name}>
-                        <label className="text-sm text-color-secondary block mb-1">
+                        <label style={{ fontSize: 13, color: 'var(--text-color-secondary)', display: 'block', marginBottom: 4 }}>
                             {f.name}
                             {f.required && <span style={{ color: '#e88' }}> *</span>}
                             {f.description && (
-                                <span style={{ fontSize: 10, color: '#666', marginLeft: 6 }}>{f.description}</span>
+                                <span style={{ fontSize: 12, color: '#666', marginLeft: 6 }}>{f.description}</span>
                             )}
                         </label>
                         <FieldInput
@@ -61,7 +61,7 @@ function EdgePanel({ visible, onHide, edge, eventInstance, eventSchema, sourceLa
                 ))}
 
                 {!isDone && !fields.length && (
-                    <p style={{ fontSize: 11, color: '#666', margin: 0 }}>This event type has no configurable parameters.</p>
+                    <p style={{ fontSize: 12, color: '#666', margin: 0 }}>This event type has no configurable parameters.</p>
                 )}
 
                 <hr style={{ borderColor: '#2a3a4a', margin: '4px 0' }} />
