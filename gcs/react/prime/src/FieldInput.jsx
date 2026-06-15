@@ -17,7 +17,7 @@ function FieldInput({ field, value, onChange, namedAreas = [] }) {
         return (
             <InputNumber
                 value={value ?? field.default ?? 0}
-                onValueChange={e => onChange(e.value)}
+                onChange={e => onChange(e.value)}
                 className="w-full"
                 useGrouping={false}
             />
