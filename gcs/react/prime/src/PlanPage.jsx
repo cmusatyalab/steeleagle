@@ -151,7 +151,7 @@ function getNamedAreas(featuresStr) {
 
 function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
                      startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
-                     setPanelEdgeId, toast }) {
+                     setPanelEdgeId, pushSnapshot, toast }) {
     const { screenToFlowPosition } = useReactFlow();
     const [connectModal, setConnectModal] = useState({ visible: false, connection: null });
     const [contextMenu, setContextMenu] = useState(null);
@@ -170,6 +170,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     }, [setPanelEdgeId]);
 
     function confirmConnect(connection, eventId) {
+        pushSnapshot();
         const isSelfLoop = connection.source === connection.target;
         setEdges(es => addEdge({
             ...connection,
@@ -224,9 +225,10 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
             },
         };
 
+        pushSnapshot();
         setNodes(ns => [...ns, newNode]);
         if (isFirst) setStartNodeId(id);
-    }, [nodes, schema, namedAreas, screenToFlowPosition]);
+    }, [nodes, schema, namedAreas, screenToFlowPosition, pushSnapshot]);
 
     // Right-click context menu on a node
     const onNodeContextMenu = useCallback((event, node) => {
@@ -241,12 +243,14 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     }, []);
 
     function setAsStart(nodeId) {
+        pushSnapshot();
         setStartNodeId(nodeId);
         setNodes(ns => ns.map(n => ({ ...n, data: { ...n.data, isStart: n.id === nodeId } })));
         setContextMenu(null);
     }
 
     function deleteNode(nodeId) {
+        pushSnapshot();
         setNodes(ns => ns.filter(n => n.id !== nodeId));
         setEdges(es => es.filter(e => e.source !== nodeId && e.target !== nodeId));
         if (startNodeId === nodeId) setStartNodeId(null);
@@ -324,7 +328,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
                                 style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 12, color: '#e88080' }}
                                 onMouseEnter={e => e.currentTarget.style.background = '#2a3a50'}
                                 onMouseLeave={e => e.currentTarget.style.background = ''}
-                                onClick={() => { setEdges(es => es.filter(e => e.id !== contextMenu.edgeId)); setContextMenu(null); }}
+                                onClick={() => { pushSnapshot(); setEdges(es => es.filter(e => e.id !== contextMenu.edgeId)); setContextMenu(null); }}
                             >
                                 🗑 Delete transition
                             </div>
@@ -366,6 +370,90 @@ function PlanPage({ vehicles, squadList }) {
     const [loadingDsl, setLoadingDsl] = useState(false);
     const fileInputRef = useRef(null);
     const toast = useRef(null);
+
+    // Undo / redo history
+    const pastRef = useRef([]);
+    const futureRef = useRef([]);
+    const schemaRef = useRef(schema);
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
+    useEffect(() => { schemaRef.current = schema; }, [schema]);
+
+    function snapshotCurrent() {
+        return {
+            nodes: nodes.map(n => ({
+                id: n.id,
+                type: n.type,
+                position: n.position,
+                data: {
+                    type_name: n.data.type_name,
+                    instance_id: n.data.instance_id,
+                    params: n.data.params,
+                    isStart: n.data.isStart,
+                },
+            })),
+            edges,
+            eventInstances,
+            startNodeId,
+        };
+    }
+
+    function applySnapshot(snap) {
+        setNodes(snap.nodes.map(n => ({
+            ...n,
+            data: {
+                ...n.data,
+                schema: schemaRef.current.actions[n.data.type_name],
+                onOpenPanel: () => setPanelNodeId(n.id),
+            },
+        })));
+        setEdges(snap.edges);
+        setEventInstances(snap.eventInstances);
+        setStartNodeId(snap.startNodeId);
+    }
+
+    function pushSnapshot() {
+        const snap = snapshotCurrent();
+        pastRef.current = [...pastRef.current.slice(-49), snap];
+        futureRef.current = [];
+        setCanUndo(true);
+        setCanRedo(false);
+    }
+
+    function undo() {
+        if (!pastRef.current.length) return;
+        const snap = pastRef.current[pastRef.current.length - 1];
+        futureRef.current = [snapshotCurrent(), ...futureRef.current.slice(0, 49)];
+        pastRef.current = pastRef.current.slice(0, -1);
+        applySnapshot(snap);
+        setCanUndo(pastRef.current.length > 0);
+        setCanRedo(true);
+    }
+
+    function redo() {
+        if (!futureRef.current.length) return;
+        const snap = futureRef.current[0];
+        pastRef.current = [...pastRef.current.slice(-49), snapshotCurrent()];
+        futureRef.current = futureRef.current.slice(1);
+        applySnapshot(snap);
+        setCanUndo(true);
+        setCanRedo(futureRef.current.length > 0);
+    }
+
+    // Stable keyboard handler via refs so it doesn't re-register on every render
+    const undoRef = useRef(undo);
+    const redoRef = useRef(redo);
+    useEffect(() => { undoRef.current = undo; });
+    useEffect(() => { redoRef.current = redo; });
+    useEffect(() => {
+        function onKeyDown(e) {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoRef.current(); }
+            if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redoRef.current(); }
+        }
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
 
     const startNode = nodes.find(n => n.id === startNodeId);
 
@@ -462,22 +550,27 @@ function PlanPage({ vehicles, squadList }) {
     }
 
     function updateNodeParams(nodeId, params) {
+        pushSnapshot();
         setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, params } } : n));
     }
 
     function updateNodeId(nodeId, newId) {
+        pushSnapshot();
         setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, instance_id: newId } } : n));
     }
 
     function updateEventParams(instanceId, params) {
+        pushSnapshot();
         setEventInstances(evs => evs.map(ev => ev.instance_id === instanceId ? { ...ev, params } : ev));
     }
 
     function deleteEdge(edgeId) {
+        pushSnapshot();
         setEdges(es => es.filter(e => e.id !== edgeId));
     }
 
     function deleteNodeById(nodeId) {
+        pushSnapshot();
         setNodes(ns => ns.filter(n => n.id !== nodeId));
         setEdges(es => es.filter(e => e.source !== nodeId && e.target !== nodeId));
         if (startNodeId === nodeId) setStartNodeId(null);
@@ -485,7 +578,7 @@ function PlanPage({ vehicles, squadList }) {
     }
 
     function loadFromParsed(parsed) {
-        // Build events lookup
+        pushSnapshot();
         const evMap = Object.fromEntries(parsed.events.map(ev => [ev.instance_id, ev]));
 
         // Use instance_id as the React Flow node id for simplicity
@@ -587,6 +680,7 @@ function PlanPage({ vehicles, squadList }) {
                                     schema={schema} features={features}
                                     panelNode={panelNode} setPanelNode={setPanelNodeId}
                                     setPanelEdgeId={setPanelEdgeId}
+                                    pushSnapshot={pushSnapshot}
                                     toast={toast}
                                 />
                             </ReactFlowProvider>
@@ -600,6 +694,24 @@ function PlanPage({ vehicles, squadList }) {
                                 accept=".dsl,.txt"
                                 style={{ display: 'none' }}
                                 onChange={e => handleLoadDsl(e.target.files[0])}
+                            />
+                            <Button
+                                icon="pi pi-undo"
+                                size="small"
+                                outlined
+                                disabled={!canUndo}
+                                onClick={undo}
+                                tooltip="Undo (Ctrl+Z)"
+                                tooltipOptions={{ position: 'top' }}
+                            />
+                            <Button
+                                icon="pi pi-refresh"
+                                size="small"
+                                outlined
+                                disabled={!canRedo}
+                                onClick={redo}
+                                tooltip="Redo (Ctrl+Shift+Z)"
+                                tooltipOptions={{ position: 'top' }}
                             />
                             <Button
                                 label="Load DSL"
