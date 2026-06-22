@@ -26,7 +26,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["daemon", "cli"]
 
-[tool.pytest]
+[tool.pytest.ini_options]
 markers = [
-    "gcs: test all gcs related functions start/stop/restart/install",
+    "gcs: GCS service lifecycle and build/install routes",
+    "backend: backend Docker Compose service routes",
+    "sim: simulator service lifecycle",
+    "pool: vehicle ProcessPool routes",
 ]
