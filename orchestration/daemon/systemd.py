@@ -24,7 +24,7 @@ _UNIT_TEMPLATE = """\
 Description={description}
 Documentation=https://github.com/cmusatyalab/steeleagle
 # Wait for the network and Docker before starting.
-After=network.target docker.service
+After=network.target docker.service{session_after}
 Wants=docker.service
 # Hard ceiling on restarts within a 30-second window.
 StartLimitBurst=5
@@ -75,7 +75,14 @@ def render_unit(cfg: UnitConfig) -> str:
 
     if cfg.user_service:
         user_group = ""
-        wanted_by = "default.target"
+        # A user manager starts default.target as soon as the user logs in,
+        # which can race ahead of the desktop session importing DISPLAY/
+        # XAUTHORITY into the systemd user environment. graphical-session.target
+        # is only reached once that import has happened, so ordering after it
+        # (and being pulled in by it instead of default.target) ensures any
+        # subprocess we spawn — e.g. the simulator — inherits a working display.
+        session_after = " graphical-session.target"
+        wanted_by = "graphical-session.target"
     else:
         lines = []
         if cfg.run_as_user:
@@ -83,6 +90,7 @@ def render_unit(cfg: UnitConfig) -> str:
         if cfg.run_as_group:
             lines.append(f"Group={cfg.run_as_group}")
         user_group = "\n".join(lines)
+        session_after = ""
         wanted_by = "multi-user.target"
 
     return _UNIT_TEMPLATE.format(
@@ -90,6 +98,7 @@ def render_unit(cfg: UnitConfig) -> str:
         exec_start=cfg.exec_start,
         working_directory=cfg.working_directory,
         extra_env=extra_env,
+        session_after=session_after,
         user_group=user_group,
         service_name=cfg.service_name,
         wanted_by=wanted_by,
