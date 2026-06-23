@@ -132,7 +132,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
       <Tooltip target=".custom-choose-btn" content="Select Mission Files" position="bottom" />
       <Tooltip target=".custom-upload-btn" content="Upload Mission" position="bottom" />
       <Tooltip target=".custom-cancel-btn" content="Clear Selected Files" position="bottom" />
-      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" url={'/api/upload'} multiple accept="application/vnd.google-earth.kml+xml,application/json" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
+      <FileUpload className="m-2" itemTemplate={itemTemplate} chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} mode="advanced" name="mission[]" url={'/api/upload'} multiple accept=".json,.kml,application/json,application/vnd.google-earth.kml+xml,text/xml,application/xml" maxFileSize={10000} customUpload uploadHandler={uploadHandler} onProgress={onProgress} onUpload={onUploadComplete} />
       <Button icon="pi pi-play-circle" label="Start Mission" className="m-2 p-button-success" onClick={onMissionStart} />
     </>
   ), [uploadHandler, onMissionStart]);
