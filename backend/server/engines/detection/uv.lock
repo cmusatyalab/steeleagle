@@ -601,6 +601,15 @@ wheels = [
 ]
 
 [[package]]
+name = "nvidia-ml-py"
+version = "13.610.43"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/b5/a8fbc356f768fa5c9cfd646668fd7d34bf55bdd1c6e20754642a64d930d4/nvidia_ml_py-13.610.43.tar.gz", hash = "sha256:65437eb73d68d0c62c931ca4d45038472faff03bd0b8729abba4b899f70d60f2", size = 52109, upload-time = "2026-06-01T18:54:08.829Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/45/caa600acfab94560807a20a64b5830d2cd3c3202b7f1328644d70b7d6bd8/nvidia_ml_py-13.610.43-py3-none-any.whl", hash = "sha256:f13c72698edef492f985cc225f14faafe68ae065a2e407f45bdf6f4b9b43fde8", size = 53163, upload-time = "2026-06-01T18:54:07.704Z" },
+]
+
+[[package]]
 name = "nvidia-nccl-cu12"
 version = "2.27.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1041,7 +1050,7 @@ requires-dist = [
     { name = "steeleagle-sdk", specifier = ">=1.0.16" },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", index = "https://download.pytorch.org/whl/cu126" },
-    { name = "ultralytics" },
+    { name = "ultralytics", specifier = "==8.4.66" },
 ]
 
 [[package]]
@@ -1134,9 +1143,9 @@ dependencies = [
     { name = "typing-extensions", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://download.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:3a5fb967ffb53ffa0d2579c9819491cfc36c557040de6fdeabcfcfb45df019bc" },
-    { url = "https://download.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a9a9ba3b2baf23c044499ffbcbed88e04b6e38b94189c7dc42dd2cfcdd8c55c0" },
-    { url = "https://download.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-win_amd64.whl", hash = "sha256:4749cd32e32ed55179ff2ff0407e0ae5077fe4d332bfa49258f4578d09eccb40" },
+    { url = "https://download-r2.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:3a5fb967ffb53ffa0d2579c9819491cfc36c557040de6fdeabcfcfb45df019bc", upload-time = "2026-01-21T19:34:08Z" },
+    { url = "https://download-r2.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a9a9ba3b2baf23c044499ffbcbed88e04b6e38b94189c7dc42dd2cfcdd8c55c0", upload-time = "2026-01-21T19:34:12Z" },
+    { url = "https://download-r2.pytorch.org/whl/cu126/torch-2.10.0%2Bcu126-cp311-cp311-win_amd64.whl", hash = "sha256:4749cd32e32ed55179ff2ff0407e0ae5077fe4d332bfa49258f4578d09eccb40", upload-time = "2026-01-21T19:34:21Z" },
 ]
 
 [[package]]
@@ -1208,11 +1217,12 @@ wheels = [
 
 [[package]]
 name = "ultralytics"
-version = "8.3.223"
+version = "8.4.66"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "nvidia-ml-py" },
     { name = "opencv-python", marker = "sys_platform == 'never'" },
     { name = "pillow" },
     { name = "polars" },
@@ -1226,9 +1236,9 @@ dependencies = [
     { name = "torchvision", version = "0.25.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "ultralytics-thop" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/3d/3d91c0b695782b3a4888d25ef0be41b03228c3589740d428db3da5596bc0/ultralytics-8.3.223.tar.gz", hash = "sha256:07d3858c40238fc7780a69b31fee56ab7c706bfab214b8985e42ee4b28b0ffc2", size = 926412, upload-time = "2025-10-30T14:53:50.259Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/d6/7d95601a9078b614e87d14f93bf597a6bd75aa2bfe19cbe57e0016005c35/ultralytics-8.4.66.tar.gz", hash = "sha256:bb6e70e6b6de5399f9fc29a7c57495d6272529cc4896faf548372ddfa1c3365f", size = 1104120, upload-time = "2026-06-11T16:48:03.3Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/04/179b3c7c7599b4e71b4668fd87d4aa1fb91fa11d63ad221319ab1636618d/ultralytics-8.3.223-py3-none-any.whl", hash = "sha256:59c0727fab12cc9c5385e699052646dee0dedafdcc5a9516452d7a392aff6415", size = 1080709, upload-time = "2025-10-30T14:53:48.128Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/23/bd0d2417110cda4c0555f6e8fa2bb3782f34ebf73a48e90c4d0195da6444/ultralytics-8.4.66-py3-none-any.whl", hash = "sha256:e35708a9fd2b3d375a9787a70a8f76701533f889ef19dec4c2d5821c2d0ef508", size = 1313534, upload-time = "2026-06-11T16:47:59.408Z" },
 ]
 
 [[package]]

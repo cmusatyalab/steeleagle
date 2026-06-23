@@ -10,7 +10,7 @@ dependencies = [
    "numpy",
    "pykml",
    "pygeodesy",
-   "ultralytics",
+   "ultralytics==8.4.66",
    "scipy",
    "Pillow",
    "gabriel-server>=4.1.2",
