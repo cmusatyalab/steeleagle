@@ -10,6 +10,9 @@ import (
     "github.com/shirou/gopsutil/v3/process"
 )
 
+// ACL provides a basic access control list for a listener. It can be set to
+// check access rights for process clients using PIDs or network clients using
+// IP CIDRs.
 type ACL struct {
 	nets  []*net.IPNet
     cidrs []string

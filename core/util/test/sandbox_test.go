@@ -20,10 +20,10 @@ func TestSandboxPlugin(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
-	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -45,10 +45,10 @@ func TestSandboxPluginRunhook(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path))
-	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -76,10 +76,10 @@ func TestSandboxPluginPython(t *testing.T) {
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path),
         util.WithExecutableFiles([]string{"uv"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -108,10 +108,10 @@ func TestSandboxPluginFileBinding(t *testing.T) {
         util.WithExecutableArgs([]string{"run"}),
         util.WithScript(fileMain),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	_, _, err = plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -132,10 +132,10 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -157,10 +157,10 @@ func TestSandboxPluginArgs(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}), util.WithoutServer())
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	_, _, err = plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

@@ -112,13 +112,14 @@ func TestACLIP(t *testing.T) {
 func TestACLPID(t *testing.T) {
 	base, err := net.Listen("unix", "/tmp/listener.sock")
 	if err != nil {
-		t.Errorf("couldn't listen on localhost port 8080")
+		t.Errorf("couldn't listen on /tmp/listener.sock")
 	}
 	defer base.Close()
 
     acl := util.GetACL([]string{}, []int{})
 	aclLn := util.NewCodedListener(base, util.ServerCode, acl)
 	defer aclLn.Close()
+    go aclLn.Accept()
 
     cmd := exec.Command(pidBinary)
     cmd.Stdout = os.Stdout

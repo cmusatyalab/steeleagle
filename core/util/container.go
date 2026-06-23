@@ -117,13 +117,6 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     // since we want to preserve any passed in args
     p.rargs = append(args, p.rargs...)
 
-    // Check if the container itself is runnable
-    runnable, err := isContainerRunnable(p.tag)
-    if err != nil {
-        p.logError(err, "couldn't check if container was runnable")
-        return nil, nil, err
-    }
-
     // Create a cid file to capture the container ID
     // which is needed to get the container PID
     cidFile := filepath.Join(p.runDir, ".cid")
@@ -132,28 +125,22 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
     // Only bind in the plugin files if checks are enabled,
     // otherwise blindly use the script/exec set by the user
     if p.check {
-        if !runnable {
-            // Bind in the plugin files
-            if p.pkg {
-                // Bind in the plugin directory
-                p.rargs = append(
-                    p.rargs, "-v",
-                    fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
-                )
-            } else {
-                // Bind in the script
-                p.rargs = append(
-                    p.rargs, "-v",
-                    fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
-                )
-            }
-            p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
-            p.script = "./"+filepath.Base(p.script)
-        } else if runnable {
-            p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
-            p.exec = "sh"
-            p.script = fmt.Sprintf("/%s/%s", bindDir, runHook) // use runhook
+        // Bind in the plugin files
+        if p.pkg {
+            // Bind in the plugin directory
+            p.rargs = append(
+                p.rargs, "-v",
+                fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
+            )
+        } else {
+            // Bind in the script
+            p.rargs = append(
+                p.rargs, "-v",
+                fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
+            )
         }
+        p.rargs = append(p.rargs, "-w", "/"+bindDir, p.tag) // change workdir
+        p.script = "./"+filepath.Base(p.script)
     }
 	
     // Append the podman PID namespace to the allowed PIDs
@@ -205,20 +192,4 @@ func (p *ContainerPlugin) getPID() (int, error) {
         return -1, fmt.Errorf("couldn't parse container pid: %w", err)
     }
     return pid, nil
-}
-
-// isContainerRunnable reports whether the container image already has a run hook at the expected path.
-func isContainerRunnable(tag string) (bool, error) {
-    // Check if a runhook exists in the container
-    cmd := exec.Command("podman", "run", "--rm", tag, "test", "-f", fmt.Sprintf("/%s/%s", bindDir, runHook))
-    err := cmd.Run()
-    if err == nil {
-        return true, nil
-    }
-	var exitErr *exec.ExitError
-    if errors.As(err, &exitErr) {
-        return false, nil
-    } else {
-        return false, err
-    }
 }

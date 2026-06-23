@@ -23,10 +23,10 @@ func TestContainerPlugin(t *testing.T) {
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -51,10 +51,10 @@ func TestContainerPluginRunhook(t *testing.T) {
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -79,10 +79,10 @@ func TestContainerPluginPython(t *testing.T) {
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -110,10 +110,10 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
         util.WithExecutableArgs([]string{"run"}),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	ln, conn, err := plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -138,10 +138,10 @@ func TestContainerPluginFileBinding(t *testing.T) {
         util.WithExecutableArgs([]string{"run"}),
         util.WithScript(fileMain),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	_, _, err = plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -196,10 +196,10 @@ func TestContainerPluginArgs(t *testing.T) {
         util.WithoutServer(),
         util.WithRunnerArgs([]string{"--rm"}),
     )
-    defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
+    defer plugin.Stop()
 	_, _, err = plugin.Start(context.Background())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
