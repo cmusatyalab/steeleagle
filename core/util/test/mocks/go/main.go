@@ -74,6 +74,7 @@ func main() {
 	flag.Parse()
 
 	if *errPtr {
+        time.Sleep(100 * time.Millisecond)
         fmt.Println("go_test: asked to exit with error")
 		os.Exit(1)
 	}
