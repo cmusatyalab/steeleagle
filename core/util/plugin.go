@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"time"
-    "slices"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -22,80 +22,80 @@ type Plugin interface {
 	// side and a client connection to the plugin. The returned listener
 	// and connection are both bound to the plugin's lifetime. Canceling ctx
 	// or calling Stop tears them down.
-    Start(context.Context) (net.Listener, *grpc.ClientConn, error)
+	Start(context.Context) (net.Listener, *grpc.ClientConn, error)
 
 	// Stop cancels the plugin's context, triggering shutdown.
-    Stop()
+	Stop()
 
 	// Watch returns a channel that receives the plugin's exit error when it
 	// terminates.
-    Watch() <-chan error
+	Watch() <-chan error
 
 	// Wait blocks until the plugin process exits and returns its exit error.
-    Wait() error
+	Wait() error
 }
 
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
-	id      string   // auto-generated ID for path disambiguation
-	code    AuthCode // authentication entity
-    pkg     bool     // determines whether the plugin is a package or not
-	path    string   // path to plugin
-    runner  string   // runner target (e.g. bwrap, podman)
-    rargs   []string // runner args
-	exec    string   // executable target (e.g. sh)
-	eargs   []string // executable args
-	script  string   // script target (plugin script)
-	sargs   []string // script args
-    files   map[string]int // linked files (only applicable to sandboxes/containers)
-	start   int64    // plugin start time
-    timout  int      // timeout in seconds waiting for the server to start
-	running bool	 // whether or not the plugin is currently running
-    runDir  string   // runtime directory path
-    cSock   string   // client socket file path
-    lnSock  string   // listener socket file path
-    server  bool     // whether or not the plugin hosts a server
-    check   bool     // whether or not to check existence of files
-    timeout int      // timeout for plugin to start (seconds)
-	cmd     *exec.Cmd // command to run
-    ctx     context.Context // context
-    cancel  context.CancelFunc // cancellation function
+	id      string             // auto-generated ID for path disambiguation
+	code    AuthCode           // authentication entity
+	pkg     bool               // determines whether the plugin is a package or not
+	path    string             // path to plugin
+	runner  string             // runner target (e.g. bwrap, podman)
+	rargs   []string           // runner args
+	exec    string             // executable target (e.g. sh)
+	eargs   []string           // executable args
+	script  string             // script target (plugin script)
+	sargs   []string           // script args
+	files   map[string]int     // linked files (only applicable to sandboxes/containers)
+	start   int64              // plugin start time
+	timout  int                // timeout in seconds waiting for the server to start
+	running bool               // whether or not the plugin is currently running
+	runDir  string             // runtime directory path
+	cSock   string             // client socket file path
+	lnSock  string             // listener socket file path
+	server  bool               // whether or not the plugin hosts a server
+	check   bool               // whether or not to check existence of files
+	timeout int                // timeout for plugin to start (seconds)
+	cmd     *exec.Cmd          // command to run
+	ctx     context.Context    // context
+	cancel  context.CancelFunc // cancellation function
 }
 
 // CreateBasePlugin creates an instance of a BasePlugin.
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set default input options and retrieve options
 	p := &BasePlugin{
-		code: UnknownCode,
-        id: uuid.New().String(),
-        files: make(map[string]int),
-        server: true,
-        check: true,
-        timeout: 15, // default to 15s timeout
+		code:    UnknownCode,
+		id:      uuid.New().String(),
+		files:   make(map[string]int),
+		server:  true,
+		check:   true,
+		timeout: 15, // default to 15s timeout
 	}
 	for _, option := range options {
 		option(p)
 	}
-    
-    // Find and validate script if checks are on 
-    if p.check {
-        err := p.validateScript()
-        if err != nil {
-            p.logError(err, "couldn't find a script")
-            return nil, err
-        }
-    }
 
-    // Get the plugin dir, then create the socket file paths
-    dir, err := GetPluginDirByID(p.id)
-    if err != nil {
-        p.logError(err, "couldn't create plugin run directory")
-        return nil, err
-    }
-    p.runDir = dir
-    p.cSock = filepath.Join(p.runDir, clientSockName)
-    p.lnSock = filepath.Join(p.runDir, listenSockName)
+	// Find and validate script if checks are on
+	if p.check {
+		err := p.validateScript()
+		if err != nil {
+			p.logError(err, "couldn't find a script")
+			return nil, err
+		}
+	}
+
+	// Get the plugin dir, then create the socket file paths
+	dir, err := GetPluginDirByID(p.id)
+	if err != nil {
+		p.logError(err, "couldn't create plugin run directory")
+		return nil, err
+	}
+	p.runDir = dir
+	p.cSock = filepath.Join(p.runDir, clientSockName)
+	p.lnSock = filepath.Join(p.runDir, listenSockName)
 
 	return p, nil
 }
@@ -103,43 +103,43 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 // Start builds the command from the configured runner/executable/script chain, launches the subprocess,
 // and returns the listener and gRPC client connection.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
-    // Create a new context with a cancel function
-    p.ctx, p.cancel = context.WithCancel(ctx)
+	// Create a new context with a cancel function
+	p.ctx, p.cancel = context.WithCancel(ctx)
 
 	// Create the command; check in sequence whether the script,
-    // executable, and then runner are set, and prepend the arguments
-    // for each into one executable string
-    final := []string{}
-    if p.script != "" {
-        final = slices.Insert(p.sargs, 0, p.script)
-    }
-    if p.exec != "" {
-        final = append(p.eargs, final...)
-        final = slices.Insert(final, 0, p.exec)
-    }
-    if p.runner != "" {
-        final = append(p.rargs, final...)
-        final = slices.Insert(final, 0, p.runner)
-    }
+	// executable, and then runner are set, and prepend the arguments
+	// for each into one executable string
+	final := []string{}
+	if p.script != "" {
+		final = slices.Insert(p.sargs, 0, p.script)
+	}
+	if p.exec != "" {
+		final = append(p.eargs, final...)
+		final = slices.Insert(final, 0, p.exec)
+	}
+	if p.runner != "" {
+		final = append(p.rargs, final...)
+		final = slices.Insert(final, 0, p.runner)
+	}
 
-    // Check for argument count
-    if len(final) >= 2 {
-        p.cmd = exec.CommandContext(ctx, final[0], final[1:]...)
-    } else if len(final) == 1 {
-        p.cmd = exec.CommandContext(ctx, final[0])
-    } else {
-        err := fmt.Errorf("no arguments provided to plugin")
-        p.logError(err, "insufficient arguments to start plugin")
-        return nil, nil, err
-    }
-    if p.script != "" {
-        // Set the working directory for the command
-	    p.cmd.Dir = filepath.Dir(p.script)
-    }
-    p.logDebug(fmt.Sprintf("starting: %v", final))
+	// Check for argument count
+	if len(final) >= 2 {
+		p.cmd = exec.CommandContext(ctx, final[0], final[1:]...)
+	} else if len(final) == 1 {
+		p.cmd = exec.CommandContext(ctx, final[0])
+	} else {
+		err := fmt.Errorf("no arguments provided to plugin")
+		p.logError(err, "insufficient arguments to start plugin")
+		return nil, nil, err
+	}
+	if p.script != "" {
+		// Set the working directory for the command
+		p.cmd.Dir = filepath.Dir(p.script)
+	}
+	p.logDebug(fmt.Sprintf("starting: %v", final))
 
-    // Bind in stdout and stderr
-    p.cmd.Stdout = os.Stdout
+	// Bind in stdout and stderr
+	p.cmd.Stdout = os.Stdout
 	p.cmd.Stderr = os.Stderr
 
 	// Reverse the listener and client; the plugin connects
@@ -148,26 +148,26 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
 		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
 	)
-    err := p.run()
+	err := p.run()
 	if err != nil {
-        p.logError(err, "error running command")
+		p.logError(err, "error running command")
 		return nil, nil, err
 	}
 
-    // Cleanup goroutine
-    go func() {
-        <-p.ctx.Done()
-        p.cleanup()
-    }()
+	// Cleanup goroutine
+	go func() {
+		<-p.ctx.Done()
+		p.cleanup()
+	}()
 
-    return p.createSocketEndpoints()
+	return p.createSocketEndpoints()
 }
 
 // Stop cancels the plugin's context, signaling the subprocess to shut down.
 func (p *BasePlugin) Stop() {
-    if p.cancel != nil {
-        p.cancel()
-    }
+	if p.cancel != nil {
+		p.cancel()
+	}
 }
 
 // Watch returns a channel that receives the subprocess exit error when the process terminates.
@@ -181,22 +181,22 @@ func (p *BasePlugin) Watch() <-chan error {
 
 // Wait blocks until the plugin subprocess exits and returns its exit error.
 func (p *BasePlugin) Wait() error {
-    return p.cmd.Wait()
+	return p.cmd.Wait()
 }
 
 // validateScript resolves and validates the plugin's script path, setting pkg and exec fields as needed.
 func (p *BasePlugin) validateScript() error {
-    // Check if script has already been manually set
-    if p.script != "" {
-        _, err := os.Stat(p.script)
+	// Check if script has already been manually set
+	if p.script != "" {
+		_, err := os.Stat(p.script)
 		if err != nil {
 			p.logError(err, "couldn't stat plugin script, is it there?")
 			return err
 		}
-        return nil
-    }
+		return nil
+	}
 
-    // Make sure the plugin path exists
+	// Make sure the plugin path exists
 	info, err := os.Stat(p.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -211,7 +211,7 @@ func (p *BasePlugin) validateScript() error {
 	// target executable
 	if info.IsDir() {
 		// Set info and target to the runhook
-        p.pkg = true
+		p.pkg = true
 		p.script = filepath.Join(p.path, runHook)
 		info, err = os.Stat(p.script)
 		if err != nil {
@@ -222,8 +222,8 @@ func (p *BasePlugin) validateScript() error {
 	} else {
 		p.script = p.path
 		// Ensure that the script is runnable
-		if info.Mode() & 0o111 == 0 {
-            p.logError(nil, "couldn't find runnable script")
+		if info.Mode()&0o111 == 0 {
+			p.logError(nil, "couldn't find runnable script")
 			return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
 		}
 	}
@@ -233,59 +233,59 @@ func (p *BasePlugin) validateScript() error {
 
 // createSocketEndpoints listens on the server socket and, when server mode is enabled, dials the client socket.
 func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, error) {
-    // Listen on the server socket
+	// Listen on the server socket
 	ln, err := net.Listen("unix", p.lnSock)
 	if err != nil {
-        p.logError(err, "couldn't listen on socket")
+		p.logError(err, "couldn't listen on socket")
 		return nil, nil, err
 	}
 
-    // Wait on the socket file to be created by the plugin
-    var client *grpc.ClientConn
-    if p.server {
-        err = p.waitForSocket(p.cSock)
-        if err != nil {
-            p.logError(err, "timed out waiting for socket")
-            ln.Close()
-            return nil, nil, err
-        }
+	// Wait on the socket file to be created by the plugin
+	var client *grpc.ClientConn
+	if p.server {
+		err = p.waitForSocket(p.cSock)
+		if err != nil {
+			p.logError(err, "timed out waiting for socket")
+			ln.Close()
+			return nil, nil, err
+		}
 
-	    // Connect to the client socket
-        target := fmt.Sprintf("unix://%s", p.cSock)
-        client, err = grpc.NewClient(
-	    	target,
-	    	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	    )
-	    if err != nil {
-            p.logError(err, "couldn't connect with client")
-            ln.Close()
-	    	return nil, nil, err
-	    }
-    }
+		// Connect to the client socket
+		target := fmt.Sprintf("unix://%s", p.cSock)
+		client, err = grpc.NewClient(
+			target,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			p.logError(err, "couldn't connect with client")
+			ln.Close()
+			return nil, nil, err
+		}
+	}
 
-    acl := GetACL([]string{}, []int{p.cmd.Process.Pid})
+	acl := GetACL([]string{}, []int{p.cmd.Process.Pid})
 	return NewCodedListener(ln, p.code, acl), client, nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout elapses.
 func (p *BasePlugin) waitForSocket(path string) error {
-    deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
-    for time.Now().Before(deadline) {
-        if _, err := os.Stat(path); err == nil {
-            return nil
-        }
-        time.Sleep(50 * time.Millisecond)
-    }
-    return fmt.Errorf("timed out waiting for socket: %s", path)
+	deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(path); err == nil {
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("timed out waiting for socket: %s", path)
 }
 
 // cleanup removes the plugin's runtime directory.
 func (p *BasePlugin) cleanup() {
-    // Remove the plugin run directory
-    err := os.RemoveAll(p.runDir)
-    if err != nil {
-        p.logError(err, "got error while trying to clean up")
-    }
+	// Remove the plugin run directory
+	err := os.RemoveAll(p.runDir)
+	if err != nil {
+		p.logError(err, "got error while trying to clean up")
+	}
 }
 
 // run starts the plugin command and records the start time.
