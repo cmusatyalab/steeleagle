@@ -27,5 +27,6 @@ type Runnable struct {
 type PluginConfig struct {
 	driver  Runnable
 	mission Runnable
+	admin   Runnable
 	plugins []Runnable
 }

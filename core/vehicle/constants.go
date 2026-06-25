@@ -8,6 +8,8 @@ const DefaultPort int = 50000
 // Default main services socket name
 const MainSocket string = "services"
 
+const AdminSocket string = "admin"
+
 //go:embed defaults/laws.toml
 var DefaultLaw []byte // DefaultLaw is the default control law if no user-specified law can be found.
 

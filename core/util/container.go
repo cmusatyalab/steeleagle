@@ -125,22 +125,22 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	// Only bind in the plugin files if checks are enabled,
 	// otherwise blindly use the script/exec set by the user
 	if p.check {
-	    // Bind in the plugin files
-	    if p.pkg {
-	    	// Bind in the plugin directory
-	    	p.rargs = append(
-	    		p.rargs, "-v",
-	    		fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
-	    	)
-	    } else {
-	    	// Bind in the script
-	    	p.rargs = append(
-	    		p.rargs, "-v",
-	    		fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
-	    	)
-	    }
-	    p.rargs = append(p.rargs, "-w", "/"+bindDir, p.image_ref) // change workdir
-	    p.script = "./" + filepath.Base(p.script)
+		// Bind in the plugin files
+		if p.pkg {
+			// Bind in the plugin directory
+			p.rargs = append(
+				p.rargs, "-v",
+				fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
+			)
+		} else {
+			// Bind in the script
+			p.rargs = append(
+				p.rargs, "-v",
+				fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
+			)
+		}
+		p.rargs = append(p.rargs, "-w", "/"+bindDir, p.image_ref) // change workdir
+		p.script = "./" + filepath.Base(p.script)
 	}
 
 	// Append the podman PID namespace to the allowed PIDs

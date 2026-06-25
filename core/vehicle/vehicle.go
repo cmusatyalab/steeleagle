@@ -24,35 +24,35 @@ type listenerState struct {
 }
 
 type connectionState struct {
-	// Admin gRPC connections
-	admin *grpc.ClientConn
-	// Proxied gRPC connections
 	driver  *grpc.ClientConn
 	mission *grpc.ClientConn
 }
 
 type Vehicle struct {
-	name       string
-	path       string
-	socketPath string // path to main services socket
+	name         string // vehicle id
+	path         string // path to vehicle implementation
+	socketPath   string // path to main services socket
 	pluginConfig PluginConfig
 	driver       util.Plugin
 	mission      util.Plugin
+	admin        util.Plugin
 	plugins      []util.Plugin
-	connCfg   ConnectionConfig
-	server    *grpc.Server
-	listeners listenerState
-	conns     connectionState
-	policyCfg PolicyConfig
-	policy    policyState
-	test      bool
-	backend   string
+	connCfg      ConnectionConfig
+	server       *grpc.Server
+	listeners    listenerState
+	conns        connectionState
+	policyCfg    PolicyConfig
+	policy       policyState
+	test         bool
+	backend      string
 }
 
-func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
+// Create a new vehicle with the given plugins and options.
+func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		name: uuid.New().String(),
+		name:         uuid.New().String(),
+		pluginConfig: pluginCfg,
 	}
 	for _, option := range options {
 		option(vehicle)
@@ -94,6 +94,16 @@ func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 	return vehicle, nil
 }
 
+func createUnixSocketListener(path string) (net.Listener, error) {
+	os.RemoveAll(path)
+	ln, err := net.Listen("unix", path)
+	if err != nil {
+		log.Error().Err(err).Str("file", path).Msg("could not listen on socket, aborting")
+		return nil, fmt.Errorf("can't listen at file %s: %w", path, err)
+	}
+	return ln, nil
+}
+
 func (v *Vehicle) Start(ctx context.Context) error {
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
@@ -104,40 +114,33 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	var err error
 	// Create a main socket listener with AuthCode External
-	mainSocket := filepath.Join(v.path, MainSocket)
-	ln, err := net.Listen("unix", mainSocket)
-	v.listeners.main =
-		util.NewCodedListener(ln, util.ExternalCode, nil)
+	ln, err := createUnixSocketListener(v.socketPath)
 	if err != nil {
-		log.Error().Err(err).Str("file", mainSocket).Msg("could not listen on main socket, aborting")
-		return fmt.Errorf("can't listen at file %s: %w", mainSocket, err)
+		return err
 	}
+	defer os.RemoveAll(v.socketPath)
+	v.listeners.main = util.NewCodedListener(ln, util.ExternalCode, nil)
+
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
 		v.listeners.wan =
 			util.NewCodedListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs, nil))
-		if err != nil {
-			log.Error().Err(err).Msg("could not listen on WAN endpoint, aborting")
-			return fmt.Errorf("can't listen at WAN endpoint: %w", err)
-		}
 	}
 
-	// Create admin connection, so internal RPC methods can be
-	// authorized with Admin codes
-	adminLn, adminClient, err := util.CreateSocketPairFiles()
+	// Create admin listener
+	adminSocket := filepath.Join(v.path, AdminSocket)
+	ln, err = createUnixSocketListener(adminSocket)
 	if err != nil {
-		log.Error().Err(err).Msg("could not set up admin socket pairs")
-		return fmt.Errorf("can't create admin socket pairs: %v", err)
+		return err
 	}
-	v.listeners.admin, v.conns.admin, err = util.CreateSocketPairEndpoints(util.AdminCode, adminLn, adminClient)
-	if err != nil {
-		log.Error().Err(err).Msg("could not set up admin socket endpoints")
-		return fmt.Errorf("can't create admin socket endpoints: %v", err)
-	}
+	defer os.RemoveAll(adminSocket)
+	// TODO(Aditya): add acl based on admin plugin
+	v.listeners.admin = util.NewCodedListener(ln, util.AdminCode, nil)
 
 	// Start mission/driver plugins, and retrieve associated ClientConn and
 	// Listener objects
 	_, v.conns.driver, err = v.driver.Start(ctx)
+	v.admin.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		return err
@@ -160,11 +163,13 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			errCh <- fmt.Errorf("admin listener: %w", err)
 		}
 	}()
-	go func() {
-		if err := v.server.Serve(v.listeners.wan); err != nil {
-			errCh <- fmt.Errorf("WAN listener: %w", err)
-		}
-	}()
+	if v.listeners.wan != nil {
+		go func() {
+			if err := v.server.Serve(v.listeners.wan); err != nil {
+				errCh <- fmt.Errorf("WAN listener: %w", err)
+			}
+		}()
+	}
 	go func() {
 		// TODO: may want to restart the mission plugin instead of
 		// returning with an error here

@@ -29,14 +29,28 @@ const listenSockName string = "in.sock"
 
 // CLient socket environment variable names passed to the subprocess
 const ClientSockEnv string = "CLIENT_SOCKET"
+
 // Listener socket environment variable names passed to the subprocess
 const ListenSockEnv string = "LISTEN_SOCKET"
 
 // Used to determine how to run a plugin
-type PluginRuntime string
+type PluginRuntime int
 
 const (
-	Process   PluginRuntime = "Process"
-	Container PluginRuntime = "Container"
-	Sandbox   PluginRuntime = "Sandbox"
+	Process PluginRuntime = iota
+	Container
+	Sandbox
 )
+
+func (r PluginRuntime) String() string {
+	switch r {
+	case Process:
+		return "process"
+	case Container:
+		return "container"
+	case Sandbox:
+		return "sandbox"
+	default:
+		return "unknown"
+	}
+}
