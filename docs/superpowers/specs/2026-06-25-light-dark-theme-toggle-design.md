@@ -11,7 +11,7 @@ The app already links its PrimeReact theme via a single `<link id="theme-link">`
 This app currently has no precedent for persisting settings (connection mode, gamepad deadzone, etc. all reset on reload) — theme is treated as an exception because it's a one-time visual preference rather than session state, per explicit user decision during design.
 
 **New files:** `gcs/react/prime/public/themes/lara-light-amber/` (theme CSS + fonts, copied from PrimeReact's bundled themes)
-**Modified files:** `index.html`, `App.jsx`
+**Modified files:** `index.html`, `App.jsx`, `PlanPage.jsx`
 
 ## Theme Assets
 
@@ -62,6 +62,18 @@ In `menuBarEnd` (~line 473), add a moon icon, `InputSwitch`, and sun icon immedi
 
 The "Connection Mode" `SelectButton` inside the gear icon's `OverlayPanel` (`overlayContent`, ~line 446) is unchanged — the theme switch lives in the menu bar itself, not inside that popover.
 
+## `PlanPage.jsx` (FSM Canvas) Changes
+
+The FSM canvas on the Plan tab is a separate rendering surface from PrimeReact — `@xyflow/react`'s `<ReactFlow>` component ships its own CSS variables for edges, the minimap, the background, and controls, switched via a `colorMode` prop (`'light' | 'dark' | 'system'`). It's currently hardcoded:
+```jsx
+<ReactFlow colorMode="dark" ... >
+```
+(`PlanPage.jsx:269`). Our `theme` state values (`'dark'`/`'light'`) are exactly the values `colorMode` accepts, so no mapping is needed — only threading the value through:
+- `App.jsx` passes `theme={theme}` to `<PlanPage>` (currently `<PlanPage vehicles={vehicles} squadList={squadList} />`, `App.jsx:522`).
+- `PlanPage.jsx` accepts `theme` as a new prop and passes it straight through: `colorMode={theme}`.
+
+No new CSS is needed — `@xyflow/react/dist/style.css` (already imported in `PlanPage.jsx`) defines light-mode variables as the base defaults and overrides them under a `.react-flow.dark` class, which the `colorMode` prop toggles automatically.
+
 ## Data Flow
 
 1. Page load: inline script in `<head>` sets the initial theme link `href` from `localStorage` (or defaults to dark) before any stylesheet loads.
@@ -71,7 +83,7 @@ The "Connection Mode" `SelectButton` inside the gear icon's `OverlayPanel` (`ove
 
 ## Testing
 
-Pure UI wiring with no business logic — verified manually by running the dev server: toggle the switch and confirm the stylesheet swaps, reload and confirm the choice persisted, and check that the panels touched in the recent `FieldInput` fixes (numeric inputs, nested fields) still render correctly under the light theme.
+Pure UI wiring with no business logic — verified manually by running the dev server: toggle the switch and confirm the stylesheet swaps, reload and confirm the choice persisted, check that the panels touched in the recent `FieldInput` fixes (numeric inputs, nested fields) still render correctly under the light theme, and check the Plan tab's FSM canvas (edges, minimap, background dots) re-themes along with everything else.
 
 ## Non-Goals
 
