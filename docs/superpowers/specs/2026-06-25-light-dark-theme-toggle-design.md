@@ -70,7 +70,7 @@ The FSM canvas on the Plan tab is a separate rendering surface from PrimeReact �
 ```
 (`PlanPage.jsx:269`). Our `theme` state values (`'dark'`/`'light'`) are exactly the values `colorMode` accepts, so no mapping is needed — only threading the value through:
 - `App.jsx` passes `theme={theme}` to `<PlanPage>` (currently `<PlanPage vehicles={vehicles} squadList={squadList} />`, `App.jsx:522`).
-- `PlanPage.jsx` accepts `theme` as a new prop and passes it straight through: `colorMode={theme}`.
+- `PlanPage.jsx` accepts `theme` as a new prop. The actual `<ReactFlow>` element lives one level deeper, in an inner `FsmCanvas` component that `PlanPage` renders inside a `<ReactFlowProvider>` — `PlanPage` forwards `theme` as a prop to `<FsmCanvas>`, which forwards it to `colorMode={theme}`.
 
 No new CSS is needed — `@xyflow/react/dist/style.css` (already imported in `PlanPage.jsx`) defines light-mode variables as the base defaults and overrides them under a `.react-flow.dark` class, which the `colorMode` prop toggles automatically.
 

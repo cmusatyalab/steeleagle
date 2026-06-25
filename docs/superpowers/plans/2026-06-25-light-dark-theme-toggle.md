@@ -206,14 +206,15 @@ git commit -m "Pick theme stylesheet from localStorage before first paint"
 
 ---
 
-### Task 3: Add the toggle to the menu bar (`App.jsx`)
+### Task 3: Add the toggle to the menu bar, and re-theme the FSM canvas (`App.jsx`, `PlanPage.jsx`)
 
 **Files:**
 - Modify: `gcs/react/prime/src/App.jsx`
+- Modify: `gcs/react/prime/src/PlanPage.jsx`
 
 **Interfaces:**
 - Consumes: `document.getElementById('theme-link')` produced by Task 2; theme asset paths produced by Task 1.
-- Produces: `theme` state (`'dark' | 'light'`) and `setTheme` — local to `App`, not consumed elsewhere.
+- Produces: `theme` state (`'dark' | 'light'`) and `setTheme` in `App.jsx`, passed down as the `theme` prop to `<PlanPage>` and from there to `<FsmCanvas>`, which forwards it directly to `<ReactFlow colorMode={theme}>`.
 
 This task does **not** touch `overlayContent` (the gear icon's popover containing the "Connection Mode" `SelectButton`, ~line 446) — the new switch sits in the menu bar itself, next to the gear button, not inside the popover.
 
@@ -271,7 +272,80 @@ Replace with:
 ```
 (`theme` is added to the dependency array since the JSX now reads it.)
 
-- [ ] **Step 5: Start the dev server and headless Chrome**
+- [ ] **Step 5: Thread `theme` down to the FSM canvas (`PlanPage.jsx`)**
+
+The Plan tab's canvas is `@xyflow/react`'s `<ReactFlow>`, which has its own `colorMode` prop (`'light' | 'dark' | 'system'`) controlling the minimap, edges, and background dot colors — separate from the PrimeReact CSS swap. It's currently hardcoded to `"dark"` inside `FsmCanvas`, the inner component `PlanPage` renders. Our `theme` values match `colorMode`'s accepted values exactly, so this is a straight pass-through in three places:
+
+In `App.jsx`, update the `<PlanPage>` call site (current code, line 522):
+```jsx
+{planMounted && <PlanPage vehicles={vehicles} squadList={squadList} />}
+```
+to:
+```jsx
+{planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
+```
+
+In `PlanPage.jsx`, update the component signature (current code, line 354):
+```js
+function PlanPage({ vehicles, squadList }) {
+```
+to:
+```js
+function PlanPage({ vehicles, squadList, theme }) {
+```
+
+Still in `PlanPage.jsx`, pass `theme` through to `<FsmCanvas>` (current code, lines 770-780):
+```jsx
+                                <FsmCanvas
+                                    nodes={nodesWithWarnings} edges={edges}
+                                    setNodes={setNodes} setEdges={setEdges}
+                                    eventInstances={eventInstances} setEventInstances={setEventInstances}
+                                    startNodeId={startNodeId} setStartNodeId={setStartNodeId}
+                                    schema={schema} features={features}
+                                    panelNode={panelNode} setPanelNode={setPanelNodeId}
+                                    setPanelEdgeId={setPanelEdgeId}
+                                    pushSnapshot={pushSnapshot}
+                                    toast={toast}
+                                />
+```
+to:
+```jsx
+                                <FsmCanvas
+                                    nodes={nodesWithWarnings} edges={edges}
+                                    setNodes={setNodes} setEdges={setEdges}
+                                    eventInstances={eventInstances} setEventInstances={setEventInstances}
+                                    startNodeId={startNodeId} setStartNodeId={setStartNodeId}
+                                    schema={schema} features={features}
+                                    panelNode={panelNode} setPanelNode={setPanelNodeId}
+                                    setPanelEdgeId={setPanelEdgeId}
+                                    pushSnapshot={pushSnapshot}
+                                    toast={toast}
+                                    theme={theme}
+                                />
+```
+
+Finally, update the `FsmCanvas` signature and its `<ReactFlow>` element. Current code (lines 153-155 and 268-269):
+```js
+function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
+                     startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
+                     setPanelEdgeId, pushSnapshot, toast }) {
+```
+```jsx
+            <ReactFlow
+                colorMode="dark"
+```
+to:
+```js
+function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
+                     startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
+                     setPanelEdgeId, pushSnapshot, toast, theme }) {
+```
+```jsx
+            <ReactFlow
+                colorMode={theme}
+```
+
+- [ ] **Step 6: Start the dev server and headless Chrome**
 
 ```bash
 cd gcs/react/prime && npx vite --port 5179 --strictPort > /tmp/vite-theme.log 2>&1 &
@@ -281,7 +355,9 @@ sleep 2 && curl -s http://localhost:9333/json/version
 ```
 Expected: JSON containing `"webSocketDebuggerUrl"`.
 
-- [ ] **Step 6: Write the switch-interaction verification script**
+- [ ] **Step 7: Write the switch-interaction verification script**
+
+This also mounts the Plan tab and checks that the FSM canvas's `.react-flow` root element drops its `dark` class when the switch flips to light — confirming `colorMode` is actually following `theme`.
 
 Save as `/tmp/verify-theme-switch.mjs`:
 ```js
@@ -307,6 +383,16 @@ function send(ws, method, params = {}) {
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+async function clickSelector(ws, expression) {
+    const r = await send(ws, 'Runtime.evaluate', {
+        expression: `(function(){ const el = ${expression}; const r = el.getBoundingClientRect(); return JSON.stringify({x:r.x+r.width/2,y:r.y+r.height/2}); })()`,
+        returnByValue: true,
+    });
+    const { x, y } = JSON.parse(r.result.value);
+    await send(ws, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+    await send(ws, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+}
+
 async function main() {
     const res = await fetch(`${CDP}/json/new?http://localhost:5179/`, { method: 'PUT' });
     const tab = await res.json();
@@ -315,25 +401,31 @@ async function main() {
     await send(ws, 'Runtime.enable');
     await sleep(1500);
 
-    const click = await send(ws, 'Runtime.evaluate', {
-        expression: `(function(){ const el = document.querySelector('.p-inputswitch'); const r = el.getBoundingClientRect(); return JSON.stringify({x:r.x+r.width/2,y:r.y+r.height/2}); })()`,
+    // Mount the Plan tab's FSM canvas
+    await clickSelector(ws, `Array.from(document.querySelectorAll('.p-menuitem-text')).find(el => el.textContent === 'Plan').closest('.p-menuitem-link')`);
+    await sleep(500);
+
+    const beforeToggle = await send(ws, 'Runtime.evaluate', {
+        expression: `document.querySelector('.react-flow').classList.contains('dark')`,
         returnByValue: true,
     });
-    const { x, y } = JSON.parse(click.result.value);
-    await send(ws, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-    await send(ws, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    console.log('CANVAS HAS .dark BEFORE TOGGLE (expect true):', beforeToggle.result.value);
+
+    await clickSelector(ws, `document.querySelector('.p-inputswitch')`);
     await sleep(300);
 
     const afterClick = await send(ws, 'Runtime.evaluate', {
-        expression: `JSON.stringify({href: document.getElementById('theme-link').href, stored: localStorage.getItem('se-theme'), checked: document.querySelector('.p-inputswitch').classList.contains('p-inputswitch-checked')})`,
+        expression: `JSON.stringify({href: document.getElementById('theme-link').href, stored: localStorage.getItem('se-theme'), checked: document.querySelector('.p-inputswitch').classList.contains('p-inputswitch-checked'), canvasDark: document.querySelector('.react-flow').classList.contains('dark')})`,
         returnByValue: true,
     });
     console.log('AFTER CLICKING SWITCH:', afterClick.result.value);
 
     await send(ws, 'Page.reload', {});
     await sleep(1500);
+    await clickSelector(ws, `Array.from(document.querySelectorAll('.p-menuitem-text')).find(el => el.textContent === 'Plan').closest('.p-menuitem-link')`);
+    await sleep(500);
     const afterReload = await send(ws, 'Runtime.evaluate', {
-        expression: `JSON.stringify({href: document.getElementById('theme-link').href, checked: document.querySelector('.p-inputswitch').classList.contains('p-inputswitch-checked')})`,
+        expression: `JSON.stringify({href: document.getElementById('theme-link').href, checked: document.querySelector('.p-inputswitch').classList.contains('p-inputswitch-checked'), canvasDark: document.querySelector('.react-flow').classList.contains('dark')})`,
         returnByValue: true,
     });
     console.log('AFTER RELOAD (should persist):', afterReload.result.value);
@@ -344,18 +436,19 @@ async function main() {
 main().catch(e => { console.error(e); process.exit(1); });
 ```
 
-- [ ] **Step 7: Run it**
+- [ ] **Step 8: Run it**
 
 ```bash
 node /tmp/verify-theme-switch.mjs
 ```
 Expected output (starting from a browser profile where `se-theme` is not already `'light'` — if Task 2's test left it set to `'dark'`, this is satisfied):
 ```
-AFTER CLICKING SWITCH: {"href":"http://localhost:5179/themes/lara-light-amber/theme.css","stored":"light","checked":true}
-AFTER RELOAD (should persist): {"href":"http://localhost:5179/themes/lara-light-amber/theme.css","checked":true}
+CANVAS HAS .dark BEFORE TOGGLE (expect true): true
+AFTER CLICKING SWITCH: {"href":"http://localhost:5179/themes/lara-light-amber/theme.css","stored":"light","checked":true,"canvasDark":false}
+AFTER RELOAD (should persist): {"href":"http://localhost:5179/themes/lara-light-amber/theme.css","checked":true,"canvasDark":false}
 ```
 
-- [ ] **Step 8: Visually confirm the light theme renders correctly**
+- [ ] **Step 9: Visually confirm the light theme renders correctly**
 
 ```bash
 node -e "
@@ -383,7 +476,7 @@ const CDP = 'http://localhost:9333';
 ```
 Then view `/tmp/light-theme.png` (e.g. with the Read tool) and confirm: page background is light, all text is readable (no light-on-light or dark-on-dark contrast failures), and the moon/switch/sun control is visible next to the gear icon in the menu bar.
 
-- [ ] **Step 9: Confirm no regression in the numeric-input panels under light theme**
+- [ ] **Step 10: Confirm no regression in the numeric-input panels under light theme**
 
 The most recent change to this app fixed decimal-entry and field-clearing bugs in `FieldInput.jsx`'s `InputNumber` usage (task/edge parameter panels). Rather than driving the full Plan canvas (React Flow node positions are dynamic and not worth scripting for a visual check), mount `FieldInput` directly in a throwaway harness with the light theme stylesheet linked.
 
@@ -462,7 +555,7 @@ Delete the throwaway harness afterward (it must not be committed):
 rm -f gcs/react/prime/verify.html gcs/react/prime/src/verify-main.jsx /tmp/light-theme-fields.png
 ```
 
-- [ ] **Step 10: Stop processes and clean up**
+- [ ] **Step 11: Stop processes and clean up**
 
 ```bash
 pkill -f "remote-debugging-port=9333"
@@ -470,9 +563,9 @@ pkill -f "vite --port 5179"
 rm -f /tmp/verify-theme-switch.mjs /tmp/light-theme.png /tmp/vite-theme.log /tmp/chrome-theme.log
 ```
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
-git add gcs/react/prime/src/App.jsx
-git commit -m "Add light/dark theme toggle to menu bar"
+git add gcs/react/prime/src/App.jsx gcs/react/prime/src/PlanPage.jsx
+git commit -m "Add light/dark theme toggle, synced across PrimeReact and the FSM canvas"
 ```
