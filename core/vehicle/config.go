@@ -18,15 +18,8 @@ type ConnectionConfig struct {
 	AllowedIPs []string
 }
 
-type Runnable struct {
-	runtime util.PluginRuntime
-	// image name and tag for a container, or file path for a binary
-	target string
-}
-
 type PluginConfig struct {
-	driver  Runnable
-	mission Runnable
-	admin   Runnable
-	plugins []Runnable
+	driver  util.Plugin
+	mission util.Plugin
+	plugins []util.Plugin
 }

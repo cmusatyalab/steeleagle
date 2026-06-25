@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/adrg/xdg"
 	services_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
@@ -18,9 +17,10 @@ import (
 
 type listenerState struct {
 	main    net.Listener
-	admin   net.Listener
 	wan     net.Listener
+	admin   net.Listener
 	mission net.Listener
+	plugins []net.Listener
 }
 
 type connectionState struct {
@@ -31,20 +31,13 @@ type connectionState struct {
 type Vehicle struct {
 	name         string // vehicle id
 	path         string // path to vehicle implementation
-	socketPath   string // path to main services socket
 	pluginConfig PluginConfig
-	driver       util.Plugin
-	mission      util.Plugin
-	admin        util.Plugin
-	plugins      []util.Plugin
 	connCfg      ConnectionConfig
 	server       *grpc.Server
 	listeners    listenerState
 	conns        connectionState
 	policyCfg    PolicyConfig
 	policy       policyState
-	test         bool
-	backend      string
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -59,22 +52,14 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	}
 
 	// Configure the vehicle runtime directory
-	if vehicle.path == "" {
-		vehicle.path = filepath.Join(xdg.RuntimeDir, vehicle.name)
-	}
 	log.Debug().Str("filepath", vehicle.path).Msg("starting vehicle in runtime directory")
-	err := os.MkdirAll(vehicle.path, 0755)
+
+	var err error
+	vehicle.path, err = util.GetVehicleDirByName(vehicle.name)
 	if err != nil {
-		log.Error().Err(err).Msg("could not create runtime directory")
-		return nil, err
+		log.Fatal().Str("folder", vehicle.path).Msg("Unable to create vehicle directory")
 	}
 	log.Debug().Str("folder", vehicle.path).Msg("vehicle folder configured")
-
-	// Configure the main socket for vehicle services, if not specified
-	if vehicle.socketPath == "" {
-		vehicle.socketPath = filepath.Join(vehicle.path, MainSocket)
-		log.Debug().Str("filepath", vehicle.socketPath).Msg("setting main services filepath")
-	}
 
 	// Set up law handling
 	vehicle.policy = getPolicy(vehicle.policyCfg)
@@ -113,13 +98,25 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	defer v.server.GracefulStop()
 
 	var err error
-	// Create a main socket listener with AuthCode External
-	ln, err := createUnixSocketListener(v.socketPath)
+	// Create a main socket listener with AuthCode ExternalCode. The main
+	// socket is a general endpoint for arbitrary entities to make API calls to
+	// the vehicle.
+	mainSocketPath := filepath.Join(v.path, MainSocket)
+	ln, err := createUnixSocketListener(mainSocketPath)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(v.socketPath)
+	defer os.RemoveAll(mainSocketPath)
 	v.listeners.main = util.NewCodedListener(ln, util.ExternalCode, nil)
+
+	// Create an admin socket listener with AuthCode AdminCode. The admin
+	// socket is intended for use by this process.
+	adminSocketPath := filepath.Join(v.path, AdminSocket)
+	ln, err = createUnixSocketListener(adminSocketPath)
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(adminSocketPath)
 
 	// Wrap the passed-in WAN listener with AuthCode Server
 	if v.connCfg.Listener != nil {
@@ -127,40 +124,49 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			util.NewCodedListener(v.connCfg.Listener, util.ServerCode, util.GetACL(v.connCfg.AllowedIPs, nil))
 	}
 
-	// Create admin listener
-	adminSocket := filepath.Join(v.path, AdminSocket)
-	ln, err = createUnixSocketListener(adminSocket)
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(adminSocket)
-	// TODO(Aditya): add acl based on admin plugin
-	v.listeners.admin = util.NewCodedListener(ln, util.AdminCode, nil)
-
 	// Start mission/driver plugins, and retrieve associated ClientConn and
 	// Listener objects
-	_, v.conns.driver, err = v.driver.Start(ctx)
-	v.admin.Start(ctx)
+	_, v.conns.driver, err = v.pluginConfig.driver.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		return err
 	}
-	v.listeners.mission, v.conns.mission, err = v.mission.Start(ctx)
+	v.listeners.mission, v.conns.mission, err = v.pluginConfig.mission.Start(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("could not start mission plugin, aborting")
 		return err
 	}
 
+	errCh := make(chan error, len(v.pluginConfig.plugins)+3)
+
+	// Start all plugins
+	for _, plugin := range v.pluginConfig.plugins {
+		lis, _, err := plugin.Start(ctx)
+		if err != nil {
+			if err != nil {
+				return err
+			}
+		}
+		v.listeners.plugins = append(v.listeners.plugins, lis)
+
+		go func() {
+			if err := v.server.Serve(lis); err != nil {
+				errCh <- fmt.Errorf("plugin listener: %w", err)
+			}
+		}()
+	}
+
 	// Serve the gRPC server at all listeners
-	errCh := make(chan error, 4)
 	go func() {
 		if err := v.server.Serve(v.listeners.main); err != nil {
 			errCh <- fmt.Errorf("main listener: %w", err)
 		}
 	}()
 	go func() {
-		if err := v.server.Serve(v.listeners.admin); err != nil {
-			errCh <- fmt.Errorf("admin listener: %w", err)
+		// TODO: may want to restart the mission plugin instead of
+		// returning with an error here
+		if err := v.server.Serve(v.listeners.mission); err != nil {
+			errCh <- fmt.Errorf("mission listener: %w", err)
 		}
 	}()
 	if v.listeners.wan != nil {
@@ -170,13 +176,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			}
 		}()
 	}
-	go func() {
-		// TODO: may want to restart the mission plugin instead of
-		// returning with an error here
-		if err := v.server.Serve(v.listeners.mission); err != nil {
-			errCh <- fmt.Errorf("mission listener: %w", err)
-		}
-	}()
 
 	// Wait for the context to be cancelled or an error to be returned
 	// from a listener
