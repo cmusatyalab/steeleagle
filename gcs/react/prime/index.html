@@ -7,7 +7,8 @@
     <title>SteelEagle GCS</title>
     <script>
       (function () {
-        var t = localStorage.getItem('se-theme') || 'dark';
+        var t = 'dark';
+        try { t = localStorage.getItem('se-theme') || 'dark'; } catch (e) {}
         document.write('<link id="theme-link" rel="stylesheet" href="/themes/lara-' + t + '-amber/theme.css">');
       })();
     </script>
