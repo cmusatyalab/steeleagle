@@ -1,0 +1,65 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - LivingEdgeLab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.api.v1.services.mission;
+
+/*
+ * Used to start a new mission or stop an active mission.
+ *
+ * This service is hosted by the driver module and represents the
+ * mission interface for the vehicle. While a single vehicle will
+ * return an OK message as soon as a command is acked and sent,
+ * multiple vehicles will return a message stream when proxied.
+ */
+service MissionService {
+  /*
+   * Order a vehicle to start its mission.
+   *
+   * Causes the vehicle to start its uploaded mission. This will enable autonomous
+   * control mode, which can be interrupted by sending a `StopMission` or
+   * `SwarmHold`.
+   */
+  rpc StartMission (StartMissionRequest)
+	returns (StartMissionResponse) {}
+  /*
+   * Upload a mission to a vehicle
+   *
+   * Uploads a mission to a vehicle. Can be started by sending a subsequent
+   * `StartMission` command.
+   */
+  rpc UploadMission (UploadMissionRequest)
+	returns (UploadMissionResponse) {}
+  /*
+   * Order a vehicle to stop its mission.
+   *
+   * Causes the vehicle to stop its running mission. This will enable manual
+   * control mode.
+   */
+  rpc StopMission (StopMissionRequest)
+	returns (StopMissionResponse) {}
+}
+
+// Data describing a mission.
+message MissionData {
+  oneof content {
+    string json = 1; // JSON object, used for Python missions
+    bytes binary = 2; // binary object, used for Go missions
+  }
+  optional bytes map = 3; // kml object
+}
+
+message UploadMissionRequest {
+  MissionData mission = 1; // data of the target mission
+}
+
+message UploadMissionResponse {}
+
+message StartMissionRequest {}
+
+message StartMissionResponse {}
+
+message StopMissionRequest {}
+
+message StopMissionResponse {}
