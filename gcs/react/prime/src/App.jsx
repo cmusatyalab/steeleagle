@@ -13,6 +13,7 @@ import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { SelectButton } from 'primereact/selectbutton';
+import { InputSwitch } from 'primereact/inputswitch';
 import { Knob } from 'primereact/knob';
 import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
@@ -59,6 +60,12 @@ function App() {
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(true);
   const [useLocalVehicle, setUseLocalVehicle] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('se-theme') || 'dark');
+
+  useEffect(() => {
+    document.getElementById('theme-link').href = `/themes/lara-${theme}-amber/theme.css`;
+    localStorage.setItem('se-theme', theme);
+  }, [theme]);
   const [manualControl, setManualControl] = useState(false);
   const [basePlanarVelocity, setBasePlanarVelocity] = useState(1);
   const [baseAngularVelocity, setBaseAngularVelocity] = useState(90);
@@ -473,11 +480,14 @@ function App() {
   const menuBarEnd = useMemo(() => (
     <div className="flex align-items-center gap-2 mr-2">
       <GameControls setAxis={setGamePadAxis} setButton={setGamePadButton} deadzone={gamepadDeadzone} />
+      <i className="pi pi-moon" />
+      <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
+      <i className="pi pi-sun" />
       <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
       <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
 
     </div>
-  ), [useLocalVehicle, gamepadDeadzone, overlayContent]);
+  ), [theme, useLocalVehicle, gamepadDeadzone, overlayContent]);
 
 
   const onToggleDetections = useCallback(async (value) => {
@@ -519,7 +529,7 @@ function App() {
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
       {selectedMenu == "Monitor" && <MonitorPage vehicles={vehicles} detectedObjects={detectedObjects} />}
       <div style={{ display: selectedMenu === 'Plan' ? '' : 'none' }}>
-        {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} />}
+        {planMounted && <PlanPage vehicles={vehicles} squadList={squadList} theme={theme} />}
       </div>
       <Toast ref={toast} />
     </>

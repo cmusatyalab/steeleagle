@@ -152,7 +152,7 @@ function getNamedAreas(featuresStr) {
 
 function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventInstances,
                      startNodeId, setStartNodeId, schema, features, panelNode, setPanelNode,
-                     setPanelEdgeId, pushSnapshot, toast }) {
+                     setPanelEdgeId, pushSnapshot, toast, theme }) {
     const { screenToFlowPosition } = useReactFlow();
     const [connectModal, setConnectModal] = useState({ visible: false, connection: null });
     const [contextMenu, setContextMenu] = useState(null);
@@ -266,7 +266,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     return (
         <div style={{ flex: 1, position: 'relative' }} onClick={() => setContextMenu(null)}>
             <ReactFlow
-                colorMode="dark"
+                colorMode={theme}
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -351,7 +351,7 @@ function FsmCanvas({ nodes, edges, setNodes, setEdges, eventInstances, setEventI
     );
 }
 
-function PlanPage({ vehicles, squadList }) {
+function PlanPage({ vehicles, squadList, theme }) {
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const [eventInstances, setEventInstances] = useState([]);
@@ -777,6 +777,7 @@ function PlanPage({ vehicles, squadList }) {
                                     setPanelEdgeId={setPanelEdgeId}
                                     pushSnapshot={pushSnapshot}
                                     toast={toast}
+                                    theme={theme}
                                 />
                             </ReactFlowProvider>
                         </div>
