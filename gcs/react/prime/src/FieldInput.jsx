@@ -16,10 +16,11 @@ function FieldInput({ field, value, onChange, namedAreas = [] }) {
     if (field.type === 'number' || field.type === 'integer') {
         return (
             <InputNumber
-                value={value ?? field.default ?? 0}
+                value={value === undefined ? (field.default ?? 0) : value}
                 onChange={e => onChange(e.value)}
                 className="w-full"
                 useGrouping={false}
+                maxFractionDigits={field.type === 'number' ? 10 : 0}
             />
         );
     }
