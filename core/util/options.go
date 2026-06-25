@@ -98,3 +98,11 @@ func WithScriptArgs(args []string) PluginOption {
 		k.sargs = args
 	}
 }
+
+// WithoutCheck skips script path validation which is useful for dynamic binding or for
+// containers which may have all components pre-built within them.
+func WithoutCheck() PluginOption {
+    return func(k *BasePlugin) {
+        k.check = false
+    }
+}

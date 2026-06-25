@@ -50,14 +50,13 @@ type BasePlugin struct {
 	sargs   []string           // script args
 	files   map[string]int     // linked files (only applicable to sandboxes/containers)
 	start   int64              // plugin start time
-	timout  int                // timeout in seconds waiting for the server to start
+	timeout int                // timeout in seconds waiting for the server to start
 	running bool               // whether or not the plugin is currently running
 	runDir  string             // runtime directory path
 	cSock   string             // client socket file path
 	lnSock  string             // listener socket file path
 	server  bool               // whether or not the plugin hosts a server
 	check   bool               // whether or not to check existence of files
-	timeout int                // timeout for plugin to start (seconds)
 	cmd     *exec.Cmd          // command to run
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function

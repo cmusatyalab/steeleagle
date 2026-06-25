@@ -1,6 +1,7 @@
 package util_test
 
 import (
+    "os/exec"
     "time"
 	"context"
 	"path/filepath"
@@ -114,4 +115,34 @@ func TestPluginArgs(t *testing.T) {
     case <-time.After(5 * time.Second):
         t.Fatalf("didn't get error from plugin when it was expected")
     }
+}
+
+func TestPluginNoCheck(t *testing.T) {
+	path, err := filepath.Abs(pyPkg)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
+	}
+    _, err = exec.LookPath("uv")
+    if err != nil {
+        t.Skip("couldn't find uv, skipping this test")
+    }
+	plugin, err := util.CreateBasePlugin(
+        util.WithExecutable("uv"),
+        util.WithExecutableArgs([]string{"run", "--directory", path}),
+        util.WithScript(filepath.Base(pyFile)),
+        util.WithoutCheck(),
+    )
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+    defer plugin.Stop()
+	ln, conn, err := plugin.Start(context.Background())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+
+	err = pluginRPCCheck(t, ln, conn, util.UnknownCode)
+	if err != nil {
+		t.Errorf("encountered error with plugin RPC handshake: %v", err)
+	}
 }
