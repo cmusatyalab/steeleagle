@@ -2,7 +2,7 @@ package util
 
 import (
 	"net"
-    "syscall"
+	"syscall"
 )
 
 // Embedded Address that holds the AuthCode
@@ -42,7 +42,7 @@ func NewCodedListener(ln net.Listener, code AuthCode, acl *ACL) net.Listener {
 func (l *codedListener) Accept() (net.Conn, error) {
 	for {
 		// Block until we get a Connection
-        c, err := l.Listener.Accept()
+		c, err := l.Listener.Accept()
 		if err != nil {
 			return nil, err
 		}
@@ -54,21 +54,21 @@ func (l *codedListener) Accept() (net.Conn, error) {
 					continue
 				}
 			}
-            if uc, ok := c.(*net.UnixConn); ok {
-			    raw, err := uc.SyscallConn()
-			    if err != nil {
-			    	c.Close()
-			    	continue
-			    }
-			    var cred *syscall.Ucred
-			    raw.Control(func(fd uintptr) {
-			    	cred, err = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
-			    })
-			    if err != nil || !l.acl.AllowsPID(int(cred.Pid)) {
-			    	c.Close()
-			    	continue
-			    }
-		    }
+			if uc, ok := c.(*net.UnixConn); ok {
+				raw, err := uc.SyscallConn()
+				if err != nil {
+					c.Close()
+					continue
+				}
+				var cred *syscall.Ucred
+				raw.Control(func(fd uintptr) {
+					cred, err = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
+				})
+				if err != nil || !l.acl.AllowsPID(int(cred.Pid)) {
+					c.Close()
+					continue
+				}
+			}
 		}
 		return &Conn{
 			Conn: c,

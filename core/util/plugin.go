@@ -64,7 +64,7 @@ type BasePlugin struct {
 
 // CreateBasePlugin creates an instance of a BasePlugin.
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
-	// Set default input options and retrieve options
+	// Set defaults
 	p := &BasePlugin{
 		code:    UnknownCode,
 		id:      uuid.New().String(),
@@ -73,6 +73,18 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		check:   true,
 		timeout: 15, // default to 15s timeout
 	}
+
+	// Get the plugin dir, then create the socket file paths
+	dir, err := GetPluginDirByID(p.id)
+	if err != nil {
+		p.logError(err, "couldn't create plugin run directory")
+		return nil, err
+	}
+	p.runDir = dir
+	p.cSock = filepath.Join(p.runDir, clientSockName)
+	p.lnSock = filepath.Join(p.runDir, listenSockName)
+
+	// Apply options
 	for _, option := range options {
 		option(p)
 	}
@@ -85,16 +97,6 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 			return nil, err
 		}
 	}
-
-	// Get the plugin dir, then create the socket file paths
-	dir, err := GetPluginDirByID(p.id)
-	if err != nil {
-		p.logError(err, "couldn't create plugin run directory")
-		return nil, err
-	}
-	p.runDir = dir
-	p.cSock = filepath.Join(p.runDir, clientSockName)
-	p.lnSock = filepath.Join(p.runDir, listenSockName)
 
 	return p, nil
 }
@@ -171,6 +173,9 @@ func (p *BasePlugin) Stop() {
 
 // Watch returns a channel that receives the subprocess exit error when the process terminates.
 func (p *BasePlugin) Watch() <-chan error {
+	if p.cmd == nil {
+		return nil
+	}
 	ch := make(chan error, 1)
 	go func() {
 		ch <- p.cmd.Wait()
@@ -180,6 +185,9 @@ func (p *BasePlugin) Watch() <-chan error {
 
 // Wait blocks until the plugin subprocess exits and returns its exit error.
 func (p *BasePlugin) Wait() error {
+	if p.cmd == nil {
+		return nil
+	}
 	return p.cmd.Wait()
 }
 
