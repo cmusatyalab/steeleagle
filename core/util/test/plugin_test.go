@@ -99,7 +99,12 @@ func TestPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}), util.WithoutServer())
+	plugin, err := util.CreateBasePlugin(
+        util.WithPath(path),
+        util.WithScriptArgs([]string{"--error"}),
+        util.WithoutClient(),
+        util.WithoutListener(),
+    )
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}

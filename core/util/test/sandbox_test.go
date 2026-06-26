@@ -73,7 +73,8 @@ func TestSandboxPluginPython(t *testing.T) {
     if err != nil {
         t.Skip("couldn't find uv, skipping this test")
     }
-	plugin, err := util.CreateSandboxPlugin(util.WithPath(path),
+	plugin, err := util.CreateSandboxPlugin(
+        util.WithPath(path),
         util.WithRunnerArgs([]string{"--share-net"}),
         util.WithExecutableFiles([]string{"uv"}),
     )
@@ -101,7 +102,8 @@ func TestSandboxPluginFileBinding(t *testing.T) {
     if err != nil {
         t.Skip("couldn't find uv, skipping this test")
     }
-	plugin, err := util.CreateSandboxPlugin(util.WithoutServer(),
+	plugin, err := util.CreateSandboxPlugin(
+        util.WithoutClient(),
         util.WithRunnerArgs([]string{"--share-net"}),
         util.WithFiles([]string{fileWrite}),
         util.WithReadOnlyFiles([]string{fileRead}),
@@ -158,7 +160,12 @@ func TestSandboxPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateSandboxPlugin(util.WithPath(path), util.WithScriptArgs([]string{"--error"}), util.WithoutServer())
+	plugin, err := util.CreateSandboxPlugin(
+        util.WithPath(path),
+        util.WithScriptArgs([]string{"--error"}),
+        util.WithoutClient(),
+        util.WithoutListener(),
+    )
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}

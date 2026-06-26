@@ -2,10 +2,19 @@ package util
 
 type PluginOption func(*BasePlugin)
 
-// WithoutServer disables the plugin's server-side socket, making it a fire-and-forget subprocess.
-func WithoutServer() PluginOption {
+// WithoutClient makes the plugin ignore the client connection to the subprocess, returning nil in its place
+// after Start is called.
+func WithoutClient() PluginOption {
 	return func(k *BasePlugin) {
-		k.server = false
+		k.client = false
+	}
+}
+
+// WithoutListener makes the plugin ignore the listener connection to the subprocess, returning nil in its place
+// after Start is called.
+func WithoutListener() PluginOption {
+	return func(k *BasePlugin) {
+		k.listen = false
 	}
 }
 

@@ -19,7 +19,8 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("alpine", 
+	plugin, err := util.CreateContainerPlugin(
+        "alpine", 
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
@@ -47,7 +48,8 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("alpine",
+	plugin, err := util.CreateContainerPlugin(
+        "alpine",
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
@@ -75,7 +77,8 @@ func TestContainerPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+	plugin, err := util.CreateContainerPlugin(
+        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )
@@ -103,7 +106,8 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+	plugin, err := util.CreateContainerPlugin(
+        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
         util.WithReadOnlyFiles([]string{path+"/pyproject.toml"}),
         util.WithScript(path+"/main.py"),
         util.WithExecutable("uv"),
@@ -130,8 +134,9 @@ func TestContainerPluginFileBinding(t *testing.T) {
 	if err != nil {
         t.Skip("podman not found, skipping test")
 	}
-	plugin, err := util.CreateContainerPlugin("ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
-        util.WithoutServer(),
+	plugin, err := util.CreateContainerPlugin(
+        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+        util.WithoutClient(),
         util.WithFiles([]string{fileWrite}),
         util.WithReadOnlyFiles([]string{fileRead}),
         util.WithExecutable("uv"),
@@ -161,7 +166,8 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("alpine",
+	plugin, err := util.CreateContainerPlugin(
+        "alpine",
         util.WithPath(path),
         util.WithAuthCode(util.MissionCode),
         util.WithRunnerArgs([]string{"--rm"}),
@@ -190,10 +196,11 @@ func TestContainerPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateContainerPlugin("alpine",
+	plugin, err := util.CreateContainerPlugin(
+        "alpine",
         util.WithPath(path),
         util.WithScriptArgs([]string{"--error"}),
-        util.WithoutServer(),
+        util.WithoutClient(),
         util.WithRunnerArgs([]string{"--rm"}),
     )
 	if err != nil {
@@ -222,7 +229,8 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	_, err = util.CreateContainerPlugin("foobar",
+	_, err = util.CreateContainerPlugin(
+        "foobar",
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
     )

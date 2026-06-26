@@ -31,10 +31,12 @@ func CreateShimPlugin(clientSocketPath, listenSocketPath string, options ...Plug
     if clientSocketPath != "" {
         p.cSock = clientSocketPath
     } else {
-        p.server = false // if no client socket path is provided, there is no server
+        p.client = false // if no client socket path is provided, there is no server
     }
     if listenSocketPath != "" {
         p.lnSock = listenSocketPath
+    } else {
+        p.listen = false // if no listen socket path is provided, there is no client
     }
 
     return p, nil

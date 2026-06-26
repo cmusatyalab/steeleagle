@@ -55,7 +55,8 @@ type BasePlugin struct {
 	runDir  string             // runtime directory path
 	cSock   string             // client socket file path
 	lnSock  string             // listener socket file path
-	server  bool               // whether or not the plugin hosts a server
+	client  bool               // whether or not to support a plugin server
+	listen  bool               // whether or not to support a plugin client
 	check   bool               // whether or not to check existence of files
 	cmd     *exec.Cmd          // command to run
     acl     *ACL               // ACL for listener connections
@@ -70,7 +71,8 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		code:    UnknownCode,
 		id:      uuid.New().String(),
 		files:   make(map[string]int),
-		server:  true,
+		client:  true,
+		listen:  true,
 		check:   true,
 		timeout: 15, // default to 15s timeout
 	}
@@ -247,20 +249,24 @@ func (p *BasePlugin) validateScript() error {
 
 // createSocketEndpoints listens on the server socket and, when server mode is enabled, dials the client socket.
 func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, error) {
-	// Listen on the server socket
-	ln, err := net.Listen("unix", p.lnSock)
-	if err != nil {
-		p.logError(err, "couldn't listen on socket")
-		return nil, nil, err
-	}
+    var err error
+    var listen net.Listener
+    if p.listen {
+	    // Listen on the server socket
+	    listen, err = net.Listen("unix", p.lnSock)
+	    if err != nil {
+	    	p.logError(err, "couldn't listen on socket")
+	    	return nil, nil, err
+	    }
+    }
 
 	// Wait on the socket file to be created by the plugin
 	var client *grpc.ClientConn
-	if p.server {
-		err = p.waitForSocket(p.cSock)
+	if p.client {
+        err = p.waitForSocket(p.cSock)
 		if err != nil {
 			p.logError(err, "timed out waiting for socket")
-			ln.Close()
+			listen.Close()
 			return nil, nil, err
 		}
 
@@ -272,12 +278,12 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		)
 		if err != nil {
 			p.logError(err, "couldn't connect with client")
-			ln.Close()
+			listen.Close()
 			return nil, nil, err
 		}
 	}
 
-	return NewCodedListener(ln, p.code, p.acl), client, nil
+	return NewCodedListener(listen, p.code, p.acl), client, nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout elapses.
