@@ -1,5 +1,11 @@
 package util
 
+import (
+    "os"
+
+	"github.com/rs/zerolog"
+)
+
 type PluginOption func(*BasePlugin)
 
 // WithoutClient makes the plugin ignore the client connection to the subprocess, returning nil in its place
@@ -120,5 +126,26 @@ func WithoutCheck() PluginOption {
 func WithACL(acl *ACL) PluginOption {
     return func(k *BasePlugin) {
         k.acl = acl
+    }
+}
+
+// WithLogger sets a custom logger object for the plugin.
+func WithLogger(logger zerolog.Logger) PluginOption {
+    return func(k *BasePlugin) {
+        k.log = logger
+    }
+}
+
+// WithOutFile sets the output file stream for logs.
+func WithOutFile(out *os.File) PluginOption {
+    return func(k *BasePlugin) {
+        k.outFile = out
+    }
+}
+
+// WithErrOutFile sets the output file stream for error logs.
+func WithErrOutFile(out *os.File) PluginOption {
+    return func(k *BasePlugin) {
+        k.errFile = out
     }
 }

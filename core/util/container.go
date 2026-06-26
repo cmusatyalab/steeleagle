@@ -37,7 +37,7 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 	// Make sure podman is installed
 	_, err = exec.LookPath("podman")
 	if err != nil {
-		p.logError(err, "couldn't find podman, have you installed it?")
+		p.log.Error().Err(err).Msg("couldn't find podman, have you installed it?")
 		p.cleanup()
 		return nil, err
 	}
@@ -49,12 +49,12 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 		// Attempt to pull the container
 		err = exec.Command("podman", "pull", p.image_ref).Run()
 		if err != nil {
-			p.logError(err, "couldn't run pull with podman: "+p.image_ref)
+			p.log.Error().Err(err).Msg("couldn't run pull with podman: "+p.image_ref)
 			p.cleanup()
 			return nil, err
 		}
 	} else if err != nil {
-		p.logError(err, "couldn't run image check with podman")
+		p.log.Error().Err(err).Msg("couldn't run image check with podman")
 		p.cleanup()
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		if w == 2 { // executables
 			path, err := exec.LookPath(f)
 			if err != nil {
-				p.logError(err, "couldn't get path to executable")
+				p.log.Error().Err(err).Msg("couldn't get path to executable")
 				return nil, nil, err
 			}
 			args = append(args,
@@ -91,12 +91,12 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		} else {
 			_, err := os.Stat(f) // ensure the file exists
 			if err != nil {
-				p.logError(err, "couldn't stat linked file")
+				p.log.Error().Err(err).Msg("couldn't stat linked file")
 				return nil, nil, err
 			}
 			path, err := filepath.Abs(f)
 			if err != nil {
-				p.logError(err, "couldn't get absolute filepath")
+				p.log.Error().Err(err).Msg("couldn't get absolute filepath")
 				return nil, nil, err
 			}
 			if w == 1 { // read-write
@@ -146,17 +146,17 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	// Append the podman PID namespace to the allowed PIDs
 	ln, conn, err := p.BasePlugin.Start(ctx)
 	if err != nil {
-		p.logError(err, "couldn't start container plugin")
+		p.log.Error().Err(err).Msg("couldn't start container plugin")
 		return nil, nil, err
 	}
 	err = p.setCID(cidFile)
 	if err != nil {
-		p.logError(err, "couldn't get container cid")
+		p.log.Error().Err(err).Msg("couldn't get container cid")
 		return nil, nil, err
 	}
 	pid, err := p.getPID()
 	if err != nil {
-		p.logError(err, "couldn't get container pid")
+		p.log.Error().Err(err).Msg("couldn't get container pid")
 		return nil, nil, err
 	}
 	cl, ok := ln.(*codedListener)

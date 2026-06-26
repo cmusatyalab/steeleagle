@@ -30,7 +30,7 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	// Make sure bubblewrap is installed
 	_, err = exec.LookPath("bwrap")
 	if err != nil {
-		p.logError(err, "couldn't find bubblewrap (bwrap), have you installed it?")
+		p.log.Error().Err(err).Msg("couldn't find bubblewrap (bwrap), have you installed it?")
 		p.cleanup()
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	// Make sure bubblerap has the right permissions
 	err = checkBwrapPermissions()
 	if err != nil {
-		p.logError(err, "bubblewrap couldn't run")
+		p.log.Error().Err(err).Msg("bubblewrap couldn't run")
 		p.cleanup()
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		if w == 2 { // executables
 			path, err := exec.LookPath(f)
 			if err != nil {
-				p.logError(err, "couldn't get path to executable")
+				p.log.Error().Err(err).Msg("couldn't get path to executable")
 				return nil, nil, err
 			}
 			args = append(args,
@@ -78,12 +78,12 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		} else {
 			_, err := os.Stat(f) // ensure the file exists
 			if err != nil {
-				p.logError(err, "couldn't stat linked file")
+				p.log.Error().Err(err).Msg("couldn't stat linked file")
 				return nil, nil, err
 			}
 			path, err := filepath.Abs(f)
 			if err != nil {
-				p.logError(err, "couldn't get absolute filepath")
+				p.log.Error().Err(err).Msg("couldn't get absolute filepath")
 				return nil, nil, err
 			}
 			if w == 1 { // read-write

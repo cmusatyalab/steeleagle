@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -60,6 +60,9 @@ type BasePlugin struct {
 	check   bool               // whether or not to check existence of files
 	cmd     *exec.Cmd          // command to run
     acl     *ACL               // ACL for listener connections
+    log     zerolog.Logger     // logger object
+    outFile *os.File           // replacement out file for Stdout
+    errFile *os.File           // replacement out file for Stderr    
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function
 }
@@ -75,12 +78,14 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		listen:  true,
 		check:   true,
 		timeout: 15, // default to 15s timeout
+        outFile: os.Stdout,
+        errFile: os.Stderr,
 	}
 
 	// Get the plugin dir, then create the socket file paths
 	dir, err := GetPluginDirByID(p.id)
 	if err != nil {
-		p.logError(err, "couldn't create plugin run directory")
+		p.log.Error().Err(err).Msg("couldn't create plugin run directory")
 		return nil, err
 	}
 	p.runDir = dir
@@ -92,6 +97,11 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		option(p)
 	}
 
+    // Check if a logger is set, and if not initialize one
+    if p.log.GetLevel() == zerolog.Disabled {
+        p.log = zerolog.New(p.outFile).With().Timestamp().Logger()
+    }
+
     // Create a new ACL if it isn't initialized
     if p.acl == nil {
         p.acl = GetACL([]string{}, []int{})
@@ -101,7 +111,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	if p.check {
 		err := p.validateScript()
 		if err != nil {
-			p.logError(err, "couldn't find a script")
+			p.log.Error().Err(err).Msg("couldn't find a script")
 			return nil, err
 		}
 	}
@@ -138,18 +148,18 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		p.cmd = exec.CommandContext(ctx, final[0])
 	} else {
 		err := fmt.Errorf("no arguments provided to plugin")
-		p.logError(err, "insufficient arguments to start plugin")
+		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
 		return nil, nil, err
 	}
 	if p.script != "" {
 		// Set the working directory for the command
 		p.cmd.Dir = filepath.Dir(p.script)
 	}
-	p.logDebug(fmt.Sprintf("starting: %v", final))
+	p.log.Debug().Msg(fmt.Sprintf("starting: %v", final))
 
 	// Bind in stdout and stderr
-	p.cmd.Stdout = os.Stdout
-	p.cmd.Stderr = os.Stderr
+	p.cmd.Stdout = p.outFile
+	p.cmd.Stderr = p.errFile
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
@@ -159,7 +169,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	)
 	err := p.run()
 	if err != nil {
-		p.logError(err, "error running command")
+		p.log.Error().Err(err).Msg("error running command")
 		return nil, nil, err
 	}
     p.acl.AddPID(p.cmd.Process.Pid)
@@ -206,7 +216,7 @@ func (p *BasePlugin) validateScript() error {
 	if p.script != "" {
 		_, err := os.Stat(p.script)
 		if err != nil {
-			p.logError(err, "couldn't stat plugin script, is it there?")
+			p.log.Error().Err(err).Msg("couldn't stat plugin script, is it there?")
 			return err
 		}
 		return nil
@@ -216,10 +226,10 @@ func (p *BasePlugin) validateScript() error {
 	info, err := os.Stat(p.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			p.logError(err, "couldn't find plugin, have you installed it?")
+			p.log.Error().Err(err).Msg("couldn't find plugin, have you installed it?")
 			return err
 		}
-		p.logError(err, "couldn't stat plugin path")
+		p.log.Error().Err(err).Msg("couldn't stat plugin path")
 		return err
 	}
 
@@ -231,7 +241,7 @@ func (p *BasePlugin) validateScript() error {
 		p.script = filepath.Join(p.path, runHook)
 		info, err = os.Stat(p.script)
 		if err != nil {
-			p.logError(err, "couldn't stat plugin run hook, is it there?")
+			p.log.Error().Err(err).Msg("couldn't stat plugin run hook, is it there?")
 			return err
 		}
 		p.exec = "sh"
@@ -239,7 +249,7 @@ func (p *BasePlugin) validateScript() error {
 		p.script = p.path
 		// Ensure that the script is runnable
 		if info.Mode()&0o111 == 0 {
-			p.logError(nil, "couldn't find runnable script")
+			p.log.Error().Msg("couldn't find runnable script")
 			return fmt.Errorf("plugin %s is not executable nor does it contain an executable runhook", p.path)
 		}
 	}
@@ -255,7 +265,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	    // Listen on the server socket
 	    listen, err = net.Listen("unix", p.lnSock)
 	    if err != nil {
-	    	p.logError(err, "couldn't listen on socket")
+	    	p.log.Error().Err(err).Msg("couldn't listen on socket")
 	    	return nil, nil, err
 	    }
     }
@@ -265,7 +275,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	if p.client {
         err = p.waitForSocket(p.cSock)
 		if err != nil {
-			p.logError(err, "timed out waiting for socket")
+			p.log.Error().Err(err).Msg("timed out waiting for socket")
 			listen.Close()
 			return nil, nil, err
 		}
@@ -277,7 +287,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
-			p.logError(err, "couldn't connect with client")
+			p.log.Error().Err(err).Msg("couldn't connect with client")
 			listen.Close()
 			return nil, nil, err
 		}
@@ -303,7 +313,7 @@ func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
     err := os.RemoveAll(p.runDir)
 	if err != nil {
-		p.logError(err, "got error while trying to clean up")
+		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
 }
 
@@ -311,7 +321,7 @@ func (p *BasePlugin) cleanup() {
 func (p *BasePlugin) run() error {
 	// Run the plugin
 	if err := p.cmd.Start(); err != nil {
-		p.logError(err, "couldn't run target for plugin")
+		p.log.Error().Err(err).Msg("couldn't run target for plugin")
 		return err
 	}
 
@@ -320,14 +330,4 @@ func (p *BasePlugin) run() error {
 	p.running = true
 
 	return nil
-}
-
-// logDebug emits a debug log event annotated with the plugin ID, path, and auth code.
-func (p *BasePlugin) logDebug(message string) {
-	log.Debug().Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
-}
-
-// logError emits an error log event annotated with the plugin ID, path, and auth code.
-func (p *BasePlugin) logError(err error, message string) {
-	log.Error().Err(err).Str("plugin", p.id).Str("path", p.path).Str("code", string(p.code)).Msg(message)
 }
