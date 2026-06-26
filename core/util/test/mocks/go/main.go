@@ -72,9 +72,11 @@ func run() error {
 func main() {
 	errPtr := flag.Bool("error", false, "produce an error")
 	flag.Parse()
+    
+    // Delay is necessary for several tests
+    time.Sleep(100 * time.Millisecond)
 
 	if *errPtr {
-        time.Sleep(100 * time.Millisecond)
         fmt.Println("go_test: asked to exit with error")
 		os.Exit(1)
 	}

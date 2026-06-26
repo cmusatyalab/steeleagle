@@ -71,8 +71,23 @@ func TestACLIP(t *testing.T) {
 	defer base.Close()
 
 	lis := newSpoofedListener(t, base)
-	allowed := []string{"100.64.0.0/10"}
-	aclLn := util.NewCodedListener(lis, util.ServerCode, util.GetACL(allowed, []int{}))
+    acl := util.GetACL([]string{"100.64.0.0/10", "10.5.2/10/2"}, []int{}) // add in a bogus ip to make sure it is ignored
+    
+    // Test adding bad and good IPs
+    err = acl.AddIP("125.100.0.0/24")
+    if err != nil {
+        t.Errorf("couldn't add correct IP: %v", err)
+    }
+    err = acl.AddIP("130.100.0.0")
+    if err != nil {
+        t.Errorf("couldn't add correct IP: %v", err)
+    }
+    err = acl.AddIP("160.1/2/2")
+    if err == nil {
+        t.Errorf("added incorrect IP without error")
+    }
+	
+    aclLn := util.NewCodedListener(lis, util.ServerCode, acl)
 	defer aclLn.Close()
 
 	accepted := make(chan net.Conn)
@@ -117,6 +132,10 @@ func TestACLPID(t *testing.T) {
 	defer base.Close()
 
     acl := util.GetACL([]string{}, []int{})
+    err = acl.AddPID(-1)
+    if err == nil {
+        t.Errorf("added incorrect pid")
+    }
 	aclLn := util.NewCodedListener(base, util.ServerCode, acl)
 	defer aclLn.Close()
     go aclLn.Accept()

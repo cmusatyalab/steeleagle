@@ -58,6 +58,7 @@ type BasePlugin struct {
 	server  bool               // whether or not the plugin hosts a server
 	check   bool               // whether or not to check existence of files
 	cmd     *exec.Cmd          // command to run
+    acl     *ACL               // ACL for listener connections
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function
 }
@@ -88,6 +89,11 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	for _, option := range options {
 		option(p)
 	}
+
+    // Create a new ACL if it isn't initialized
+    if p.acl == nil {
+        p.acl = GetACL([]string{}, []int{})
+    }
 
 	// Find and validate script if checks are on
 	if p.check {
@@ -154,6 +160,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		p.logError(err, "error running command")
 		return nil, nil, err
 	}
+    p.acl.AddPID(p.cmd.Process.Pid)
 
 	// Cleanup goroutine
 	go func() {
@@ -270,8 +277,7 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		}
 	}
 
-	acl := GetACL([]string{}, []int{p.cmd.Process.Pid})
-	return NewCodedListener(ln, p.code, acl), client, nil
+	return NewCodedListener(ln, p.code, p.acl), client, nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout elapses.
@@ -289,7 +295,7 @@ func (p *BasePlugin) waitForSocket(path string) error {
 // cleanup removes the plugin's runtime directory.
 func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
-	err := os.RemoveAll(p.runDir)
+    err := os.RemoveAll(p.runDir)
 	if err != nil {
 		p.logError(err, "got error while trying to clean up")
 	}

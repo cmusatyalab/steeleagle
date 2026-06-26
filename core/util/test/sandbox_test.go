@@ -74,6 +74,7 @@ func TestSandboxPluginPython(t *testing.T) {
         t.Skip("couldn't find uv, skipping this test")
     }
 	plugin, err := util.CreateSandboxPlugin(util.WithPath(path),
+        util.WithRunnerArgs([]string{"--share-net"}),
         util.WithExecutableFiles([]string{"uv"}),
     )
 	if err != nil {
@@ -101,6 +102,7 @@ func TestSandboxPluginFileBinding(t *testing.T) {
         t.Skip("couldn't find uv, skipping this test")
     }
 	plugin, err := util.CreateSandboxPlugin(util.WithoutServer(),
+        util.WithRunnerArgs([]string{"--share-net"}),
         util.WithFiles([]string{fileWrite}),
         util.WithReadOnlyFiles([]string{fileRead}),
         util.WithExecutableFiles([]string{"uv"}),

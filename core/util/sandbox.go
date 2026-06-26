@@ -51,7 +51,6 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 	// Add the correct bubblewrap args
 	args := []string{
 		"--unshare-all",
-		"--share-net",
 		"--ro-bind", "/usr", "/usr",
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",

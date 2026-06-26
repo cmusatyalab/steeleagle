@@ -106,3 +106,10 @@ func WithoutCheck() PluginOption {
 		k.check = false
 	}
 }
+
+// WithACL sets the ACL for the plugin, which allows extra PIDs to access a listener.
+func WithACL(acl *ACL) PluginOption {
+    return func(k *BasePlugin) {
+        k.acl = acl
+    }
+}

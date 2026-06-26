@@ -81,10 +81,14 @@ func (a *ACL) AddIP(cidr string) error {
 }
 
 // AddPID adds an allowed PID to the ACL.
-func (a *ACL) AddPID(pid int) {
+func (a *ACL) AddPID(pid int) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+    if pid <= 0 {
+        return fmt.Errorf("cannot add pid with value less than 0!")
+    }
 	a.pids = append(a.pids, pid)
+    return nil
 }
 
 // parseCIDR parses a CIDR string into a net.IPNet for easier checking.
