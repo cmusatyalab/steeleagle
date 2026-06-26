@@ -17,30 +17,30 @@ import (
 )
 
 type listenerState struct {
-	main    net.Listener
-	wan     net.Listener
-	admin   net.Listener
-	mission net.Listener
-	plugins []net.Listener
+	main    net.Listener   // general-purpose listener with ExternalCode auth
+	wan     net.Listener   // WAN listener with ServerCode auth
+	admin   net.Listener   // admin listerner with AdminCode auth
+	mission net.Listener   // mission listener with MissionCode auth
+	plugins []net.Listener // custom plugin listeners
 }
 
 type connectionState struct {
-	driver  *grpc.ClientConn
-	mission *grpc.ClientConn
+	driver  *grpc.ClientConn // driver server connection
+	mission *grpc.ClientConn // mission server connection
 }
 
 type Vehicle struct {
-	id           string // identifier
-	path         string // path to vehicle implementation
-	pluginConfig PluginConfig
-	connCfg      ConnectionConfig
-	server       *grpc.Server
-	listeners    listenerState
-	conns        connectionState
-	policyCfg    PolicyConfig
-	policy       policyState
-	logger       zerolog.Logger
-	dataSvc      DataService
+	id           string           // identifier
+	path         string           // path to vehicle implementation
+	pluginConfig PluginConfig     // plugin configuration
+	connCfg      ConnectionConfig // connection configuration
+	server       *grpc.Server     // gRPC server
+	listeners    listenerState    // server listeners
+	conns        connectionState  // gRPC server connections
+	policyCfg    PolicyConfig     // policy configuration
+	policy       policyState      // policy state
+	logger       zerolog.Logger   // logger object
+	dataSvc      DataService      // data service
 }
 
 // Create a new vehicle with the given plugins and options.
