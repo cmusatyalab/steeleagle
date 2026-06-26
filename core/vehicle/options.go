@@ -2,20 +2,20 @@ package vehicle
 
 type VehicleOption func(*Vehicle)
 
-func WithName(name string) VehicleOption {
-	return func(k *Vehicle) {
-		k.name = name
+func WithId(id string) VehicleOption {
+	return func(v *Vehicle) {
+		v.id = id
 	}
 }
 
 func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
-	return func(k *Vehicle) {
-		k.policyCfg = policyCfg
+	return func(v *Vehicle) {
+		v.policyCfg = policyCfg
 	}
 }
 
 func WithConnectionConfig(connCfg ConnectionConfig) VehicleOption {
-	return func(k *Vehicle) {
-		k.connCfg = connCfg
+	return func(v *Vehicle) {
+		v.connCfg = connCfg
 	}
 }

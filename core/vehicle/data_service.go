@@ -10,7 +10,7 @@ import (
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	data_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/data"
 	stream_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/stream"
-	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc"
 )
 
 type DataService struct {
@@ -60,32 +60,75 @@ func (s *DataService) GetFrame(ctx context.Context, req *data_pb.GetFrameRequest
 	return resp, nil
 }
 
-func (s *DataService) StartStreaming(ctx context.Context) error {
+// Encapsulates telemetry stream response along with an error for sending
+// in a channel
+type TelemetryStreamResponse struct {
+	resp *stream_pb.GetTelemetryStreamResponse
+	err  error
+}
+
+// Receive telemetry from a telemetry stream, sending any errors to the
+// specified error channel.
+func (s *DataService) recvTelemetry(
+	ctx context.Context,
+	stream grpc.ServerStreamingClient[stream_pb.GetTelemetryStreamResponse],
+	errCh chan error) {
+	ch := make(chan TelemetryStreamResponse)
+	// Invoke blocking call to receive stream data in another goroutine
+	go func() {
+		resp, err := stream.Recv()
+		ch <- TelemetryStreamResponse{resp: resp, err: err}
+	}()
+
+	// Wait to receive stream data or context to end
+	select {
+	case <-ctx.Done():
+		s.vehicle.logger.Err(ctx.Err()).Msg("telemetry stream ended")
+		errCh <- ctx.Err()
+		return
+	case res := <-ch:
+		if res.err == io.EOF {
+			s.vehicle.logger.Err(res.err).Msg("telemetry stream ended")
+			errCh <- res.err
+			return
+		}
+		if res.err != nil {
+			s.vehicle.logger.Err(res.err).Msg("telemetry stream error")
+			errCh <- res.err
+			return
+		}
+		s.updateLatestTelemetry(res.resp.Telemetry)
+	}
+}
+
+// Start streaming telemetry from the vehicle driver. Launches a goroutine
+// that performs the streaming and updates the data service as telemetry
+// is received. The launched goroutine uses the returned error channel to
+// report any errors. This method is non-blocking.
+func (s *DataService) StartTelemetryStream(ctx context.Context) (chan error, error) {
 	client := stream_pb.NewStreamServiceClient(s.vehicle.conns.driver)
 	req := &stream_pb.GetTelemetryStreamRequest{}
+
+	// Send request to driver
 	stream, err := client.GetTelemetryStream(ctx, req)
 	if err != nil {
-		return fmt.Errorf("failed to start stream: %w", err)
+		return nil, fmt.Errorf("failed to start stream: %w", err)
 	}
 
+	errCh := make(chan error, 1)
+	// Launch goroutine to stream telemetry
 	go func() {
 		for {
+			// check if context has ended
 			if err := ctx.Err(); err != nil {
-				log.Err(err).Msg("telemetry stream ended")
+				s.vehicle.logger.Err(err).Msg("telemetry stream ended")
+				errCh <- err
 				return
 			}
-			res, err := stream.Recv()
-			if err == io.EOF {
-				log.Err(err).Str("vehicle", s.vehicle.Name()).Msg("telemetry stream ended")
-				return
-			}
-			if err != nil {
-				log.Err(err).Msg("telemetry streaming error")
-			}
-			s.updateLatestTelemetry(res.Telemetry)
+			s.recvTelemetry(ctx, stream, errCh)
 		}
 	}()
-	return nil
+	return errCh, nil
 }
 
 func (s *DataService) updateLatestTelemetry(tel *stream_msg_pb.Telemetry) {

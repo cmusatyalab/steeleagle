@@ -11,6 +11,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
@@ -29,7 +30,7 @@ type connectionState struct {
 }
 
 type Vehicle struct {
-	name         string // vehicle id
+	id           string // identifier
 	path         string // path to vehicle implementation
 	pluginConfig PluginConfig
 	connCfg      ConnectionConfig
@@ -38,24 +39,28 @@ type Vehicle struct {
 	conns        connectionState
 	policyCfg    PolicyConfig
 	policy       policyState
+	logger       zerolog.Logger
+	dataSvc      DataService
 }
 
 // Create a new vehicle with the given plugins and options.
 func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		name:         uuid.New().String(),
+		id:           uuid.New().String(),
 		pluginConfig: pluginCfg,
 	}
 	for _, option := range options {
 		option(vehicle)
 	}
 
+	vehicle.logger = log.With().Str("vehicle_id", vehicle.id).Logger()
+
 	// Configure the vehicle runtime directory
 	log.Debug().Str("filepath", vehicle.path).Msg("starting vehicle in runtime directory")
 
 	var err error
-	vehicle.path, err = util.GetVehicleDirByName(vehicle.name)
+	vehicle.path, err = util.GetVehicleDirByID(vehicle.id)
 	if err != nil {
 		log.Fatal().Str("folder", vehicle.path).Msg("Unable to create vehicle directory")
 	}
@@ -73,8 +78,10 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 		)),
 	)
 
+	vehicle.dataSvc = DataService{vehicle: vehicle}
+
 	// Register data service
-	data_pb.RegisterDataServiceServer(vehicle.server, &DataService{vehicle: vehicle})
+	data_pb.RegisterDataServiceServer(vehicle.server, &vehicle.dataSvc)
 
 	return vehicle, nil
 }
@@ -177,6 +184,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}()
 	}
 
+	v.dataSvc.StartTelemetryStream(ctx)
+
 	// Wait for the context to be cancelled or an error to be returned
 	// from a listener
 	select {
@@ -188,8 +197,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 }
 
 // Status methods
-func (v *Vehicle) Name() string {
-	return v.name
+func (v *Vehicle) ID() string {
+	return v.id
 }
 
 func (v *Vehicle) Path() string {
