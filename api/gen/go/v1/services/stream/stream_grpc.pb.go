@@ -23,9 +23,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StreamService_GetVideoURL_FullMethodName        = "/steeleagle.api.v1.services.stream.StreamService/GetVideoURL"
-	StreamService_GetFrameStream_FullMethodName     = "/steeleagle.api.v1.services.stream.StreamService/GetFrameStream"
-	StreamService_GetTelemetryStream_FullMethodName = "/steeleagle.api.v1.services.stream.StreamService/GetTelemetryStream"
+	StreamService_StartVideoStream_FullMethodName = "/steeleagle.api.v1.services.stream.StreamService/StartVideoStream"
+	StreamService_GetVideoFrame_FullMethodName    = "/steeleagle.api.v1.services.stream.StreamService/GetVideoFrame"
+	StreamService_StreamTelemetry_FullMethodName  = "/steeleagle.api.v1.services.stream.StreamService/StreamTelemetry"
 )
 
 // StreamServiceClient is the client API for StreamService service.
@@ -34,28 +34,27 @@ const (
 //
 // Used to get streams from the driver.
 //
-// This is an internal service used to retrieve imagery and telemetry
-// from the driver. These are processed by the OS and then served as
-// the `DataService` to other connected plugins.
+// This is an internal service used to retrieve imagery and telemetry from the
+// driver. These are processed by the OS and then served as the `DataService`
+// to other connected plugins.
 type StreamServiceClient interface {
-	// Gets the video stream URL from the vehicle.
+	// Start streaming video from the vehicle.
 	//
 	// Retrieves the video stream URL from the vehicle so that it can be
-	// broadcast to the rest of the system. This function should only
+	// broadcast to the rest of the system. This function should only be called
+	// by the OS, and not by any plugins.
+	StartVideoStream(ctx context.Context, in *StartVideoStreamRequest, opts ...grpc.CallOption) (*StartVideoStreamResponse, error)
+	// Gets a video frame from the vehicle.
+	//
+	// Retrieves a video frame from the vehicle. This is used when camera data is
+	// accessible without needing a stream. This function should only be called
+	// by the OS, and not by any plugins.
+	GetVideoFrame(ctx context.Context, in *GetVideoFrameRequest, opts ...grpc.CallOption) (*GetVideoFrameResponse, error)
+	// Stream telemetry from the vehicle.
+	//
+	// Streams up-to-date telemetry from the vehicle. This function should only
 	// be called by the OS, and not by any plugins.
-	GetVideoURL(ctx context.Context, in *GetVideoURLRequest, opts ...grpc.CallOption) (*GetVideoURLResponse, error)
-	// Gets a stream of frames from the vehicle.
-	//
-	// Retrieves a direct stream of video frames from the vehicle. This
-	// is used when camera data is accessible without needing a stream.
-	// This function should only be called by the OS, and not by any
-	// plugins.
-	GetFrameStream(ctx context.Context, in *GetFrameStreamRequest, opts ...grpc.CallOption) (*GetFrameStreamResponse, error)
-	// Gets a stream of telemetry from the vehicle.
-	//
-	// Retrieves a stream of up-to-date telemetry from the vehicle. This
-	// function should only be called by the OS, and not by any plugins.
-	GetTelemetryStream(ctx context.Context, in *GetTelemetryStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetTelemetryStreamResponse], error)
+	StreamTelemetry(ctx context.Context, in *StreamTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTelemetryResponse], error)
 }
 
 type streamServiceClient struct {
@@ -66,33 +65,33 @@ func NewStreamServiceClient(cc grpc.ClientConnInterface) StreamServiceClient {
 	return &streamServiceClient{cc}
 }
 
-func (c *streamServiceClient) GetVideoURL(ctx context.Context, in *GetVideoURLRequest, opts ...grpc.CallOption) (*GetVideoURLResponse, error) {
+func (c *streamServiceClient) StartVideoStream(ctx context.Context, in *StartVideoStreamRequest, opts ...grpc.CallOption) (*StartVideoStreamResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetVideoURLResponse)
-	err := c.cc.Invoke(ctx, StreamService_GetVideoURL_FullMethodName, in, out, cOpts...)
+	out := new(StartVideoStreamResponse)
+	err := c.cc.Invoke(ctx, StreamService_StartVideoStream_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *streamServiceClient) GetFrameStream(ctx context.Context, in *GetFrameStreamRequest, opts ...grpc.CallOption) (*GetFrameStreamResponse, error) {
+func (c *streamServiceClient) GetVideoFrame(ctx context.Context, in *GetVideoFrameRequest, opts ...grpc.CallOption) (*GetVideoFrameResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetFrameStreamResponse)
-	err := c.cc.Invoke(ctx, StreamService_GetFrameStream_FullMethodName, in, out, cOpts...)
+	out := new(GetVideoFrameResponse)
+	err := c.cc.Invoke(ctx, StreamService_GetVideoFrame_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *streamServiceClient) GetTelemetryStream(ctx context.Context, in *GetTelemetryStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetTelemetryStreamResponse], error) {
+func (c *streamServiceClient) StreamTelemetry(ctx context.Context, in *StreamTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTelemetryResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &StreamService_ServiceDesc.Streams[0], StreamService_GetTelemetryStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StreamService_ServiceDesc.Streams[0], StreamService_StreamTelemetry_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[GetTelemetryStreamRequest, GetTelemetryStreamResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[StreamTelemetryRequest, StreamTelemetryResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -103,7 +102,7 @@ func (c *streamServiceClient) GetTelemetryStream(ctx context.Context, in *GetTel
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type StreamService_GetTelemetryStreamClient = grpc.ServerStreamingClient[GetTelemetryStreamResponse]
+type StreamService_StreamTelemetryClient = grpc.ServerStreamingClient[StreamTelemetryResponse]
 
 // StreamServiceServer is the server API for StreamService service.
 // All implementations must embed UnimplementedStreamServiceServer
@@ -111,28 +110,27 @@ type StreamService_GetTelemetryStreamClient = grpc.ServerStreamingClient[GetTele
 //
 // Used to get streams from the driver.
 //
-// This is an internal service used to retrieve imagery and telemetry
-// from the driver. These are processed by the OS and then served as
-// the `DataService` to other connected plugins.
+// This is an internal service used to retrieve imagery and telemetry from the
+// driver. These are processed by the OS and then served as the `DataService`
+// to other connected plugins.
 type StreamServiceServer interface {
-	// Gets the video stream URL from the vehicle.
+	// Start streaming video from the vehicle.
 	//
 	// Retrieves the video stream URL from the vehicle so that it can be
-	// broadcast to the rest of the system. This function should only
+	// broadcast to the rest of the system. This function should only be called
+	// by the OS, and not by any plugins.
+	StartVideoStream(context.Context, *StartVideoStreamRequest) (*StartVideoStreamResponse, error)
+	// Gets a video frame from the vehicle.
+	//
+	// Retrieves a video frame from the vehicle. This is used when camera data is
+	// accessible without needing a stream. This function should only be called
+	// by the OS, and not by any plugins.
+	GetVideoFrame(context.Context, *GetVideoFrameRequest) (*GetVideoFrameResponse, error)
+	// Stream telemetry from the vehicle.
+	//
+	// Streams up-to-date telemetry from the vehicle. This function should only
 	// be called by the OS, and not by any plugins.
-	GetVideoURL(context.Context, *GetVideoURLRequest) (*GetVideoURLResponse, error)
-	// Gets a stream of frames from the vehicle.
-	//
-	// Retrieves a direct stream of video frames from the vehicle. This
-	// is used when camera data is accessible without needing a stream.
-	// This function should only be called by the OS, and not by any
-	// plugins.
-	GetFrameStream(context.Context, *GetFrameStreamRequest) (*GetFrameStreamResponse, error)
-	// Gets a stream of telemetry from the vehicle.
-	//
-	// Retrieves a stream of up-to-date telemetry from the vehicle. This
-	// function should only be called by the OS, and not by any plugins.
-	GetTelemetryStream(*GetTelemetryStreamRequest, grpc.ServerStreamingServer[GetTelemetryStreamResponse]) error
+	StreamTelemetry(*StreamTelemetryRequest, grpc.ServerStreamingServer[StreamTelemetryResponse]) error
 	mustEmbedUnimplementedStreamServiceServer()
 }
 
@@ -143,14 +141,14 @@ type StreamServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStreamServiceServer struct{}
 
-func (UnimplementedStreamServiceServer) GetVideoURL(context.Context, *GetVideoURLRequest) (*GetVideoURLResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetVideoURL not implemented")
+func (UnimplementedStreamServiceServer) StartVideoStream(context.Context, *StartVideoStreamRequest) (*StartVideoStreamResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartVideoStream not implemented")
 }
-func (UnimplementedStreamServiceServer) GetFrameStream(context.Context, *GetFrameStreamRequest) (*GetFrameStreamResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetFrameStream not implemented")
+func (UnimplementedStreamServiceServer) GetVideoFrame(context.Context, *GetVideoFrameRequest) (*GetVideoFrameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetVideoFrame not implemented")
 }
-func (UnimplementedStreamServiceServer) GetTelemetryStream(*GetTelemetryStreamRequest, grpc.ServerStreamingServer[GetTelemetryStreamResponse]) error {
-	return status.Error(codes.Unimplemented, "method GetTelemetryStream not implemented")
+func (UnimplementedStreamServiceServer) StreamTelemetry(*StreamTelemetryRequest, grpc.ServerStreamingServer[StreamTelemetryResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamTelemetry not implemented")
 }
 func (UnimplementedStreamServiceServer) mustEmbedUnimplementedStreamServiceServer() {}
 func (UnimplementedStreamServiceServer) testEmbeddedByValue()                       {}
@@ -173,52 +171,52 @@ func RegisterStreamServiceServer(s grpc.ServiceRegistrar, srv StreamServiceServe
 	s.RegisterService(&StreamService_ServiceDesc, srv)
 }
 
-func _StreamService_GetVideoURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetVideoURLRequest)
+func _StreamService_StartVideoStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartVideoStreamRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StreamServiceServer).GetVideoURL(ctx, in)
+		return srv.(StreamServiceServer).StartVideoStream(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StreamService_GetVideoURL_FullMethodName,
+		FullMethod: StreamService_StartVideoStream_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamServiceServer).GetVideoURL(ctx, req.(*GetVideoURLRequest))
+		return srv.(StreamServiceServer).StartVideoStream(ctx, req.(*StartVideoStreamRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StreamService_GetFrameStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFrameStreamRequest)
+func _StreamService_GetVideoFrame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVideoFrameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StreamServiceServer).GetFrameStream(ctx, in)
+		return srv.(StreamServiceServer).GetVideoFrame(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StreamService_GetFrameStream_FullMethodName,
+		FullMethod: StreamService_GetVideoFrame_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StreamServiceServer).GetFrameStream(ctx, req.(*GetFrameStreamRequest))
+		return srv.(StreamServiceServer).GetVideoFrame(ctx, req.(*GetVideoFrameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StreamService_GetTelemetryStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetTelemetryStreamRequest)
+func _StreamService_StreamTelemetry_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamTelemetryRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(StreamServiceServer).GetTelemetryStream(m, &grpc.GenericServerStream[GetTelemetryStreamRequest, GetTelemetryStreamResponse]{ServerStream: stream})
+	return srv.(StreamServiceServer).StreamTelemetry(m, &grpc.GenericServerStream[StreamTelemetryRequest, StreamTelemetryResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type StreamService_GetTelemetryStreamServer = grpc.ServerStreamingServer[GetTelemetryStreamResponse]
+type StreamService_StreamTelemetryServer = grpc.ServerStreamingServer[StreamTelemetryResponse]
 
 // StreamService_ServiceDesc is the grpc.ServiceDesc for StreamService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -228,18 +226,18 @@ var StreamService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*StreamServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetVideoURL",
-			Handler:    _StreamService_GetVideoURL_Handler,
+			MethodName: "StartVideoStream",
+			Handler:    _StreamService_StartVideoStream_Handler,
 		},
 		{
-			MethodName: "GetFrameStream",
-			Handler:    _StreamService_GetFrameStream_Handler,
+			MethodName: "GetVideoFrame",
+			Handler:    _StreamService_GetVideoFrame_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetTelemetryStream",
-			Handler:       _StreamService_GetTelemetryStream_Handler,
+			StreamName:    "StreamTelemetry",
+			Handler:       _StreamService_StreamTelemetry_Handler,
 			ServerStreams: true,
 		},
 	},

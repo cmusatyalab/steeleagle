@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from v1.messages.stream import stream_pb2 as v1_dot_messages_dot_stream_dot_stream__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fv1/services/stream/stream.proto\x12!steeleagle.api.v1.services.stream\x1a\x1fv1/messages/stream/stream.proto\"\x14\n\x12GetVideoURLRequest\"\'\n\x13GetVideoURLResponse\x12\x10\n\x03url\x18\x01 \x01(\tR\x03url\"\x17\n\x15GetFrameStreamRequest\"[\n\x16GetFrameStreamResponse\x12\x41\n\x05\x66rame\x18\x01 \x01(\x0b\x32+.steeleagle.api.v1.messages.stream.RawFrameR\x05\x66rame\"\x1b\n\x19GetTelemetryStreamRequest\"h\n\x1aGetTelemetryStreamResponse\x12J\n\ttelemetry\x18\x01 \x01(\x0b\x32,.steeleagle.api.v1.messages.stream.TelemetryR\ttelemetry2\xb1\x03\n\rStreamService\x12~\n\x0bGetVideoURL\x12\x35.steeleagle.api.v1.services.stream.GetVideoURLRequest\x1a\x36.steeleagle.api.v1.services.stream.GetVideoURLResponse\"\x00\x12\x87\x01\n\x0eGetFrameStream\x12\x38.steeleagle.api.v1.services.stream.GetFrameStreamRequest\x1a\x39.steeleagle.api.v1.services.stream.GetFrameStreamResponse\"\x00\x12\x95\x01\n\x12GetTelemetryStream\x12<.steeleagle.api.v1.services.stream.GetTelemetryStreamRequest\x1a=.steeleagle.api.v1.services.stream.GetTelemetryStreamResponse\"\x00\x30\x01\x42\x9f\x02\n%com.steeleagle.api.v1.services.streamB\x0bStreamProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/stream\xa2\x02\x05SAVSS\xaa\x02!Steeleagle.Api.V1.Services.Stream\xca\x02!Steeleagle\\Api\\V1\\Services\\Stream\xe2\x02-Steeleagle\\Api\\V1\\Services\\Stream\\GPBMetadata\xea\x02%Steeleagle::Api::V1::Services::Streamb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fv1/services/stream/stream.proto\x12!steeleagle.api.v1.services.stream\x1a\x1fv1/messages/stream/stream.proto\"\xfd\x01\n\x17StartVideoStreamRequest\x12\x65\n\nresolution\x18\x01 \x01(\x0e\x32\x45.steeleagle.api.v1.services.stream.StartVideoStreamRequest.ResolutionR\nresolution\"{\n\nResolution\x12\x1a\n\x16RESOLUTION_UNSPECIFIED\x10\x00\x12\x13\n\x0fRESOLUTION_480P\x10\x01\x12\x13\n\x0fRESOLUTION_720P\x10\x02\x12\x14\n\x10RESOLUTION_1080P\x10\x03\x12\x11\n\rRESOLUTION_4K\x10\x04\"9\n\x18StartVideoStreamResponse\x12\x1d\n\nstream_url\x18\x01 \x01(\tR\tstreamUrl\"\x16\n\x14GetVideoFrameRequest\"Z\n\x15GetVideoFrameResponse\x12\x41\n\x05\x66rame\x18\x01 \x01(\x0b\x32+.steeleagle.api.v1.messages.stream.RawFrameR\x05\x66rame\"\x18\n\x16StreamTelemetryRequest\"e\n\x17StreamTelemetryResponse\x12J\n\ttelemetry\x18\x01 \x01(\x0b\x32,.steeleagle.api.v1.messages.stream.TelemetryR\ttelemetry2\xaf\x03\n\rStreamService\x12\x8b\x01\n\x10StartVideoStream\x12:.steeleagle.api.v1.services.stream.StartVideoStreamRequest\x1a;.steeleagle.api.v1.services.stream.StartVideoStreamResponse\x12\x82\x01\n\rGetVideoFrame\x12\x37.steeleagle.api.v1.services.stream.GetVideoFrameRequest\x1a\x38.steeleagle.api.v1.services.stream.GetVideoFrameResponse\x12\x8a\x01\n\x0fStreamTelemetry\x12\x39.steeleagle.api.v1.services.stream.StreamTelemetryRequest\x1a:.steeleagle.api.v1.services.stream.StreamTelemetryResponse0\x01\x42\x9f\x02\n%com.steeleagle.api.v1.services.streamB\x0bStreamProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/stream\xa2\x02\x05SAVSS\xaa\x02!Steeleagle.Api.V1.Services.Stream\xca\x02!Steeleagle\\Api\\V1\\Services\\Stream\xe2\x02-Steeleagle\\Api\\V1\\Services\\Stream\\GPBMetadata\xea\x02%Steeleagle::Api::V1::Services::Streamb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,18 +33,20 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'v1.services.stream.stream_p
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n%com.steeleagle.api.v1.services.streamB\013StreamProtoP\001Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/stream\242\002\005SAVSS\252\002!Steeleagle.Api.V1.Services.Stream\312\002!Steeleagle\\Api\\V1\\Services\\Stream\342\002-Steeleagle\\Api\\V1\\Services\\Stream\\GPBMetadata\352\002%Steeleagle::Api::V1::Services::Stream'
-  _globals['_GETVIDEOURLREQUEST']._serialized_start=103
-  _globals['_GETVIDEOURLREQUEST']._serialized_end=123
-  _globals['_GETVIDEOURLRESPONSE']._serialized_start=125
-  _globals['_GETVIDEOURLRESPONSE']._serialized_end=164
-  _globals['_GETFRAMESTREAMREQUEST']._serialized_start=166
-  _globals['_GETFRAMESTREAMREQUEST']._serialized_end=189
-  _globals['_GETFRAMESTREAMRESPONSE']._serialized_start=191
-  _globals['_GETFRAMESTREAMRESPONSE']._serialized_end=282
-  _globals['_GETTELEMETRYSTREAMREQUEST']._serialized_start=284
-  _globals['_GETTELEMETRYSTREAMREQUEST']._serialized_end=311
-  _globals['_GETTELEMETRYSTREAMRESPONSE']._serialized_start=313
-  _globals['_GETTELEMETRYSTREAMRESPONSE']._serialized_end=417
-  _globals['_STREAMSERVICE']._serialized_start=420
-  _globals['_STREAMSERVICE']._serialized_end=853
+  _globals['_STARTVIDEOSTREAMREQUEST']._serialized_start=104
+  _globals['_STARTVIDEOSTREAMREQUEST']._serialized_end=357
+  _globals['_STARTVIDEOSTREAMREQUEST_RESOLUTION']._serialized_start=234
+  _globals['_STARTVIDEOSTREAMREQUEST_RESOLUTION']._serialized_end=357
+  _globals['_STARTVIDEOSTREAMRESPONSE']._serialized_start=359
+  _globals['_STARTVIDEOSTREAMRESPONSE']._serialized_end=416
+  _globals['_GETVIDEOFRAMEREQUEST']._serialized_start=418
+  _globals['_GETVIDEOFRAMEREQUEST']._serialized_end=440
+  _globals['_GETVIDEOFRAMERESPONSE']._serialized_start=442
+  _globals['_GETVIDEOFRAMERESPONSE']._serialized_end=532
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_start=534
+  _globals['_STREAMTELEMETRYREQUEST']._serialized_end=558
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_start=560
+  _globals['_STREAMTELEMETRYRESPONSE']._serialized_end=661
+  _globals['_STREAMSERVICE']._serialized_start=664
+  _globals['_STREAMSERVICE']._serialized_end=1095
 # @@protoc_insertion_point(module_scope)

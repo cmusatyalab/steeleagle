@@ -10,54 +10,61 @@ import "v1/messages/stream/stream.proto";
 /*
  * Used to get streams from the driver.
  *
- * This is an internal service used to retrieve imagery and telemetry
- * from the driver. These are processed by the OS and then served as
- * the `DataService` to other connected plugins.
+ * This is an internal service used to retrieve imagery and telemetry from the
+ * driver. These are processed by the OS and then served as the `DataService`
+ * to other connected plugins.
  */
 service StreamService {
   /*
-   * Gets the video stream URL from the vehicle.
+   * Start streaming video from the vehicle.
    *
    * Retrieves the video stream URL from the vehicle so that it can be
-   * broadcast to the rest of the system. This function should only
+   * broadcast to the rest of the system. This function should only be called
+   * by the OS, and not by any plugins.
+   */
+  rpc StartVideoStream (StartVideoStreamRequest)
+    returns (StartVideoStreamResponse);
+  /*
+   * Gets a video frame from the vehicle.
+   *
+   * Retrieves a video frame from the vehicle. This is used when camera data is
+   * accessible without needing a stream. This function should only be called
+   * by the OS, and not by any plugins.
+   */
+  rpc GetVideoFrame (GetVideoFrameRequest) returns (GetVideoFrameResponse);
+  /*
+   * Stream telemetry from the vehicle.
+   *
+   * Streams up-to-date telemetry from the vehicle. This function should only
    * be called by the OS, and not by any plugins.
    */
-  rpc GetVideoURL (GetVideoURLRequest)
-    returns (GetVideoURLResponse) {}
-  /*
-   * Gets a stream of frames from the vehicle.
-   *
-   * Retrieves a direct stream of video frames from the vehicle. This
-   * is used when camera data is accessible without needing a stream.
-   * This function should only be called by the OS, and not by any
-   * plugins.
-   */
-  rpc GetFrameStream (GetFrameStreamRequest)
-    returns (GetFrameStreamResponse) {}
-  /*
-   * Gets a stream of telemetry from the vehicle.
-   *
-   * Retrieves a stream of up-to-date telemetry from the vehicle. This
-   * function should only be called by the OS, and not by any plugins.
-   */
-  rpc GetTelemetryStream (GetTelemetryStreamRequest)
-    returns (stream GetTelemetryStreamResponse) {}
+  rpc StreamTelemetry (StreamTelemetryRequest)
+    returns (stream StreamTelemetryResponse);
 }
 
-message GetVideoURLRequest {}
-
-message GetVideoURLResponse {
-  string url = 1; // URL of the video stream
+message StartVideoStreamRequest {
+  enum Resolution {
+    RESOLUTION_UNSPECIFIED = 0;
+    RESOLUTION_480P = 1;
+    RESOLUTION_720P = 2;
+    RESOLUTION_1080P = 3;
+    RESOLUTION_4K = 4;
+  }
+  Resolution resolution = 1; // video stream resolution
 }
 
-message GetFrameStreamRequest {}
+message StartVideoStreamResponse {
+  string stream_url = 1; // URL of the video stream
+}
 
-message GetFrameStreamResponse {
+message GetVideoFrameRequest {}
+
+message GetVideoFrameResponse {
   steeleagle.api.v1.messages.stream.RawFrame frame = 1; // raw frame from the camera
 }
 
-message GetTelemetryStreamRequest {}
+message StreamTelemetryRequest {}
 
-message GetTelemetryStreamResponse {
+message StreamTelemetryResponse {
   steeleagle.api.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver
 }

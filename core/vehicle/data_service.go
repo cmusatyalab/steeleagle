@@ -63,7 +63,7 @@ func (s *DataService) GetFrame(ctx context.Context, req *data_pb.GetFrameRequest
 // Encapsulates telemetry stream response along with an error for sending
 // in a channel
 type TelemetryStreamResponse struct {
-	resp *stream_pb.GetTelemetryStreamResponse
+	resp *stream_pb.StreamTelemetryResponse
 	err  error
 }
 
@@ -71,7 +71,7 @@ type TelemetryStreamResponse struct {
 // specified error channel.
 func (s *DataService) recvTelemetry(
 	ctx context.Context,
-	stream grpc.ServerStreamingClient[stream_pb.GetTelemetryStreamResponse],
+	stream grpc.ServerStreamingClient[stream_pb.StreamTelemetryResponse],
 	errCh chan error) {
 	ch := make(chan TelemetryStreamResponse)
 	// Invoke blocking call to receive stream data in another goroutine
@@ -107,10 +107,10 @@ func (s *DataService) recvTelemetry(
 // report any errors. This method is non-blocking.
 func (s *DataService) StartTelemetryStream(ctx context.Context) (chan error, error) {
 	client := stream_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &stream_pb.GetTelemetryStreamRequest{}
+	req := &stream_pb.StreamTelemetryRequest{}
 
 	// Send request to driver
-	stream, err := client.GetTelemetryStream(ctx, req)
+	stream, err := client.StreamTelemetry(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start stream: %w", err)
 	}
