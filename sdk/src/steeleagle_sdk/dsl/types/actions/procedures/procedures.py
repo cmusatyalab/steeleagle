@@ -153,6 +153,76 @@ class PrecisionLand(Action):
     altitude_ceil: float = Field(10.0, lt=20.0)
     target_altitude: float = Field(1.5, gt=1)
 
+    # --- Descent step configuration (new) ---
+    max_descent_step: float = Field(
+        1.0,
+        gt=0,
+        description="Maximum altitude (meters) to drop in a single descend-then-realign increment",
+    )
+    min_descent_step: float = Field(
+        0.2,
+        gt=0,
+        description="Minimum altitude (meters) to drop per increment, even when margin is tight",
+    )
+    fov_margin_fraction: float = Field(
+        0.6,
+        gt=0,
+        lt=1.0,
+        description=(
+            "Safety fraction of remaining FOV margin to consume per descent step. "
+            "E.g. 0.6 means: only use 60% of the angular room left before the target "
+            "would exit frame, leaving headroom for drift during the drop."
+        ),
+    )
+
+    def _max_safe_descent(
+        self, forward_err: float, lateral_err: float, altitude: float
+    ) -> float:
+        """
+        Estimate how far we can safely descend before the target risks leaving frame,
+        assuming some lateral/forward drift could occur during the drop.
+
+        Idea: the target currently sits at angular offset (forward_err, lateral_err)
+        from center. The remaining angular margin before hitting the edge of the FOV
+        is (half_fov - |current_err|) for each axis. We don't want to "spend" all of
+        that margin on altitude change alone -- we want most of it left over as a
+        buffer against horizontal drift during the descent. So we scale the safe
+        descent step by how much margin remains, relative to how much margin we
+        started with (i.e. how centered we already are).
+
+        Returns a step size in meters, clamped to [min_descent_step, max_descent_step].
+        """
+        half_hfov = self.hfov_deg / 2.0
+        half_vfov = self.vfov_deg / 2.0
+
+        lateral_margin_frac = self._clamp(
+            1.0 - (abs(lateral_err) / half_hfov), 0.0, 1.0
+        )
+        forward_margin_frac = self._clamp(
+            1.0 - (abs(forward_err) / half_vfov), 0.0, 1.0
+        )
+
+        # Use the tighter (smaller) of the two margins -- whichever axis is closer
+        # to the frame edge is the one that limits how aggressively we can descend.
+        tightest_margin_frac = min(lateral_margin_frac, forward_margin_frac)
+
+        # Scale max_descent_step by that margin, then apply the safety fraction
+        # so we're not using 100% of even the "safe" margin.
+        step = self.max_descent_step * tightest_margin_frac * self.fov_margin_fraction
+
+        # Never drop below min_descent_step (avoid the loop stalling on tiny steps
+        # forever) and never exceed max_descent_step or current altitude itself.
+        step = self._clamp(step, self.min_descent_step, self.max_descent_step)
+        step = min(step, altitude - 0.05)  # never command a step past the ground
+
+        logger.debug(
+            "max_safe_descent: lateral_margin=%.2f forward_margin=%.2f -> step=%.2fm",
+            lateral_margin_frac,
+            forward_margin_frac,
+            step,
+        )
+        return max(step, 0.0)
+
     @property
     def _pixel_center(self) -> tuple[float, float]:
         logger.debug("pixel center: w=%d, h=%d", self.image_width, self.image_height)
@@ -185,20 +255,20 @@ class PrecisionLand(Action):
     async def execute(self):
         logger.info("Started the task")
         last_seen: float | None = None
-        mode: int = 0
-        # Pitch the gimbal
+        mode: int = 0  # 0 = align forward, 1 = align lateral, 2 = bounded descend
+
         await SetGimbalPose(
             gimbal_id=0, pose=common.Pose(pitch=-90.0, roll=0.0, yaw=0.0)
         ).execute()
-        # Descent loop
+
         while True:
             # --- Telemetry ---
             telemetry = await fetch_telemetry()
             if not telemetry:
                 logger.error("Could not get telemetry, waiting!")
                 continue
-            # logger.info("Track: telemetry fetched: %s", telemetry)
             altitude = telemetry.position_info.relative_position.z
+
             # --- Target lost check ---
             now = asyncio.get_event_loop().time()
             if last_seen is not None and (now - last_seen) > self.target_lost_duration:
@@ -210,18 +280,18 @@ class PrecisionLand(Action):
                     )
                     break
                 else:
+                    logger.info("Ascending to attempt to reacquire...")
                     await Joystick(
                         velocity=common.Velocity(z_vel=self.descent_speed)
                     ).execute()
 
             # --- Detections ---
             res: FrameResult = await fetch_results(self.compute_stream)
-            # logger.info("Track: fetched results from stream=%s", res)
-
             box: BoundingBox | None = None
             if not res or not res.result:
-                logger.info("PrecisionLand: no objects found")
-                continue  # no ComputeResult entries
+                logger.info(f"PrecisionLand: No results from {self.compute_stream}")
+                continue
+
             for compute in res.result:
                 det_result = compute.detection_result
                 if not det_result or not det_result.detections:
@@ -236,69 +306,89 @@ class PrecisionLand(Action):
                         last_seen = now
                         break
 
-            # --- Track procedure ---
-            if box is not None:
-                altitude = telemetry.position_info.relative_position.z
-                forward_err, lateral_err = await self._compute_error(box, telemetry)
-                forward_off = math.tan(math.radians(forward_err)) * altitude
-                lateral_off = math.tan(math.radians(lateral_err)) * altitude
-                target = common.Velocity()
-                if mode == 0:  # forward
-                    logger.info(f"forward step {forward_off}")
-                    if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(
-                            f"forward check {forward_off} {self.err_tol * altitude} {altitude}"
-                        )
-                        mode = 1
-                        await Hold().execute()
-                        continue
-                    else:
-                        target.x_vel = self._clamp(
-                            forward_off, -self.forward_speed, self.forward_speed
-                        )
-                elif mode == 1:  # lateral
-                    logger.info(f"lateral step {lateral_off}")
-                    if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
-                        logger.info(
-                            f"lateral check {lateral_off} {self.err_tol * altitude} {altitude}"
-                        )
-                        if math.isclose(
-                            forward_off, 0.0, abs_tol=self.err_tol * altitude
-                        ):
-                            mode = 2
-                            await Hold().execute()
-                            continue
-                        else:
-                            mode = 0
-                            await Hold().execute()
-                            continue
-                    else:
-                        target.y_vel = self._clamp(
-                            lateral_off, -self.lateral_speed, self.lateral_speed
-                        )
-                else:  # descend
-                    if math.isclose(
-                        forward_off, 0.0, abs_tol=self.err_tol * self.target_altitude
-                    ) and math.isclose(
-                        lateral_off, 0.0, abs_tol=self.err_tol * self.target_altitude
-                    ):
-                        logger.info("land check")
-                        await Land().execute()
-                        return
-                    else:
-                        mode = 0
-                logger.info("outer loop")
-                if (
-                    math.isclose(forward_off, 0.0, abs_tol=self.err_tol)
-                    and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
-                    and altitude <= self.target_altitude
-                ):
-                    logger.info("land check")
+            if box is None:
+                continue
+
+            # --- Error computation (every iteration, fresh) ---
+            altitude = telemetry.position_info.relative_position.z
+            forward_err, lateral_err = await self._compute_error(box, telemetry)
+            forward_off = math.tan(math.radians(forward_err)) * altitude
+            lateral_off = math.tan(math.radians(lateral_err)) * altitude
+
+            target = common.Velocity()
+
+            # --- Final landing check (unconditional, any mode) ---
+            if (
+                math.isclose(forward_off, 0.0, abs_tol=self.err_tol)
+                and math.isclose(lateral_off, 0.0, abs_tol=self.err_tol)
+                and altitude <= self.target_altitude
+            ):
+                logger.info("Landing criteria met -- landing")
+                await Land().execute()
+                return
+
+            # --- Mode 0: forward alignment ---
+            if mode == 0:
+                if math.isclose(forward_off, 0.0, abs_tol=self.err_tol * altitude):
+                    logger.info(
+                        "forward aligned (%.2fm) -> moving to lateral", forward_off
+                    )
+                    await Hold().execute()
+                    mode = 1
+                else:
+                    logger.info("forward step: %.2fm", forward_off)
+                    target.x_vel = self._clamp(
+                        forward_off, -self.forward_speed, self.forward_speed
+                    )
+                    await Joystick(velocity=target).execute()
+
+            # --- Mode 1: lateral alignment ---
+            elif mode == 1:
+                if math.isclose(lateral_off, 0.0, abs_tol=self.err_tol * altitude):
+                    logger.info(
+                        "lateral aligned (%.2fm) -> moving to descend", lateral_off
+                    )
+                    await Hold().execute()
+                    mode = 2
+                else:
+                    logger.info("lateral step: %.2fm", lateral_off)
+                    target.y_vel = self._clamp(
+                        lateral_off, -self.lateral_speed, self.lateral_speed
+                    )
+                    await Joystick(velocity=target).execute()
+
+            # --- Mode 2: bounded incremental descend, then re-align ---
+            else:
+                if altitude <= self.target_altitude:
+                    logger.info(
+                        "reached target altitude without full centering -- landing"
+                    )
                     await Land().execute()
                     return
-                else:
-                    logger.info("joystick")
-                    await Joystick(velocity=target).execute()
+
+                step = self._max_safe_descent(forward_err, lateral_err, altitude)
+                logger.info(
+                    "descending step=%.2fm (altitude=%.2fm, fwd_err=%.2f, lat_err=%.2f)",
+                    step,
+                    altitude,
+                    forward_err,
+                    lateral_err,
+                )
+
+                # Estimate how long to descend at descent_speed to cover `step` meters,
+                # then hold and go re-align rather than trying to descend continuously
+                # while also correcting position (keeps the phases decoupled and simple).
+                descend_duration = step / self.descent_speed
+                await Joystick(
+                    velocity=common.Velocity(z_vel=-1 * self.descent_speed)
+                ).execute()
+                await asyncio.sleep(descend_duration)
+                await Hold().execute()
+
+                # Always re-check forward alignment first after a descent step,
+                # since a lower altitude changes the ground-distance meaning of
+                # the same angular error.
+                mode = 0
 
 
 @register_action
