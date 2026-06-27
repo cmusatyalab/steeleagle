@@ -39,7 +39,7 @@ function TaskNode({ data }) {
         <div
             onClick={handleClick}
             style={{
-                background: '#1e3040',
+                background: 'var(--node-bg)',
                 border: `2px solid ${borderColor}`,
                 borderRadius: 8,
                 padding: '8px 12px',
@@ -54,7 +54,7 @@ function TaskNode({ data }) {
             {/* Header row: icon · type name · START chip · warning badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: summaryFields.length ? 4 : 0 }}>
                 <span style={{ fontSize: 16 }}>{icon}</span>
-                <span style={{ fontWeight: 'bold', color: isStart ? '#a3e8a0' : '#fff', fontSize: 12 }}>
+                <span style={{ fontWeight: 'bold', color: isStart ? '#a3e8a0' : 'var(--node-text)', fontSize: 12 }}>
                     {type_name}
                 </span>
                 {isStart && (
@@ -81,13 +81,13 @@ function TaskNode({ data }) {
             </div>
 
             {/* Instance ID */}
-            <div style={{ fontSize: 9, color: '#7ecfff', marginBottom: summaryFields.length ? 4 : 0 }}>
+            <div style={{ fontSize: 9, color: 'var(--node-id-color)', marginBottom: summaryFields.length ? 4 : 0 }}>
                 {instance_id}
             </div>
 
             {/* Param summary chips */}
             {summaryFields.map(f => (
-                <div key={f.name} style={{ fontSize: 9, background: '#0d1820', padding: '2px 5px', borderRadius: 3, marginBottom: 2, color: '#aaa' }}>
+                <div key={f.name} style={{ fontSize: 9, background: 'var(--node-chip-bg)', padding: '2px 5px', borderRadius: 3, marginBottom: 2, color: 'var(--node-chip-text)' }}>
                     {f.name}: {summarise(f)}
                 </div>
             ))}

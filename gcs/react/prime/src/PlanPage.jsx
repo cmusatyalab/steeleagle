@@ -785,7 +785,20 @@ function PlanPage({ vehicles, squadList, theme }) {
                         </div>
 
                         {/* Canvas — middle */}
-                        <div className="flex flex-1" style={{ overflow: 'hidden' }}>
+                        <div className="flex flex-1" style={{
+                            overflow: 'hidden',
+                            '--node-bg':            theme === 'light' ? '#ffffff'  : '#1e3040',
+                            '--node-text':          theme === 'light' ? '#111827'  : '#ffffff',
+                            '--node-id-color':      theme === 'light' ? '#1d4ed8'  : '#7ecfff',
+                            '--node-chip-bg':       theme === 'light' ? '#f1f5f9'  : '#0d1820',
+                            '--node-chip-text':     theme === 'light' ? '#475569'  : '#aaaaaa',
+                            '--palette-bg':         theme === 'light' ? '#f8fafc'  : '#1a2530',
+                            '--palette-border':     theme === 'light' ? '#e2e8f0'  : '#2a3a4a',
+                            '--palette-header':     theme === 'light' ? '#1d4ed8'  : '#7ecfff',
+                            '--palette-item-text':  theme === 'light' ? '#1e293b'  : '#ffffff',
+                            '--palette-item-div':   theme === 'light' ? '#e2e8f0'  : '#1e2a38',
+                            '--palette-item-hover': theme === 'light' ? '#dbeafe'  : '#1e3040',
+                        }}>
                             <FsmPalette onSchemaLoaded={setSchema} />
                             <ReactFlowProvider>
                                 <FsmCanvas

@@ -36,14 +36,14 @@ function FsmPalette({ onSchemaLoaded }) {
     if (error) return <div className="p-2 text-sm" style={{ color: '#e88' }}>Schema error: {error}</div>;
 
     return (
-        <div style={{ width: 180, background: '#1a2530', height: '100%', overflowY: 'auto', borderRight: '1px solid #2a3a4a' }}>
+        <div style={{ width: 180, background: 'var(--palette-bg)', height: '100%', overflowY: 'auto', borderRight: '1px solid var(--palette-border)' }}>
             <div
                 className="flex align-items-center gap-2 p-2"
-                style={{ cursor: 'pointer', borderBottom: '1px solid #2a3a4a', userSelect: 'none' }}
+                style={{ cursor: 'pointer', borderBottom: '1px solid var(--palette-border)', userSelect: 'none' }}
                 onClick={() => setActionsOpen(o => !o)}
             >
                 <i className={`pi pi-${actionsOpen ? 'chevron-down' : 'chevron-right'}`} style={{ fontSize: 10 }} />
-                <span style={{ fontSize: 12, color: '#7ecfff', textTransform: 'uppercase', letterSpacing: 1 }}>Actions</span>
+                <span style={{ fontSize: 12, color: 'var(--palette-header)', textTransform: 'uppercase', letterSpacing: 1 }}>Actions</span>
             </div>
             {actionsOpen && Object.keys(schema.actions).map(typeName => (
                 <div
@@ -54,13 +54,13 @@ function FsmPalette({ onSchemaLoaded }) {
                     style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: '5px 10px', cursor: 'grab', fontSize: 13,
-                        borderBottom: '1px solid #1e2a38',
+                        borderBottom: '1px solid var(--palette-item-div)',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#1e3040'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--palette-item-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
                     <span>{TYPE_ICONS[typeName] || '⚙'}</span>
-                    <span style={{ color: '#fff' }}>{typeName}</span>
+                    <span style={{ color: 'var(--palette-item-text)' }}>{typeName}</span>
                 </div>
             ))}
         </div>
