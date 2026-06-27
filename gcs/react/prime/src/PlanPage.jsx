@@ -662,7 +662,7 @@ function PlanPage({ vehicles, squadList, theme }) {
 
     function handleExportDsl() {
         const dsl = generateDsl(nodes, edges, eventInstances, startNodeId, schema);
-        const blob = new Blob([dsl], { type: 'text/plain' });
+        const blob = new Blob([dsl + '\n'], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
