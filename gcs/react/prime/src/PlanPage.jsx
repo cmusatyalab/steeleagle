@@ -547,8 +547,9 @@ function PlanPage({ vehicles, squadList, theme }) {
                 body: JSON.stringify({ kml, dsl, vehicles: squadList }),
             });
             if (!resp.ok) {
-                const err = await resp.json();
-                toast.current.show({ severity: 'error', summary: 'Deploy failed', detail: err.detail });
+                let detail = `Server error ${resp.status}`;
+                try { const err = await resp.json(); detail = err.detail ?? detail; } catch (_) { detail = await resp.text().catch(() => detail); }
+                toast.current.show({ severity: 'error', summary: 'Deploy failed', detail });
             } else {
                 toast.current.show({ severity: 'success', summary: 'Deployed', detail: `Mission sent to ${squadList.join(', ')}.` });
             }

@@ -785,7 +785,7 @@ async def set_gimbal_pose(req: GimbalPose, sandbox_mode: bool = True) -> JSONRes
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission start sent!")
 
 
@@ -829,24 +829,24 @@ async def start(req: Start, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission start sent!")
 
 
 @app.post("/api/upload")
 async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
     for v in req.vehicles:
-        if sandbox_mode:
-            conn = vehicle_connections[v]
-        else:
-            if backend_key is None:
-                conn = backend_connections[list(backend_connections)[0]]
-            else:
-                conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
         try:
+            if sandbox_mode:
+                conn = vehicle_connections[v]
+            else:
+                if backend_key is None:
+                    conn = backend_connections[list(backend_connections)[0]]
+                else:
+                    conn = backend_connections[backend_key]
+            _ = conn.grpc_channel.get_state(
+                try_to_connect=True
+            )  # attempt to reconnect to grpc endpoint
             up = UploadRequest()
             up.mission.map = base64.b64decode(req.kml)
             up.mission.content = base64.b64decode(req.dsl)
@@ -875,7 +875,7 @@ async def upload(req: Upload, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Mission upload complete!")
 
 
@@ -923,7 +923,7 @@ async def joystick(req: Joystick, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return JSONResponse(status_code=200, content="Joystick movement complete!")
 
 
@@ -1025,7 +1025,7 @@ async def command(req: Command, sandbox_mode: bool = True) -> JSONResponse:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
         except Exception as e:
             logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {e.message}") from e
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
     return response
 
 
