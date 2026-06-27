@@ -587,6 +587,17 @@ function PlanPage({ vehicles, squadList, theme }) {
         setPanelNodeId(null);
     }
 
+    function handleNewMission() {
+        if (nodes.length === 0 && edges.length === 0) return;
+        if (!window.confirm('Start a new mission? The current canvas will be cleared.')) return;
+        pushSnapshot();
+        setNodes([]);
+        setEdges([]);
+        setEventInstances([]);
+        setStartNodeId(null);
+        setCompiledMission(null);
+    }
+
     function loadFromParsed(parsed) {
         pushSnapshot();
         const evMap = Object.fromEntries(parsed.events.map(ev => [ev.instance_id, ev]));
@@ -719,6 +730,16 @@ function PlanPage({ vehicles, squadList, theme }) {
                                 disabled={!canRedo}
                                 onClick={redo}
                                 tooltip="Redo (Ctrl+Shift+Z)"
+                                tooltipOptions={{ position: 'top' }}
+                            />
+                            <Button
+                                label="New"
+                                icon="pi pi-file"
+                                size="small"
+                                outlined
+                                disabled={nodes.length === 0 && edges.length === 0}
+                                onClick={handleNewMission}
+                                tooltip="Clear canvas and start a new mission"
                                 tooltipOptions={{ position: 'top' }}
                             />
                             <Button
