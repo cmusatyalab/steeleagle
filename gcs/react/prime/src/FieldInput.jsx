@@ -1,6 +1,54 @@
+import { useState, useEffect, useRef } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
+
+function FloatInput({ value, onChange, className }) {
+    const [text, setText] = useState(() =>
+        value === undefined || value === null ? '' : String(value)
+    );
+    const editingRef = useRef(false);
+
+    useEffect(() => {
+        if (!editingRef.current) {
+            setText(value === undefined || value === null ? '' : String(value));
+        }
+    }, [value]);
+
+    const handleChange = (e) => {
+        editingRef.current = true;
+        const raw = e.target.value;
+        // Allow only valid float-in-progress characters
+        if (raw !== '' && raw !== '-' && !/^-?\d*\.?\d*$/.test(raw)) return;
+        setText(raw);
+        const parsed = parseFloat(raw);
+        if (!isNaN(parsed) && !raw.trim().endsWith('.') && raw.trim() !== '-') {
+            onChange(parsed);
+        }
+    };
+
+    const handleBlur = () => {
+        editingRef.current = false;
+        const parsed = parseFloat(text);
+        if (!isNaN(parsed)) {
+            onChange(parsed);
+            setText(String(parsed));
+        } else {
+            const fallback = value === undefined || value === null ? 0 : value;
+            onChange(fallback);
+            setText(String(fallback));
+        }
+    };
+
+    return (
+        <InputText
+            value={text}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={className}
+        />
+    );
+}
 
 function FieldInput({ field, value, onChange, namedAreas = [] }) {
     if (field.type === 'boolean') {
@@ -13,14 +61,23 @@ function FieldInput({ field, value, onChange, namedAreas = [] }) {
             />
         );
     }
-    if (field.type === 'number' || field.type === 'integer') {
+    if (field.type === 'number') {
+        return (
+            <FloatInput
+                value={value === undefined ? (field.default ?? 0) : value}
+                onChange={onChange}
+                className="w-full"
+            />
+        );
+    }
+    if (field.type === 'integer') {
         return (
             <InputNumber
                 value={value === undefined ? (field.default ?? 0) : value}
                 onChange={e => onChange(e.value)}
                 className="w-full"
                 useGrouping={false}
-                maxFractionDigits={field.type === 'number' ? 10 : 0}
+                maxFractionDigits={0}
             />
         );
     }
