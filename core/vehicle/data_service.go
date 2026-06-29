@@ -101,52 +101,6 @@ func (s *DataService) recvTelemetry(
 	}
 }
 
-// Start video streaming with the given resolution
-func (s *DataService) StartVideoStream(
-	ctx context.Context,
-	res driver_pb.GetVideoStreamURLRequest_Resolution) (chan error, error) {
-	client := driver_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{Resolution: res}
-
-	// Send request to driver to get video stream URL
-	_, err := client.GetVideoStreamURL(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-// Start streaming telemetry from the vehicle driver. Launches a goroutine
-// that performs the streaming and updates the data service as telemetry
-// is received. The launched goroutine uses the returned error channel to
-// report any errors. This method is non-blocking.
-func (s *DataService) StartTelemetryStream(ctx context.Context) (chan error, error) {
-	client := driver_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &driver_pb.StreamTelemetryRequest{}
-
-	// Send request to driver
-	stream, err := client.StreamTelemetry(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start stream: %w", err)
-	}
-
-	errCh := make(chan error, 1)
-	// Launch goroutine to stream telemetry
-	go func() {
-		for {
-			// check if context has ended
-			if err := ctx.Err(); err != nil {
-				s.vehicle.logger.Err(err).Msg("telemetry stream ended")
-				errCh <- err
-				return
-			}
-			s.recvTelemetry(ctx, stream, errCh)
-		}
-	}()
-	return errCh, nil
-}
-
 func (s *DataService) updateLatestTelemetry(tel *stream_msg_pb.Telemetry) {
 	s.tel_mu.Lock()
 	defer s.tel_mu.Unlock()
