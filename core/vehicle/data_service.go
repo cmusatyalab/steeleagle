@@ -3,14 +3,12 @@ package vehicle
 import (
 	"context"
 	"fmt"
-	"io"
 	"sync"
 
 	result_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
-	"google.golang.org/grpc"
 )
 
 type DataService struct {
@@ -65,40 +63,6 @@ func (s *DataService) GetFrame(ctx context.Context, req *vehicle_pb.GetFrameRequ
 type TelemetryStreamResponse struct {
 	resp *driver_pb.StreamTelemetryResponse
 	err  error
-}
-
-// Receive telemetry from a telemetry stream, sending any errors to the
-// specified error channel.
-func (s *DataService) recvTelemetry(
-	ctx context.Context,
-	stream grpc.ServerStreamingClient[driver_pb.StreamTelemetryResponse],
-	errCh chan error) {
-	ch := make(chan TelemetryStreamResponse)
-	// Invoke blocking call to receive stream data in another goroutine
-	go func() {
-		resp, err := stream.Recv()
-		ch <- TelemetryStreamResponse{resp: resp, err: err}
-	}()
-
-	// Wait to receive stream data or context to end
-	select {
-	case <-ctx.Done():
-		s.vehicle.logger.Err(ctx.Err()).Msg("telemetry stream ended")
-		errCh <- ctx.Err()
-		return
-	case res := <-ch:
-		if res.err == io.EOF {
-			s.vehicle.logger.Err(res.err).Msg("telemetry stream ended")
-			errCh <- res.err
-			return
-		}
-		if res.err != nil {
-			s.vehicle.logger.Err(res.err).Msg("telemetry stream error")
-			errCh <- res.err
-			return
-		}
-		s.updateLatestTelemetry(res.resp.Telemetry)
-	}
 }
 
 func (s *DataService) updateLatestTelemetry(tel *stream_msg_pb.Telemetry) {
