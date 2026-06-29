@@ -7,13 +7,11 @@ import (
 
 	result_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 )
 
 type DataService struct {
 	vehicle_pb.UnimplementedDataServiceServer
-	vehicle          *Vehicle
 	latest_telemetry *stream_msg_pb.Telemetry
 	latest_frame     *stream_msg_pb.EncodedFrame
 	latest_results   map[string]*result_pb.ComputeResult
@@ -56,13 +54,6 @@ func (s *DataService) GetFrame(ctx context.Context, req *vehicle_pb.GetFrameRequ
 	}
 	resp := &vehicle_pb.GetFrameResponse{Frame: s.latest_frame}
 	return resp, nil
-}
-
-// Encapsulates telemetry stream response along with an error for sending
-// in a channel
-type TelemetryStreamResponse struct {
-	resp *driver_pb.StreamTelemetryResponse
-	err  error
 }
 
 func (s *DataService) updateLatestTelemetry(tel *stream_msg_pb.Telemetry) {
