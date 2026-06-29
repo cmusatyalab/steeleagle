@@ -158,7 +158,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		// Set the working directory for the command
 		p.cmd.Dir = filepath.Dir(p.script)
 	}
-	p.log.Debug().Msg(fmt.Sprintf("starting: %v", final))
+	p.log.Debug().Msgf("starting: %v", final)
 
 	// Bind in stdout and stderr
 	p.cmd.Stdout = p.outFile

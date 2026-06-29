@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -27,7 +26,6 @@ func GetACL(cidrs []string, pids []int) *ACL {
 	for _, cidr := range cidrs {
 		ipnet, err := parseCIDR(cidr)
 		if err != nil {
-			log.Warn().Err(err).Str("cidr", cidr).Msg("couldn't parse cidr, ignoring")
 			continue
 		}
 		nets = append(nets, ipnet)
@@ -41,11 +39,9 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 	defer a.mu.Unlock()
 	for _, n := range a.nets {
 		if n.Contains(ip) {
-			log.Debug().Str("ip", ip.String()).Strs("allowed", a.cidrs).Msg("ip accepted")
 			return true
 		}
 	}
-	log.Debug().Str("ip", ip.String()).Strs("allowed", a.cidrs).Msg("ip rejected")
 	return false
 }
 
@@ -56,14 +52,9 @@ func (a *ACL) AllowsPID(pid int) bool {
 	var err error
 	for _, p := range a.pids {
 		if ok, err := isPIDDescendant(int32(p), int32(pid)); err == nil && ok {
-			log.Debug().Int("pid", pid).Ints("allowed", a.pids).Msg("pid accepted")
 			return true
 		}
-		if err != nil {
-			log.Debug().Err(err).Int("ppid", p).Int("pid", pid).Msg("pid heritage could not be validated")
-		}
 	}
-	log.Debug().Int("pid", pid).Ints("allowed", a.pids).Msg("pid rejected")
 	return false
 }
 

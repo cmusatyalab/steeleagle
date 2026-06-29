@@ -118,6 +118,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	    	v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
 	    	return err
 	    }
+    } else {
+        v.log.Error().Msg("no driver provided, aborting")
+        return fmt.Errorf("no driver provided, aborting")
     }
     if v.pluginConfig.mission != nil {
 	    ln, v.mission, err = v.pluginConfig.mission.Start(ctx)
@@ -131,14 +134,21 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
 			if err != nil {
+	    	    v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
 				return err
 			}
 		}
 		v.listeners = append(v.listeners, ln)
+        v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 
 	// Serve the gRPC server at all listeners
-
+    v.errCh = make(<-chan error, len(v.listeners))
+    for _, ln := range v.listeners {
+        go func {
+             
+        }()
+    }
 
 }
 
