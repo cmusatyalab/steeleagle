@@ -101,12 +101,18 @@ func (s *DataService) recvTelemetry(
 	}
 }
 
-func (s *DataService) StartVideoStream(ctx context.Context) (chan error, error) {
+// Start video streaming with the given resolution
+func (s *DataService) StartVideoStream(
+	ctx context.Context,
+	res driver_pb.GetVideoStreamURLRequest_Resolution) (chan error, error) {
 	client := driver_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{}
+	req := &driver_pb.GetVideoStreamURLRequest{Resolution: res}
 
-	// Send request to driver
-	client.GetVideoStreamURL(ctx, req)
+	// Send request to driver to get video stream URL
+	_, err := client.GetVideoStreamURL(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
