@@ -33,12 +33,16 @@ type Plugin interface {
 
 	// Wait blocks until the plugin process exits and returns its exit error.
 	Wait() error
+
+    // Name gets the readable name of the plugin.
+    Name() string
 }
 
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
 	id      string             // auto-generated ID for path disambiguation
+    name    string             // name for easier user identification
 	code    AuthCode           // authentication entity
 	pkg     bool               // determines whether the plugin is a package or not
 	path    string             // path to plugin
@@ -61,8 +65,7 @@ type BasePlugin struct {
 	cmd     *exec.Cmd          // command to run
     acl     *ACL               // ACL for listener connections
     log     zerolog.Logger     // logger object
-    outFile *os.File           // replacement out file for Stdout
-    errFile *os.File           // replacement out file for Stderr    
+    outFile *os.File           // replacement out file for Stdout/err
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function
 }
@@ -71,15 +74,15 @@ type BasePlugin struct {
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-		code:    UnknownCode,
 		id:      uuid.New().String(),
+        name:    uuid.New().String(),
+		code:    UnknownCode,
 		files:   make(map[string]int),
 		client:  true,
 		listen:  true,
 		check:   true,
 		timeout: 15, // default to 15s timeout
         outFile: os.Stdout,
-        errFile: os.Stderr,
 	}
 
 	// Get the plugin dir, then create the socket file paths
@@ -159,7 +162,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 
 	// Bind in stdout and stderr
 	p.cmd.Stdout = p.outFile
-	p.cmd.Stderr = p.errFile
+	p.cmd.Stderr = p.outFile
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
@@ -208,6 +211,11 @@ func (p *BasePlugin) Wait() error {
 		return nil
 	}
 	return p.cmd.Wait()
+}
+
+// Name gets the readable name of the plugin.
+func (p *BasePlugin) Name() string {
+    return p.name
 }
 
 // validateScript resolves and validates the plugin's script path, setting pkg and exec fields as needed.

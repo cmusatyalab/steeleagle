@@ -8,6 +8,13 @@ import (
 
 type PluginOption func(*BasePlugin)
 
+// WithName assigns a user readable name to the plugin.
+func WithName(name string) PluginOption {
+    return func(k *BasePlugin) {
+        k.name = name
+    }
+}
+
 // WithoutClient makes the plugin ignore the client connection to the subprocess, returning nil in its place
 // after Start is called.
 func WithoutClient() PluginOption {
@@ -136,16 +143,9 @@ func WithLogger(logger zerolog.Logger) PluginOption {
     }
 }
 
-// WithOutFile sets the output file stream for logs.
-func WithOutFile(out *os.File) PluginOption {
+// WithOutputFile sets the output file stream for logs.
+func WithOutputFile(out *os.File) PluginOption {
     return func(k *BasePlugin) {
         k.outFile = out
-    }
-}
-
-// WithErrOutFile sets the output file stream for error logs.
-func WithErrOutFile(out *os.File) PluginOption {
-    return func(k *BasePlugin) {
-        k.errFile = out
     }
 }
