@@ -75,7 +75,7 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	)
 
 	// Register data service
-	vehicle_pb.RegisterDataServiceServer(vehicle.services, &DataService{vehicle: vehicle})
+	vehicle_pb.RegisterDataServiceServer(vehicle.services, &DataService{})
 
 	return vehicle, nil
 }
@@ -228,6 +228,13 @@ func (v *Vehicle) StartTelemetryStream(ctx context.Context) (chan error, error) 
 		}
 	}()
 	return errCh, nil
+}
+
+// Encapsulates telemetry stream response along with an error for sending
+// in a channel
+type TelemetryStreamResponse struct {
+	resp *driver_pb.StreamTelemetryResponse
+	err  error
 }
 
 // Receive telemetry from a telemetry stream, sending any errors to the
