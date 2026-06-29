@@ -6,13 +6,14 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import { featuresToGeoJson, featuresToKml } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile } from './mapUtils.js';
 
 function MapDraw({ features, setFeatures, toast }) {
     const mapRef = useRef();
     const mapContainerRef = useRef();
     const draw = useRef();
     const numFeaturesRef = useRef(0);
+    const importFileRef = useRef(null);
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [nameInput, setNameInput] = useState('');
@@ -121,9 +122,39 @@ function MapDraw({ features, setFeatures, toast }) {
         URL.revokeObjectURL(url);
     }
 
+    async function handleImport(file) {
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const fc = parseImportFile(file.name, text);
+            draw.current.deleteAll();
+            draw.current.set(fc);
+            numFeaturesRef.current = fc.features.length;
+            setFeatures(JSON.stringify(draw.current.getAll()));
+        } catch (e) {
+            toast.current.show({ severity: 'error', summary: 'Import failed', detail: e.message });
+        } finally {
+            if (importFileRef.current) importFileRef.current.value = '';
+        }
+    }
+
     return (
         <div className="flex flex-column" style={{ height: '100%' }}>
             <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a' }}>
+                <input
+                    ref={importFileRef}
+                    type="file"
+                    accept=".kml,.geojson,.json"
+                    style={{ display: 'none' }}
+                    onChange={e => handleImport(e.target.files[0])}
+                />
+                <Button
+                    label="Import"
+                    icon="pi pi-upload"
+                    size="small"
+                    outlined
+                    onClick={() => importFileRef.current?.click()}
+                />
                 <Button
                     label="Export GeoJSON"
                     icon="pi pi-file"
