@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	data_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/data"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
@@ -81,7 +81,7 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	vehicle.dataSvc = DataService{vehicle: vehicle}
 
 	// Register data service
-	data_pb.RegisterDataServiceServer(vehicle.server, &vehicle.dataSvc)
+	driver_pb.RegisterDataServiceServer(vehicle.server, &vehicle.dataSvc)
 
 	return vehicle, nil
 }

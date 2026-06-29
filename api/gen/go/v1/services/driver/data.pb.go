@@ -26,26 +26,26 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type StartVideoStreamRequest_Resolution int32
+type GetVideoStreamURLRequest_Resolution int32
 
 const (
-	StartVideoStreamRequest_RESOLUTION_UNSPECIFIED StartVideoStreamRequest_Resolution = 0
-	StartVideoStreamRequest_RESOLUTION_480P        StartVideoStreamRequest_Resolution = 1
-	StartVideoStreamRequest_RESOLUTION_720P        StartVideoStreamRequest_Resolution = 2
-	StartVideoStreamRequest_RESOLUTION_1080P       StartVideoStreamRequest_Resolution = 3
-	StartVideoStreamRequest_RESOLUTION_4K          StartVideoStreamRequest_Resolution = 4
+	GetVideoStreamURLRequest_RESOLUTION_UNSPECIFIED GetVideoStreamURLRequest_Resolution = 0
+	GetVideoStreamURLRequest_RESOLUTION_480P        GetVideoStreamURLRequest_Resolution = 1
+	GetVideoStreamURLRequest_RESOLUTION_720P        GetVideoStreamURLRequest_Resolution = 2
+	GetVideoStreamURLRequest_RESOLUTION_1080P       GetVideoStreamURLRequest_Resolution = 3
+	GetVideoStreamURLRequest_RESOLUTION_4K          GetVideoStreamURLRequest_Resolution = 4
 )
 
-// Enum value maps for StartVideoStreamRequest_Resolution.
+// Enum value maps for GetVideoStreamURLRequest_Resolution.
 var (
-	StartVideoStreamRequest_Resolution_name = map[int32]string{
+	GetVideoStreamURLRequest_Resolution_name = map[int32]string{
 		0: "RESOLUTION_UNSPECIFIED",
 		1: "RESOLUTION_480P",
 		2: "RESOLUTION_720P",
 		3: "RESOLUTION_1080P",
 		4: "RESOLUTION_4K",
 	}
-	StartVideoStreamRequest_Resolution_value = map[string]int32{
+	GetVideoStreamURLRequest_Resolution_value = map[string]int32{
 		"RESOLUTION_UNSPECIFIED": 0,
 		"RESOLUTION_480P":        1,
 		"RESOLUTION_720P":        2,
@@ -54,54 +54,54 @@ var (
 	}
 )
 
-func (x StartVideoStreamRequest_Resolution) Enum() *StartVideoStreamRequest_Resolution {
-	p := new(StartVideoStreamRequest_Resolution)
+func (x GetVideoStreamURLRequest_Resolution) Enum() *GetVideoStreamURLRequest_Resolution {
+	p := new(GetVideoStreamURLRequest_Resolution)
 	*p = x
 	return p
 }
 
-func (x StartVideoStreamRequest_Resolution) String() string {
+func (x GetVideoStreamURLRequest_Resolution) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (StartVideoStreamRequest_Resolution) Descriptor() protoreflect.EnumDescriptor {
+func (GetVideoStreamURLRequest_Resolution) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_services_driver_data_proto_enumTypes[0].Descriptor()
 }
 
-func (StartVideoStreamRequest_Resolution) Type() protoreflect.EnumType {
+func (GetVideoStreamURLRequest_Resolution) Type() protoreflect.EnumType {
 	return &file_v1_services_driver_data_proto_enumTypes[0]
 }
 
-func (x StartVideoStreamRequest_Resolution) Number() protoreflect.EnumNumber {
+func (x GetVideoStreamURLRequest_Resolution) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use StartVideoStreamRequest_Resolution.Descriptor instead.
-func (StartVideoStreamRequest_Resolution) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use GetVideoStreamURLRequest_Resolution.Descriptor instead.
+func (GetVideoStreamURLRequest_Resolution) EnumDescriptor() ([]byte, []int) {
 	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{0, 0}
 }
 
-type StartVideoStreamRequest struct {
-	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Resolution    StartVideoStreamRequest_Resolution `protobuf:"varint,1,opt,name=resolution,proto3,enum=steeleagle.api.v1.services.driver.data.StartVideoStreamRequest_Resolution" json:"resolution,omitempty"` // video stream resolution
+type GetVideoStreamURLRequest struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	Resolution    GetVideoStreamURLRequest_Resolution `protobuf:"varint,1,opt,name=resolution,proto3,enum=steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest_Resolution" json:"resolution,omitempty"` // video stream resolution
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StartVideoStreamRequest) Reset() {
-	*x = StartVideoStreamRequest{}
+func (x *GetVideoStreamURLRequest) Reset() {
+	*x = GetVideoStreamURLRequest{}
 	mi := &file_v1_services_driver_data_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StartVideoStreamRequest) String() string {
+func (x *GetVideoStreamURLRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StartVideoStreamRequest) ProtoMessage() {}
+func (*GetVideoStreamURLRequest) ProtoMessage() {}
 
-func (x *StartVideoStreamRequest) ProtoReflect() protoreflect.Message {
+func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_services_driver_data_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -113,39 +113,39 @@ func (x *StartVideoStreamRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StartVideoStreamRequest.ProtoReflect.Descriptor instead.
-func (*StartVideoStreamRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetVideoStreamURLRequest.ProtoReflect.Descriptor instead.
+func (*GetVideoStreamURLRequest) Descriptor() ([]byte, []int) {
 	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *StartVideoStreamRequest) GetResolution() StartVideoStreamRequest_Resolution {
+func (x *GetVideoStreamURLRequest) GetResolution() GetVideoStreamURLRequest_Resolution {
 	if x != nil {
 		return x.Resolution
 	}
-	return StartVideoStreamRequest_RESOLUTION_UNSPECIFIED
+	return GetVideoStreamURLRequest_RESOLUTION_UNSPECIFIED
 }
 
-type StartVideoStreamResponse struct {
+type GetVideoStreamURLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	StreamUrl     string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3" json:"stream_url,omitempty"` // URL of the video stream
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StartVideoStreamResponse) Reset() {
-	*x = StartVideoStreamResponse{}
+func (x *GetVideoStreamURLResponse) Reset() {
+	*x = GetVideoStreamURLResponse{}
 	mi := &file_v1_services_driver_data_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StartVideoStreamResponse) String() string {
+func (x *GetVideoStreamURLResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StartVideoStreamResponse) ProtoMessage() {}
+func (*GetVideoStreamURLResponse) ProtoMessage() {}
 
-func (x *StartVideoStreamResponse) ProtoReflect() protoreflect.Message {
+func (x *GetVideoStreamURLResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_services_driver_data_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -157,38 +157,38 @@ func (x *StartVideoStreamResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StartVideoStreamResponse.ProtoReflect.Descriptor instead.
-func (*StartVideoStreamResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetVideoStreamURLResponse.ProtoReflect.Descriptor instead.
+func (*GetVideoStreamURLResponse) Descriptor() ([]byte, []int) {
 	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *StartVideoStreamResponse) GetStreamUrl() string {
+func (x *GetVideoStreamURLResponse) GetStreamUrl() string {
 	if x != nil {
 		return x.StreamUrl
 	}
 	return ""
 }
 
-type GetVideoFrameRequest struct {
+type StreamVideoFramesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetVideoFrameRequest) Reset() {
-	*x = GetVideoFrameRequest{}
+func (x *StreamVideoFramesRequest) Reset() {
+	*x = StreamVideoFramesRequest{}
 	mi := &file_v1_services_driver_data_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetVideoFrameRequest) String() string {
+func (x *StreamVideoFramesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetVideoFrameRequest) ProtoMessage() {}
+func (*StreamVideoFramesRequest) ProtoMessage() {}
 
-func (x *GetVideoFrameRequest) ProtoReflect() protoreflect.Message {
+func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_services_driver_data_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -200,32 +200,32 @@ func (x *GetVideoFrameRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetVideoFrameRequest.ProtoReflect.Descriptor instead.
-func (*GetVideoFrameRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamVideoFramesRequest.ProtoReflect.Descriptor instead.
+func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
 	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{2}
 }
 
-type GetVideoFrameResponse struct {
+type StreamVideoFramesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Frame         *stream.RawFrame       `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // raw frame from the camera
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetVideoFrameResponse) Reset() {
-	*x = GetVideoFrameResponse{}
+func (x *StreamVideoFramesResponse) Reset() {
+	*x = StreamVideoFramesResponse{}
 	mi := &file_v1_services_driver_data_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetVideoFrameResponse) String() string {
+func (x *StreamVideoFramesResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetVideoFrameResponse) ProtoMessage() {}
+func (*StreamVideoFramesResponse) ProtoMessage() {}
 
-func (x *GetVideoFrameResponse) ProtoReflect() protoreflect.Message {
+func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_services_driver_data_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -237,12 +237,12 @@ func (x *GetVideoFrameResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetVideoFrameResponse.ProtoReflect.Descriptor instead.
-func (*GetVideoFrameResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamVideoFramesResponse.ProtoReflect.Descriptor instead.
+func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
 	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetVideoFrameResponse) GetFrame() *stream.RawFrame {
+func (x *StreamVideoFramesResponse) GetFrame() *stream.RawFrame {
 	if x != nil {
 		return x.Frame
 	}
@@ -333,10 +333,10 @@ var File_v1_services_driver_data_proto protoreflect.FileDescriptor
 
 const file_v1_services_driver_data_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/services/driver/data.proto\x12&steeleagle.api.v1.services.driver.data\x1a\x1fv1/messages/stream/stream.proto\"\x82\x02\n" +
-	"\x17StartVideoStreamRequest\x12j\n" +
+	"\x1dv1/services/driver/data.proto\x12&steeleagle.api.v1.services.driver.data\x1a\x1fv1/messages/stream/stream.proto\"\x84\x02\n" +
+	"\x18GetVideoStreamURLRequest\x12k\n" +
 	"\n" +
-	"resolution\x18\x01 \x01(\x0e2J.steeleagle.api.v1.services.driver.data.StartVideoStreamRequest.ResolutionR\n" +
+	"resolution\x18\x01 \x01(\x0e2K.steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.ResolutionR\n" +
 	"resolution\"{\n" +
 	"\n" +
 	"Resolution\x12\x1a\n" +
@@ -344,19 +344,19 @@ const file_v1_services_driver_data_proto_rawDesc = "" +
 	"\x0fRESOLUTION_480P\x10\x01\x12\x13\n" +
 	"\x0fRESOLUTION_720P\x10\x02\x12\x14\n" +
 	"\x10RESOLUTION_1080P\x10\x03\x12\x11\n" +
-	"\rRESOLUTION_4K\x10\x04\"9\n" +
-	"\x18StartVideoStreamResponse\x12\x1d\n" +
+	"\rRESOLUTION_4K\x10\x04\":\n" +
+	"\x19GetVideoStreamURLResponse\x12\x1d\n" +
 	"\n" +
-	"stream_url\x18\x01 \x01(\tR\tstreamUrl\"\x16\n" +
-	"\x14GetVideoFrameRequest\"Z\n" +
-	"\x15GetVideoFrameResponse\x12A\n" +
+	"stream_url\x18\x01 \x01(\tR\tstreamUrl\"\x1a\n" +
+	"\x18StreamVideoFramesRequest\"^\n" +
+	"\x19StreamVideoFramesResponse\x12A\n" +
 	"\x05frame\x18\x01 \x01(\v2+.steeleagle.api.v1.messages.stream.RawFrameR\x05frame\"\x18\n" +
 	"\x16StreamTelemetryRequest\"e\n" +
 	"\x17StreamTelemetryResponse\x12J\n" +
-	"\ttelemetry\x18\x01 \x01(\v2,.steeleagle.api.v1.messages.stream.TelemetryR\ttelemetry2\xd4\x03\n" +
-	"\rStreamService\x12\x96\x01\n" +
-	"\x11GetVideoStreamURL\x12?.steeleagle.api.v1.services.driver.data.StartVideoStreamRequest\x1a@.steeleagle.api.v1.services.driver.data.StartVideoStreamResponse\x12\x92\x01\n" +
-	"\x11StreamVideoFrames\x12<.steeleagle.api.v1.services.driver.data.GetVideoFrameRequest\x1a=.steeleagle.api.v1.services.driver.data.GetVideoFrameResponse0\x01\x12\x94\x01\n" +
+	"\ttelemetry\x18\x01 \x01(\v2,.steeleagle.api.v1.messages.stream.TelemetryR\ttelemetry2\xde\x03\n" +
+	"\rStreamService\x12\x98\x01\n" +
+	"\x11GetVideoStreamURL\x12@.steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest\x1aA.steeleagle.api.v1.services.driver.data.GetVideoStreamURLResponse\x12\x9a\x01\n" +
+	"\x11StreamVideoFrames\x12@.steeleagle.api.v1.services.driver.data.StreamVideoFramesRequest\x1aA.steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse0\x01\x12\x94\x01\n" +
 	"\x0fStreamTelemetry\x12>.steeleagle.api.v1.services.driver.data.StreamTelemetryRequest\x1a?.steeleagle.api.v1.services.driver.data.StreamTelemetryResponse0\x01B\xb8\x02\n" +
 	"*com.steeleagle.api.v1.services.driver.dataB\tDataProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver\xa2\x02\x06SAVSDD\xaa\x02&Steeleagle.Api.V1.Services.Driver.Data\xca\x02&Steeleagle\\Api\\V1\\Services\\Driver\\Data\xe2\x022Steeleagle\\Api\\V1\\Services\\Driver\\Data\\GPBMetadata\xea\x02+Steeleagle::Api::V1::Services::Driver::Datab\x06proto3"
 
@@ -375,25 +375,25 @@ func file_v1_services_driver_data_proto_rawDescGZIP() []byte {
 var file_v1_services_driver_data_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_services_driver_data_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_services_driver_data_proto_goTypes = []any{
-	(StartVideoStreamRequest_Resolution)(0), // 0: steeleagle.api.v1.services.driver.data.StartVideoStreamRequest.Resolution
-	(*StartVideoStreamRequest)(nil),         // 1: steeleagle.api.v1.services.driver.data.StartVideoStreamRequest
-	(*StartVideoStreamResponse)(nil),        // 2: steeleagle.api.v1.services.driver.data.StartVideoStreamResponse
-	(*GetVideoFrameRequest)(nil),            // 3: steeleagle.api.v1.services.driver.data.GetVideoFrameRequest
-	(*GetVideoFrameResponse)(nil),           // 4: steeleagle.api.v1.services.driver.data.GetVideoFrameResponse
-	(*StreamTelemetryRequest)(nil),          // 5: steeleagle.api.v1.services.driver.data.StreamTelemetryRequest
-	(*StreamTelemetryResponse)(nil),         // 6: steeleagle.api.v1.services.driver.data.StreamTelemetryResponse
-	(*stream.RawFrame)(nil),                 // 7: steeleagle.api.v1.messages.stream.RawFrame
-	(*stream.Telemetry)(nil),                // 8: steeleagle.api.v1.messages.stream.Telemetry
+	(GetVideoStreamURLRequest_Resolution)(0), // 0: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.Resolution
+	(*GetVideoStreamURLRequest)(nil),         // 1: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest
+	(*GetVideoStreamURLResponse)(nil),        // 2: steeleagle.api.v1.services.driver.data.GetVideoStreamURLResponse
+	(*StreamVideoFramesRequest)(nil),         // 3: steeleagle.api.v1.services.driver.data.StreamVideoFramesRequest
+	(*StreamVideoFramesResponse)(nil),        // 4: steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse
+	(*StreamTelemetryRequest)(nil),           // 5: steeleagle.api.v1.services.driver.data.StreamTelemetryRequest
+	(*StreamTelemetryResponse)(nil),          // 6: steeleagle.api.v1.services.driver.data.StreamTelemetryResponse
+	(*stream.RawFrame)(nil),                  // 7: steeleagle.api.v1.messages.stream.RawFrame
+	(*stream.Telemetry)(nil),                 // 8: steeleagle.api.v1.messages.stream.Telemetry
 }
 var file_v1_services_driver_data_proto_depIdxs = []int32{
-	0, // 0: steeleagle.api.v1.services.driver.data.StartVideoStreamRequest.resolution:type_name -> steeleagle.api.v1.services.driver.data.StartVideoStreamRequest.Resolution
-	7, // 1: steeleagle.api.v1.services.driver.data.GetVideoFrameResponse.frame:type_name -> steeleagle.api.v1.messages.stream.RawFrame
+	0, // 0: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.resolution:type_name -> steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.Resolution
+	7, // 1: steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse.frame:type_name -> steeleagle.api.v1.messages.stream.RawFrame
 	8, // 2: steeleagle.api.v1.services.driver.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle.api.v1.messages.stream.Telemetry
-	1, // 3: steeleagle.api.v1.services.driver.data.StreamService.GetVideoStreamURL:input_type -> steeleagle.api.v1.services.driver.data.StartVideoStreamRequest
-	3, // 4: steeleagle.api.v1.services.driver.data.StreamService.StreamVideoFrames:input_type -> steeleagle.api.v1.services.driver.data.GetVideoFrameRequest
+	1, // 3: steeleagle.api.v1.services.driver.data.StreamService.GetVideoStreamURL:input_type -> steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest
+	3, // 4: steeleagle.api.v1.services.driver.data.StreamService.StreamVideoFrames:input_type -> steeleagle.api.v1.services.driver.data.StreamVideoFramesRequest
 	5, // 5: steeleagle.api.v1.services.driver.data.StreamService.StreamTelemetry:input_type -> steeleagle.api.v1.services.driver.data.StreamTelemetryRequest
-	2, // 6: steeleagle.api.v1.services.driver.data.StreamService.GetVideoStreamURL:output_type -> steeleagle.api.v1.services.driver.data.StartVideoStreamResponse
-	4, // 7: steeleagle.api.v1.services.driver.data.StreamService.StreamVideoFrames:output_type -> steeleagle.api.v1.services.driver.data.GetVideoFrameResponse
+	2, // 6: steeleagle.api.v1.services.driver.data.StreamService.GetVideoStreamURL:output_type -> steeleagle.api.v1.services.driver.data.GetVideoStreamURLResponse
+	4, // 7: steeleagle.api.v1.services.driver.data.StreamService.StreamVideoFrames:output_type -> steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse
 	6, // 8: steeleagle.api.v1.services.driver.data.StreamService.StreamTelemetry:output_type -> steeleagle.api.v1.services.driver.data.StreamTelemetryResponse
 	6, // [6:9] is the sub-list for method output_type
 	3, // [3:6] is the sub-list for method input_type

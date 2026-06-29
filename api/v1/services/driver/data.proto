@@ -16,22 +16,25 @@ import "v1/messages/stream/stream.proto";
  */
 service StreamService {
   /*
-   * Start streaming video from the vehicle.
+   * Get the video streaming URL from the vehicle.
    *
    * Retrieves the video stream URL from the vehicle so that it can be
    * broadcast to the rest of the system. This function should only be called
    * by the OS, and not by any plugins.
    */
-  rpc GetVideoStreamURL (StartVideoStreamRequest)
-    returns (StartVideoStreamResponse);
+  rpc GetVideoStreamURL (GetVideoStreamURLRequest)
+    returns (GetVideoStreamURLResponse);
+
   /*
-   * Gets a video frame from the vehicle.
+   * Stream individual video frames from the vehicle.
    *
-   * Retrieves a video frame from the vehicle. This is used when camera data is
-   * accessible without needing a stream. This function should only be called
-   * by the OS, and not by any plugins.
+   * Retrieves a stream of individual video frame from the vehicle. This is
+   * used when camera data is accessible without needing a stream. This
+   * function should only be called by the OS, and not by any plugins.
    */
-  rpc StreamVideoFrames (GetVideoFrameRequest) returns (stream GetVideoFrameResponse);
+  rpc StreamVideoFrames (StreamVideoFramesRequest)
+    returns (stream StreamVideoFramesResponse);
+
   /*
    * Stream telemetry from the vehicle.
    *
@@ -42,7 +45,7 @@ service StreamService {
     returns (stream StreamTelemetryResponse);
 }
 
-message StartVideoStreamRequest {
+message GetVideoStreamURLRequest {
   enum Resolution {
     RESOLUTION_UNSPECIFIED = 0;
     RESOLUTION_480P = 1;
@@ -53,13 +56,13 @@ message StartVideoStreamRequest {
   Resolution resolution = 1; // video stream resolution
 }
 
-message StartVideoStreamResponse {
+message GetVideoStreamURLResponse {
   string stream_url = 1; // URL of the video stream
 }
 
-message GetVideoFrameRequest {}
+message StreamVideoFramesRequest {}
 
-message GetVideoFrameResponse {
+message StreamVideoFramesResponse {
   steeleagle.api.v1.messages.stream.RawFrame frame = 1; // raw frame from the camera
 }
 

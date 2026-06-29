@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	services_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
 )
@@ -18,10 +18,10 @@ type DriverTestPlugin struct {
 
 func CreateDriverTestPlugin() (*DriverTestPlugin, error) {
 	s := grpc.NewServer()
-	services_pb.RegisterControlServiceServer(s, &ControlTestService{})
+	driver_pb.RegisterControlServiceServer(s, &ControlTestService{})
 	return &DriverTestPlugin{
 		server: grpc.NewServer(),
-	}
+	}, nil
 }
 
 func (p *DriverTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
@@ -29,22 +29,23 @@ func (p *DriverTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Clien
 	if err != nil {
 		return err
 	}
-	ln, client, err := util.CreateEndpoints(lnFile, clientFile)
+	ln, _, err := util.CreateEndpoints(lnFile, clientFile)
 	if err != nil {
 		return err
 	}
 
 	go func() {
 		if err := p.server.Serve(ln); err != nil {
-			return err
+			return
 		}
 	}()
 
-	return nil
+	return nil, nil, nil
 }
 
 func (p *DriverTestPlugin) Stop() error {
 	p.server.GracefulStop()
+	return nil
 }
 
 // Mock mission plugin to act as an endpoint for test clients
@@ -57,10 +58,10 @@ type MissionTestPlugin struct {
 
 func CreateMissionTestPlugin() (*MissionTestPlugin, error) {
 	s := grpc.NewServer()
-	services_pb.RegisterControlServiceServer(s, &MissionTestService{})
+	driver_pb.RegisterControlServiceServer(s, &MissionTestService{})
 	return &MissionTestPlugin{
 		server: s,
-	}
+	}, nil
 }
 
 func (p *MissionTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
@@ -76,15 +77,16 @@ func (p *MissionTestPlugin) Spawn(ctx context.Context) (net.Listener, *grpc.Clie
 
 	go func() {
 		if err := p.server.Serve(ln); err != nil {
-			return err
+			return
 		}
 	}()
 
-	return nil
+	return nil, nil, nil
 }
 
 func (p *MissionTestPlugin) Stop() error {
 	p.server.GracefulStop()
+	return nil
 }
 
 // Service definitions

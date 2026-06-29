@@ -8,13 +8,13 @@ import (
 
 	result_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	data_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/data"
-	stream_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/stream"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"google.golang.org/grpc"
 )
 
 type DataService struct {
-	data_pb.UnimplementedDataServiceServer
+	vehicle_pb.UnimplementedDataServiceServer
 	vehicle          *Vehicle
 	latest_telemetry *stream_msg_pb.Telemetry
 	latest_frame     *stream_msg_pb.EncodedFrame
@@ -24,7 +24,7 @@ type DataService struct {
 	result_mu        *sync.RWMutex
 }
 
-func (s *DataService) GetResult(ctx context.Context, req *data_pb.GetResultRequest) (*data_pb.GetResultResponse, error) {
+func (s *DataService) GetResult(ctx context.Context, req *vehicle_pb.GetResultRequest) (*vehicle_pb.GetResultResponse, error) {
 	s.result_mu.RLock()
 	defer s.result_mu.RUnlock()
 	producer_name := req.Name
@@ -36,34 +36,34 @@ func (s *DataService) GetResult(ctx context.Context, req *data_pb.GetResultReque
 	if val == nil {
 		return nil, fmt.Errorf("no result available for producer %s", producer_name)
 	}
-	resp := &data_pb.GetResultResponse{Result: val}
+	resp := &vehicle_pb.GetResultResponse{Result: val}
 	return resp, nil
 }
 
-func (s *DataService) GetTelemetry(ctx context.Context, req *data_pb.GetTelemetryRequest) (*data_pb.GetTelemetryResponse, error) {
+func (s *DataService) GetTelemetry(ctx context.Context, req *vehicle_pb.GetTelemetryRequest) (*vehicle_pb.GetTelemetryResponse, error) {
 	s.tel_mu.RLock()
 	defer s.tel_mu.RUnlock()
 	if s.latest_telemetry == nil {
 		return nil, fmt.Errorf("telemetry unavailable")
 	}
-	resp := &data_pb.GetTelemetryResponse{Telemetry: s.latest_telemetry}
+	resp := &vehicle_pb.GetTelemetryResponse{Telemetry: s.latest_telemetry}
 	return resp, nil
 }
 
-func (s *DataService) GetFrame(ctx context.Context, req *data_pb.GetFrameRequest) (*data_pb.GetFrameResponse, error) {
+func (s *DataService) GetFrame(ctx context.Context, req *vehicle_pb.GetFrameRequest) (*vehicle_pb.GetFrameResponse, error) {
 	s.frame_mu.RLock()
 	defer s.frame_mu.RUnlock()
 	if s.latest_frame == nil {
 		return nil, fmt.Errorf("frame unavilable")
 	}
-	resp := &data_pb.GetFrameResponse{Frame: s.latest_frame}
+	resp := &vehicle_pb.GetFrameResponse{Frame: s.latest_frame}
 	return resp, nil
 }
 
 // Encapsulates telemetry stream response along with an error for sending
 // in a channel
 type TelemetryStreamResponse struct {
-	resp *stream_pb.StreamTelemetryResponse
+	resp *driver_pb.StreamTelemetryResponse
 	err  error
 }
 
@@ -71,7 +71,7 @@ type TelemetryStreamResponse struct {
 // specified error channel.
 func (s *DataService) recvTelemetry(
 	ctx context.Context,
-	stream grpc.ServerStreamingClient[stream_pb.StreamTelemetryResponse],
+	stream grpc.ServerStreamingClient[driver_pb.StreamTelemetryResponse],
 	errCh chan error) {
 	ch := make(chan TelemetryStreamResponse)
 	// Invoke blocking call to receive stream data in another goroutine
@@ -102,11 +102,11 @@ func (s *DataService) recvTelemetry(
 }
 
 func (s *DataService) StartVideoStream(ctx context.Context) (chan error, error) {
-	client := stream_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &stream_pb.StartVideoStreamRequest{}
+	client := driver_pb.NewStreamServiceClient(s.vehicle.conns.driver)
+	req := &driver_pb.GetVideoStreamURLRequest{}
 
 	// Send request to driver
-	stream, err := client.StreamTelemetry(ctx, req)
+	client.GetVideoStreamURL(ctx, req)
 
 	return nil, nil
 }
@@ -116,8 +116,8 @@ func (s *DataService) StartVideoStream(ctx context.Context) (chan error, error) 
 // is received. The launched goroutine uses the returned error channel to
 // report any errors. This method is non-blocking.
 func (s *DataService) StartTelemetryStream(ctx context.Context) (chan error, error) {
-	client := stream_pb.NewStreamServiceClient(s.vehicle.conns.driver)
-	req := &stream_pb.StreamTelemetryRequest{}
+	client := driver_pb.NewStreamServiceClient(s.vehicle.conns.driver)
+	req := &driver_pb.StreamTelemetryRequest{}
 
 	// Send request to driver
 	stream, err := client.StreamTelemetry(ctx, req)
