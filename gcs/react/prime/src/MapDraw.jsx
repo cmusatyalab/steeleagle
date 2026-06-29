@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -6,16 +6,20 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
+import { featuresToGeoJson, featuresToKml } from './mapUtils.js';
 
-function MapDraw({ features, setFeatures }) {
+function MapDraw({ features, setFeatures, toast }) {
     const mapRef = useRef();
     const mapContainerRef = useRef();
     const draw = useRef();
     const numFeaturesRef = useRef(0);
 
-    // Selected feature for naming
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [nameInput, setNameInput] = useState('');
+
+    const hasFeatures = useMemo(() => {
+        try { return JSON.parse(features).features.length > 0; } catch { return false; }
+    }, [features]);
 
     useEffect(() => {
         mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
@@ -82,7 +86,6 @@ function MapDraw({ features, setFeatures }) {
         mapRef.current.on('draw.selectionchange', selectFeature);
 
         const timer = setTimeout(() => { mapRef.current?.resize(); }, 100);
-
         const ro = new ResizeObserver(() => { mapRef.current?.resize(); });
         ro.observe(mapContainerRef.current);
 
@@ -98,22 +101,60 @@ function MapDraw({ features, setFeatures }) {
         setFeatures(JSON.stringify(draw.current.getAll()));
     }
 
+    function handleExportGeoJson() {
+        const blob = new Blob([featuresToGeoJson(features)], { type: 'application/geo+json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'map-features.geojson';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function handleExportKml() {
+        const blob = new Blob([featuresToKml(features)], { type: 'application/vnd.google-earth.kml+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'map-features.kml';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     return (
         <div className="flex flex-column" style={{ height: '100%' }}>
-            {selectedFeatureId && (
-                <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a' }}>
-                    <label className="text-sm">Area name:</label>
-                    <InputText
-                        value={nameInput}
-                        onChange={e => setNameInput(e.target.value)}
-                        placeholder="e.g. AreaB"
-                        className="p-inputtext-sm"
-                        style={{ width: 160 }}
-                        onKeyDown={e => { if (e.key === 'Enter') applyName(); }}
-                    />
-                    <Button label="Set" size="small" onClick={applyName} />
-                </div>
-            )}
+            <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a' }}>
+                <Button
+                    label="Export GeoJSON"
+                    icon="pi pi-file"
+                    size="small"
+                    outlined
+                    disabled={!hasFeatures}
+                    onClick={handleExportGeoJson}
+                />
+                <Button
+                    label="Export KML"
+                    icon="pi pi-file-export"
+                    size="small"
+                    outlined
+                    disabled={!hasFeatures}
+                    onClick={handleExportKml}
+                />
+                {selectedFeatureId && (
+                    <div className="flex gap-2 align-items-center" style={{ marginLeft: 'auto' }}>
+                        <label className="text-sm">Area name:</label>
+                        <InputText
+                            value={nameInput}
+                            onChange={e => setNameInput(e.target.value)}
+                            placeholder="e.g. AreaB"
+                            className="p-inputtext-sm"
+                            style={{ width: 160 }}
+                            onKeyDown={e => { if (e.key === 'Enter') applyName(); }}
+                        />
+                        <Button label="Set" size="small" onClick={applyName} />
+                    </div>
+                )}
+            </div>
             <div id="map-container" ref={mapContainerRef} style={{ flex: 1 }} />
         </div>
     );

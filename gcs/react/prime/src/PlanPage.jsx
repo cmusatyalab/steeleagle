@@ -857,7 +857,7 @@ function PlanPage({ vehicles, squadList, theme }) {
 
                 <TabPanel header="Map" leftIcon="pi pi-map mr-2" headerClassName="mr-2">
                     <div style={{ height: 'calc(100vh - 180px)' }}>
-                        <MapDraw features={features} setFeatures={setFeatures} />
+                        <MapDraw features={features} setFeatures={setFeatures} toast={toast} />
                     </div>
                 </TabPanel>
 
