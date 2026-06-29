@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle.api.v1.services.data;
+package steeleagle.api.v1.services.vehicle.data;
 
 import "v1/messages/result/result.proto";
 import "v1/messages/stream/stream.proto";

@@ -6,9 +6,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: v1/services/data/data.proto
+// source: v1/services/vehicle/data.proto
 
-package data
+package vehicle
 
 import (
 	result "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
@@ -36,7 +36,7 @@ type GetResultRequest struct {
 
 func (x *GetResultRequest) Reset() {
 	*x = GetResultRequest{}
-	mi := &file_v1_services_data_data_proto_msgTypes[0]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -48,7 +48,7 @@ func (x *GetResultRequest) String() string {
 func (*GetResultRequest) ProtoMessage() {}
 
 func (x *GetResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[0]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,7 +61,7 @@ func (x *GetResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResultRequest.ProtoReflect.Descriptor instead.
 func (*GetResultRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetResultRequest) GetName() string {
@@ -80,7 +80,7 @@ type GetResultResponse struct {
 
 func (x *GetResultResponse) Reset() {
 	*x = GetResultResponse{}
-	mi := &file_v1_services_data_data_proto_msgTypes[1]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -92,7 +92,7 @@ func (x *GetResultResponse) String() string {
 func (*GetResultResponse) ProtoMessage() {}
 
 func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[1]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -105,7 +105,7 @@ func (x *GetResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResultResponse.ProtoReflect.Descriptor instead.
 func (*GetResultResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetResultResponse) GetResult() *result.ComputeResult {
@@ -123,7 +123,7 @@ type GetTelemetryRequest struct {
 
 func (x *GetTelemetryRequest) Reset() {
 	*x = GetTelemetryRequest{}
-	mi := &file_v1_services_data_data_proto_msgTypes[2]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -135,7 +135,7 @@ func (x *GetTelemetryRequest) String() string {
 func (*GetTelemetryRequest) ProtoMessage() {}
 
 func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[2]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,7 +148,7 @@ func (x *GetTelemetryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTelemetryRequest.ProtoReflect.Descriptor instead.
 func (*GetTelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{2}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{2}
 }
 
 type GetTelemetryResponse struct {
@@ -160,7 +160,7 @@ type GetTelemetryResponse struct {
 
 func (x *GetTelemetryResponse) Reset() {
 	*x = GetTelemetryResponse{}
-	mi := &file_v1_services_data_data_proto_msgTypes[3]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -172,7 +172,7 @@ func (x *GetTelemetryResponse) String() string {
 func (*GetTelemetryResponse) ProtoMessage() {}
 
 func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[3]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -185,7 +185,7 @@ func (x *GetTelemetryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTelemetryResponse.ProtoReflect.Descriptor instead.
 func (*GetTelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{3}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetTelemetryResponse) GetTelemetry() *stream.Telemetry {
@@ -203,7 +203,7 @@ type GetFrameRequest struct {
 
 func (x *GetFrameRequest) Reset() {
 	*x = GetFrameRequest{}
-	mi := &file_v1_services_data_data_proto_msgTypes[4]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +215,7 @@ func (x *GetFrameRequest) String() string {
 func (*GetFrameRequest) ProtoMessage() {}
 
 func (x *GetFrameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[4]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +228,7 @@ func (x *GetFrameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFrameRequest.ProtoReflect.Descriptor instead.
 func (*GetFrameRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{4}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{4}
 }
 
 type GetFrameResponse struct {
@@ -240,7 +240,7 @@ type GetFrameResponse struct {
 
 func (x *GetFrameResponse) Reset() {
 	*x = GetFrameResponse{}
-	mi := &file_v1_services_data_data_proto_msgTypes[5]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -252,7 +252,7 @@ func (x *GetFrameResponse) String() string {
 func (*GetFrameResponse) ProtoMessage() {}
 
 func (x *GetFrameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_data_data_proto_msgTypes[5]
+	mi := &file_v1_services_vehicle_data_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -265,7 +265,7 @@ func (x *GetFrameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFrameResponse.ProtoReflect.Descriptor instead.
 func (*GetFrameResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_data_data_proto_rawDescGZIP(), []int{5}
+	return file_v1_services_vehicle_data_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetFrameResponse) GetFrame() *stream.EncodedFrame {
@@ -275,11 +275,11 @@ func (x *GetFrameResponse) GetFrame() *stream.EncodedFrame {
 	return nil
 }
 
-var File_v1_services_data_data_proto protoreflect.FileDescriptor
+var File_v1_services_vehicle_data_proto protoreflect.FileDescriptor
 
-const file_v1_services_data_data_proto_rawDesc = "" +
+const file_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\n" +
-	"\x1bv1/services/data/data.proto\x12\x1fsteeleagle.api.v1.services.data\x1a\x1fv1/messages/result/result.proto\x1a\x1fv1/messages/stream/stream.proto\"&\n" +
+	"\x1ev1/services/vehicle/data.proto\x12'steeleagle.api.v1.services.vehicle.data\x1a\x1fv1/messages/result/result.proto\x1a\x1fv1/messages/stream/stream.proto\"&\n" +
 	"\x10GetResultRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"]\n" +
 	"\x11GetResultResponse\x12H\n" +
@@ -289,47 +289,47 @@ const file_v1_services_data_data_proto_rawDesc = "" +
 	"\ttelemetry\x18\x01 \x01(\v2,.steeleagle.api.v1.messages.stream.TelemetryR\ttelemetry\"\x11\n" +
 	"\x0fGetFrameRequest\"Y\n" +
 	"\x10GetFrameResponse\x12E\n" +
-	"\x05frame\x18\x01 \x01(\v2/.steeleagle.api.v1.messages.stream.EncodedFrameR\x05frame2\xf5\x02\n" +
-	"\vDataService\x12t\n" +
-	"\tGetResult\x121.steeleagle.api.v1.services.data.GetResultRequest\x1a2.steeleagle.api.v1.services.data.GetResultResponse\"\x00\x12}\n" +
-	"\fGetTelemetry\x124.steeleagle.api.v1.services.data.GetTelemetryRequest\x1a5.steeleagle.api.v1.services.data.GetTelemetryResponse\"\x00\x12q\n" +
-	"\bGetFrame\x120.steeleagle.api.v1.services.data.GetFrameRequest\x1a1.steeleagle.api.v1.services.data.GetFrameResponse\"\x00B\x91\x02\n" +
-	"#com.steeleagle.api.v1.services.dataB\tDataProtoP\x01Z=github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/data\xa2\x02\x05SAVSD\xaa\x02\x1fSteeleagle.Api.V1.Services.Data\xca\x02\x1fSteeleagle\\Api\\V1\\Services\\Data\xe2\x02+Steeleagle\\Api\\V1\\Services\\Data\\GPBMetadata\xea\x02#Steeleagle::Api::V1::Services::Datab\x06proto3"
+	"\x05frame\x18\x01 \x01(\v2/.steeleagle.api.v1.messages.stream.EncodedFrameR\x05frame2\xa8\x03\n" +
+	"\vDataService\x12\x84\x01\n" +
+	"\tGetResult\x129.steeleagle.api.v1.services.vehicle.data.GetResultRequest\x1a:.steeleagle.api.v1.services.vehicle.data.GetResultResponse\"\x00\x12\x8d\x01\n" +
+	"\fGetTelemetry\x12<.steeleagle.api.v1.services.vehicle.data.GetTelemetryRequest\x1a=.steeleagle.api.v1.services.vehicle.data.GetTelemetryResponse\"\x00\x12\x81\x01\n" +
+	"\bGetFrame\x128.steeleagle.api.v1.services.vehicle.data.GetFrameRequest\x1a9.steeleagle.api.v1.services.vehicle.data.GetFrameResponse\"\x00B\xbe\x02\n" +
+	"+com.steeleagle.api.v1.services.vehicle.dataB\tDataProtoP\x01Z@github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle\xa2\x02\x06SAVSVD\xaa\x02'Steeleagle.Api.V1.Services.Vehicle.Data\xca\x02'Steeleagle\\Api\\V1\\Services\\Vehicle\\Data\xe2\x023Steeleagle\\Api\\V1\\Services\\Vehicle\\Data\\GPBMetadata\xea\x02,Steeleagle::Api::V1::Services::Vehicle::Datab\x06proto3"
 
 var (
-	file_v1_services_data_data_proto_rawDescOnce sync.Once
-	file_v1_services_data_data_proto_rawDescData []byte
+	file_v1_services_vehicle_data_proto_rawDescOnce sync.Once
+	file_v1_services_vehicle_data_proto_rawDescData []byte
 )
 
-func file_v1_services_data_data_proto_rawDescGZIP() []byte {
-	file_v1_services_data_data_proto_rawDescOnce.Do(func() {
-		file_v1_services_data_data_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_data_data_proto_rawDesc), len(file_v1_services_data_data_proto_rawDesc)))
+func file_v1_services_vehicle_data_proto_rawDescGZIP() []byte {
+	file_v1_services_vehicle_data_proto_rawDescOnce.Do(func() {
+		file_v1_services_vehicle_data_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_vehicle_data_proto_rawDesc), len(file_v1_services_vehicle_data_proto_rawDesc)))
 	})
-	return file_v1_services_data_data_proto_rawDescData
+	return file_v1_services_vehicle_data_proto_rawDescData
 }
 
-var file_v1_services_data_data_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_v1_services_data_data_proto_goTypes = []any{
-	(*GetResultRequest)(nil),     // 0: steeleagle.api.v1.services.data.GetResultRequest
-	(*GetResultResponse)(nil),    // 1: steeleagle.api.v1.services.data.GetResultResponse
-	(*GetTelemetryRequest)(nil),  // 2: steeleagle.api.v1.services.data.GetTelemetryRequest
-	(*GetTelemetryResponse)(nil), // 3: steeleagle.api.v1.services.data.GetTelemetryResponse
-	(*GetFrameRequest)(nil),      // 4: steeleagle.api.v1.services.data.GetFrameRequest
-	(*GetFrameResponse)(nil),     // 5: steeleagle.api.v1.services.data.GetFrameResponse
+var file_v1_services_vehicle_data_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_services_vehicle_data_proto_goTypes = []any{
+	(*GetResultRequest)(nil),     // 0: steeleagle.api.v1.services.vehicle.data.GetResultRequest
+	(*GetResultResponse)(nil),    // 1: steeleagle.api.v1.services.vehicle.data.GetResultResponse
+	(*GetTelemetryRequest)(nil),  // 2: steeleagle.api.v1.services.vehicle.data.GetTelemetryRequest
+	(*GetTelemetryResponse)(nil), // 3: steeleagle.api.v1.services.vehicle.data.GetTelemetryResponse
+	(*GetFrameRequest)(nil),      // 4: steeleagle.api.v1.services.vehicle.data.GetFrameRequest
+	(*GetFrameResponse)(nil),     // 5: steeleagle.api.v1.services.vehicle.data.GetFrameResponse
 	(*result.ComputeResult)(nil), // 6: steeleagle.api.v1.messages.result.ComputeResult
 	(*stream.Telemetry)(nil),     // 7: steeleagle.api.v1.messages.stream.Telemetry
 	(*stream.EncodedFrame)(nil),  // 8: steeleagle.api.v1.messages.stream.EncodedFrame
 }
-var file_v1_services_data_data_proto_depIdxs = []int32{
-	6, // 0: steeleagle.api.v1.services.data.GetResultResponse.result:type_name -> steeleagle.api.v1.messages.result.ComputeResult
-	7, // 1: steeleagle.api.v1.services.data.GetTelemetryResponse.telemetry:type_name -> steeleagle.api.v1.messages.stream.Telemetry
-	8, // 2: steeleagle.api.v1.services.data.GetFrameResponse.frame:type_name -> steeleagle.api.v1.messages.stream.EncodedFrame
-	0, // 3: steeleagle.api.v1.services.data.DataService.GetResult:input_type -> steeleagle.api.v1.services.data.GetResultRequest
-	2, // 4: steeleagle.api.v1.services.data.DataService.GetTelemetry:input_type -> steeleagle.api.v1.services.data.GetTelemetryRequest
-	4, // 5: steeleagle.api.v1.services.data.DataService.GetFrame:input_type -> steeleagle.api.v1.services.data.GetFrameRequest
-	1, // 6: steeleagle.api.v1.services.data.DataService.GetResult:output_type -> steeleagle.api.v1.services.data.GetResultResponse
-	3, // 7: steeleagle.api.v1.services.data.DataService.GetTelemetry:output_type -> steeleagle.api.v1.services.data.GetTelemetryResponse
-	5, // 8: steeleagle.api.v1.services.data.DataService.GetFrame:output_type -> steeleagle.api.v1.services.data.GetFrameResponse
+var file_v1_services_vehicle_data_proto_depIdxs = []int32{
+	6, // 0: steeleagle.api.v1.services.vehicle.data.GetResultResponse.result:type_name -> steeleagle.api.v1.messages.result.ComputeResult
+	7, // 1: steeleagle.api.v1.services.vehicle.data.GetTelemetryResponse.telemetry:type_name -> steeleagle.api.v1.messages.stream.Telemetry
+	8, // 2: steeleagle.api.v1.services.vehicle.data.GetFrameResponse.frame:type_name -> steeleagle.api.v1.messages.stream.EncodedFrame
+	0, // 3: steeleagle.api.v1.services.vehicle.data.DataService.GetResult:input_type -> steeleagle.api.v1.services.vehicle.data.GetResultRequest
+	2, // 4: steeleagle.api.v1.services.vehicle.data.DataService.GetTelemetry:input_type -> steeleagle.api.v1.services.vehicle.data.GetTelemetryRequest
+	4, // 5: steeleagle.api.v1.services.vehicle.data.DataService.GetFrame:input_type -> steeleagle.api.v1.services.vehicle.data.GetFrameRequest
+	1, // 6: steeleagle.api.v1.services.vehicle.data.DataService.GetResult:output_type -> steeleagle.api.v1.services.vehicle.data.GetResultResponse
+	3, // 7: steeleagle.api.v1.services.vehicle.data.DataService.GetTelemetry:output_type -> steeleagle.api.v1.services.vehicle.data.GetTelemetryResponse
+	5, // 8: steeleagle.api.v1.services.vehicle.data.DataService.GetFrame:output_type -> steeleagle.api.v1.services.vehicle.data.GetFrameResponse
 	6, // [6:9] is the sub-list for method output_type
 	3, // [3:6] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -337,26 +337,26 @@ var file_v1_services_data_data_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_v1_services_data_data_proto_init() }
-func file_v1_services_data_data_proto_init() {
-	if File_v1_services_data_data_proto != nil {
+func init() { file_v1_services_vehicle_data_proto_init() }
+func file_v1_services_vehicle_data_proto_init() {
+	if File_v1_services_vehicle_data_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_data_data_proto_rawDesc), len(file_v1_services_data_data_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_vehicle_data_proto_rawDesc), len(file_v1_services_vehicle_data_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_v1_services_data_data_proto_goTypes,
-		DependencyIndexes: file_v1_services_data_data_proto_depIdxs,
-		MessageInfos:      file_v1_services_data_data_proto_msgTypes,
+		GoTypes:           file_v1_services_vehicle_data_proto_goTypes,
+		DependencyIndexes: file_v1_services_vehicle_data_proto_depIdxs,
+		MessageInfos:      file_v1_services_vehicle_data_proto_msgTypes,
 	}.Build()
-	File_v1_services_data_data_proto = out.File
-	file_v1_services_data_data_proto_goTypes = nil
-	file_v1_services_data_data_proto_depIdxs = nil
+	File_v1_services_vehicle_data_proto = out.File
+	file_v1_services_vehicle_data_proto_goTypes = nil
+	file_v1_services_vehicle_data_proto_depIdxs = nil
 }

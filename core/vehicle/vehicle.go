@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	data_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/data"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
@@ -29,6 +29,7 @@ type Vehicle struct {
     log          zerolog.Logger   // logger object
     outFile      *os.File         // output file to log to (if no logger is provided)
     errCh        <-chan error     // error channel shared by listeners
+	dataSvc      DataService      // data service
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -71,7 +72,7 @@ func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 	)
 
 	// Register data service
-	data_pb.RegisterDataServiceServer(vehicle.services, &DataService{vehicle: vehicle})
+    driver_pb.RegisterDataServiceServer(vehicle.server, &DataService{vehicle: vehicle})
 
 	return vehicle, nil
 }

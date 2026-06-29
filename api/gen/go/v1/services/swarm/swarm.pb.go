@@ -12,7 +12,7 @@ package swarm
 
 import (
 	_ "github.com/cmusatyalab/steeleagle/api/gen/go/v1"
-	control "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/control"
+	driver "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	mission "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -29,9 +29,9 @@ const (
 )
 
 type SwarmTakeOffRequest struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Vehicles      []string                `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.TakeOffRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
+	Request       *driver.TakeOffRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -73,7 +73,7 @@ func (x *SwarmTakeOffRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmTakeOffRequest) GetRequest() *control.TakeOffRequest {
+func (x *SwarmTakeOffRequest) GetRequest() *driver.TakeOffRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -81,11 +81,11 @@ func (x *SwarmTakeOffRequest) GetRequest() *control.TakeOffRequest {
 }
 
 type SwarmTakeOffResponse struct {
-	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Vehicle       string                   `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.TakeOffResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                   `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                   `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Vehicle       string                  `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
+	Response      *driver.TakeOffResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Code          uint32                  `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
+	Details       string                  `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -127,7 +127,7 @@ func (x *SwarmTakeOffResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmTakeOffResponse) GetResponse() *control.TakeOffResponse {
+func (x *SwarmTakeOffResponse) GetResponse() *driver.TakeOffResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -151,7 +151,7 @@ func (x *SwarmTakeOffResponse) GetDetails() string {
 type SwarmLandRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.LandRequest   `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	Request       *driver.LandRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -193,7 +193,7 @@ func (x *SwarmLandRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmLandRequest) GetRequest() *control.LandRequest {
+func (x *SwarmLandRequest) GetRequest() *driver.LandRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -203,7 +203,7 @@ func (x *SwarmLandRequest) GetRequest() *control.LandRequest {
 type SwarmLandResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.LandResponse  `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Response      *driver.LandResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
 	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
 	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
@@ -247,7 +247,7 @@ func (x *SwarmLandResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmLandResponse) GetResponse() *control.LandResponse {
+func (x *SwarmLandResponse) GetResponse() *driver.LandResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -271,7 +271,7 @@ func (x *SwarmLandResponse) GetDetails() string {
 type SwarmHoldRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.HoldRequest   `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	Request       *driver.HoldRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -313,7 +313,7 @@ func (x *SwarmHoldRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmHoldRequest) GetRequest() *control.HoldRequest {
+func (x *SwarmHoldRequest) GetRequest() *driver.HoldRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -323,7 +323,7 @@ func (x *SwarmHoldRequest) GetRequest() *control.HoldRequest {
 type SwarmHoldResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.HoldResponse  `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Response      *driver.HoldResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
 	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
 	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
@@ -367,7 +367,7 @@ func (x *SwarmHoldResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmHoldResponse) GetResponse() *control.HoldResponse {
+func (x *SwarmHoldResponse) GetResponse() *driver.HoldResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -391,7 +391,7 @@ func (x *SwarmHoldResponse) GetDetails() string {
 type SwarmKillRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicles      []string               `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.KillRequest   `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	Request       *driver.KillRequest    `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -433,7 +433,7 @@ func (x *SwarmKillRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmKillRequest) GetRequest() *control.KillRequest {
+func (x *SwarmKillRequest) GetRequest() *driver.KillRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -443,7 +443,7 @@ func (x *SwarmKillRequest) GetRequest() *control.KillRequest {
 type SwarmKillResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicle       string                 `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.KillResponse  `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Response      *driver.KillResponse   `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
 	Code          uint32                 `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
 	Details       string                 `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
@@ -487,7 +487,7 @@ func (x *SwarmKillResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmKillResponse) GetResponse() *control.KillResponse {
+func (x *SwarmKillResponse) GetResponse() *driver.KillResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -509,9 +509,9 @@ func (x *SwarmKillResponse) GetDetails() string {
 }
 
 type SwarmReturnToHomeRequest struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicles      []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.ReturnToHomeRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Vehicles      []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
+	Request       *driver.ReturnToHomeRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -553,7 +553,7 @@ func (x *SwarmReturnToHomeRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmReturnToHomeRequest) GetRequest() *control.ReturnToHomeRequest {
+func (x *SwarmReturnToHomeRequest) GetRequest() *driver.ReturnToHomeRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -561,11 +561,11 @@ func (x *SwarmReturnToHomeRequest) GetRequest() *control.ReturnToHomeRequest {
 }
 
 type SwarmReturnToHomeResponse struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Vehicle       string                        `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.ReturnToHomeResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                        `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                        `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Vehicle       string                       `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
+	Response      *driver.ReturnToHomeResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Code          uint32                       `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
+	Details       string                       `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -607,7 +607,7 @@ func (x *SwarmReturnToHomeResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmReturnToHomeResponse) GetResponse() *control.ReturnToHomeResponse {
+func (x *SwarmReturnToHomeResponse) GetResponse() *driver.ReturnToHomeResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -629,9 +629,9 @@ func (x *SwarmReturnToHomeResponse) GetDetails() string {
 }
 
 type SwarmSetVelocityRequest struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Vehicles      []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.SetVelocityRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Vehicles      []string                   `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
+	Request       *driver.SetVelocityRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -673,7 +673,7 @@ func (x *SwarmSetVelocityRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmSetVelocityRequest) GetRequest() *control.SetVelocityRequest {
+func (x *SwarmSetVelocityRequest) GetRequest() *driver.SetVelocityRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -681,11 +681,11 @@ func (x *SwarmSetVelocityRequest) GetRequest() *control.SetVelocityRequest {
 }
 
 type SwarmSetVelocityResponse struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicle       string                       `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.SetVelocityResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                       `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                       `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Vehicle       string                      `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
+	Response      *driver.SetVelocityResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Code          uint32                      `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
+	Details       string                      `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -727,7 +727,7 @@ func (x *SwarmSetVelocityResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmSetVelocityResponse) GetResponse() *control.SetVelocityResponse {
+func (x *SwarmSetVelocityResponse) GetResponse() *driver.SetVelocityResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -749,9 +749,9 @@ func (x *SwarmSetVelocityResponse) GetDetails() string {
 }
 
 type SwarmSetGimbalPoseRequest struct {
-	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Vehicles      []string                      `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *control.SetGimbalPoseRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Vehicles      []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
+	Request       *driver.SetGimbalPoseRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -793,7 +793,7 @@ func (x *SwarmSetGimbalPoseRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmSetGimbalPoseRequest) GetRequest() *control.SetGimbalPoseRequest {
+func (x *SwarmSetGimbalPoseRequest) GetRequest() *driver.SetGimbalPoseRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -801,11 +801,11 @@ func (x *SwarmSetGimbalPoseRequest) GetRequest() *control.SetGimbalPoseRequest {
 }
 
 type SwarmSetGimbalPoseResponse struct {
-	state         protoimpl.MessageState         `protogen:"open.v1"`
-	Vehicle       string                         `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
-	Response      *control.SetGimbalPoseResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
-	Code          uint32                         `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
-	Details       string                         `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Vehicle       string                        `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`   // ID of vehicle
+	Response      *driver.SetGimbalPoseResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"` // proxied response object
+	Code          uint32                        `protobuf:"varint,3,opt,name=code,proto3" json:"code,omitempty"`        // gRPC status code
+	Details       string                        `protobuf:"bytes,4,opt,name=details,proto3" json:"details,omitempty"`   // error details, if applicable
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -847,7 +847,7 @@ func (x *SwarmSetGimbalPoseResponse) GetVehicle() string {
 	return ""
 }
 
-func (x *SwarmSetGimbalPoseResponse) GetResponse() *control.SetGimbalPoseResponse {
+func (x *SwarmSetGimbalPoseResponse) GetResponse() *driver.SetGimbalPoseResponse {
 	if x != nil {
 		return x.Response
 	}
@@ -1232,61 +1232,61 @@ var File_v1_services_swarm_swarm_proto protoreflect.FileDescriptor
 
 const file_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/services/swarm/swarm.proto\x12 steeleagle.api.v1.services.swarm\x1a\x0fv1/common.proto\x1a!v1/services/control/control.proto\x1a!v1/services/mission/mission.proto\"\x7f\n" +
+	"\x1dv1/services/swarm/swarm.proto\x12 steeleagle.api.v1.services.swarm\x1a\x0fv1/common.proto\x1a v1/services/driver/control.proto\x1a!v1/services/mission/mission.proto\"\x86\x01\n" +
 	"\x13SwarmTakeOffRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12L\n" +
-	"\arequest\x18\x02 \x01(\v22.steeleagle.api.v1.services.control.TakeOffRequestR\arequest\"\xaf\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12S\n" +
+	"\arequest\x18\x02 \x01(\v29.steeleagle.api.v1.services.driver.control.TakeOffRequestR\arequest\"\xb6\x01\n" +
 	"\x14SwarmTakeOffResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12O\n" +
-	"\bresponse\x18\x02 \x01(\v23.steeleagle.api.v1.services.control.TakeOffResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12V\n" +
+	"\bresponse\x18\x02 \x01(\v2:.steeleagle.api.v1.services.driver.control.TakeOffResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"y\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x80\x01\n" +
 	"\x10SwarmLandRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12I\n" +
-	"\arequest\x18\x02 \x01(\v2/.steeleagle.api.v1.services.control.LandRequestR\arequest\"\xa9\x01\n" +
-	"\x11SwarmLandResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12L\n" +
-	"\bresponse\x18\x02 \x01(\v20.steeleagle.api.v1.services.control.LandResponseR\bresponse\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"y\n" +
-	"\x10SwarmHoldRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12I\n" +
-	"\arequest\x18\x02 \x01(\v2/.steeleagle.api.v1.services.control.HoldRequestR\arequest\"\xa9\x01\n" +
-	"\x11SwarmHoldResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12L\n" +
-	"\bresponse\x18\x02 \x01(\v20.steeleagle.api.v1.services.control.HoldResponseR\bresponse\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"y\n" +
-	"\x10SwarmKillRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12I\n" +
-	"\arequest\x18\x02 \x01(\v2/.steeleagle.api.v1.services.control.KillRequestR\arequest\"\xa9\x01\n" +
-	"\x11SwarmKillResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12L\n" +
-	"\bresponse\x18\x02 \x01(\v20.steeleagle.api.v1.services.control.KillResponseR\bresponse\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x89\x01\n" +
-	"\x18SwarmReturnToHomeRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12Q\n" +
-	"\arequest\x18\x02 \x01(\v27.steeleagle.api.v1.services.control.ReturnToHomeRequestR\arequest\"\xb9\x01\n" +
-	"\x19SwarmReturnToHomeResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12T\n" +
-	"\bresponse\x18\x02 \x01(\v28.steeleagle.api.v1.services.control.ReturnToHomeResponseR\bresponse\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x87\x01\n" +
-	"\x17SwarmSetVelocityRequest\x12\x1a\n" +
 	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12P\n" +
-	"\arequest\x18\x02 \x01(\v26.steeleagle.api.v1.services.control.SetVelocityRequestR\arequest\"\xb7\x01\n" +
-	"\x18SwarmSetVelocityResponse\x12\x18\n" +
+	"\arequest\x18\x02 \x01(\v26.steeleagle.api.v1.services.driver.control.LandRequestR\arequest\"\xb0\x01\n" +
+	"\x11SwarmLandResponse\x12\x18\n" +
 	"\avehicle\x18\x01 \x01(\tR\avehicle\x12S\n" +
-	"\bresponse\x18\x02 \x01(\v27.steeleagle.api.v1.services.control.SetVelocityResponseR\bresponse\x12\x12\n" +
+	"\bresponse\x18\x02 \x01(\v27.steeleagle.api.v1.services.driver.control.LandResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x8b\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x80\x01\n" +
+	"\x10SwarmHoldRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12P\n" +
+	"\arequest\x18\x02 \x01(\v26.steeleagle.api.v1.services.driver.control.HoldRequestR\arequest\"\xb0\x01\n" +
+	"\x11SwarmHoldResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12S\n" +
+	"\bresponse\x18\x02 \x01(\v27.steeleagle.api.v1.services.driver.control.HoldResponseR\bresponse\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x80\x01\n" +
+	"\x10SwarmKillRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12P\n" +
+	"\arequest\x18\x02 \x01(\v26.steeleagle.api.v1.services.driver.control.KillRequestR\arequest\"\xb0\x01\n" +
+	"\x11SwarmKillResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12S\n" +
+	"\bresponse\x18\x02 \x01(\v27.steeleagle.api.v1.services.driver.control.KillResponseR\bresponse\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x90\x01\n" +
+	"\x18SwarmReturnToHomeRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12X\n" +
+	"\arequest\x18\x02 \x01(\v2>.steeleagle.api.v1.services.driver.control.ReturnToHomeRequestR\arequest\"\xc0\x01\n" +
+	"\x19SwarmReturnToHomeResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12[\n" +
+	"\bresponse\x18\x02 \x01(\v2?.steeleagle.api.v1.services.driver.control.ReturnToHomeResponseR\bresponse\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x8e\x01\n" +
+	"\x17SwarmSetVelocityRequest\x12\x1a\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12W\n" +
+	"\arequest\x18\x02 \x01(\v2=.steeleagle.api.v1.services.driver.control.SetVelocityRequestR\arequest\"\xbe\x01\n" +
+	"\x18SwarmSetVelocityResponse\x12\x18\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12Z\n" +
+	"\bresponse\x18\x02 \x01(\v2>.steeleagle.api.v1.services.driver.control.SetVelocityResponseR\bresponse\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x92\x01\n" +
 	"\x19SwarmSetGimbalPoseRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12R\n" +
-	"\arequest\x18\x02 \x01(\v28.steeleagle.api.v1.services.control.SetGimbalPoseRequestR\arequest\"\xbb\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12Y\n" +
+	"\arequest\x18\x02 \x01(\v2?.steeleagle.api.v1.services.driver.control.SetGimbalPoseRequestR\arequest\"\xc2\x01\n" +
 	"\x1aSwarmSetGimbalPoseResponse\x12\x18\n" +
-	"\avehicle\x18\x01 \x01(\tR\avehicle\x12U\n" +
-	"\bresponse\x18\x02 \x01(\v29.steeleagle.api.v1.services.control.SetGimbalPoseResponseR\bresponse\x12\x12\n" +
+	"\avehicle\x18\x01 \x01(\tR\avehicle\x12\\\n" +
+	"\bresponse\x18\x02 \x01(\v2@.steeleagle.api.v1.services.driver.control.SetGimbalPoseResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
 	"\adetails\x18\x04 \x01(\tR\adetails\"\x8b\x01\n" +
 	"\x19SwarmUploadMissionRequest\x12\x1a\n" +
@@ -1362,20 +1362,20 @@ var file_v1_services_swarm_swarm_proto_goTypes = []any{
 	(*SwarmStartMissionResponse)(nil),     // 17: steeleagle.api.v1.services.swarm.SwarmStartMissionResponse
 	(*SwarmStopMissionRequest)(nil),       // 18: steeleagle.api.v1.services.swarm.SwarmStopMissionRequest
 	(*SwarmStopMissionResponse)(nil),      // 19: steeleagle.api.v1.services.swarm.SwarmStopMissionResponse
-	(*control.TakeOffRequest)(nil),        // 20: steeleagle.api.v1.services.control.TakeOffRequest
-	(*control.TakeOffResponse)(nil),       // 21: steeleagle.api.v1.services.control.TakeOffResponse
-	(*control.LandRequest)(nil),           // 22: steeleagle.api.v1.services.control.LandRequest
-	(*control.LandResponse)(nil),          // 23: steeleagle.api.v1.services.control.LandResponse
-	(*control.HoldRequest)(nil),           // 24: steeleagle.api.v1.services.control.HoldRequest
-	(*control.HoldResponse)(nil),          // 25: steeleagle.api.v1.services.control.HoldResponse
-	(*control.KillRequest)(nil),           // 26: steeleagle.api.v1.services.control.KillRequest
-	(*control.KillResponse)(nil),          // 27: steeleagle.api.v1.services.control.KillResponse
-	(*control.ReturnToHomeRequest)(nil),   // 28: steeleagle.api.v1.services.control.ReturnToHomeRequest
-	(*control.ReturnToHomeResponse)(nil),  // 29: steeleagle.api.v1.services.control.ReturnToHomeResponse
-	(*control.SetVelocityRequest)(nil),    // 30: steeleagle.api.v1.services.control.SetVelocityRequest
-	(*control.SetVelocityResponse)(nil),   // 31: steeleagle.api.v1.services.control.SetVelocityResponse
-	(*control.SetGimbalPoseRequest)(nil),  // 32: steeleagle.api.v1.services.control.SetGimbalPoseRequest
-	(*control.SetGimbalPoseResponse)(nil), // 33: steeleagle.api.v1.services.control.SetGimbalPoseResponse
+	(*driver.TakeOffRequest)(nil),         // 20: steeleagle.api.v1.services.driver.control.TakeOffRequest
+	(*driver.TakeOffResponse)(nil),        // 21: steeleagle.api.v1.services.driver.control.TakeOffResponse
+	(*driver.LandRequest)(nil),            // 22: steeleagle.api.v1.services.driver.control.LandRequest
+	(*driver.LandResponse)(nil),           // 23: steeleagle.api.v1.services.driver.control.LandResponse
+	(*driver.HoldRequest)(nil),            // 24: steeleagle.api.v1.services.driver.control.HoldRequest
+	(*driver.HoldResponse)(nil),           // 25: steeleagle.api.v1.services.driver.control.HoldResponse
+	(*driver.KillRequest)(nil),            // 26: steeleagle.api.v1.services.driver.control.KillRequest
+	(*driver.KillResponse)(nil),           // 27: steeleagle.api.v1.services.driver.control.KillResponse
+	(*driver.ReturnToHomeRequest)(nil),    // 28: steeleagle.api.v1.services.driver.control.ReturnToHomeRequest
+	(*driver.ReturnToHomeResponse)(nil),   // 29: steeleagle.api.v1.services.driver.control.ReturnToHomeResponse
+	(*driver.SetVelocityRequest)(nil),     // 30: steeleagle.api.v1.services.driver.control.SetVelocityRequest
+	(*driver.SetVelocityResponse)(nil),    // 31: steeleagle.api.v1.services.driver.control.SetVelocityResponse
+	(*driver.SetGimbalPoseRequest)(nil),   // 32: steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest
+	(*driver.SetGimbalPoseResponse)(nil),  // 33: steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse
 	(*mission.UploadMissionRequest)(nil),  // 34: steeleagle.api.v1.services.mission.UploadMissionRequest
 	(*mission.UploadMissionResponse)(nil), // 35: steeleagle.api.v1.services.mission.UploadMissionResponse
 	(*mission.StartMissionRequest)(nil),   // 36: steeleagle.api.v1.services.mission.StartMissionRequest
@@ -1383,20 +1383,20 @@ var file_v1_services_swarm_swarm_proto_goTypes = []any{
 	(*mission.StopMissionResponse)(nil),   // 38: steeleagle.api.v1.services.mission.StopMissionResponse
 }
 var file_v1_services_swarm_swarm_proto_depIdxs = []int32{
-	20, // 0: steeleagle.api.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle.api.v1.services.control.TakeOffRequest
-	21, // 1: steeleagle.api.v1.services.swarm.SwarmTakeOffResponse.response:type_name -> steeleagle.api.v1.services.control.TakeOffResponse
-	22, // 2: steeleagle.api.v1.services.swarm.SwarmLandRequest.request:type_name -> steeleagle.api.v1.services.control.LandRequest
-	23, // 3: steeleagle.api.v1.services.swarm.SwarmLandResponse.response:type_name -> steeleagle.api.v1.services.control.LandResponse
-	24, // 4: steeleagle.api.v1.services.swarm.SwarmHoldRequest.request:type_name -> steeleagle.api.v1.services.control.HoldRequest
-	25, // 5: steeleagle.api.v1.services.swarm.SwarmHoldResponse.response:type_name -> steeleagle.api.v1.services.control.HoldResponse
-	26, // 6: steeleagle.api.v1.services.swarm.SwarmKillRequest.request:type_name -> steeleagle.api.v1.services.control.KillRequest
-	27, // 7: steeleagle.api.v1.services.swarm.SwarmKillResponse.response:type_name -> steeleagle.api.v1.services.control.KillResponse
-	28, // 8: steeleagle.api.v1.services.swarm.SwarmReturnToHomeRequest.request:type_name -> steeleagle.api.v1.services.control.ReturnToHomeRequest
-	29, // 9: steeleagle.api.v1.services.swarm.SwarmReturnToHomeResponse.response:type_name -> steeleagle.api.v1.services.control.ReturnToHomeResponse
-	30, // 10: steeleagle.api.v1.services.swarm.SwarmSetVelocityRequest.request:type_name -> steeleagle.api.v1.services.control.SetVelocityRequest
-	31, // 11: steeleagle.api.v1.services.swarm.SwarmSetVelocityResponse.response:type_name -> steeleagle.api.v1.services.control.SetVelocityResponse
-	32, // 12: steeleagle.api.v1.services.swarm.SwarmSetGimbalPoseRequest.request:type_name -> steeleagle.api.v1.services.control.SetGimbalPoseRequest
-	33, // 13: steeleagle.api.v1.services.swarm.SwarmSetGimbalPoseResponse.response:type_name -> steeleagle.api.v1.services.control.SetGimbalPoseResponse
+	20, // 0: steeleagle.api.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle.api.v1.services.driver.control.TakeOffRequest
+	21, // 1: steeleagle.api.v1.services.swarm.SwarmTakeOffResponse.response:type_name -> steeleagle.api.v1.services.driver.control.TakeOffResponse
+	22, // 2: steeleagle.api.v1.services.swarm.SwarmLandRequest.request:type_name -> steeleagle.api.v1.services.driver.control.LandRequest
+	23, // 3: steeleagle.api.v1.services.swarm.SwarmLandResponse.response:type_name -> steeleagle.api.v1.services.driver.control.LandResponse
+	24, // 4: steeleagle.api.v1.services.swarm.SwarmHoldRequest.request:type_name -> steeleagle.api.v1.services.driver.control.HoldRequest
+	25, // 5: steeleagle.api.v1.services.swarm.SwarmHoldResponse.response:type_name -> steeleagle.api.v1.services.driver.control.HoldResponse
+	26, // 6: steeleagle.api.v1.services.swarm.SwarmKillRequest.request:type_name -> steeleagle.api.v1.services.driver.control.KillRequest
+	27, // 7: steeleagle.api.v1.services.swarm.SwarmKillResponse.response:type_name -> steeleagle.api.v1.services.driver.control.KillResponse
+	28, // 8: steeleagle.api.v1.services.swarm.SwarmReturnToHomeRequest.request:type_name -> steeleagle.api.v1.services.driver.control.ReturnToHomeRequest
+	29, // 9: steeleagle.api.v1.services.swarm.SwarmReturnToHomeResponse.response:type_name -> steeleagle.api.v1.services.driver.control.ReturnToHomeResponse
+	30, // 10: steeleagle.api.v1.services.swarm.SwarmSetVelocityRequest.request:type_name -> steeleagle.api.v1.services.driver.control.SetVelocityRequest
+	31, // 11: steeleagle.api.v1.services.swarm.SwarmSetVelocityResponse.response:type_name -> steeleagle.api.v1.services.driver.control.SetVelocityResponse
+	32, // 12: steeleagle.api.v1.services.swarm.SwarmSetGimbalPoseRequest.request:type_name -> steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest
+	33, // 13: steeleagle.api.v1.services.swarm.SwarmSetGimbalPoseResponse.response:type_name -> steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse
 	34, // 14: steeleagle.api.v1.services.swarm.SwarmUploadMissionRequest.request:type_name -> steeleagle.api.v1.services.mission.UploadMissionRequest
 	35, // 15: steeleagle.api.v1.services.swarm.SwarmUploadMissionResponse.response:type_name -> steeleagle.api.v1.services.mission.UploadMissionResponse
 	36, // 16: steeleagle.api.v1.services.swarm.SwarmStartMissionRequest.request:type_name -> steeleagle.api.v1.services.mission.StartMissionRequest

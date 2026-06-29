@@ -6,9 +6,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: v1/services/compute/compute.proto
+// source: v1/services/vehicle/compute.proto
 
-package compute
+package vehicle
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -62,11 +62,11 @@ func (x EngineLocation) String() string {
 }
 
 func (EngineLocation) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_compute_compute_proto_enumTypes[0].Descriptor()
+	return file_v1_services_vehicle_compute_proto_enumTypes[0].Descriptor()
 }
 
 func (EngineLocation) Type() protoreflect.EnumType {
-	return &file_v1_services_compute_compute_proto_enumTypes[0]
+	return &file_v1_services_vehicle_compute_proto_enumTypes[0]
 }
 
 func (x EngineLocation) Number() protoreflect.EnumNumber {
@@ -75,7 +75,7 @@ func (x EngineLocation) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EngineLocation.Descriptor instead.
 func (EngineLocation) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_compute_compute_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{0}
 }
 
 // Denotes which type of data to forward.
@@ -112,11 +112,11 @@ func (x Topic) String() string {
 }
 
 func (Topic) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_compute_compute_proto_enumTypes[1].Descriptor()
+	return file_v1_services_vehicle_compute_proto_enumTypes[1].Descriptor()
 }
 
 func (Topic) Type() protoreflect.EnumType {
-	return &file_v1_services_compute_compute_proto_enumTypes[1]
+	return &file_v1_services_vehicle_compute_proto_enumTypes[1]
 }
 
 func (x Topic) Number() protoreflect.EnumNumber {
@@ -125,7 +125,7 @@ func (x Topic) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Topic.Descriptor instead.
 func (Topic) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_compute_compute_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{1}
 }
 
 // Information about an engine.
@@ -134,14 +134,14 @@ type EngineInfo struct {
 	// engine ID
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// engine location
-	Location      EngineLocation `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle.api.v1.services.compute.EngineLocation" json:"location,omitempty"`
+	Location      EngineLocation `protobuf:"varint,2,opt,name=location,proto3,enum=steeleagle.api.v1.services.vehicle.compute.EngineLocation" json:"location,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EngineInfo) Reset() {
 	*x = EngineInfo{}
-	mi := &file_v1_services_compute_compute_proto_msgTypes[0]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +153,7 @@ func (x *EngineInfo) String() string {
 func (*EngineInfo) ProtoMessage() {}
 
 func (x *EngineInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_compute_compute_proto_msgTypes[0]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +166,7 @@ func (x *EngineInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EngineInfo.ProtoReflect.Descriptor instead.
 func (*EngineInfo) Descriptor() ([]byte, []int) {
-	return file_v1_services_compute_compute_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *EngineInfo) GetId() string {
@@ -185,15 +185,15 @@ func (x *EngineInfo) GetLocation() EngineLocation {
 
 type SetEnginesForTopicRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Topic         Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle.api.v1.services.compute.Topic" json:"topic,omitempty"` // topic to forward
-	Datasinks     []*EngineInfo          `protobuf:"bytes,2,rep,name=datasinks,proto3" json:"datasinks,omitempty"`                                        // name of target engines
+	Topic         Topic                  `protobuf:"varint,1,opt,name=topic,proto3,enum=steeleagle.api.v1.services.vehicle.compute.Topic" json:"topic,omitempty"` // topic to forward
+	Datasinks     []*EngineInfo          `protobuf:"bytes,2,rep,name=datasinks,proto3" json:"datasinks,omitempty"`                                                // name of target engines
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SetEnginesForTopicRequest) Reset() {
 	*x = SetEnginesForTopicRequest{}
-	mi := &file_v1_services_compute_compute_proto_msgTypes[1]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -205,7 +205,7 @@ func (x *SetEnginesForTopicRequest) String() string {
 func (*SetEnginesForTopicRequest) ProtoMessage() {}
 
 func (x *SetEnginesForTopicRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_compute_compute_proto_msgTypes[1]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -218,7 +218,7 @@ func (x *SetEnginesForTopicRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetEnginesForTopicRequest.ProtoReflect.Descriptor instead.
 func (*SetEnginesForTopicRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_compute_compute_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SetEnginesForTopicRequest) GetTopic() Topic {
@@ -243,7 +243,7 @@ type SetEnginesForTopicResponse struct {
 
 func (x *SetEnginesForTopicResponse) Reset() {
 	*x = SetEnginesForTopicResponse{}
-	mi := &file_v1_services_compute_compute_proto_msgTypes[2]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +255,7 @@ func (x *SetEnginesForTopicResponse) String() string {
 func (*SetEnginesForTopicResponse) ProtoMessage() {}
 
 func (x *SetEnginesForTopicResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_compute_compute_proto_msgTypes[2]
+	mi := &file_v1_services_vehicle_compute_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,21 +268,21 @@ func (x *SetEnginesForTopicResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetEnginesForTopicResponse.ProtoReflect.Descriptor instead.
 func (*SetEnginesForTopicResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_compute_compute_proto_rawDescGZIP(), []int{2}
+	return file_v1_services_vehicle_compute_proto_rawDescGZIP(), []int{2}
 }
 
-var File_v1_services_compute_compute_proto protoreflect.FileDescriptor
+var File_v1_services_vehicle_compute_proto protoreflect.FileDescriptor
 
-const file_v1_services_compute_compute_proto_rawDesc = "" +
+const file_v1_services_vehicle_compute_proto_rawDesc = "" +
 	"\n" +
-	"!v1/services/compute/compute.proto\x12\"steeleagle.api.v1.services.compute\"l\n" +
+	"!v1/services/vehicle/compute.proto\x12*steeleagle.api.v1.services.vehicle.compute\"t\n" +
 	"\n" +
 	"EngineInfo\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12N\n" +
-	"\blocation\x18\x02 \x01(\x0e22.steeleagle.api.v1.services.compute.EngineLocationR\blocation\"\xaa\x01\n" +
-	"\x19SetEnginesForTopicRequest\x12?\n" +
-	"\x05topic\x18\x01 \x01(\x0e2).steeleagle.api.v1.services.compute.TopicR\x05topic\x12L\n" +
-	"\tdatasinks\x18\x02 \x03(\v2..steeleagle.api.v1.services.compute.EngineInfoR\tdatasinks\"\x1c\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12V\n" +
+	"\blocation\x18\x02 \x01(\x0e2:.steeleagle.api.v1.services.vehicle.compute.EngineLocationR\blocation\"\xba\x01\n" +
+	"\x19SetEnginesForTopicRequest\x12G\n" +
+	"\x05topic\x18\x01 \x01(\x0e21.steeleagle.api.v1.services.vehicle.compute.TopicR\x05topic\x12T\n" +
+	"\tdatasinks\x18\x02 \x03(\v26.steeleagle.api.v1.services.vehicle.compute.EngineInfoR\tdatasinks\"\x1c\n" +
 	"\x1aSetEnginesForTopicResponse*\x82\x01\n" +
 	"\x0eEngineLocation\x12\x1f\n" +
 	"\x1bENGINE_LOCATION_UNSPECIFIED\x10\x00\x12\x18\n" +
@@ -292,38 +292,38 @@ const file_v1_services_compute_compute_proto_rawDesc = "" +
 	"\x05Topic\x12\x15\n" +
 	"\x11TOPIC_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fTOPIC_TELEMETRY\x10\x01\x12\x10\n" +
-	"\fTOPIC_FRAMES\x10\x022\xa8\x01\n" +
-	"\x0eComputeService\x12\x95\x01\n" +
-	"\x12SetEnginesForTopic\x12=.steeleagle.api.v1.services.compute.SetEnginesForTopicRequest\x1a>.steeleagle.api.v1.services.compute.SetEnginesForTopicResponse\"\x00B\xa6\x02\n" +
-	"&com.steeleagle.api.v1.services.computeB\fComputeProtoP\x01Z@github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/compute\xa2\x02\x05SAVSC\xaa\x02\"Steeleagle.Api.V1.Services.Compute\xca\x02\"Steeleagle\\Api\\V1\\Services\\Compute\xe2\x02.Steeleagle\\Api\\V1\\Services\\Compute\\GPBMetadata\xea\x02&Steeleagle::Api::V1::Services::Computeb\x06proto3"
+	"\fTOPIC_FRAMES\x10\x022\xb6\x01\n" +
+	"\x0eComputeService\x12\xa3\x01\n" +
+	"\x12SetEnginesForTopic\x12E.steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicRequest\x1aF.steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicResponseB\xd0\x02\n" +
+	".com.steeleagle.api.v1.services.vehicle.computeB\fComputeProtoP\x01Z@github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle\xa2\x02\x06SAVSVC\xaa\x02*Steeleagle.Api.V1.Services.Vehicle.Compute\xca\x02*Steeleagle\\Api\\V1\\Services\\Vehicle\\Compute\xe2\x026Steeleagle\\Api\\V1\\Services\\Vehicle\\Compute\\GPBMetadata\xea\x02/Steeleagle::Api::V1::Services::Vehicle::Computeb\x06proto3"
 
 var (
-	file_v1_services_compute_compute_proto_rawDescOnce sync.Once
-	file_v1_services_compute_compute_proto_rawDescData []byte
+	file_v1_services_vehicle_compute_proto_rawDescOnce sync.Once
+	file_v1_services_vehicle_compute_proto_rawDescData []byte
 )
 
-func file_v1_services_compute_compute_proto_rawDescGZIP() []byte {
-	file_v1_services_compute_compute_proto_rawDescOnce.Do(func() {
-		file_v1_services_compute_compute_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_compute_compute_proto_rawDesc), len(file_v1_services_compute_compute_proto_rawDesc)))
+func file_v1_services_vehicle_compute_proto_rawDescGZIP() []byte {
+	file_v1_services_vehicle_compute_proto_rawDescOnce.Do(func() {
+		file_v1_services_vehicle_compute_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_vehicle_compute_proto_rawDesc), len(file_v1_services_vehicle_compute_proto_rawDesc)))
 	})
-	return file_v1_services_compute_compute_proto_rawDescData
+	return file_v1_services_vehicle_compute_proto_rawDescData
 }
 
-var file_v1_services_compute_compute_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_services_compute_compute_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_v1_services_compute_compute_proto_goTypes = []any{
-	(EngineLocation)(0),                // 0: steeleagle.api.v1.services.compute.EngineLocation
-	(Topic)(0),                         // 1: steeleagle.api.v1.services.compute.Topic
-	(*EngineInfo)(nil),                 // 2: steeleagle.api.v1.services.compute.EngineInfo
-	(*SetEnginesForTopicRequest)(nil),  // 3: steeleagle.api.v1.services.compute.SetEnginesForTopicRequest
-	(*SetEnginesForTopicResponse)(nil), // 4: steeleagle.api.v1.services.compute.SetEnginesForTopicResponse
+var file_v1_services_vehicle_compute_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_v1_services_vehicle_compute_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_v1_services_vehicle_compute_proto_goTypes = []any{
+	(EngineLocation)(0),                // 0: steeleagle.api.v1.services.vehicle.compute.EngineLocation
+	(Topic)(0),                         // 1: steeleagle.api.v1.services.vehicle.compute.Topic
+	(*EngineInfo)(nil),                 // 2: steeleagle.api.v1.services.vehicle.compute.EngineInfo
+	(*SetEnginesForTopicRequest)(nil),  // 3: steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicRequest
+	(*SetEnginesForTopicResponse)(nil), // 4: steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicResponse
 }
-var file_v1_services_compute_compute_proto_depIdxs = []int32{
-	0, // 0: steeleagle.api.v1.services.compute.EngineInfo.location:type_name -> steeleagle.api.v1.services.compute.EngineLocation
-	1, // 1: steeleagle.api.v1.services.compute.SetEnginesForTopicRequest.topic:type_name -> steeleagle.api.v1.services.compute.Topic
-	2, // 2: steeleagle.api.v1.services.compute.SetEnginesForTopicRequest.datasinks:type_name -> steeleagle.api.v1.services.compute.EngineInfo
-	3, // 3: steeleagle.api.v1.services.compute.ComputeService.SetEnginesForTopic:input_type -> steeleagle.api.v1.services.compute.SetEnginesForTopicRequest
-	4, // 4: steeleagle.api.v1.services.compute.ComputeService.SetEnginesForTopic:output_type -> steeleagle.api.v1.services.compute.SetEnginesForTopicResponse
+var file_v1_services_vehicle_compute_proto_depIdxs = []int32{
+	0, // 0: steeleagle.api.v1.services.vehicle.compute.EngineInfo.location:type_name -> steeleagle.api.v1.services.vehicle.compute.EngineLocation
+	1, // 1: steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicRequest.topic:type_name -> steeleagle.api.v1.services.vehicle.compute.Topic
+	2, // 2: steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicRequest.datasinks:type_name -> steeleagle.api.v1.services.vehicle.compute.EngineInfo
+	3, // 3: steeleagle.api.v1.services.vehicle.compute.ComputeService.SetEnginesForTopic:input_type -> steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicRequest
+	4, // 4: steeleagle.api.v1.services.vehicle.compute.ComputeService.SetEnginesForTopic:output_type -> steeleagle.api.v1.services.vehicle.compute.SetEnginesForTopicResponse
 	4, // [4:5] is the sub-list for method output_type
 	3, // [3:4] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -331,27 +331,27 @@ var file_v1_services_compute_compute_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_v1_services_compute_compute_proto_init() }
-func file_v1_services_compute_compute_proto_init() {
-	if File_v1_services_compute_compute_proto != nil {
+func init() { file_v1_services_vehicle_compute_proto_init() }
+func file_v1_services_vehicle_compute_proto_init() {
+	if File_v1_services_vehicle_compute_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_compute_compute_proto_rawDesc), len(file_v1_services_compute_compute_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_vehicle_compute_proto_rawDesc), len(file_v1_services_vehicle_compute_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_v1_services_compute_compute_proto_goTypes,
-		DependencyIndexes: file_v1_services_compute_compute_proto_depIdxs,
-		EnumInfos:         file_v1_services_compute_compute_proto_enumTypes,
-		MessageInfos:      file_v1_services_compute_compute_proto_msgTypes,
+		GoTypes:           file_v1_services_vehicle_compute_proto_goTypes,
+		DependencyIndexes: file_v1_services_vehicle_compute_proto_depIdxs,
+		EnumInfos:         file_v1_services_vehicle_compute_proto_enumTypes,
+		MessageInfos:      file_v1_services_vehicle_compute_proto_msgTypes,
 	}.Build()
-	File_v1_services_compute_compute_proto = out.File
-	file_v1_services_compute_compute_proto_goTypes = nil
-	file_v1_services_compute_compute_proto_depIdxs = nil
+	File_v1_services_vehicle_compute_proto = out.File
+	file_v1_services_vehicle_compute_proto_goTypes = nil
+	file_v1_services_vehicle_compute_proto_depIdxs = nil
 }

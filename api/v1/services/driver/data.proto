@@ -1,0 +1,73 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle.api.v1.services.driver.data;
+
+import "v1/messages/stream/stream.proto";
+
+/*
+ * Used to get streams from the driver.
+ *
+ * This is an internal service used to retrieve imagery and telemetry from the
+ * driver. These are processed by the OS and then served as the `DataService`
+ * to other connected plugins.
+ */
+service StreamService {
+  /*
+   * Get the video streaming URL from the vehicle.
+   *
+   * Retrieves the video stream URL from the vehicle so that it can be
+   * broadcast to the rest of the system. This function should only be called
+   * by the OS, and not by any plugins.
+   */
+  rpc GetVideoStreamURL (GetVideoStreamURLRequest)
+    returns (GetVideoStreamURLResponse);
+
+  /*
+   * Stream individual video frames from the vehicle.
+   *
+   * Retrieves a stream of individual video frame from the vehicle. This is
+   * used when camera data is accessible without needing a stream. This
+   * function should only be called by the OS, and not by any plugins.
+   */
+  rpc StreamVideoFrames (StreamVideoFramesRequest)
+    returns (stream StreamVideoFramesResponse);
+
+  /*
+   * Stream telemetry from the vehicle.
+   *
+   * Streams up-to-date telemetry from the vehicle. This function should only
+   * be called by the OS, and not by any plugins.
+   */
+  rpc StreamTelemetry (StreamTelemetryRequest)
+    returns (stream StreamTelemetryResponse);
+}
+
+message GetVideoStreamURLRequest {
+  enum Resolution {
+    RESOLUTION_UNSPECIFIED = 0;
+    RESOLUTION_480P = 1;
+    RESOLUTION_720P = 2;
+    RESOLUTION_1080P = 3;
+    RESOLUTION_4K = 4;
+  }
+  Resolution resolution = 1; // video stream resolution
+}
+
+message GetVideoStreamURLResponse {
+  string stream_url = 1; // URL of the video stream
+}
+
+message StreamVideoFramesRequest {}
+
+message StreamVideoFramesResponse {
+  steeleagle.api.v1.messages.stream.RawFrame frame = 1; // raw frame from the camera
+}
+
+message StreamTelemetryRequest {}
+
+message StreamTelemetryResponse {
+  steeleagle.api.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver
+}

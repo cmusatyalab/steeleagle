@@ -46,9 +46,9 @@ const (
 // will result in actuation of targeted vehicles (be careful!). Each method
 // will return a stream of result objects. Each result object contains the
 // associated vehicle name and a copy of its response, response code, and
-// response string if applicable. Even if one or more vehicles fails its
-// call, the overall call will _still succeed_. To check for errors, each
-// response should be inspected manually for failures.
+// response string if applicable. Even if one or more vehicles fails its call,
+// the overall call will _still succeed_. To check for errors, each response
+// should be inspected manually for failures.
 type SwarmServiceClient interface {
 	// Order multiple vehicles to take off.
 	//
@@ -329,9 +329,9 @@ type SwarmService_SwarmStopMissionClient = grpc.ServerStreamingClient[SwarmStopM
 // will result in actuation of targeted vehicles (be careful!). Each method
 // will return a stream of result objects. Each result object contains the
 // associated vehicle name and a copy of its response, response code, and
-// response string if applicable. Even if one or more vehicles fails its
-// call, the overall call will _still succeed_. To check for errors, each
-// response should be inspected manually for failures.
+// response string if applicable. Even if one or more vehicles fails its call,
+// the overall call will _still succeed_. To check for errors, each response
+// should be inspected manually for failures.
 type SwarmServiceServer interface {
 	// Order multiple vehicles to take off.
 	//
