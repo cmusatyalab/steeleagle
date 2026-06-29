@@ -49,7 +49,6 @@ func (a *ACL) AllowsIP(ip net.IP) bool {
 func (a *ACL) AllowsPID(pid int) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	var err error
 	for _, p := range a.pids {
 		if ok, err := isPIDDescendant(int32(p), int32(pid)); err == nil && ok {
 			return true
