@@ -13,9 +13,3 @@ func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 		v.policyCfg = policyCfg
 	}
 }
-
-func WithConnectionConfig(connCfg ConnectionConfig) VehicleOption {
-	return func(v *Vehicle) {
-		v.connCfg = connCfg
-	}
-}

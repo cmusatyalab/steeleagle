@@ -3,12 +3,10 @@ package vehicle
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"path/filepath"
 
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
@@ -114,44 +112,44 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()})),
 	)
 
-    // Start all plugins and register listeners
-    if v.pluginConfig.driver != nil {
-	    _, v.driver, err = v.pluginConfig.driver.Start(ctx)
-	    if err != nil {
-	    	v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
-	    	return err
-	    }
-    } else {
-        v.log.Error().Msg("no driver provided, aborting")
-        return fmt.Errorf("no driver provided, aborting")
-    }
-    if v.pluginConfig.mission != nil {
-	    ln, v.mission, err = v.pluginConfig.mission.Start(ctx)
-	    if err != nil {
-	    	v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
-	    	return err
-	    }
-        v.listeners = append(v.listeners, ln)
-    }
-	for _, plugin := range v.pluginConfig.plugins {
+	// Start all plugins and register listeners
+	if v.driver != nil {
+		_, v.driver, err = v.pluginConfig.Driver.Start(ctx)
+		if err != nil {
+			v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
+			return err
+		}
+	} else {
+		v.log.Error().Msg("no driver provided, aborting")
+		return fmt.Errorf("no driver provided, aborting")
+	}
+	if v.pluginConfig.Mission != nil {
+		ln, v.mission, err = v.pluginConfig.Mission.Start(ctx)
+		if err != nil {
+			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
+			return err
+		}
+		v.listeners = append(v.listeners, ln)
+	}
+	for _, plugin := range v.pluginConfig.Plugins {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
 			if err != nil {
-	    	    v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
+				v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
 				return err
 			}
 		}
 		v.listeners = append(v.listeners, ln)
-        v.log.Debug().Msgf("plugin %s started!", plugin.Name())
+		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 
 	// Serve the gRPC server at all listeners
-    v.errCh = make(<-chan error, len(v.listeners))
-    for _, ln := range v.listeners {
-        go func {
-             
-        }()
-    }
+	v.errCh = make(<-chan error, len(v.listeners))
+	//for _, ln := range v.listeners {
+	//    go func {
+
+	//    }()
+	//}
 
 	return nil
 }
@@ -182,91 +180,4 @@ func createUnixSocketListener(path string) (net.Listener, error) {
 		return nil, fmt.Errorf("can't listen at file %s: %w", path, err)
 	}
 	return ln, nil
-}
-
-// Start video streaming with the given resolution
-func (v *Vehicle) StartVideoStream(
-	ctx context.Context,
-	res driver_pb.GetVideoStreamURLRequest_Resolution) (chan error, error) {
-	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{Resolution: res}
-
-	// Send request to driver to get video stream URL
-	_, err := client.GetVideoStreamURL(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-// Start streaming telemetry from the vehicle driver. Launches a goroutine that
-// performs the streaming and updates the data service as telemetry is
-// received. The launched goroutine uses the returned error channel to report
-// any errors. This method is non-blocking.
-func (v *Vehicle) StartTelemetryStream(ctx context.Context) (chan error, error) {
-	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.StreamTelemetryRequest{}
-
-	// Send request to driver
-	stream, err := client.StreamTelemetry(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start stream: %w", err)
-	}
-
-	errCh := make(chan error, 1)
-	// Launch goroutine to stream telemetry
-	go func() {
-		for {
-			// check if context has ended
-			if err := ctx.Err(); err != nil {
-				v.log.Err(err).Msg("telemetry stream ended")
-				errCh <- err
-				return
-			}
-			v.recvTelemetry(ctx, stream, errCh)
-		}
-	}()
-	return errCh, nil
-}
-
-// Encapsulates telemetry stream response along with an error for sending
-// in a channel
-type TelemetryStreamResponse struct {
-	resp *driver_pb.StreamTelemetryResponse
-	err  error
-}
-
-// Receive telemetry from a telemetry stream, sending any errors to the
-// specified error channel.
-func (v *Vehicle) recvTelemetry(
-	ctx context.Context,
-	stream grpc.ServerStreamingClient[driver_pb.StreamTelemetryResponse],
-	errCh chan error) {
-	ch := make(chan TelemetryStreamResponse)
-	// Invoke blocking call to receive stream data in another goroutine
-	go func() {
-		resp, err := stream.Recv()
-		ch <- TelemetryStreamResponse{resp: resp, err: err}
-	}()
-
-	// Wait to receive stream data or context to end
-	select {
-	case <-ctx.Done():
-		v.log.Err(ctx.Err()).Msg("telemetry stream ended")
-		errCh <- ctx.Err()
-		return
-	case res := <-ch:
-		if res.err == io.EOF {
-			v.log.Err(res.err).Msg("telemetry stream ended")
-			errCh <- res.err
-			return
-		}
-		if res.err != nil {
-			v.log.Err(res.err).Msg("telemetry stream error")
-			errCh <- res.err
-			return
-		}
-		v.dataSvc.updateLatestTelemetry(res.resp.Telemetry)
-	}
 }
