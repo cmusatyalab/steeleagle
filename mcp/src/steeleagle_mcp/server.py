@@ -438,15 +438,14 @@ async def compile_mission_dsl(
     name="save_mission_artifacts",
     description=(
         "Save mission DSL and mission JSON to local artifact files. "
-        "Pass normalized DSL plus compile_id returned by compile_mission_dsl. "
-        "Do not pass mission_json or mission_json_text in normal use; the tool saves "
-        "the exact mission JSON cached from the compile step. "
+        "Pass the compile_id returned by compile_mission_dsl. "
+        "Do not pass DSL, mission_json, or mission_json_text in normal use; the tool "
+        "saves the exact normalized DSL and mission JSON cached from the compile step. "
         "Defaults to steeleagle/mcp/artifacts/missions and refuses to overwrite "
         "unless overwrite=true. This does not execute, upload, or start the mission."
     ),
 )
 async def save_mission_artifacts(
-    dsl: str,
     compile_id: str,
     basename: str = "mission",
     output_dir: str = "",
@@ -454,7 +453,6 @@ async def save_mission_artifacts(
     add_timestamp: bool = True,
 ) -> str:
     payload = save_mission_artifacts_payload(
-        dsl=dsl,
         compile_id=compile_id,
         basename=basename,
         output_dir=output_dir,

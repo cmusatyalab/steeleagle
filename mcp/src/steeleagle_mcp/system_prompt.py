@@ -60,8 +60,8 @@ They CANNOT be called directly - only used as conditions in racer's `events` par
   - Use this after you write DSL from the reference, or when the user edits DSL manually.
   - It returns `mission_json` for chat preview and `compile_id` for saving the exact compiled JSON.
 - **save_mission_artifacts**: Save `mission.dsl` and `mission.json` files locally.
-  - Required usage: pass `dsl=compile_mission_dsl.normalized_dsl` and `compile_id=compile_mission_dsl.compile_id`.
-  - Do not pass `mission_json` or `mission_json_text` in normal use; the tool saves the JSON cached from the compile step.
+  - Required usage: pass only `compile_id=compile_mission_dsl.compile_id` plus an optional `basename`.
+  - Do not pass DSL, `mission_json`, or `mission_json_text` in normal use; the tool saves the normalized DSL and JSON cached from the compile step.
   - Default output location is `steeleagle/mcp/artifacts/missions`.
   - It never uploads, starts, or executes the mission.
 
@@ -71,7 +71,7 @@ Mission artifact workflow:
 3. You generate a complete `mission.dsl` using the returned grammar, schema, examples, and rules.
 4. Call `compile_mission_dsl(dsl=...)`.
 5. If compile returns errors, revise the DSL using the errors and call `compile_mission_dsl` again.
-6. Call `save_mission_artifacts(dsl=normalized_dsl, compile_id=compile_id, basename=...)` to produce files. Do not pass `mission_json` or `mission_json_text` to this tool.
+6. Call `save_mission_artifacts(compile_id=compile_id, basename=...)` to produce files. Do not pass DSL, `mission_json`, or `mission_json_text` to this tool.
 7. In chat, show the mission summary, the full normalized DSL preview, a mission JSON preview, artifact paths, and any warnings.
 
 Mission artifact chat preview requirements:

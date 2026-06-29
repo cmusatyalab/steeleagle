@@ -500,7 +500,7 @@ def translate_with_dsl_reference_payload(
             "Use the instruction plus this reference to write a complete mission.dsl.",
             "Call compile_mission_dsl with the DSL.",
             "If compile_mission_dsl returns errors, revise the DSL and call it again.",
-            "After compile succeeds, call save_mission_artifacts with the normalized DSL and compile_id from compile_mission_dsl.",
+            "After compile succeeds, call save_mission_artifacts with the compile_id from compile_mission_dsl.",
             "Do not upload or start the generated mission unless the user explicitly asks after review.",
         ],
         "errors": [],
@@ -632,8 +632,8 @@ def _safe_basename(basename: str | None) -> str:
 
 
 def save_mission_artifacts_payload(
-    dsl: str,
     compile_id: str = "",
+    dsl: str = "",
     mission_json_text: str = "",
     basename: str = "mission",
     output_dir: str = "",
@@ -643,20 +643,9 @@ def save_mission_artifacts_payload(
     """Write mission DSL and JSON artifacts to disk."""
     request_id = _request_id()
 
-    if not isinstance(dsl, str) or not dsl.strip():
-        return {
-            "ok": False,
-            "dsl_path": None,
-            "json_path": None,
-            "written_files": [],
-            "compile_id": compile_id,
-            "errors": [_err("INPUT_ERROR", "`dsl` is required")],
-            "request_id": request_id,
-        }
-
-    dsl_text = _canonical_dsl_text(dsl)
     notes: list[str] = []
     parsed_json: Any | None = None
+    dsl_text = ""
     compile_id = (compile_id or "").strip()
 
     if compile_id:
@@ -678,8 +667,11 @@ def save_mission_artifacts_payload(
                 "request_id": request_id,
             }
 
-        provided_hash = _hash_text(dsl_text)
-        if provided_hash != cached["dsl_hash"]:
+        if dsl:
+            provided_hash = _hash_text(_canonical_dsl_text(dsl))
+        else:
+            provided_hash = cached["dsl_hash"]
+        if dsl and provided_hash != cached["dsl_hash"]:
             return {
                 "ok": False,
                 "dsl_path": None,
@@ -702,6 +694,23 @@ def save_mission_artifacts_payload(
         if mission_json_text:
             notes.append("Ignored `mission_json_text` because `compile_id` was provided.")
     else:
+        if not isinstance(dsl, str) or not dsl.strip():
+            return {
+                "ok": False,
+                "dsl_path": None,
+                "json_path": None,
+                "written_files": [],
+                "compile_id": "",
+                "errors": [
+                    _err(
+                        "INPUT_ERROR",
+                        "`compile_id` is required. Call compile_mission_dsl first and "
+                        "pass its `compile_id` here.",
+                    )
+                ],
+                "request_id": request_id,
+            }
+
         parsed_json, json_error = _coerce_mission_json_text(mission_json_text)
         if json_error:
             return {
@@ -733,6 +742,7 @@ def save_mission_artifacts_payload(
             "Used manual mission_json_text fallback; prefer compile_id from "
             "compile_mission_dsl."
         )
+        dsl_text = _canonical_dsl_text(dsl)
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     name = _safe_basename(basename)

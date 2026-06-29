@@ -83,7 +83,6 @@ def test_save_mission_artifacts_payload_writes_files(tmp_path: Path):
     assert compiled["ok"], compiled["errors"]
 
     result = save_mission_artifacts_payload(
-        dsl=compiled["normalized_dsl"],
         compile_id=compiled["compile_id"],
         basename="test mission",
         output_dir=str(tmp_path),
@@ -164,7 +163,6 @@ def test_save_mission_artifacts_payload_refuses_overwrite(tmp_path: Path):
     assert compiled["ok"], compiled["errors"]
 
     first = save_mission_artifacts_payload(
-        dsl=compiled["normalized_dsl"],
         compile_id=compiled["compile_id"],
         basename="mission",
         output_dir=str(tmp_path),
@@ -173,7 +171,6 @@ def test_save_mission_artifacts_payload_refuses_overwrite(tmp_path: Path):
     assert first["ok"], first["errors"]
 
     second = save_mission_artifacts_payload(
-        dsl=compiled["normalized_dsl"],
         compile_id=compiled["compile_id"],
         basename="mission",
         output_dir=str(tmp_path),
