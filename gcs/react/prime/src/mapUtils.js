@@ -13,6 +13,9 @@ export function parseImportFile(filename, text) {
     const ext = filename.split('.').pop().toLowerCase();
     if (ext === 'kml') {
         const dom = new DOMParser().parseFromString(text, 'text/xml');
+        if (dom.querySelector('parsererror')) {
+            throw new Error('Failed to parse KML: invalid XML');
+        }
         const fc = kmlToGeoJson(dom);
         if (!fc || fc.type !== 'FeatureCollection') {
             throw new Error('KML did not produce a valid FeatureCollection');

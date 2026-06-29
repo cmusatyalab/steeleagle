@@ -84,4 +84,8 @@ describe('parseImportFile', () => {
         const notFc = JSON.stringify({ type: 'Feature', geometry: null, properties: {} });
         expect(() => parseImportFile('bad.geojson', notFc)).toThrow('Not a valid GeoJSON FeatureCollection');
     });
+
+    it('throws on malformed KML (invalid XML)', () => {
+        expect(() => parseImportFile('bad.kml', '<kml><broken')).toThrow('Failed to parse KML');
+    });
 });
