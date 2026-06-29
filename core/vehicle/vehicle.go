@@ -3,20 +3,23 @@ package vehicle
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
 
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
 type Vehicle struct {
-    id           string           // auto-generated ID for path disambiguation
+	id           string           // auto-generated ID for path disambiguation
 	name         string           // vehicle name
 	runDir       string           // path to vehicle runtime directory
 	pluginConfig PluginConfig     // plugin configuration
@@ -24,38 +27,38 @@ type Vehicle struct {
 	policy       policyState      // active policy state
 	driver       *grpc.ClientConn // driver gRPC client connection
 	mission      *grpc.ClientConn // mission gRPC client connection
-    listeners    []net.Listener   // list of all active listeners
+	listeners    []net.Listener   // list of all active listeners
 	services     *grpc.Server     // gRPC server instance
-    log          zerolog.Logger   // logger object
-    outFile      *os.File         // output file to log to (if no logger is provided)
-    errCh        <-chan error     // error channel shared by listeners
+	log          zerolog.Logger   // logger object
+	outFile      *os.File         // output file to log to (if no logger is provided)
+	errCh        <-chan error     // error channel shared by listeners
 	dataSvc      DataService      // data service
 }
 
 // Create a new vehicle with the given plugins and options.
-func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
+func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-        id:           uuid.New().String(),
+		id:           uuid.New().String(),
 		name:         uuid.New().String(),
 		pluginConfig: pluginCfg,
-        outFile:      os.Stdout,
+		outFile:      os.Stdout,
 	}
 	for _, option := range options {
 		option(vehicle)
 	}
-    
-    // Check if a logger is set, and if not initialize one
-    if vehicle.log.GetLevel() == zerolog.Disabled {
-        vehicle.log = zerolog.New(p.outFile).With().Timestamp().Logger()
-    }
-	
-    // Create the runtime directory
-    var err error
-	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
+
+	// Check if a logger is set, and if not initialize one
+	if vehicle.log.GetLevel() == zerolog.Disabled {
+		vehicle.log = zerolog.New(vehicle.outFile).With().Timestamp().Logger()
+	}
+
+	// Create the runtime directory
+	var err error
+	vehicle.runDir, err = util.GetVehicleDirByID(vehicle.name)
 	if err != nil {
 		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
-        return err
+		return nil, err
 	}
 	vehicle.log.Debug().Str("folder", vehicle.runDir).Msg("vehicle folder configured")
 
@@ -72,7 +75,7 @@ func NewVehicle(options ...VehicleOption) (*Vehicle, error) {
 	)
 
 	// Register data service
-    driver_pb.RegisterDataServiceServer(vehicle.server, &DataService{vehicle: vehicle})
+	vehicle_pb.RegisterDataServiceServer(vehicle.services, &DataService{vehicle: vehicle})
 
 	return vehicle, nil
 }
@@ -83,7 +86,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	defer cancel()
 
 	// Stop the gRPC server once done
-	defer v.server.GracefulStop()
+	defer v.services.GracefulStop()
 
 	// Create a main socket listener with AuthCode ExternalCode. The main
 	// socket is a general endpoint for arbitrary entities to make API calls to
@@ -94,10 +97,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-    v.listeners = append(
-        v.listeners,
-        util.NewCodedListener(ln, util.ExternalCode, nil),
-    )
+	v.listeners = append(
+		v.listeners,
+		util.NewCodedListener(ln, util.ExternalCode, nil),
+	)
 
 	// Create an admin socket listener with AuthCode AdminCode. The admin
 	// socket is intended for use by this process.
@@ -106,10 +109,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-    v.listeners = append(
-        v.listeners,
-        util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()})),
-    )
+	v.listeners = append(
+		v.listeners,
+		util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()})),
+	)
 
     // Start all plugins and register listeners
     if v.pluginConfig.driver != nil {
@@ -150,14 +153,15 @@ func (v *Vehicle) Start(ctx context.Context) error {
         }()
     }
 
+	return nil
 }
 
 func (v *Vehicle) Watch() <-chan error {
-
+	return nil
 }
 
 func (v *Vehicle) Wait() error {
-
+	return nil
 }
 
 func (v *Vehicle) Name() string {
@@ -178,4 +182,84 @@ func createUnixSocketListener(path string) (net.Listener, error) {
 		return nil, fmt.Errorf("can't listen at file %s: %w", path, err)
 	}
 	return ln, nil
+}
+
+// Start video streaming with the given resolution
+func (v *Vehicle) StartVideoStream(
+	ctx context.Context,
+	res driver_pb.GetVideoStreamURLRequest_Resolution) (chan error, error) {
+	client := driver_pb.NewStreamServiceClient(v.driver)
+	req := &driver_pb.GetVideoStreamURLRequest{Resolution: res}
+
+	// Send request to driver to get video stream URL
+	_, err := client.GetVideoStreamURL(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+// Start streaming telemetry from the vehicle driver. Launches a goroutine that
+// performs the streaming and updates the data service as telemetry is
+// received. The launched goroutine uses the returned error channel to report
+// any errors. This method is non-blocking.
+func (v *Vehicle) StartTelemetryStream(ctx context.Context) (chan error, error) {
+	client := driver_pb.NewStreamServiceClient(v.driver)
+	req := &driver_pb.StreamTelemetryRequest{}
+
+	// Send request to driver
+	stream, err := client.StreamTelemetry(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start stream: %w", err)
+	}
+
+	errCh := make(chan error, 1)
+	// Launch goroutine to stream telemetry
+	go func() {
+		for {
+			// check if context has ended
+			if err := ctx.Err(); err != nil {
+				v.log.Err(err).Msg("telemetry stream ended")
+				errCh <- err
+				return
+			}
+			v.recvTelemetry(ctx, stream, errCh)
+		}
+	}()
+	return errCh, nil
+}
+
+// Receive telemetry from a telemetry stream, sending any errors to the
+// specified error channel.
+func (v *Vehicle) recvTelemetry(
+	ctx context.Context,
+	stream grpc.ServerStreamingClient[driver_pb.StreamTelemetryResponse],
+	errCh chan error) {
+	ch := make(chan TelemetryStreamResponse)
+	// Invoke blocking call to receive stream data in another goroutine
+	go func() {
+		resp, err := stream.Recv()
+		ch <- TelemetryStreamResponse{resp: resp, err: err}
+	}()
+
+	// Wait to receive stream data or context to end
+	select {
+	case <-ctx.Done():
+		v.log.Err(ctx.Err()).Msg("telemetry stream ended")
+		errCh <- ctx.Err()
+		return
+	case res := <-ch:
+		if res.err == io.EOF {
+			v.log.Err(res.err).Msg("telemetry stream ended")
+			errCh <- res.err
+			return
+		}
+		if res.err != nil {
+			v.log.Err(res.err).Msg("telemetry stream error")
+			errCh <- res.err
+			return
+		}
+		v.dataSvc.updateLatestTelemetry(res.resp.Telemetry)
+	}
 }
