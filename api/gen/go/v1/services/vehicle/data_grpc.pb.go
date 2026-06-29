@@ -6,9 +6,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: v1/services/data/data.proto
+// source: v1/services/vehicle/data.proto
 
-package data
+package vehicle
 
 import (
 	context "context"
@@ -23,9 +23,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DataService_GetResult_FullMethodName    = "/steeleagle.api.v1.services.data.DataService/GetResult"
-	DataService_GetTelemetry_FullMethodName = "/steeleagle.api.v1.services.data.DataService/GetTelemetry"
-	DataService_GetFrame_FullMethodName     = "/steeleagle.api.v1.services.data.DataService/GetFrame"
+	DataService_GetResult_FullMethodName    = "/steeleagle.api.v1.services.vehicle.data.DataService/GetResult"
+	DataService_GetTelemetry_FullMethodName = "/steeleagle.api.v1.services.vehicle.data.DataService/GetTelemetry"
+	DataService_GetFrame_FullMethodName     = "/steeleagle.api.v1.services.vehicle.data.DataService/GetFrame"
 )
 
 // DataServiceClient is the client API for DataService service.
@@ -208,7 +208,7 @@ func _DataService_GetFrame_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var DataService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle.api.v1.services.data.DataService",
+	ServiceName: "steeleagle.api.v1.services.vehicle.data.DataService",
 	HandlerType: (*DataServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -225,5 +225,5 @@ var DataService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/services/data/data.proto",
+	Metadata: "v1/services/vehicle/data.proto",
 }

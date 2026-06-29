@@ -6,9 +6,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: v1/services/control/control.proto
+// source: v1/services/driver/control.proto
 
-package control
+package driver
 
 import (
 	v1 "github.com/cmusatyalab/steeleagle/api/gen/go/v1"
@@ -59,11 +59,11 @@ func (x ReturnToHomeEndBehavior) String() string {
 }
 
 func (ReturnToHomeEndBehavior) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_control_control_proto_enumTypes[0].Descriptor()
+	return file_v1_services_driver_control_proto_enumTypes[0].Descriptor()
 }
 
 func (ReturnToHomeEndBehavior) Type() protoreflect.EnumType {
-	return &file_v1_services_control_control_proto_enumTypes[0]
+	return &file_v1_services_driver_control_proto_enumTypes[0]
 }
 
 func (x ReturnToHomeEndBehavior) Number() protoreflect.EnumNumber {
@@ -72,7 +72,7 @@ func (x ReturnToHomeEndBehavior) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReturnToHomeEndBehavior.Descriptor instead.
 func (ReturnToHomeEndBehavior) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{0}
 }
 
 // Altitude mode switch.
@@ -109,11 +109,11 @@ func (x AltitudeMode) String() string {
 }
 
 func (AltitudeMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_control_control_proto_enumTypes[1].Descriptor()
+	return file_v1_services_driver_control_proto_enumTypes[1].Descriptor()
 }
 
 func (AltitudeMode) Type() protoreflect.EnumType {
-	return &file_v1_services_control_control_proto_enumTypes[1]
+	return &file_v1_services_driver_control_proto_enumTypes[1]
 }
 
 func (x AltitudeMode) Number() protoreflect.EnumNumber {
@@ -122,7 +122,7 @@ func (x AltitudeMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AltitudeMode.Descriptor instead.
 func (AltitudeMode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{1}
 }
 
 // Heading mode switch.
@@ -159,11 +159,11 @@ func (x HeadingMode) String() string {
 }
 
 func (HeadingMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_control_control_proto_enumTypes[2].Descriptor()
+	return file_v1_services_driver_control_proto_enumTypes[2].Descriptor()
 }
 
 func (HeadingMode) Type() protoreflect.EnumType {
-	return &file_v1_services_control_control_proto_enumTypes[2]
+	return &file_v1_services_driver_control_proto_enumTypes[2]
 }
 
 func (x HeadingMode) Number() protoreflect.EnumNumber {
@@ -172,7 +172,7 @@ func (x HeadingMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use HeadingMode.Descriptor instead.
 func (HeadingMode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{2}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{2}
 }
 
 // Reference frame mode switch.
@@ -209,11 +209,11 @@ func (x ReferenceFrame) String() string {
 }
 
 func (ReferenceFrame) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_control_control_proto_enumTypes[3].Descriptor()
+	return file_v1_services_driver_control_proto_enumTypes[3].Descriptor()
 }
 
 func (ReferenceFrame) Type() protoreflect.EnumType {
-	return &file_v1_services_control_control_proto_enumTypes[3]
+	return &file_v1_services_driver_control_proto_enumTypes[3]
 }
 
 func (x ReferenceFrame) Number() protoreflect.EnumNumber {
@@ -222,7 +222,7 @@ func (x ReferenceFrame) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReferenceFrame.Descriptor instead.
 func (ReferenceFrame) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{3}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{3}
 }
 
 // Pose mode switch.
@@ -262,11 +262,11 @@ func (x PoseMode) String() string {
 }
 
 func (PoseMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_control_control_proto_enumTypes[4].Descriptor()
+	return file_v1_services_driver_control_proto_enumTypes[4].Descriptor()
 }
 
 func (PoseMode) Type() protoreflect.EnumType {
-	return &file_v1_services_control_control_proto_enumTypes[4]
+	return &file_v1_services_driver_control_proto_enumTypes[4]
 }
 
 func (x PoseMode) Number() protoreflect.EnumNumber {
@@ -275,7 +275,7 @@ func (x PoseMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PoseMode.Descriptor instead.
 func (PoseMode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{4}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{4}
 }
 
 type TakeOffRequest struct {
@@ -288,7 +288,7 @@ type TakeOffRequest struct {
 
 func (x *TakeOffRequest) Reset() {
 	*x = TakeOffRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[0]
+	mi := &file_v1_services_driver_control_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -300,7 +300,7 @@ func (x *TakeOffRequest) String() string {
 func (*TakeOffRequest) ProtoMessage() {}
 
 func (x *TakeOffRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[0]
+	mi := &file_v1_services_driver_control_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -313,7 +313,7 @@ func (x *TakeOffRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TakeOffRequest.ProtoReflect.Descriptor instead.
 func (*TakeOffRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *TakeOffRequest) GetTakeOffAltitude() float32 {
@@ -331,7 +331,7 @@ type TakeOffResponse struct {
 
 func (x *TakeOffResponse) Reset() {
 	*x = TakeOffResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[1]
+	mi := &file_v1_services_driver_control_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -343,7 +343,7 @@ func (x *TakeOffResponse) String() string {
 func (*TakeOffResponse) ProtoMessage() {}
 
 func (x *TakeOffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[1]
+	mi := &file_v1_services_driver_control_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +356,7 @@ func (x *TakeOffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TakeOffResponse.ProtoReflect.Descriptor instead.
 func (*TakeOffResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{1}
 }
 
 type LandRequest struct {
@@ -367,7 +367,7 @@ type LandRequest struct {
 
 func (x *LandRequest) Reset() {
 	*x = LandRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[2]
+	mi := &file_v1_services_driver_control_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -379,7 +379,7 @@ func (x *LandRequest) String() string {
 func (*LandRequest) ProtoMessage() {}
 
 func (x *LandRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[2]
+	mi := &file_v1_services_driver_control_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -392,7 +392,7 @@ func (x *LandRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LandRequest.ProtoReflect.Descriptor instead.
 func (*LandRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{2}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{2}
 }
 
 type LandResponse struct {
@@ -403,7 +403,7 @@ type LandResponse struct {
 
 func (x *LandResponse) Reset() {
 	*x = LandResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[3]
+	mi := &file_v1_services_driver_control_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -415,7 +415,7 @@ func (x *LandResponse) String() string {
 func (*LandResponse) ProtoMessage() {}
 
 func (x *LandResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[3]
+	mi := &file_v1_services_driver_control_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -428,7 +428,7 @@ func (x *LandResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LandResponse.ProtoReflect.Descriptor instead.
 func (*LandResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{3}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{3}
 }
 
 type HoldRequest struct {
@@ -439,7 +439,7 @@ type HoldRequest struct {
 
 func (x *HoldRequest) Reset() {
 	*x = HoldRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[4]
+	mi := &file_v1_services_driver_control_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -451,7 +451,7 @@ func (x *HoldRequest) String() string {
 func (*HoldRequest) ProtoMessage() {}
 
 func (x *HoldRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[4]
+	mi := &file_v1_services_driver_control_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -464,7 +464,7 @@ func (x *HoldRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HoldRequest.ProtoReflect.Descriptor instead.
 func (*HoldRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{4}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{4}
 }
 
 type HoldResponse struct {
@@ -475,7 +475,7 @@ type HoldResponse struct {
 
 func (x *HoldResponse) Reset() {
 	*x = HoldResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[5]
+	mi := &file_v1_services_driver_control_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -487,7 +487,7 @@ func (x *HoldResponse) String() string {
 func (*HoldResponse) ProtoMessage() {}
 
 func (x *HoldResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[5]
+	mi := &file_v1_services_driver_control_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -500,7 +500,7 @@ func (x *HoldResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HoldResponse.ProtoReflect.Descriptor instead.
 func (*HoldResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{5}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{5}
 }
 
 type KillRequest struct {
@@ -511,7 +511,7 @@ type KillRequest struct {
 
 func (x *KillRequest) Reset() {
 	*x = KillRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[6]
+	mi := &file_v1_services_driver_control_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -523,7 +523,7 @@ func (x *KillRequest) String() string {
 func (*KillRequest) ProtoMessage() {}
 
 func (x *KillRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[6]
+	mi := &file_v1_services_driver_control_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -536,7 +536,7 @@ func (x *KillRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillRequest.ProtoReflect.Descriptor instead.
 func (*KillRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{6}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{6}
 }
 
 type KillResponse struct {
@@ -547,7 +547,7 @@ type KillResponse struct {
 
 func (x *KillResponse) Reset() {
 	*x = KillResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[7]
+	mi := &file_v1_services_driver_control_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -559,7 +559,7 @@ func (x *KillResponse) String() string {
 func (*KillResponse) ProtoMessage() {}
 
 func (x *KillResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[7]
+	mi := &file_v1_services_driver_control_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -572,7 +572,7 @@ func (x *KillResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillResponse.ProtoReflect.Descriptor instead.
 func (*KillResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{7}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{7}
 }
 
 type SetHomeRequest struct {
@@ -584,7 +584,7 @@ type SetHomeRequest struct {
 
 func (x *SetHomeRequest) Reset() {
 	*x = SetHomeRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[8]
+	mi := &file_v1_services_driver_control_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -596,7 +596,7 @@ func (x *SetHomeRequest) String() string {
 func (*SetHomeRequest) ProtoMessage() {}
 
 func (x *SetHomeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[8]
+	mi := &file_v1_services_driver_control_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -609,7 +609,7 @@ func (x *SetHomeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetHomeRequest.ProtoReflect.Descriptor instead.
 func (*SetHomeRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{8}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SetHomeRequest) GetNewHome() *v1.GlobalPosition {
@@ -627,7 +627,7 @@ type SetHomeResponse struct {
 
 func (x *SetHomeResponse) Reset() {
 	*x = SetHomeResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[9]
+	mi := &file_v1_services_driver_control_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -639,7 +639,7 @@ func (x *SetHomeResponse) String() string {
 func (*SetHomeResponse) ProtoMessage() {}
 
 func (x *SetHomeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[9]
+	mi := &file_v1_services_driver_control_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -652,13 +652,13 @@ func (x *SetHomeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetHomeResponse.ProtoReflect.Descriptor instead.
 func (*SetHomeResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{9}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{9}
 }
 
 type ReturnToHomeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// what the vehicle should do after returning home
-	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle.api.v1.services.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
+	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle.api.v1.services.driver.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
 	// altitude that the vehicle should move at while reurning home
 	ReturnAltitude uint32 `protobuf:"varint,2,opt,name=return_altitude,json=returnAltitude,proto3" json:"return_altitude,omitempty"`
 	// altitude that the vehicle should hover at, for hover end behavior
@@ -669,7 +669,7 @@ type ReturnToHomeRequest struct {
 
 func (x *ReturnToHomeRequest) Reset() {
 	*x = ReturnToHomeRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[10]
+	mi := &file_v1_services_driver_control_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -681,7 +681,7 @@ func (x *ReturnToHomeRequest) String() string {
 func (*ReturnToHomeRequest) ProtoMessage() {}
 
 func (x *ReturnToHomeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[10]
+	mi := &file_v1_services_driver_control_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -694,7 +694,7 @@ func (x *ReturnToHomeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReturnToHomeRequest.ProtoReflect.Descriptor instead.
 func (*ReturnToHomeRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{10}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ReturnToHomeRequest) GetEndBehavior() ReturnToHomeEndBehavior {
@@ -726,7 +726,7 @@ type ReturnToHomeResponse struct {
 
 func (x *ReturnToHomeResponse) Reset() {
 	*x = ReturnToHomeResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[11]
+	mi := &file_v1_services_driver_control_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -738,7 +738,7 @@ func (x *ReturnToHomeResponse) String() string {
 func (*ReturnToHomeResponse) ProtoMessage() {}
 
 func (x *ReturnToHomeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[11]
+	mi := &file_v1_services_driver_control_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -751,16 +751,16 @@ func (x *ReturnToHomeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReturnToHomeResponse.ProtoReflect.Descriptor instead.
 func (*ReturnToHomeResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{11}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{11}
 }
 
 type GoToGlobalPositionRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Position *v1.GlobalPosition     `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"` // target global position
 	// determines how the vehicle will orient during transit (default: `TO_TARGET`)
-	HeadingMode *HeadingMode `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle.api.v1.services.control.HeadingMode,oneof" json:"heading_mode,omitempty"`
+	HeadingMode *HeadingMode `protobuf:"varint,2,opt,name=heading_mode,json=headingMode,proto3,enum=steeleagle.api.v1.services.driver.control.HeadingMode,oneof" json:"heading_mode,omitempty"`
 	// determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
-	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle.api.v1.services.control.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
+	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle.api.v1.services.driver.control.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
 	// maximum velocity during transit
 	MaxVelocity   *v1.Velocity `protobuf:"bytes,4,opt,name=max_velocity,json=maxVelocity,proto3,oneof" json:"max_velocity,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -769,7 +769,7 @@ type GoToGlobalPositionRequest struct {
 
 func (x *GoToGlobalPositionRequest) Reset() {
 	*x = GoToGlobalPositionRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[12]
+	mi := &file_v1_services_driver_control_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -781,7 +781,7 @@ func (x *GoToGlobalPositionRequest) String() string {
 func (*GoToGlobalPositionRequest) ProtoMessage() {}
 
 func (x *GoToGlobalPositionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[12]
+	mi := &file_v1_services_driver_control_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -794,7 +794,7 @@ func (x *GoToGlobalPositionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoToGlobalPositionRequest.ProtoReflect.Descriptor instead.
 func (*GoToGlobalPositionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{12}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GoToGlobalPositionRequest) GetPosition() *v1.GlobalPosition {
@@ -833,7 +833,7 @@ type GoToGlobalPositionResponse struct {
 
 func (x *GoToGlobalPositionResponse) Reset() {
 	*x = GoToGlobalPositionResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[13]
+	mi := &file_v1_services_driver_control_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -845,7 +845,7 @@ func (x *GoToGlobalPositionResponse) String() string {
 func (*GoToGlobalPositionResponse) ProtoMessage() {}
 
 func (x *GoToGlobalPositionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[13]
+	mi := &file_v1_services_driver_control_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -858,7 +858,7 @@ func (x *GoToGlobalPositionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoToGlobalPositionResponse.ProtoReflect.Descriptor instead.
 func (*GoToGlobalPositionResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{13}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{13}
 }
 
 type GoToRelativePositionRequest struct {
@@ -868,14 +868,14 @@ type GoToRelativePositionRequest struct {
 	// maximum velocity during transit
 	MaxVelocity *v1.Velocity `protobuf:"bytes,2,opt,name=max_velocity,json=maxVelocity,proto3,oneof" json:"max_velocity,omitempty"`
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,3,opt,name=frame,proto3,enum=steeleagle.api.v1.services.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,3,opt,name=frame,proto3,enum=steeleagle.api.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GoToRelativePositionRequest) Reset() {
 	*x = GoToRelativePositionRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[14]
+	mi := &file_v1_services_driver_control_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +887,7 @@ func (x *GoToRelativePositionRequest) String() string {
 func (*GoToRelativePositionRequest) ProtoMessage() {}
 
 func (x *GoToRelativePositionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[14]
+	mi := &file_v1_services_driver_control_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +900,7 @@ func (x *GoToRelativePositionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoToRelativePositionRequest.ProtoReflect.Descriptor instead.
 func (*GoToRelativePositionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{14}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GoToRelativePositionRequest) GetPosition() *v1.RelativePosition {
@@ -932,7 +932,7 @@ type GoToRelativePositionResponse struct {
 
 func (x *GoToRelativePositionResponse) Reset() {
 	*x = GoToRelativePositionResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[15]
+	mi := &file_v1_services_driver_control_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -944,7 +944,7 @@ func (x *GoToRelativePositionResponse) String() string {
 func (*GoToRelativePositionResponse) ProtoMessage() {}
 
 func (x *GoToRelativePositionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[15]
+	mi := &file_v1_services_driver_control_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -957,7 +957,7 @@ func (x *GoToRelativePositionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoToRelativePositionResponse.ProtoReflect.Descriptor instead.
 func (*GoToRelativePositionResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{15}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{15}
 }
 
 type SetVelocityRequest struct {
@@ -965,14 +965,14 @@ type SetVelocityRequest struct {
 	// target velocity
 	Velocity *v1.Velocity `protobuf:"bytes,1,opt,name=velocity,proto3" json:"velocity,omitempty"`
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle.api.v1.services.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,2,opt,name=frame,proto3,enum=steeleagle.api.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SetVelocityRequest) Reset() {
 	*x = SetVelocityRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[16]
+	mi := &file_v1_services_driver_control_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -984,7 +984,7 @@ func (x *SetVelocityRequest) String() string {
 func (*SetVelocityRequest) ProtoMessage() {}
 
 func (x *SetVelocityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[16]
+	mi := &file_v1_services_driver_control_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -997,7 +997,7 @@ func (x *SetVelocityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetVelocityRequest.ProtoReflect.Descriptor instead.
 func (*SetVelocityRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{16}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SetVelocityRequest) GetVelocity() *v1.Velocity {
@@ -1022,7 +1022,7 @@ type SetVelocityResponse struct {
 
 func (x *SetVelocityResponse) Reset() {
 	*x = SetVelocityResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[17]
+	mi := &file_v1_services_driver_control_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1034,7 +1034,7 @@ func (x *SetVelocityResponse) String() string {
 func (*SetVelocityResponse) ProtoMessage() {}
 
 func (x *SetVelocityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[17]
+	mi := &file_v1_services_driver_control_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1047,23 +1047,23 @@ func (x *SetVelocityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetVelocityResponse.ProtoReflect.Descriptor instead.
 func (*SetVelocityResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{17}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{17}
 }
 
 type SetGimbalPoseRequest struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	GimbalId uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3" json:"gimbal_id,omitempty"`                                                        // ID of the target gimbal
-	Pose     *v1.Pose               `protobuf:"bytes,2,opt,name=pose,proto3" json:"pose,omitempty"`                                                                                 // target pose
-	PoseMode *PoseMode              `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle.api.v1.services.control.PoseMode,oneof" json:"pose_mode,omitempty"` // specifies how to interpret the target pose
+	GimbalId uint32                 `protobuf:"varint,1,opt,name=gimbal_id,json=gimbalId,proto3" json:"gimbal_id,omitempty"`                                                               // ID of the target gimbal
+	Pose     *v1.Pose               `protobuf:"bytes,2,opt,name=pose,proto3" json:"pose,omitempty"`                                                                                        // target pose
+	PoseMode *PoseMode              `protobuf:"varint,3,opt,name=pose_mode,json=poseMode,proto3,enum=steeleagle.api.v1.services.driver.control.PoseMode,oneof" json:"pose_mode,omitempty"` // specifies how to interpret the target pose
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle.api.v1.services.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle.api.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SetGimbalPoseRequest) Reset() {
 	*x = SetGimbalPoseRequest{}
-	mi := &file_v1_services_control_control_proto_msgTypes[18]
+	mi := &file_v1_services_driver_control_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1075,7 +1075,7 @@ func (x *SetGimbalPoseRequest) String() string {
 func (*SetGimbalPoseRequest) ProtoMessage() {}
 
 func (x *SetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[18]
+	mi := &file_v1_services_driver_control_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1088,7 +1088,7 @@ func (x *SetGimbalPoseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetGimbalPoseRequest.ProtoReflect.Descriptor instead.
 func (*SetGimbalPoseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{18}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SetGimbalPoseRequest) GetGimbalId() uint32 {
@@ -1127,7 +1127,7 @@ type SetGimbalPoseResponse struct {
 
 func (x *SetGimbalPoseResponse) Reset() {
 	*x = SetGimbalPoseResponse{}
-	mi := &file_v1_services_control_control_proto_msgTypes[19]
+	mi := &file_v1_services_driver_control_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1139,7 +1139,7 @@ func (x *SetGimbalPoseResponse) String() string {
 func (*SetGimbalPoseResponse) ProtoMessage() {}
 
 func (x *SetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_control_control_proto_msgTypes[19]
+	mi := &file_v1_services_driver_control_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1152,14 +1152,14 @@ func (x *SetGimbalPoseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetGimbalPoseResponse.ProtoReflect.Descriptor instead.
 func (*SetGimbalPoseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_control_control_proto_rawDescGZIP(), []int{19}
+	return file_v1_services_driver_control_proto_rawDescGZIP(), []int{19}
 }
 
-var File_v1_services_control_control_proto protoreflect.FileDescriptor
+var File_v1_services_driver_control_proto protoreflect.FileDescriptor
 
-const file_v1_services_control_control_proto_rawDesc = "" +
+const file_v1_services_driver_control_proto_rawDesc = "" +
 	"\n" +
-	"!v1/services/control/control.proto\x12\"steeleagle.api.v1.services.control\x1a\x0fv1/common.proto\"<\n" +
+	" v1/services/driver/control.proto\x12)steeleagle.api.v1.services.driver.control\x1a\x0fv1/common.proto\"<\n" +
 	"\x0eTakeOffRequest\x12*\n" +
 	"\x11take_off_altitude\x18\x01 \x01(\x02R\x0ftakeOffAltitude\"\x11\n" +
 	"\x0fTakeOffResponse\"\r\n" +
@@ -1171,38 +1171,38 @@ const file_v1_services_control_control_proto_rawDesc = "" +
 	"\fKillResponse\"N\n" +
 	"\x0eSetHomeRequest\x12<\n" +
 	"\bnew_home\x18\x01 \x01(\v2!.steeleagle.api.v1.GlobalPositionR\anewHome\"\x11\n" +
-	"\x0fSetHomeResponse\"\xc5\x01\n" +
-	"\x13ReturnToHomeRequest\x12^\n" +
-	"\fend_behavior\x18\x01 \x01(\x0e2;.steeleagle.api.v1.services.control.ReturnToHomeEndBehaviorR\vendBehavior\x12'\n" +
+	"\x0fSetHomeResponse\"\xcc\x01\n" +
+	"\x13ReturnToHomeRequest\x12e\n" +
+	"\fend_behavior\x18\x01 \x01(\x0e2B.steeleagle.api.v1.services.driver.control.ReturnToHomeEndBehaviorR\vendBehavior\x12'\n" +
 	"\x0freturn_altitude\x18\x02 \x01(\rR\x0ereturnAltitude\x12%\n" +
 	"\x0efinal_altitude\x18\x03 \x01(\rR\rfinalAltitude\"\x16\n" +
-	"\x14ReturnToHomeResponse\"\x88\x03\n" +
+	"\x14ReturnToHomeResponse\"\x96\x03\n" +
 	"\x19GoToGlobalPositionRequest\x12=\n" +
-	"\bposition\x18\x01 \x01(\v2!.steeleagle.api.v1.GlobalPositionR\bposition\x12W\n" +
-	"\fheading_mode\x18\x02 \x01(\x0e2/.steeleagle.api.v1.services.control.HeadingModeH\x00R\vheadingMode\x88\x01\x01\x12Z\n" +
-	"\raltitude_mode\x18\x03 \x01(\x0e20.steeleagle.api.v1.services.control.AltitudeModeH\x01R\faltitudeMode\x88\x01\x01\x12C\n" +
+	"\bposition\x18\x01 \x01(\v2!.steeleagle.api.v1.GlobalPositionR\bposition\x12^\n" +
+	"\fheading_mode\x18\x02 \x01(\x0e26.steeleagle.api.v1.services.driver.control.HeadingModeH\x00R\vheadingMode\x88\x01\x01\x12a\n" +
+	"\raltitude_mode\x18\x03 \x01(\x0e27.steeleagle.api.v1.services.driver.control.AltitudeModeH\x01R\faltitudeMode\x88\x01\x01\x12C\n" +
 	"\fmax_velocity\x18\x04 \x01(\v2\x1b.steeleagle.api.v1.VelocityH\x02R\vmaxVelocity\x88\x01\x01B\x0f\n" +
 	"\r_heading_modeB\x10\n" +
 	"\x0e_altitude_modeB\x0f\n" +
 	"\r_max_velocity\"\x1c\n" +
-	"\x1aGoToGlobalPositionResponse\"\x8d\x02\n" +
+	"\x1aGoToGlobalPositionResponse\"\x94\x02\n" +
 	"\x1bGoToRelativePositionRequest\x12?\n" +
 	"\bposition\x18\x01 \x01(\v2#.steeleagle.api.v1.RelativePositionR\bposition\x12C\n" +
-	"\fmax_velocity\x18\x02 \x01(\v2\x1b.steeleagle.api.v1.VelocityH\x00R\vmaxVelocity\x88\x01\x01\x12M\n" +
-	"\x05frame\x18\x03 \x01(\x0e22.steeleagle.api.v1.services.control.ReferenceFrameH\x01R\x05frame\x88\x01\x01B\x0f\n" +
+	"\fmax_velocity\x18\x02 \x01(\v2\x1b.steeleagle.api.v1.VelocityH\x00R\vmaxVelocity\x88\x01\x01\x12T\n" +
+	"\x05frame\x18\x03 \x01(\x0e29.steeleagle.api.v1.services.driver.control.ReferenceFrameH\x01R\x05frame\x88\x01\x01B\x0f\n" +
 	"\r_max_velocityB\b\n" +
 	"\x06_frame\"\x1e\n" +
-	"\x1cGoToRelativePositionResponse\"\xa6\x01\n" +
+	"\x1cGoToRelativePositionResponse\"\xad\x01\n" +
 	"\x12SetVelocityRequest\x127\n" +
-	"\bvelocity\x18\x01 \x01(\v2\x1b.steeleagle.api.v1.VelocityR\bvelocity\x12M\n" +
-	"\x05frame\x18\x02 \x01(\x0e22.steeleagle.api.v1.services.control.ReferenceFrameH\x00R\x05frame\x88\x01\x01B\b\n" +
+	"\bvelocity\x18\x01 \x01(\v2\x1b.steeleagle.api.v1.VelocityR\bvelocity\x12T\n" +
+	"\x05frame\x18\x02 \x01(\x0e29.steeleagle.api.v1.services.driver.control.ReferenceFrameH\x00R\x05frame\x88\x01\x01B\b\n" +
 	"\x06_frame\"\x15\n" +
-	"\x13SetVelocityResponse\"\x97\x02\n" +
+	"\x13SetVelocityResponse\"\xa5\x02\n" +
 	"\x14SetGimbalPoseRequest\x12\x1b\n" +
 	"\tgimbal_id\x18\x01 \x01(\rR\bgimbalId\x12+\n" +
-	"\x04pose\x18\x02 \x01(\v2\x17.steeleagle.api.v1.PoseR\x04pose\x12N\n" +
-	"\tpose_mode\x18\x03 \x01(\x0e2,.steeleagle.api.v1.services.control.PoseModeH\x00R\bposeMode\x88\x01\x01\x12M\n" +
-	"\x05frame\x18\x04 \x01(\x0e22.steeleagle.api.v1.services.control.ReferenceFrameH\x01R\x05frame\x88\x01\x01B\f\n" +
+	"\x04pose\x18\x02 \x01(\v2\x17.steeleagle.api.v1.PoseR\x04pose\x12U\n" +
+	"\tpose_mode\x18\x03 \x01(\x0e23.steeleagle.api.v1.services.driver.control.PoseModeH\x00R\bposeMode\x88\x01\x01\x12T\n" +
+	"\x05frame\x18\x04 \x01(\x0e29.steeleagle.api.v1.services.driver.control.ReferenceFrameH\x01R\x05frame\x88\x01\x01B\f\n" +
 	"\n" +
 	"_pose_modeB\b\n" +
 	"\x06_frame\"\x17\n" +
@@ -1227,101 +1227,100 @@ const file_v1_services_control_control_proto_rawDesc = "" +
 	"\x15POSE_MODE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fPOSE_MODE_ANGLE\x10\x01\x12\x14\n" +
 	"\x10POSE_MODE_OFFSET\x10\x02\x12\x16\n" +
-	"\x12POSE_MODE_VELOCITY\x10\x032\x8b\n" +
-	"\n" +
-	"\x0eControlService\x12t\n" +
-	"\aTakeOff\x122.steeleagle.api.v1.services.control.TakeOffRequest\x1a3.steeleagle.api.v1.services.control.TakeOffResponse\"\x00\x12k\n" +
-	"\x04Land\x12/.steeleagle.api.v1.services.control.LandRequest\x1a0.steeleagle.api.v1.services.control.LandResponse\"\x00\x12k\n" +
-	"\x04Hold\x12/.steeleagle.api.v1.services.control.HoldRequest\x1a0.steeleagle.api.v1.services.control.HoldResponse\"\x00\x12k\n" +
-	"\x04Kill\x12/.steeleagle.api.v1.services.control.KillRequest\x1a0.steeleagle.api.v1.services.control.KillResponse\"\x00\x12t\n" +
-	"\aSetHome\x122.steeleagle.api.v1.services.control.SetHomeRequest\x1a3.steeleagle.api.v1.services.control.SetHomeResponse\"\x00\x12\x83\x01\n" +
-	"\fReturnToHome\x127.steeleagle.api.v1.services.control.ReturnToHomeRequest\x1a8.steeleagle.api.v1.services.control.ReturnToHomeResponse\"\x00\x12\x95\x01\n" +
-	"\x12GoToGlobalPosition\x12=.steeleagle.api.v1.services.control.GoToGlobalPositionRequest\x1a>.steeleagle.api.v1.services.control.GoToGlobalPositionResponse\"\x00\x12\x9b\x01\n" +
-	"\x14GoToRelativePosition\x12?.steeleagle.api.v1.services.control.GoToRelativePositionRequest\x1a@.steeleagle.api.v1.services.control.GoToRelativePositionResponse\"\x00\x12\x80\x01\n" +
-	"\vSetVelocity\x126.steeleagle.api.v1.services.control.SetVelocityRequest\x1a7.steeleagle.api.v1.services.control.SetVelocityResponse\"\x00\x12\x86\x01\n" +
-	"\rSetGimbalPose\x128.steeleagle.api.v1.services.control.SetGimbalPoseRequest\x1a9.steeleagle.api.v1.services.control.SetGimbalPoseResponse\"\x00B\xa6\x02\n" +
-	"&com.steeleagle.api.v1.services.controlB\fControlProtoP\x01Z@github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/control\xa2\x02\x05SAVSC\xaa\x02\"Steeleagle.Api.V1.Services.Control\xca\x02\"Steeleagle\\Api\\V1\\Services\\Control\xe2\x02.Steeleagle\\Api\\V1\\Services\\Control\\GPBMetadata\xea\x02&Steeleagle::Api::V1::Services::Controlb\x06proto3"
+	"\x12POSE_MODE_VELOCITY\x10\x032\x99\v\n" +
+	"\x0eControlService\x12\x82\x01\n" +
+	"\aTakeOff\x129.steeleagle.api.v1.services.driver.control.TakeOffRequest\x1a:.steeleagle.api.v1.services.driver.control.TakeOffResponse\"\x00\x12y\n" +
+	"\x04Land\x126.steeleagle.api.v1.services.driver.control.LandRequest\x1a7.steeleagle.api.v1.services.driver.control.LandResponse\"\x00\x12y\n" +
+	"\x04Hold\x126.steeleagle.api.v1.services.driver.control.HoldRequest\x1a7.steeleagle.api.v1.services.driver.control.HoldResponse\"\x00\x12y\n" +
+	"\x04Kill\x126.steeleagle.api.v1.services.driver.control.KillRequest\x1a7.steeleagle.api.v1.services.driver.control.KillResponse\"\x00\x12\x82\x01\n" +
+	"\aSetHome\x129.steeleagle.api.v1.services.driver.control.SetHomeRequest\x1a:.steeleagle.api.v1.services.driver.control.SetHomeResponse\"\x00\x12\x91\x01\n" +
+	"\fReturnToHome\x12>.steeleagle.api.v1.services.driver.control.ReturnToHomeRequest\x1a?.steeleagle.api.v1.services.driver.control.ReturnToHomeResponse\"\x00\x12\xa3\x01\n" +
+	"\x12GoToGlobalPosition\x12D.steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest\x1aE.steeleagle.api.v1.services.driver.control.GoToGlobalPositionResponse\"\x00\x12\xa9\x01\n" +
+	"\x14GoToRelativePosition\x12F.steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest\x1aG.steeleagle.api.v1.services.driver.control.GoToRelativePositionResponse\"\x00\x12\x8e\x01\n" +
+	"\vSetVelocity\x12=.steeleagle.api.v1.services.driver.control.SetVelocityRequest\x1a>.steeleagle.api.v1.services.driver.control.SetVelocityResponse\"\x00\x12\x94\x01\n" +
+	"\rSetGimbalPose\x12?.steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest\x1a@.steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse\"\x00B\xca\x02\n" +
+	"-com.steeleagle.api.v1.services.driver.controlB\fControlProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver\xa2\x02\x06SAVSDC\xaa\x02)Steeleagle.Api.V1.Services.Driver.Control\xca\x02)Steeleagle\\Api\\V1\\Services\\Driver\\Control\xe2\x025Steeleagle\\Api\\V1\\Services\\Driver\\Control\\GPBMetadata\xea\x02.Steeleagle::Api::V1::Services::Driver::Controlb\x06proto3"
 
 var (
-	file_v1_services_control_control_proto_rawDescOnce sync.Once
-	file_v1_services_control_control_proto_rawDescData []byte
+	file_v1_services_driver_control_proto_rawDescOnce sync.Once
+	file_v1_services_driver_control_proto_rawDescData []byte
 )
 
-func file_v1_services_control_control_proto_rawDescGZIP() []byte {
-	file_v1_services_control_control_proto_rawDescOnce.Do(func() {
-		file_v1_services_control_control_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_control_control_proto_rawDesc), len(file_v1_services_control_control_proto_rawDesc)))
+func file_v1_services_driver_control_proto_rawDescGZIP() []byte {
+	file_v1_services_driver_control_proto_rawDescOnce.Do(func() {
+		file_v1_services_driver_control_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_driver_control_proto_rawDesc), len(file_v1_services_driver_control_proto_rawDesc)))
 	})
-	return file_v1_services_control_control_proto_rawDescData
+	return file_v1_services_driver_control_proto_rawDescData
 }
 
-var file_v1_services_control_control_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_v1_services_control_control_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
-var file_v1_services_control_control_proto_goTypes = []any{
-	(ReturnToHomeEndBehavior)(0),         // 0: steeleagle.api.v1.services.control.ReturnToHomeEndBehavior
-	(AltitudeMode)(0),                    // 1: steeleagle.api.v1.services.control.AltitudeMode
-	(HeadingMode)(0),                     // 2: steeleagle.api.v1.services.control.HeadingMode
-	(ReferenceFrame)(0),                  // 3: steeleagle.api.v1.services.control.ReferenceFrame
-	(PoseMode)(0),                        // 4: steeleagle.api.v1.services.control.PoseMode
-	(*TakeOffRequest)(nil),               // 5: steeleagle.api.v1.services.control.TakeOffRequest
-	(*TakeOffResponse)(nil),              // 6: steeleagle.api.v1.services.control.TakeOffResponse
-	(*LandRequest)(nil),                  // 7: steeleagle.api.v1.services.control.LandRequest
-	(*LandResponse)(nil),                 // 8: steeleagle.api.v1.services.control.LandResponse
-	(*HoldRequest)(nil),                  // 9: steeleagle.api.v1.services.control.HoldRequest
-	(*HoldResponse)(nil),                 // 10: steeleagle.api.v1.services.control.HoldResponse
-	(*KillRequest)(nil),                  // 11: steeleagle.api.v1.services.control.KillRequest
-	(*KillResponse)(nil),                 // 12: steeleagle.api.v1.services.control.KillResponse
-	(*SetHomeRequest)(nil),               // 13: steeleagle.api.v1.services.control.SetHomeRequest
-	(*SetHomeResponse)(nil),              // 14: steeleagle.api.v1.services.control.SetHomeResponse
-	(*ReturnToHomeRequest)(nil),          // 15: steeleagle.api.v1.services.control.ReturnToHomeRequest
-	(*ReturnToHomeResponse)(nil),         // 16: steeleagle.api.v1.services.control.ReturnToHomeResponse
-	(*GoToGlobalPositionRequest)(nil),    // 17: steeleagle.api.v1.services.control.GoToGlobalPositionRequest
-	(*GoToGlobalPositionResponse)(nil),   // 18: steeleagle.api.v1.services.control.GoToGlobalPositionResponse
-	(*GoToRelativePositionRequest)(nil),  // 19: steeleagle.api.v1.services.control.GoToRelativePositionRequest
-	(*GoToRelativePositionResponse)(nil), // 20: steeleagle.api.v1.services.control.GoToRelativePositionResponse
-	(*SetVelocityRequest)(nil),           // 21: steeleagle.api.v1.services.control.SetVelocityRequest
-	(*SetVelocityResponse)(nil),          // 22: steeleagle.api.v1.services.control.SetVelocityResponse
-	(*SetGimbalPoseRequest)(nil),         // 23: steeleagle.api.v1.services.control.SetGimbalPoseRequest
-	(*SetGimbalPoseResponse)(nil),        // 24: steeleagle.api.v1.services.control.SetGimbalPoseResponse
+var file_v1_services_driver_control_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_v1_services_driver_control_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_v1_services_driver_control_proto_goTypes = []any{
+	(ReturnToHomeEndBehavior)(0),         // 0: steeleagle.api.v1.services.driver.control.ReturnToHomeEndBehavior
+	(AltitudeMode)(0),                    // 1: steeleagle.api.v1.services.driver.control.AltitudeMode
+	(HeadingMode)(0),                     // 2: steeleagle.api.v1.services.driver.control.HeadingMode
+	(ReferenceFrame)(0),                  // 3: steeleagle.api.v1.services.driver.control.ReferenceFrame
+	(PoseMode)(0),                        // 4: steeleagle.api.v1.services.driver.control.PoseMode
+	(*TakeOffRequest)(nil),               // 5: steeleagle.api.v1.services.driver.control.TakeOffRequest
+	(*TakeOffResponse)(nil),              // 6: steeleagle.api.v1.services.driver.control.TakeOffResponse
+	(*LandRequest)(nil),                  // 7: steeleagle.api.v1.services.driver.control.LandRequest
+	(*LandResponse)(nil),                 // 8: steeleagle.api.v1.services.driver.control.LandResponse
+	(*HoldRequest)(nil),                  // 9: steeleagle.api.v1.services.driver.control.HoldRequest
+	(*HoldResponse)(nil),                 // 10: steeleagle.api.v1.services.driver.control.HoldResponse
+	(*KillRequest)(nil),                  // 11: steeleagle.api.v1.services.driver.control.KillRequest
+	(*KillResponse)(nil),                 // 12: steeleagle.api.v1.services.driver.control.KillResponse
+	(*SetHomeRequest)(nil),               // 13: steeleagle.api.v1.services.driver.control.SetHomeRequest
+	(*SetHomeResponse)(nil),              // 14: steeleagle.api.v1.services.driver.control.SetHomeResponse
+	(*ReturnToHomeRequest)(nil),          // 15: steeleagle.api.v1.services.driver.control.ReturnToHomeRequest
+	(*ReturnToHomeResponse)(nil),         // 16: steeleagle.api.v1.services.driver.control.ReturnToHomeResponse
+	(*GoToGlobalPositionRequest)(nil),    // 17: steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest
+	(*GoToGlobalPositionResponse)(nil),   // 18: steeleagle.api.v1.services.driver.control.GoToGlobalPositionResponse
+	(*GoToRelativePositionRequest)(nil),  // 19: steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest
+	(*GoToRelativePositionResponse)(nil), // 20: steeleagle.api.v1.services.driver.control.GoToRelativePositionResponse
+	(*SetVelocityRequest)(nil),           // 21: steeleagle.api.v1.services.driver.control.SetVelocityRequest
+	(*SetVelocityResponse)(nil),          // 22: steeleagle.api.v1.services.driver.control.SetVelocityResponse
+	(*SetGimbalPoseRequest)(nil),         // 23: steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest
+	(*SetGimbalPoseResponse)(nil),        // 24: steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse
 	(*v1.GlobalPosition)(nil),            // 25: steeleagle.api.v1.GlobalPosition
 	(*v1.Velocity)(nil),                  // 26: steeleagle.api.v1.Velocity
 	(*v1.RelativePosition)(nil),          // 27: steeleagle.api.v1.RelativePosition
 	(*v1.Pose)(nil),                      // 28: steeleagle.api.v1.Pose
 }
-var file_v1_services_control_control_proto_depIdxs = []int32{
-	25, // 0: steeleagle.api.v1.services.control.SetHomeRequest.new_home:type_name -> steeleagle.api.v1.GlobalPosition
-	0,  // 1: steeleagle.api.v1.services.control.ReturnToHomeRequest.end_behavior:type_name -> steeleagle.api.v1.services.control.ReturnToHomeEndBehavior
-	25, // 2: steeleagle.api.v1.services.control.GoToGlobalPositionRequest.position:type_name -> steeleagle.api.v1.GlobalPosition
-	2,  // 3: steeleagle.api.v1.services.control.GoToGlobalPositionRequest.heading_mode:type_name -> steeleagle.api.v1.services.control.HeadingMode
-	1,  // 4: steeleagle.api.v1.services.control.GoToGlobalPositionRequest.altitude_mode:type_name -> steeleagle.api.v1.services.control.AltitudeMode
-	26, // 5: steeleagle.api.v1.services.control.GoToGlobalPositionRequest.max_velocity:type_name -> steeleagle.api.v1.Velocity
-	27, // 6: steeleagle.api.v1.services.control.GoToRelativePositionRequest.position:type_name -> steeleagle.api.v1.RelativePosition
-	26, // 7: steeleagle.api.v1.services.control.GoToRelativePositionRequest.max_velocity:type_name -> steeleagle.api.v1.Velocity
-	3,  // 8: steeleagle.api.v1.services.control.GoToRelativePositionRequest.frame:type_name -> steeleagle.api.v1.services.control.ReferenceFrame
-	26, // 9: steeleagle.api.v1.services.control.SetVelocityRequest.velocity:type_name -> steeleagle.api.v1.Velocity
-	3,  // 10: steeleagle.api.v1.services.control.SetVelocityRequest.frame:type_name -> steeleagle.api.v1.services.control.ReferenceFrame
-	28, // 11: steeleagle.api.v1.services.control.SetGimbalPoseRequest.pose:type_name -> steeleagle.api.v1.Pose
-	4,  // 12: steeleagle.api.v1.services.control.SetGimbalPoseRequest.pose_mode:type_name -> steeleagle.api.v1.services.control.PoseMode
-	3,  // 13: steeleagle.api.v1.services.control.SetGimbalPoseRequest.frame:type_name -> steeleagle.api.v1.services.control.ReferenceFrame
-	5,  // 14: steeleagle.api.v1.services.control.ControlService.TakeOff:input_type -> steeleagle.api.v1.services.control.TakeOffRequest
-	7,  // 15: steeleagle.api.v1.services.control.ControlService.Land:input_type -> steeleagle.api.v1.services.control.LandRequest
-	9,  // 16: steeleagle.api.v1.services.control.ControlService.Hold:input_type -> steeleagle.api.v1.services.control.HoldRequest
-	11, // 17: steeleagle.api.v1.services.control.ControlService.Kill:input_type -> steeleagle.api.v1.services.control.KillRequest
-	13, // 18: steeleagle.api.v1.services.control.ControlService.SetHome:input_type -> steeleagle.api.v1.services.control.SetHomeRequest
-	15, // 19: steeleagle.api.v1.services.control.ControlService.ReturnToHome:input_type -> steeleagle.api.v1.services.control.ReturnToHomeRequest
-	17, // 20: steeleagle.api.v1.services.control.ControlService.GoToGlobalPosition:input_type -> steeleagle.api.v1.services.control.GoToGlobalPositionRequest
-	19, // 21: steeleagle.api.v1.services.control.ControlService.GoToRelativePosition:input_type -> steeleagle.api.v1.services.control.GoToRelativePositionRequest
-	21, // 22: steeleagle.api.v1.services.control.ControlService.SetVelocity:input_type -> steeleagle.api.v1.services.control.SetVelocityRequest
-	23, // 23: steeleagle.api.v1.services.control.ControlService.SetGimbalPose:input_type -> steeleagle.api.v1.services.control.SetGimbalPoseRequest
-	6,  // 24: steeleagle.api.v1.services.control.ControlService.TakeOff:output_type -> steeleagle.api.v1.services.control.TakeOffResponse
-	8,  // 25: steeleagle.api.v1.services.control.ControlService.Land:output_type -> steeleagle.api.v1.services.control.LandResponse
-	10, // 26: steeleagle.api.v1.services.control.ControlService.Hold:output_type -> steeleagle.api.v1.services.control.HoldResponse
-	12, // 27: steeleagle.api.v1.services.control.ControlService.Kill:output_type -> steeleagle.api.v1.services.control.KillResponse
-	14, // 28: steeleagle.api.v1.services.control.ControlService.SetHome:output_type -> steeleagle.api.v1.services.control.SetHomeResponse
-	16, // 29: steeleagle.api.v1.services.control.ControlService.ReturnToHome:output_type -> steeleagle.api.v1.services.control.ReturnToHomeResponse
-	18, // 30: steeleagle.api.v1.services.control.ControlService.GoToGlobalPosition:output_type -> steeleagle.api.v1.services.control.GoToGlobalPositionResponse
-	20, // 31: steeleagle.api.v1.services.control.ControlService.GoToRelativePosition:output_type -> steeleagle.api.v1.services.control.GoToRelativePositionResponse
-	22, // 32: steeleagle.api.v1.services.control.ControlService.SetVelocity:output_type -> steeleagle.api.v1.services.control.SetVelocityResponse
-	24, // 33: steeleagle.api.v1.services.control.ControlService.SetGimbalPose:output_type -> steeleagle.api.v1.services.control.SetGimbalPoseResponse
+var file_v1_services_driver_control_proto_depIdxs = []int32{
+	25, // 0: steeleagle.api.v1.services.driver.control.SetHomeRequest.new_home:type_name -> steeleagle.api.v1.GlobalPosition
+	0,  // 1: steeleagle.api.v1.services.driver.control.ReturnToHomeRequest.end_behavior:type_name -> steeleagle.api.v1.services.driver.control.ReturnToHomeEndBehavior
+	25, // 2: steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest.position:type_name -> steeleagle.api.v1.GlobalPosition
+	2,  // 3: steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest.heading_mode:type_name -> steeleagle.api.v1.services.driver.control.HeadingMode
+	1,  // 4: steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest.altitude_mode:type_name -> steeleagle.api.v1.services.driver.control.AltitudeMode
+	26, // 5: steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest.max_velocity:type_name -> steeleagle.api.v1.Velocity
+	27, // 6: steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest.position:type_name -> steeleagle.api.v1.RelativePosition
+	26, // 7: steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest.max_velocity:type_name -> steeleagle.api.v1.Velocity
+	3,  // 8: steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest.frame:type_name -> steeleagle.api.v1.services.driver.control.ReferenceFrame
+	26, // 9: steeleagle.api.v1.services.driver.control.SetVelocityRequest.velocity:type_name -> steeleagle.api.v1.Velocity
+	3,  // 10: steeleagle.api.v1.services.driver.control.SetVelocityRequest.frame:type_name -> steeleagle.api.v1.services.driver.control.ReferenceFrame
+	28, // 11: steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest.pose:type_name -> steeleagle.api.v1.Pose
+	4,  // 12: steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest.pose_mode:type_name -> steeleagle.api.v1.services.driver.control.PoseMode
+	3,  // 13: steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest.frame:type_name -> steeleagle.api.v1.services.driver.control.ReferenceFrame
+	5,  // 14: steeleagle.api.v1.services.driver.control.ControlService.TakeOff:input_type -> steeleagle.api.v1.services.driver.control.TakeOffRequest
+	7,  // 15: steeleagle.api.v1.services.driver.control.ControlService.Land:input_type -> steeleagle.api.v1.services.driver.control.LandRequest
+	9,  // 16: steeleagle.api.v1.services.driver.control.ControlService.Hold:input_type -> steeleagle.api.v1.services.driver.control.HoldRequest
+	11, // 17: steeleagle.api.v1.services.driver.control.ControlService.Kill:input_type -> steeleagle.api.v1.services.driver.control.KillRequest
+	13, // 18: steeleagle.api.v1.services.driver.control.ControlService.SetHome:input_type -> steeleagle.api.v1.services.driver.control.SetHomeRequest
+	15, // 19: steeleagle.api.v1.services.driver.control.ControlService.ReturnToHome:input_type -> steeleagle.api.v1.services.driver.control.ReturnToHomeRequest
+	17, // 20: steeleagle.api.v1.services.driver.control.ControlService.GoToGlobalPosition:input_type -> steeleagle.api.v1.services.driver.control.GoToGlobalPositionRequest
+	19, // 21: steeleagle.api.v1.services.driver.control.ControlService.GoToRelativePosition:input_type -> steeleagle.api.v1.services.driver.control.GoToRelativePositionRequest
+	21, // 22: steeleagle.api.v1.services.driver.control.ControlService.SetVelocity:input_type -> steeleagle.api.v1.services.driver.control.SetVelocityRequest
+	23, // 23: steeleagle.api.v1.services.driver.control.ControlService.SetGimbalPose:input_type -> steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest
+	6,  // 24: steeleagle.api.v1.services.driver.control.ControlService.TakeOff:output_type -> steeleagle.api.v1.services.driver.control.TakeOffResponse
+	8,  // 25: steeleagle.api.v1.services.driver.control.ControlService.Land:output_type -> steeleagle.api.v1.services.driver.control.LandResponse
+	10, // 26: steeleagle.api.v1.services.driver.control.ControlService.Hold:output_type -> steeleagle.api.v1.services.driver.control.HoldResponse
+	12, // 27: steeleagle.api.v1.services.driver.control.ControlService.Kill:output_type -> steeleagle.api.v1.services.driver.control.KillResponse
+	14, // 28: steeleagle.api.v1.services.driver.control.ControlService.SetHome:output_type -> steeleagle.api.v1.services.driver.control.SetHomeResponse
+	16, // 29: steeleagle.api.v1.services.driver.control.ControlService.ReturnToHome:output_type -> steeleagle.api.v1.services.driver.control.ReturnToHomeResponse
+	18, // 30: steeleagle.api.v1.services.driver.control.ControlService.GoToGlobalPosition:output_type -> steeleagle.api.v1.services.driver.control.GoToGlobalPositionResponse
+	20, // 31: steeleagle.api.v1.services.driver.control.ControlService.GoToRelativePosition:output_type -> steeleagle.api.v1.services.driver.control.GoToRelativePositionResponse
+	22, // 32: steeleagle.api.v1.services.driver.control.ControlService.SetVelocity:output_type -> steeleagle.api.v1.services.driver.control.SetVelocityResponse
+	24, // 33: steeleagle.api.v1.services.driver.control.ControlService.SetGimbalPose:output_type -> steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse
 	24, // [24:34] is the sub-list for method output_type
 	14, // [14:24] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name
@@ -1329,31 +1328,31 @@ var file_v1_services_control_control_proto_depIdxs = []int32{
 	0,  // [0:14] is the sub-list for field type_name
 }
 
-func init() { file_v1_services_control_control_proto_init() }
-func file_v1_services_control_control_proto_init() {
-	if File_v1_services_control_control_proto != nil {
+func init() { file_v1_services_driver_control_proto_init() }
+func file_v1_services_driver_control_proto_init() {
+	if File_v1_services_driver_control_proto != nil {
 		return
 	}
-	file_v1_services_control_control_proto_msgTypes[12].OneofWrappers = []any{}
-	file_v1_services_control_control_proto_msgTypes[14].OneofWrappers = []any{}
-	file_v1_services_control_control_proto_msgTypes[16].OneofWrappers = []any{}
-	file_v1_services_control_control_proto_msgTypes[18].OneofWrappers = []any{}
+	file_v1_services_driver_control_proto_msgTypes[12].OneofWrappers = []any{}
+	file_v1_services_driver_control_proto_msgTypes[14].OneofWrappers = []any{}
+	file_v1_services_driver_control_proto_msgTypes[16].OneofWrappers = []any{}
+	file_v1_services_driver_control_proto_msgTypes[18].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_control_control_proto_rawDesc), len(file_v1_services_control_control_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_driver_control_proto_rawDesc), len(file_v1_services_driver_control_proto_rawDesc)),
 			NumEnums:      5,
 			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_v1_services_control_control_proto_goTypes,
-		DependencyIndexes: file_v1_services_control_control_proto_depIdxs,
-		EnumInfos:         file_v1_services_control_control_proto_enumTypes,
-		MessageInfos:      file_v1_services_control_control_proto_msgTypes,
+		GoTypes:           file_v1_services_driver_control_proto_goTypes,
+		DependencyIndexes: file_v1_services_driver_control_proto_depIdxs,
+		EnumInfos:         file_v1_services_driver_control_proto_enumTypes,
+		MessageInfos:      file_v1_services_driver_control_proto_msgTypes,
 	}.Build()
-	File_v1_services_control_control_proto = out.File
-	file_v1_services_control_control_proto_goTypes = nil
-	file_v1_services_control_control_proto_depIdxs = nil
+	File_v1_services_driver_control_proto = out.File
+	file_v1_services_driver_control_proto_goTypes = nil
+	file_v1_services_driver_control_proto_depIdxs = nil
 }

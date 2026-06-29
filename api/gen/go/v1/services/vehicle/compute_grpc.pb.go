@@ -6,9 +6,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: v1/services/compute/compute.proto
+// source: v1/services/vehicle/compute.proto
 
-package compute
+package vehicle
 
 import (
 	context "context"
@@ -23,7 +23,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ComputeService_SetEnginesForTopic_FullMethodName = "/steeleagle.api.v1.services.compute.ComputeService/SetEnginesForTopic"
+	ComputeService_SetEnginesForTopic_FullMethodName = "/steeleagle.api.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic"
 )
 
 // ComputeServiceClient is the client API for ComputeService service.
@@ -32,10 +32,10 @@ const (
 //
 // Used to configure compute engines for sensor streams.
 //
-// This service is used to configure engine endpoints for frames and
-// telemetry post-processing. It maintains an internal consumer list of
-// enginess that the vehicle broadcasts frames and telemetry to. RPC
-// methods within this service allow for manipulation of this list.
+// This service is used to configure engine endpoints for frames and telemetry
+// post-processing. It maintains an internal consumer list of engines that the
+// vehicle broadcasts frames and telemetry to. RPC methods within this service
+// allow for manipulation of this list.
 type ComputeServiceClient interface {
 	// Set the datasink consumer list.
 	//
@@ -67,10 +67,10 @@ func (c *computeServiceClient) SetEnginesForTopic(ctx context.Context, in *SetEn
 //
 // Used to configure compute engines for sensor streams.
 //
-// This service is used to configure engine endpoints for frames and
-// telemetry post-processing. It maintains an internal consumer list of
-// enginess that the vehicle broadcasts frames and telemetry to. RPC
-// methods within this service allow for manipulation of this list.
+// This service is used to configure engine endpoints for frames and telemetry
+// post-processing. It maintains an internal consumer list of engines that the
+// vehicle broadcasts frames and telemetry to. RPC methods within this service
+// allow for manipulation of this list.
 type ComputeServiceServer interface {
 	// Set the datasink consumer list.
 	//
@@ -132,7 +132,7 @@ func _ComputeService_SetEnginesForTopic_Handler(srv interface{}, ctx context.Con
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ComputeService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle.api.v1.services.compute.ComputeService",
+	ServiceName: "steeleagle.api.v1.services.vehicle.compute.ComputeService",
 	HandlerType: (*ComputeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -141,5 +141,5 @@ var ComputeService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/services/compute/compute.proto",
+	Metadata: "v1/services/vehicle/compute.proto",
 }

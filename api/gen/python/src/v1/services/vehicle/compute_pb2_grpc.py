@@ -2,17 +2,17 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from v1.services.compute import compute_pb2 as v1_dot_services_dot_compute_dot_compute__pb2
+from v1.services.vehicle import compute_pb2 as v1_dot_services_dot_vehicle_dot_compute__pb2
 
 
 class ComputeServiceStub:
     """
     Used to configure compute engines for sensor streams.
 
-    This service is used to configure engine endpoints for frames and
-    telemetry post-processing. It maintains an internal consumer list of
-    enginess that the vehicle broadcasts frames and telemetry to. RPC
-    methods within this service allow for manipulation of this list.
+    This service is used to configure engine endpoints for frames and telemetry
+    post-processing. It maintains an internal consumer list of engines that the
+    vehicle broadcasts frames and telemetry to. RPC methods within this service
+    allow for manipulation of this list.
     """
 
     def __init__(self, channel):
@@ -22,9 +22,9 @@ class ComputeServiceStub:
             channel: A grpc.Channel.
         """
         self.SetEnginesForTopic = channel.unary_unary(
-                '/steeleagle.api.v1.services.compute.ComputeService/SetEnginesForTopic',
-                request_serializer=v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
+                '/steeleagle.api.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic',
+                request_serializer=v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
                 _registered_method=True)
 
 
@@ -32,10 +32,10 @@ class ComputeServiceServicer:
     """
     Used to configure compute engines for sensor streams.
 
-    This service is used to configure engine endpoints for frames and
-    telemetry post-processing. It maintains an internal consumer list of
-    enginess that the vehicle broadcasts frames and telemetry to. RPC
-    methods within this service allow for manipulation of this list.
+    This service is used to configure engine endpoints for frames and telemetry
+    post-processing. It maintains an internal consumer list of engines that the
+    vehicle broadcasts frames and telemetry to. RPC methods within this service
+    allow for manipulation of this list.
     """
 
     def SetEnginesForTopic(self, request, context):
@@ -53,14 +53,14 @@ def add_ComputeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SetEnginesForTopic': grpc.unary_unary_rpc_method_handler(
                     servicer.SetEnginesForTopic,
-                    request_deserializer=v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicRequest.FromString,
-                    response_serializer=v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicResponse.SerializeToString,
+                    request_deserializer=v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicRequest.FromString,
+                    response_serializer=v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle.api.v1.services.compute.ComputeService', rpc_method_handlers)
+            'steeleagle.api.v1.services.vehicle.compute.ComputeService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle.api.v1.services.compute.ComputeService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle.api.v1.services.vehicle.compute.ComputeService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -68,10 +68,10 @@ class ComputeService:
     """
     Used to configure compute engines for sensor streams.
 
-    This service is used to configure engine endpoints for frames and
-    telemetry post-processing. It maintains an internal consumer list of
-    enginess that the vehicle broadcasts frames and telemetry to. RPC
-    methods within this service allow for manipulation of this list.
+    This service is used to configure engine endpoints for frames and telemetry
+    post-processing. It maintains an internal consumer list of engines that the
+    vehicle broadcasts frames and telemetry to. RPC methods within this service
+    allow for manipulation of this list.
     """
 
     @staticmethod
@@ -88,9 +88,9 @@ class ComputeService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle.api.v1.services.compute.ComputeService/SetEnginesForTopic',
-            v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
-            v1_dot_services_dot_compute_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
+            '/steeleagle.api.v1.services.vehicle.compute.ComputeService/SetEnginesForTopic',
+            v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicRequest.SerializeToString,
+            v1_dot_services_dot_vehicle_dot_compute__pb2.SetEnginesForTopicResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from v1.services.stream import stream_pb2 as v1_dot_services_dot_stream_dot_stream__pb2
+from v1.services.driver import data_pb2 as v1_dot_services_dot_driver_dot_data__pb2
 
 
 class StreamServiceStub:
@@ -20,20 +20,20 @@ class StreamServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.StartVideoStream = channel.unary_unary(
-                '/steeleagle.api.v1.services.stream.StreamService/StartVideoStream',
-                request_serializer=v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamResponse.FromString,
+        self.GetVideoStreamURL = channel.unary_unary(
+                '/steeleagle.api.v1.services.driver.data.StreamService/GetVideoStreamURL',
+                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamResponse.FromString,
                 _registered_method=True)
-        self.GetVideoFrame = channel.unary_unary(
-                '/steeleagle.api.v1.services.stream.StreamService/GetVideoFrame',
-                request_serializer=v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameResponse.FromString,
+        self.StreamVideoFrames = channel.unary_stream(
+                '/steeleagle.api.v1.services.driver.data.StreamService/StreamVideoFrames',
+                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameResponse.FromString,
                 _registered_method=True)
         self.StreamTelemetry = channel.unary_stream(
-                '/steeleagle.api.v1.services.stream.StreamService/StreamTelemetry',
-                request_serializer=v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryResponse.FromString,
+                '/steeleagle.api.v1.services.driver.data.StreamService/StreamTelemetry',
+                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.FromString,
                 _registered_method=True)
 
 
@@ -46,7 +46,7 @@ class StreamServiceServicer:
     to other connected plugins.
     """
 
-    def StartVideoStream(self, request, context):
+    def GetVideoStreamURL(self, request, context):
         """
         Start streaming video from the vehicle.
 
@@ -58,7 +58,7 @@ class StreamServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetVideoFrame(self, request, context):
+    def StreamVideoFrames(self, request, context):
         """
         Gets a video frame from the vehicle.
 
@@ -84,26 +84,26 @@ class StreamServiceServicer:
 
 def add_StreamServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'StartVideoStream': grpc.unary_unary_rpc_method_handler(
-                    servicer.StartVideoStream,
-                    request_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamRequest.FromString,
-                    response_serializer=v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamResponse.SerializeToString,
+            'GetVideoStreamURL': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetVideoStreamURL,
+                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamResponse.SerializeToString,
             ),
-            'GetVideoFrame': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetVideoFrame,
-                    request_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameRequest.FromString,
-                    response_serializer=v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameResponse.SerializeToString,
+            'StreamVideoFrames': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamVideoFrames,
+                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameResponse.SerializeToString,
             ),
             'StreamTelemetry': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamTelemetry,
-                    request_deserializer=v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryRequest.FromString,
-                    response_serializer=v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryResponse.SerializeToString,
+                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle.api.v1.services.stream.StreamService', rpc_method_handlers)
+            'steeleagle.api.v1.services.driver.data.StreamService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle.api.v1.services.stream.StreamService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle.api.v1.services.driver.data.StreamService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -117,7 +117,7 @@ class StreamService:
     """
 
     @staticmethod
-    def StartVideoStream(request,
+    def GetVideoStreamURL(request,
             target,
             options=(),
             channel_credentials=None,
@@ -130,9 +130,9 @@ class StreamService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/steeleagle.api.v1.services.stream.StreamService/StartVideoStream',
-            v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamRequest.SerializeToString,
-            v1_dot_services_dot_stream_dot_stream__pb2.StartVideoStreamResponse.FromString,
+            '/steeleagle.api.v1.services.driver.data.StreamService/GetVideoStreamURL',
+            v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_data__pb2.StartVideoStreamResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -144,7 +144,7 @@ class StreamService:
             _registered_method=True)
 
     @staticmethod
-    def GetVideoFrame(request,
+    def StreamVideoFrames(request,
             target,
             options=(),
             channel_credentials=None,
@@ -154,12 +154,12 @@ class StreamService:
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle.api.v1.services.stream.StreamService/GetVideoFrame',
-            v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameRequest.SerializeToString,
-            v1_dot_services_dot_stream_dot_stream__pb2.GetVideoFrameResponse.FromString,
+            '/steeleagle.api.v1.services.driver.data.StreamService/StreamVideoFrames',
+            v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_data__pb2.GetVideoFrameResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -184,9 +184,9 @@ class StreamService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle.api.v1.services.stream.StreamService/StreamTelemetry',
-            v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryRequest.SerializeToString,
-            v1_dot_services_dot_stream_dot_stream__pb2.StreamTelemetryResponse.FromString,
+            '/steeleagle.api.v1.services.driver.data.StreamService/StreamTelemetry',
+            v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.FromString,
             options,
             channel_credentials,
             insecure,

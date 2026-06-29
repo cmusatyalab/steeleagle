@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle.api.v1.services.stream;
+package steeleagle.api.v1.services.driver.data;
 
 import "v1/messages/stream/stream.proto";
 
@@ -22,7 +22,7 @@ service StreamService {
    * broadcast to the rest of the system. This function should only be called
    * by the OS, and not by any plugins.
    */
-  rpc StartVideoStream (StartVideoStreamRequest)
+  rpc GetVideoStreamURL (StartVideoStreamRequest)
     returns (StartVideoStreamResponse);
   /*
    * Gets a video frame from the vehicle.
@@ -31,7 +31,7 @@ service StreamService {
    * accessible without needing a stream. This function should only be called
    * by the OS, and not by any plugins.
    */
-  rpc GetVideoFrame (GetVideoFrameRequest) returns (GetVideoFrameResponse);
+  rpc StreamVideoFrames (GetVideoFrameRequest) returns (stream GetVideoFrameResponse);
   /*
    * Stream telemetry from the vehicle.
    *

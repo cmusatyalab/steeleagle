@@ -101,6 +101,16 @@ func (s *DataService) recvTelemetry(
 	}
 }
 
+func (s *DataService) StartVideoStream(ctx context.Context) (chan error, error) {
+	client := stream_pb.NewStreamServiceClient(s.vehicle.conns.driver)
+	req := &stream_pb.StartVideoStreamRequest{}
+
+	// Send request to driver
+	stream, err := client.StreamTelemetry(ctx, req)
+
+	return nil, nil
+}
+
 // Start streaming telemetry from the vehicle driver. Launches a goroutine
 // that performs the streaming and updates the data service as telemetry
 // is received. The launched goroutine uses the returned error channel to

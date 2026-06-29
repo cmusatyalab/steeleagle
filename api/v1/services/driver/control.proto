@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle.api.v1.services.control;
+package steeleagle.api.v1.services.driver.control;
 
 import "v1/common.proto";
 
@@ -21,7 +21,7 @@ service ControlService {
    * Causes the vehicle to take off to a specified take off altitude.
    * Implicitly arms the vehicle.
    */
-  rpc TakeOff (TakeOffRequest) 
+  rpc TakeOff (TakeOffRequest)
 	returns (TakeOffResponse) {}
   /*
    * Order the vehicle to land.
@@ -29,7 +29,7 @@ service ControlService {
    * Causes the vehicle to land at its current location. Implicitly
    * disarms the vehicle.
    */
-  rpc Land (LandRequest) 
+  rpc Land (LandRequest)
 	returns (LandResponse) {}
   /*
    * Order the vehicle to hold/loiter.
@@ -37,7 +37,7 @@ service ControlService {
    * Causes the vehicle to hold at its current location and to
    * cancel any ongoing movement commands (`ReturnToHome` e.g.).
    */
-  rpc Hold (HoldRequest) 
+  rpc Hold (HoldRequest)
 	returns (HoldResponse) {}
   /*
    * Orders an emergency shutdown of the vehicle motors.
@@ -45,7 +45,7 @@ service ControlService {
    * Causes the vehicle to immediately turn off its motors. _This will
    * result in the vehicle going into freefall, only for emergencies!_
    */
-  rpc Kill (KillRequest) 
+  rpc Kill (KillRequest)
 	returns (KillResponse) {}
   /*
    * Set the home location of the vehicle.
@@ -54,15 +54,15 @@ service ControlService {
    * commands will move the vehicle to the provided location instead
    * of its starting position.
    */
-  rpc SetHome (SetHomeRequest) 
+  rpc SetHome (SetHomeRequest)
 	returns (SetHomeResponse) {}
   /*
    * Order the vehicle to return to its home position.
    *
-   * Causes the vehicle to return to its home position. If the home position 
-   * has not been explicitly set, this will be its start position (defined 
-   * as its takeoff position by default). If the home position has been 
-   * explicitly set, by `SetHome`, the vehicle will return to that 
+   * Causes the vehicle to return to its home position. If the home position
+   * has not been explicitly set, this will be its start position (defined
+   * as its takeoff position by default). If the home position has been
+   * explicitly set, by `SetHome`, the vehicle will return to that
    * position instead. If `return_altitude` is set, the vehicle will ascend
    * to that altitude before transit.
    *
@@ -70,7 +70,7 @@ service ControlService {
    * - `HOVER` -> hover at `final_altitude` above home position
    * - `LAND` -> land at home position
    */
-  rpc ReturnToHome (ReturnToHomeRequest) 
+  rpc ReturnToHome (ReturnToHomeRequest)
 	returns (ReturnToHomeResponse) {}
   /*
    * Order the vehicle to move to a global position.
@@ -78,18 +78,18 @@ service ControlService {
    * Causes the vehicle to transit to the provided global position. The vehicle
    * will interpret the heading of travel according to `heading_mode`:
    * - `TO_TARGET` -> turn to face the target position bearing
-   * - `HEADING_START` -> turn to face the provided heading in the global position object. 
-   * 
-   * This will be the heading the vehicle maintains for the duration of transit. 
-   * 
-   * The vehicle will move towards the target at the specified maximum velocity 
-   * until the vehicle has reached its destination. Error tolerance is determined 
+   * - `HEADING_START` -> turn to face the provided heading in the global position object.
+   *
+   * This will be the heading the vehicle maintains for the duration of transit.
+   *
+   * The vehicle will move towards the target at the specified maximum velocity
+   * until the vehicle has reached its destination. Error tolerance is determined
    * by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
    * - `x_vel` -> maximum _horizontal_ velocity
    * - `y_vel` -> ignored
    * - `z_vel` -> maximum _vertical_ velocity
    *
-   * If no maximum velocity is provided, the driver will use a preset speed usually 
+   * If no maximum velocity is provided, the driver will use a preset speed usually
    * determined by the manufacturer or hardware settings.
    *
    * During motion, the vehicle will also ascend or descend towards the target
@@ -107,15 +107,15 @@ service ControlService {
    * will interpret the input position according to `frame` as follows:
    * - `BODY` -> (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_
    * - `NEU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_
-   * 
-   * The vehicle will move towards the target at the specified maximum velocity 
-   * until the vehicle has reached its destination. Error tolerance is determined 
+   *
+   * The vehicle will move towards the target at the specified maximum velocity
+   * until the vehicle has reached its destination. Error tolerance is determined
    * by the driver. Maximum velocity is interpreted from `max_velocity` as follows:
    * - `x_vel` -> maximum _horizontal_ velocity
    * - `y_vel` -> ignored
    * - `z_vel` -> maximum _vertical_ velocity
-   * 
-   * If no maximum velocity is provided, the driver will use a preset speed usually 
+   *
+   * If no maximum velocity is provided, the driver will use a preset speed usually
    * determined by the manufacturer or hardware settings.
    */
   rpc GoToRelativePosition (GoToRelativePositionRequest)
@@ -134,12 +134,12 @@ service ControlService {
    * Order the vehicle to set the pose of a gimbal.
    *
    * Causes the vehicle to actuate a gimbal to a new pose. The vehicle
-   * will interpret the new pose type from `pose_mode` as follows: 
+   * will interpret the new pose type from `pose_mode` as follows:
    * - `ABSOLUTE` -> absolute angle
    * - `RELATIVE` -> angle relative to current position
    * - `VELOCITY` -> angular velocities
-   * 
-   * The vehicle will interpret the new pose angles according to `frame` 
+   *
+   * The vehicle will interpret the new pose angles according to `frame`
    * as follows:
    * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
    * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
@@ -185,7 +185,7 @@ message ReturnToHomeRequest {
   // altitude that the vehicle should move at while reurning home
   uint32 return_altitude = 2;
   // altitude that the vehicle should hover at, for hover end behavior
-  uint32 final_altitude = 3; 
+  uint32 final_altitude = 3;
 }
 
 message ReturnToHomeResponse {}

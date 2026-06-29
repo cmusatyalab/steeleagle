@@ -10,13 +10,13 @@ class SwarmServiceStub:
     Used for swarm-level control over multiple vehicles.
 
     This service is hosted by the swarm controller module and represents the
-    teleoperation interface for groups of vehicles. Most methods called here 
+    teleoperation interface for groups of vehicles. Most methods called here
     will result in actuation of targeted vehicles (be careful!). Each method
     will return a stream of result objects. Each result object contains the
     associated vehicle name and a copy of its response, response code, and
-    response string if applicable. Even if one or more vehicles fails its
-    call, the overall call will _still succeed_. To check for errors, each
-    response should be inspected manually for failures.
+    response string if applicable. Even if one or more vehicles fails its call,
+    the overall call will _still succeed_. To check for errors, each response
+    should be inspected manually for failures.
     """
 
     def __init__(self, channel):
@@ -82,13 +82,13 @@ class SwarmServiceServicer:
     Used for swarm-level control over multiple vehicles.
 
     This service is hosted by the swarm controller module and represents the
-    teleoperation interface for groups of vehicles. Most methods called here 
+    teleoperation interface for groups of vehicles. Most methods called here
     will result in actuation of targeted vehicles (be careful!). Each method
     will return a stream of result objects. Each result object contains the
     associated vehicle name and a copy of its response, response code, and
-    response string if applicable. Even if one or more vehicles fails its
-    call, the overall call will _still succeed_. To check for errors, each
-    response should be inspected manually for failures.
+    response string if applicable. Even if one or more vehicles fails its call,
+    the overall call will _still succeed_. To check for errors, each response
+    should be inspected manually for failures.
     """
 
     def SwarmTakeOff(self, request, context):
@@ -171,12 +171,12 @@ class SwarmServiceServicer:
         Order multiple vehicles to set the pose of a gimbal.
 
         Causes vehicles to actuate a gimbal to a new pose. Each vehicle
-        will interpret the new pose type from `pose_mode` as follows: 
+        will interpret the new pose type from `pose_mode` as follows:
         - `ABSOLUTE` -> absolute angle
         - `RELATIVE` -> angle relative to current position
         - `VELOCITY` -> angular velocities
 
-        Each vehicle will interpret the new pose angles according to `frame` 
+        Each vehicle will interpret the new pose angles according to `frame`
         as follows:
         - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
         - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
@@ -285,13 +285,13 @@ class SwarmService:
     Used for swarm-level control over multiple vehicles.
 
     This service is hosted by the swarm controller module and represents the
-    teleoperation interface for groups of vehicles. Most methods called here 
+    teleoperation interface for groups of vehicles. Most methods called here
     will result in actuation of targeted vehicles (be careful!). Each method
     will return a stream of result objects. Each result object contains the
     associated vehicle name and a copy of its response, response code, and
-    response string if applicable. Even if one or more vehicles fails its
-    call, the overall call will _still succeed_. To check for errors, each
-    response should be inspected manually for failures.
+    response string if applicable. Even if one or more vehicles fails its call,
+    the overall call will _still succeed_. To check for errors, each response
+    should be inspected manually for failures.
     """
 
     @staticmethod

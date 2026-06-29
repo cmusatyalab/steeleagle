@@ -6,20 +6,20 @@ syntax = "proto3";
 package steeleagle.api.v1.services.swarm;
 
 import "v1/common.proto";
-import "v1/services/control/control.proto";
+import "v1/services/driver/control.proto";
 import "v1/services/mission/mission.proto";
 
 /*
  * Used for swarm-level control over multiple vehicles.
  *
  * This service is hosted by the swarm controller module and represents the
- * teleoperation interface for groups of vehicles. Most methods called here 
+ * teleoperation interface for groups of vehicles. Most methods called here
  * will result in actuation of targeted vehicles (be careful!). Each method
  * will return a stream of result objects. Each result object contains the
  * associated vehicle name and a copy of its response, response code, and
- * response string if applicable. Even if one or more vehicles fails its
- * call, the overall call will _still succeed_. To check for errors, each
- * response should be inspected manually for failures.
+ * response string if applicable. Even if one or more vehicles fails its call,
+ * the overall call will _still succeed_. To check for errors, each response
+ * should be inspected manually for failures.
  */
 service SwarmService {
   /*
@@ -28,7 +28,7 @@ service SwarmService {
    * Causes vehicles to take off to a specified take off altitude.
    * Implicitly arms the vehicles.
    */
-  rpc SwarmTakeOff (SwarmTakeOffRequest) 
+  rpc SwarmTakeOff (SwarmTakeOffRequest)
 	returns (stream SwarmTakeOffResponse) {}
   /*
    * Order multiple vehicle to land.
@@ -36,7 +36,7 @@ service SwarmService {
    * Causes vehicles to land at its current location. Implicitly
    * disarms the vehicles.
    */
-  rpc SwarmLand (SwarmLandRequest) 
+  rpc SwarmLand (SwarmLandRequest)
 	returns (stream SwarmLandResponse) {}
   /*
    * Order multiple vehicle to hold/loiter.
@@ -44,7 +44,7 @@ service SwarmService {
    * Causes vehicles to hold at their current locations and to
    * cancel any ongoing movement commands (`SwarmReturnToHome` e.g.).
    */
-  rpc SwarmHold (SwarmHoldRequest) 
+  rpc SwarmHold (SwarmHoldRequest)
 	returns (stream SwarmHoldResponse) {}
   /*
    * Orders an emergency shutdown of multiple vehicles.
@@ -52,7 +52,7 @@ service SwarmService {
    * Causes vehicles to immediately turn off their motors. _This will
    * result in the vehicles going into freefall, only for emergencies!_
    */
-  rpc SwarmKill (SwarmKillRequest) 
+  rpc SwarmKill (SwarmKillRequest)
 	returns (stream SwarmKillResponse) {}
   /*
    * Order multiple vehicles to return to their home positions.
@@ -67,7 +67,7 @@ service SwarmService {
    * - `HOVER` -> hover at `final_altitude` above home position
    * - `LAND` -> land at home position
    */
-  rpc SwarmReturnToHome (SwarmReturnToHomeRequest) 
+  rpc SwarmReturnToHome (SwarmReturnToHomeRequest)
 	returns (stream SwarmReturnToHomeResponse) {}
   /*
    * Order multiple vehicles to accelerate to a velocity.
@@ -83,12 +83,12 @@ service SwarmService {
    * Order multiple vehicles to set the pose of a gimbal.
    *
    * Causes vehicles to actuate a gimbal to a new pose. Each vehicle
-   * will interpret the new pose type from `pose_mode` as follows: 
+   * will interpret the new pose type from `pose_mode` as follows:
    * - `ABSOLUTE` -> absolute angle
    * - `RELATIVE` -> angle relative to current position
    * - `VELOCITY` -> angular velocities
-   * 
-   * Each vehicle will interpret the new pose angles according to `frame` 
+   *
+   * Each vehicle will interpret the new pose angles according to `frame`
    * as follows:
    * - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw)
    * - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw)
@@ -124,84 +124,84 @@ service SwarmService {
 
 message SwarmTakeOffRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.TakeOffRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.TakeOffRequest request = 2; // proxied request object
 }
 
 message SwarmTakeOffResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.TakeOffResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.TakeOffResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmLandRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.LandRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.LandRequest request = 2; // proxied request object
 }
 
 message SwarmLandResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.LandResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.LandResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmHoldRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.HoldRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.HoldRequest request = 2; // proxied request object
 }
 
 message SwarmHoldResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.HoldResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.HoldResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmKillRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.KillRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.KillRequest request = 2; // proxied request object
 }
 
 message SwarmKillResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.KillResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.KillResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmReturnToHomeRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.ReturnToHomeRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.ReturnToHomeRequest request = 2; // proxied request object
 }
 
 message SwarmReturnToHomeResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.ReturnToHomeResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.ReturnToHomeResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmSetVelocityRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.SetVelocityRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.SetVelocityRequest request = 2; // proxied request object
 }
 
 message SwarmSetVelocityResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.SetVelocityResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.SetVelocityResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
 
 message SwarmSetGimbalPoseRequest{
   repeated string vehicles = 1; // target vehicles
-  steeleagle.api.v1.services.control.SetGimbalPoseRequest request = 2; // proxied request object
+  steeleagle.api.v1.services.driver.control.SetGimbalPoseRequest request = 2; // proxied request object
 }
 
 message SwarmSetGimbalPoseResponse {
   string vehicle = 1; // ID of vehicle
-  steeleagle.api.v1.services.control.SetGimbalPoseResponse response = 2; // proxied response object
+  steeleagle.api.v1.services.driver.control.SetGimbalPoseResponse response = 2; // proxied response object
   uint32 code = 3; // gRPC status code
   string details = 4; // error details, if applicable
 }
