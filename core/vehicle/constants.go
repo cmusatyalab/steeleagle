@@ -5,9 +5,8 @@ import _ "embed"
 // Default port to use if no port is specified.
 const DefaultPort int = 50000
 
-// Default main services socket name
+// Default services socket names
 const MainSocket string = "services"
-
 const AdminSocket string = "admin"
 
 //go:embed defaults/laws.toml

@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/open-policy-agent/opa/rego"
-	"github.com/rs/zerolog/log"
 )
 
 type policyState struct {
@@ -60,7 +59,6 @@ func (p *policyState) safeCheckAndTransit(ctx context.Context, command string) (
 }
 
 func (p *policyState) check(ctx context.Context, command string) (bool, string, error) {
-	log.Debug().Str("command", command).Msg("command check started")
 	results, err := p.query.Eval(ctx, rego.EvalInput(map[string]any{
 		"command": command,
 		"state":   p.currentState,
@@ -82,14 +80,12 @@ func (p *policyState) check(ctx context.Context, command string) (bool, string, 
 		return false, "", err
 	}
 
-	log.Debug().Str("command", command).Bool("allowed", d.Allowed).Str("next_state", d.NextState).Msg("command check completed")
 	return d.Allowed, d.NextState, nil
 }
 
 func (p *policyState) transit(nextState string) error {
 	_, ok := p.lawMap[nextState]
 	if ok {
-		log.Info().Str("state", nextState).Msg("transitioning to new control state")
 		p.currentState = nextState
 	} else {
 		return fmt.Errorf("failed to transition to state %s, not in law!", nextState)

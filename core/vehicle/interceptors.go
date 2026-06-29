@@ -26,10 +26,10 @@ func qualifyCommand(ctx context.Context, fullName string) string {
 		code = util.UnknownCode
 	}
 	// Qualify command for law checking
-	return fmt.Sprintf("%s%s", code, fullName)
+	return fmt.Sprintf("%s%s", code.String(), fullName)
 }
 
-func (p *policyState) getInterceptor() grpc.StreamServerInterceptor {
+func (v *Vehicle) getInterceptor() grpc.StreamServerInterceptor {
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -37,9 +37,10 @@ func (p *policyState) getInterceptor() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) error {
 		command := qualifyCommand(ss.Context(), info.FullMethod)
+        // TODO: Add in the logging that was removed from policy
 		log.Info().Str("command", command).Msg("received RPC request")
 		// Check if command is allowed by laws, and transit to new state if necessary
-		allowed, _, err := p.safeCheckAndTransit(ss.Context(), command)
+		allowed, _, err := p.policyState.safeCheckAndTransit(ss.Context(), command)
 		if allowed == false && err == nil {
 			log.Error().Str("command", command).Str("state", p.currentState).Msg("command is not allowed in current state!")
 			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, p.currentState)
