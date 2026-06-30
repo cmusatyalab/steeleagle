@@ -6,7 +6,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: v1/services/driver/data.proto
+// source: v1/services/driver/stream.proto
 
 package driver
 
@@ -65,11 +65,11 @@ func (x GetVideoStreamURLRequest_Resolution) String() string {
 }
 
 func (GetVideoStreamURLRequest_Resolution) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_services_driver_data_proto_enumTypes[0].Descriptor()
+	return file_v1_services_driver_stream_proto_enumTypes[0].Descriptor()
 }
 
 func (GetVideoStreamURLRequest_Resolution) Type() protoreflect.EnumType {
-	return &file_v1_services_driver_data_proto_enumTypes[0]
+	return &file_v1_services_driver_stream_proto_enumTypes[0]
 }
 
 func (x GetVideoStreamURLRequest_Resolution) Number() protoreflect.EnumNumber {
@@ -78,7 +78,7 @@ func (x GetVideoStreamURLRequest_Resolution) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetVideoStreamURLRequest_Resolution.Descriptor instead.
 func (GetVideoStreamURLRequest_Resolution) EnumDescriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{0, 0}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{0, 0}
 }
 
 type GetVideoStreamURLRequest struct {
@@ -90,7 +90,7 @@ type GetVideoStreamURLRequest struct {
 
 func (x *GetVideoStreamURLRequest) Reset() {
 	*x = GetVideoStreamURLRequest{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[0]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +102,7 @@ func (x *GetVideoStreamURLRequest) String() string {
 func (*GetVideoStreamURLRequest) ProtoMessage() {}
 
 func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[0]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +115,7 @@ func (x *GetVideoStreamURLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVideoStreamURLRequest.ProtoReflect.Descriptor instead.
 func (*GetVideoStreamURLRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{0}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetVideoStreamURLRequest) GetResolution() GetVideoStreamURLRequest_Resolution {
@@ -134,7 +134,7 @@ type GetVideoStreamURLResponse struct {
 
 func (x *GetVideoStreamURLResponse) Reset() {
 	*x = GetVideoStreamURLResponse{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[1]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -146,7 +146,7 @@ func (x *GetVideoStreamURLResponse) String() string {
 func (*GetVideoStreamURLResponse) ProtoMessage() {}
 
 func (x *GetVideoStreamURLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[1]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -159,7 +159,7 @@ func (x *GetVideoStreamURLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetVideoStreamURLResponse.ProtoReflect.Descriptor instead.
 func (*GetVideoStreamURLResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{1}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetVideoStreamURLResponse) GetStreamUrl() string {
@@ -177,7 +177,7 @@ type StreamVideoFramesRequest struct {
 
 func (x *StreamVideoFramesRequest) Reset() {
 	*x = StreamVideoFramesRequest{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[2]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -189,7 +189,7 @@ func (x *StreamVideoFramesRequest) String() string {
 func (*StreamVideoFramesRequest) ProtoMessage() {}
 
 func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[2]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -202,7 +202,7 @@ func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamVideoFramesRequest.ProtoReflect.Descriptor instead.
 func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{2}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{2}
 }
 
 type StreamVideoFramesResponse struct {
@@ -214,7 +214,7 @@ type StreamVideoFramesResponse struct {
 
 func (x *StreamVideoFramesResponse) Reset() {
 	*x = StreamVideoFramesResponse{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[3]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +226,7 @@ func (x *StreamVideoFramesResponse) String() string {
 func (*StreamVideoFramesResponse) ProtoMessage() {}
 
 func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[3]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +239,7 @@ func (x *StreamVideoFramesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamVideoFramesResponse.ProtoReflect.Descriptor instead.
 func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{3}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *StreamVideoFramesResponse) GetFrame() *stream.RawFrame {
@@ -257,7 +257,7 @@ type StreamTelemetryRequest struct {
 
 func (x *StreamTelemetryRequest) Reset() {
 	*x = StreamTelemetryRequest{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[4]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -269,7 +269,7 @@ func (x *StreamTelemetryRequest) String() string {
 func (*StreamTelemetryRequest) ProtoMessage() {}
 
 func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[4]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -282,7 +282,7 @@ func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamTelemetryRequest.ProtoReflect.Descriptor instead.
 func (*StreamTelemetryRequest) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{4}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{4}
 }
 
 type StreamTelemetryResponse struct {
@@ -294,7 +294,7 @@ type StreamTelemetryResponse struct {
 
 func (x *StreamTelemetryResponse) Reset() {
 	*x = StreamTelemetryResponse{}
-	mi := &file_v1_services_driver_data_proto_msgTypes[5]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -306,7 +306,7 @@ func (x *StreamTelemetryResponse) String() string {
 func (*StreamTelemetryResponse) ProtoMessage() {}
 
 func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_services_driver_data_proto_msgTypes[5]
+	mi := &file_v1_services_driver_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -319,7 +319,7 @@ func (x *StreamTelemetryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamTelemetryResponse.ProtoReflect.Descriptor instead.
 func (*StreamTelemetryResponse) Descriptor() ([]byte, []int) {
-	return file_v1_services_driver_data_proto_rawDescGZIP(), []int{5}
+	return file_v1_services_driver_stream_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *StreamTelemetryResponse) GetTelemetry() *stream.Telemetry {
@@ -329,11 +329,11 @@ func (x *StreamTelemetryResponse) GetTelemetry() *stream.Telemetry {
 	return nil
 }
 
-var File_v1_services_driver_data_proto protoreflect.FileDescriptor
+var File_v1_services_driver_stream_proto protoreflect.FileDescriptor
 
-const file_v1_services_driver_data_proto_rawDesc = "" +
+const file_v1_services_driver_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/services/driver/data.proto\x12&steeleagle.api.v1.services.driver.data\x1a\x1fv1/messages/stream/stream.proto\"\x84\x02\n" +
+	"\x1fv1/services/driver/stream.proto\x12&steeleagle.api.v1.services.driver.data\x1a\x1fv1/messages/stream/stream.proto\"\x84\x02\n" +
 	"\x18GetVideoStreamURLRequest\x12k\n" +
 	"\n" +
 	"resolution\x18\x01 \x01(\x0e2K.steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.ResolutionR\n" +
@@ -357,24 +357,24 @@ const file_v1_services_driver_data_proto_rawDesc = "" +
 	"\rStreamService\x12\x98\x01\n" +
 	"\x11GetVideoStreamURL\x12@.steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest\x1aA.steeleagle.api.v1.services.driver.data.GetVideoStreamURLResponse\x12\x9a\x01\n" +
 	"\x11StreamVideoFrames\x12@.steeleagle.api.v1.services.driver.data.StreamVideoFramesRequest\x1aA.steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse0\x01\x12\x94\x01\n" +
-	"\x0fStreamTelemetry\x12>.steeleagle.api.v1.services.driver.data.StreamTelemetryRequest\x1a?.steeleagle.api.v1.services.driver.data.StreamTelemetryResponse0\x01B\xb8\x02\n" +
-	"*com.steeleagle.api.v1.services.driver.dataB\tDataProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver\xa2\x02\x06SAVSDD\xaa\x02&Steeleagle.Api.V1.Services.Driver.Data\xca\x02&Steeleagle\\Api\\V1\\Services\\Driver\\Data\xe2\x022Steeleagle\\Api\\V1\\Services\\Driver\\Data\\GPBMetadata\xea\x02+Steeleagle::Api::V1::Services::Driver::Datab\x06proto3"
+	"\x0fStreamTelemetry\x12>.steeleagle.api.v1.services.driver.data.StreamTelemetryRequest\x1a?.steeleagle.api.v1.services.driver.data.StreamTelemetryResponse0\x01B\xba\x02\n" +
+	"*com.steeleagle.api.v1.services.driver.dataB\vStreamProtoP\x01Z?github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver\xa2\x02\x06SAVSDD\xaa\x02&Steeleagle.Api.V1.Services.Driver.Data\xca\x02&Steeleagle\\Api\\V1\\Services\\Driver\\Data\xe2\x022Steeleagle\\Api\\V1\\Services\\Driver\\Data\\GPBMetadata\xea\x02+Steeleagle::Api::V1::Services::Driver::Datab\x06proto3"
 
 var (
-	file_v1_services_driver_data_proto_rawDescOnce sync.Once
-	file_v1_services_driver_data_proto_rawDescData []byte
+	file_v1_services_driver_stream_proto_rawDescOnce sync.Once
+	file_v1_services_driver_stream_proto_rawDescData []byte
 )
 
-func file_v1_services_driver_data_proto_rawDescGZIP() []byte {
-	file_v1_services_driver_data_proto_rawDescOnce.Do(func() {
-		file_v1_services_driver_data_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_driver_data_proto_rawDesc), len(file_v1_services_driver_data_proto_rawDesc)))
+func file_v1_services_driver_stream_proto_rawDescGZIP() []byte {
+	file_v1_services_driver_stream_proto_rawDescOnce.Do(func() {
+		file_v1_services_driver_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_services_driver_stream_proto_rawDesc), len(file_v1_services_driver_stream_proto_rawDesc)))
 	})
-	return file_v1_services_driver_data_proto_rawDescData
+	return file_v1_services_driver_stream_proto_rawDescData
 }
 
-var file_v1_services_driver_data_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_services_driver_data_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_v1_services_driver_data_proto_goTypes = []any{
+var file_v1_services_driver_stream_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_services_driver_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_services_driver_stream_proto_goTypes = []any{
 	(GetVideoStreamURLRequest_Resolution)(0), // 0: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.Resolution
 	(*GetVideoStreamURLRequest)(nil),         // 1: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest
 	(*GetVideoStreamURLResponse)(nil),        // 2: steeleagle.api.v1.services.driver.data.GetVideoStreamURLResponse
@@ -385,7 +385,7 @@ var file_v1_services_driver_data_proto_goTypes = []any{
 	(*stream.RawFrame)(nil),                  // 7: steeleagle.api.v1.messages.stream.RawFrame
 	(*stream.Telemetry)(nil),                 // 8: steeleagle.api.v1.messages.stream.Telemetry
 }
-var file_v1_services_driver_data_proto_depIdxs = []int32{
+var file_v1_services_driver_stream_proto_depIdxs = []int32{
 	0, // 0: steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.resolution:type_name -> steeleagle.api.v1.services.driver.data.GetVideoStreamURLRequest.Resolution
 	7, // 1: steeleagle.api.v1.services.driver.data.StreamVideoFramesResponse.frame:type_name -> steeleagle.api.v1.messages.stream.RawFrame
 	8, // 2: steeleagle.api.v1.services.driver.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle.api.v1.messages.stream.Telemetry
@@ -402,27 +402,27 @@ var file_v1_services_driver_data_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_v1_services_driver_data_proto_init() }
-func file_v1_services_driver_data_proto_init() {
-	if File_v1_services_driver_data_proto != nil {
+func init() { file_v1_services_driver_stream_proto_init() }
+func file_v1_services_driver_stream_proto_init() {
+	if File_v1_services_driver_stream_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_driver_data_proto_rawDesc), len(file_v1_services_driver_data_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_services_driver_stream_proto_rawDesc), len(file_v1_services_driver_stream_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_v1_services_driver_data_proto_goTypes,
-		DependencyIndexes: file_v1_services_driver_data_proto_depIdxs,
-		EnumInfos:         file_v1_services_driver_data_proto_enumTypes,
-		MessageInfos:      file_v1_services_driver_data_proto_msgTypes,
+		GoTypes:           file_v1_services_driver_stream_proto_goTypes,
+		DependencyIndexes: file_v1_services_driver_stream_proto_depIdxs,
+		EnumInfos:         file_v1_services_driver_stream_proto_enumTypes,
+		MessageInfos:      file_v1_services_driver_stream_proto_msgTypes,
 	}.Build()
-	File_v1_services_driver_data_proto = out.File
-	file_v1_services_driver_data_proto_goTypes = nil
-	file_v1_services_driver_data_proto_depIdxs = nil
+	File_v1_services_driver_stream_proto = out.File
+	file_v1_services_driver_stream_proto_goTypes = nil
+	file_v1_services_driver_stream_proto_depIdxs = nil
 }

@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from v1.services.driver import data_pb2 as v1_dot_services_dot_driver_dot_data__pb2
+from v1.services.driver import stream_pb2 as v1_dot_services_dot_driver_dot_stream__pb2
 
 
 class StreamServiceStub:
@@ -22,18 +22,18 @@ class StreamServiceStub:
         """
         self.GetVideoStreamURL = channel.unary_unary(
                 '/steeleagle.api.v1.services.driver.data.StreamService/GetVideoStreamURL',
-                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLResponse.FromString,
+                request_serializer=v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.FromString,
                 _registered_method=True)
         self.StreamVideoFrames = channel.unary_stream(
                 '/steeleagle.api.v1.services.driver.data.StreamService/StreamVideoFrames',
-                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesResponse.FromString,
+                request_serializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.FromString,
                 _registered_method=True)
         self.StreamTelemetry = channel.unary_stream(
                 '/steeleagle.api.v1.services.driver.data.StreamService/StreamTelemetry',
-                request_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
-                response_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.FromString,
+                request_serializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryRequest.SerializeToString,
+                response_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryResponse.FromString,
                 _registered_method=True)
 
 
@@ -86,18 +86,18 @@ def add_StreamServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'GetVideoStreamURL': grpc.unary_unary_rpc_method_handler(
                     servicer.GetVideoStreamURL,
-                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLRequest.FromString,
-                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLResponse.SerializeToString,
+                    request_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.SerializeToString,
             ),
             'StreamVideoFrames': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamVideoFrames,
-                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesRequest.FromString,
-                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesResponse.SerializeToString,
+                    request_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.SerializeToString,
             ),
             'StreamTelemetry': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamTelemetry,
-                    request_deserializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.FromString,
-                    response_serializer=v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.SerializeToString,
+                    request_deserializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryRequest.FromString,
+                    response_serializer=v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -131,8 +131,8 @@ class StreamService:
             request,
             target,
             '/steeleagle.api.v1.services.driver.data.StreamService/GetVideoStreamURL',
-            v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLRequest.SerializeToString,
-            v1_dot_services_dot_driver_dot_data__pb2.GetVideoStreamURLResponse.FromString,
+            v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_stream__pb2.GetVideoStreamURLResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -158,8 +158,8 @@ class StreamService:
             request,
             target,
             '/steeleagle.api.v1.services.driver.data.StreamService/StreamVideoFrames',
-            v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
-            v1_dot_services_dot_driver_dot_data__pb2.StreamVideoFramesResponse.FromString,
+            v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_stream__pb2.StreamVideoFramesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -185,8 +185,8 @@ class StreamService:
             request,
             target,
             '/steeleagle.api.v1.services.driver.data.StreamService/StreamTelemetry',
-            v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
-            v1_dot_services_dot_driver_dot_data__pb2.StreamTelemetryResponse.FromString,
+            v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryRequest.SerializeToString,
+            v1_dot_services_dot_driver_dot_stream__pb2.StreamTelemetryResponse.FromString,
             options,
             channel_credentials,
             insecure,

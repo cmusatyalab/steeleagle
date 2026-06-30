@@ -6,7 +6,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: v1/services/driver/data.proto
+// source: v1/services/driver/stream.proto
 
 package driver
 
@@ -244,5 +244,5 @@ var StreamService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "v1/services/driver/data.proto",
+	Metadata: "v1/services/driver/stream.proto",
 }
