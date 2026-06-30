@@ -2,6 +2,7 @@ package util
 
 import (
     "os"
+    "fmt"
 
 	"github.com/rs/zerolog"
 )
@@ -147,5 +148,12 @@ func WithLogger(logger zerolog.Logger) PluginOption {
 func WithOutputFile(out *os.File) PluginOption {
     return func(k *BasePlugin) {
         k.outFile = out
+    }
+}
+
+// WithEnvironment sets an environment key-value pair for the plugin.
+func WithEnvironment(key, value string) PluginOption {
+    return func(k *BasePlugin) {
+        k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
     }
 }

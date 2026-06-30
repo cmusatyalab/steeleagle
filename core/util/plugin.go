@@ -66,6 +66,7 @@ type BasePlugin struct {
     acl     *ACL               // ACL for listener connections
     log     zerolog.Logger     // logger object
     outFile *os.File           // replacement out file for Stdout/err
+    environ []string           // environment to run the plugin in
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function
 }
@@ -84,6 +85,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		timeout: 15, // default to 15s timeout
         log:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
         outFile: os.Stdout,
+        environ: os.Environ(),
 	}
 
 	// Get the plugin dir, then create the socket file paths
@@ -162,7 +164,8 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
-	p.cmd.Env = append(os.Environ(),
+	p.cmd.Env = append(
+        p.environ,
 		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
 		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
 	)
