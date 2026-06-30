@@ -82,6 +82,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		listen:  true,
 		check:   true,
 		timeout: 15, // default to 15s timeout
+        log:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
         outFile: os.Stdout,
 	}
 
@@ -99,11 +100,6 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	for _, option := range options {
 		option(p)
 	}
-
-    // Check if a logger is set, and if not initialize one
-    if p.log.GetLevel() == zerolog.Disabled {
-        p.log = zerolog.New(p.outFile).With().Timestamp().Logger()
-    }
 
     // Create a new ACL if it isn't initialized
     if p.acl == nil {

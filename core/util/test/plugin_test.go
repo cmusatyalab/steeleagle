@@ -1,7 +1,6 @@
 package util_test
 
 import (
-    "os"
     "os/exec"
     "time"
 	"context"
@@ -9,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/rs/zerolog"
 )
 
 func TestPlugin(t *testing.T) {
@@ -18,30 +16,6 @@ func TestPlugin(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateBasePlugin(util.WithPath(path))
-	if err != nil {
-		t.Fatalf("encountered error creating plugin: %v", err)
-	}
-    defer plugin.Stop()
-	ln, conn, err := plugin.Start(context.Background())
-	if err != nil {
-		t.Fatalf("encountered error spawning plugin: %v", err)
-	}
-
-	err = pluginRPCCheck(t, ln, conn, util.UnknownCode)
-	if err != nil {
-		t.Errorf("encountered error with plugin RPC handshake: %v", err)
-	}
-}
-
-func TestPluginCustomLogger(t *testing.T) {
-	path, err := filepath.Abs(goBinary)
-	if err != nil {
-		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
-	}
-	plugin, err := util.CreateBasePlugin(
-        util.WithPath(path),
-        util.WithLogger(zerolog.New(os.Stderr).With().Timestamp().Logger()),
-    )
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}

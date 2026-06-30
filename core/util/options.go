@@ -143,7 +143,7 @@ func WithLogger(logger zerolog.Logger) PluginOption {
     }
 }
 
-// WithOutputFile sets the output file stream for logs.
+// WithOutputFile sets the output file stream for the delegate process output.
 func WithOutputFile(out *os.File) PluginOption {
     return func(k *BasePlugin) {
         k.outFile = out
