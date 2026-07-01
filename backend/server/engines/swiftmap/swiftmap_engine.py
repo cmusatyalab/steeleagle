@@ -39,58 +39,101 @@ class SwiftMapClient:
         self.server_ip = server_ip
         self.server_port = server_port
         self.client_socket = None
-        self.retry_interval = 5  # seconds
+        self.connected = False
+        self.retry_interval = 5   # seconds between reconnect attempts at startup
+        self.socket_timeout = 15  # seconds before a send/recv is treated as dead
 
-    def connect(self):
-        while True:
+    def _close_socket(self):
+        """Drop the current socket and mark the client disconnected."""
+        if self.client_socket is not None:
             try:
-                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.client_socket.connect((self.server_ip, self.server_port))
+                self.client_socket.close()
+            except Exception:
+                pass
+            self.client_socket = None
+        self.connected = False
+
+    def connect(self, max_retries=None):
+        """(Re)connect to the SwiftMap server.
+
+        max_retries=None retries forever (startup). A finite value makes at most
+        that many attempts then returns False, used for a fast best-effort
+        reconnect mid-stream so a dead frame doesn't block the engine while the
+        server is down.
+        """
+        attempt = 0
+        while max_retries is None or attempt < max_retries:
+            attempt += 1
+            self._close_socket()
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(self.socket_timeout)
+                sock.connect((self.server_ip, self.server_port))
+                self.client_socket = sock
+                self.connected = True
                 logger.info(
                     f"Connected to SwiftMap server at {self.server_ip}:{self.server_port}"
                 )
                 return True
             except Exception as e:
                 logger.error(f"Failed to connect to SwiftMap server: {e}")
+                if max_retries is not None and attempt >= max_retries:
+                    break
                 logger.info(f"Retrying connection in {self.retry_interval} seconds...")
                 time.sleep(self.retry_interval)
+        return False
 
     def process_frame(self, image_data, gps):
-        """Send a frame + paired GPS to SwiftMap. gps = (lat, lon, alt) or None."""
-        try:
-            # Decode + re-encode the image to guarantee a clean JPEG payload.
-            np_data = np.frombuffer(image_data, dtype=np.uint8)
-            img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-            if img is None:
-                logger.error("Failed to decode incoming image")
-                return "error"
-            _, img_encoded = cv2.imencode(".jpg", img)
-            img_bytes = img_encoded.tobytes()
+        """Send a frame + paired GPS to SwiftMap. gps = (lat, lon, alt) or None.
 
-            # Send image size, image, then the paired GPS (NaN when absent).
-            self.client_socket.sendall(struct.pack("!I", len(img_bytes)))
-            self.client_socket.sendall(img_bytes)
-            lat, lon, alt = gps if gps is not None else (float("nan"),) * 3
-            self.client_socket.sendall(struct.pack("!3d", lat, lon, alt))
-
-            # Read the 24-byte status reply.
-            resp = b""
-            while len(resp) < 24:
-                chunk = self.client_socket.recv(24 - len(resp))
-                if not chunk:
-                    return "error"
-                resp += chunk
-            status, _kf, _total = struct.unpack("3d", resp)
-            return "keyframe" if status == 1.0 else "skipped"
-
-        except Exception as e:
-            logger.error(f"Error sending frame to SwiftMap: {e}")
+        Survives a SwiftMap server restart: if the socket is dead, it makes a
+        best-effort reconnect and retries the frame once. If the server is still
+        down the frame is dropped ("error") and the next frame retries — the
+        engine keeps running throughout.
+        """
+        # Decode + re-encode the image to guarantee a clean JPEG payload. A decode
+        # failure is a bad frame, not a connection problem, so don't reconnect.
+        np_data = np.frombuffer(image_data, dtype=np.uint8)
+        img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+        if img is None:
+            logger.error("Failed to decode incoming image")
             return "error"
+        _, img_encoded = cv2.imencode(".jpg", img)
+        img_bytes = img_encoded.tobytes()
+        lat, lon, alt = gps if gps is not None else (float("nan"),) * 3
+        header = struct.pack("!I", len(img_bytes))
+        gps_bytes = struct.pack("!3d", lat, lon, alt)
+
+        # Two passes: send on the current connection; if it's dead, reconnect once
+        # and resend. The frame is length-prefixed, so resending on a fresh socket
+        # is a clean new frame (no desync with a partially-sent old one).
+        for attempt in range(2):
+            if not self.connected and not self.connect(max_retries=1):
+                return "error"  # server still down; drop this frame, retry next one
+            try:
+                self.client_socket.sendall(header)
+                self.client_socket.sendall(img_bytes)
+                self.client_socket.sendall(gps_bytes)
+
+                resp = b""
+                while len(resp) < 24:
+                    chunk = self.client_socket.recv(24 - len(resp))
+                    if not chunk:
+                        raise ConnectionError("SwiftMap server closed the connection")
+                    resp += chunk
+                status, _kf, _total = struct.unpack("3d", resp)
+                return "keyframe" if status == 1.0 else "skipped"
+            except Exception as e:
+                logger.warning(
+                    f"SwiftMap connection lost ({e}); reconnecting"
+                    + (" and retrying frame" if attempt == 0 else "")
+                )
+                self._close_socket()  # forces a reconnect on the next pass
+        return "error"
 
     def close(self):
-        if self.client_socket:
-            self.client_socket.close()
-            logger.info("SwiftMap connection closed")
+        self._close_socket()
+        logger.info("SwiftMap connection closed")
 
 
 class SwiftMapEngine(cognitive_engine.Engine):
