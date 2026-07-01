@@ -92,6 +92,7 @@ func (v *Vehicle) recvTelemetry(
 			errCh <- res.err
 			return
 		}
-		v.dataSvc.updateLatestTelemetry(res.resp.Telemetry)
+		//TODO: we don't want a circular reference here!
+		//v.dataSvc.updateLatestTelemetry(res.resp.Telemetry)
 	}
 }

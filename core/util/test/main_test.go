@@ -17,7 +17,7 @@ const fileRead string = "./mocks/file/read.txt"
 const fileWrite string = "./mocks/file/write.txt"
 
 func TestMain(m *testing.M) {
-	// Build testdata/main.go into a plugin binary that we can test with
+	// Build mocks into plugin binaries that we can test with
 	env := os.Environ()
 	env = append(env, "CGO_ENABLED=0", "GOOS=linux")
 	cmd := exec.Command("go", "build", "-o", goBinary, goPkg)

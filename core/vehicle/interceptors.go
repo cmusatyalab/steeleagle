@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -30,6 +29,7 @@ func qualifyCommand(ctx context.Context, fullName string) string {
 }
 
 func (v *Vehicle) getInterceptor() grpc.StreamServerInterceptor {
+    // TODO: set up DMS monitor
 	return func(
 		srv any,
 		ss grpc.ServerStream,
@@ -37,19 +37,18 @@ func (v *Vehicle) getInterceptor() grpc.StreamServerInterceptor {
 		handler grpc.StreamHandler,
 	) error {
 		command := qualifyCommand(ss.Context(), info.FullMethod)
-		// TODO: Add in the logging that was removed from policy
-		log.Info().Str("command", command).Msg("received RPC request")
+		v.log.Info().Str("command", command).Msg("received RPC request")
 		// Check if command is allowed by laws, and transit to new state if necessary
 		allowed, _, err := v.policy.safeCheckAndTransit(ss.Context(), command)
 		if allowed == false && err == nil {
-			log.Error().Str("command", command).Str("state", v.policy.currentState).Msg("command is not allowed in current state!")
+			v.log.Error().Str("command", command).Str("state", v.policy.currentState).Msg("command is not allowed in current state!")
 			return status.Errorf(codes.PermissionDenied, "command %s is not allowed in state %s", command, v.policy.currentState)
 		} else if allowed == false && err != nil {
-			log.Warn().Err(err).Msg("policy check failed, denying to be safe")
+			v.log.Warn().Err(err).Msg("policy check failed, denying to be safe")
 			return status.Errorf(codes.Internal, "error making policy request, denying to be safe")
 		}
 
-		log.Info().Str("command", command).Msg("responding to RPC request")
+		v.log.Info().Str("command", command).Msg("RPC request approved, sending command")
 		return handler(srv, ss)
 	}
 }

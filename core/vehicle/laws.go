@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pelletier/go-toml/v2"
-	"github.com/rs/zerolog/log"
 )
 
 type ControlLawState struct {
@@ -21,13 +20,12 @@ type ControlLaw struct {
 
 func getLaw(l *ControlLaw) (map[string]ControlLawState, string) {
 	// If no start state is provided, ignore and load default laws
-	if l.First == "" {
+	if l == nil || l.First == "" {
 		return getDefaultLaw()
 	}
 
 	m, err := createLawMap(l)
 	if err != nil {
-		log.Warn().Err(err).Msg("something went wrong reading law file, using default laws")
 		return getDefaultLaw()
 	}
 
