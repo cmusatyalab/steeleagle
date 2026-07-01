@@ -1,12 +1,25 @@
 package vehicle_test
 
 import (
+    "net"
     "context"
     "testing"
 
+	"google.golang.org/grpc"
+    "github.com/cmusatyalab/steeleagle/core/util"
     driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
     mission_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
 )
+
+// TODO: add removal logic to a main_test.go
+// ServerSocket is the location of the server listener.
+const ServerSocket = "/tmp/server.sock"
+// DriverServerSocket is the location of the driver server.
+const DriverServerSocket = "/tmp/driver-server.sock"
+// MissionServerSocket is the location of the mission server.
+const MissionServerSocket = "/tmp/mission-server.sock"
+// MissionClientSocket is the location of the mission client listener.
+const MissionClientSocket = "/tmp/mission-client.sock"
 
 // ControlService mocks a ControlService gRPC server.
 type ControlService struct {
@@ -58,7 +71,42 @@ func (m *MissionService) StopMission(ctx context.Context, req *mission_pb.StopMi
     return &mission_pb.StopMissionResponse{}, nil
 } 
 
-func setupServers(t *testing.T) {
+// setupServers creates the mission and driver gRPC servers for tests.
+func setupServers(t *testing.T, commCh chan string) (*grpc.Server, *grpc.Server, error) {
     t.Helper()
-    // TODO
+    // Create listeners
+    driverLn, err := net.Listen("unix", DriverServerSocket)
+    if err != nil {
+        return nil, nil, err
+    }
+    missionLn, err := net.Listen("unix", MissionServerSocket)
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // Server driver and mission services
+    driverServer := grpc.NewServer()
+    driver_pb.RegisterControlServiceServer(driverServer, &ControlService{commCh: commCh})
+    driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh})
+    missionServer := grpc.NewServer()
+    mission_pb.RegisterMissionServiceServer(missionServer, &MissionService{commCh: commCh})
+    go driverServer.Serve(driverLn) 
+    go missionServer.Serve(missionLn) 
+    
+    return driverServer, missionServer, nil
+}
+
+// setupPlugins sets up the shim plugins for the driver and mission.
+func setupPlugins(t *testing.T) (util.Plugin, util.Plugin, error) {
+    // Create shim plugins that attach to the pre-created listeners
+    driverPlugin, err := util.CreateShimPlugin(DriverServerSocket, "")
+    if err != nil {
+        return nil, nil, err
+    }
+    missionPlugin, err := util.CreateShimPlugin(MissionServerSocket, MissionClientSocket)
+    if err != nil {
+        return nil, nil, err
+    }
+
+    return driverPlugin, missionPlugin, nil
 }
