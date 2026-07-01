@@ -141,7 +141,6 @@ func (v *Vehicle) StartRTSPVideoStream(
 	if err != nil {
 		return nil, fmt.Errorf("error: %w", err)
 	}
-	println(fmt.Sprintf("%s", cmd))
 	errCh := make(chan error, 1)
 
 	go func() {
