@@ -1,15 +1,46 @@
 package vehicle
 
-type VehicleOption func(*Vehicle)
+import (
+    "net"
 
-func WithId(id string) VehicleOption {
-	return func(v *Vehicle) {
-		v.id = id
-	}
-}
+	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
+)
+
+type VehicleOption func(*Vehicle)
 
 func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 	return func(v *Vehicle) {
 		v.policyCfg = policyCfg
+	}
+}
+
+func WithDriverConn(conn *grpc.ClientConn) VehicleOption {
+	return func(v *Vehicle) {
+		v.driver = conn
+	}
+}
+
+func WithMissionConn(conn *grpc.ClientConn) VehicleOption {
+    return func(v *Vehicle) {
+        v.mission = conn
+    }
+}
+
+func WithMissionListener(ln net.Listener) VehicleOption {
+    return func(v *Vehicle) {
+        v.listeners[MissionListenerName] = ln
+    }
+}
+
+func WithServerListener(ln net.Listener) VehicleOption {
+    return func(v *Vehicle) {
+        v.listeners[ServerListenerName] = ln
+    }
+}
+
+func WithLogger(logger zerolog.Logger) VehicleOption {
+	return func(v *Vehicle) {
+		v.log = logger
 	}
 }

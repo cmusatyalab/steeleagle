@@ -99,7 +99,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.listeners[AdminListenerName] = util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()}))
 
 	// Start all plugins and register listeners
-	if v.driver != nil {
+	if v.driver == nil {
 		_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
@@ -110,7 +110,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		v.log.Error().Msg("no driver provided, aborting")
 		return fmt.Errorf("no driver provided, aborting")
 	}
-	if v.pluginCfg.Mission != nil {
+	if v.mission == nil {
 		ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
