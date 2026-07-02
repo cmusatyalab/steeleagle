@@ -167,7 +167,7 @@ class SwiftMapEngine(cognitive_engine.Engine):
         send_status = self.client.process_frame(frame.data, self._extract_gps(frame))
         if send_status == "error":
             logger.warning("SwiftMap server unreachable; frame dropped")
-            return None
+            return cognitive_engine.Result(status, b"")
 
         self._log_stats()
         return cognitive_engine.Result(status, send_status.encode())
