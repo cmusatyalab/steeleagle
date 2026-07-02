@@ -166,8 +166,7 @@ class SwiftMapEngine(cognitive_engine.Engine):
 
         send_status = self.client.process_frame(frame.data, self._extract_gps(frame))
         if send_status == "error":
-            status.code = gabriel_pb2.StatusCode.ENGINE_ERROR
-            status.message = "Failed to forward frame to SwiftMap server"
+            logger.warning("SwiftMap server unreachable; frame dropped")
             return cognitive_engine.Result(status, None)
 
         self._log_stats()
