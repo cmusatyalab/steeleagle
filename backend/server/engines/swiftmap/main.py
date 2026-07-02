@@ -58,7 +58,7 @@ def main():
         engine=SwiftMapEngine(args),
         engine_id=args.engine_id,
         server_address=args.gabriel,
-        all_responses_required=True,
+        all_responses_required=False,
     )
 
     runner.run()
