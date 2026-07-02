@@ -154,12 +154,12 @@ class SwiftMapEngine(cognitive_engine.Engine):
         if input_frame.payload_type != gabriel_pb2.PayloadType.IMAGE:
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = f"Ignoring non-image payload: {input_frame.payload_type}"
-            return cognitive_engine.Result(status, None)
+            return cognitive_engine.Result(status, b"")
         if (input_frame.WhichOneof("payload") != "any_payload"
                 or not input_frame.any_payload.Is(telemetry.Frame.DESCRIPTOR)):
             status.code = gabriel_pb2.StatusCode.WRONG_INPUT_FORMAT
             status.message = "Expected an any_payload telemetry.Frame"
-            return cognitive_engine.Result(status, None)
+            return cognitive_engine.Result(status, b"")
 
         frame = telemetry.Frame()
         input_frame.any_payload.Unpack(frame)
@@ -167,10 +167,10 @@ class SwiftMapEngine(cognitive_engine.Engine):
         send_status = self.client.process_frame(frame.data, self._extract_gps(frame))
         if send_status == "error":
             logger.warning("SwiftMap server unreachable; frame dropped")
-            return cognitive_engine.Result(status, None)
+            return None
 
         self._log_stats()
-        return cognitive_engine.Result(status, send_status)  # echo keyframe/skip status
+        return cognitive_engine.Result(status, send_status.encode())
 
     def _log_stats(self):
         """Log average fps once per STATS_INTERVAL."""
