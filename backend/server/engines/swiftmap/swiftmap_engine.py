@@ -199,7 +199,7 @@ class SwiftMapEngine(cognitive_engine.Engine):
             self.print_inference_stats(now)
 
         # No meaningful result back to the Gabriel client for now.
-        return cognitive_engine.Result(status, None)
+        return cognitive_engine.Result(status, send_status)
 
     def print_inference_stats(self, now=None):
         now = now or time.time()
