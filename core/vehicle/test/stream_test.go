@@ -18,13 +18,6 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-type testWriter struct{ t *testing.T }
-
-func (tw testWriter) Write(p []byte) (n int, err error) {
-	tw.t.Log(string(p))
-	return len(p), nil
-}
-
 const (
 	testWidth         = 320
 	testHeight        = 240
@@ -35,7 +28,7 @@ const (
 	bufConnSize       = 1 << 20
 )
 
-func testStreaming(t *testing.T, inputFileURL string) {
+func testStreaming(t *testing.T, inputFileURL string, timeout time.Duration) {
 	driverConn, err := newMockDriverConn(t, inputFileURL)
 	if err != nil {
 		t.Fatalf("error creating mock driver connection: %v", err)
@@ -63,7 +56,7 @@ func testStreaming(t *testing.T, inputFileURL string) {
 		t.Fatalf("error starting video stream: %v", err)
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(timeout)
 
 	select {
 	case err = <-errCh:
@@ -153,13 +146,13 @@ func TestStreamingRTSP(t *testing.T) {
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
 
 	rtspURL := startRTSPServer(t, videoPath)
-	testStreaming(t, rtspURL)
+	testStreaming(t, rtspURL, 10*time.Second)
 }
 
 func TestStreamingFromFile(t *testing.T) {
 	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
-	testStreaming(t, videoPath)
+	testStreaming(t, videoPath, 1*time.Second)
 }
 
 func generateTestVideo(t *testing.T, path string, width, height, fps, duration int) {

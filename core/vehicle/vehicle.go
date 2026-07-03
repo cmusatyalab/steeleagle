@@ -16,29 +16,29 @@ import (
 )
 
 type Vehicle struct {
-	id           string                  // auto-generated ID for path disambiguation
-	name         string                  // vehicle name
-	runDir       string                  // path to vehicle runtime directory
-	pluginCfg    PluginConfig            // plugin configuration
-	policyCfg    PolicyConfig            // policy configuration
-	policy       policyState             // active policy state
-	driver       *grpc.ClientConn        // driver gRPC client connection
-	mission      *grpc.ClientConn        // mission gRPC client connection
-	listeners    map[string]net.Listener // map of names to active listeners
-	services     *grpc.Server            // gRPC server instance
-	log          zerolog.Logger          // logger object
-	errCh        chan error              // error channel shared by listeners
+	id        string                  // auto-generated ID for path disambiguation
+	name      string                  // vehicle name
+	runDir    string                  // path to vehicle runtime directory
+	pluginCfg PluginConfig            // plugin configuration
+	policyCfg PolicyConfig            // policy configuration
+	policy    policyState             // active policy state
+	driver    *grpc.ClientConn        // driver gRPC client connection
+	mission   *grpc.ClientConn        // mission gRPC client connection
+	listeners map[string]net.Listener // map of names to active listeners
+	services  *grpc.Server            // gRPC server instance
+	log       zerolog.Logger          // logger object
+	errCh     chan error              // error channel shared by listeners
 }
 
 // Create a new vehicle with the given plugins and options.
 func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		id:           uuid.New().String(),
-		name:         uuid.New().String(),
-		listeners:    make(map[string]net.Listener),
-		pluginCfg:    pluginCfg,
-		log:          zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		id:        uuid.New().String(),
+		name:      uuid.New().String(),
+		listeners: make(map[string]net.Listener),
+		pluginCfg: pluginCfg,
+		log:       zerolog.New(os.Stderr).With().Timestamp().Logger(),
 	}
 	for _, option := range options {
 		option(vehicle)
@@ -127,9 +127,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
 			return err
 		}
-        if ln != nil {
-		    v.listeners[plugin.Name()] = ln
-        }
+		if ln != nil {
+			v.listeners[plugin.Name()] = ln
+		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 
@@ -148,8 +148,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 }
 
 func (v *Vehicle) Stop() {
-    v.services.GracefulStop()
-    os.RemoveAll(v.runDir)
+	v.services.GracefulStop()
+	os.RemoveAll(v.runDir)
 }
 
 func (v *Vehicle) Watch() <-chan error {
