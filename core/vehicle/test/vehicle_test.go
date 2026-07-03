@@ -10,6 +10,7 @@ import (
 )
 
 func TestProxy(t *testing.T) {
+	initializeSocketFiles(t)
 	// TODO: test socket proxying between driver and mission, and
 	// ensure that the stream service is not visible
 	commCh := make(chan string, 0)

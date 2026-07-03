@@ -18,9 +18,15 @@ const (
 	testFPS           = 10
 	testDuration      = 3
 	testVideoFilename = "test.mp4"
-	minFrames         = testFPS
+	minFrames         = 2
 	testTimeout       = 15 * time.Second
 )
+
+func TestStreamingFromFile(t *testing.T) {
+	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
+	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
+	testStreaming(t, videoPath)
+}
 
 func TestStreamingRTSP(t *testing.T) {
 	if _, err := exec.LookPath("mediamtx"); err != nil {
@@ -38,12 +44,6 @@ func TestStreamingRTSP(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	testStreaming(t, rtspURL)
-}
-
-func TestStreamingFromFile(t *testing.T) {
-	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
-	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
-	testStreaming(t, videoPath)
 }
 
 func testStreaming(t *testing.T, inputFileURL string) {

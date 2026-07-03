@@ -2,6 +2,7 @@ package vehicle_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -14,16 +15,23 @@ import (
 
 // TODO: add removal logic to a main_test.go
 // ServerSocket is the location of the server listener.
-const ServerSocket = "/tmp/server.sock"
+var ServerSocket string // "/tmp/server.sock"
 
 // DriverServerSocket is the location of the driver server.
-const DriverServerSocket = "/tmp/driver-server.sock"
+var DriverServerSocket string //= "/tmp/driver-server.sock"
 
 // MissionServerSocket is the location of the mission server.
-const MissionServerSocket = "/tmp/mission-server.sock"
+var MissionServerSocket string //= "/tmp/mission-server.sock"
 
 // MissionClientSocket is the location of the mission client listener.
-const MissionClientSocket = "/tmp/mission-client.sock"
+var MissionClientSocket string //= "/tmp/mission-client.sock"
+
+func initializeSocketFiles(t *testing.T) {
+	ServerSocket = fmt.Sprintf("%s/server.sock", t.TempDir())
+	DriverServerSocket = fmt.Sprintf("%s/driver-server.sock", t.TempDir())
+	MissionServerSocket = fmt.Sprintf("%s/mission-server.sock", t.TempDir())
+	MissionClientSocket = fmt.Sprintf("%s/mission-client.sock", t.TempDir())
+}
 
 // ControlService mocks a ControlService gRPC server.
 type ControlService struct {
