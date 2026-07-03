@@ -93,8 +93,7 @@ func (v *Vehicle) readFrames(
 func (v *Vehicle) consumeFrames(
 	ctx context.Context,
 	frameCh chan []byte,
-	handler func([]byte),
-	errCh chan error) {
+	handler func([]byte)) {
 	count := 0
 	for {
 		select {
@@ -119,7 +118,7 @@ func (v *Vehicle) consumeFrames(
 func (v *Vehicle) StartRTSPVideoStream(
 	ctx context.Context,
 	cfg VideoStreamConfig,
-	handler func([]byte)) (chan error, error) {
+	handler func([]byte)) (<-chan error, error) {
 
 	v.log.Info().Msg("starting RTSP video stream")
 
@@ -164,7 +163,7 @@ func (v *Vehicle) StartRTSPVideoStream(
 	frameCh := make(chan []byte, 1)
 	height, width := resolutionDimensions(cfg.Resolution)
 	go v.readFrames(stdout, frameCh, height*width*3, errCh)
-	go v.consumeFrames(ctx, frameCh, handler, errCh)
+	go v.consumeFrames(ctx, frameCh, handler)
 
 	return errCh, nil
 }
@@ -175,7 +174,7 @@ func (v *Vehicle) StartVideoStream(
 	res driver_pb.GetVideoStreamURLRequest_Resolution,
 	streamType VideoStreamingType,
 	cfg VideoStreamConfig,
-	handler func([]byte)) (chan error, error) {
+	handler func([]byte)) (<-chan error, error) {
 
 	if streamType != RTSP {
 		return nil, fmt.Errorf("only RTSP streaming is supported for now")
