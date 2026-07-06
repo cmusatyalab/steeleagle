@@ -1,9 +1,8 @@
 package vehicle_test
 
 import (
-	"context"
+	"errors"
 	"fmt"
-	"net"
 	"os/exec"
 	"testing"
 	"time"
@@ -11,33 +10,44 @@ import (
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
 )
-
-type testWriter struct{ t *testing.T }
-
-func (tw testWriter) Write(p []byte) (n int, err error) {
-	tw.t.Log(string(p))
-	return len(p), nil
-}
 
 const (
 	testWidth         = 320
 	testHeight        = 240
 	testFPS           = 10
 	testDuration      = 3
-	testBufCap        = 2
 	testVideoFilename = "test.mp4"
-	minFrames         = testFPS * testDuration
-	bufConnSize       = 1 << 20
+	minFrames         = 2
+	testTimeout       = 15 * time.Second
 )
 
-func TestStreaming(t *testing.T) {
+func TestStreamingFromFile(t *testing.T) {
 	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
-	driverConn, err := newMockDriverConn(t, videoPath)
+	testStreaming(t, videoPath)
+}
+
+func TestStreamingRTSP(t *testing.T) {
+	if _, err := exec.LookPath("mediamtx"); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			t.Skip("mediamtx binary not found")
+		} else {
+			t.Fatalf("error looking for mediamtx binary: %v", err)
+		}
+	}
+
+	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
+	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
+
+	rtspURL := startRTSPServer(t, videoPath)
+	time.Sleep(500 * time.Millisecond)
+
+	testStreaming(t, rtspURL)
+}
+
+func testStreaming(t *testing.T, inputFileURL string) {
+	driverConn, err := newMockDriverConn(t, inputFileURL)
 	if err != nil {
 		t.Fatalf("error creating mock driver connection: %v", err)
 	}
@@ -55,8 +65,12 @@ func TestStreaming(t *testing.T) {
 	videoCfg := vehicle.VideoStreamConfig{Resolution: resolution}
 
 	numFrames := 0
+	doneCh := make(chan struct{})
 	handler := func(frame []byte) {
 		numFrames += 1
+		if numFrames == minFrames+1 {
+			close(doneCh)
+		}
 	}
 
 	errCh, err := v.StartRTSPVideoStream(t.Context(), videoCfg, handler)
@@ -64,61 +78,14 @@ func TestStreaming(t *testing.T) {
 		t.Fatalf("error starting video stream: %v", err)
 	}
 
-	time.Sleep(time.Second)
-
 	select {
 	case err = <-errCh:
-		t.Fatalf("error with video stream: %v", err)
-	default:
+		t.Fatalf("video stream error: %v", err)
+	case <-doneCh:
+	case <-time.After(testTimeout):
 	}
 
 	if numFrames < minFrames {
 		t.Fatalf("only received %d frames", numFrames)
 	}
-}
-
-func generateTestVideo(t *testing.T, path string, width, height, fps, duration int) {
-	cmd := exec.Command(
-		"ffmpeg",
-		"-f", "lavfi",
-		"-i", fmt.Sprintf("testsrc=size=%dx%d:rate=%d:duration=%d", width, height, fps, duration),
-		"-c:v", "libx264",
-		"-pix_fmt", "yuv420p",
-		"-y", path,
-	)
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("error generating test video: %v", err)
-	}
-	t.Log("generated test video successfully")
-}
-
-func newMockDriverConn(t *testing.T, streamURL string) (*grpc.ClientConn, error) {
-	lis := bufconn.Listen(bufConnSize)
-	s := grpc.NewServer()
-	driver_pb.RegisterStreamServiceServer(s, &mockStreamSvc{url: streamURL, t: t})
-	go s.Serve(lis)
-	t.Cleanup(s.Stop)
-
-	conn, _ := grpc.NewClient("passthrough:///bufnet",
-		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-			return lis.DialContext(ctx)
-		}),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	t.Cleanup(func() { conn.Close() })
-
-	return conn, nil
-}
-
-type mockStreamSvc struct {
-	driver_pb.UnimplementedStreamServiceServer
-	url string
-	t   *testing.T
-}
-
-func (s *mockStreamSvc) GetVideoStreamURL(ctx context.Context, req *driver_pb.GetVideoStreamURLRequest) (*driver_pb.GetVideoStreamURLResponse, error) {
-	s.t.Log("mock stream service received request for video stream URL")
-	resp := driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}
-	return &resp, nil
 }
