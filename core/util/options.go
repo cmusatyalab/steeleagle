@@ -157,3 +157,10 @@ func WithEnvironment(key, value string) PluginOption {
         k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
     }
 }
+
+// WithVehicle scopes the plugin under a vehicle so the run directory is a child of that vehicle.
+func WithVehicle(vehicle string) PluginOption {
+    return func(k *BasePlugin) {
+        k.vehicle = vehicle
+    }
+}
