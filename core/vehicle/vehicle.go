@@ -46,7 +46,7 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 
 	// Create the runtime directory
 	var err error
-	vehicle.runDir, err = util.GetVehicleDirByID(vehicle.name)
+	vehicle.runDir, err = util.GetVehicleDirByID(vehicle.id)
 	if err != nil {
 		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
 		return nil, err
