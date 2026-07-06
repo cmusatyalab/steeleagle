@@ -100,10 +100,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Start all plugins and register listeners
 	if v.driver == nil {
-        if v.pluginCfg.Driver == nil {
-		    v.log.Error().Msg("no driver provided, aborting")
-		    return fmt.Errorf("no driver provided, aborting")
-        }
+		if v.pluginCfg.Driver == nil {
+			v.log.Error().Msg("no driver provided, aborting")
+			return fmt.Errorf("no driver provided, aborting")
+		}
 		_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
@@ -112,19 +112,19 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 	}
 	if v.mission == nil {
-        if v.pluginCfg.Mission == nil {
-            v.log.Debug().Msg("no mission provided, continuing with no mission")
-        } else {
-		    ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
-		    if err != nil {
-		    	v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
-		    	return err
-		    }
-		    // For logging purposes, use a mission tag instead of the name to disambiguate
-		    // between this plugin and external plugins
-		    v.listeners[MissionListenerName] = ln
-		    v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
-        }
+		if v.pluginCfg.Mission == nil {
+			v.log.Debug().Msg("no mission provided, continuing with no mission")
+		} else {
+			ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
+			if err != nil {
+				v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
+				return err
+			}
+			// For logging purposes, use a mission tag instead of the name to disambiguate
+			// between this plugin and external plugins
+			v.listeners[MissionListenerName] = ln
+			v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
+		}
 	}
 	for _, plugin := range v.pluginCfg.Plugins {
 		ln, _, err = plugin.Start(ctx)
