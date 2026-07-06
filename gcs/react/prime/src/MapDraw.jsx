@@ -7,7 +7,8 @@ import { MAPBOX_TOKEN } from './config.js';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
-import { featuresToGeoJson, featuresToKml, parseImportFile } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import FeatureList from './FeatureList.jsx';
 
 const STYLE_URLS = {
     streets: 'mapbox://styles/mapbox/standard',
@@ -98,6 +99,10 @@ function MapDraw({ features, setFeatures, toast }) {
         try { return JSON.parse(features).features.length > 0; } catch { return false; }
     }, [features]);
 
+    const featureArray = useMemo(() => {
+        try { return JSON.parse(features).features ?? []; } catch { return []; }
+    }, [features]);
+
     useEffect(() => {
         mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
         mapRef.current = new mapboxgl.Map({
@@ -184,6 +189,27 @@ function MapDraw({ features, setFeatures, toast }) {
         feat.properties = { ...(feat.properties || {}), name: nameInput };
         draw.current.add(feat);
         setFeatures(JSON.stringify(draw.current.getAll()));
+    }
+
+    function handleSelectFeature(id) {
+        const feature = draw.current?.get(id);
+        if (!feature) return;
+        draw.current.changeMode('simple_select', { featureIds: [id] });
+        setSelectedFeatureId(id);
+        setNameInput(feature.properties?.name || '');
+        try {
+            const bbox = bboxFromFeature(feature);
+            mapRef.current?.fitBounds(bbox, { padding: 60, maxZoom: 18 });
+        } catch (_) {}
+    }
+
+    function handleDeleteFeature(id) {
+        draw.current?.delete(id);
+        setFeatures(JSON.stringify(draw.current.getAll()));
+        if (selectedFeatureId === id) {
+            setSelectedFeatureId(null);
+            setNameInput('');
+        }
     }
 
     function handleExportGeoJson() {
@@ -277,7 +303,15 @@ function MapDraw({ features, setFeatures, toast }) {
                     </div>
                 )}
             </div>
-            <div id="map-container" ref={mapContainerRef} style={{ flex: 1 }} />
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                <FeatureList
+                    features={featureArray}
+                    selectedFeatureId={selectedFeatureId}
+                    onSelect={handleSelectFeature}
+                    onDelete={handleDeleteFeature}
+                />
+                <div id="map-container" ref={mapContainerRef} style={{ flex: 1 }} />
+            </div>
         </div>
     );
 }
