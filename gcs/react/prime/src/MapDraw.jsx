@@ -90,6 +90,7 @@ function MapDraw({ features, setFeatures, toast }) {
     const draw = useRef();
     const numFeaturesRef = useRef(0);
     const importFileRef = useRef(null);
+    const isFirstStyleEffect = useRef(true);
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [nameInput, setNameInput] = useState('');
@@ -179,6 +180,7 @@ function MapDraw({ features, setFeatures, toast }) {
 
     useEffect(() => {
         if (!mapRef.current) return;
+        if (isFirstStyleEffect.current) { isFirstStyleEffect.current = false; return; }
         mapRef.current.setStyle(STYLE_URLS[mapStyle]);
     }, [mapStyle]);
 
