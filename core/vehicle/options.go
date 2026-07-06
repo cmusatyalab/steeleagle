@@ -9,6 +9,12 @@ import (
 
 type VehicleOption func(*Vehicle)
 
+func WithName(name string) VehicleOption {
+    return func(v *Vehicle) {
+        v.name = name
+    }
+}
+
 func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 	return func(v *Vehicle) {
 		v.policyCfg = policyCfg
