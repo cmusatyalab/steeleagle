@@ -112,6 +112,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		err := p.validateScript()
 		if err != nil {
 			p.log.Error().Err(err).Msg("couldn't find a script")
+            p.cleanup()
 			return nil, err
 		}
 	}
@@ -188,7 +189,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 func (p *BasePlugin) Stop() {
 	if p.cancel != nil {
 		p.cancel()
-	}
+    }
 }
 
 // Watch returns a channel that receives the subprocess exit error when the process terminates.

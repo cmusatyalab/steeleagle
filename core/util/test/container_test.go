@@ -229,7 +229,7 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	_, err = util.CreateContainerPlugin(
+    _, err = util.CreateContainerPlugin(
         "foobar",
         util.WithPath(path),
         util.WithRunnerArgs([]string{"--rm"}),
