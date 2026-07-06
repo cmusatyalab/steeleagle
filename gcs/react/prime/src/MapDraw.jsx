@@ -6,7 +6,82 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
+import { Dropdown } from 'primereact/dropdown';
 import { featuresToGeoJson, featuresToKml, parseImportFile } from './mapUtils.js';
+
+const STYLE_URLS = {
+    streets: 'mapbox://styles/mapbox/standard',
+    satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+};
+
+const STYLE_OPTIONS = [
+    { label: 'Streets', value: 'streets' },
+    { label: 'Satellite', value: 'satellite' },
+];
+
+const DRAW_STYLES = [
+    {
+        id: 'gl-draw-polygon-fill',
+        type: 'fill',
+        filter: ['all', ['==', '$type', 'Polygon']],
+        paint: {
+            'fill-color': ['case', ['==', ['get', 'active'], 'true'], '#fbb03b', '#3bb2d0'],
+            'fill-opacity': 0.2,
+        },
+    },
+    {
+        id: 'gl-draw-lines',
+        type: 'line',
+        filter: ['any', ['==', '$type', 'LineString'], ['==', '$type', 'Polygon']],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+            'line-color': ['case', ['==', ['get', 'active'], 'true'], '#fbb03b', '#3bb2d0'],
+            'line-width': 3,
+        },
+    },
+    {
+        id: 'gl-draw-point-outer',
+        type: 'circle',
+        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+        paint: {
+            'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 8, 6],
+            'circle-color': '#fff',
+        },
+    },
+    {
+        id: 'gl-draw-point-inner',
+        type: 'circle',
+        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+        paint: {
+            'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 6, 4],
+            'circle-color': ['case', ['==', ['get', 'active'], 'true'], '#fbb03b', '#3bb2d0'],
+        },
+    },
+    {
+        id: 'gl-draw-vertex-outer',
+        type: 'circle',
+        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['!=', 'mode', 'simple_select']],
+        paint: {
+            'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 10, 7],
+            'circle-color': '#fff',
+        },
+    },
+    {
+        id: 'gl-draw-vertex-inner',
+        type: 'circle',
+        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['!=', 'mode', 'simple_select']],
+        paint: {
+            'circle-radius': ['case', ['==', ['get', 'active'], 'true'], 7, 5],
+            'circle-color': '#fbb03b',
+        },
+    },
+    {
+        id: 'gl-draw-midpoint',
+        type: 'circle',
+        filter: ['all', ['==', 'meta', 'midpoint']],
+        paint: { 'circle-radius': 4, 'circle-color': '#fbb03b' },
+    },
+];
 
 function MapDraw({ features, setFeatures, toast }) {
     const mapRef = useRef();
@@ -17,6 +92,7 @@ function MapDraw({ features, setFeatures, toast }) {
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
     const [nameInput, setNameInput] = useState('');
+    const [mapStyle, setMapStyle] = useState('streets');
 
     const hasFeatures = useMemo(() => {
         try { return JSON.parse(features).features.length > 0; } catch { return false; }
@@ -41,6 +117,10 @@ function MapDraw({ features, setFeatures, toast }) {
             },
         });
 
+        mapRef.current.on('load', () => {
+            mapRef.current.addControl(new mapboxgl.NavigationControl());
+        });
+
         mapRef.current.on('style.load', () => {
             mapRef.current.addSource('mapbox-dem', {
                 type: 'raster-dem',
@@ -49,10 +129,9 @@ function MapDraw({ features, setFeatures, toast }) {
                 maxzoom: 14,
             });
             mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
-            mapRef.current.addControl(new mapboxgl.NavigationControl());
         });
 
-        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon' });
+        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES });
         mapRef.current.addControl(draw.current);
 
         function updateFeatures(e) {
@@ -92,6 +171,11 @@ function MapDraw({ features, setFeatures, toast }) {
 
         return () => { clearTimeout(timer); ro.disconnect(); mapRef.current.remove(); };
     }, []);
+
+    useEffect(() => {
+        if (!mapRef.current) return;
+        mapRef.current.setStyle(STYLE_URLS[mapStyle]);
+    }, [mapStyle]);
 
     function applyName() {
         if (!selectedFeatureId) return;
@@ -170,6 +254,13 @@ function MapDraw({ features, setFeatures, toast }) {
                     outlined
                     disabled={!hasFeatures}
                     onClick={handleExportKml}
+                />
+                <Dropdown
+                    value={mapStyle}
+                    options={STYLE_OPTIONS}
+                    onChange={e => setMapStyle(e.value)}
+                    className="p-inputtext-sm"
+                    style={{ width: 130 }}
                 />
                 {selectedFeatureId && (
                     <div className="flex gap-2 align-items-center" style={{ marginLeft: 'auto' }}>
