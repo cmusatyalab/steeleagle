@@ -31,3 +31,20 @@ export function parseImportFile(filename, text) {
     }
     throw new Error('Unsupported file type. Use .kml, .geojson, or .json');
 }
+
+export function bboxFromFeature(feature) {
+    const { type, coordinates } = feature.geometry;
+    if (type === 'Point') {
+        const [lng, lat] = coordinates;
+        return [lng - 0.001, lat - 0.001, lng + 0.001, lat + 0.001];
+    }
+    const coords = type === 'Polygon' ? coordinates[0] : coordinates;
+    let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+    for (const [lng, lat] of coords) {
+        if (lng < minLng) minLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lng > maxLng) maxLng = lng;
+        if (lat > maxLat) maxLat = lat;
+    }
+    return [minLng, minLat, maxLng, maxLat];
+}

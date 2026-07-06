@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -87,5 +87,44 @@ describe('parseImportFile', () => {
 
     it('throws on malformed KML (invalid XML)', () => {
         expect(() => parseImportFile('bad.kml', '<kml><broken')).toThrow('Failed to parse KML');
+    });
+});
+
+describe('bboxFromFeature', () => {
+    it('returns tight bbox for a polygon', () => {
+        const feature = {
+            type: 'Feature',
+            geometry: {
+                type: 'Polygon',
+                coordinates: [[[-80, 40], [-79, 40], [-79, 41], [-80, 41], [-80, 40]]],
+            },
+            properties: {},
+        };
+        expect(bboxFromFeature(feature)).toEqual([-80, 40, -79, 41]);
+    });
+
+    it('returns tight bbox for a linestring', () => {
+        const feature = {
+            type: 'Feature',
+            geometry: {
+                type: 'LineString',
+                coordinates: [[-80, 40], [-79, 41]],
+            },
+            properties: {},
+        };
+        expect(bboxFromFeature(feature)).toEqual([-80, 40, -79, 41]);
+    });
+
+    it('returns buffered bbox for a point', () => {
+        const feature = {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-80, 40] },
+            properties: {},
+        };
+        const bbox = bboxFromFeature(feature);
+        expect(bbox[0]).toBeCloseTo(-80.001);
+        expect(bbox[1]).toBeCloseTo(39.999);
+        expect(bbox[2]).toBeCloseTo(-79.999);
+        expect(bbox[3]).toBeCloseTo(40.001);
     });
 });
