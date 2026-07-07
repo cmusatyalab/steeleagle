@@ -407,7 +407,7 @@ wheels = [
 
 [[package]]
 name = "gabriel-client"
-version = "4.1.6"
+version = "4.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gabriel-protocol" },
@@ -417,9 +417,9 @@ dependencies = [
     { name = "pyzmq" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/b2/04ded9be2057207cc3ca09e0cb922cec7a9e7b1c395703aabe151419e0ad/gabriel_client-4.1.6.tar.gz", hash = "sha256:9d65223bd65958714796aedc2d4dc134c981f3c176c761d1730a29d668b0d6be", size = 15393, upload-time = "2026-02-25T15:46:30.019Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2e/96/b4a1a2a8624be7ce024f7aa468459b3eeb4304971f0467238b4fc85febe6/gabriel_client-4.1.7.tar.gz", hash = "sha256:19a2a1e2d61e72d60e8de49a71db489642f456ae260af9250ab0bd3bee73b083", size = 15405, upload-time = "2026-04-03T19:00:43.694Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/08/6c1eac948c3c9f57c26e09e9102f3a3b4af09e344530bcda4a83871222a9/gabriel_client-4.1.6-py3-none-any.whl", hash = "sha256:bc35b2e893e84c3f3169a123f24307ce2ab30922207729e85982b0fa577b71f1", size = 17457, upload-time = "2026-02-25T15:46:29.045Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/d5/535c5f2b6dece70e9392060e004461b4bf62f4c3ed70074d1b30be400f39/gabriel_client-4.1.7-py3-none-any.whl", hash = "sha256:b93e2fb06b205ccdb098685292ca54f308de539793d60e9c74a94c8972eaa512", size = 17466, upload-time = "2026-04-03T19:00:42.791Z" },
 ]
 
 [[package]]
@@ -429,6 +429,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/37/bc/59ac496c8134959d2d69eb4000501b885bdb4dad59d9465489b8ef1c9c20/gabriel_protocol-4.1.tar.gz", hash = "sha256:72e98f2d341c497b3993252f3febf75bb531267b9524b9db21573f855285237c", size = 8728, upload-time = "2025-12-01T03:38:34.646Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/fd/313df258ee105d83afad86615133a0b0e46069a4c84058a80b220e557166/gabriel_protocol-4.1-py3-none-any.whl", hash = "sha256:69bb331db7f58c91eebc6d2d796b4ddbda1622dab00489b74f00cc16379638cb", size = 9834, upload-time = "2025-12-01T03:38:33.92Z" },
+]
+
+[[package]]
+name = "gabriel-server"
+version = "4.1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gabriel-protocol" },
+    { name = "prometheus-client" },
+    { name = "protobuf" },
+    { name = "pyzmq" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3f/44/17560c9190799434e8385eafee45df9e34fc3cb0ecc22c41b15d8f7eee2e/gabriel_server-4.1.3.tar.gz", hash = "sha256:5e4e4cef423ea6111d1f6cb221e7c7dfe694b1e87bb7f31eac7d607cd551a0c9", size = 21948, upload-time = "2026-02-25T15:46:56.435Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/80/1bfcef22e2404096f89036417e007bad083569468aea562c3dad5510f855/gabriel_server-4.1.3-py3-none-any.whl", hash = "sha256:06020ea8a9d22c0ce359b35d55bccc97c82de7277bd7ef6925cbf6486d44b67a", size = 27772, upload-time = "2026-02-25T15:46:55.281Z" },
 ]
 
 [[package]]
@@ -1528,7 +1544,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-sdk"
-version = "1.0.16"
+version = "3.1.0"
 source = { editable = "../sdk" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1572,6 +1588,8 @@ dependencies = [
     { name = "aiorwlock" },
     { name = "dacite" },
     { name = "gabriel-client" },
+    { name = "gabriel-protocol" },
+    { name = "gabriel-server" },
     { name = "grpc-interceptor" },
     { name = "grpcio" },
     { name = "jinja2" },
@@ -1592,7 +1610,9 @@ dependencies = [
 requires-dist = [
     { name = "aiorwlock", specifier = ">=1.5.0" },
     { name = "dacite", specifier = ">=1.9.2" },
-    { name = "gabriel-client", specifier = ">=4.1.6" },
+    { name = "gabriel-client", specifier = ">=4.1.7" },
+    { name = "gabriel-protocol", specifier = ">=4.1" },
+    { name = "gabriel-server", specifier = ">=4.1.3" },
     { name = "grpc-interceptor", specifier = ">=0.15.4" },
     { name = "grpcio", specifier = ">=1.74.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
