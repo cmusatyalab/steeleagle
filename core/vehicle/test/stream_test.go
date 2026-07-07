@@ -12,16 +12,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const (
-	testWidth         = 320
-	testHeight        = 240
-	testFPS           = 10
-	testDuration      = 3
-	testVideoFilename = "test.mp4"
-	minFrames         = 2
-	testTimeout       = 15 * time.Second
-)
-
 func TestStreamingFromFile(t *testing.T) {
 	videoPath := fmt.Sprintf("%s/%s", t.TempDir(), testVideoFilename)
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
@@ -44,48 +34,4 @@ func TestStreamingRTSP(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	testStreaming(t, rtspURL)
-}
-
-func testStreaming(t *testing.T, inputFileURL string) {
-	driverConn, err := newMockDriverConn(t, inputFileURL)
-	if err != nil {
-		t.Fatalf("error creating mock driver connection: %v", err)
-	}
-
-	pluginCfg := vehicle.PluginConfig{}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testWriter{t}})
-	v, err := vehicle.NewVehicle(
-		pluginCfg,
-		vehicle.WithDriverConn(driverConn),
-		vehicle.WithLogger(logger))
-	if err != nil {
-		t.Fatalf("error creating vehicle: %v", err)
-	}
-	resolution := driver_pb.GetVideoStreamURLRequest_RESOLUTION_720P
-	videoCfg := vehicle.VideoStreamConfig{Resolution: resolution}
-
-	numFrames := 0
-	doneCh := make(chan struct{})
-	handler := func(frame []byte) {
-		numFrames += 1
-		if numFrames == minFrames+1 {
-			close(doneCh)
-		}
-	}
-
-	errCh, err := v.StartRTSPVideoStream(t.Context(), videoCfg, handler)
-	if err != nil {
-		t.Fatalf("error starting video stream: %v", err)
-	}
-
-	select {
-	case err = <-errCh:
-		t.Fatalf("video stream error: %v", err)
-	case <-doneCh:
-	case <-time.After(testTimeout):
-	}
-
-	if numFrames < minFrames {
-		t.Fatalf("only received %d frames", numFrames)
-	}
 }

@@ -10,45 +10,21 @@ import (
 	"google.golang.org/grpc"
 )
 
-type VideoStreamConfig struct {
-	Codec      string
-	BufCap     int
-	Resolution driver_pb.GetVideoStreamURLRequest_Resolution
-}
-
-func resolutionDimensions(res driver_pb.GetVideoStreamURLRequest_Resolution) (int, int) {
-	switch res {
-	case driver_pb.GetVideoStreamURLRequest_RESOLUTION_480P:
-		return 854, 480
-	case driver_pb.GetVideoStreamURLRequest_RESOLUTION_720P:
-		return 1280, 720
-	case driver_pb.GetVideoStreamURLRequest_RESOLUTION_1080P:
-		return 1920, 1080
-	case driver_pb.GetVideoStreamURLRequest_RESOLUTION_4K:
-		return 3840, 2160
-	default:
-		return 1280, 720
-	}
-}
-
-type VideoStreamingType int
-
-const (
-	RTSP VideoStreamingType = iota
-	Frames
-)
-
-func buildFFmpegCmd(rtspURL string, cfg VideoStreamConfig) []string {
-	width, height := resolutionDimensions(cfg.Resolution)
+// getFFmpegArgs returns the arguments for the FFmpeg command corresponding
+// to the VideoStreamConfig.
+func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
+	// Build the args from the config
+    width, height := cfg.Resolution.Ints()
 	args := []string{
-		//"-fflags", "nobuffer", // don't buffer before starting stream
-		"-flags", "low_delay", // optimize latency
+		"-flags", "low_delay", // optimize for low latency
 	}
+
+    // Add hardware decoding if it is requested
 	if cfg.Codec != "" {
-		args = append(args, "-c:v", cfg.Codec) // hardware decoding
+		args = append(args, "-c:v", cfg.Codec)
 	}
 	args = append(args,
-		"-i", rtspURL,
+		"-i", url,
 		"-an", // drop audio
 		"-vf", fmt.Sprintf("scale=%d:%d", width, height),
 		"-pix_fmt", "bgr24", // convert to BGR 3 bytes per pixel
@@ -56,6 +32,7 @@ func buildFFmpegCmd(rtspURL string, cfg VideoStreamConfig) []string {
 		"-fps_mode", "passthrough", // don't retime/duplicate/drop frames
 		"pipe:1", // write to fd 1
 	)
+
 	return args
 }
 
@@ -115,9 +92,8 @@ func (v *Vehicle) consumeFrames(
 	}
 }
 
-func (v *Vehicle) StartRTSPVideoStream(
+func (v *Vehicle) startRTSPVideoStream(
 	ctx context.Context,
-	cfg VideoStreamConfig,
 	handler func([]byte)) (<-chan error, error) {
 
 	v.log.Info().Msg("starting RTSP video stream")
@@ -181,76 +157,4 @@ func (v *Vehicle) StartVideoStream(
 	}
 
 	return v.StartRTSPVideoStream(ctx, cfg, handler)
-}
-
-// Start streaming telemetry from the vehicle driver. Launches a goroutine that
-// performs the streaming and updates the data service as telemetry is
-// received. The launched goroutine uses the returned error channel to report
-// any errors. This method is non-blocking.
-func (v *Vehicle) StartTelemetryStream(ctx context.Context) (chan error, error) {
-	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.StreamTelemetryRequest{}
-
-	// Send request to driver
-	stream, err := client.StreamTelemetry(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start stream: %w", err)
-	}
-
-	errCh := make(chan error, 1)
-	// Launch goroutine to stream telemetry
-	go func() {
-		for {
-			// check if context has ended
-			if err := ctx.Err(); err != nil {
-				v.log.Err(err).Msg("telemetry stream ended")
-				errCh <- err
-				return
-			}
-			v.recvTelemetry(ctx, stream, errCh)
-		}
-	}()
-	return errCh, nil
-}
-
-// Encapsulates telemetry stream response along with an error for sending
-// in a channel
-type TelemetryStreamResponse struct {
-	resp *driver_pb.StreamTelemetryResponse
-	err  error
-}
-
-// Receive telemetry from a telemetry stream, sending any errors to the
-// specified error channel.
-func (v *Vehicle) recvTelemetry(
-	ctx context.Context,
-	stream grpc.ServerStreamingClient[driver_pb.StreamTelemetryResponse],
-	errCh chan error) {
-	ch := make(chan TelemetryStreamResponse)
-	// Invoke blocking call to receive stream data in another goroutine
-	go func() {
-		resp, err := stream.Recv()
-		ch <- TelemetryStreamResponse{resp: resp, err: err}
-	}()
-
-	// Wait to receive stream data or context to end
-	select {
-	case <-ctx.Done():
-		v.log.Err(ctx.Err()).Msg("telemetry stream ended")
-		errCh <- ctx.Err()
-		return
-	case res := <-ch:
-		if res.err == io.EOF {
-			v.log.Err(res.err).Msg("telemetry stream ended")
-			errCh <- res.err
-			return
-		}
-		if res.err != nil {
-			v.log.Err(res.err).Msg("telemetry stream error")
-			errCh <- res.err
-			return
-		}
-		//TODO: we don't want a circular reference here!
-		//v.dataSvc.updateLatestTelemetry(res.resp.Telemetry)
-	}
 }

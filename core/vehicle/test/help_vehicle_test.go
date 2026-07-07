@@ -13,25 +13,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-// TODO: add removal logic to a main_test.go
 // ServerSocket is the location of the server listener.
-var ServerSocket string // "/tmp/server.sock"
+const ServerSocket = "server.sock"
 
 // DriverServerSocket is the location of the driver server.
-var DriverServerSocket string //= "/tmp/driver-server.sock"
+const DriverServerSocket = "driver-server.sock"
 
 // MissionServerSocket is the location of the mission server.
-var MissionServerSocket string //= "/tmp/mission-server.sock"
+const MissionServerSocket = "mission-server.sock"
 
 // MissionClientSocket is the location of the mission client listener.
-var MissionClientSocket string //= "/tmp/mission-client.sock"
-
-func initializeSocketFiles(t *testing.T) {
-	ServerSocket = fmt.Sprintf("%s/server.sock", t.TempDir())
-	DriverServerSocket = fmt.Sprintf("%s/driver-server.sock", t.TempDir())
-	MissionServerSocket = fmt.Sprintf("%s/mission-server.sock", t.TempDir())
-	MissionClientSocket = fmt.Sprintf("%s/mission-client.sock", t.TempDir())
-}
+const MissionClientSocket = "mission-client.sock"
 
 // ControlService mocks a ControlService gRPC server.
 type ControlService struct {
@@ -63,7 +55,11 @@ type StreamService struct {
 	commCh chan string
 }
 
-// TODO: add method implementations here to test streaming
+// GetVideoStreamURL mocks and logs a 
+func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driver_pb.GetVideoStreamURLRequest) (*driver_pb.GetVideoStreamURLResponse, error) {
+    s.commCh <- "StreamService.GetVideoStreamURL"
+    return &driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
+}
 
 // MissionService mocks a MissionService gRPC server.
 type MissionService struct {
@@ -83,51 +79,49 @@ func (m *MissionService) StopMission(ctx context.Context, req *mission_pb.StopMi
 	return &mission_pb.StopMissionResponse{}, nil
 }
 
-// setupServers creates the mission and driver gRPC servers for tests.
-func setupServers(t *testing.T, commCh chan string) (*grpc.Server, *grpc.Server, error) {
+// setupPlugins creates the mission and driver gRPC servers/plugins for tests. Can
+// provide a stream url that the StreamService will respond with as well.
+func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan string, error) {
 	t.Helper()
+
+    // Create command channel
+    commCh := make(chan string, 2)
+
 	// Create listeners
-	driverLn, err := net.Listen("unix", DriverServerSocket)
+	driverLn, err := net.Listen("unix", filepath.Join(t.TempDir(), DriverServerSocket))
 	if err != nil {
-		return nil, nil, err
+        return nil, nil, nil, err
 	}
-	missionLn, err := net.Listen("unix", MissionServerSocket)
+	missionLn, err := net.Listen("unix", filepath.Join(t.TempDir(), MissionServerSocket))
 	if err != nil {
-		return nil, nil, err
+        return nil, nil, nil, err
 	}
 
 	// Server driver and mission services
 	driverServer := grpc.NewServer()
 	driver_pb.RegisterControlServiceServer(driverServer, &ControlService{commCh: commCh})
-	driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh})
+    driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh, url: url})
 	missionServer := grpc.NewServer()
 	mission_pb.RegisterMissionServiceServer(missionServer, &MissionService{commCh: commCh})
 	go driverServer.Serve(driverLn)
 	go missionServer.Serve(missionLn)
 
-	return driverServer, missionServer, nil
-}
+    // Register cleanup for servers
+    t.Cleanup(driverServer.GracefulStop())
+    t.Cleanup(missionServer.GracefulStop())
 
-// setupPlugins sets up the shim plugins for the driver and mission.
-func setupPlugins(t *testing.T) (util.Plugin, util.Plugin, error) {
 	// Create shim plugins that attach to the pre-created listeners
-	driverPlugin, err := util.CreateShimPlugin(DriverServerSocket, "")
+    driverServer := filepath.Join(t.TempDir(), DriverServerSocket)
+	driverPlugin, err := util.CreateShimPlugin(driverServer, "")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	missionPlugin, err := util.CreateShimPlugin(MissionServerSocket, MissionClientSocket)
+    missionServer := filepath.Join(t.TempDir(), MissionServerSocket)
+    missionClient := filepath.Join(t.TempDir(), MissionClientSocket)
+	missionPlugin, err := util.CreateShimPlugin(missionServer, missionClient)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return driverPlugin, missionPlugin, nil
+	return driverPlugin, missionPlugin, commCh, nil
 }
-
-type testWriter struct{ t *testing.T }
-
-func (tw testWriter) Write(p []byte) (n int, err error) {
-	tw.t.Log(string(p))
-	return len(p), nil
-}
-
-var _ io.Writer = (*testWriter)(nil)

@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+    "slices"
 
 	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
@@ -16,7 +17,6 @@ import (
 )
 
 type Vehicle struct {
-	id        string                  // auto-generated ID for path disambiguation
 	name      string                  // vehicle name
 	runDir    string                  // path to vehicle runtime directory
 	pluginCfg PluginConfig            // plugin configuration
@@ -34,7 +34,6 @@ type Vehicle struct {
 func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		id:        uuid.New().String(),
 		name:      uuid.New().String(),
 		listeners: make(map[string]net.Listener),
 		pluginCfg: pluginCfg,
@@ -46,7 +45,7 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 
 	// Create the runtime directory
 	var err error
-	vehicle.runDir, err = util.GetVehicleDirByID(vehicle.id)
+	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
 	if err != nil {
 		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
 		return nil, err
@@ -98,43 +97,45 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 	v.listeners[AdminListenerName] = util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()}))
 
-	// Start all plugins and register listeners
-	if v.driver == nil {
-		if v.pluginCfg.Driver == nil {
-			v.log.Error().Msg("no driver provided, aborting")
-			return fmt.Errorf("no driver provided, aborting")
-		}
-		_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
+	// Start driver plugin
+	if v.pluginCfg.Driver == nil {
+		v.log.Error().Msg("no driver provided, aborting")
+		return fmt.Errorf("no driver provided, aborting")
+	}
+	_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
+	if err != nil {
+		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
+		return err
+	}
+	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
+
+    // Start mission plugin
+	if v.pluginCfg.Mission == nil {
+		v.log.Debug().Msg("no mission provided, continuing with no mission")
+	} else {
+		ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
 		if err != nil {
-			v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
+			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
 			return err
 		}
-		v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
+		// For logging purposes, use a mission tag instead of the name to disambiguate
+		// between this plugin and external plugins
+		v.listeners[MissionListenerName] = ln
+		v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
 	}
-	if v.mission == nil {
-		if v.pluginCfg.Mission == nil {
-			v.log.Debug().Msg("no mission provided, continuing with no mission")
-		} else {
-			ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
-			if err != nil {
-				v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
-				return err
-			}
-			// For logging purposes, use a mission tag instead of the name to disambiguate
-			// between this plugin and external plugins
-			v.listeners[MissionListenerName] = ln
-			v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
-		}
-	}
-	for _, plugin := range v.pluginCfg.Plugins {
+	
+    // Start all other plugins
+    for _, plugin := range v.pluginCfg.Plugins {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
 			return err
 		}
-		if ln != nil {
+		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
-		}
+        } else {
+            v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code")
+        }
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 

@@ -9,7 +9,20 @@ import (
 	"time"
 )
 
+// Constants defining the test video characteristics.
+const (
+	testWidth         = 320
+	testHeight        = 240
+	testFPS           = 10
+	testDuration      = 3
+	testVideoFilename = "test.mp4"
+	minFrames         = 2
+	testTimeout       = 15 * time.Second
+)
+
+// generateTestVideo creates a synthetic video stream.
 func generateTestVideo(t *testing.T, path string, width, height, fps, duration int) {
+    t.Helper()
 	cmd := exec.Command(
 		"ffmpeg",
 		"-f", "lavfi",
@@ -25,7 +38,9 @@ func generateTestVideo(t *testing.T, path string, width, height, fps, duration i
 	t.Log("generated test video successfully")
 }
 
+// getFreePort finds a free port to host on.
 func getFreePort(t *testing.T) int {
+    t.Helper()
 	l, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("error finding free port: %v", err)
@@ -34,20 +49,22 @@ func getFreePort(t *testing.T) int {
 	return l.LocalAddr().(*net.UDPAddr).Port
 }
 
+// pushTestVideo pipes a video to an RTSP stream to an RTSP server.
 func pushTestVideo(t *testing.T, videoPath string, port int, path string) {
+    t.Helper()
 	rtspURL := fmt.Sprintf("rtsp://127.0.0.1:%d/%s", port, path)
 	cmd := exec.CommandContext(t.Context(), "ffmpeg",
 		"-re", "-stream_loop", "-1", "-i", videoPath,
 		"-c", "copy", "-f", "rtsp", rtspURL,
 	)
-	cmd.Stdout = testWriter{t}
-	cmd.Stderr = testWriter{t}
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("error starting ffmpeg push: %v", err)
 	}
 }
 
+// waitForPort waits for a port to be ready.
 func waitForPort(t *testing.T, addr string, timeout time.Duration) {
+    t.Helper()
 	start := time.Now()
 	deadline := start.Add(timeout)
 	for time.Now().Before(deadline) {
@@ -63,7 +80,9 @@ func waitForPort(t *testing.T, addr string, timeout time.Duration) {
 	t.Fatalf("timeout out waiting for %s to be ready", addr)
 }
 
+// startMediaMtx starts the MediaMtx RTSP server.
 func startMediaMtx(t *testing.T, port int) {
+    t.Helper()
 	cfgPath := fmt.Sprintf("%s/mediamtx.yml", t.TempDir())
 	cfg := fmt.Sprintf("rtspAddress: :%d\npaths:\n  all_others:\n", port)
 	if err := os.WriteFile(cfgPath, []byte(cfg), 0644); err != nil {
@@ -71,8 +90,6 @@ func startMediaMtx(t *testing.T, port int) {
 	}
 
 	cmd := exec.CommandContext(t.Context(), "mediamtx", cfgPath)
-	cmd.Stdout = testWriter{t}
-	cmd.Stderr = testWriter{t}
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("error starting mediamtx: %v", err)
 	}
@@ -80,11 +97,60 @@ func startMediaMtx(t *testing.T, port int) {
 	waitForPort(t, fmt.Sprintf("127.0.0.1:%d", port), 2*time.Second)
 }
 
+// startRTSPServer gets a free port and pipes a test video to a MediaMtx RTSP
+// server on that port.
 func startRTSPServer(t *testing.T, videoPath string) string {
+    t.Helper()
 	streamPath := "live"
 	port := getFreePort(t)
 	startMediaMtx(t, port)
 	pushTestVideo(t, videoPath, port, streamPath)
 
 	return fmt.Sprintf("rtsp://127.0.0.1:%d/%s", port, streamPath)
+}
+
+// testStreaming tests the driver streaming service exchange with the
+// vehicle data service.
+func testStreaming(t *testing.T, inputFileURL string) {
+	driverConn, err := newMockDriverConn(t, inputFileURL)
+	if err != nil {
+		t.Fatalf("error creating mock driver connection: %v", err)
+	}
+
+	pluginCfg := vehicle.PluginConfig{}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testWriter{t}})
+	v, err := vehicle.NewVehicle(
+		pluginCfg,
+		vehicle.WithDriverConn(driverConn),
+		vehicle.WithLogger(logger))
+	if err != nil {
+		t.Fatalf("error creating vehicle: %v", err)
+	}
+	resolution := driver_pb.GetVideoStreamURLRequest_RESOLUTION_720P
+	videoCfg := vehicle.VideoStreamConfig{Resolution: resolution}
+
+	numFrames := 0
+	doneCh := make(chan struct{})
+	handler := func(frame []byte) {
+		numFrames += 1
+		if numFrames == minFrames+1 {
+			close(doneCh)
+		}
+	}
+
+	errCh, err := v.StartRTSPVideoStream(t.Context(), videoCfg, handler)
+	if err != nil {
+		t.Fatalf("error starting video stream: %v", err)
+	}
+
+	select {
+	case err = <-errCh:
+		t.Fatalf("video stream error: %v", err)
+	case <-doneCh:
+	case <-time.After(testTimeout):
+	}
+
+	if numFrames < minFrames {
+		t.Fatalf("only received %d frames", numFrames)
+	}
 }

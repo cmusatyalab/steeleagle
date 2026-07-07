@@ -13,3 +13,8 @@ type PluginConfig struct {
 	Mission util.Plugin
 	Plugins []util.Plugin
 }
+
+type VideoStreamConfig struct {
+	Codec      string
+	Resolution VideoResolution
+}
