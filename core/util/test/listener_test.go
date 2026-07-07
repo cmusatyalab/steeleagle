@@ -57,7 +57,7 @@ func TestAuthCode(t *testing.T) {
 	go server.Serve(ln)
 
 	client := health_pb.NewHealthClient(conn)
-	_, err = client.Check(context.Background(), &health_pb.HealthCheckRequest{})
+	_, err = client.Check(t.Context(), &health_pb.HealthCheckRequest{})
 	if err != nil {
 		t.Errorf("rpc failed when it was expected to succeed: %v", err)
 	}

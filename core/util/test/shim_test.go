@@ -4,7 +4,6 @@ import (
     "fmt"
     "os"
     "os/exec"
-	"context"
 	"testing"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
@@ -20,7 +19,7 @@ func TestShimPlugin(t *testing.T) {
 	}
     defer plugin.Stop()
     
-    cmd := exec.CommandContext(context.Background(), goBinary)
+    cmd := exec.CommandContext(t.Context(), goBinary)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
@@ -33,7 +32,7 @@ func TestShimPlugin(t *testing.T) {
         t.Fatalf("couldn't start command: %v", err)
     }
     acl.AddPID(cmd.Process.Pid)
-	ln, conn, err := plugin.Start(context.Background())
+	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}

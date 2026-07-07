@@ -50,7 +50,7 @@ func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code u
 
 	// Make a check request with a timeout
 	client := health_pb.NewHealthClient(conn)
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	ctx, _ := context.WithTimeout(t.Context(), time.Second)
 	_, err := client.Check(ctx, &health_pb.HealthCheckRequest{}, grpc.WaitForReady(true))
     t.Log("rpc check: sent client check")
 	if err != nil {

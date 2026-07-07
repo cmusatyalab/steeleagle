@@ -36,6 +36,9 @@ type Plugin interface {
 
     // Name gets the readable name of the plugin.
     Name() string
+
+    // Code gets the AuthCode of the plugin.
+    Code() AuthCode
 }
 
 // BasePlugin provides common attributes shared across all plugins. It is
@@ -55,7 +58,7 @@ type BasePlugin struct {
 	start   int64              // plugin start time
 	timeout int                // timeout in seconds waiting for the server to start
 	running bool               // whether or not the plugin is currently running
-    vehicle  string            // vehicle directory for plugin to live under (used to create runDir)
+    parent  string             // parent directory for plugin to live under (used to create runDir)
 	runDir  string             // runtime directory path
 	cSock   string             // client socket file path
 	lnSock  string             // listener socket file path
@@ -88,7 +91,7 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	}
 
 	// Get the plugin dir, then create the socket file paths
-	dir, err := GetPluginDirByName(p.name, p.vehicle)
+	dir, err := GetPluginDirByName(p.name, p.parent)
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't create plugin run directory")
 		return nil, err
@@ -215,6 +218,11 @@ func (p *BasePlugin) Wait() error {
 // Name gets the readable name of the plugin.
 func (p *BasePlugin) Name() string {
     return p.name
+}
+
+// Code gets the AuthCode of the plugin.
+func (p *BasePlugin) Code() AuthCode {
+    return p.code
 }
 
 // validateScript resolves and validates the plugin's script path, setting pkg and exec fields as needed.

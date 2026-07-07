@@ -158,9 +158,9 @@ func WithEnvironment(key, value string) PluginOption {
     }
 }
 
-// WithVehicle scopes the plugin under a vehicle so the run directory is a child of that vehicle.
-func WithVehicle(vehicle string) PluginOption {
+// WithParent scopes the plugin under a parent directory so the run directory is its child.
+func WithParent(parent string) PluginOption {
     return func(k *BasePlugin) {
-        k.vehicle = vehicle
+        k.parent = parent
     }
 }
