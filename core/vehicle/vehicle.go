@@ -9,7 +9,7 @@ import (
 	"slices"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
@@ -31,6 +31,7 @@ type Vehicle struct {
 	errCh             chan error              // error channel shared by listeners
 	gabrielClient     *gabrielclient.Client   // gabriel remote server client
 	videoStreamConfig VideoStreamConfig       // video stream config
+	store             *dataStore              // data store
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -67,12 +68,16 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 		)),
 	)
 
+	// Initialize data store
+	vehicle.store = &dataStore{}
+
 	// Register data service
-	vehicle_pb.RegisterDataServiceServer(vehicle.services, &DataService{})
+	vehiclepb.RegisterDataServiceServer(vehicle.services, &DataService{store: vehicle.store})
 
 	return vehicle, nil
 }
 
+// Start the vehicle.
 func (v *Vehicle) Start(ctx context.Context) error {
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)

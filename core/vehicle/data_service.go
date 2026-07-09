@@ -3,73 +3,47 @@ package vehicle
 import (
 	"context"
 	"fmt"
-	"sync"
 
-	result_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 )
 
+// Vehicle gRPC service to get telemetry, frames, and compute results
+// associated with this vehicle.
 type DataService struct {
-	vehicle_pb.UnimplementedDataServiceServer
-	latest_telemetry *stream_msg_pb.Telemetry
-	latest_frame     *stream_msg_pb.EncodedFrame
-	latest_results   map[string]*result_pb.ComputeResult
-	tel_mu           *sync.RWMutex
-	frame_mu         *sync.RWMutex
-	result_mu        *sync.RWMutex
+	vehiclepb.UnimplementedDataServiceServer
+	store *DataStore
 }
 
-func (s *DataService) GetResult(ctx context.Context, req *vehicle_pb.GetResultRequest) (*vehicle_pb.GetResultResponse, error) {
-	s.result_mu.RLock()
-	defer s.result_mu.RUnlock()
+// GetResult implements the GetResult RPC defined in data.proto. It returns
+// the latest compute result available for the specific producer.
+func (s *DataService) GetResult(ctx context.Context, req *vehiclepb.GetResultRequest) (*vehiclepb.GetResultResponse, error) {
 	producer_name := req.Name
-	var val *result_pb.ComputeResult
-	var ok bool
-	if val, ok = s.latest_results[producer_name]; !ok {
-		return nil, fmt.Errorf("producer %s not found", producer_name)
-	}
-	if val == nil {
+	res := s.store.getResult(producer_name)
+	if res == nil {
 		return nil, fmt.Errorf("no result available for producer %s", producer_name)
 	}
-	resp := &vehicle_pb.GetResultResponse{Result: val}
+	resp := &vehiclepb.GetResultResponse{Result: res}
 	return resp, nil
 }
 
-func (s *DataService) GetTelemetry(ctx context.Context, req *vehicle_pb.GetTelemetryRequest) (*vehicle_pb.GetTelemetryResponse, error) {
-	s.tel_mu.RLock()
-	defer s.tel_mu.RUnlock()
-	if s.latest_telemetry == nil {
+// GetTelemetry implements the GetTelemetry RPC defined in data.proto. It
+// returns the latest telemetry available for this vehicle.
+func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTelemetryRequest) (*vehiclepb.GetTelemetryResponse, error) {
+	tel := s.store.getTelemetry()
+	if tel == nil {
 		return nil, fmt.Errorf("telemetry unavailable")
 	}
-	resp := &vehicle_pb.GetTelemetryResponse{Telemetry: s.latest_telemetry}
+	resp := &vehiclepb.GetTelemetryResponse{Telemetry: tel}
 	return resp, nil
 }
 
-func (s *DataService) GetFrame(ctx context.Context, req *vehicle_pb.GetFrameRequest) (*vehicle_pb.GetFrameResponse, error) {
-	s.frame_mu.RLock()
-	defer s.frame_mu.RUnlock()
-	if s.latest_frame == nil {
+// GetFrame implements the GetFrame RPC defined in data.proto. It returns the
+// latest video frame available for this vehicle.
+func (s *DataService) GetFrame(ctx context.Context, req *vehiclepb.GetFrameRequest) (*vehiclepb.GetFrameResponse, error) {
+	frame := s.store.getFrame()
+	if frame == nil {
 		return nil, fmt.Errorf("frame unavilable")
 	}
-	resp := &vehicle_pb.GetFrameResponse{Frame: s.latest_frame}
+	resp := &vehiclepb.GetFrameResponse{Frame: frame}
 	return resp, nil
-}
-
-func (s *DataService) updateLatestTelemetry(tel *stream_msg_pb.Telemetry) {
-	s.tel_mu.Lock()
-	defer s.tel_mu.Unlock()
-
-	s.latest_telemetry = tel
-}
-
-func (s *DataService) updateLatestFrame() {
-	s.frame_mu.Lock()
-	defer s.frame_mu.Unlock()
-}
-
-func (s *DataService) updateLatestResults() {
-	s.result_mu.Lock()
-	defer s.result_mu.Unlock()
-
 }
