@@ -6,8 +6,9 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-    "slices"
+	"slices"
 
+	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
@@ -17,17 +18,19 @@ import (
 )
 
 type Vehicle struct {
-	name      string                  // vehicle name
-	runDir    string                  // path to vehicle runtime directory
-	pluginCfg PluginConfig            // plugin configuration
-	policyCfg PolicyConfig            // policy configuration
-	policy    policyState             // active policy state
-	driver    *grpc.ClientConn        // driver gRPC client connection
-	mission   *grpc.ClientConn        // mission gRPC client connection
-	listeners map[string]net.Listener // map of names to active listeners
-	services  *grpc.Server            // gRPC server instance
-	log       zerolog.Logger          // logger object
-	errCh     chan error              // error channel shared by listeners
+	name              string                  // vehicle name
+	runDir            string                  // path to vehicle runtime directory
+	pluginCfg         PluginConfig            // plugin configuration
+	policyCfg         PolicyConfig            // policy configuration
+	policy            policyState             // active policy state
+	driver            *grpc.ClientConn        // driver gRPC client connection
+	mission           *grpc.ClientConn        // mission gRPC client connection
+	listeners         map[string]net.Listener // map of names to active listeners
+	services          *grpc.Server            // gRPC server instance
+	log               zerolog.Logger          // logger object
+	errCh             chan error              // error channel shared by listeners
+	gabrielClient     *gabrielclient.Client   // gabriel remote server client
+	videoStreamConfig VideoStreamConfig       // video stream config
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -45,7 +48,7 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 
 	// Create the runtime directory
 	var err error
-	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
+	vehicle.runDir, err = util.GetVehicleDirByID(vehicle.name)
 	if err != nil {
 		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
 		return nil, err
@@ -109,7 +112,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 
-    // Start mission plugin
+	// Start mission plugin
 	if v.pluginCfg.Mission == nil {
 		v.log.Debug().Msg("no mission provided, continuing with no mission")
 	} else {
@@ -123,9 +126,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		v.listeners[MissionListenerName] = ln
 		v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
 	}
-	
-    // Start all other plugins
-    for _, plugin := range v.pluginCfg.Plugins {
+
+	// Start all other plugins
+	for _, plugin := range v.pluginCfg.Plugins {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
@@ -133,9 +136,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}
 		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
-        } else {
-            v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code")
-        }
+		} else {
+			v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code")
+		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 

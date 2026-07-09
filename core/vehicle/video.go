@@ -7,19 +7,18 @@ import (
 	"os/exec"
 
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	"google.golang.org/grpc"
 )
 
 // getFFmpegArgs returns the arguments for the FFmpeg command corresponding
 // to the VideoStreamConfig.
 func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
 	// Build the args from the config
-    width, height := cfg.Resolution.Ints()
+	width, height := cfg.Resolution.Ints()
 	args := []string{
 		"-flags", "low_delay", // optimize for low latency
 	}
 
-    // Add hardware decoding if it is requested
+	// Add hardware decoding if it is requested
 	if cfg.Codec != "" {
 		args = append(args, "-c:v", cfg.Codec)
 	}
@@ -99,14 +98,15 @@ func (v *Vehicle) startRTSPVideoStream(
 	v.log.Info().Msg("starting RTSP video stream")
 
 	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{Resolution: cfg.Resolution}
+	req := &driver_pb.GetVideoStreamURLRequest{Resolution: v.videoStreamConfig.Resolution.ToProto()}
 
 	// Send request to driver to get video stream URL
 	resp, err := client.GetVideoStreamURL(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.CommandContext(ctx, "ffmpeg", buildFFmpegCmd(resp.StreamUrl, cfg)...)
+	cmd := exec.CommandContext(
+		ctx, "ffmpeg", getFFmpegArgs(resp.StreamUrl, v.videoStreamConfig)...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -137,7 +137,7 @@ func (v *Vehicle) startRTSPVideoStream(
 	v.log.Info().Msg("FFmpeg streaming started")
 
 	frameCh := make(chan []byte, 1)
-	height, width := resolutionDimensions(cfg.Resolution)
+	height, width := v.videoStreamConfig.Resolution.Ints()
 	go v.readFrames(stdout, frameCh, height*width*3, errCh)
 	go v.consumeFrames(ctx, frameCh, handler)
 
@@ -156,5 +156,5 @@ func (v *Vehicle) StartVideoStream(
 		return nil, fmt.Errorf("only RTSP streaming is supported for now")
 	}
 
-	return v.StartRTSPVideoStream(ctx, cfg, handler)
+	return v.startRTSPVideoStream(ctx, handler)
 }

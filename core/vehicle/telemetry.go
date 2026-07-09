@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	"google.golang.org/grpc"
