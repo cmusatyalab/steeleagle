@@ -12,12 +12,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func getFrameProducer() *gabrielclient.InputProducer {
-	return nil
+// Sensor data for input producers.
+type Data interface {
+	*stream_msg_pb.EncodedFrame | *stream_msg_pb.Telemetry
+	proto.Message
 }
 
-func createTelemetryProducer(
-	telCh <-chan *stream_msg_pb.Telemetry) *gabrielclient.InputProducer {
+// Construct a Gabriel input producer with the given name that uses the
+// provided channel to produce its inputs, targeting the specified engines.
+func getGabrielProducer[T Data](
+	producerName string,
+	inputCh <-chan T,
+	targetEngines []string) *gabrielclient.InputProducer {
 
 	producer := func(ctx context.Context) <-chan *gabrielpb.InputFrame {
 		ch := make(chan *gabrielpb.InputFrame, 1)
@@ -26,10 +32,10 @@ func createTelemetryProducer(
 				select {
 				case <-ctx.Done():
 					return
-				case tel := <-telCh:
-					telBytes, err := proto.Marshal(tel)
+				case val := <-inputCh:
+					telBytes, err := proto.Marshal(val)
 					if err != nil {
-						log.Err(err).Msg("error marshaling telemetry")
+						log.Err(err).Msg("error marshaling data")
 					}
 					payload := &gabrielpb.InputFrame_BytePayload{
 						BytePayload: telBytes,
@@ -44,12 +50,12 @@ func createTelemetryProducer(
 		}()
 		return ch
 	}
-	return gabrielclient.NewInputProducer("telemetry", producer, []string{"telemetry-engine"})
+	return gabrielclient.NewInputProducer(producerName, producer, targetEngines)
 }
 
 func (v *Vehicle) createGabrielClient() {
 	telCh := v.store.subscribeToTelemetry()
-	telProducer := createTelemetryProducer(telCh)
+	telProducer := getGabrielProducer("telemetry", telCh, []string{"telemetry-engine"})
 
 	consumer := func(res *gabrielpb.Result) {
 		cmpRes := &result.ComputeResult{

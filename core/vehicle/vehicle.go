@@ -178,7 +178,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	streamErrCh, err := v.startDriverStreaming(ctx)
 	if err != nil {
 		v.log.Err(err).Msg("failed to stream from driver")
-		cancel()
 		return err
 	}
 
@@ -188,15 +187,20 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// create gabriel client with telemetry and frame producers
 	v.createGabrielClient()
+	gabrielErrCh, err := v.gabrielClient.Launch(ctx)
+	if err != nil {
+		v.log.Err(err).Msg("failed to launch Gabriel client")
+		return err
+	}
 
 	select {
 	case <-ctx.Done():
 		return nil
 	case err = <-streamErrCh:
-		cancel()
 		return err
 	case err = <-v.errCh:
-		cancel()
+		return err
+	case err = <-gabrielErrCh:
 		return err
 	}
 }
