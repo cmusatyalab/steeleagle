@@ -11,14 +11,14 @@ import (
 // associated with this vehicle.
 type DataService struct {
 	vehiclepb.UnimplementedDataServiceServer
-	store *DataStore
+	store *dataStore
 }
 
 // GetResult implements the GetResult RPC defined in data.proto. It returns
 // the latest compute result available for the specific producer.
 func (s *DataService) GetResult(ctx context.Context, req *vehiclepb.GetResultRequest) (*vehiclepb.GetResultResponse, error) {
 	producer_name := req.Name
-	res := s.store.getResult(producer_name)
+	res := s.store.getLatestResult(producer_name)
 	if res == nil {
 		return nil, fmt.Errorf("no result available for producer %s", producer_name)
 	}
@@ -29,7 +29,7 @@ func (s *DataService) GetResult(ctx context.Context, req *vehiclepb.GetResultReq
 // GetTelemetry implements the GetTelemetry RPC defined in data.proto. It
 // returns the latest telemetry available for this vehicle.
 func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTelemetryRequest) (*vehiclepb.GetTelemetryResponse, error) {
-	tel := s.store.getTelemetry()
+	tel := s.store.getLatestTelemetry()
 	if tel == nil {
 		return nil, fmt.Errorf("telemetry unavailable")
 	}
@@ -40,7 +40,7 @@ func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTeleme
 // GetFrame implements the GetFrame RPC defined in data.proto. It returns the
 // latest video frame available for this vehicle.
 func (s *DataService) GetFrame(ctx context.Context, req *vehiclepb.GetFrameRequest) (*vehiclepb.GetFrameResponse, error) {
-	frame := s.store.getFrame()
+	frame := s.store.getLatestFrame()
 	if frame == nil {
 		return nil, fmt.Errorf("frame unavilable")
 	}

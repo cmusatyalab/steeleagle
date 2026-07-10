@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"time"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
@@ -16,6 +17,10 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
+
+// pluginReadyTimeout bounds how long Start waits for a plugin to report
+// healthy over its gRPC connection before aborting vehicle startup.
+const pluginReadyTimeout = 15 * time.Second
 
 type Vehicle struct {
 	name              string                  // vehicle name
@@ -69,7 +74,10 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	)
 
 	// Initialize data store
-	vehicle.store = &dataStore{}
+	vehicle.store, err = newDataStore(vehicle.name)
+	if err != nil {
+		return nil, err
+	}
 
 	// Register data service
 	vehiclepb.RegisterDataServiceServer(vehicle.services, &DataService{store: vehicle.store})
@@ -115,6 +123,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		return err
 	}
+	if err := waitForPluginReady(ctx, v.driver); err != nil {
+		v.log.Error().Err(err).Msg("driver plugin did not become ready, aborting")
+		return err
+	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 
 	// Start mission plugin
@@ -124,6 +136,10 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
 		if err != nil {
 			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
+			return err
+		}
+		if err := waitForPluginReady(ctx, v.mission); err != nil {
+			v.log.Error().Err(err).Msg("mission plugin did not become ready, aborting")
 			return err
 		}
 		// For logging purposes, use a mission tag instead of the name to disambiguate
@@ -142,7 +158,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
 		} else {
-			v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code")
+			v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code", plugin.Name())
 		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
@@ -158,7 +174,39 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		}()
 	}
 
-	return nil
+	// Start streaming frames and telemetry from the driver
+	streamErrCh, err := v.startDriverStreaming(ctx)
+	if err != nil {
+		v.log.Err(err).Msg("failed to stream from driver")
+		cancel()
+		return err
+	}
+
+	// Initialize the store, launching goroutine to flush telemetry data to
+	// disk periodically
+	v.store.init(ctx)
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case err = <-streamErrCh:
+		cancel()
+		return err
+	case err = <-v.errCh:
+		cancel()
+		return err
+	}
+}
+
+// waitForPluginReady blocks until conn reports healthy or pluginReadyTimeout
+// elapses.
+func waitForPluginReady(ctx context.Context, conn *grpc.ClientConn) error {
+	if conn == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, pluginReadyTimeout)
+	defer cancel()
+	return util.WaitForReady(ctx, conn)
 }
 
 func (v *Vehicle) Stop() {

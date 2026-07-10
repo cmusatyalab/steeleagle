@@ -37,12 +37,17 @@ func getFFmpegArgs(url string, cfg VideoStreamConfig) []string {
 
 // Read video frames from the reader and send them to a channel.
 func (v *Vehicle) readFrames(
+	ctx context.Context,
 	r io.Reader,
 	out chan []byte,
 	frameSize int,
 	errCh chan error) {
 	defer close(out)
 	for {
+		if err := ctx.Err(); err != nil {
+			errCh <- err
+			return
+		}
 		frame := make([]byte, frameSize)
 		if _, err := io.ReadFull(r, frame); err != nil {
 			v.log.Err(err).Msg("error reading frame")
@@ -138,16 +143,15 @@ func (v *Vehicle) startRTSPVideoStream(
 
 	frameCh := make(chan []byte, 1)
 	height, width := v.videoStreamConfig.Resolution.Ints()
-	go v.readFrames(stdout, frameCh, height*width*3, errCh)
+	go v.readFrames(ctx, stdout, frameCh, height*width*3, errCh)
 	go v.consumeFrames(ctx, frameCh, handler)
 
 	return errCh, nil
 }
 
 // Start video streaming with the given resolution
-func (v *Vehicle) StartVideoStream(
+func (v *Vehicle) startVideoStream(
 	ctx context.Context,
-	res driver_pb.GetVideoStreamURLRequest_Resolution,
 	streamType VideoStreamingType,
 	cfg VideoStreamConfig,
 	handler func([]byte)) (<-chan error, error) {

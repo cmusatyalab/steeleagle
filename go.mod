@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/adrg/xdg v0.5.3
+	github.com/cmusatyalab/gabriel/go-client v0.0.0-20260707195611-936af3c0b393
 	github.com/google/uuid v1.6.0
 	github.com/mwitkow/grpc-proxy v0.0.0-20250813121105-2866842de9a5
 	github.com/open-policy-agent/opa v1.12.3
@@ -29,7 +30,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.17.3 // indirect
-	github.com/cmusatyalab/gabriel/go-client v0.0.0-20260707195611-936af3c0b393 // indirect
 	github.com/cmusatyalab/gabriel/protocol/go v0.1.1-0.20260707195611-936af3c0b393 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/creachadair/msync v0.7.1 // indirect
@@ -100,6 +100,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	go.etcd.io/bbolt v1.5.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect

@@ -14,14 +14,15 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	health_pb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // Plugin defines the behavior required of all plugin implementations.
 type Plugin interface {
 	// Start launches the plugin and returns a listener for the plugin's server
-	// side and a client connection to the plugin. The returned listener
-	// and connection are both bound to the plugin's lifetime. Canceling ctx
-	// or calling Stop tears them down.
+	// side and a client connection to the plugin. The returned listener and
+	// connection are both bound to the plugin's lifetime. Canceling ctx or
+	// calling Stop tears them down.
 	Start(context.Context) (net.Listener, *grpc.ClientConn, error)
 
 	// Stop cancels the plugin's context, triggering shutdown.
@@ -34,17 +35,17 @@ type Plugin interface {
 	// Wait blocks until the plugin process exits and returns its exit error.
 	Wait() error
 
-    // Name gets the readable name of the plugin.
-    Name() string
+	// Name gets the readable name of the plugin.
+	Name() string
 
-    // Code gets the AuthCode of the plugin.
-    Code() AuthCode
+	// Code gets the AuthCode of the plugin.
+	Code() AuthCode
 }
 
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
-    name    string             // name for easier user identification
+	name    string             // name for easier user identification
 	code    AuthCode           // authentication entity
 	pkg     bool               // determines whether the plugin is a package or not
 	path    string             // path to plugin
@@ -58,7 +59,7 @@ type BasePlugin struct {
 	start   int64              // plugin start time
 	timeout int                // timeout in seconds waiting for the server to start
 	running bool               // whether or not the plugin is currently running
-    parent  string             // parent directory for plugin to live under (used to create runDir)
+	parent  string             // parent directory for plugin to live under (used to create runDir)
 	runDir  string             // runtime directory path
 	cSock   string             // client socket file path
 	lnSock  string             // listener socket file path
@@ -66,10 +67,10 @@ type BasePlugin struct {
 	listen  bool               // whether or not to support a plugin client
 	check   bool               // whether or not to check existence of files
 	cmd     *exec.Cmd          // command to run
-    acl     *ACL               // ACL for listener connections
-    log     zerolog.Logger     // logger object
-    outFile *os.File           // replacement out file for Stdout/err
-    environ []string           // environment to run the plugin in
+	acl     *ACL               // ACL for listener connections
+	log     zerolog.Logger     // logger object
+	outFile *os.File           // replacement out file for Stdout/err
+	environ []string           // environment to run the plugin in
 	ctx     context.Context    // context
 	cancel  context.CancelFunc // cancellation function
 }
@@ -78,16 +79,16 @@ type BasePlugin struct {
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-        name:    uuid.New().String(),
+		name:    uuid.New().String(),
 		code:    UnknownCode,
 		files:   make(map[string]int),
 		client:  true,
 		listen:  true,
 		check:   true,
 		timeout: 15, // default to 15s timeout
-        log:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
-        outFile: os.Stdout,
-        environ: os.Environ(),
+		log:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		outFile: os.Stdout,
+		environ: os.Environ(),
 	}
 
 	// Get the plugin dir, then create the socket file paths
@@ -105,17 +106,17 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		option(p)
 	}
 
-    // Create a new ACL if it isn't initialized
-    if p.acl == nil {
-        p.acl = GetACL([]string{}, []int{})
-    }
+	// Create a new ACL if it isn't initialized
+	if p.acl == nil {
+		p.acl = GetACL([]string{}, []int{})
+	}
 
 	// Find and validate script if checks are on
 	if p.check {
 		err := p.validateScript()
 		if err != nil {
 			p.log.Error().Err(err).Msg("couldn't find a script")
-            p.cleanup()
+			p.cleanup()
 			return nil, err
 		}
 	}
@@ -123,15 +124,16 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	return p, nil
 }
 
-// Start builds the command from the configured runner/executable/script chain, launches the subprocess,
-// and returns the listener and gRPC client connection.
+// Start builds the command from the configured runner/executable/script chain,
+// launches the subprocess, and returns the listener and gRPC client
+// connection.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	// Create a new context with a cancel function
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
-	// Create the command; check in sequence whether the script,
-	// executable, and then runner are set, and prepend the arguments
-	// for each into one executable string
+	// Create the command; check in sequence whether the script, executable,
+	// and then runner are set, and prepend the arguments for each into one
+	// executable string
 	final := []string{}
 	if p.script != "" {
 		final = slices.Insert(p.sargs, 0, p.script)
@@ -168,7 +170,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way
 	p.cmd.Env = append(
-        p.environ,
+		p.environ,
 		fmt.Sprintf("%s=%s", ListenSockEnv, p.cSock),
 		fmt.Sprintf("%s=%s", ClientSockEnv, p.lnSock),
 	)
@@ -177,7 +179,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		p.log.Error().Err(err).Msg("error running command")
 		return nil, nil, err
 	}
-    p.acl.AddPID(p.cmd.Process.Pid)
+	p.acl.AddPID(p.cmd.Process.Pid)
 
 	// Cleanup goroutine
 	go func() {
@@ -192,10 +194,11 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 func (p *BasePlugin) Stop() {
 	if p.cancel != nil {
 		p.cancel()
-    }
+	}
 }
 
-// Watch returns a channel that receives the subprocess exit error when the process terminates.
+// Watch returns a channel that receives the subprocess exit error when the
+// process terminates.
 func (p *BasePlugin) Watch() <-chan error {
 	if p.cmd == nil {
 		return nil
@@ -217,15 +220,16 @@ func (p *BasePlugin) Wait() error {
 
 // Name gets the readable name of the plugin.
 func (p *BasePlugin) Name() string {
-    return p.name
+	return p.name
 }
 
 // Code gets the AuthCode of the plugin.
 func (p *BasePlugin) Code() AuthCode {
-    return p.code
+	return p.code
 }
 
-// validateScript resolves and validates the plugin's script path, setting pkg and exec fields as needed.
+// validateScript resolves and validates the plugin's script path, setting pkg
+// and exec fields as needed.
 func (p *BasePlugin) validateScript() error {
 	// Check if script has already been manually set
 	if p.script != "" {
@@ -272,23 +276,24 @@ func (p *BasePlugin) validateScript() error {
 	return nil
 }
 
-// createSocketEndpoints listens on the server socket and, when server mode is enabled, dials the client socket.
+// createSocketEndpoints listens on the server socket and, when server mode is
+// enabled, dials the client socket.
 func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, error) {
-    var err error
-    var listen net.Listener
-    if p.listen {
-	    // Listen on the server socket
-	    listen, err = net.Listen("unix", p.lnSock)
-	    if err != nil {
-	    	p.log.Error().Err(err).Msg("couldn't listen on socket")
-	    	return nil, nil, err
-	    }
-    }
+	var err error
+	var listen net.Listener
+	if p.listen {
+		// Listen on the server socket
+		listen, err = net.Listen("unix", p.lnSock)
+		if err != nil {
+			p.log.Error().Err(err).Msg("couldn't listen on socket")
+			return nil, nil, err
+		}
+	}
 
 	// Wait on the socket file to be created by the plugin
 	var client *grpc.ClientConn
 	if p.client {
-        err = p.waitForSocket(p.cSock)
+		err = p.waitForSocket(p.cSock)
 		if err != nil {
 			p.log.Error().Err(err).Msg("timed out waiting for socket")
 			listen.Close()
@@ -311,7 +316,24 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	return NewCodedListener(listen, p.code, p.acl), client, nil
 }
 
-// waitForSocket polls path until the socket file exists or the plugin timeout elapses.
+// WaitForReady blocks until conn responds healthy through the standard gRPC
+// health-checking protocol, or until ctx is done. Callers should bound ctx
+// with a deadline. Also, the plugin must register a grpc_health_v1 health
+// server.
+func WaitForReady(ctx context.Context, conn *grpc.ClientConn) error {
+	client := health_pb.NewHealthClient(conn)
+	resp, err := client.Check(ctx, &health_pb.HealthCheckRequest{}, grpc.WaitForReady(true))
+	if err != nil {
+		return fmt.Errorf("plugin health check failed: %w", err)
+	}
+	if resp.Status != health_pb.HealthCheckResponse_SERVING {
+		return fmt.Errorf("plugin reported non-serving status: %s", resp.Status)
+	}
+	return nil
+}
+
+// waitForSocket polls path until the socket file exists or the plugin timeout
+// elapses.
 func (p *BasePlugin) waitForSocket(path string) error {
 	deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
 	for time.Now().Before(deadline) {
@@ -326,7 +348,7 @@ func (p *BasePlugin) waitForSocket(path string) error {
 // cleanup removes the plugin's runtime directory.
 func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
-    err := os.RemoveAll(p.runDir)
+	err := os.RemoveAll(p.runDir)
 	if err != nil {
 		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
