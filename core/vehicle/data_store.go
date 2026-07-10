@@ -59,8 +59,8 @@ func newDataStore(vehicleName string) (*dataStore, error) {
 	return store, nil
 }
 
-// Initialize the data store, launching a goroutine that listens for telemetry
-// updates on the specified channel.
+// Initialize the data store, launching a goroutine that periodically flushes
+// data to disk.
 func (s *dataStore) init(ctx context.Context) error {
 	err := s.db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(telemetryBucket))
@@ -83,8 +83,7 @@ func itob(v uint64) []byte {
 	return b
 }
 
-// storeTelemetryWorker listens on the provided channel for telemetry data,
-// storing it in the internal database periodically.
+// storeTelemetryWorker periodically flushes data to disk.
 func (s *dataStore) storeTelemetryWorker(ctx context.Context) {
 	// Store data in the internal database periodically in batches
 	batch := make([]*stream_msg_pb.Telemetry, 0, maxBatch)
