@@ -26,14 +26,16 @@ const (
 // computed results. It runs a goroutine to periodically flush telemetry data
 // to disk in a Bolt key/value store.
 type dataStore struct {
-	latestTelemetry *stream_msg_pb.Telemetry           // latest telemetry
-	telMu           *sync.RWMutex                      // telemetry mutex
-	latestFrame     *stream_msg_pb.EncodedFrame        // latest frame
-	frameMu         *sync.RWMutex                      // frame mutex
-	latestResults   map[string]*resultpb.ComputeResult // latest results
-	resultsMu       *sync.RWMutex                      // results mutex
-	telCh           chan *stream_msg_pb.Telemetry      // telemetry flush channel
-	db              *bbolt.DB                          // database
+	latestTelemetry  *stream_msg_pb.Telemetry            // latest telemetry
+	telMu            *sync.RWMutex                       // telemetry mutex
+	latestFrame      *stream_msg_pb.EncodedFrame         // latest frame
+	frameMu          *sync.RWMutex                       // frame mutex
+	latestResults    map[string]*resultpb.ComputeResult  // latest results
+	resultsMu        *sync.RWMutex                       // results mutex
+	telCh            chan *stream_msg_pb.Telemetry       // telemetry flush channel
+	db               *bbolt.DB                           // database
+	telSubscribers   [](chan<- *stream_msg_pb.Telemetry) // telemetry subscribers
+	telSubscribersMu *sync.RWMutex                       // telemetry subscribers mutex
 }
 
 // Create a new data store.
@@ -161,6 +163,15 @@ func (s *dataStore) addTelemetry(tel *stream_msg_pb.Telemetry) {
 	s.latestTelemetry = tel
 	s.telMu.Unlock()
 	s.telCh <- tel
+
+	for _, ch := range s.telSubscribers {
+		go func() {
+			select {
+			case ch <- tel:
+			case <-time.After(time.Second):
+			}
+		}()
+	}
 }
 
 // Add a video frame to the store.
@@ -177,4 +188,12 @@ func (s *dataStore) addResult(producerName string, res *resultpb.ComputeResult) 
 	defer s.resultsMu.Unlock()
 
 	s.latestResults[producerName] = res
+}
+
+func (s *dataStore) subscribeToTelemetry() <-chan *stream_msg_pb.Telemetry {
+	s.telSubscribersMu.Lock()
+	defer s.telSubscribersMu.Unlock()
+	ch := make(chan *stream_msg_pb.Telemetry, 1)
+	s.telSubscribers = append(s.telSubscribers, ch)
+	return ch
 }

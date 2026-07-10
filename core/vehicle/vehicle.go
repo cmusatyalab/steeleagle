@@ -34,7 +34,7 @@ type Vehicle struct {
 	services          *grpc.Server            // gRPC server instance
 	log               zerolog.Logger          // logger object
 	errCh             chan error              // error channel shared by listeners
-	gabrielClient     *gabrielclient.Client   // gabriel remote server client
+	gabrielClient     gabrielclient.Client    // gabriel remote server client
 	videoStreamConfig VideoStreamConfig       // video stream config
 	store             *dataStore              // data store
 }
@@ -185,6 +185,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Initialize the store, launching goroutine to flush telemetry data to
 	// disk periodically
 	v.store.init(ctx)
+
+	// create gabriel client with telemetry and frame producers
+	v.createGabrielClient()
 
 	select {
 	case <-ctx.Done():
