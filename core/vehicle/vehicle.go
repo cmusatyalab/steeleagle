@@ -40,7 +40,9 @@ type Vehicle struct {
 }
 
 // Create a new vehicle with the given plugins and options.
-func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
+func NewVehicle(
+	pluginCfg PluginConfig,
+	options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
 		name:      uuid.New().String(),
@@ -56,10 +58,12 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	var err error
 	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
 	if err != nil {
-		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
+		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).
+			Msg("Unable to create vehicle directory")
 		return nil, err
 	}
-	vehicle.log.Debug().Str("folder", vehicle.runDir).Msg("vehicle folder configured")
+	vehicle.log.Debug().Str("folder", vehicle.runDir).
+		Msg("vehicle folder configured")
 
 	// Set up law handling
 	vehicle.policy = getPolicy(vehicle.policyCfg)
@@ -80,7 +84,9 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	}
 
 	// Register data service
-	vehiclepb.RegisterDataServiceServer(vehicle.services, &DataService{store: vehicle.store})
+	vehiclepb.RegisterDataServiceServer(
+		vehicle.services,
+		&DataService{store: vehicle.store})
 
 	return vehicle, nil
 }
@@ -98,20 +104,28 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	mainSocketPath := filepath.Join(v.runDir, MainSocketName)
 	ln, err := createUnixSocketListener(mainSocketPath)
 	if err != nil {
-		v.log.Error().Err(err).Str("path", mainSocketPath).Msg("failed to create socket listener for main services")
+		v.log.Error().Err(err).Str("path", mainSocketPath).
+			Msg("failed to create socket listener for main services")
 		return err
 	}
-	v.listeners[MainListenerName] = util.NewCodedListener(ln, util.ExternalCode, nil)
+	v.listeners[MainListenerName] =
+		util.NewCodedListener(ln, util.ExternalCode, nil)
 
 	// Create an admin socket listener with AuthCode AdminCode. The admin
 	// socket is intended for use by this process
 	adminSocketPath := filepath.Join(v.runDir, AdminSocketName)
 	ln, err = createUnixSocketListener(adminSocketPath)
 	if err != nil {
-		v.log.Error().Err(err).Str("path", mainSocketPath).Msg("failed to create socket listener for admin services")
+		v.log.Error().Err(err).Str("path", mainSocketPath).
+			Msg("failed to create socket listener for admin services")
 		return err
 	}
-	v.listeners[AdminListenerName] = util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()}))
+	v.listeners[AdminListenerName] =
+		util.NewCodedListener(
+			ln,
+			util.AdminCode,
+			util.GetACL(nil, []int{os.Getpid()}),
+		)
 
 	// Start driver plugin
 	if v.pluginCfg.Driver == nil {
@@ -124,7 +138,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		return err
 	}
 	if err := waitForPluginReady(ctx, v.driver); err != nil {
-		v.log.Error().Err(err).Msg("driver plugin did not become ready, aborting")
+		v.log.Error().Err(err).
+			Msg("driver plugin did not become ready, aborting")
 		return err
 	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
@@ -135,30 +150,35 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	} else {
 		ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
 		if err != nil {
-			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
+			v.log.Error().Err(err).
+				Msg("could not start mission plugin, aborting")
 			return err
 		}
 		if err := waitForPluginReady(ctx, v.mission); err != nil {
-			v.log.Error().Err(err).Msg("mission plugin did not become ready, aborting")
+			v.log.Error().Err(err).
+				Msg("mission plugin did not become ready, aborting")
 			return err
 		}
-		// For logging purposes, use a mission tag instead of the name to disambiguate
-		// between this plugin and external plugins
+		// For logging purposes, use a mission tag instead of the name to
+		// disambiguate between this plugin and external plugins
 		v.listeners[MissionListenerName] = ln
-		v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
+		v.log.Debug().
+			Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
 	}
 
 	// Start all other plugins
 	for _, plugin := range v.pluginCfg.Plugins {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
-			v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
+			v.log.Error().Err(err).
+				Msgf("could not start plugin %s, aborting", plugin.Name())
 			return err
 		}
 		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
 		} else {
-			v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code", plugin.Name())
+			v.log.Debug().
+				Msgf("plugin %s listener not added: doesn't exist or has a reserved name/code", plugin.Name())
 		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
@@ -168,8 +188,11 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	for name, ln := range v.listeners {
 		go func() {
 			if err := v.services.Serve(ln); err != nil {
-				v.log.Error().Err(err).Str("listener", name).Msg("listener exited with error")
-				v.errCh <- fmt.Errorf("listener %s exited with error: %w", name, err)
+				v.log.Error().Err(err).Str("listener", name).
+					Msg("listener exited with error")
+				v.errCh <- fmt.Errorf(
+					"listener %s exited with error: %w", name, err,
+				)
 			}
 		}()
 	}
