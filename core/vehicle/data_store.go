@@ -26,25 +26,29 @@ const (
 // computed results. It runs a goroutine to periodically flush telemetry data
 // to disk in a Bolt key/value store.
 type dataStore struct {
-	latestTelemetry  *stream_msg_pb.Telemetry            // latest telemetry
-	telMu            *sync.RWMutex                       // telemetry mutex
-	latestFrame      *stream_msg_pb.EncodedFrame         // latest frame
-	frameMu          *sync.RWMutex                       // frame mutex
-	latestResults    map[string]*resultpb.ComputeResult  // latest results
-	resultsMu        *sync.RWMutex                       // results mutex
-	telCh            chan *stream_msg_pb.Telemetry       // telemetry flush channel
-	db               *bbolt.DB                           // database
-	telSubscribers   [](chan<- *stream_msg_pb.Telemetry) // telemetry subscribers
-	telSubscribersMu *sync.RWMutex                       // telemetry subscribers mutex
+	latestTelemetry    *stream_msg_pb.Telemetry               // latest telemetry
+	telMu              *sync.RWMutex                          // telemetry mutex
+	latestFrame        *stream_msg_pb.EncodedFrame            // latest frame
+	frameMu            *sync.RWMutex                          // frame mutex
+	latestResults      map[string]*resultpb.ComputeResult     // latest results
+	resultsMu          *sync.RWMutex                          // results mutex
+	telCh              chan *stream_msg_pb.Telemetry          // telemetry flush channel
+	db                 *bbolt.DB                              // database
+	telSubscribers     [](chan<- *stream_msg_pb.Telemetry)    // telemetry subscribers
+	telSubscribersMu   *sync.RWMutex                          // telemetry subscribers mutex
+	frameSubscribers   [](chan<- *stream_msg_pb.EncodedFrame) // video frame subscribers
+	frameSubscribersMu *sync.RWMutex                          // video frame subscribers mutex
 }
 
 // Create a new data store.
 func newDataStore(vehicleName string) (*dataStore, error) {
 	store := &dataStore{
-		telMu:     &sync.RWMutex{},
-		frameMu:   &sync.RWMutex{},
-		resultsMu: &sync.RWMutex{},
-		telCh:     make(chan *stream_msg_pb.Telemetry, 1),
+		telMu:              &sync.RWMutex{},
+		frameMu:            &sync.RWMutex{},
+		resultsMu:          &sync.RWMutex{},
+		telCh:              make(chan *stream_msg_pb.Telemetry, 1),
+		telSubscribersMu:   &sync.RWMutex{},
+		frameSubscribersMu: &sync.RWMutex{},
 	}
 	var err error
 	store.db, err = bbolt.Open(fmt.Sprintf(dbPath, vehicleName), dbOpenMode, nil)
@@ -164,6 +168,8 @@ func (s *dataStore) addTelemetry(tel *stream_msg_pb.Telemetry) {
 	s.telMu.Unlock()
 	s.telCh <- tel
 
+	s.telSubscribersMu.RLock()
+	defer s.telSubscribersMu.RUnlock()
 	for _, ch := range s.telSubscribers {
 		go func() {
 			select {
@@ -177,9 +183,19 @@ func (s *dataStore) addTelemetry(tel *stream_msg_pb.Telemetry) {
 // Add a video frame to the store.
 func (s *dataStore) addFrame(frame *stream_msg_pb.EncodedFrame) {
 	s.frameMu.Lock()
-	defer s.frameMu.Unlock()
-
 	s.latestFrame = frame
+	s.frameMu.Unlock()
+
+	s.frameSubscribersMu.RLock()
+	defer s.frameSubscribersMu.RUnlock()
+	for _, ch := range s.frameSubscribers {
+		go func() {
+			select {
+			case ch <- frame:
+			case <-time.After(time.Second):
+			}
+		}()
+	}
 }
 
 // Add a compute result to the store.
@@ -190,10 +206,24 @@ func (s *dataStore) addResult(producerName string, res *resultpb.ComputeResult) 
 	s.latestResults[producerName] = res
 }
 
+// subscribeToTelemetry returns a channel that can be used to receive telemetry
+// updates as they are added to the store.
 func (s *dataStore) subscribeToTelemetry() <-chan *stream_msg_pb.Telemetry {
 	s.telSubscribersMu.Lock()
 	defer s.telSubscribersMu.Unlock()
 	ch := make(chan *stream_msg_pb.Telemetry, 1)
 	s.telSubscribers = append(s.telSubscribers, ch)
+	return ch
+}
+
+// subscribeToFrames returns a cahnnel that can can be used to receive video
+// frames as they are added to the store.
+//
+// TODO: handle different kinds of frames, if there are multiple cameras
+func (s *dataStore) subscribeToFrames() <-chan *stream_msg_pb.EncodedFrame {
+	s.frameSubscribersMu.Lock()
+	defer s.frameSubscribersMu.Unlock()
+	ch := make(chan *stream_msg_pb.EncodedFrame, 1)
+	s.frameSubscribers = append(s.frameSubscribers, ch)
 	return ch
 }

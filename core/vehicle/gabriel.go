@@ -53,9 +53,13 @@ func getGabrielProducer[T Data](
 	return gabrielclient.NewInputProducer(producerName, producer, targetEngines)
 }
 
+// Create a Gabriel client with telemetry and video frame input producers.
 func (v *Vehicle) createGabrielClient() {
 	telCh := v.store.subscribeToTelemetry()
 	telProducer := getGabrielProducer("telemetry", telCh, []string{"telemetry-engine"})
+
+	frameCh := v.store.subscribeToFrames()
+	frameProducer := getGabrielProducer("frames", frameCh, []string{"object-engine"})
 
 	consumer := func(res *gabrielpb.Result) {
 		cmpRes := &result.ComputeResult{
@@ -66,7 +70,9 @@ func (v *Vehicle) createGabrielClient() {
 
 	var err error
 	v.gabrielClient, err = gabrielclient.NewGrpcClient(
-		"", []*gabrielclient.InputProducer{telProducer}, consumer)
+		"",
+		[]*gabrielclient.InputProducer{telProducer, frameProducer},
+		consumer)
 	if err != nil {
 
 	}
