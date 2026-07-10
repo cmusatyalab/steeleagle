@@ -45,6 +45,7 @@ func newDataStore(vehicleName string) (*dataStore, error) {
 	store := &dataStore{
 		telMu:              &sync.RWMutex{},
 		frameMu:            &sync.RWMutex{},
+		latestResults:      make(map[string]*resultpb.ComputeResult),
 		resultsMu:          &sync.RWMutex{},
 		telCh:              make(chan *stream_msg_pb.Telemetry, 1),
 		telSubscribersMu:   &sync.RWMutex{},
