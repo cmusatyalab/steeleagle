@@ -14,6 +14,13 @@ type PluginConfig struct {
 	Plugins []util.Plugin
 }
 
+// Configuration options for Gabriel client used by the vehicle.
+type GabrielConfig struct {
+	ServerEndpoint           string   // Gabriel server address
+	TelemetryTargetEngines   []string // Engines to send telemetry to
+	VideoFramesTargetEngines []string // Engines to send video frames to
+}
+
 type VideoStreamConfig struct {
 	Codec      string
 	Resolution VideoResolution

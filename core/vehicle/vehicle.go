@@ -34,7 +34,8 @@ type Vehicle struct {
 	services          *grpc.Server            // gRPC server instance
 	log               zerolog.Logger          // logger object
 	errCh             chan error              // error channel shared by listeners
-	gabrielClient     gabrielclient.Client    // gabriel remote server client
+	gabrielCfg        GabrielConfig           // Gabriel config
+	gabrielClient     gabrielclient.Client    // Gabriel remote server client
 	videoStreamConfig VideoStreamConfig       // video stream config
 	store             *dataStore              // data store
 }
@@ -209,7 +210,11 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.store.init(ctx)
 
 	// create gabriel client with telemetry and frame producers
-	v.createGabrielClient()
+	err = v.createGabrielClient()
+	if err != nil {
+		v.log.Err(err).Msg("failed to create Gabriel client")
+		return err
+	}
 	gabrielErrCh, err := v.gabrielClient.Launch(ctx)
 	if err != nil {
 		v.log.Err(err).Msg("failed to launch Gabriel client")
