@@ -8,7 +8,7 @@ import (
 )
 
 type TailscaleServer struct {
-	server tsnet.Server
+	server *tsnet.Server
 }
 
 func NewTailscaleServer(hostname string) (*TailscaleServer, error) {
@@ -22,7 +22,7 @@ func NewTailscaleServer(hostname string) (*TailscaleServer, error) {
 
 	return &TailscaleServer{
 		server: server,
-	}
+	}, nil
 }
 
 func (i *TailscaleServer) Listen(protocol string, port int) (net.Listener, error) {
