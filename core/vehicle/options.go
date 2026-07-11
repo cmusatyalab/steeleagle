@@ -1,7 +1,7 @@
 package vehicle
 
 import (
-    "net"
+	"net"
 
 	"github.com/rs/zerolog"
 )
@@ -9,9 +9,9 @@ import (
 type VehicleOption func(*Vehicle)
 
 func WithName(name string) VehicleOption {
-    return func(v *Vehicle) {
-        v.name = name
-    }
+	return func(v *Vehicle) {
+		v.name = name
+	}
 }
 
 func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
@@ -26,10 +26,16 @@ func WithVideoStreamConfig(videoCfg VideoStreamConfig) VehicleOption {
     }
 }
 
+func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {
+	return func(v *Vehicle) {
+		v.gabrielCfg = gabrielCfg
+	}
+}
+
 func WithServerListener(ln net.Listener) VehicleOption {
-    return func(v *Vehicle) {
-        v.listeners[ServerListenerName] = ln
-    }
+	return func(v *Vehicle) {
+		v.listeners[ServerListenerName] = ln
+	}
 }
 
 func WithLogger(logger zerolog.Logger) VehicleOption {

@@ -6,10 +6,6 @@ import (
 	"os/exec"
 	"testing"
 	"time"
-
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	"github.com/cmusatyalab/steeleagle/core/vehicle"
-	"github.com/rs/zerolog"
 )
 
 func TestStreamingFromFile(t *testing.T) {

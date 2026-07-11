@@ -12,13 +12,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func createFrameProducer(
-    frameCh <-chan *stream_msg_pb.EncodedFrame) *gabrielclient.InputProducer {
-	return nil
+// Sensor data for input producers.
+type Data interface {
+	*stream_msg_pb.EncodedFrame | *stream_msg_pb.Telemetry
+	proto.Message
 }
 
-func createTelemetryProducer(
-	telCh <-chan *stream_msg_pb.Telemetry) *gabrielclient.InputProducer {
+// Construct a Gabriel input producer with the given name that uses the
+// provided channel to produce its inputs, targeting the specified engines.
+func getGabrielProducer[T Data](
+	producerName string,
+	inputCh <-chan T,
+	targetEngines []string) *gabrielclient.InputProducer {
 
 	producer := func(ctx context.Context) <-chan *gabriel_pb.InputFrame {
 		ch := make(chan *gabriel_pb.InputFrame, 1)
@@ -27,10 +32,10 @@ func createTelemetryProducer(
 				select {
 				case <-ctx.Done():
 					return
-				case tel := <-telCh:
-					telBytes, err := proto.Marshal(tel)
+				case val := <-inputCh:
+					telBytes, err := proto.Marshal(val)
 					if err != nil {
-						log.Err(err).Msg("error marshaling telemetry")
+						log.Err(err).Msg("error marshaling data")
 					}
 					payload := &gabriel_pb.InputFrame_BytePayload{
 						BytePayload: telBytes,
@@ -45,12 +50,22 @@ func createTelemetryProducer(
 		}()
 		return ch
 	}
-	return gabrielclient.NewInputProducer("telemetry", producer, []string{"telemetry-engine"})
+	return gabrielclient.NewInputProducer(producerName, producer, targetEngines)
 }
 
-func (v *Vehicle) createGabrielClient() {
+// Create a Gabriel client with telemetry and video frame input producers.
+func (v *Vehicle) createGabrielClient() error {
 	telCh := v.store.subscribeToTelemetry()
-	telProducer := createTelemetryProducer(telCh)
+	telProducer := getGabrielProducer(
+		"telemetry",
+		telCh,
+		v.gabrielCfg.TelemetryTargetEngines)
+
+	frameCh := v.store.subscribeToFrames()
+	frameProducer := getGabrielProducer(
+		"frames",
+		frameCh,
+		v.gabrielCfg.VideoFramesTargetEngines)
 
 	consumer := func(res *gabriel_pb.Result) {
 		cmpRes := &result.ComputeResult{
@@ -61,8 +76,8 @@ func (v *Vehicle) createGabrielClient() {
 
 	var err error
 	v.gabrielClient, err = gabrielclient.NewGrpcClient(
-		"", []*gabrielclient.InputProducer{telProducer}, consumer)
-	if err != nil {
-
-	}
+		v.gabrielCfg.ServerEndpoint,
+		[]*gabrielclient.InputProducer{telProducer, frameProducer},
+		consumer)
+	return err
 }

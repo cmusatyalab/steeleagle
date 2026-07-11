@@ -5,8 +5,10 @@ import (
 	"net"
 	"testing"
     "path/filepath"
+    "time"
 
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	stream_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	mission_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
@@ -52,10 +54,24 @@ type StreamService struct {
 	commCh chan string
 }
 
-// GetVideoStreamURL mocks and logs a 
+// GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back a mock URL.
 func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driver_pb.GetVideoStreamURLRequest) (*driver_pb.GetVideoStreamURLResponse, error) {
     s.commCh <- "StreamService.GetVideoStreamURL"
     return &driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
+}
+
+// StreamTelemetry mocks and logs a StreamTelemetry request.
+func (s *StreamService) StreamTelemetry(req *driver_pb.StreamTelemetryRequest, stream driver_pb.StreamService_StreamTelemetryServer) error {
+    s.commCh <- "StreamService.StreamTelemetry"
+    for {
+        err := stream.Send(&driver_pb.StreamTelemetryResponse{
+            Telemetry: &stream_pb.Telemetry{}, 
+        })
+        if err != nil {
+            return err
+        }
+        time.Sleep(1 * time.Second)
+    }
 }
 
 // MissionService mocks a MissionService gRPC server.
@@ -84,12 +100,15 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
     // Create command channel
     commCh := make(chan string, 2)
 
+    // Create a temporary directory to hold the sockets
+    tempDir := t.TempDir()
+
 	// Create listeners
-	driverLn, err := net.Listen("unix", filepath.Join(t.TempDir(), DriverServerSocket))
+	driverLn, err := net.Listen("unix", filepath.Join(tempDir, DriverServerSocket))
 	if err != nil {
         return nil, nil, nil, err
 	}
-	missionLn, err := net.Listen("unix", filepath.Join(t.TempDir(), MissionServerSocket))
+	missionLn, err := net.Listen("unix", filepath.Join(tempDir, MissionServerSocket))
 	if err != nil {
         return nil, nil, nil, err
 	}
@@ -108,13 +127,13 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
     t.Cleanup(missionServer.GracefulStop)
 
 	// Create shim plugins that attach to the pre-created listeners
-    driverAddr := filepath.Join(t.TempDir(), DriverServerSocket)
+    driverAddr := filepath.Join(tempDir, DriverServerSocket)
 	driverPlugin, err := util.CreateShimPlugin(driverAddr, "")
 	if err != nil {
 		return nil, nil, nil, err
 	}
-    missionAddr := filepath.Join(t.TempDir(), MissionServerSocket)
-    missionClient := filepath.Join(t.TempDir(), MissionClientSocket)
+    missionAddr := filepath.Join(tempDir, MissionServerSocket)
+    missionClient := filepath.Join(tempDir, MissionClientSocket)
 	missionPlugin, err := util.CreateShimPlugin(missionAddr, missionClient)
 	if err != nil {
 		return nil, nil, nil, err

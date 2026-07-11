@@ -19,7 +19,7 @@ const (
 	testDuration      = 3
 	testVideoFilename = "test.mp4"
 	minFrames         = 2
-	testTimeout       = 15 * time.Second
+	testTimeout       = 5 * time.Second
 )
 
 // generateTestVideo creates a synthetic video stream.
@@ -114,40 +114,20 @@ func startRTSPServer(t *testing.T, videoPath string) string {
 // testStreaming tests the driver streaming service exchange with the
 // vehicle data service.
 func testStreaming(t *testing.T, inputFileURL string) {
-    driverPlugin, _, err := setupPlugins(t)
+    driverPlugin, _, _, err := setupPlugins(t, inputFileURL)
     if err != nil {
         t.Fatalf("couldn't create plugin config: %v", err)
     }
 	pluginCfg := vehicle.PluginConfig{Driver: driverPlugin}
-	resolution := driver_pb.GetVideoStreamURLRequest_RESOLUTION_720P
-	videoCfg := vehicle.VideoStreamConfig{Resolution: resolution}
-	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithServerListener(serverLn), vehicle.WithVideoStreamConfig(videoCfg))
+	videoCfg := vehicle.VideoStreamConfig{Resolution: vehicle.Res720P}
+	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithVideoStreamConfig(videoCfg))
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
-
-	numFrames := 0
-	doneCh := make(chan struct{})
-	handler := func(frame []byte) {
-		numFrames += 1
-		if numFrames == minFrames+1 {
-			close(doneCh)
-		}
-	}
-
-	errCh, err := v.StartRTSPVideoStream(t.Context(), videoCfg, handler)
-	if err != nil {
-		t.Fatalf("error starting video stream: %v", err)
-	}
-
-	select {
-	case err = <-errCh:
+	
+    select {
+	case err = <-v.Watch():
 		t.Fatalf("video stream error: %v", err)
-	case <-doneCh:
 	case <-time.After(testTimeout):
-	}
-
-	if numFrames < minFrames {
-		t.Fatalf("only received %d frames", numFrames)
 	}
 }

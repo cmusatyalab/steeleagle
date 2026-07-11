@@ -119,21 +119,15 @@ func (v *Vehicle) startRTSPVideoStream(
 	if err != nil {
 		return nil, fmt.Errorf("error: %w", err)
 	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("error: %w", err)
-	}
 	errCh := make(chan error, 1)
 
+	v.log.Info().Msg("FFmpeg streaming started")
 	go func() {
-		errOut, _ := io.ReadAll(stderr)
 		err = cmd.Wait()
 		v.log.Error().Msg("FFmpeg command exited")
-		v.log.Error().Bytes("stderr", errOut).Msg("ffmpeg stderr")
 		if err != nil {
 			v.log.Err(err).Msg("FFmpeg non-zero exit status")
-			errCh <- fmt.Errorf("ffmpeg non-zero exit status: %v", err)
-			v.log.Error().Bytes("stderr", errOut).Msg("ffmpeg stderr")
+			errCh <- fmt.Errorf("FFmpeg non-zero exit status: %v", err)
 			return
 		}
 	}()
@@ -141,7 +135,6 @@ func (v *Vehicle) startRTSPVideoStream(
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error starting FFmpeg: %w", err)
 	}
-	v.log.Info().Msg("FFmpeg streaming started")
 
 	frameCh := make(chan []byte, 1)
 	height, width := v.videoCfg.Resolution.Ints()

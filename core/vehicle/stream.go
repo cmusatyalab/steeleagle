@@ -5,17 +5,17 @@ import (
 	"io"
 
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	"github.com/rs/zerolog/log"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Stream telemetry from the driver, updating the vehicle store.
 func (v *Vehicle) streamTelemetry(ctx context.Context) error {
-	client := driverpb.NewStreamServiceClient(v.driver)
-	req := &driverpb.StreamTelemetryRequest{}
+	client := driver_pb.NewStreamServiceClient(v.driver)
+	req := &driver_pb.StreamTelemetryRequest{}
 	stream, err := client.StreamTelemetry(ctx, req)
 	if err != nil {
+        v.log.Error().Err(err).Msg("couldn't get telemetry stream from driver")
 		return err
 	}
 	for {
@@ -27,11 +27,11 @@ func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 			return err
 		}
 		if err != nil {
-			log.Err(err).Msg("error receiving telemetry from driver")
+			v.log.Error().Err(err).Msg("error receiving telemetry from driver")
 			continue
 		}
 		if tel == nil {
-			log.Error().Msg("received nil telemetry from driver")
+			v.log.Error().Msg("received nil telemetry from driver")
 			continue
 		}
 		v.store.addTelemetry(tel.Telemetry)
@@ -40,7 +40,7 @@ func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 
 // Start streaming video frames and telemetry from the driver, updating the
 // vehicle data store.
-func (v *Vehicle) startDriverStreaming(ctx context.Context) (<-chan error, error) {
+func (v *Vehicle) startDriverStreaming(ctx context.Context) error {
 	frameHandler := func(frameBytes []byte) {
 		f := &stream_msg_pb.EncodedFrame{
 			Timestamp:   timestamppb.Now(),
@@ -50,12 +50,11 @@ func (v *Vehicle) startDriverStreaming(ctx context.Context) (<-chan error, error
 	}
 	videoErrCh, err := v.startVideoStream(ctx, RTSP, v.videoCfg, frameHandler)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
-	errCh := make(chan error, 2)
-	go func() { errCh <- v.streamTelemetry(ctx) }()
-	go func() { errCh <- <-videoErrCh }()
+	go func() { v.errCh <- v.streamTelemetry(ctx) }()
+	go func() { v.errCh <- <-videoErrCh }()
 
-	return errCh, nil
+    return nil
 }

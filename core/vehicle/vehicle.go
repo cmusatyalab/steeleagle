@@ -9,7 +9,7 @@ import (
 	"slices"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-	vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+    vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
@@ -23,6 +23,7 @@ type Vehicle struct {
 	pluginCfg         PluginConfig            // plugin configuration
 	policyCfg         PolicyConfig            // policy configuration
 	videoCfg          VideoStreamConfig       // video stream config
+	gabrielCfg        GabrielConfig           // Gabriel config
 	policy            policyState             // active policy state
 	driver            *grpc.ClientConn        // driver gRPC client connection
 	mission           *grpc.ClientConn        // mission gRPC client connection
@@ -30,12 +31,14 @@ type Vehicle struct {
 	services          *grpc.Server            // gRPC server instance
 	log               zerolog.Logger          // logger object
 	errCh             chan error              // error channel shared by listeners
-	gabrielClient     gabrielclient.Client    // gabriel remote server client
+	gabrielClient     gabrielclient.Client    // Gabriel remote server client
 	store             *dataStore              // data store
 }
 
 // Create a new vehicle with the given plugins and options.
-func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, error) {
+func NewVehicle(
+	pluginCfg PluginConfig,
+	options ...VehicleOption) (*Vehicle, error) {
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
 		name:      uuid.New().String(),
@@ -51,10 +54,12 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	var err error
 	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
 	if err != nil {
-		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).Msg("Unable to create vehicle directory")
+		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).
+			Msg("Unable to create vehicle directory")
 		return nil, err
 	}
-	vehicle.log.Debug().Str("folder", vehicle.runDir).Msg("vehicle folder configured")
+	vehicle.log.Debug().Str("folder", vehicle.runDir).
+		Msg("vehicle folder configured")
 
 	// Set up law handling
 	vehicle.policy = getPolicy(vehicle.policyCfg)
@@ -75,7 +80,10 @@ func NewVehicle(pluginCfg PluginConfig, options ...VehicleOption) (*Vehicle, err
 	}
 
 	// Register data service
-	vehicle_pb.RegisterDataServiceServer(vehicle.services, &DataService{store: vehicle.store})
+	vehicle_pb.RegisterDataServiceServer(
+		vehicle.services,
+		&DataService{store: vehicle.store},
+    )
 
 	return vehicle, nil
 }
@@ -93,20 +101,28 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	mainSocketPath := filepath.Join(v.runDir, MainSocketName)
 	ln, err := createUnixSocketListener(mainSocketPath)
 	if err != nil {
-		v.log.Error().Err(err).Str("path", mainSocketPath).Msg("failed to create socket listener for main services")
+		v.log.Error().Err(err).Str("path", mainSocketPath).
+			Msg("failed to create socket listener for main services")
 		return err
 	}
-	v.listeners[MainListenerName] = util.NewCodedListener(ln, util.ExternalCode, nil)
+	v.listeners[MainListenerName] =
+		util.NewCodedListener(ln, util.ExternalCode, nil)
 
 	// Create an admin socket listener with AuthCode AdminCode. The admin
 	// socket is intended for use by this process
 	adminSocketPath := filepath.Join(v.runDir, AdminSocketName)
 	ln, err = createUnixSocketListener(adminSocketPath)
 	if err != nil {
-		v.log.Error().Err(err).Str("path", mainSocketPath).Msg("failed to create socket listener for admin services")
+		v.log.Error().Err(err).Str("path", mainSocketPath).
+			Msg("failed to create socket listener for admin services")
 		return err
 	}
-	v.listeners[AdminListenerName] = util.NewCodedListener(ln, util.AdminCode, util.GetACL(nil, []int{os.Getpid()}))
+	v.listeners[AdminListenerName] =
+		util.NewCodedListener(
+			ln,
+			util.AdminCode,
+			util.GetACL(nil, []int{os.Getpid()}),
+		)
 
 	// Start driver plugin
 	if v.pluginCfg.Driver == nil {
@@ -126,26 +142,30 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	} else {
 		ln, v.mission, err = v.pluginCfg.Mission.Start(ctx)
 		if err != nil {
-			v.log.Error().Err(err).Msg("could not start mission plugin, aborting")
+			v.log.Error().Err(err).
+				Msg("could not start mission plugin, aborting")
 			return err
 		}
-		// For logging purposes, use a mission tag instead of the name to disambiguate
-		// between this plugin and external plugins
+		// For logging purposes, use a mission tag instead of the name to
+		// disambiguate between this plugin and external plugins
 		v.listeners[MissionListenerName] = ln
-		v.log.Debug().Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
+		v.log.Debug().
+			Msgf("mission plugin %s started!", v.pluginCfg.Mission.Name())
 	}
 
 	// Start all other plugins
 	for _, plugin := range v.pluginCfg.Plugins {
 		ln, _, err = plugin.Start(ctx)
 		if err != nil {
-			v.log.Error().Err(err).Msgf("could not start plugin %s, aborting", plugin.Name())
+			v.log.Error().Err(err).
+				Msgf("could not start plugin %s, aborting", plugin.Name())
 			return err
 		}
 		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
 		} else {
-			v.log.Debug().Msgf("plugin %s listener was not added because it didn't exist or had a reserved name/code", plugin.Name())
+			v.log.Debug().
+				Msgf("plugin %s listener not added: doesn't exist or has a reserved name/code", plugin.Name())
 		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
@@ -155,17 +175,19 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	for name, ln := range v.listeners {
 		go func() {
 			if err := v.services.Serve(ln); err != nil {
-				v.log.Error().Err(err).Str("listener", name).Msg("listener exited with error")
-				v.errCh <- fmt.Errorf("listener %s exited with error: %w", name, err)
+				v.log.Error().Err(err).Str("listener", name).
+					Msg("listener exited with error")
+				v.errCh <- fmt.Errorf(
+					"listener %s exited with error: %w", name, err,
+				)
 			}
 		}()
 	}
 
 	// Start streaming frames and telemetry from the driver
-	streamErrCh, err := v.startDriverStreaming(ctx)
+	err = v.startDriverStreaming(ctx)
 	if err != nil {
 		v.log.Err(err).Msg("failed to stream from driver")
-		cancel()
 		return err
 	}
 
@@ -173,19 +195,24 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// disk periodically
 	v.store.init(ctx)
 
-	// create gabriel client with telemetry and frame producers
-	v.createGabrielClient()
+	// Create gabriel client with telemetry and frame producers if a server
+    // endpoint is specified
+    if v.gabrielCfg.ServerEndpoint != "" {
+	    err = v.createGabrielClient()
+	    if err != nil {
+	    	v.log.Err(err).Msg("failed to create Gabriel client")
+	    	return err
+	    }
+	    _, err = v.gabrielClient.Launch(ctx)
+	    if err != nil {
+	    	v.log.Err(err).Msg("failed to launch Gabriel client")
+	    	return err
+	    }
+    } else {
+        v.log.Warn().Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
+    }
 
-	select {
-	case <-ctx.Done():
-		return nil
-	case err = <-streamErrCh:
-		cancel()
-		return err
-	case err = <-v.errCh:
-		cancel()
-		return err
-	}
+    return nil
 }
 
 func (v *Vehicle) Stop() {

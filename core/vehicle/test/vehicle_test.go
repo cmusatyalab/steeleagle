@@ -1,22 +1,26 @@
 package vehicle_test
 
 import (
+    "os"
 	"context"
 	"net"
 	"testing"
+    "path/filepath"
 
 	vehicle "github.com/cmusatyalab/steeleagle/core/vehicle"
 )
 
-func TestProxy(t *testing.T) {
+func TestStartStop(t *testing.T) {
 	driverPlugin, missionPlugin, _, err := setupPlugins(t, "")
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-	serverLn, err := net.Listen("unix", ServerSocket)
+    serverSockDir := t.TempDir()
+	serverLn, err := net.Listen("unix", filepath.Join(serverSockDir, ServerSocket))
 	if err != nil {
 		t.Fatalf("couldn't listen on server socket")
 	}
+    defer os.Remove(filepath.Join(serverSockDir, ServerSocket))
 
 	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
 	vehicle, err := vehicle.NewVehicle(pluginConfig, vehicle.WithServerListener(serverLn))
@@ -28,6 +32,10 @@ func TestProxy(t *testing.T) {
 		t.Fatalf("couldn't start vehicle")
 	}
 	vehicle.Stop()
+}
+
+func TestProxy(t *testing.T) {
+	// TODO: test proxy with command routing
 }
 
 func TestPolicy(t *testing.T) {
@@ -67,3 +75,8 @@ func TestMissionFailsafe(t *testing.T) {
 func TestAbandonFailsafe(t *testing.T) {
 	// TODO: server and mission dc failsafe
 }
+
+// TODO:
+// Error cases
+// - nil driver plugin
+// - reserved listener name
