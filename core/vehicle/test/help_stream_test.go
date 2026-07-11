@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"testing"
 	"time"
+
+    "github.com/cmusatyalab/steeleagle/core/vehicle"
 )
 
 // Constants defining the test video characteristics.
@@ -112,22 +114,17 @@ func startRTSPServer(t *testing.T, videoPath string) string {
 // testStreaming tests the driver streaming service exchange with the
 // vehicle data service.
 func testStreaming(t *testing.T, inputFileURL string) {
-	driverConn, err := newMockDriverConn(t, inputFileURL)
-	if err != nil {
-		t.Fatalf("error creating mock driver connection: %v", err)
-	}
-
-	pluginCfg := vehicle.PluginConfig{}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testWriter{t}})
-	v, err := vehicle.NewVehicle(
-		pluginCfg,
-		vehicle.WithDriverConn(driverConn),
-		vehicle.WithLogger(logger))
-	if err != nil {
-		t.Fatalf("error creating vehicle: %v", err)
-	}
+    driverPlugin, _, err := setupPlugins(t)
+    if err != nil {
+        t.Fatalf("couldn't create plugin config: %v", err)
+    }
+	pluginCfg := vehicle.PluginConfig{Driver: driverPlugin}
 	resolution := driver_pb.GetVideoStreamURLRequest_RESOLUTION_720P
 	videoCfg := vehicle.VideoStreamConfig{Resolution: resolution}
+	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithServerListener(serverLn), vehicle.WithVideoStreamConfig(videoCfg))
+	if err != nil {
+		t.Fatalf("couldn't create vehicle")
+	}
 
 	numFrames := 0
 	doneCh := make(chan struct{})

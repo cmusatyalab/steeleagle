@@ -48,7 +48,7 @@ func (v *Vehicle) startDriverStreaming(ctx context.Context) (<-chan error, error
 		}
 		v.store.addFrame(f)
 	}
-	videoErrCh, err := v.startVideoStream(ctx, RTSP, v.videoStreamConfig, frameHandler)
+	videoErrCh, err := v.startVideoStream(ctx, RTSP, v.videoCfg, frameHandler)
 	if err != nil {
 		return nil, err
 	}

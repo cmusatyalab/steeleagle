@@ -4,7 +4,7 @@ import (
 	"context"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
+	gabriel_pb "github.com/cmusatyalab/gabriel/protocol/go"
 	"github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	"github.com/rs/zerolog/log"
@@ -12,15 +12,16 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func getFrameProducer() *gabrielclient.InputProducer {
+func createFrameProducer(
+    frameCh <-chan *stream_msg_pb.EncodedFrame) *gabrielclient.InputProducer {
 	return nil
 }
 
 func createTelemetryProducer(
 	telCh <-chan *stream_msg_pb.Telemetry) *gabrielclient.InputProducer {
 
-	producer := func(ctx context.Context) <-chan *gabrielpb.InputFrame {
-		ch := make(chan *gabrielpb.InputFrame, 1)
+	producer := func(ctx context.Context) <-chan *gabriel_pb.InputFrame {
+		ch := make(chan *gabriel_pb.InputFrame, 1)
 		go func() {
 			for {
 				select {
@@ -31,11 +32,11 @@ func createTelemetryProducer(
 					if err != nil {
 						log.Err(err).Msg("error marshaling telemetry")
 					}
-					payload := &gabrielpb.InputFrame_BytePayload{
+					payload := &gabriel_pb.InputFrame_BytePayload{
 						BytePayload: telBytes,
 					}
-					frame := &gabrielpb.InputFrame{
-						PayloadType: gabrielpb.PayloadType_TEXT,
+					frame := &gabriel_pb.InputFrame{
+						PayloadType: gabriel_pb.PayloadType_TEXT,
 						Payload:     payload,
 					}
 					ch <- frame
@@ -51,7 +52,7 @@ func (v *Vehicle) createGabrielClient() {
 	telCh := v.store.subscribeToTelemetry()
 	telProducer := createTelemetryProducer(telCh)
 
-	consumer := func(res *gabrielpb.Result) {
+	consumer := func(res *gabriel_pb.Result) {
 		cmpRes := &result.ComputeResult{
 			Timestamp: timestamppb.Now(),
 		}

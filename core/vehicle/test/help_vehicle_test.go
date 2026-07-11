@@ -2,10 +2,9 @@ package vehicle_test
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net"
 	"testing"
+    "path/filepath"
 
 	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	mission_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
@@ -15,13 +14,10 @@ import (
 
 // ServerSocket is the location of the server listener.
 const ServerSocket = "server.sock"
-
 // DriverServerSocket is the location of the driver server.
 const DriverServerSocket = "driver-server.sock"
-
 // MissionServerSocket is the location of the mission server.
 const MissionServerSocket = "mission-server.sock"
-
 // MissionClientSocket is the location of the mission client listener.
 const MissionClientSocket = "mission-client.sock"
 
@@ -52,6 +48,7 @@ func (c *ControlService) SetVelocity(ctx context.Context, req *driver_pb.SetVelo
 // StreamService mocks a StreamService gRPC server.
 type StreamService struct {
 	driver_pb.UnimplementedStreamServiceServer
+    url    string
 	commCh chan string
 }
 
@@ -107,18 +104,18 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
 	go missionServer.Serve(missionLn)
 
     // Register cleanup for servers
-    t.Cleanup(driverServer.GracefulStop())
-    t.Cleanup(missionServer.GracefulStop())
+    t.Cleanup(driverServer.GracefulStop)
+    t.Cleanup(missionServer.GracefulStop)
 
 	// Create shim plugins that attach to the pre-created listeners
-    driverServer := filepath.Join(t.TempDir(), DriverServerSocket)
-	driverPlugin, err := util.CreateShimPlugin(driverServer, "")
+    driverAddr := filepath.Join(t.TempDir(), DriverServerSocket)
+	driverPlugin, err := util.CreateShimPlugin(driverAddr, "")
 	if err != nil {
 		return nil, nil, nil, err
 	}
-    missionServer := filepath.Join(t.TempDir(), MissionServerSocket)
+    missionAddr := filepath.Join(t.TempDir(), MissionServerSocket)
     missionClient := filepath.Join(t.TempDir(), MissionClientSocket)
-	missionPlugin, err := util.CreateShimPlugin(missionServer, missionClient)
+	missionPlugin, err := util.CreateShimPlugin(missionAddr, missionClient)
 	if err != nil {
 		return nil, nil, nil, err
 	}

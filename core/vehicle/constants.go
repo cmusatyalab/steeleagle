@@ -3,8 +3,7 @@ package vehicle
 import (
 	_ "embed"
 
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	"github.com/cmusatyalab/steeleagle/core/util"
+    "github.com/cmusatyalab/steeleagle/core/util"
 )
 
 // VideoStreamingType determines the type of video streaming that the vehicle
@@ -23,7 +22,8 @@ const (
 type VideoResolution int
 
 const (
-	Res480P VideoResolution = iota
+    ResUnknown VideoResolution = iota
+	Res480P
 	Res720P
 	Res1080P
 	Res4K
@@ -42,21 +42,6 @@ func (v VideoResolution) Ints() (int, int) {
 		return 3840, 2160
 	default:
 		return 1280, 720
-	}
-}
-
-func (v VideoResolution) ToProto() driverpb.GetVideoStreamURLRequest_Resolution {
-	switch v {
-	case Res480P:
-		return driverpb.GetVideoStreamURLRequest_RESOLUTION_480P
-	case Res720P:
-		return driverpb.GetVideoStreamURLRequest_RESOLUTION_720P
-	case Res1080P:
-		return driverpb.GetVideoStreamURLRequest_RESOLUTION_1080P
-	case Res4K:
-		return driverpb.GetVideoStreamURLRequest_RESOLUTION_4K
-	default:
-		return driverpb.GetVideoStreamURLRequest_RESOLUTION_720P
 	}
 }
 

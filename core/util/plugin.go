@@ -14,7 +14,6 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	health_pb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // Plugin defines the behavior required of all plugin implementations.
@@ -314,22 +313,6 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 	}
 
 	return NewCodedListener(listen, p.code, p.acl), client, nil
-}
-
-// WaitForReady blocks until conn responds healthy through the standard gRPC
-// health-checking protocol, or until ctx is done. Callers should bound ctx
-// with a deadline. Also, the plugin must register a grpc_health_v1 health
-// server.
-func WaitForReady(ctx context.Context, conn *grpc.ClientConn) error {
-	client := health_pb.NewHealthClient(conn)
-	resp, err := client.Check(ctx, &health_pb.HealthCheckRequest{}, grpc.WaitForReady(true))
-	if err != nil {
-		return fmt.Errorf("plugin health check failed: %w", err)
-	}
-	if resp.Status != health_pb.HealthCheckResponse_SERVING {
-		return fmt.Errorf("plugin reported non-serving status: %s", resp.Status)
-	}
-	return nil
 }
 
 // waitForSocket polls path until the socket file exists or the plugin timeout

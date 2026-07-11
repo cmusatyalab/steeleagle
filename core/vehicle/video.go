@@ -103,7 +103,9 @@ func (v *Vehicle) startRTSPVideoStream(
 	v.log.Info().Msg("starting RTSP video stream")
 
 	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{Resolution: v.videoStreamConfig.Resolution.ToProto()}
+	req := &driver_pb.GetVideoStreamURLRequest{
+        Resolution: driver_pb.GetVideoStreamURLRequest_Resolution(v.videoCfg.Resolution),
+    }
 
 	// Send request to driver to get video stream URL
 	resp, err := client.GetVideoStreamURL(ctx, req)
@@ -111,7 +113,7 @@ func (v *Vehicle) startRTSPVideoStream(
 		return nil, err
 	}
 	cmd := exec.CommandContext(
-		ctx, "ffmpeg", getFFmpegArgs(resp.StreamUrl, v.videoStreamConfig)...)
+		ctx, "ffmpeg", getFFmpegArgs(resp.StreamUrl, v.videoCfg)...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -142,7 +144,7 @@ func (v *Vehicle) startRTSPVideoStream(
 	v.log.Info().Msg("FFmpeg streaming started")
 
 	frameCh := make(chan []byte, 1)
-	height, width := v.videoStreamConfig.Resolution.Ints()
+	height, width := v.videoCfg.Resolution.Ints()
 	go v.readFrames(ctx, stdout, frameCh, height*width*3, errCh)
 	go v.consumeFrames(ctx, frameCh, handler)
 

@@ -4,7 +4,6 @@ import (
     "net"
 
 	"github.com/rs/zerolog"
-	"google.golang.org/grpc"
 )
 
 type VehicleOption func(*Vehicle)
@@ -21,21 +20,9 @@ func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 	}
 }
 
-func WithDriverConn(conn *grpc.ClientConn) VehicleOption {
-	return func(v *Vehicle) {
-		v.driver = conn
-	}
-}
-
-func WithMissionConn(conn *grpc.ClientConn) VehicleOption {
+func WithVideoStreamConfig(videoCfg VideoStreamConfig) VehicleOption {
     return func(v *Vehicle) {
-        v.mission = conn
-    }
-}
-
-func WithMissionListener(ln net.Listener) VehicleOption {
-    return func(v *Vehicle) {
-        v.listeners[MissionListenerName] = ln
+        v.videoCfg = videoCfg
     }
 }
 
