@@ -4,9 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"time"
-    "net"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,14 +18,14 @@ import (
 // and sends an acknowledgement Check back to the test harness.
 func run() error {
 	// Know that FD3 is the server file, FD4 is the client file
-    listenSocket := os.Getenv("LISTEN_SOCKET")
+	listenSocket := os.Getenv("LISTEN_SOCKET")
 	clientSocket := os.Getenv("CLIENT_SOCKET")
 	if listenSocket == "" || clientSocket == "" {
 		return fmt.Errorf("LISTEN_SOCKET and CLIENT_SOCKET environment variables must be set")
 	}
 
-    // Create the connections
-    ln, err := net.Listen("unix", listenSocket)
+	// Create the connections
+	ln, err := net.Listen("unix", listenSocket)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", listenSocket, err)
 	}
@@ -50,7 +50,7 @@ func run() error {
 	defer server.GracefulStop()
 	health_pb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)
-    fmt.Println("go_test: starting server")
+	fmt.Println("go_test: starting server")
 
 	// Wait to receive a request, then send another as an ack
 	select {
@@ -60,7 +60,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-        fmt.Println("go_test: client check succeeded")
+		fmt.Println("go_test: client check succeeded")
 		return nil
 	case <-time.After(time.Second * 15):
 		// Timeout
@@ -72,17 +72,17 @@ func run() error {
 func main() {
 	errPtr := flag.Bool("error", false, "produce an error")
 	flag.Parse()
-    
-    // Delay is necessary for several tests
-    time.Sleep(100 * time.Millisecond)
+
+	// Delay is necessary for several tests
+	time.Sleep(100 * time.Millisecond)
 
 	if *errPtr {
-        fmt.Println("go_test: asked to exit with error")
+		fmt.Println("go_test: asked to exit with error")
 		os.Exit(1)
 	}
 
 	if err := run(); err != nil {
-        fmt.Printf("go_test: got the following error %v\n", err)
+		fmt.Printf("go_test: got the following error %v\n", err)
 		os.Exit(1)
 	}
 }

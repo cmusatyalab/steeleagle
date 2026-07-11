@@ -1,10 +1,10 @@
 package util_test
 
 import (
-    "time"
-    "os/exec"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
@@ -12,21 +12,21 @@ import (
 func TestContainerPlugin(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "alpine", 
-        util.WithPath(path),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+		"alpine",
+		util.WithPath(path),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -41,21 +41,21 @@ func TestContainerPlugin(t *testing.T) {
 func TestContainerPluginRunhook(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(goPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "alpine",
-        util.WithPath(path),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+		"alpine",
+		util.WithPath(path),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -70,21 +70,21 @@ func TestContainerPluginRunhook(t *testing.T) {
 func TestContainerPluginPython(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
-        util.WithPath(path),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+		util.WithPath(path),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -99,24 +99,24 @@ func TestContainerPluginPython(t *testing.T) {
 func TestContainerPluginPythonCustomExec(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
-        util.WithReadOnlyFiles([]string{path+"/pyproject.toml"}),
-        util.WithScript(path+"/main.py"),
-        util.WithExecutable("uv"),
-        util.WithExecutableArgs([]string{"run"}),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+		util.WithReadOnlyFiles([]string{path + "/pyproject.toml"}),
+		util.WithScript(path+"/main.py"),
+		util.WithExecutable("uv"),
+		util.WithExecutableArgs([]string{"run"}),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -131,47 +131,47 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 func TestContainerPluginFileBinding(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
-        util.WithoutClient(),
-        util.WithFiles([]string{fileWrite}),
-        util.WithReadOnlyFiles([]string{fileRead}),
-        util.WithExecutable("uv"),
-        util.WithExecutableArgs([]string{"run"}),
-        util.WithScript(fileMain),
-    )
+		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+		util.WithoutClient(),
+		util.WithFiles([]string{fileWrite}),
+		util.WithReadOnlyFiles([]string{fileRead}),
+		util.WithExecutable("uv"),
+		util.WithExecutableArgs([]string{"run"}),
+		util.WithScript(fileMain),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
-    err = plugin.Wait()
-    if err != nil {
-        t.Fatalf("plugin exited with error unexpectedly: %v", err)
-    }
+	err = plugin.Wait()
+	if err != nil {
+		t.Fatalf("plugin exited with error unexpectedly: %v", err)
+	}
 }
 
 func TestContainerPluginWrongAuthCode(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "alpine",
-        util.WithPath(path),
-        util.WithAuthCode(util.MissionCode),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
-    defer plugin.Stop()
+		"alpine",
+		util.WithPath(path),
+		util.WithAuthCode(util.MissionCode),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
+	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -189,50 +189,50 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 func TestContainerPluginArgs(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateContainerPlugin(
-        "alpine",
-        util.WithPath(path),
-        util.WithScriptArgs([]string{"--error"}),
-        util.WithoutClient(),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+		"alpine",
+		util.WithPath(path),
+		util.WithScriptArgs([]string{"--error"}),
+		util.WithoutClient(),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
-    select {
-    case _ = <-plugin.Watch():
-        return // expect an error
-    case <-time.After(5 * time.Second):
-        t.Fatalf("didn't get error from plugin when it was expected")
-    }
+	select {
+	case _ = <-plugin.Watch():
+		return // expect an error
+	case <-time.After(5 * time.Second):
+		t.Fatalf("didn't get error from plugin when it was expected")
+	}
 }
 
 func TestContainerPluginWrongTag(t *testing.T) {
 	_, err := exec.LookPath("podman")
 	if err != nil {
-        t.Skip("podman not found, skipping test")
+		t.Skip("podman not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-    _, err = util.CreateContainerPlugin(
-        "foobar",
-        util.WithPath(path),
-        util.WithRunnerArgs([]string{"--rm"}),
-    )
+	_, err = util.CreateContainerPlugin(
+		"foobar",
+		util.WithPath(path),
+		util.WithRunnerArgs([]string{"--rm"}),
+	)
 	if err == nil {
 		t.Fatalf("no error creating plugin when it was expected")
 	}

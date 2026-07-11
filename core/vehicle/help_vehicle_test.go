@@ -2,13 +2,14 @@ package vehicle_test
 
 import (
 	"context"
+	"io"
 	"net"
+	"path/filepath"
 	"testing"
-    "path/filepath"
-    "time"
+	"time"
 
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	stream_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
+	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	mission_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
@@ -16,10 +17,13 @@ import (
 
 // ServerSocket is the location of the server listener.
 const ServerSocket = "server.sock"
+
 // DriverServerSocket is the location of the driver server.
 const DriverServerSocket = "driver-server.sock"
+
 // MissionServerSocket is the location of the mission server.
 const MissionServerSocket = "mission-server.sock"
+
 // MissionClientSocket is the location of the mission client listener.
 const MissionClientSocket = "mission-client.sock"
 
@@ -50,28 +54,28 @@ func (c *ControlService) SetVelocity(ctx context.Context, req *driver_pb.SetVelo
 // StreamService mocks a StreamService gRPC server.
 type StreamService struct {
 	driver_pb.UnimplementedStreamServiceServer
-    url    string
+	url    string
 	commCh chan string
 }
 
 // GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back a mock URL.
 func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driver_pb.GetVideoStreamURLRequest) (*driver_pb.GetVideoStreamURLResponse, error) {
-    s.commCh <- "StreamService.GetVideoStreamURL"
-    return &driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
+	s.commCh <- "StreamService.GetVideoStreamURL"
+	return &driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
 }
 
 // StreamTelemetry mocks and logs a StreamTelemetry request.
 func (s *StreamService) StreamTelemetry(req *driver_pb.StreamTelemetryRequest, stream driver_pb.StreamService_StreamTelemetryServer) error {
-    s.commCh <- "StreamService.StreamTelemetry"
-    for {
-        err := stream.Send(&driver_pb.StreamTelemetryResponse{
-            Telemetry: &stream_pb.Telemetry{}, 
-        })
-        if err != nil {
-            return err
-        }
-        time.Sleep(1 * time.Second)
-    }
+	s.commCh <- "StreamService.StreamTelemetry"
+	for {
+		err := stream.Send(&driver_pb.StreamTelemetryResponse{
+			Telemetry: &stream_pb.Telemetry{},
+		})
+		if err != nil {
+			return err
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 // MissionService mocks a MissionService gRPC server.
@@ -97,43 +101,43 @@ func (m *MissionService) StopMission(ctx context.Context, req *mission_pb.StopMi
 func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan string, error) {
 	t.Helper()
 
-    // Create command channel
-    commCh := make(chan string, 2)
+	// Create command channel
+	commCh := make(chan string, 2)
 
-    // Create a temporary directory to hold the sockets
-    tempDir := t.TempDir()
+	// Create a temporary directory to hold the sockets
+	tempDir := t.TempDir()
 
 	// Create listeners
 	driverLn, err := net.Listen("unix", filepath.Join(tempDir, DriverServerSocket))
 	if err != nil {
-        return nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 	missionLn, err := net.Listen("unix", filepath.Join(tempDir, MissionServerSocket))
 	if err != nil {
-        return nil, nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Server driver and mission services
 	driverServer := grpc.NewServer()
 	driver_pb.RegisterControlServiceServer(driverServer, &ControlService{commCh: commCh})
-    driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh, url: url})
+	driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh, url: url})
 	missionServer := grpc.NewServer()
 	mission_pb.RegisterMissionServiceServer(missionServer, &MissionService{commCh: commCh})
 	go driverServer.Serve(driverLn)
 	go missionServer.Serve(missionLn)
 
-    // Register cleanup for servers
-    t.Cleanup(driverServer.GracefulStop)
-    t.Cleanup(missionServer.GracefulStop)
+	// Register cleanup for servers
+	t.Cleanup(driverServer.GracefulStop)
+	t.Cleanup(missionServer.GracefulStop)
 
 	// Create shim plugins that attach to the pre-created listeners
-    driverAddr := filepath.Join(tempDir, DriverServerSocket)
+	driverAddr := filepath.Join(tempDir, DriverServerSocket)
 	driverPlugin, err := util.CreateShimPlugin(driverAddr, "")
 	if err != nil {
 		return nil, nil, nil, err
 	}
-    missionAddr := filepath.Join(tempDir, MissionServerSocket)
-    missionClient := filepath.Join(tempDir, MissionClientSocket)
+	missionAddr := filepath.Join(tempDir, MissionServerSocket)
+	missionClient := filepath.Join(tempDir, MissionClientSocket)
 	missionPlugin, err := util.CreateShimPlugin(missionAddr, missionClient)
 	if err != nil {
 		return nil, nil, nil, err
@@ -141,3 +145,15 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
 
 	return driverPlugin, missionPlugin, commCh, nil
 }
+
+// testLogger implements the io.Writer interface to allow zerolog to write logs
+// to the testing log method. By using testLogger, zerolog logs are printed to
+// the console only when a test fails.
+type testLogger struct{ t *testing.T }
+
+func (l testLogger) Write(p []byte) (n int, err error) {
+	l.t.Log(string(p))
+	return len(p), nil
+}
+
+var _ io.Writer = (*testLogger)(nil)

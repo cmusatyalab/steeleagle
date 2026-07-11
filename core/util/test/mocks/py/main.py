@@ -5,6 +5,7 @@ from concurrent import futures
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
+
 # run establishes the gRPC server and client sockets, serves a health check,
 # and sends an acknowledgement Check back to the test harness.
 def run():
@@ -40,6 +41,7 @@ def run():
         channel.close()
     finally:
         server.stop(grace=0)
+
 
 # delegates to run.
 if __name__ == "__main__":

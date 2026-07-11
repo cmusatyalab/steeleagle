@@ -3,7 +3,7 @@ package vehicle
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	dbPath          = "%s-store.db" // database file path
-	dbOpenMode      = 0600          // database open mode
-	maxBatch        = 100           // max number of telemetry entries before flush
-	flushInterval   = time.Second   // flush interval
-	telemetryBucket = "telemetry"   // database bucket name for telemetry
+	dbFilename      = "store.db"  // database file name
+	dbOpenMode      = 0600        // database open mode
+	maxBatch        = 100         // max number of telemetry entries before flush
+	flushInterval   = time.Second // flush interval
+	telemetryBucket = "telemetry" // database bucket name for telemetry
 )
 
 // dataStore stores data associated with a vehicle, such as sensor data and
@@ -41,7 +41,7 @@ type dataStore struct {
 }
 
 // Create a new data store.
-func newDataStore(vehicleName string) (*dataStore, error) {
+func newDataStore(runDir string) (*dataStore, error) {
 	store := &dataStore{
 		telMu:              &sync.RWMutex{},
 		frameMu:            &sync.RWMutex{},
@@ -52,7 +52,8 @@ func newDataStore(vehicleName string) (*dataStore, error) {
 		frameSubscribersMu: &sync.RWMutex{},
 	}
 	var err error
-	store.db, err = bbolt.Open(fmt.Sprintf(dbPath, vehicleName), dbOpenMode, nil)
+	store.db, err =
+		bbolt.Open(filepath.Join(runDir, dbFilename), dbOpenMode, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +217,7 @@ func (s *dataStore) subscribeToTelemetry() <-chan *stream_msg_pb.Telemetry {
 	return ch
 }
 
-// subscribeToFrames returns a cahnnel that can can be used to receive video
+// subscribeToFrames returns a channel that can can be used to receive video
 // frames as they are added to the store.
 //
 // TODO: handle different kinds of frames, if there are multiple cameras

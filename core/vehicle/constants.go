@@ -3,7 +3,7 @@ package vehicle
 import (
 	_ "embed"
 
-    "github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util"
 )
 
 // VideoStreamingType determines the type of video streaming that the vehicle
@@ -22,7 +22,7 @@ const (
 type VideoResolution int
 
 const (
-    ResUnknown VideoResolution = iota
+	ResUnknown VideoResolution = iota
 	Res480P
 	Res720P
 	Res1080P

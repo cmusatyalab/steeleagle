@@ -9,7 +9,7 @@ import (
 	"slices"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-    vehicle_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"
@@ -18,21 +18,21 @@ import (
 )
 
 type Vehicle struct {
-	name              string                  // vehicle name
-	runDir            string                  // path to vehicle runtime directory
-	pluginCfg         PluginConfig            // plugin configuration
-	policyCfg         PolicyConfig            // policy configuration
-	videoCfg          VideoStreamConfig       // video stream config
-	gabrielCfg        GabrielConfig           // Gabriel config
-	policy            policyState             // active policy state
-	driver            *grpc.ClientConn        // driver gRPC client connection
-	mission           *grpc.ClientConn        // mission gRPC client connection
-	listeners         map[string]net.Listener // map of names to active listeners
-	services          *grpc.Server            // gRPC server instance
-	log               zerolog.Logger          // logger object
-	errCh             chan error              // error channel shared by listeners
-	gabrielClient     gabrielclient.Client    // Gabriel remote server client
-	store             *dataStore              // data store
+	name          string                  // vehicle name
+	runDir        string                  // path to vehicle runtime directory
+	pluginCfg     PluginConfig            // plugin configuration
+	policyCfg     PolicyConfig            // policy configuration
+	videoCfg      VideoStreamConfig       // video stream config
+	gabrielCfg    GabrielConfig           // Gabriel config
+	policy        policyState             // active policy state
+	driver        *grpc.ClientConn        // driver gRPC client connection
+	mission       *grpc.ClientConn        // mission gRPC client connection
+	listeners     map[string]net.Listener // map of names to active listeners
+	services      *grpc.Server            // gRPC server instance
+	log           zerolog.Logger          // logger object
+	errCh         chan error              // error channel shared by listeners
+	gabrielClient gabrielclient.Client    // Gabriel remote server client
+	store         *dataStore              // data store
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -74,25 +74,25 @@ func NewVehicle(
 	)
 
 	// Initialize data store
-	vehicle.store, err = newDataStore(vehicle.name)
+	vehicle.store, err = newDataStore(vehicle.runDir)
 	if err != nil {
+		vehicle.log.Err(err).Msg("error creating data store")
 		return nil, err
 	}
 
 	// Register data service
-	vehicle_pb.RegisterDataServiceServer(
+	vehiclepb.RegisterDataServiceServer(
 		vehicle.services,
 		&DataService{store: vehicle.store},
-    )
+	)
 
 	return vehicle, nil
 }
 
 // Start the vehicle.
-func (v *Vehicle) Start(ctx context.Context) error {
+func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// Create a main socket listener with AuthCode ExternalCode. The main
 	// socket is a general endpoint for arbitrary entities to make API calls to
@@ -103,7 +103,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
 			Msg("failed to create socket listener for main services")
-		return err
+		cancel()
+		return nil, err
 	}
 	v.listeners[MainListenerName] =
 		util.NewCodedListener(ln, util.ExternalCode, nil)
@@ -115,7 +116,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	if err != nil {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
 			Msg("failed to create socket listener for admin services")
-		return err
+		cancel()
+		return nil, err
 	}
 	v.listeners[AdminListenerName] =
 		util.NewCodedListener(
@@ -127,12 +129,14 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// Start driver plugin
 	if v.pluginCfg.Driver == nil {
 		v.log.Error().Msg("no driver provided, aborting")
-		return fmt.Errorf("no driver provided, aborting")
+		cancel()
+		return nil, fmt.Errorf("no driver provided, aborting")
 	}
 	_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 	if err != nil {
 		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
-		return err
+		cancel()
+		return nil, err
 	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 
@@ -144,7 +148,8 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		if err != nil {
 			v.log.Error().Err(err).
 				Msg("could not start mission plugin, aborting")
-			return err
+			cancel()
+			return nil, err
 		}
 		// For logging purposes, use a mission tag instead of the name to
 		// disambiguate between this plugin and external plugins
@@ -159,9 +164,12 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		if err != nil {
 			v.log.Error().Err(err).
 				Msgf("could not start plugin %s, aborting", plugin.Name())
-			return err
+			cancel()
+			return nil, err
 		}
-		if ln != nil && !slices.Contains(ReservedNames, plugin.Name()) && !slices.Contains(ReservedCodes, plugin.Code()) {
+		if ln != nil &&
+			!slices.Contains(ReservedNames, plugin.Name()) &&
+			!slices.Contains(ReservedCodes, plugin.Code()) {
 			v.listeners[plugin.Name()] = ln
 		} else {
 			v.log.Debug().
@@ -185,10 +193,11 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	}
 
 	// Start streaming frames and telemetry from the driver
-	err = v.startDriverStreaming(ctx)
+	v.startDriverStreaming(ctx)
 	if err != nil {
 		v.log.Err(err).Msg("failed to stream from driver")
-		return err
+		cancel()
+		return nil, err
 	}
 
 	// Initialize the store, launching goroutine to flush telemetry data to
@@ -196,23 +205,26 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.store.init(ctx)
 
 	// Create gabriel client with telemetry and frame producers if a server
-    // endpoint is specified
-    if v.gabrielCfg.ServerEndpoint != "" {
-	    err = v.createGabrielClient()
-	    if err != nil {
-	    	v.log.Err(err).Msg("failed to create Gabriel client")
-	    	return err
-	    }
-	    _, err = v.gabrielClient.Launch(ctx)
-	    if err != nil {
-	    	v.log.Err(err).Msg("failed to launch Gabriel client")
-	    	return err
-	    }
-    } else {
-        v.log.Warn().Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
-    }
+	// endpoint is specified
+	if v.gabrielCfg.ServerEndpoint != "" {
+		err = v.createGabrielClient()
+		if err != nil {
+			v.log.Err(err).Msg("failed to create Gabriel client")
+			cancel()
+			return nil, err
+		}
+		_, err = v.gabrielClient.Launch(ctx)
+		if err != nil {
+			v.log.Err(err).Msg("failed to launch Gabriel client")
+			cancel()
+			return nil, err
+		}
+	} else {
+		v.log.Warn().
+			Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
+	}
 
-    return nil
+	return nil, nil
 }
 
 func (v *Vehicle) Stop() {

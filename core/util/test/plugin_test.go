@@ -1,11 +1,11 @@
 package util_test
 
 import (
-    "os"
-    "os/exec"
-    "time"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
@@ -19,7 +19,7 @@ func TestPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -40,7 +40,7 @@ func TestPluginWithParent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -51,12 +51,12 @@ func TestPluginWithParent(t *testing.T) {
 		t.Errorf("encountered error with plugin RPC handshake: %v", err)
 	}
 
-    path, err = util.GetVehicleDirByName("foo")
-    if err != nil {
-        t.Errorf("couldn't get vehicle directory: %v", err)
-    }
+	path, err = util.GetVehicleDirByName("foo")
+	if err != nil {
+		t.Errorf("couldn't get vehicle directory: %v", err)
+	}
 
-    os.RemoveAll(path)
+	os.RemoveAll(path)
 }
 
 func TestPluginRunhook(t *testing.T) {
@@ -68,7 +68,7 @@ func TestPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -89,7 +89,7 @@ func TestPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -110,7 +110,7 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -128,26 +128,26 @@ func TestPluginArgs(t *testing.T) {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateBasePlugin(
-        util.WithPath(path),
-        util.WithScriptArgs([]string{"--error"}),
-        util.WithoutClient(),
-        util.WithoutListener(),
-    )
+		util.WithPath(path),
+		util.WithScriptArgs([]string{"--error"}),
+		util.WithoutClient(),
+		util.WithoutListener(),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
-    select {
-    case _ = <-plugin.Watch():
-        return // expect an error
-    case <-time.After(5 * time.Second):
-        t.Fatalf("didn't get error from plugin when it was expected")
-    }
+	select {
+	case _ = <-plugin.Watch():
+		return // expect an error
+	case <-time.After(5 * time.Second):
+		t.Fatalf("didn't get error from plugin when it was expected")
+	}
 }
 
 func TestPluginNoCheck(t *testing.T) {
@@ -155,20 +155,20 @@ func TestPluginNoCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-    _, err = exec.LookPath("uv")
-    if err != nil {
-        t.Skip("couldn't find uv, skipping this test")
-    }
+	_, err = exec.LookPath("uv")
+	if err != nil {
+		t.Skip("couldn't find uv, skipping this test")
+	}
 	plugin, err := util.CreateBasePlugin(
-        util.WithExecutable("uv"),
-        util.WithExecutableArgs([]string{"run", "--directory", path}),
-        util.WithScript(filepath.Base(pyFile)),
-        util.WithoutCheck(),
-    )
+		util.WithExecutable("uv"),
+		util.WithExecutableArgs([]string{"run", "--directory", path}),
+		util.WithScript(filepath.Base(pyFile)),
+		util.WithoutCheck(),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

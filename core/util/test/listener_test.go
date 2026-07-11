@@ -2,52 +2,52 @@ package util_test
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"os"
+	"os/exec"
 	"testing"
-    "fmt"
 	"time"
-    "os"
-    "os/exec"
 
-	"google.golang.org/grpc/peer"
+	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	health_pb "google.golang.org/grpc/health/grpc_health_v1"
-	"github.com/cmusatyalab/steeleagle/core/util"
+	"google.golang.org/grpc/peer"
 )
 
 func TestAuthCode(t *testing.T) {
-    sock, err := net.Listen("unix", "/tmp/listener.sock")
+	sock, err := net.Listen("unix", "/tmp/listener.sock")
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
 	}
-    ln := util.NewCodedListener(sock, util.MissionCode, util.GetACL([]string{}, []int{os.Getpid()}))
-    
+	ln := util.NewCodedListener(sock, util.MissionCode, util.GetACL([]string{}, []int{os.Getpid()}))
+
 	conn, err := grpc.NewClient("unix:///tmp/listener.sock", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("failed to create new client: %v", err)
 	}
-    defer os.Remove("/tmp/listener.sock")
+	defer os.Remove("/tmp/listener.sock")
 
-    // Define a mock auth interceptor
-    authInt := func(
+	// Define a mock auth interceptor
+	authInt := func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-        p, ok := peer.FromContext(ctx)
-        if !ok {
-            return nil, fmt.Errorf("couldn't get peer from context")
-        }
-        a, ok := p.Addr.(*util.Addr)
-        if !ok {
-            return nil, fmt.Errorf("couldn't get auth code from peer")
-        }
-        if a.Code != util.MissionCode {
-            return nil, fmt.Errorf("cannot call this RPC without code: mission")
-        }
+		p, ok := peer.FromContext(ctx)
+		if !ok {
+			return nil, fmt.Errorf("couldn't get peer from context")
+		}
+		a, ok := p.Addr.(*util.Addr)
+		if !ok {
+			return nil, fmt.Errorf("couldn't get auth code from peer")
+		}
+		if a.Code != util.MissionCode {
+			return nil, fmt.Errorf("cannot call this RPC without code: mission")
+		}
 		return handler(ctx, req)
 	}
 
@@ -71,23 +71,23 @@ func TestACLIP(t *testing.T) {
 	defer base.Close()
 
 	lis := newSpoofedListener(t, base)
-    acl := util.GetACL([]string{"100.64.0.0/10", "10.5.2/10/2"}, []int{}) // add in a bogus ip to make sure it is ignored
-    
-    // Test adding bad and good IPs
-    err = acl.AddIP("125.100.0.0/24")
-    if err != nil {
-        t.Errorf("couldn't add correct IP: %v", err)
-    }
-    err = acl.AddIP("130.100.0.0")
-    if err != nil {
-        t.Errorf("couldn't add correct IP: %v", err)
-    }
-    err = acl.AddIP("160.1/2/2")
-    if err == nil {
-        t.Errorf("added incorrect IP without error")
-    }
-	
-    aclLn := util.NewCodedListener(lis, util.ServerCode, acl)
+	acl := util.GetACL([]string{"100.64.0.0/10", "10.5.2/10/2"}, []int{}) // add in a bogus ip to make sure it is ignored
+
+	// Test adding bad and good IPs
+	err = acl.AddIP("125.100.0.0/24")
+	if err != nil {
+		t.Errorf("couldn't add correct IP: %v", err)
+	}
+	err = acl.AddIP("130.100.0.0")
+	if err != nil {
+		t.Errorf("couldn't add correct IP: %v", err)
+	}
+	err = acl.AddIP("160.1/2/2")
+	if err == nil {
+		t.Errorf("added incorrect IP without error")
+	}
+
+	aclLn := util.NewCodedListener(lis, util.ServerCode, acl)
 	defer aclLn.Close()
 
 	accepted := make(chan net.Conn)
@@ -131,33 +131,33 @@ func TestACLPID(t *testing.T) {
 	}
 	defer base.Close()
 
-    acl := util.GetACL([]string{}, []int{})
-    err = acl.AddPID(-1)
-    if err == nil {
-        t.Errorf("added incorrect pid")
-    }
+	acl := util.GetACL([]string{}, []int{})
+	err = acl.AddPID(-1)
+	if err == nil {
+		t.Errorf("added incorrect pid")
+	}
 	aclLn := util.NewCodedListener(base, util.ServerCode, acl)
 	defer aclLn.Close()
-    go aclLn.Accept()
+	go aclLn.Accept()
 
-    cmd := exec.Command(pidBinary)
-    cmd.Stdout = os.Stdout
-    cmd.Stderr = os.Stderr
-    err = cmd.Run()
-    if err == nil {
-        t.Errorf("pid accepted incorrectly")
-    }
+	cmd := exec.Command(pidBinary)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err == nil {
+		t.Errorf("pid accepted incorrectly")
+	}
 
-    cmd = exec.Command(pidBinary)
-    cmd.Stdout = os.Stdout
-    cmd.Stderr = os.Stderr
-    err = cmd.Start()
-    acl.AddPID(cmd.Process.Pid)
-    if err != nil {
-        t.Errorf("couldn't start command")
-    }
-    err = cmd.Wait()
-    if err != nil {
-        t.Errorf("pid rejected incorrectly")
-    }
+	cmd = exec.Command(pidBinary)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
+	acl.AddPID(cmd.Process.Pid)
+	if err != nil {
+		t.Errorf("couldn't start command")
+	}
+	err = cmd.Wait()
+	if err != nil {
+		t.Errorf("pid rejected incorrectly")
+	}
 }

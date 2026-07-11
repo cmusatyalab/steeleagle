@@ -49,7 +49,7 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 		// Attempt to pull the container
 		err = exec.Command("podman", "pull", p.image_ref).Run()
 		if err != nil {
-			p.log.Error().Err(err).Msg("couldn't run pull with podman: "+p.image_ref)
+			p.log.Error().Err(err).Msg("couldn't run pull with podman: " + p.image_ref)
 			p.cleanup()
 			return nil, err
 		}

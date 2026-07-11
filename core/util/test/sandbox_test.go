@@ -1,10 +1,10 @@
 package util_test
 
 import (
-    "time"
-    "os/exec"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
@@ -12,7 +12,7 @@ import (
 func TestSandboxPlugin(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -37,7 +37,7 @@ func TestSandboxPlugin(t *testing.T) {
 func TestSandboxPluginRunhook(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
 	path, err := filepath.Abs(goPkg)
 	if err != nil {
@@ -62,25 +62,25 @@ func TestSandboxPluginRunhook(t *testing.T) {
 func TestSandboxPluginPython(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
 	path, err := filepath.Abs(pyPkg)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-    _, err = exec.LookPath("uv")
-    if err != nil {
-        t.Skip("couldn't find uv, skipping this test")
-    }
+	_, err = exec.LookPath("uv")
+	if err != nil {
+		t.Skip("couldn't find uv, skipping this test")
+	}
 	plugin, err := util.CreateSandboxPlugin(
-        util.WithPath(path),
-        util.WithRunnerArgs([]string{"--share-net"}),
-        util.WithExecutableFiles([]string{"uv"}),
-    )
+		util.WithPath(path),
+		util.WithRunnerArgs([]string{"--share-net"}),
+		util.WithExecutableFiles([]string{"uv"}),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -95,40 +95,40 @@ func TestSandboxPluginPython(t *testing.T) {
 func TestSandboxPluginFileBinding(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
-    _, err = exec.LookPath("uv")
-    if err != nil {
-        t.Skip("couldn't find uv, skipping this test")
-    }
+	_, err = exec.LookPath("uv")
+	if err != nil {
+		t.Skip("couldn't find uv, skipping this test")
+	}
 	plugin, err := util.CreateSandboxPlugin(
-        util.WithoutClient(),
-        util.WithRunnerArgs([]string{"--share-net"}),
-        util.WithFiles([]string{fileWrite}),
-        util.WithReadOnlyFiles([]string{fileRead}),
-        util.WithExecutableFiles([]string{"uv"}),
-        util.WithExecutable("uv"),
-        util.WithExecutableArgs([]string{"run"}),
-        util.WithScript(fileMain),
-    )
+		util.WithoutClient(),
+		util.WithRunnerArgs([]string{"--share-net"}),
+		util.WithFiles([]string{fileWrite}),
+		util.WithReadOnlyFiles([]string{fileRead}),
+		util.WithExecutableFiles([]string{"uv"}),
+		util.WithExecutable("uv"),
+		util.WithExecutableArgs([]string{"run"}),
+		util.WithScript(fileMain),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
-    err = plugin.Wait()
-    if err != nil {
-        t.Fatalf("plugin exited with error unexpectedly: %v", err)
-    }
+	err = plugin.Wait()
+	if err != nil {
+		t.Fatalf("plugin exited with error unexpectedly: %v", err)
+	}
 }
 
 func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
@@ -138,7 +138,7 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -153,31 +153,31 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 func TestSandboxPluginArgs(t *testing.T) {
 	_, err := exec.LookPath("bwrap")
 	if err != nil {
-        t.Skip("bubblewrap (bwrap) not found, skipping test")
+		t.Skip("bubblewrap (bwrap) not found, skipping test")
 	}
 	path, err := filepath.Abs(goBinary)
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
 	plugin, err := util.CreateSandboxPlugin(
-        util.WithPath(path),
-        util.WithScriptArgs([]string{"--error"}),
-        util.WithoutClient(),
-        util.WithoutListener(),
-    )
+		util.WithPath(path),
+		util.WithScriptArgs([]string{"--error"}),
+		util.WithoutClient(),
+		util.WithoutListener(),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-    defer plugin.Stop()
+	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
 	}
 
-    select {
-    case _ = <-plugin.Watch():
-        return // expect an error
-    case <-time.After(5 * time.Second):
-        t.Fatalf("didn't get error from plugin when it was expected")
-    }
+	select {
+	case _ = <-plugin.Watch():
+		return // expect an error
+	case <-time.After(5 * time.Second):
+		t.Fatalf("didn't get error from plugin when it was expected")
+	}
 }

@@ -7,11 +7,11 @@ package util
 type AuthCode int
 
 const (
-	ServerCode   AuthCode = iota
-	AdminCode   
-	MissionCode 
+	ServerCode AuthCode = iota
+	AdminCode
+	MissionCode
 	ExternalCode
-	UnknownCode 
+	UnknownCode
 )
 
 // Converts an AuthCode to its string representation.

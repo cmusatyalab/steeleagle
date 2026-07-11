@@ -295,9 +295,9 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		err = p.waitForSocket(p.cSock)
 		if err != nil {
 			p.log.Error().Err(err).Msg("timed out waiting for socket")
-            if listen != nil {
-			    listen.Close()
-            }
+			if listen != nil {
+				listen.Close()
+			}
 			return nil, nil, err
 		}
 
@@ -309,9 +309,9 @@ func (p *BasePlugin) createSocketEndpoints() (net.Listener, *grpc.ClientConn, er
 		)
 		if err != nil {
 			p.log.Error().Err(err).Msg("couldn't connect with client")
-            if listen != nil {
-			    listen.Close()
-            }
+			if listen != nil {
+				listen.Close()
+			}
 			return nil, nil, err
 		}
 	}

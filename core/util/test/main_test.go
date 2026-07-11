@@ -39,6 +39,6 @@ func TestMain(m *testing.M) {
 	// Cleanup
 	os.Remove(goBinary)
 	os.Remove(pidBinary)
-	
-    os.Exit(code)
+
+	os.Exit(code)
 }

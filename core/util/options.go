@@ -1,8 +1,8 @@
 package util
 
 import (
-    "os"
-    "fmt"
+	"fmt"
+	"os"
 
 	"github.com/rs/zerolog"
 )
@@ -11,9 +11,9 @@ type PluginOption func(*BasePlugin)
 
 // WithName assigns a user readable name to the plugin.
 func WithName(name string) PluginOption {
-    return func(k *BasePlugin) {
-        k.name = name
-    }
+	return func(k *BasePlugin) {
+		k.name = name
+	}
 }
 
 // WithoutClient makes the plugin ignore the client connection to the subprocess, returning nil in its place
@@ -132,35 +132,35 @@ func WithoutCheck() PluginOption {
 
 // WithACL sets the ACL for the plugin, which allows extra PIDs to access a listener.
 func WithACL(acl *ACL) PluginOption {
-    return func(k *BasePlugin) {
-        k.acl = acl
-    }
+	return func(k *BasePlugin) {
+		k.acl = acl
+	}
 }
 
 // WithLogger sets a custom logger object for the plugin.
 func WithLogger(logger zerolog.Logger) PluginOption {
-    return func(k *BasePlugin) {
-        k.log = logger
-    }
+	return func(k *BasePlugin) {
+		k.log = logger
+	}
 }
 
 // WithOutputFile sets the output file stream for the delegate process output.
 func WithOutputFile(out *os.File) PluginOption {
-    return func(k *BasePlugin) {
-        k.outFile = out
-    }
+	return func(k *BasePlugin) {
+		k.outFile = out
+	}
 }
 
 // WithEnvironment sets an environment key-value pair for the plugin.
 func WithEnvironment(key, value string) PluginOption {
-    return func(k *BasePlugin) {
-        k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
-    }
+	return func(k *BasePlugin) {
+		k.environ = append(k.environ, fmt.Sprintf("%s=%s", key, value))
+	}
 }
 
 // WithParent scopes the plugin under a parent directory so the run directory is its child.
 func WithParent(parent string) PluginOption {
-    return func(k *BasePlugin) {
-        k.parent = parent
-    }
+	return func(k *BasePlugin) {
+		k.parent = parent
+	}
 }

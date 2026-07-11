@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-    "github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/rs/zerolog"
 )
 
 // Constants defining the test video characteristics.
@@ -24,7 +25,7 @@ const (
 
 // generateTestVideo creates a synthetic video stream.
 func generateTestVideo(t *testing.T, path string, width, height, fps, duration int) {
-    t.Helper()
+	t.Helper()
 	cmd := exec.Command(
 		"ffmpeg",
 		"-f", "lavfi",
@@ -42,7 +43,7 @@ func generateTestVideo(t *testing.T, path string, width, height, fps, duration i
 
 // getFreePort finds a free port to host on.
 func getFreePort(t *testing.T) int {
-    t.Helper()
+	t.Helper()
 	l, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("error finding free port: %v", err)
@@ -53,7 +54,7 @@ func getFreePort(t *testing.T) int {
 
 // pushTestVideo pipes a video to an RTSP stream to an RTSP server.
 func pushTestVideo(t *testing.T, videoPath string, port int, path string) {
-    t.Helper()
+	t.Helper()
 	rtspURL := fmt.Sprintf("rtsp://127.0.0.1:%d/%s", port, path)
 	cmd := exec.CommandContext(t.Context(), "ffmpeg",
 		"-re", "-stream_loop", "-1", "-i", videoPath,
@@ -66,7 +67,7 @@ func pushTestVideo(t *testing.T, videoPath string, port int, path string) {
 
 // waitForPort waits for a port to be ready.
 func waitForPort(t *testing.T, addr string, timeout time.Duration) {
-    t.Helper()
+	t.Helper()
 	start := time.Now()
 	deadline := start.Add(timeout)
 	for time.Now().Before(deadline) {
@@ -84,7 +85,7 @@ func waitForPort(t *testing.T, addr string, timeout time.Duration) {
 
 // startMediaMtx starts the MediaMtx RTSP server.
 func startMediaMtx(t *testing.T, port int) {
-    t.Helper()
+	t.Helper()
 	cfgPath := fmt.Sprintf("%s/mediamtx.yml", t.TempDir())
 	cfg := fmt.Sprintf("rtspAddress: :%d\npaths:\n  all_others:\n", port)
 	if err := os.WriteFile(cfgPath, []byte(cfg), 0644); err != nil {
@@ -102,7 +103,7 @@ func startMediaMtx(t *testing.T, port int) {
 // startRTSPServer gets a free port and pipes a test video to a MediaMtx RTSP
 // server on that port.
 func startRTSPServer(t *testing.T, videoPath string) string {
-    t.Helper()
+	t.Helper()
 	streamPath := "live"
 	port := getFreePort(t)
 	startMediaMtx(t, port)
@@ -114,18 +115,19 @@ func startRTSPServer(t *testing.T, videoPath string) string {
 // testStreaming tests the driver streaming service exchange with the
 // vehicle data service.
 func testStreaming(t *testing.T, inputFileURL string) {
-    driverPlugin, _, _, err := setupPlugins(t, inputFileURL)
-    if err != nil {
-        t.Fatalf("couldn't create plugin config: %v", err)
-    }
+	driverPlugin, _, _, err := setupPlugins(t, inputFileURL)
+	if err != nil {
+		t.Fatalf("couldn't create plugin config: %v", err)
+	}
 	pluginCfg := vehicle.PluginConfig{Driver: driverPlugin}
 	videoCfg := vehicle.VideoStreamConfig{Resolution: vehicle.Res720P}
-	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithVideoStreamConfig(videoCfg))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithVideoStreamConfig(videoCfg), vehicle.WithLogger(logger))
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
-	
-    select {
+
+	select {
 	case err = <-v.Watch():
 		t.Fatalf("video stream error: %v", err)
 	case <-time.After(testTimeout):

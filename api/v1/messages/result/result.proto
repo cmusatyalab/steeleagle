@@ -10,7 +10,7 @@ import "google/protobuf/timestamp.proto";
 
 /*
  * Bounding box associated with an object detection.
- * 
+ *
  * Defines the upper left and lower right corners of a detected object
  * in an image frame. Origin (0,0) is the top left corner of the input image.
  * (image_height, image_width) is the bottom right corner.

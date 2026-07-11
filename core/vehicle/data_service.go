@@ -42,7 +42,7 @@ func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTeleme
 func (s *DataService) GetFrame(ctx context.Context, req *vehiclepb.GetFrameRequest) (*vehiclepb.GetFrameResponse, error) {
 	frame := s.store.getLatestFrame()
 	if frame == nil {
-		return nil, fmt.Errorf("frame unavilable")
+		return nil, fmt.Errorf("frame unavailable")
 	}
 	resp := &vehiclepb.GetFrameResponse{Frame: frame}
 	return resp, nil

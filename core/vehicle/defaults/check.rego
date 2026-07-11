@@ -26,4 +26,4 @@ next_state := transition[1] if {
     count(transition) == 2
     glob.match(transition[0], [], input.command)
     _ = input.law[transition[1]]
-}   
+}

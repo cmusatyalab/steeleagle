@@ -29,7 +29,7 @@ func qualifyCommand(ctx context.Context, fullName string) string {
 }
 
 func (v *Vehicle) getInterceptor() grpc.StreamServerInterceptor {
-    // TODO: set up DMS monitor
+	// TODO: set up DMS monitor
 	return func(
 		srv any,
 		ss grpc.ServerStream,

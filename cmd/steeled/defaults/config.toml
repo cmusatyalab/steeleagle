@@ -41,7 +41,7 @@ failfast = true
 # Name of the package/container to run for this engine.
 id = "object-engine"
 # How to run this engine (one of sandbox, container, or process):
-# sandbox      -- Runs missions inside a sandbox environment (Linux only, 
+# sandbox      -- Runs missions inside a sandbox environment (Linux only,
 # requires Bubblewrap).
 # container    -- Runs missions inside a container (requires Podman).
 # process      -- Runs missions with NO ISOLATION, should only be done for
@@ -54,7 +54,7 @@ isolation = ""
 # Switch for using Tailscale VPN for vehicles (highly recommended).
 vpn = true
 # How to run missions (one of sandbox, container, or process):
-# sandbox      -- Runs missions inside a sandbox environment (Linux only, 
+# sandbox      -- Runs missions inside a sandbox environment (Linux only,
 # requires Bubblewrap).
 # container    -- Runs missions inside a container (requires Podman).
 # process      -- Runs missions with NO ISOLATION, should only be done for

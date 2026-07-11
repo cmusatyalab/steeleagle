@@ -79,6 +79,5 @@ func GetVehicleDirByName(name string) (string, error) {
 			return "", err
 		}
 	}
-
 	return vehiclePath, nil
 }

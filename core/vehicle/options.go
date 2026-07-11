@@ -21,9 +21,9 @@ func WithPolicyConfig(policyCfg PolicyConfig) VehicleOption {
 }
 
 func WithVideoStreamConfig(videoCfg VideoStreamConfig) VehicleOption {
-    return func(v *Vehicle) {
-        v.videoCfg = videoCfg
-    }
+	return func(v *Vehicle) {
+		v.videoCfg = videoCfg
+	}
 }
 
 func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {

@@ -46,17 +46,17 @@ func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code u
 	defer server.GracefulStop()
 	health_pb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)
-    t.Log("rpc check: serving the server")
+	t.Log("rpc check: serving the server")
 
 	// Make a check request with a timeout
 	client := health_pb.NewHealthClient(conn)
 	ctx, _ := context.WithTimeout(t.Context(), time.Second)
 	_, err := client.Check(ctx, &health_pb.HealthCheckRequest{}, grpc.WaitForReady(true))
-    t.Log("rpc check: sent client check")
+	t.Log("rpc check: sent client check")
 	if err != nil {
 		return err
 	}
-    t.Log("rpc check: got client response")
+	t.Log("rpc check: got client response")
 
 	// Wait to receive a request
 	select {

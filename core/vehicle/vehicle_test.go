@@ -1,13 +1,13 @@
 package vehicle_test
 
 import (
-    "os"
-	"context"
 	"net"
+	"os"
+	"path/filepath"
 	"testing"
-    "path/filepath"
 
 	vehicle "github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/rs/zerolog"
 )
 
 func TestStartStop(t *testing.T) {
@@ -15,19 +15,20 @@ func TestStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
-    serverSockDir := t.TempDir()
+	serverSockDir := t.TempDir()
 	serverLn, err := net.Listen("unix", filepath.Join(serverSockDir, ServerSocket))
 	if err != nil {
 		t.Fatalf("couldn't listen on server socket")
 	}
-    defer os.Remove(filepath.Join(serverSockDir, ServerSocket))
+	defer os.Remove(filepath.Join(serverSockDir, ServerSocket))
 
 	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	vehicle, err := vehicle.NewVehicle(pluginConfig, vehicle.WithServerListener(serverLn))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	vehicle, err := vehicle.NewVehicle(pluginConfig, vehicle.WithServerListener(serverLn), vehicle.WithLogger(logger))
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
-	err = vehicle.Start(context.Background())
+	_, err = vehicle.Start(t.Context())
 	if err != nil {
 		t.Fatalf("couldn't start vehicle")
 	}
