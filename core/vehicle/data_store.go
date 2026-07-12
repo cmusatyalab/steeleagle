@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	result_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
+	resultpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	"github.com/rs/zerolog/log"
 	"go.etcd.io/bbolt"
@@ -30,7 +30,7 @@ type dataStore struct {
 	telMu              *sync.RWMutex                          // telemetry mutex
 	latestFrame        *stream_msg_pb.EncodedFrame            // latest frame
 	frameMu            *sync.RWMutex                          // frame mutex
-	latestResults      map[string]*result_pb.ComputeResult    // latest results
+	latestResults      map[string]*resultpb.ComputeResult     // latest results
 	resultsMu          *sync.RWMutex                          // results mutex
 	telCh              chan *stream_msg_pb.Telemetry          // telemetry flush channel
 	db                 *bbolt.DB                              // database
@@ -45,7 +45,7 @@ func newDataStore(runDir string) (*dataStore, error) {
 	store := &dataStore{
 		telMu:              &sync.RWMutex{},
 		frameMu:            &sync.RWMutex{},
-		latestResults:      make(map[string]*result_pb.ComputeResult),
+		latestResults:      make(map[string]*resultpb.ComputeResult),
 		resultsMu:          &sync.RWMutex{},
 		telCh:              make(chan *stream_msg_pb.Telemetry, 1),
 		telSubscribersMu:   &sync.RWMutex{},
@@ -156,7 +156,7 @@ func (s *dataStore) getLatestFrame() *stream_msg_pb.EncodedFrame {
 }
 
 // Get the latest compute result available for the given producer.
-func (s *dataStore) getLatestResult(producerName string) *result_pb.ComputeResult {
+func (s *dataStore) getLatestResult(producerName string) *resultpb.ComputeResult {
 	s.resultsMu.RLock()
 	defer s.resultsMu.RUnlock()
 	return s.latestResults[producerName]
@@ -200,7 +200,7 @@ func (s *dataStore) addFrame(frame *stream_msg_pb.EncodedFrame) {
 }
 
 // Add a compute result to the store.
-func (s *dataStore) addResult(producerName string, res *result_pb.ComputeResult) {
+func (s *dataStore) addResult(producerName string, res *resultpb.ComputeResult) {
 	s.resultsMu.Lock()
 	defer s.resultsMu.Unlock()
 

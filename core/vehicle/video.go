@@ -7,7 +7,7 @@ import (
 	"os/exec"
 
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -17,9 +17,9 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 
 	v.log.Info().Msg("starting RTSP video stream")
 
-	client := driver_pb.NewStreamServiceClient(v.driver)
-	req := &driver_pb.GetVideoStreamURLRequest{
-		Resolution: driver_pb.GetVideoStreamURLRequest_Resolution(v.videoCfg.Resolution),
+	client := driverpb.NewStreamServiceClient(v.driver)
+	req := &driverpb.GetVideoStreamURLRequest{
+		Resolution: driverpb.GetVideoStreamURLRequest_Resolution(v.videoCfg.Resolution),
 	}
 
 	// Send request to driver to get video stream URL

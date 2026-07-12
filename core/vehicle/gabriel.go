@@ -4,7 +4,7 @@ import (
 	"context"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-	gabriel_pb "github.com/cmusatyalab/gabriel/protocol/go"
+	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
 	"github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
 	"github.com/rs/zerolog/log"
@@ -25,8 +25,8 @@ func getGabrielProducer[T Data](
 	inputCh <-chan T,
 	targetEngines []string) *gabrielclient.InputProducer {
 
-	producer := func(ctx context.Context) <-chan *gabriel_pb.InputFrame {
-		ch := make(chan *gabriel_pb.InputFrame, 1)
+	producer := func(ctx context.Context) <-chan *gabrielpb.InputFrame {
+		ch := make(chan *gabrielpb.InputFrame, 1)
 		go func() {
 			for {
 				select {
@@ -37,11 +37,11 @@ func getGabrielProducer[T Data](
 					if err != nil {
 						log.Err(err).Msg("error marshaling data")
 					}
-					payload := &gabriel_pb.InputFrame_BytePayload{
+					payload := &gabrielpb.InputFrame_BytePayload{
 						BytePayload: telBytes,
 					}
-					frame := &gabriel_pb.InputFrame{
-						PayloadType: gabriel_pb.PayloadType_TEXT,
+					frame := &gabrielpb.InputFrame{
+						PayloadType: gabrielpb.PayloadType_TEXT,
 						Payload:     payload,
 					}
 					ch <- frame
@@ -67,7 +67,7 @@ func (v *Vehicle) createGabrielClient() error {
 		frameCh,
 		v.gabrielCfg.VideoFramesTargetEngines)
 
-	consumer := func(res *gabriel_pb.Result) {
+	consumer := func(res *gabrielpb.Result) {
 		cmpRes := &result.ComputeResult{
 			Timestamp: timestamppb.Now(),
 		}

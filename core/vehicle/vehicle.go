@@ -33,6 +33,7 @@ type Vehicle struct {
 	errCh         chan error              // error channel shared by listeners
 	gabrielClient gabrielclient.Client    // Gabriel remote server client
 	store         *dataStore              // data store
+	cancelFn      context.CancelFunc      // cancel function for vehicle context
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -93,6 +94,7 @@ func NewVehicle(
 func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
+	v.cancelFn = cancel
 
 	// Create a main socket listener with AuthCode ExternalCode. The main
 	// socket is a general endpoint for arbitrary entities to make API calls to
@@ -229,6 +231,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 
 func (v *Vehicle) Stop() {
 	v.services.GracefulStop()
+	v.cancelFn()
 	os.RemoveAll(v.runDir)
 }
 
