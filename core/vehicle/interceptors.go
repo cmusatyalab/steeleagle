@@ -12,7 +12,7 @@ import (
 )
 
 func qualifyCommand(ctx context.Context, fullName string) string {
-    code := util.UnknownCode
+	code := util.UnknownCode
 	// Extract code from the connection address (packed by listener)
 	if p, ok := peer.FromContext(ctx); ok {
 		if a, ok := p.Addr.(*util.Addr); ok {

@@ -16,7 +16,7 @@ func (v *Vehicle) getProxyDirector() proxy.StreamDirector {
 			return ctx, v.driver, nil
 		} else if strings.Contains(method, ".MissionService/") {
 			return ctx, v.mission, nil
-        }
+		}
 		return nil, nil, status.Errorf(codes.Unimplemented, "Unknown method")
 	}
 }

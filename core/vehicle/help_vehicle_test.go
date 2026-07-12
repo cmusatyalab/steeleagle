@@ -1,13 +1,13 @@
 package vehicle_test
 
 import (
-    "os"
 	"context"
+	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"testing"
-    "fmt"
 	"time"
 
 	streampb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
@@ -20,10 +20,13 @@ import (
 
 // ServerSocket is the location of the server listener.
 const ServerSocket = "server.sock"
+
 // DriverServerSocket is the location of the driver server.
 const DriverServerSocket = "driver-server.sock"
+
 // MissionServerSocket is the location of the mission server.
 const MissionServerSocket = "mission-server.sock"
+
 // MissionListenSocket is the location of the mission listener.
 const MissionListenSocket = "mission-listen.sock"
 
@@ -54,7 +57,7 @@ func (c *ControlService) Hold(ctx context.Context, req *driverpb.HoldRequest) (*
 // StreamService mocks a StreamService gRPC server.
 type StreamService struct {
 	driverpb.UnimplementedStreamServiceServer
-	url    string
+	url string
 }
 
 // GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back a mock URL.
@@ -141,23 +144,23 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, *grpc.Cli
 	}
 	missionAddr := filepath.Join(tempDir, MissionServerSocket)
 	missionListener := filepath.Join(tempDir, MissionListenSocket)
-    acl := util.GetACL([]string{}, []int{os.Getpid()})
+	acl := util.GetACL([]string{}, []int{os.Getpid()})
 	missionPlugin, err := util.CreateShimPlugin(
-        missionAddr,
-        missionListener,
-        util.WithACL(acl),
-        util.WithAuthCode(util.MissionCode),
-    )
+		missionAddr,
+		missionListener,
+		util.WithACL(acl),
+		util.WithAuthCode(util.MissionCode),
+	)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-    // Create a mission client
-    target := fmt.Sprintf("unix://%s", missionListener)
-    client, err := grpc.NewClient(
-        target,
-        grpc.WithTransportCredentials(insecure.NewCredentials()),
-    )
+	// Create a mission client
+	target := fmt.Sprintf("unix://%s", missionListener)
+	client, err := grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 
 	return driverPlugin, missionPlugin, client, commCh, nil
 }

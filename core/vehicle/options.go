@@ -3,7 +3,7 @@ package vehicle
 import (
 	"net"
 
-    "github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/rs/zerolog"
 )
 
@@ -35,7 +35,7 @@ func WithGabrielConfig(gabrielCfg GabrielConfig) VehicleOption {
 
 func WithServerListener(ln net.Listener, acl *util.ACL) VehicleOption {
 	return func(v *Vehicle) {
-        codedLn := util.NewCodedListener(ln, util.ServerCode, acl)
+		codedLn := util.NewCodedListener(ln, util.ServerCode, acl)
 		v.listeners[ServerListenerName] = codedLn
 	}
 }
