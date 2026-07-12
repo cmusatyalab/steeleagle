@@ -13,10 +13,14 @@ import { FileUpload } from 'primereact/fileupload';
 import { MultiSelect } from 'primereact/multiselect';
 import { Dropdown } from 'primereact/dropdown';
 import { Image } from 'primereact/image';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Divider } from 'primereact/divider';
 import React from 'react';
 import { getApiUrl } from './App.jsx';
 import Status from './Status.jsx';
 import Mapbox from './Mapbox.jsx';
+import { CONTROL_MAPPINGS } from './controlMappings.js';
 
 const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger' };
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
@@ -202,6 +206,15 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         </div>
 
 
+      </div>
+      <Divider />
+      <div className="flex flex-column m-2">
+        <span className="font-bold mb-2">Control Mappings</span>
+        <DataTable value={CONTROL_MAPPINGS} size="small" scrollable scrollHeight="300px">
+          <Column field="action" header="Action" />
+          <Column field="keyboard" header="Keyboard" />
+          <Column field="gamepad" header="Gamepad" />
+        </DataTable>
       </div>
     </>
 
