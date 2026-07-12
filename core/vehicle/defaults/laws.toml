@@ -6,14 +6,14 @@ first = 'REMOTE'
 name = 'REMOTE'
 allowed = []
 match = [
-    ['server/**.MissionService/Start', 'LOCAL']
+    ['server/**.MissionService/StartMission', 'LOCAL']
 ]
 
 [[states]]
 name = 'LOCAL'
 allowed = [
-    'internal/**.ControlService/*',
-    'internal/**.ComputeService/*',
+    'mission/**.ControlService/*',
+    'mission/**.DataService/*',
 ]
 match = [
     ['server/**', 'REMOTE']

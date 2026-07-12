@@ -1,75 +1,78 @@
 package vehicle_test
 
 import (
+    "os"
 	"context"
 	"io"
 	"net"
 	"path/filepath"
 	"testing"
+    "fmt"
 	"time"
 
-	stream_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driver_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	mission_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
+	streampb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
+	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	missionpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // ServerSocket is the location of the server listener.
 const ServerSocket = "server.sock"
-
 // DriverServerSocket is the location of the driver server.
 const DriverServerSocket = "driver-server.sock"
-
 // MissionServerSocket is the location of the mission server.
 const MissionServerSocket = "mission-server.sock"
-
-// MissionClientSocket is the location of the mission client listener.
-const MissionClientSocket = "mission-client.sock"
+// MissionListenSocket is the location of the mission listener.
+const MissionListenSocket = "mission-listen.sock"
 
 // ControlService mocks a ControlService gRPC server.
 type ControlService struct {
-	driver_pb.UnimplementedControlServiceServer
+	driverpb.UnimplementedControlServiceServer
 	commCh chan string
 }
 
 // TakeOff mocks and logs a TakeOff endpoint.
-func (c *ControlService) TakeOff(ctx context.Context, req *driver_pb.TakeOffRequest) (*driver_pb.TakeOffResponse, error) {
+func (c *ControlService) TakeOff(ctx context.Context, req *driverpb.TakeOffRequest) (*driverpb.TakeOffResponse, error) {
 	c.commCh <- "ControlService.TakeOff"
-	return &driver_pb.TakeOffResponse{}, nil
+	return &driverpb.TakeOffResponse{}, nil
+}
+
+// Land mocks and logs a Land endpoint.
+func (c *ControlService) Land(ctx context.Context, req *driverpb.LandRequest) (*driverpb.LandResponse, error) {
+	c.commCh <- "ControlService.Land"
+	return &driverpb.LandResponse{}, nil
 }
 
 // Hold mocks and logs a Hold endpoint.
-func (c *ControlService) Hold(ctx context.Context, req *driver_pb.HoldRequest) (*driver_pb.HoldResponse, error) {
+func (c *ControlService) Hold(ctx context.Context, req *driverpb.HoldRequest) (*driverpb.HoldResponse, error) {
 	c.commCh <- "ControlService.Hold"
-	return &driver_pb.HoldResponse{}, nil
-}
-
-// SetVelocity mocks and logs a SetVelocity endpoint.
-func (c *ControlService) SetVelocity(ctx context.Context, req *driver_pb.SetVelocityRequest) (*driver_pb.SetVelocityResponse, error) {
-	c.commCh <- "ControlService.SetVelocity"
-	return &driver_pb.SetVelocityResponse{}, nil
+	return &driverpb.HoldResponse{}, nil
 }
 
 // StreamService mocks a StreamService gRPC server.
 type StreamService struct {
-	driver_pb.UnimplementedStreamServiceServer
+	driverpb.UnimplementedStreamServiceServer
 	url    string
-	commCh chan string
 }
 
 // GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back a mock URL.
-func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driver_pb.GetVideoStreamURLRequest) (*driver_pb.GetVideoStreamURLResponse, error) {
-	s.commCh <- "StreamService.GetVideoStreamURL"
-	return &driver_pb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
+// This is called automatically by the vehicle's background driver streaming
+// as soon as it starts, so unlike the other mocked RPCs it does not report
+// on commCh: doing so would race with (and starve) the command-routing
+// assertions that tests make against explicit RPCs.
+func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driverpb.GetVideoStreamURLRequest) (*driverpb.GetVideoStreamURLResponse, error) {
+	return &driverpb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
 }
 
-// StreamTelemetry mocks and logs a StreamTelemetry request.
-func (s *StreamService) StreamTelemetry(req *driver_pb.StreamTelemetryRequest, stream driver_pb.StreamService_StreamTelemetryServer) error {
-	s.commCh <- "StreamService.StreamTelemetry"
+// StreamTelemetry mocks and logs a StreamTelemetry request. Like
+// GetVideoStreamURL, it is triggered automatically on vehicle start and so
+// does not report on commCh.
+func (s *StreamService) StreamTelemetry(req *driverpb.StreamTelemetryRequest, stream driverpb.StreamService_StreamTelemetryServer) error {
 	for {
-		err := stream.Send(&driver_pb.StreamTelemetryResponse{
-			Telemetry: &stream_pb.Telemetry{},
+		err := stream.Send(&driverpb.StreamTelemetryResponse{
+			Telemetry: &streampb.Telemetry{},
 		})
 		if err != nil {
 			return err
@@ -80,25 +83,25 @@ func (s *StreamService) StreamTelemetry(req *driver_pb.StreamTelemetryRequest, s
 
 // MissionService mocks a MissionService gRPC server.
 type MissionService struct {
-	mission_pb.UnimplementedMissionServiceServer
+	missionpb.UnimplementedMissionServiceServer
 	commCh chan string
 }
 
 // StartMission mocks and logs a StartMission endpoint.
-func (m *MissionService) StartMission(ctx context.Context, req *mission_pb.StartMissionRequest) (*mission_pb.StartMissionResponse, error) {
+func (m *MissionService) StartMission(ctx context.Context, req *missionpb.StartMissionRequest) (*missionpb.StartMissionResponse, error) {
 	m.commCh <- "MissionService.StartMission"
-	return &mission_pb.StartMissionResponse{}, nil
+	return &missionpb.StartMissionResponse{}, nil
 }
 
 // StopMission mocks and logs a StopMission endpoint.
-func (m *MissionService) StopMission(ctx context.Context, req *mission_pb.StopMissionRequest) (*mission_pb.StopMissionResponse, error) {
+func (m *MissionService) StopMission(ctx context.Context, req *missionpb.StopMissionRequest) (*missionpb.StopMissionResponse, error) {
 	m.commCh <- "MissionService.StopMission"
-	return &mission_pb.StopMissionResponse{}, nil
+	return &missionpb.StopMissionResponse{}, nil
 }
 
 // setupPlugins creates the mission and driver gRPC servers/plugins for tests. Can
 // provide a stream url that the StreamService will respond with as well.
-func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan string, error) {
+func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, *grpc.ClientConn, chan string, error) {
 	t.Helper()
 
 	// Create command channel
@@ -110,19 +113,19 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
 	// Create listeners
 	driverLn, err := net.Listen("unix", filepath.Join(tempDir, DriverServerSocket))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	missionLn, err := net.Listen("unix", filepath.Join(tempDir, MissionServerSocket))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Server driver and mission services
 	driverServer := grpc.NewServer()
-	driver_pb.RegisterControlServiceServer(driverServer, &ControlService{commCh: commCh})
-	driver_pb.RegisterStreamServiceServer(driverServer, &StreamService{commCh: commCh, url: url})
+	driverpb.RegisterControlServiceServer(driverServer, &ControlService{commCh: commCh})
+	driverpb.RegisterStreamServiceServer(driverServer, &StreamService{url: url})
 	missionServer := grpc.NewServer()
-	mission_pb.RegisterMissionServiceServer(missionServer, &MissionService{commCh: commCh})
+	missionpb.RegisterMissionServiceServer(missionServer, &MissionService{commCh: commCh})
 	go driverServer.Serve(driverLn)
 	go missionServer.Serve(missionLn)
 
@@ -134,16 +137,29 @@ func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, chan stri
 	driverAddr := filepath.Join(tempDir, DriverServerSocket)
 	driverPlugin, err := util.CreateShimPlugin(driverAddr, "")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	missionAddr := filepath.Join(tempDir, MissionServerSocket)
-	missionClient := filepath.Join(tempDir, MissionClientSocket)
-	missionPlugin, err := util.CreateShimPlugin(missionAddr, missionClient)
+	missionListener := filepath.Join(tempDir, MissionListenSocket)
+    acl := util.GetACL([]string{}, []int{os.Getpid()})
+	missionPlugin, err := util.CreateShimPlugin(
+        missionAddr,
+        missionListener,
+        util.WithACL(acl),
+        util.WithAuthCode(util.MissionCode),
+    )
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	return driverPlugin, missionPlugin, commCh, nil
+    // Create a mission client
+    target := fmt.Sprintf("unix://%s", missionListener)
+    client, err := grpc.NewClient(
+        target,
+        grpc.WithTransportCredentials(insecure.NewCredentials()),
+    )
+
+	return driverPlugin, missionPlugin, client, commCh, nil
 }
 
 // testLogger implements the io.Writer interface to allow zerolog to write logs

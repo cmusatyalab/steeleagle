@@ -115,7 +115,7 @@ func startRTSPServer(t *testing.T, videoPath string) string {
 // testStreaming tests the driver streaming service exchange with the
 // vehicle data service.
 func testStreaming(t *testing.T, inputFileURL string) {
-	driverPlugin, _, _, err := setupPlugins(t, inputFileURL)
+	driverPlugin, _, _, _, err := setupPlugins(t, inputFileURL)
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
 	}
