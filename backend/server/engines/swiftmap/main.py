@@ -7,6 +7,7 @@
 
 import argparse
 import logging
+import os
 
 from gabriel_server.network_engine import engine_runner
 
@@ -49,6 +50,15 @@ def main():
         type=int,
         default=43322,
         help="SwiftMap mapping server TCP port.",
+    )
+
+    parser.add_argument(
+        "--send-distance",
+        dest="send_distance",
+        type=float,
+        default=float(os.environ.get("SWIFTMAP_SEND_DISTANCE", "5.0")),
+        help="Forward at most one frame+GPS pair per this many meters of travel "
+             "(0 = forward every frame).",
     )
 
     args, _ = parser.parse_known_args()
