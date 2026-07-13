@@ -156,25 +156,25 @@ services:
   # Forwards each drone image + paired GPS to the swiftmap-server service (below),
   # reachable in-network by that name. Distance-gated: one frame+GPS pair per
   # SWIFTMAP_SEND_DISTANCE meters of travel, so it never overfills the server.
-  swiftmap-engine:
-    image: cmusatyalab/steeleagle-swiftmap-engine:${SWIFTMAP_IMAGE_TAG}
-    container_name: swiftmap-engine
-    restart: on-failure:3
-    privileged: true
-    entrypoint: ["uv", "run", "/steeleagle/main.py", "-s", "${SWIFTMAP_HOST}", "--server_port", "${SWIFTMAP_PORT}", "--send-distance", "${SWIFTMAP_SEND_DISTANCE}"]
-    depends_on:
-      - gabriel-server
-      - swiftmap-server
-    networks:
-      - steeleagle-net
-      - redis
-    volumes:
-      - ./steeleagle-vol:/steeleagle/images/
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  #  swiftmap-engine:
+  #    image: cmusatyalab/steeleagle-swiftmap-engine:${SWIFTMAP_IMAGE_TAG}
+  #    container_name: swiftmap-engine
+  #    restart: on-failure:3
+  #    privileged: true
+  #    entrypoint: ["uv", "run", "/steeleagle/main.py", "-s", "${SWIFTMAP_HOST}", "--server_port", "${SWIFTMAP_PORT}", "--send-distance", "${SWIFTMAP_SEND_DISTANCE}"]
+  #    depends_on:
+  #      - gabriel-server
+  #      - swiftmap-server
+  #    networks:
+  #      - steeleagle-net
+  #      - redis
+  #    volumes:
+  #      - ./steeleagle-vol:/steeleagle/images/
+  #    logging:
+  #      driver: "json-file"
+  #      options:
+  #        max-size: "10m"
+  #        max-file: "3"
 
   # SwiftMap Server
   # Headless mapping server. Collects the frame+GPS pairs the engine forwards and,
@@ -184,34 +184,34 @@ services:
   # 7866): pick an area tag and segment it on demand.
   # Build the image from the swift_map repo first:
   #   cd <swift_map> && docker build -t cmusatyalab/steeleagle-swiftmap-server:latest .
-  swiftmap-server:
-    image: cmusatyalab/steeleagle-swiftmap-server:${SWIFTMAP_SERVER_TAG}
-    container_name: swiftmap-server
-    restart: unless-stopped
-    runtime: nvidia
-    ports:
-      - "${SWIFTMAP_VIEWER_PORT:-7866}:7866"   # results viewer + segment-request UI (Gradio)
-    depends_on:
-      - gabriel-server
-    networks:
-      - steeleagle-net
-    environment:
-      - SWIFTMAP_PORT=${SWIFTMAP_PORT}
-      - SWIFTMAP_BACKBONE=${SWIFTMAP_BACKBONE}
-      - SWIFTMAP_SEGMENTER=${SWIFTMAP_SEGMENTER}
-      - SWIFTMAP_SITE=${SWIFTMAP_SITE}
-      - SWIFTMAP_MAX_KEYFRAMES=${SWIFTMAP_MAX_KEYFRAMES}
-      - SWIFTMAP_CONF_THRESHOLD=${SWIFTMAP_CONF_THRESHOLD}
-      - SWIFTMAP_MASK_SKY=${SWIFTMAP_MASK_SKY}
-      - SWIFTMAP_KEEP_ALL=${SWIFTMAP_KEEP_ALL}
-      - SWIFTMAP_OUTPUT_DIR=/app/output
-      - VGGT_OMEGA_CHECKPOINT=${VGGT_OMEGA_CHECKPOINT}
-      - SAM3_CHECKPOINT=${SAM3_CHECKPOINT}
-    volumes:
-      - ./steeleagle-vol/swiftmap:/app/output          # areas exported here on the host
-      - ./models:/app/checkpoints                       # VGGT-Omega checkpoint (weights you supply)
-      - ./models/swiftmap-cache:/root/.cache
-
+  #  swiftmap-server:
+  #    image: cmusatyalab/steeleagle-swiftmap-server:${SWIFTMAP_SERVER_TAG}
+  #    container_name: swiftmap-server
+  #    restart: unless-stopped
+  #    runtime: nvidia
+  #    ports:
+  #      - "${SWIFTMAP_VIEWER_PORT:-7866}:7866"   # results viewer + segment-request UI (Gradio)
+  #    depends_on:
+  #      - gabriel-server
+  #    networks:
+  #      - steeleagle-net
+  #    environment:
+  #      - SWIFTMAP_PORT=${SWIFTMAP_PORT}
+  #      - SWIFTMAP_BACKBONE=${SWIFTMAP_BACKBONE}
+  #      - SWIFTMAP_SEGMENTER=${SWIFTMAP_SEGMENTER}
+  #      - SWIFTMAP_SITE=${SWIFTMAP_SITE}
+  #      - SWIFTMAP_MAX_KEYFRAMES=${SWIFTMAP_MAX_KEYFRAMES}
+  #      - SWIFTMAP_CONF_THRESHOLD=${SWIFTMAP_CONF_THRESHOLD}
+  #      - SWIFTMAP_MASK_SKY=${SWIFTMAP_MASK_SKY}
+  #      - SWIFTMAP_KEEP_ALL=${SWIFTMAP_KEEP_ALL}
+  #      - SWIFTMAP_OUTPUT_DIR=/app/output
+  #      - VGGT_OMEGA_CHECKPOINT=${VGGT_OMEGA_CHECKPOINT}
+  #      - SAM3_CHECKPOINT=${SAM3_CHECKPOINT}
+  #    volumes:
+  #      - ./steeleagle-vol/swiftmap:/app/output          # areas exported here on the host
+  #      - ./models:/app/checkpoints                       # VGGT-Omega checkpoint (weights you supply)
+  #      - ./models/swiftmap-cache:/root/.cache
+  
   # Swarm Controller
   # Centralized processing of control plane for all vehicles
   swarm-controller:
