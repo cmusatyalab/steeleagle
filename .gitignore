@@ -17,6 +17,8 @@ venv/
 *.jar
 *swp
 *.egg-info/
+*.crt
+*.key
 
 # Protocol
 # *_pb2.py
