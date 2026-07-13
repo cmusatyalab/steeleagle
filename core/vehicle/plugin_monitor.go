@@ -2,6 +2,8 @@ package vehicle
 
 import (
 	"context"
+	"errors"
+	"os/exec"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/rs/zerolog"
@@ -33,11 +35,30 @@ func (m *pluginMonitor) start(ctx context.Context) {
 	plugins = append(plugins, m.pluginCfg.Plugins...)
 	for _, plugin := range plugins {
 		go func() {
-			err := plugin.Wait()
-			if ctx.Err() != nil {
-				return
+		PluginLoop:
+			for {
+				err := plugin.Wait()
+				if ctx.Err() != nil {
+					return
+				}
+				m.handleExit(plugin, err)
+
+				switch m.restartPolicy {
+				case noRestart:
+					break PluginLoop
+				case onFailure:
+					var exitErr *exec.ExitError
+					if errors.As(err, &exitErr) {
+						exitCode := exitErr.ExitCode()
+						if exitCode == 0 {
+							m.log.Info().Str("plugin", plugin.Name()).
+								Msg("plugin exited with exit code 0")
+							break PluginLoop
+						}
+					}
+				case alwaysRestart:
+				}
 			}
-			m.handleExit(plugin, err)
 		}()
 	}
 }
