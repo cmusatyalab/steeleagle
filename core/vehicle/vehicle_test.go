@@ -29,11 +29,19 @@ func TestStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
-	_, err = vehicle.Start(t.Context())
+	ctx, cancel := context.WithCancel(t.Context())
+	err = vehicle.Start(ctx)
 	if err != nil {
 		t.Fatalf("couldn't start vehicle")
 	}
-	vehicle.Stop()
+
+	// cancel vehicle context
+	cancel()
+
+	err = vehicle.Wait()
+	if err != context.Canceled {
+		t.FailNow()
+	}
 }
 
 func TestPolicy(t *testing.T) {
@@ -65,11 +73,10 @@ func TestPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
-	_, err = vehicle.Start(t.Context())
+	err = vehicle.Start(t.Context())
 	if err != nil {
 		t.Fatalf("couldn't start vehicle")
 	}
-	defer vehicle.Stop()
 
 	missionControlClient := driverpb.NewControlServiceClient(mClient)
 	serverControlClient := driverpb.NewControlServiceClient(sClient)

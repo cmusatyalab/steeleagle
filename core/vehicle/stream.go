@@ -45,6 +45,6 @@ func (v *Vehicle) streamVideo(ctx context.Context) error {
 // Start streaming video frames and telemetry from the driver, updating the
 // vehicle data store.
 func (v *Vehicle) startDriverStreaming(ctx context.Context) {
-	go func() { v.errCh <- v.streamTelemetry(ctx) }()
-	go func() { v.errCh <- v.streamVideo(ctx) }()
+	go func() { v.streamTelemetry(ctx) }()
+	go func() { v.streamVideo(ctx) }()
 }

@@ -112,8 +112,8 @@ func startRTSPServer(t *testing.T, videoPath string) string {
 	return fmt.Sprintf("rtsp://127.0.0.1:%d/%s", port, streamPath)
 }
 
-// testStreaming tests the driver streaming service exchange with the
-// vehicle data service.
+// testStreaming tests the driver streaming service exchange with the vehicle
+// data service.
 func testStreaming(t *testing.T, inputFileURL string) {
 	driverPlugin, _, _, _, err := setupPlugins(t, inputFileURL)
 	if err != nil {
@@ -127,8 +127,13 @@ func testStreaming(t *testing.T, inputFileURL string) {
 		t.Fatalf("couldn't create vehicle")
 	}
 
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- v.Wait()
+	}()
+
 	select {
-	case err = <-v.Watch():
+	case err = <-errCh:
 		t.Fatalf("video stream error: %v", err)
 	case <-time.After(testTimeout):
 	}

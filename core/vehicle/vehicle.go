@@ -30,10 +30,13 @@ type Vehicle struct {
 	listeners     map[string]net.Listener // map of names to active listeners
 	services      *grpc.Server            // gRPC server instance
 	log           zerolog.Logger          // logger object
-	errCh         chan error              // error channel shared by listeners
 	gabrielClient gabrielclient.Client    // Gabriel remote server client
 	store         *dataStore              // data store
+	pluginMonitor *pluginMonitor          // pluginMonitor
 	cancelFn      context.CancelFunc      // cancel function for vehicle context
+	errCh         chan error              // error channel shared by listeners
+	err           error                   // vehicle error
+	shutdown      chan struct{}           // shutdown channel
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -46,6 +49,7 @@ func NewVehicle(
 		listeners: make(map[string]net.Listener),
 		pluginCfg: pluginCfg,
 		log:       zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		shutdown:  make(chan struct{}, 1),
 	}
 	for _, option := range options {
 		option(vehicle)
@@ -90,8 +94,9 @@ func NewVehicle(
 	return vehicle, nil
 }
 
-// Start the vehicle.
-func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
+// Starts the vehicle but does not wait for it to stop. After a succesful
+// call to Start, the vehicle will keep running until it encounters an
+func (v *Vehicle) Start(ctx context.Context) error {
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
 	v.cancelFn = cancel
@@ -106,7 +111,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
 			Msg("failed to create socket listener for main services")
 		cancel()
-		return nil, err
+		return err
 	}
 	v.listeners[MainListenerName] =
 		util.NewCodedListener(ln, util.ExternalCode, nil)
@@ -119,7 +124,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
 			Msg("failed to create socket listener for admin services")
 		cancel()
-		return nil, err
+		return err
 	}
 	v.listeners[AdminListenerName] =
 		util.NewCodedListener(
@@ -132,13 +137,13 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 	if v.pluginCfg.Driver == nil {
 		v.log.Error().Msg("no driver provided, aborting")
 		cancel()
-		return nil, fmt.Errorf("no driver provided, aborting")
+		return fmt.Errorf("no driver provided, aborting")
 	}
 	_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 	if err != nil {
 		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
 		cancel()
-		return nil, err
+		return err
 	}
 	v.log.Debug().Msgf("driver plugin %s started!", v.pluginCfg.Driver.Name())
 
@@ -151,7 +156,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 			v.log.Error().Err(err).
 				Msg("could not start mission plugin, aborting")
 			cancel()
-			return nil, err
+			return err
 		}
 		// For logging purposes, use a mission tag instead of the name to
 		// disambiguate between this plugin and external plugins
@@ -167,7 +172,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 			v.log.Error().Err(err).
 				Msgf("could not start plugin %s, aborting", plugin.Name())
 			cancel()
-			return nil, err
+			return err
 		}
 		if ln != nil &&
 			!slices.Contains(ReservedNames, plugin.Name()) &&
@@ -179,6 +184,14 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 		}
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
+
+	// Monitor plugins in case they exit unexpectedly
+	v.pluginMonitor = &pluginMonitor{
+		pluginCfg:     v.pluginCfg,
+		restartPolicy: noRestart,
+		log:           v.log,
+	}
+	v.pluginMonitor.start(ctx)
 
 	// Serve the gRPC server at all listeners
 	v.errCh = make(chan error, len(v.listeners))
@@ -199,7 +212,7 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 	if err != nil {
 		v.log.Err(err).Msg("failed to stream from driver")
 		cancel()
-		return nil, err
+		return err
 	}
 
 	// Initialize the store, launching goroutine to flush telemetry data to
@@ -213,30 +226,41 @@ func (v *Vehicle) Start(ctx context.Context) (chan error, error) {
 		if err != nil {
 			v.log.Err(err).Msg("failed to create Gabriel client")
 			cancel()
-			return nil, err
+			return err
 		}
 		_, err = v.gabrielClient.Launch(ctx)
 		if err != nil {
 			v.log.Err(err).Msg("failed to launch Gabriel client")
 			cancel()
-			return nil, err
+			return err
 		}
 	} else {
 		v.log.Warn().
 			Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
 	}
 
-	return nil, nil
+	// Stop goroutines when a fatal error is encountered
+	go func() {
+		// wait for fatal error
+		select {
+		case v.err = <-v.errCh:
+			v.log.Err(err).Msg("vehicle encountered fatal error, initiating shutdown")
+		case <-ctx.Done():
+			v.log.Info().Msg("vehicle context closed, initiating shutdown")
+			v.err = ctx.Err()
+		}
+		// unblock all Vehicle.Wait() calls blocked on this channel
+		close(v.shutdown)
+		v.cleanup()
+	}()
+
+	return nil
 }
 
-func (v *Vehicle) Stop() {
-	v.services.GracefulStop()
-	v.cancelFn()
-	os.RemoveAll(v.runDir)
-}
-
-func (v *Vehicle) Watch() <-chan error {
-	return v.errCh
+// Wait blocks until the vehicle hits a fatal error.
+func (v *Vehicle) Wait() error {
+	<-v.shutdown
+	return v.err
 }
 
 func (v *Vehicle) Name() string {
@@ -247,6 +271,14 @@ func (v *Vehicle) ControlState() string {
 	v.policy.mu.RLock()
 	defer v.policy.mu.RUnlock()
 	return v.policy.currentState
+}
+
+// Perform cleanup, releasing any associated system resources.
+func (v *Vehicle) cleanup() {
+	v.services.GracefulStop()
+	v.cancelFn()
+	os.RemoveAll(v.runDir)
+	v.log.Info().Msg("shutdown complete")
 }
 
 func createUnixSocketListener(path string) (net.Listener, error) {
