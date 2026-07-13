@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync/atomic"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
@@ -37,6 +38,7 @@ type Vehicle struct {
 	errCh         chan error              // error channel shared by listeners
 	err           error                   // vehicle error
 	shutdown      chan struct{}           // shutdown channel
+	started       atomic.Bool             // indicates the vehicle has started
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -95,8 +97,12 @@ func NewVehicle(
 }
 
 // Starts the vehicle but does not wait for it to stop. After a succesful
-// call to Start, the vehicle will keep running until it encounters an
+// call to Start, the vehicle will keep running until it encounters a fatal
+// error or the provided context is canceled.
 func (v *Vehicle) Start(ctx context.Context) error {
+	if !v.started.CompareAndSwap(false, true) {
+		return fmt.Errorf("vehicle already started")
+	}
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
 	v.cancelFn = cancel
@@ -244,14 +250,14 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		// wait for fatal error
 		select {
 		case v.err = <-v.errCh:
-			v.log.Err(err).Msg("vehicle encountered fatal error, initiating shutdown")
+			v.log.Err(v.err).Msg("vehicle encountered fatal error, initiating shutdown")
 		case <-ctx.Done():
 			v.log.Info().Msg("vehicle context closed, initiating shutdown")
 			v.err = ctx.Err()
 		}
 		// unblock all Vehicle.Wait() calls blocked on this channel
-		close(v.shutdown)
 		v.cleanup()
+		close(v.shutdown)
 	}()
 
 	return nil
