@@ -5,8 +5,8 @@ import (
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
-	"github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
+	"github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
+	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"

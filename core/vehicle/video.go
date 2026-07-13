@@ -6,8 +6,8 @@ import (
 	"io"
 	"os/exec"
 
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

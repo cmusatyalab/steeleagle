@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	streampb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	missionpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
+	streampb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
+	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

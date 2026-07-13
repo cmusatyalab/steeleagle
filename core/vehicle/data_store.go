@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	resultpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/result"
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/messages/stream"
+	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
+	steammsgpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
 	"github.com/rs/zerolog/log"
 	"go.etcd.io/bbolt"
 	"google.golang.org/protobuf/proto"
@@ -26,17 +26,17 @@ const (
 // computed results. It runs a goroutine to periodically flush telemetry data
 // to disk in a Bolt key/value store.
 type dataStore struct {
-	latestTelemetry    *stream_msg_pb.Telemetry               // latest telemetry
+	latestTelemetry    *steammsgpb.Telemetry               // latest telemetry
 	telMu              *sync.RWMutex                          // telemetry mutex
-	latestFrame        *stream_msg_pb.EncodedFrame            // latest frame
+	latestFrame        *steammsgpb.EncodedFrame            // latest frame
 	frameMu            *sync.RWMutex                          // frame mutex
 	latestResults      map[string]*resultpb.ComputeResult     // latest results
 	resultsMu          *sync.RWMutex                          // results mutex
-	telCh              chan *stream_msg_pb.Telemetry          // telemetry flush channel
+	telCh              chan *steammsgpb.Telemetry          // telemetry flush channel
 	db                 *bbolt.DB                              // database
-	telSubscribers     [](chan<- *stream_msg_pb.Telemetry)    // telemetry subscribers
+	telSubscribers     [](chan<- *steammsgpb.Telemetry)    // telemetry subscribers
 	telSubscribersMu   *sync.RWMutex                          // telemetry subscribers mutex
-	frameSubscribers   [](chan<- *stream_msg_pb.EncodedFrame) // video frame subscribers
+	frameSubscribers   [](chan<- *steammsgpb.EncodedFrame) // video frame subscribers
 	frameSubscribersMu *sync.RWMutex                          // video frame subscribers mutex
 }
 
@@ -47,7 +47,7 @@ func newDataStore(runDir string) (*dataStore, error) {
 		frameMu:            &sync.RWMutex{},
 		latestResults:      make(map[string]*resultpb.ComputeResult),
 		resultsMu:          &sync.RWMutex{},
-		telCh:              make(chan *stream_msg_pb.Telemetry, 1),
+		telCh:              make(chan *steammsgpb.Telemetry, 1),
 		telSubscribersMu:   &sync.RWMutex{},
 		frameSubscribersMu: &sync.RWMutex{},
 	}
@@ -88,7 +88,7 @@ func itob(v uint64) []byte {
 // storeTelemetryWorker periodically flushes data to disk.
 func (s *dataStore) storeTelemetryWorker(ctx context.Context) {
 	// Store data in the internal database periodically in batches
-	batch := make([]*stream_msg_pb.Telemetry, 0, maxBatch)
+	batch := make([]*steammsgpb.Telemetry, 0, maxBatch)
 	ticker := time.NewTicker(flushInterval)
 	defer ticker.Stop()
 
@@ -142,14 +142,14 @@ func (s *dataStore) storeTelemetryWorker(ctx context.Context) {
 }
 
 // Get the latest telemetry available for the vehicle.
-func (s *dataStore) getLatestTelemetry() *stream_msg_pb.Telemetry {
+func (s *dataStore) getLatestTelemetry() *steammsgpb.Telemetry {
 	s.telMu.RLock()
 	defer s.telMu.RUnlock()
 	return s.latestTelemetry
 }
 
 // Get the latest frame available for the vehicle.
-func (s *dataStore) getLatestFrame() *stream_msg_pb.EncodedFrame {
+func (s *dataStore) getLatestFrame() *steammsgpb.EncodedFrame {
 	s.frameMu.RLock()
 	defer s.frameMu.RUnlock()
 	return s.latestFrame
@@ -163,7 +163,7 @@ func (s *dataStore) getLatestResult(producerName string) *resultpb.ComputeResult
 }
 
 // Add new telemetry to the store.
-func (s *dataStore) addTelemetry(tel *stream_msg_pb.Telemetry) {
+func (s *dataStore) addTelemetry(tel *steammsgpb.Telemetry) {
 	s.telMu.Lock()
 	s.latestTelemetry = tel
 	s.telMu.Unlock()
@@ -182,7 +182,7 @@ func (s *dataStore) addTelemetry(tel *stream_msg_pb.Telemetry) {
 }
 
 // Add a video frame to the store.
-func (s *dataStore) addFrame(frame *stream_msg_pb.EncodedFrame) {
+func (s *dataStore) addFrame(frame *steammsgpb.EncodedFrame) {
 	s.frameMu.Lock()
 	s.latestFrame = frame
 	s.frameMu.Unlock()
@@ -209,10 +209,10 @@ func (s *dataStore) addResult(producerName string, res *resultpb.ComputeResult) 
 
 // subscribeToTelemetry returns a channel that can be used to receive telemetry
 // updates as they are added to the store.
-func (s *dataStore) subscribeToTelemetry() <-chan *stream_msg_pb.Telemetry {
+func (s *dataStore) subscribeToTelemetry() <-chan *steammsgpb.Telemetry {
 	s.telSubscribersMu.Lock()
 	defer s.telSubscribersMu.Unlock()
-	ch := make(chan *stream_msg_pb.Telemetry, 1)
+	ch := make(chan *steammsgpb.Telemetry, 1)
 	s.telSubscribers = append(s.telSubscribers, ch)
 	return ch
 }
@@ -221,10 +221,10 @@ func (s *dataStore) subscribeToTelemetry() <-chan *stream_msg_pb.Telemetry {
 // frames as they are added to the store.
 //
 // TODO: handle different kinds of frames, if there are multiple cameras
-func (s *dataStore) subscribeToFrames() <-chan *stream_msg_pb.EncodedFrame {
+func (s *dataStore) subscribeToFrames() <-chan *steammsgpb.EncodedFrame {
 	s.frameSubscribersMu.Lock()
 	defer s.frameSubscribersMu.Unlock()
-	ch := make(chan *stream_msg_pb.EncodedFrame, 1)
+	ch := make(chan *steammsgpb.EncodedFrame, 1)
 	s.frameSubscribers = append(s.frameSubscribers, ch)
 	return ch
 }

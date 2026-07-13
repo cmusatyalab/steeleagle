@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
+	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 )
 
 // Stream telemetry from the driver, updating the vehicle data store.

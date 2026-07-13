@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
-	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/google/uuid"
 	"github.com/mwitkow/grpc-proxy/proxy"

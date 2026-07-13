@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	vehiclepb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/vehicle"
+	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 )
 
 // Vehicle gRPC service to get telemetry, frames, and compute results

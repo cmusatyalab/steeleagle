@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	driverpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/driver"
-	missionpb "github.com/cmusatyalab/steeleagle/api/gen/go/v1/services/mission"
+	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
+	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
