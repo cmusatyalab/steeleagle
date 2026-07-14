@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Carnegie Mellon University
 # SPDX-License-Identifier: 0BSD
-"""Mission artifact tools for the SteelEagle MCP server.
+"""Mission file tools for the SteelEagle MCP server.
 
 These functions keep MCP concerns here while reusing the deterministic parts of
 the existing nl2dsl project: normalize, validate, compile, and examples. The
@@ -40,7 +40,7 @@ _MCP_ROOT = _find_mcp_root()
 _REPO_ROOT = _MCP_ROOT.parent
 _SDK_SRC = _REPO_ROOT / "sdk" / "src"
 _COPILOT_ROOT = _REPO_ROOT.parent / "steeleagle-copilot"
-_DEFAULT_ARTIFACT_DIR = _MCP_ROOT / "artifacts" / "missions"
+_DEFAULT_MISSION_FILES_DIR = _MCP_ROOT / "mission_files"
 _GRAMMAR_PATH = _SDK_SRC / "steeleagle_sdk" / "dsl" / "grammar" / "dronedsl.lark"
 _COPILOT_EXAMPLES_DIR = _COPILOT_ROOT / "examples"
 
@@ -500,7 +500,7 @@ def translate_with_dsl_reference_payload(
             "Use the instruction plus this reference to write a complete mission.dsl.",
             "Call compile_mission_dsl with the DSL.",
             "If compile_mission_dsl returns errors, revise the DSL and call it again.",
-            "After compile succeeds, call save_mission_artifacts with the compile_id from compile_mission_dsl.",
+            "After compile succeeds, call save_mission_files with the compile_id from compile_mission_dsl.",
             "Do not upload or start the generated mission unless the user explicitly asks after review.",
         ],
         "errors": [],
@@ -615,7 +615,7 @@ def _coerce_mission_json_text(value: str | None) -> tuple[Any | None, str | None
 
 def _resolve_output_dir(output_dir: str | None) -> Path:
     if not output_dir:
-        return _DEFAULT_ARTIFACT_DIR
+        return _DEFAULT_MISSION_FILES_DIR
 
     path = Path(output_dir).expanduser()
     if path.is_absolute():
@@ -631,7 +631,7 @@ def _safe_basename(basename: str | None) -> str:
     return safe or "mission"
 
 
-def save_mission_artifacts_payload(
+def save_mission_files_payload(
     compile_id: str = "",
     dsl: str = "",
     mission_json_text: str = "",
@@ -640,7 +640,7 @@ def save_mission_artifacts_payload(
     overwrite: bool = False,
     add_timestamp: bool = True,
 ) -> dict[str, Any]:
-    """Write mission DSL and JSON artifacts to disk."""
+    """Write mission DSL and JSON files to disk."""
     request_id = _request_id()
 
     notes: list[str] = []
@@ -661,7 +661,7 @@ def save_mission_artifacts_payload(
                     _err(
                         "INPUT_ERROR",
                         "Unknown or expired `compile_id`. Call compile_mission_dsl "
-                        "again and pass the returned `compile_id` to save_mission_artifacts.",
+                        "again and pass the returned `compile_id` to save_mission_files.",
                     )
                 ],
                 "request_id": request_id,
@@ -750,11 +750,11 @@ def save_mission_artifacts_payload(
         name = f"{name}-{timestamp}"
 
     try:
-        artifact_dir = _resolve_output_dir(output_dir)
-        artifact_dir.mkdir(parents=True, exist_ok=True)
+        mission_files_dir = _resolve_output_dir(output_dir)
+        mission_files_dir.mkdir(parents=True, exist_ok=True)
 
-        dsl_path = artifact_dir / f"{name}.dsl"
-        json_path = artifact_dir / f"{name}.json"
+        dsl_path = mission_files_dir / f"{name}.dsl"
+        json_path = mission_files_dir / f"{name}.json"
         existing = [str(p) for p in (dsl_path, json_path) if p.exists()]
         if existing and not overwrite:
             return {
@@ -766,7 +766,7 @@ def save_mission_artifacts_payload(
                 "errors": [
                     _err(
                         "IO_ERROR",
-                        "Refusing to overwrite existing artifact(s): "
+                        "Refusing to overwrite existing mission file(s): "
                         + ", ".join(existing),
                     )
                 ],
@@ -779,7 +779,7 @@ def save_mission_artifacts_payload(
             encoding="utf-8",
         )
     except Exception as exc:
-        logger.exception("save_mission_artifacts failed request_id=%s", request_id)
+        logger.exception("save_mission_files failed request_id=%s", request_id)
         return {
             "ok": False,
             "dsl_path": None,
@@ -792,7 +792,7 @@ def save_mission_artifacts_payload(
 
     written = [str(dsl_path), str(json_path)]
     logger.info(
-        "mission tool save_mission_artifacts request_id=%s ok=True artifact_paths=%s",
+        "mission tool save_mission_files request_id=%s ok=True file_paths=%s",
         request_id,
         written,
     )

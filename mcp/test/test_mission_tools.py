@@ -3,7 +3,7 @@ from pathlib import Path
 
 from steeleagle_mcp.mission_tools import (
     compile_mission_dsl_payload,
-    save_mission_artifacts_payload,
+    save_mission_files_payload,
     translate_with_dsl_reference_payload,
 )
 
@@ -78,11 +78,11 @@ def test_compile_mission_dsl_payload_errors_are_structured():
     assert any("FakeAction" in error for error in result["errors"])
 
 
-def test_save_mission_artifacts_payload_writes_files(tmp_path: Path):
+def test_save_mission_files_payload_writes_files(tmp_path: Path):
     compiled = compile_mission_dsl_payload(VALID_DSL)
     assert compiled["ok"], compiled["errors"]
 
-    result = save_mission_artifacts_payload(
+    result = save_mission_files_payload(
         compile_id=compiled["compile_id"],
         basename="test mission",
         output_dir=str(tmp_path),
@@ -101,8 +101,8 @@ def test_save_mission_artifacts_payload_writes_files(tmp_path: Path):
     )
 
 
-def test_save_mission_artifacts_payload_accepts_manual_mission_json_text(tmp_path: Path):
-    result = save_mission_artifacts_payload(
+def test_save_mission_files_payload_accepts_manual_mission_json_text(tmp_path: Path):
+    result = save_mission_files_payload(
         dsl=VALID_DSL,
         compile_id="",
         mission_json_text=json.dumps(
@@ -125,8 +125,8 @@ def test_save_mission_artifacts_payload_accepts_manual_mission_json_text(tmp_pat
     ] == "take_off"
 
 
-def test_save_mission_artifacts_payload_requires_compile_id(tmp_path: Path):
-    result = save_mission_artifacts_payload(
+def test_save_mission_files_payload_requires_compile_id(tmp_path: Path):
+    result = save_mission_files_payload(
         dsl=VALID_DSL,
         basename="missing-json",
         output_dir=str(tmp_path),
@@ -137,7 +137,7 @@ def test_save_mission_artifacts_payload_requires_compile_id(tmp_path: Path):
     assert any("compile_id" in error for error in result["errors"])
 
 
-def test_save_mission_artifacts_payload_rejects_mismatched_compile_id(
+def test_save_mission_files_payload_rejects_mismatched_compile_id(
     tmp_path: Path,
 ):
     compiled = compile_mission_dsl_payload(VALID_DSL)
@@ -146,7 +146,7 @@ def test_save_mission_artifacts_payload_rejects_mismatched_compile_id(
     changed_dsl = compiled["normalized_dsl"].replace(
         "Land land()", "ReturnToHome land()"
     )
-    result = save_mission_artifacts_payload(
+    result = save_mission_files_payload(
         dsl=changed_dsl,
         compile_id=compiled["compile_id"],
         basename="mismatch",
@@ -158,11 +158,11 @@ def test_save_mission_artifacts_payload_rejects_mismatched_compile_id(
     assert any("does not match" in error for error in result["errors"])
 
 
-def test_save_mission_artifacts_payload_refuses_overwrite(tmp_path: Path):
+def test_save_mission_files_payload_refuses_overwrite(tmp_path: Path):
     compiled = compile_mission_dsl_payload(VALID_DSL)
     assert compiled["ok"], compiled["errors"]
 
-    first = save_mission_artifacts_payload(
+    first = save_mission_files_payload(
         compile_id=compiled["compile_id"],
         basename="mission",
         output_dir=str(tmp_path),
@@ -170,7 +170,7 @@ def test_save_mission_artifacts_payload_refuses_overwrite(tmp_path: Path):
     )
     assert first["ok"], first["errors"]
 
-    second = save_mission_artifacts_payload(
+    second = save_mission_files_payload(
         compile_id=compiled["compile_id"],
         basename="mission",
         output_dir=str(tmp_path),

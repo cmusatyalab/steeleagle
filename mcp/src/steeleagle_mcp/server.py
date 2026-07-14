@@ -36,7 +36,7 @@ from steeleagle_sdk.dsl.compiler.registry import _ACTIONS, _EVENTS
 from steeleagle_mcp.config import load_config, make_server_parser, setup_logging
 from steeleagle_mcp.mission_tools import (
     compile_mission_dsl_payload,
-    save_mission_artifacts_payload,
+    save_mission_files_payload,
     translate_with_dsl_reference_payload,
 )
 
@@ -372,7 +372,7 @@ logger.info("Registered 1 control flow tool: racer")
 
 
 # ---------------------------------------------------------------------------
-# Mission artifact tools: reference-assisted DSL -> mission.json -> files
+# Mission file tools: reference-assisted DSL -> mission.json -> files
 # ---------------------------------------------------------------------------
 
 
@@ -435,24 +435,24 @@ async def compile_mission_dsl(
 
 
 @mcp.tool(
-    name="save_mission_artifacts",
+    name="save_mission_files",
     description=(
-        "Save mission DSL and mission JSON to local artifact files. "
+        "Save mission DSL and mission JSON to local mission files. "
         "Pass the compile_id returned by compile_mission_dsl. "
         "Do not pass DSL, mission_json, or mission_json_text in normal use; the tool "
         "saves the exact normalized DSL and mission JSON cached from the compile step. "
-        "Defaults to steeleagle/mcp/artifacts/missions and refuses to overwrite "
+        "Defaults to steeleagle/mcp/mission_files and refuses to overwrite "
         "unless overwrite=true. This does not execute, upload, or start the mission."
     ),
 )
-async def save_mission_artifacts(
+async def save_mission_files(
     compile_id: str,
     basename: str = "mission",
     output_dir: str = "",
     overwrite: bool = False,
     add_timestamp: bool = True,
 ) -> str:
-    payload = save_mission_artifacts_payload(
+    payload = save_mission_files_payload(
         compile_id=compile_id,
         basename=basename,
         output_dir=output_dir,
@@ -463,8 +463,8 @@ async def save_mission_artifacts(
 
 
 logger.info(
-    "Registered 3 mission artifact tools: translate_with_dsl_reference, "
-    "compile_mission_dsl, save_mission_artifacts"
+    "Registered 3 mission file tools: translate_with_dsl_reference, "
+    "compile_mission_dsl, save_mission_files"
 )
 
 
@@ -504,12 +504,12 @@ async def amain(
     await _init_sdk(config["drone"], config["compute"])
 
     # Log available tools summary
-    total_tools = len(_ACTIONS) + 4  # racer + 3 mission artifact tools
+    total_tools = len(_ACTIONS) + 4  # racer + 3 mission file tools
     logger.info("=" * 60)
     logger.info("MCP Server ready with %d tools available:", total_tools)
     logger.info("  - %d Action tools (execute drone commands)", len(_ACTIONS))
     logger.info("  - 1 Control flow tool (racer - provides access to %d events)", len(_EVENTS))
-    logger.info("  - 3 Mission artifact tools (translate, compile, save)")
+    logger.info("  - 3 Mission file tools (translate, compile, save)")
     logger.info("=" * 60)
 
     try:
