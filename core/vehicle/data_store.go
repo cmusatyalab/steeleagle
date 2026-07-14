@@ -27,17 +27,17 @@ const (
 // to disk in a Bolt key/value store.
 type dataStore struct {
 	latestTelemetry    *steammsgpb.Telemetry               // latest telemetry
-	telMu              *sync.RWMutex                          // telemetry mutex
+	telMu              *sync.RWMutex                       // telemetry mutex
 	latestFrame        *steammsgpb.EncodedFrame            // latest frame
-	frameMu            *sync.RWMutex                          // frame mutex
-	latestResults      map[string]*resultpb.ComputeResult     // latest results
-	resultsMu          *sync.RWMutex                          // results mutex
+	frameMu            *sync.RWMutex                       // frame mutex
+	latestResults      map[string]*resultpb.ComputeResult  // latest results
+	resultsMu          *sync.RWMutex                       // results mutex
 	telCh              chan *steammsgpb.Telemetry          // telemetry flush channel
-	db                 *bbolt.DB                              // database
+	db                 *bbolt.DB                           // database
 	telSubscribers     [](chan<- *steammsgpb.Telemetry)    // telemetry subscribers
-	telSubscribersMu   *sync.RWMutex                          // telemetry subscribers mutex
+	telSubscribersMu   *sync.RWMutex                       // telemetry subscribers mutex
 	frameSubscribers   [](chan<- *steammsgpb.EncodedFrame) // video frame subscribers
-	frameSubscribersMu *sync.RWMutex                          // video frame subscribers mutex
+	frameSubscribersMu *sync.RWMutex                       // video frame subscribers mutex
 }
 
 // Create a new data store.

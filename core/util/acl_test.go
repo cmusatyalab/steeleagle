@@ -1,13 +1,13 @@
 package util_test
 
 import (
-    "net"
-    "time"
-    "os"
-    "os/exec"
-    "testing"
+	"net"
+	"os"
+	"os/exec"
+	"testing"
+	"time"
 
-    "github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/util"
 )
 
 func TestACLIP(t *testing.T) {
