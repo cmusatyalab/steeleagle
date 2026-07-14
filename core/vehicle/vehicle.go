@@ -307,6 +307,7 @@ func (v *Vehicle) cleanup() {
 	v.services.GracefulStop()
 	v.cancelFn()
 	os.RemoveAll(v.runDir)
+	v.started.Store(false)
 	v.log.Info().Msg("shutdown complete")
 }
 
