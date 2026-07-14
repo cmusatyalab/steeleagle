@@ -46,4 +46,8 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test ./...
+        run: go test -coverprofile=coverage.out ./...
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.out
