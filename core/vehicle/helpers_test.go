@@ -14,6 +14,8 @@ import (
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/cmusatyalab/steeleagle/core/vehicle"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -176,3 +178,12 @@ func (l testLogger) Write(p []byte) (n int, err error) {
 }
 
 var _ io.Writer = (*testLogger)(nil)
+
+// NewVehicle shadows vehicle.NewVehicle to add a logger that writes to testLogger.
+func NewVehicle(t *testing.T, cfg vehicle.PluginConfig, options ...vehicle.VehicleOption) (*vehicle.Vehicle, error) {
+	t.Helper()
+	out := testLogger{t}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	options = append(options, vehicle.WithLogger(logger))
+	return vehicle.NewVehicle(cfg, options...)
+}

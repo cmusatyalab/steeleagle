@@ -12,7 +12,6 @@ import (
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -24,8 +23,7 @@ func TestStartStop(t *testing.T) {
 	}
 
 	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	vehicle, err := vehicle.NewVehicle(pluginConfig, vehicle.WithLogger(logger))
+	vehicle, err := NewVehicle(t, pluginConfig)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
@@ -35,7 +33,7 @@ func TestStartStop(t *testing.T) {
 		t.Fatalf("couldn't start vehicle")
 	}
 
-	// cancel vehicle context
+	// Cancel vehicle context
 	cancel()
 
 	err = vehicle.Wait()
@@ -44,7 +42,7 @@ func TestStartStop(t *testing.T) {
 	}
 }
 
-func TestPolicy(t *testing.T) {
+func TestCommandAccessPolicy(t *testing.T) {
 	driverPlugin, missionPlugin, mClient, commCh, err := setupPlugins(t, "")
 	if err != nil {
 		t.Fatalf("couldn't create plugin config: %v", err)
@@ -68,8 +66,7 @@ func TestPolicy(t *testing.T) {
 	defer sClient.Close()
 
 	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	vehicle, err := vehicle.NewVehicle(pluginConfig, vehicle.WithServerListener(serverLn, nil), vehicle.WithLogger(logger))
+	vehicle, err := NewVehicle(t, pluginConfig, vehicle.WithServerListener(serverLn, nil))
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
