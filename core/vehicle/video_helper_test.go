@@ -122,7 +122,11 @@ func testStreaming(t *testing.T, inputFileURL string) {
 	pluginCfg := vehicle.PluginConfig{Driver: driverPlugin}
 	videoCfg := vehicle.VideoStreamConfig{Resolution: vehicle.Res720P}
 	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	v, err := vehicle.NewVehicle(pluginCfg, vehicle.WithVideoStreamConfig(videoCfg), vehicle.WithLogger(logger))
+	v, err := vehicle.NewVehicle(
+		pluginCfg,
+		vehicle.WithVideoStreamConfig(videoCfg),
+		vehicle.WithLogger(logger),
+	)
 	if err != nil {
 		t.Fatalf("couldn't create vehicle")
 	}
