@@ -87,9 +87,10 @@ func TestACLPID(t *testing.T) {
 	defer aclLn.Close()
 	go aclLn.Accept()
 
+	logger := testLogger{t}
 	cmd := exec.Command(pidBinary)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = logger
+	cmd.Stderr = logger
 	err = cmd.Run()
 	if err == nil {
 		t.Errorf("pid accepted incorrectly")

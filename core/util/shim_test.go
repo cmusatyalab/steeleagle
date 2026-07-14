@@ -7,23 +7,25 @@ import (
 	"testing"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/rs/zerolog"
 )
 
 func TestShimPlugin(t *testing.T) {
 	acl := util.GetACL([]string{}, []int{})
 	in := "/tmp/in.sock"
 	out := "/tmp/out.sock"
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateShimPlugin(
-		in, out, util.WithACL(acl), util.WithLogger(logger))
+	plugin, err := CreateShimPlugin(t,
+		in,
+		out,
+		util.WithACL(acl),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
 
+	logger := testLogger{t}
 	cmd := exec.CommandContext(t.Context(), goBinary)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = logger
+	cmd.Stderr = logger
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("%s=%s", util.ListenSockEnv, in),
 		fmt.Sprintf("%s=%s", util.ClientSockEnv, out),

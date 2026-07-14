@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/rs/zerolog"
 )
@@ -155,10 +155,10 @@ func WithLogger(logger zerolog.Logger) PluginOption {
 	}
 }
 
-// WithOutputFile sets the output file stream for the delegate process output.
-func WithOutputFile(out *os.File) PluginOption {
+// WithProcessOutputStream sets the output file stream for the delegate process output.
+func WithProcessOutputStream(out io.Writer) PluginOption {
 	return func(k *BasePlugin) {
-		k.outFile = out
+		k.outStream = out
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -43,57 +44,56 @@ type Plugin interface {
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
-	name          string             // name for easier user identification
-	code          AuthCode           // authentication entity
-	pkg           bool               // determines whether the plugin is a package or not
-	path          string             // path to plugin
-	runner        string             // runner target (e.g. bwrap, podman)
-	rargs         []string           // runner args, never modified during runtime
-	rargsOverride []string           // runner args generated on every Start() invocation
-	exec          string             // executable target (e.g. sh)
-	eargs         []string           // executable args
-	script        string             // script target (plugin script)
-	sargs         []string           // script args
-	files         map[string]int     // linked files (only applicable to sandboxes/containers)
-	start         int64              // plugin start time
-	timeout       int                // timeout in seconds waiting for the server to start
-	running       bool               // whether or not the plugin is currently running
-	parentDir     string             // parent directory for plugin to live under (used to create runDir)
-	runDir        string             // runtime directory path
-	cSock         string             // client socket file path
-	lnSock        string             // listener socket file path
-	client        bool               // whether or not to support a plugin server
-	listen        bool               // whether or not to support a plugin client
-	check         bool               // whether or not to check existence of files
-	cmd           *exec.Cmd          // command to run
-	acl           *ACL               // ACL for listener connections
-	log           zerolog.Logger     // logger object
-	outFile       *os.File           // replacement out file for Stdout/err
-	environ       []string           // environment to run the plugin in
-	ctx           context.Context    // context
-	cancel        context.CancelFunc // cancellation function
-	waitOnce      sync.Once          // guards against calling cmd.Wait() more than once
-	waitErr       error              // result of cmd.Wait(), populated exactly once by waitOnce
-	waitDone      chan struct{}      // closed once cmd.Wait() returns; lets every Watch/Wait caller observe the same result
+	name      string             // name for easier user identification
+	code      AuthCode           // authentication entity
+	pkg       bool               // determines whether the plugin is a package or not
+	path      string             // path to plugin
+	runner    string             // runner target (e.g. bwrap, podman)
+	final     []string           // final args for the subprocess
+	rargs     []string           // runner args, never modified during runtime
+	exec      string             // executable target (e.g. sh)
+	eargs     []string           // executable args
+	script    string             // script target (plugin script)
+	sargs     []string           // script args
+	files     map[string]int     // linked files (only applicable to sandboxes/containers)
+	start     int64              // plugin start time
+	timeout   int                // timeout in seconds waiting for the server to start
+	running   bool               // whether or not the plugin is currently running
+	parentDir string             // parent directory for plugin to live under (used to create runDir)
+	runDir    string             // runtime directory path
+	cSock     string             // client socket file path
+	lnSock    string             // listener socket file path
+	client    bool               // whether or not to support a plugin server
+	listen    bool               // whether or not to support a plugin client
+	check     bool               // whether or not to check existence of files
+	cmd       *exec.Cmd          // command to run
+	acl       *ACL               // ACL for listener connections
+	log       zerolog.Logger     // logger object
+	outStream io.Writer          // replacement out file for Stdout/err
+	environ   []string           // environment to run the plugin in
+	ctx       context.Context    // context
+	cancel    context.CancelFunc // cancellation function
+	waitOnce  sync.Once          // guards against calling cmd.Wait() more than once
+	waitErr   error              // result of cmd.Wait(), populated exactly once by waitOnce
+	waitDone  chan struct{}      // closed once cmd.Wait() returns; lets every Watch/Wait caller observe the same result
 }
 
 // CreateBasePlugin creates an instance of a BasePlugin.
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-		name:     uuid.New().String()[:4],
-		code:     UnknownCode,
-		files:    make(map[string]int),
-		client:   true,
-		listen:   true,
-		check:    true,
-		timeout:  15, // default to 15s timeout
-		log:      zerolog.New(os.Stdout).With().Timestamp().Logger(),
-		outFile:  os.Stdout,
-		environ:  os.Environ(),
-		waitDone: make(chan struct{}, 1),
+		name:      uuid.New().String()[:4],
+		code:      UnknownCode,
+		files:     make(map[string]int),
+		client:    true,
+		listen:    true,
+		check:     true,
+		timeout:   15, // default to 15s timeout
+		log:       zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		outStream: os.Stdout,
+		environ:   os.Environ(),
+		waitDone:  make(chan struct{}, 1),
 	}
-
 	// Apply options
 	for _, option := range options {
 		option(p)
@@ -123,36 +123,35 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	// Create a new context with a cancel function
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
+	// Set up the run directory and the client/listen socket
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
+		return nil, nil, err
 	}
 
 	// Create the command; check in sequence whether the script, executable,
 	// and then runner are set, and prepend the arguments for each into one
 	// executable string
-	final := []string{}
-	if p.script != "" {
-		final = slices.Insert(p.sargs, 0, p.script)
-	}
-	if p.exec != "" {
-		final = append(p.eargs, final...)
-		final = slices.Insert(final, 0, p.exec)
-	}
-	if p.runner != "" {
-		rargs := p.rargs
-		if p.rargsOverride != nil {
-			rargs = p.rargsOverride
+	if p.final == nil {
+		if p.script != "" {
+			p.final = slices.Insert(p.sargs, 0, p.script)
 		}
-		final = append(rargs, final...)
-		final = slices.Insert(final, 0, p.runner)
+		if p.exec != "" {
+			p.final = append(p.eargs, p.final...)
+			p.final = slices.Insert(p.final, 0, p.exec)
+		}
+		if p.runner != "" {
+			p.final = append(p.rargs, p.final...)
+			p.final = slices.Insert(p.final, 0, p.runner)
+		}
 	}
 
 	// Check for argument count
-	if len(final) >= 2 {
-		p.cmd = exec.CommandContext(ctx, final[0], final[1:]...)
-	} else if len(final) == 1 {
-		p.cmd = exec.CommandContext(ctx, final[0])
+	if len(p.final) >= 2 {
+		p.cmd = exec.CommandContext(ctx, p.final[0], p.final[1:]...)
+	} else if len(p.final) == 1 {
+		p.cmd = exec.CommandContext(ctx, p.final[0])
 	} else {
 		err := fmt.Errorf("no arguments provided to plugin")
 		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
@@ -162,11 +161,11 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		// Set the working directory for the command
 		p.cmd.Dir = filepath.Dir(p.script)
 	}
-	p.log.Debug().Msgf("starting: %v", final)
+	p.log.Debug().Msgf("starting: %v", p.final)
 
 	// Bind in stdout and stderr
-	p.cmd.Stdout = p.outFile
-	p.cmd.Stderr = p.outFile
+	p.cmd.Stdout = p.outStream
+	p.cmd.Stderr = p.outStream
 
 	// Reverse the listener and client; the plugin connects
 	// in the opposite way

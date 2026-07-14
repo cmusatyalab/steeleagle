@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
-	"github.com/rs/zerolog"
 )
 
 func TestSandboxPlugin(t *testing.T) {
@@ -19,10 +18,8 @@ func TestSandboxPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithPath(path),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -47,10 +44,8 @@ func TestSandboxPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithPath(path),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -79,12 +74,10 @@ func TestSandboxPluginPython(t *testing.T) {
 	if err != nil {
 		t.Skip("couldn't find uv, skipping this test")
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithPath(path),
 		util.WithRunnerArgs([]string{"--share-net"}),
 		util.WithExecutableFiles([]string{"uv"}),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -109,8 +102,7 @@ func TestSandboxPluginFileBinding(t *testing.T) {
 	if err != nil {
 		t.Skip("couldn't find uv, skipping this test")
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithoutClient(),
 		util.WithRunnerArgs([]string{"--share-net"}),
 		util.WithFiles([]string{fileWrite}),
@@ -119,7 +111,6 @@ func TestSandboxPluginFileBinding(t *testing.T) {
 		util.WithExecutable("uv"),
 		util.WithExecutableArgs([]string{"run"}),
 		util.WithScript(fileMain),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -143,11 +134,9 @@ func TestSandboxPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithPath(path),
 		util.WithAuthCode(util.MissionCode),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -172,13 +161,11 @@ func TestSandboxPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
-	plugin, err := util.CreateSandboxPlugin(
+	plugin, err := CreateSandboxPlugin(t,
 		util.WithPath(path),
 		util.WithScriptArgs([]string{"--error"}),
 		util.WithoutClient(),
 		util.WithoutListener(),
-		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)

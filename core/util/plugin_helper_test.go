@@ -3,7 +3,6 @@ package util_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"testing"
 	"time"
@@ -68,15 +67,3 @@ func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code u
 		return fmt.Errorf("expected rpc call, but none arrived")
 	}
 }
-
-// testLogger implements the io.Writer interface to allow zerolog to write logs
-// to the testing log method. By using testLogger, zerolog logs are printed to
-// the console only when a test fails.
-type testLogger struct{ t *testing.T }
-
-func (l testLogger) Write(p []byte) (n int, err error) {
-	l.t.Log(string(p))
-	return len(p), nil
-}
-
-var _ io.Writer = (*testLogger)(nil)

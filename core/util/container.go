@@ -17,13 +17,13 @@ import (
 
 type ContainerPlugin struct {
 	*BasePlugin
-	image_ref string
-	cid       string
+	imageRef string
+	cid      string
 }
 
 // CreateContainerPlugin creates a ContainerPlugin backed by podman, pulling
 // the image if it is not already present.
-func CreateContainerPlugin(image_ref string, options ...PluginOption) (*ContainerPlugin, error) {
+func CreateContainerPlugin(imageRef string, options ...PluginOption) (*ContainerPlugin, error) {
 	// Create the plugin
 	internal, err := CreateBasePlugin(options...)
 	if err != nil {
@@ -31,7 +31,7 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 	}
 	p := &ContainerPlugin{
 		BasePlugin: internal,
-		image_ref:  image_ref,
+		imageRef:   imageRef,
 	}
 	p.runner = "podman"
 
@@ -43,13 +43,13 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 	}
 
 	// Check whether the image exists
-	err = exec.Command("podman", "image", "exists", p.image_ref).Run()
+	err = exec.Command("podman", "image", "exists", p.imageRef).Run()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 		// Attempt to pull the container
-		err = exec.Command("podman", "pull", p.image_ref).Run()
+		err = exec.Command("podman", "pull", p.imageRef).Run()
 		if err != nil {
-			p.log.Error().Err(err).Msg("couldn't run pull with podman: " + p.image_ref)
+			p.log.Error().Err(err).Msg("couldn't run pull with podman: " + p.imageRef)
 			return nil, err
 		}
 	} else if err != nil {
@@ -64,6 +64,10 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 // bindings, then returns the listener and gRPC client connection to the
 // caller.
 func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	if p.final != nil {
+		return p.BasePlugin.Start(ctx)
+	}
+
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
@@ -119,12 +123,12 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 
 	// Append the existing runner args onto these args, since we want to
 	// preserve any passed in args
-	args = append(args, p.rargs...)
+	p.rargs = append(args, p.rargs...)
 
 	// Create a cid file to capture the container ID which is needed to get the
 	// container PID
 	cidFile := filepath.Join(p.runDir, ".cid")
-	args = append(args, "--cidfile", cidFile)
+	p.rargs = append(p.rargs, "--cidfile", cidFile)
 
 	// Only bind in the plugin files if checks are enabled, otherwise blindly
 	// use the script/exec set by the user
@@ -132,23 +136,22 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		// Bind in the plugin files
 		if p.pkg {
 			// Bind in the plugin directory
-			args = append(
-				args, "-v",
+			p.rargs = append(
+				p.rargs, "-v",
 				fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
 			)
 		} else {
 			// Bind in the script
-			args = append(
-				args, "-v",
+			p.rargs = append(
+				p.rargs, "-v",
 				fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
 			)
 		}
-		args = append(args, "-w", "/"+bindDir, p.image_ref) // change workdir
+		p.rargs = append(p.rargs, "-w", "/"+bindDir, p.imageRef) // change workdir
 		p.script = "./" + filepath.Base(p.script)
 	}
 
 	// Append the podman PID namespace to the allowed PIDs
-	p.rargsOverride = args
 	ln, conn, err := p.BasePlugin.Start(ctx)
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't start container plugin")
