@@ -16,23 +16,24 @@ func WithName(name string) PluginOption {
 	}
 }
 
-// WithoutClient makes the plugin ignore the client connection to the subprocess, returning nil in its place
-// after Start is called.
+// WithoutClient makes the plugin ignore the client connection to the
+// subprocess, returning nil in its place after Start is called.
 func WithoutClient() PluginOption {
 	return func(k *BasePlugin) {
 		k.client = false
 	}
 }
 
-// WithoutListener makes the plugin ignore the listener connection to the subprocess, returning nil in its place
-// after Start is called.
+// WithoutListener makes the plugin ignore the listener connection to the
+// subprocess, returning nil in its place after Start is called.
 func WithoutListener() PluginOption {
 	return func(k *BasePlugin) {
 		k.listen = false
 	}
 }
 
-// WithTimeout sets the number of seconds the plugin waits for its server socket to become ready.
+// WithTimeout sets the number of seconds the plugin waits for its server
+// socket to become ready.
 func WithTimeout(timeout int) PluginOption {
 	return func(k *BasePlugin) {
 		k.timeout = timeout
@@ -46,7 +47,8 @@ func WithPath(path string) PluginOption {
 	}
 }
 
-// WithExecutableFiles registers executables that will be resolved via PATH and bind-mounted into the plugin's environment.
+// WithExecutableFiles registers executables that will be resolved via PATH and
+// bind-mounted into the plugin's environment.
 func WithExecutableFiles(files []string) PluginOption {
 	return func(k *BasePlugin) {
 		for _, f := range files {
@@ -55,7 +57,8 @@ func WithExecutableFiles(files []string) PluginOption {
 	}
 }
 
-// WithFiles registers read-write files that will be bind-mounted into the plugin's environment.
+// WithFiles registers read-write files that will be bind-mounted into the
+// plugin's environment.
 func WithFiles(files []string) PluginOption {
 	return func(k *BasePlugin) {
 		for _, f := range files {
@@ -64,7 +67,8 @@ func WithFiles(files []string) PluginOption {
 	}
 }
 
-// WithReadOnlyFiles registers read-only files that will be bind-mounted into the plugin's environment.
+// WithReadOnlyFiles registers read-only files that will be bind-mounted into
+// the plugin's environment.
 func WithReadOnlyFiles(files []string) PluginOption {
 	return func(k *BasePlugin) {
 		for _, f := range files {
@@ -73,14 +77,16 @@ func WithReadOnlyFiles(files []string) PluginOption {
 	}
 }
 
-// WithAuthCode sets the AuthCode that the plugin's listener will attach to every accepted connection.
+// WithAuthCode sets the AuthCode that the plugin's listener will attach to
+// every accepted connection.
 func WithAuthCode(code AuthCode) PluginOption {
 	return func(k *BasePlugin) {
 		k.code = code
 	}
 }
 
-// WithRunner sets the runner binary (e.g. podman, bwrap) used to launch the plugin.
+// WithRunner sets the runner binary (e.g. podman, bwrap) used to launch the
+// plugin.
 func WithRunner(runner string) PluginOption {
 	return func(k *BasePlugin) {
 		k.runner = runner
@@ -94,21 +100,24 @@ func WithRunnerArgs(args []string) PluginOption {
 	}
 }
 
-// WithExecutable sets the executable (e.g. sh, python3) used to run the plugin script.
+// WithExecutable sets the executable (e.g. sh, python3) used to run the plugin
+// script.
 func WithExecutable(exec string) PluginOption {
 	return func(k *BasePlugin) {
 		k.exec = exec
 	}
 }
 
-// WithExecutableArgs appends arguments passed to the executable before the script.
+// WithExecutableArgs appends arguments passed to the executable before the
+// script.
 func WithExecutableArgs(args []string) PluginOption {
 	return func(k *BasePlugin) {
 		k.eargs = append(k.eargs, args...)
 	}
 }
 
-// WithScript sets an explicit path to the plugin script, bypassing automatic discovery.
+// WithScript sets an explicit path to the plugin script, bypassing automatic
+// discovery.
 func WithScript(script string) PluginOption {
 	return func(k *BasePlugin) {
 		k.script = script
@@ -122,15 +131,17 @@ func WithScriptArgs(args []string) PluginOption {
 	}
 }
 
-// WithoutCheck skips script path validation which is useful for dynamic binding or for
-// containers which may have all components pre-built within them.
+// WithoutCheck skips script path validation which is useful for dynamic
+// binding or for containers which may have all components pre-built within
+// them.
 func WithoutCheck() PluginOption {
 	return func(k *BasePlugin) {
 		k.check = false
 	}
 }
 
-// WithACL sets the ACL for the plugin, which allows extra PIDs to access a listener.
+// WithACL sets the ACL for the plugin, which allows extra PIDs to access a
+// listener.
 func WithACL(acl *ACL) PluginOption {
 	return func(k *BasePlugin) {
 		k.acl = acl
@@ -158,9 +169,10 @@ func WithEnvironment(key, value string) PluginOption {
 	}
 }
 
-// WithParent scopes the plugin under a parent directory so the run directory is its child.
-func WithParent(parent string) PluginOption {
+// WithParent scopes the plugin under a parent directory so the run directory
+// is its child.
+func WithParentDir(parentDir string) PluginOption {
 	return func(k *BasePlugin) {
-		k.parent = parent
+		k.parentDir = parentDir
 	}
 }

@@ -36,6 +36,8 @@ func GetPluginDirByName(name, parent string) (string, error) {
 	var pluginPath string
 	if parent == "" { // if the parent is not set, place the plugin in the main runtime directory
 		pluginPath = filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir, name)
+	} else if filepath.IsAbs(parent) {
+		pluginPath = filepath.Join(parent, pluginDir, name)
 	} else { // if parent is set, place the plugin in that directory
 		pluginPath = filepath.Join(xdg.RuntimeDir, runtimeDir, parent, pluginDir, name)
 	}

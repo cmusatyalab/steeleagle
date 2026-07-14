@@ -2,17 +2,18 @@ package vehicle
 
 import (
 	"context"
-	"errors"
-	"os/exec"
+	"net"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
 )
 
 type pluginMonitor struct {
 	pluginCfg     PluginConfig
 	restartPolicy restartPolicy
 	log           zerolog.Logger
+	pluginResetCb func(pluginType, string, net.Listener, *grpc.ClientConn)
 }
 
 type restartPolicy int
@@ -20,20 +21,28 @@ type restartPolicy int
 const (
 	noRestart = iota
 	alwaysRestart
-	onFailure
 )
+
+type pluginType int
+
+const (
+	driverPlugin = iota
+	missionPlugin
+	otherPlugin
+)
+
+const numPluginRestartAttempts = 5
 
 // Monitors each plugin and logs it if it exits unexpectedly. Canceling ctx
 // kills plugin subprocesses too, so an exit observed after ctx is done is
 // treated as expected and not logged.
 func (m *pluginMonitor) start(ctx context.Context) {
-	plugins := make([]util.Plugin, 0, 2+len(m.pluginCfg.Plugins))
-	plugins = append(plugins, m.pluginCfg.Driver)
+	plugins := make(map[pluginType]util.Plugin)
+	plugins[driverPlugin] = m.pluginCfg.Driver
 	if m.pluginCfg.Mission != nil {
-		plugins = append(plugins, m.pluginCfg.Mission)
+		plugins[missionPlugin] = m.pluginCfg.Mission
 	}
-	plugins = append(plugins, m.pluginCfg.Plugins...)
-	for _, plugin := range plugins {
+	for pluginType, plugin := range plugins {
 		go func() {
 		PluginLoop:
 			for {
@@ -41,22 +50,12 @@ func (m *pluginMonitor) start(ctx context.Context) {
 				if ctx.Err() != nil {
 					return
 				}
-				m.handleExit(plugin, err)
+				m.handleExit(ctx, plugin, pluginType, err)
 
 				switch m.restartPolicy {
 				case noRestart:
 					break PluginLoop
-				case onFailure:
-					var exitErr *exec.ExitError
-					if errors.As(err, &exitErr) {
-						exitCode := exitErr.ExitCode()
-						if exitCode == 0 {
-							m.log.Info().Str("plugin", plugin.Name()).
-								Msg("plugin exited with exit code 0")
-							break PluginLoop
-						}
-					}
-				case alwaysRestart:
+				default:
 				}
 			}
 		}()
@@ -64,10 +63,24 @@ func (m *pluginMonitor) start(ctx context.Context) {
 }
 
 // Handle plugin exit based on the configured restart policy.
-func (m *pluginMonitor) handleExit(p util.Plugin, err error) {
+func (m *pluginMonitor) handleExit(ctx context.Context, p util.Plugin, pluginType pluginType, err error) {
+	m.log.Err(err).Str("plugin", p.Name()).Msg("plugin exited unexpectedly")
 	switch m.restartPolicy {
 	case noRestart:
-		m.log.Err(err).Msg("plugin exited unexpectedly")
+	case alwaysRestart:
+		attempts := 0
+		for {
+			ln, conn, err := p.Start(ctx)
+			if err != nil {
+				m.log.Err(err).Str("plugin", p.Name()).Msg("error restarting plugin")
+				attempts += 1
+				if attempts > numPluginRestartAttempts {
+					break
+				}
+				continue
+			}
+			m.pluginResetCb(pluginType, p.Name(), ln, conn)
+		}
 	default:
 		m.log.Error().Str("plugin", p.Name()).
 			Msg("restart policy unimplemented")

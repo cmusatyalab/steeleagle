@@ -17,7 +17,6 @@ func TestShimPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 
 	cmd := exec.CommandContext(t.Context(), goBinary)
 	cmd.Stdout = os.Stdout

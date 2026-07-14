@@ -26,7 +26,6 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -55,7 +54,6 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -84,7 +82,6 @@ func TestContainerPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -116,7 +113,6 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	ln, conn, err := plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -145,7 +141,6 @@ func TestContainerPluginFileBinding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)
@@ -171,7 +166,6 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 		util.WithAuthCode(util.MissionCode),
 		util.WithRunnerArgs([]string{"--rm"}),
 	)
-	defer plugin.Stop()
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -205,7 +199,6 @@ func TestContainerPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
-	defer plugin.Stop()
 	_, _, err = plugin.Start(t.Context())
 	if err != nil {
 		t.Fatalf("encountered error spawning plugin: %v", err)

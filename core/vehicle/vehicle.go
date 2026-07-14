@@ -191,11 +191,30 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		v.log.Debug().Msgf("plugin %s started!", plugin.Name())
 	}
 
+	// reset plugin state if a plugin exists and is restarted
+	pluginResetCb := func(
+		pluginType pluginType,
+		pluginName string,
+		ln net.Listener,
+		conn *grpc.ClientConn) {
+
+		switch pluginType {
+		case driverPlugin:
+			v.driver = conn
+		case missionPlugin:
+			v.mission = conn
+			v.listeners[MissionListenerName] = ln
+		default:
+			v.listeners[pluginName] = ln
+		}
+	}
+
 	// Monitor plugins in case they exit unexpectedly
 	v.pluginMonitor = &pluginMonitor{
 		pluginCfg:     v.pluginCfg,
 		restartPolicy: noRestart,
 		log:           v.log,
+		pluginResetCb: pluginResetCb,
 	}
 	v.pluginMonitor.start(ctx)
 
@@ -203,12 +222,16 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.errCh = make(chan error, len(v.listeners))
 	for name, ln := range v.listeners {
 		go func() {
-			if err := v.services.Serve(ln); err != nil {
-				v.log.Error().Err(err).Str("listener", name).
-					Msg("listener exited with error")
-				v.errCh <- fmt.Errorf(
-					"listener %s exited with error: %w", name, err,
-				)
+			// serve in a loop to account for plugin restarts that might
+			// cause Serve() to fail
+			for {
+				if err := v.services.Serve(ln); err != nil {
+					v.log.Error().Err(err).Str("listener", name).
+						Msg("listener exited with error, restarting serve call")
+				}
+				if ctx.Err() != nil || v.err != nil {
+					break
+				}
 			}
 		}()
 	}

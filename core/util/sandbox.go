@@ -31,7 +31,6 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	_, err = exec.LookPath("bwrap")
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't find bubblewrap (bwrap), have you installed it?")
-		p.cleanup()
 		return nil, err
 	}
 
@@ -39,7 +38,6 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 	err = checkBwrapPermissions()
 	if err != nil {
 		p.log.Error().Err(err).Msg("bubblewrap couldn't run")
-		p.cleanup()
 		return nil, err
 	}
 
@@ -48,6 +46,11 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 
 // Start assembles the bubblewrap arguments, binds in the plugin files, and delegates to BasePlugin.Start.
 func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	err := p.setupRunDir()
+	if err != nil {
+		p.log.Err(err).Msg("error setting up plugin runtime directory")
+	}
+
 	// Add the correct bubblewrap args
 	args := []string{
 		"--unshare-all",
@@ -104,21 +107,21 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 
 	// Append the existing runner args onto these args,
 	// since we want to preserve any passed in args
-	p.rargs = append(args, p.rargs...)
+	args = append(args, p.rargs...)
 
 	// Only bind in the plugin files if checks are enabled,
 	// otherwise blindly use the script/exec set by the user
 	if p.check {
 		// Bind in the plugin files
 		if p.pkg {
-			p.rargs = append(p.rargs,
+			args = append(args,
 				"--bind",
 				p.path, bindDir,
 				"--chdir",
 				bindDir,
 			)
 		} else {
-			p.rargs = append(p.rargs,
+			args = append(args,
 				"--bind",
 				p.script,
 				fmt.Sprintf("/%s/%s", bindDir, filepath.Base(p.script)),
@@ -129,6 +132,7 @@ func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientCo
 		p.script = fmt.Sprintf("./%s", filepath.Base(p.script))
 	}
 
+	p.rargsOverride = args
 	return p.BasePlugin.Start(ctx)
 }
 

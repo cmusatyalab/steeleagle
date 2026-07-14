@@ -21,7 +21,8 @@ type ContainerPlugin struct {
 	cid       string
 }
 
-// CreateContainerPlugin creates a ContainerPlugin backed by podman, pulling the image if it is not already present.
+// CreateContainerPlugin creates a ContainerPlugin backed by podman, pulling
+// the image if it is not already present.
 func CreateContainerPlugin(image_ref string, options ...PluginOption) (*ContainerPlugin, error) {
 	// Create the plugin
 	internal, err := CreateBasePlugin(options...)
@@ -38,7 +39,6 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 	_, err = exec.LookPath("podman")
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't find podman, have you installed it?")
-		p.cleanup()
 		return nil, err
 	}
 
@@ -50,21 +50,25 @@ func CreateContainerPlugin(image_ref string, options ...PluginOption) (*Containe
 		err = exec.Command("podman", "pull", p.image_ref).Run()
 		if err != nil {
 			p.log.Error().Err(err).Msg("couldn't run pull with podman: " + p.image_ref)
-			p.cleanup()
 			return nil, err
 		}
 	} else if err != nil {
 		p.log.Error().Err(err).Msg("couldn't run image check with podman")
-		p.cleanup()
 		return nil, err
 	}
 
 	return p, nil
 }
 
-// Start launches the container with the appropriate volume mounts and socket bindings,
-// then returns the listener and gRPC client connection to the caller.
+// Start launches the container with the appropriate volume mounts and socket
+// bindings, then returns the listener and gRPC client connection to the
+// caller.
 func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	err := p.setupRunDir()
+	if err != nil {
+		p.log.Err(err).Msg("error setting up plugin runtime directory")
+	}
+
 	// Set environment variables and link in the plugin runtime folder
 	args := []string{
 		"run",
@@ -113,37 +117,38 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 		}
 	}
 
-	// Append the existing runner args onto these args,
-	// since we want to preserve any passed in args
-	p.rargs = append(args, p.rargs...)
+	// Append the existing runner args onto these args, since we want to
+	// preserve any passed in args
+	args = append(args, p.rargs...)
 
-	// Create a cid file to capture the container ID
-	// which is needed to get the container PID
+	// Create a cid file to capture the container ID which is needed to get the
+	// container PID
 	cidFile := filepath.Join(p.runDir, ".cid")
-	p.rargs = append(p.rargs, "--cidfile", cidFile)
+	args = append(args, "--cidfile", cidFile)
 
-	// Only bind in the plugin files if checks are enabled,
-	// otherwise blindly use the script/exec set by the user
+	// Only bind in the plugin files if checks are enabled, otherwise blindly
+	// use the script/exec set by the user
 	if p.check {
 		// Bind in the plugin files
 		if p.pkg {
 			// Bind in the plugin directory
-			p.rargs = append(
-				p.rargs, "-v",
+			args = append(
+				args, "-v",
 				fmt.Sprintf("%s:/%s:Z", p.path, bindDir),
 			)
 		} else {
 			// Bind in the script
-			p.rargs = append(
-				p.rargs, "-v",
+			args = append(
+				args, "-v",
 				fmt.Sprintf("%s:/%s/%s:Z", p.script, bindDir, filepath.Base(p.script)),
 			)
 		}
-		p.rargs = append(p.rargs, "-w", "/"+bindDir, p.image_ref) // change workdir
+		args = append(args, "-w", "/"+bindDir, p.image_ref) // change workdir
 		p.script = "./" + filepath.Base(p.script)
 	}
 
 	// Append the podman PID namespace to the allowed PIDs
+	p.rargsOverride = args
 	ln, conn, err := p.BasePlugin.Start(ctx)
 	if err != nil {
 		p.log.Error().Err(err).Msg("couldn't start container plugin")
@@ -166,7 +171,8 @@ func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.Client
 	return ln, conn, err
 }
 
-// setCID polls cidPath until the container ID is written or the plugin timeout elapses.
+// setCID polls cidPath until the container ID is written or the plugin timeout
+// elapses.
 func (p *ContainerPlugin) setCID(cidPath string) error {
 	// Retry reads to give container time to write to cid file
 	deadline := time.Now().Add(time.Duration(p.timeout) * time.Second)
@@ -181,7 +187,8 @@ func (p *ContainerPlugin) setCID(cidPath string) error {
 	return fmt.Errorf("timed out waiting for container ID file: %s", cidPath)
 }
 
-// getPID returns the host PID of the running container by inspecting it with podman.
+// getPID returns the host PID of the running container by inspecting it with
+// podman.
 func (p *ContainerPlugin) getPID() (int, error) {
 	out, err := exec.Command("podman", "inspect", "--format", "{{.State.Pid}}", p.cid).Output()
 	if err != nil {
