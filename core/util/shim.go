@@ -46,3 +46,5 @@ func CreateShimPlugin(clientSocketPath, listenSocketPath string, options ...Plug
 func (p *ShimPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
 	return p.createSocketEndpoints()
 }
+
+var _ Plugin = (*ShimPlugin)(nil)

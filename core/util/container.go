@@ -200,3 +200,5 @@ func (p *ContainerPlugin) getPID() (int, error) {
 	}
 	return pid, nil
 }
+
+var _ Plugin = (*ContainerPlugin)(nil)

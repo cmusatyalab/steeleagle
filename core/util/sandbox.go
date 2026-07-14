@@ -151,3 +151,5 @@ func checkBwrapPermissions() error {
 	}
 	return nil
 }
+
+var _ Plugin = (*SandboxPlugin)(nil)
