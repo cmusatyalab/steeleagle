@@ -6,13 +6,13 @@ import (
 	"github.com/cmusatyalab/steeleagle/core/util"
 )
 
-// VideoStreamingType determines the type of video streaming that the vehicle
-// uses.  RTSP will forward an existing RTSP stream from the driver. Frames
-// will encode individually sent frames into an RTSP stream.
-type VideoStreamingType int
+// VideoStreamType determines the type of video streaming that the vehicle
+// uses. RTSP will forward an existing RTSP stream from the driver. Frames will
+// encode individually sent frames into an RTSP stream.
+type VideoStreamType int
 
 const (
-	RTSP VideoStreamingType = iota
+	RTSP VideoStreamType = iota
 	Frames
 )
 

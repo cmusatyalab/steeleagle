@@ -21,6 +21,7 @@ import (
 type Vehicle struct {
 	name          string                  // vehicle name
 	runDir        string                  // path to vehicle runtime directory
+	running       atomic.Bool             // whether or not the vehicle is currently running
 	pluginCfg     PluginConfig            // plugin configuration
 	policyCfg     PolicyConfig            // policy configuration
 	videoCfg      VideoStreamConfig       // video stream config
@@ -38,7 +39,6 @@ type Vehicle struct {
 	errCh         chan error              // error channel shared by listeners
 	err           error                   // vehicle error
 	shutdown      chan struct{}           // shutdown channel
-	started       atomic.Bool             // indicates the vehicle has started
 }
 
 // Create a new vehicle with the given plugins and options.
@@ -100,8 +100,8 @@ func NewVehicle(
 // call to Start, the vehicle will keep running until it encounters a fatal
 // error or the provided context is canceled.
 func (v *Vehicle) Start(ctx context.Context) error {
-	if !v.started.CompareAndSwap(false, true) {
-		return fmt.Errorf("vehicle already started")
+	if !v.running.CompareAndSwap(false, true) {
+		return fmt.Errorf("vehicle already running")
 	}
 	// Set up new context
 	ctx, cancel := context.WithCancel(ctx)
@@ -307,7 +307,7 @@ func (v *Vehicle) cleanup() {
 	v.services.GracefulStop()
 	v.cancelFn()
 	os.RemoveAll(v.runDir)
-	v.started.Store(false)
+	v.running.Store(false)
 	v.log.Info().Msg("shutdown complete")
 }
 

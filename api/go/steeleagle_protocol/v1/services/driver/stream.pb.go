@@ -207,7 +207,7 @@ func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
 
 type StreamVideoFramesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Frame         *stream.RawFrame       `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // raw frame from the camera
+	Frame         *stream.EncodedFrame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // raw frame from the camera
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -242,7 +242,7 @@ func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *StreamVideoFramesResponse) GetFrame() *stream.RawFrame {
+func (x *StreamVideoFramesResponse) GetFrame() *stream.EncodedFrame {
 	if x != nil {
 		return x.Frame
 	}
@@ -348,9 +348,9 @@ const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"\x19GetVideoStreamURLResponse\x12\x1d\n" +
 	"\n" +
 	"stream_url\x18\x01 \x01(\tR\tstreamUrl\"\x1a\n" +
-	"\x18StreamVideoFramesRequest\"c\n" +
-	"\x19StreamVideoFramesResponse\x12F\n" +
-	"\x05frame\x18\x01 \x01(\v20.steeleagle_protocol.v1.messages.stream.RawFrameR\x05frame\"\x18\n" +
+	"\x18StreamVideoFramesRequest\"g\n" +
+	"\x19StreamVideoFramesResponse\x12J\n" +
+	"\x05frame\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.stream.EncodedFrameR\x05frame\"\x18\n" +
 	"\x16StreamTelemetryRequest\"j\n" +
 	"\x17StreamTelemetryResponse\x12O\n" +
 	"\ttelemetry\x18\x01 \x01(\v21.steeleagle_protocol.v1.messages.stream.TelemetryR\ttelemetry2\xfc\x03\n" +
@@ -382,12 +382,12 @@ var file_steeleagle_protocol_v1_services_driver_stream_proto_goTypes = []any{
 	(*StreamVideoFramesResponse)(nil),        // 4: steeleagle_protocol.v1.services.driver.data.StreamVideoFramesResponse
 	(*StreamTelemetryRequest)(nil),           // 5: steeleagle_protocol.v1.services.driver.data.StreamTelemetryRequest
 	(*StreamTelemetryResponse)(nil),          // 6: steeleagle_protocol.v1.services.driver.data.StreamTelemetryResponse
-	(*stream.RawFrame)(nil),                  // 7: steeleagle_protocol.v1.messages.stream.RawFrame
+	(*stream.EncodedFrame)(nil),              // 7: steeleagle_protocol.v1.messages.stream.EncodedFrame
 	(*stream.Telemetry)(nil),                 // 8: steeleagle_protocol.v1.messages.stream.Telemetry
 }
 var file_steeleagle_protocol_v1_services_driver_stream_proto_depIdxs = []int32{
 	0, // 0: steeleagle_protocol.v1.services.driver.data.GetVideoStreamURLRequest.resolution:type_name -> steeleagle_protocol.v1.services.driver.data.GetVideoStreamURLRequest.Resolution
-	7, // 1: steeleagle_protocol.v1.services.driver.data.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.stream.RawFrame
+	7, // 1: steeleagle_protocol.v1.services.driver.data.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.stream.EncodedFrame
 	8, // 2: steeleagle_protocol.v1.services.driver.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.stream.Telemetry
 	1, // 3: steeleagle_protocol.v1.services.driver.data.StreamService.GetVideoStreamURL:input_type -> steeleagle_protocol.v1.services.driver.data.GetVideoStreamURLRequest
 	3, // 4: steeleagle_protocol.v1.services.driver.data.StreamService.StreamVideoFrames:input_type -> steeleagle_protocol.v1.services.driver.data.StreamVideoFramesRequest

@@ -39,12 +39,34 @@ func (v *Vehicle) streamTelemetry(ctx context.Context) error {
 // Stream video from the driver, updating the vehicle data store. This method
 // chooses the stream type based on the vehicle's video configuration.
 func (v *Vehicle) streamVideo(ctx context.Context) error {
-	return v.streamRTSPVideo(ctx)
+	switch v.videoCfg.StreamType {
+	case RTSP:
+		return v.streamRTSPVideo(ctx)
+	case Frames:
+		return v.streamEncodedVideoFrames(ctx)
+	}
+	return nil
 }
 
 // Start streaming video frames and telemetry from the driver, updating the
 // vehicle data store.
 func (v *Vehicle) startDriverStreaming(ctx context.Context) {
-	go func() { v.streamTelemetry(ctx) }()
-	go func() { v.streamVideo(ctx) }()
+	go func() {
+		for {
+			err := v.streamTelemetry(ctx)
+			if ctx.Err() != nil {
+				return
+			}
+			v.log.Err(err).Msg("error streaming telemetry, restarting stream")
+		}
+	}()
+	go func() {
+		for {
+			err := v.streamVideo(ctx)
+			if ctx.Err() != nil {
+				return
+			}
+			v.log.Err(err).Msg("error streaming frames, restarting stream")
+		}
+	}()
 }
