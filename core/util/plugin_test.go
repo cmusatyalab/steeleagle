@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/rs/zerolog"
 )
 
 func TestPlugin(t *testing.T) {
@@ -15,7 +16,8 @@ func TestPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithLogger(logger))
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -35,7 +37,12 @@ func TestPluginWithParent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithParentDir(filepath.Join(t.TempDir(), "foo")))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	plugin, err := util.CreateBasePlugin(
+		util.WithPath(path),
+		util.WithParentDir(filepath.Join(t.TempDir(), "foo")),
+		util.WithLogger(logger),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -62,7 +69,11 @@ func TestPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	plugin, err := util.CreateBasePlugin(
+		util.WithPath(path),
+		util.WithLogger(logger),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -82,7 +93,11 @@ func TestPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	plugin, err := util.CreateBasePlugin(
+		util.WithPath(path),
+		util.WithLogger(logger),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -102,7 +117,12 @@ func TestPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
-	plugin, err := util.CreateBasePlugin(util.WithPath(path), util.WithAuthCode(util.MissionCode))
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
+	plugin, err := util.CreateBasePlugin(
+		util.WithPath(path),
+		util.WithAuthCode(util.MissionCode),
+		util.WithLogger(logger),
+	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
 	}
@@ -122,11 +142,13 @@ func TestPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateBasePlugin(
 		util.WithPath(path),
 		util.WithScriptArgs([]string{"--error"}),
 		util.WithoutClient(),
 		util.WithoutListener(),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -153,11 +175,13 @@ func TestPluginNoCheck(t *testing.T) {
 	if err != nil {
 		t.Skip("couldn't find uv, skipping this test")
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateBasePlugin(
 		util.WithExecutable("uv"),
 		util.WithExecutableArgs([]string{"run", "--directory", path}),
 		util.WithScript(filepath.Base(pyFile)),
 		util.WithoutCheck(),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)

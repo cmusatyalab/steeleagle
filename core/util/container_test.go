@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
+	"github.com/rs/zerolog"
 )
 
 func TestContainerPlugin(t *testing.T) {
@@ -18,10 +19,12 @@ func TestContainerPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"alpine",
 		util.WithPath(path),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -46,10 +49,12 @@ func TestContainerPluginRunhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_pkg: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"alpine",
 		util.WithPath(path),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -74,10 +79,12 @@ func TestContainerPluginPython(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
 		util.WithPath(path),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -102,6 +109,7 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper py_pkg: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
 		util.WithReadOnlyFiles([]string{path + "/pyproject.toml"}),
@@ -109,6 +117,7 @@ func TestContainerPluginPythonCustomExec(t *testing.T) {
 		util.WithExecutable("uv"),
 		util.WithExecutableArgs([]string{"run"}),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -129,6 +138,7 @@ func TestContainerPluginFileBinding(t *testing.T) {
 	if err != nil {
 		t.Skip("podman not found, skipping test")
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
 		util.WithoutClient(),
@@ -137,6 +147,7 @@ func TestContainerPluginFileBinding(t *testing.T) {
 		util.WithExecutable("uv"),
 		util.WithExecutableArgs([]string{"run"}),
 		util.WithScript(fileMain),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -160,11 +171,13 @@ func TestContainerPluginWrongAuthCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"alpine",
 		util.WithPath(path),
 		util.WithAuthCode(util.MissionCode),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -189,12 +202,14 @@ func TestContainerPluginArgs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	plugin, err := util.CreateContainerPlugin(
 		"alpine",
 		util.WithPath(path),
 		util.WithScriptArgs([]string{"--error"}),
 		util.WithoutClient(),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err != nil {
 		t.Fatalf("encountered error creating plugin: %v", err)
@@ -221,10 +236,12 @@ func TestContainerPluginWrongTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
 	}
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: testLogger{t}})
 	_, err = util.CreateContainerPlugin(
 		"foobar",
 		util.WithPath(path),
 		util.WithRunnerArgs([]string{"--rm"}),
+		util.WithLogger(logger),
 	)
 	if err == nil {
 		t.Fatalf("no error creating plugin when it was expected")
