@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
-	health_pb "google.golang.org/grpc/health/grpc_health_v1"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // run establishes the gRPC server and client sockets, serves a health check,
@@ -48,15 +48,15 @@ func run() error {
 	// Serve the health service
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(notifyInt))
 	defer server.GracefulStop()
-	health_pb.RegisterHealthServer(server, health.NewServer())
+	healthpb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)
 	fmt.Println("go_test: starting server")
 
 	// Wait to receive a request, then send another as an ack
 	select {
 	case <-done:
-		client := health_pb.NewHealthClient(conn)
-		_, err = client.Check(context.Background(), &health_pb.HealthCheckRequest{})
+		client := healthpb.NewHealthClient(conn)
+		_, err = client.Check(context.Background(), &healthpb.HealthCheckRequest{})
 		if err != nil {
 			return err
 		}

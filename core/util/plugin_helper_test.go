@@ -10,7 +10,7 @@ import (
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
-	health_pb "google.golang.org/grpc/health/grpc_health_v1"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/peer"
 )
 
@@ -44,14 +44,14 @@ func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code u
 	// Serve the health service
 	server := grpc.NewServer(grpc.ChainUnaryInterceptor(notifyInt))
 	defer server.GracefulStop()
-	health_pb.RegisterHealthServer(server, health.NewServer())
+	healthpb.RegisterHealthServer(server, health.NewServer())
 	go server.Serve(ln)
 	t.Log("rpc check: serving the server")
 
 	// Make a check request with a timeout
-	client := health_pb.NewHealthClient(conn)
+	client := healthpb.NewHealthClient(conn)
 	ctx, _ := context.WithTimeout(t.Context(), time.Second)
-	_, err := client.Check(ctx, &health_pb.HealthCheckRequest{}, grpc.WaitForReady(true))
+	_, err := client.Check(ctx, &healthpb.HealthCheckRequest{}, grpc.WaitForReady(true))
 	t.Log("rpc check: sent client check")
 	if err != nil {
 		return err
