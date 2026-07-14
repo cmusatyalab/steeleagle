@@ -24,4 +24,5 @@ type GabrielConfig struct {
 type VideoStreamConfig struct {
 	Codec      string
 	Resolution VideoResolution
+	StreamType VideoStreamType
 }

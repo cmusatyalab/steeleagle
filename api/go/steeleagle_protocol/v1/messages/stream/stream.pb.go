@@ -14,7 +14,6 @@ import (
 	v1 "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -1063,7 +1062,7 @@ var File_steeleagle_protocol_v1_messages_stream_stream_proto protoreflect.FileDe
 
 const file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc = "" +
 	"\n" +
-	"3steeleagle_protocol/v1/messages/stream/stream.proto\x12&steeleagle_protocol.v1.messages.stream\x1a#steeleagle_protocol/v1/common.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"#\n" +
+	"3steeleagle_protocol/v1/messages/stream/stream.proto\x12&steeleagle_protocol.v1.messages.stream\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"#\n" +
 	"\vVehicleInfo\x12\x14\n" +
 	"\x05armed\x18\x01 \x01(\bR\x05armed\"-\n" +
 	"\vBatteryInfo\x12\x1e\n" +

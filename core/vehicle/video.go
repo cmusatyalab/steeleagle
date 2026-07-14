@@ -11,10 +11,33 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// streamEncodedVideoFrames is a helper method that streams discrete encoded
+// frames from the driver.
+func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
+	v.log.Info().Msg("starting streaming encoded video frames")
+
+	client := driverpb.NewStreamServiceClient(v.driver)
+	req := &driverpb.StreamVideoFramesRequest{}
+
+	stream, err := client.StreamVideoFrames(ctx, req)
+	if err != nil {
+		return err
+	}
+	for {
+		if ctx.Err() != nil {
+			return nil
+		}
+		f, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+		v.store.addFrame(f.Frame)
+	}
+}
+
 // streamRTSPVideo is a helper method that starts RTSP video streaming from the
 // driver.
 func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
-
 	v.log.Info().Msg("starting RTSP video stream")
 
 	client := driverpb.NewStreamServiceClient(v.driver)
