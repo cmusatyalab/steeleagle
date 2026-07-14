@@ -130,9 +130,9 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 		return nil, nil, err
 	}
 
-	// Create the command; check in sequence whether the script, executable,
-	// and then runner are set, and prepend the arguments for each into one
-	// executable string
+	// Create the command if it hasn't already been created; check in
+	// sequence whether the script, executable, and then runner are set,
+	// and prepend the arguments for each into one executable string
 	if p.final == nil {
 		if p.script != "" {
 			p.final = slices.Insert(p.sargs, 0, p.script)

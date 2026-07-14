@@ -64,10 +64,12 @@ func CreateContainerPlugin(imageRef string, options ...PluginOption) (*Container
 // bindings, then returns the listener and gRPC client connection to the
 // caller.
 func (p *ContainerPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	// Check if final has been set, if so just re-run
 	if p.final != nil {
 		return p.BasePlugin.Start(ctx)
 	}
 
+	// Setup the run directory
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")

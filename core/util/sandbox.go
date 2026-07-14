@@ -46,10 +46,12 @@ func CreateSandboxPlugin(options ...PluginOption) (*SandboxPlugin, error) {
 
 // Start assembles the bubblewrap arguments, binds in the plugin files, and delegates to BasePlugin.Start.
 func (p *SandboxPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	// Check if final has been set, if so just re-run
 	if p.final != nil {
 		return p.BasePlugin.Start(ctx)
 	}
 
+	// Setup the run directory
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
