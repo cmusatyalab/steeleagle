@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -57,7 +58,7 @@ type BasePlugin struct {
 	files         map[string]int     // linked files (only applicable to sandboxes/containers)
 	start         int64              // plugin start time
 	timeout       int                // timeout in seconds waiting for the server to start
-	running       bool               // whether or not the plugin is currently running
+	running       atomic.Bool        // whether or not the plugin is currently running
 	parentDir     string             // parent directory for plugin to live under (used to create runDir)
 	runDir        string             // runtime directory path
 	cSock         string             // client socket file path
@@ -120,6 +121,9 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 // launches the subprocess, and returns the listener and gRPC client
 // connection.
 func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	if !p.running.CompareAndSwap(false, true) {
+		return nil, nil, fmt.Errorf("plugin already running")
+	}
 	// Create a new context with a cancel function
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
@@ -349,6 +353,7 @@ func (p *BasePlugin) cleanup() {
 	// Remove the plugin run directory
 	err := os.RemoveAll(p.runDir)
 	p.cancel()
+	p.running.Store(false)
 	if err != nil {
 		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
@@ -364,7 +369,6 @@ func (p *BasePlugin) run() error {
 
 	// Populate the plugin information
 	p.start = time.Now().UnixMilli()
-	p.running = true
 
 	return nil
 }
