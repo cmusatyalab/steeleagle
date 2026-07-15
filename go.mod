@@ -3,6 +3,7 @@ module github.com/cmusatyalab/steeleagle
 go 1.25.5
 
 require (
+	9fans.net/go v0.0.8-0.20250307142834-96bdba94b63f
 	github.com/adrg/xdg v0.5.3
 	github.com/cmusatyalab/gabriel/go-client v0.1.1
 	github.com/cmusatyalab/gabriel/protocol/go v0.1.1-0.20260707195611-936af3c0b393
@@ -13,7 +14,6 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	go.etcd.io/bbolt v1.5.0
-	go.nanomsg.org/mangos/v3 v3.4.2
 	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 	tailscale.com v1.92.5
@@ -22,7 +22,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/akutz/memconn v0.1.0 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa // indirect
@@ -49,7 +48,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
 	github.com/jellydator/ttlcache/v3 v3.3.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24 // indirect

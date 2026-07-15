@@ -83,7 +83,7 @@ type BasePlugin struct {
 func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 	// Set defaults
 	p := &BasePlugin{
-		name:      uuid.New().String()[:4],
+		name:      uuid.New().String(),
 		code:      UnknownCode,
 		files:     make(map[string]int),
 		client:    true,
@@ -223,6 +223,9 @@ func (p *BasePlugin) Watch() <-chan error {
 
 // Wait blocks until the plugin subprocess exits and returns its exit error.
 func (p *BasePlugin) Wait() error {
+	if !p.running.Load() {
+		return fmt.Errorf("plugin not running")
+	}
 	if p.cmd == nil {
 		return nil
 	}

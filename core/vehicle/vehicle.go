@@ -20,7 +20,7 @@ import (
 
 type Vehicle struct {
 	name          string                  // vehicle name
-	runDir        string                  // path to vehicle runtime directory
+	RunDir        string                  // path to vehicle runtime directory
 	running       atomic.Bool             // whether or not the vehicle is currently running
 	pluginCfg     PluginConfig            // plugin configuration
 	policyCfg     PolicyConfig            // policy configuration
@@ -59,13 +59,13 @@ func NewVehicle(
 
 	// Create the runtime directory
 	var err error
-	vehicle.runDir, err = util.GetVehicleDirByName(vehicle.name)
+	vehicle.RunDir, err = util.GetVehicleDirByName(vehicle.name)
 	if err != nil {
-		vehicle.log.Error().Err(err).Str("folder", vehicle.runDir).
+		vehicle.log.Error().Err(err).Str("folder", vehicle.RunDir).
 			Msg("Unable to create vehicle directory")
 		return nil, err
 	}
-	vehicle.log.Debug().Str("folder", vehicle.runDir).
+	vehicle.log.Debug().Str("folder", vehicle.RunDir).
 		Msg("vehicle folder configured")
 
 	// Set up law handling
@@ -81,7 +81,7 @@ func NewVehicle(
 	)
 
 	// Initialize data store
-	vehicle.store, err = newDataStore(vehicle.runDir)
+	vehicle.store, err = newDataStore(vehicle.RunDir)
 	if err != nil {
 		vehicle.log.Err(err).Msg("error creating data store")
 		return nil, err
@@ -111,7 +111,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	// socket is a general endpoint for arbitrary entities to make API calls to
 	// the vehicle
 	var err error
-	mainSocketPath := filepath.Join(v.runDir, MainSocketName)
+	mainSocketPath := filepath.Join(v.RunDir, MainSocketName)
 	ln, err := createUnixSocketListener(mainSocketPath)
 	if err != nil {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
@@ -124,7 +124,7 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Create an admin socket listener with AuthCode AdminCode. The admin
 	// socket is intended for use by this process
-	adminSocketPath := filepath.Join(v.runDir, AdminSocketName)
+	adminSocketPath := filepath.Join(v.RunDir, AdminSocketName)
 	ln, err = createUnixSocketListener(adminSocketPath)
 	if err != nil {
 		v.log.Error().Err(err).Str("path", mainSocketPath).
@@ -288,6 +288,9 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 // Wait blocks until the vehicle hits a fatal error.
 func (v *Vehicle) Wait() error {
+	if !v.running.Load() {
+		return fmt.Errorf("vehicle not running")
+	}
 	<-v.shutdown
 	return v.err
 }
@@ -306,7 +309,7 @@ func (v *Vehicle) ControlState() string {
 func (v *Vehicle) cleanup() {
 	v.services.GracefulStop()
 	v.cancelFn()
-	os.RemoveAll(v.runDir)
+	os.RemoveAll(v.RunDir)
 	v.running.Store(false)
 	v.log.Info().Msg("shutdown complete")
 }

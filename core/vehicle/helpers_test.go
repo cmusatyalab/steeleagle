@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ServerSocket is the location of the server listener.
@@ -62,22 +63,46 @@ type StreamService struct {
 	url string
 }
 
-// GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back a mock URL.
-// This is called automatically by the vehicle's background driver streaming
-// as soon as it starts, so unlike the other mocked RPCs it does not report
-// on commCh: doing so would race with (and starve) the command-routing
+// GetVideoStreamURL mocks and logs a GetVideoStreamURL request and sends back
+// a mock URL. This is called automatically by the vehicle's background driver
+// streaming as soon as it starts, so unlike the other mocked RPCs it does not
+// report on commCh: doing so would race with (and starve) the command-routing
 // assertions that tests make against explicit RPCs.
-func (s *StreamService) GetVideoStreamURL(ctx context.Context, req *driverpb.GetVideoStreamURLRequest) (*driverpb.GetVideoStreamURLResponse, error) {
+func (s *StreamService) GetVideoStreamURL(
+	ctx context.Context,
+	req *driverpb.GetVideoStreamURLRequest) (*driverpb.GetVideoStreamURLResponse, error) {
 	return &driverpb.GetVideoStreamURLResponse{StreamUrl: s.url}, nil
 }
 
 // StreamTelemetry mocks and logs a StreamTelemetry request. Like
 // GetVideoStreamURL, it is triggered automatically on vehicle start and so
 // does not report on commCh.
-func (s *StreamService) StreamTelemetry(req *driverpb.StreamTelemetryRequest, stream driverpb.StreamService_StreamTelemetryServer) error {
+func (s *StreamService) StreamTelemetry(
+	req *driverpb.StreamTelemetryRequest,
+	stream driverpb.StreamService_StreamTelemetryServer) error {
 	for {
 		err := stream.Send(&driverpb.StreamTelemetryResponse{
 			Telemetry: &streampb.Telemetry{},
+		})
+		if err != nil {
+			return err
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func (s *StreamService) StreamVideoFrames(
+	req *driverpb.StreamVideoFramesRequest,
+	stream driverpb.StreamService_StreamVideoFramesServer) error {
+	frameId := 0
+	for {
+		frame := &streampb.EncodedFrame{
+			Timestamp: timestamppb.Now(),
+			Id:        uint64(frameId),
+		}
+		frameId += 1
+		err := stream.Send(&driverpb.StreamVideoFramesResponse{
+			Frame: frame,
 		})
 		if err != nil {
 			return err
@@ -104,8 +129,10 @@ func (m *MissionService) StopMission(ctx context.Context, req *missionpb.StopMis
 	return &missionpb.StopMissionResponse{}, nil
 }
 
-// setupPlugins creates the mission and driver gRPC servers/plugins for tests. Can
-// provide a stream url that the StreamService will respond with as well.
+// setupPlugins creates the mission and driver gRPC servers/plugins for tests.
+// Can provide a stream url that the StreamService will respond with as well.
+// Returns the driver plugin, mission plugin, a client for the mission gRPC
+// service, and a communication channel.
 func setupPlugins(t *testing.T, url string) (util.Plugin, util.Plugin, *grpc.ClientConn, chan string, error) {
 	t.Helper()
 
@@ -183,7 +210,7 @@ var _ io.Writer = (*testLogger)(nil)
 func NewVehicle(t *testing.T, cfg vehicle.PluginConfig, options ...vehicle.VehicleOption) (*vehicle.Vehicle, error) {
 	t.Helper()
 	out := testLogger{t}
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: out})
+	logger := zerolog.New(zerolog.ConsoleWriter{Out: out}).With().Timestamp().Logger()
 	options = append(options, vehicle.WithLogger(logger))
 	return vehicle.NewVehicle(cfg, options...)
 }

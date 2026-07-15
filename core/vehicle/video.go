@@ -1,6 +1,8 @@
 package vehicle
 
 import (
+	"bufio"
+	"container/ring"
 	"context"
 	"fmt"
 	"io"
@@ -35,6 +37,14 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 	}
 }
 
+func joinLines(lines []string) string {
+	out := ""
+	for _, l := range lines {
+		out += l + "\n"
+	}
+	return out
+}
+
 // streamRTSPVideo is a helper method that starts RTSP video streaming from the
 // driver.
 func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
@@ -55,31 +65,49 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("error: %w", err)
+		return fmt.Errorf("stdout pipe: %w", err)
 	}
-	errCh := make(chan error, 1)
-
-	v.log.Info().Msg("FFmpeg streaming started")
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("stderr pipe: %w", err)
+	}
+	// Keep only the last N lines of stderr in memory.
+	tail := ring.New(20)
+	stderrDone := make(chan struct{})
 	go func() {
-		err = cmd.Wait()
-		v.log.Error().Msg("FFmpeg command exited")
-		if err != nil {
-			v.log.Err(err).Msg("FFmpeg non-zero exit status")
-			errCh <- fmt.Errorf("FFmpeg non-zero exit status: %v", err)
-			return
+		defer close(stderrDone)
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			tail.Value = scanner.Text()
+			tail = tail.Next()
 		}
 	}()
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("error starting FFmpeg: %w", err)
 	}
+	v.log.Info().Msg("FFmpeg streaming started")
+
+	errCh := make(chan error, 1)
+	go func() {
+		<-stderrDone
+		err = cmd.Wait()
+		var lines []string
+		tail.Do(func(v any) {
+			if v != nil {
+				lines = append(lines, v.(string))
+			}
+		})
+		v.log.Error().Msgf("FFmpeg command exited:\n%s", joinLines(lines))
+		errCh <- fmt.Errorf("FFmpeg exit status: %v", err)
+	}()
 
 	frameCh := make(chan []byte, 1)
 	height, width := v.videoCfg.Resolution.Ints()
 	go v.readFrames(ctx, stdout, frameCh, height*width*3, errCh)
 	go v.consumeFrames(ctx, frameCh)
 
-	return nil
+	return <-errCh
 }
 
 // getFFmpegArgs returns the arguments for the FFmpeg command corresponding
@@ -130,6 +158,7 @@ func (v *Vehicle) readFrames(
 			}
 			return
 		}
+		v.log.Debug().Msg("got a frame!")
 		select {
 		case out <- frame:
 		default:

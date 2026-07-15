@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"google.golang.org/grpc"
@@ -44,7 +45,23 @@ func CreateShimPlugin(clientSocketPath, listenSocketPath string, options ...Plug
 
 // Start returns the client and listen endpoints.
 func (p *ShimPlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn, error) {
+	// Prevent against multiple Start() calls while running
+	if !p.running.CompareAndSwap(false, true) {
+		return nil, nil, fmt.Errorf("plugin already running")
+	}
+	p.ctx = ctx
+
+	go func() {
+		<-ctx.Done()
+		p.running.Store(false)
+	}()
+
 	return p.createSocketEndpoints()
+}
+
+func (p *ShimPlugin) Wait() error {
+	<-p.ctx.Done()
+	return nil
 }
 
 var _ Plugin = (*ShimPlugin)(nil)

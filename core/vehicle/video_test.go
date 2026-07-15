@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/exec"
 	"testing"
-	"time"
 )
 
 func TestStreamingFromFile(t *testing.T) {
@@ -27,7 +26,10 @@ func TestStreamingRTSP(t *testing.T) {
 	generateTestVideo(t, videoPath, testWidth, testHeight, testFPS, testDuration)
 
 	rtspURL := startRTSPServer(t, videoPath)
-	time.Sleep(500 * time.Millisecond)
 
 	testStreaming(t, rtspURL)
+}
+
+func TestStreamingFrames(t *testing.T) {
+	testStreaming(t, "")
 }
