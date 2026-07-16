@@ -210,8 +210,8 @@ message GoToGlobalPositionRequest {
   optional HeadingMode heading_mode = 2;
   // determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
   optional AltitudeMode altitude_mode = 3;
-  // maximum velocity during transit
-  optional Velocity max_velocity = 4;
+  // speed during transit
+  optional float speed = 4;
 }
 
 message GoToGlobalPositionResponse {}
@@ -226,8 +226,8 @@ enum ReferenceFrame {
 message GoToRelativePositionRequest {
   // target relative position
   RelativePosition position = 1;
-  // maximum velocity during transit
-  optional Velocity max_velocity = 2;
+  // speed during transit
+  optional float speed = 2;
   // frame of reference
   optional ReferenceFrame frame = 3;
 }
