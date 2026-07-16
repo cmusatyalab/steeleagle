@@ -6,6 +6,8 @@ SPDX-License-Identifier: GPL-2.0-only
 
 ![SteelEagle logo](docs/static/img/logo-text.png)
 
+[![Go CI](https://github.com/cmusatyalab/steeleagle/actions/workflows/go-ci.yml/badge.svg?branch=v4.0-beta)](https://github.com/cmusatyalab/steeleagle/actions/workflows/go-ci.yml)
+
 # SteelEagle: Edge-Enabled Drone Autonomy
 
 ## Introduction
