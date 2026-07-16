@@ -247,11 +247,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 
 	// Start streaming frames and telemetry from the driver
 	v.startDriverStreaming(ctx)
-	if err != nil {
-		v.log.Err(err).Msg("failed to stream from driver")
-		cancel()
-		return err
-	}
 
 	// Initialize the store, launching goroutine to flush telemetry data to
 	// disk periodically
