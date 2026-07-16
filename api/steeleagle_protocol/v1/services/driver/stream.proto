@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle_protocol.v1.services.driver.data;
+package steeleagle_protocol.v1.services.driver.stream;
 
 import "steeleagle_protocol/v1/messages/stream/stream.proto";
 
@@ -47,7 +47,7 @@ service StreamService {
 
 message GetVideoStreamURLRequest {
   enum Resolution {
-    RESOLUTION_UNSPECIFIED = 0;
+    RESOLUTION_UNSPECIFIED = 0; // defaults to 720P
     RESOLUTION_480P = 1;
     RESOLUTION_720P = 2;
     RESOLUTION_1080P = 3;

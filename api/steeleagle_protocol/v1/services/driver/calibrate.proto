@@ -1,0 +1,43 @@
+// SPDX-FileCopyrightText: 2025 Carnegie Mellon University - Living Edge Lab
+//
+// SPDX-License-Identifier: GPL-2.0-only
+
+syntax = "proto3";
+package steeleagle_protocol.v1.services.driver.calibration;
+
+/*
+ * Used to calibrate sensors on the driver.
+ *
+ * This is an internal service used to retrieve calibrate onboard sensors
+ * such as magnetometers and gimbals. These RPCs are only exposed to server
+ * or admin clients.
+ */
+service CalibrationService {
+  /*
+   * Calibrates a given sensor.
+   *
+   * Streams back instructions on how to calibrate a sensor. Keeps sending
+   * back instructions until either the calibration fails or succeeds.
+   * This function should only be called by the OS or a remote server, 
+   * and not by any plugins.
+   */
+  rpc Calibrate (CalibrateRequest)
+    returns (stream CalibrateResponse);
+}
+
+message CalibrateRequest {
+  enum Sensor {
+      SENSOR_UNSPECIFIED = 0; // error if unspecified
+      SENSOR_MAGNETOMETER = 1; // magnetometer sensor
+      SENSOR_GIMBAL = 2; // gimbal camera
+      SENSOR_GYRO = 3; // gyroscope
+  }
+  Sensor sensor = 1; // target sensor type
+  uint32 id = 2; // target sensor ID
+}
+
+message CalibrateResponse {
+  string next_instruction = 1; // the next instructions to follow
+  uint32 step = 2; // step in the calibration procedure
+  uint32 total = 3; // total steps in the calibration procedure
+}

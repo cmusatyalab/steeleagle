@@ -6,3 +6,30 @@ dependencies = [
     "grpcio>=1.82.1",
     "protobuf>=7.35.1",
 ]
+license = "GPL-2.0"
+authors = [
+    { name = "Mihir Bala", email = "mbala@andrew.cmu.edu" },
+    { name = "Aditya Chanana", email = "achanana@andrew.cmu.edu" }
+]
+maintainers = [
+  {name = "Thomas Eiszler", email = "teiszler@andrew.cmu.edu"}
+]
+keywords = [
+    "autonomous",
+    "robots",
+    "edge",
+    "vision",
+    "drone",
+    "uav",
+    "uas",
+    "ugv"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://cmusatyalab.github.io/steeleagle/"
+Repository = "https://github.com/cmusatyalab/steeleagle/"
