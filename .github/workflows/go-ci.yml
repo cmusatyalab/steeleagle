@@ -30,8 +30,11 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg and bubblewrap
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg bubblewrap
+
+      - name: Allow unprivileged user namespaces (required by bubblewrap)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Check formatting (gofmt)
         run: |
