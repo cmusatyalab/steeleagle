@@ -3,6 +3,7 @@ package vehicle
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/rs/zerolog"
@@ -31,7 +32,12 @@ const (
 	otherPlugin
 )
 
-const numPluginRestartAttempts = 5
+// initialRestartBackoff is the delay before the first restart retry after a
+// plugin exits unexpectedly.
+const initialRestartBackoff = 1 * time.Second
+
+// maxRestartBackoff caps the exponential backoff between restart retries.
+const maxRestartBackoff = 30 * time.Second
 
 // Monitors each plugin and logs it if it exits unexpectedly. Canceling ctx
 // kills plugin subprocesses too, so an exit observed after ctx is done is
@@ -68,21 +74,26 @@ func (m *pluginMonitor) handleExit(ctx context.Context, p util.Plugin, pluginTyp
 	switch m.restartPolicy {
 	case noRestart:
 	case alwaysRestart:
-		attempts := 0
+		backoff := initialRestartBackoff
 		for {
 			ln, conn, err := p.Start(ctx)
 			if err != nil {
-				m.log.Err(err).Str("plugin", p.Name()).Msg("error restarting plugin")
-				attempts += 1
-				if attempts > numPluginRestartAttempts {
-					break
+				m.log.Err(err).Str("plugin", p.Name()).
+					Dur("retry_in", backoff).
+					Msg("error restarting plugin, retrying")
+				select {
+				case <-time.After(backoff):
+				case <-ctx.Done():
+					return
+				}
+				backoff *= 2
+				if backoff > maxRestartBackoff {
+					backoff = maxRestartBackoff
 				}
 				continue
 			}
 			m.pluginResetCb(pluginType, p.Name(), ln, conn)
+			return
 		}
-	default:
-		m.log.Error().Str("plugin", p.Name()).
-			Msg("restart policy unimplemented")
 	}
 }

@@ -42,6 +42,25 @@ func TestStartStop(t *testing.T) {
 	}
 }
 
+func TestWaitNotRunning(t *testing.T) {
+	driverPlugin, missionPlugin, _, _, err := setupPlugins(t, "")
+	if err != nil {
+		t.Fatalf("couldn't create plugin config: %v", err)
+	}
+
+	pluginConfig := vehicle.PluginConfig{Driver: driverPlugin, Mission: missionPlugin}
+	vehicle, err := NewVehicle(t, pluginConfig)
+	if err != nil {
+		t.Fatalf("couldn't create vehicle")
+	}
+
+	// Wait() before Start() should fail immediately without blocking
+	err = vehicle.Wait()
+	if err == nil {
+		t.Fatal("expected error from Wait() before Start(), got nil")
+	}
+}
+
 func TestCommandAccessPolicy(t *testing.T) {
 	driverPlugin, missionPlugin, mClient, commCh, err := setupPlugins(t, "")
 	if err != nil {

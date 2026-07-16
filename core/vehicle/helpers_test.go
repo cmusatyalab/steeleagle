@@ -94,11 +94,13 @@ func (s *StreamService) StreamTelemetry(
 func (s *StreamService) StreamVideoFrames(
 	req *driverpb.StreamVideoFramesRequest,
 	stream driverpb.StreamService_StreamVideoFramesServer) error {
-	frameId := 0
+	frameId := 1
 	for {
+		data := make([]byte, 10)
 		frame := &streampb.EncodedFrame{
-			Timestamp: timestamppb.Now(),
-			Id:        uint64(frameId),
+			Timestamp:   timestamppb.Now(),
+			Id:          uint64(frameId),
+			EncodedData: data,
 		}
 		frameId += 1
 		err := stream.Send(&driverpb.StreamVideoFramesResponse{

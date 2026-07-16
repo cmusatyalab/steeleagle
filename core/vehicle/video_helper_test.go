@@ -175,9 +175,19 @@ func testStreaming(t *testing.T, inputFileURL string) {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+		if resp.Frame == nil {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
 		break
 	}
+	if resp.Frame.Id == 0 {
+		t.Error("frame id not set")
+	}
 	if resp.Frame.Timestamp == nil {
-		t.Fatalf("timestamp is nil")
+		t.Error("timestamp is nil")
+	}
+	if len(resp.Frame.EncodedData) == 0 {
+		t.Error("frame data not present")
 	}
 }

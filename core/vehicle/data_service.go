@@ -2,7 +2,6 @@ package vehicle
 
 import (
 	"context"
-	"fmt"
 
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 )
@@ -19,9 +18,6 @@ type DataService struct {
 func (s *DataService) GetResult(ctx context.Context, req *vehiclepb.GetResultRequest) (*vehiclepb.GetResultResponse, error) {
 	producer_name := req.Name
 	res := s.store.getLatestResult(producer_name)
-	if res == nil {
-		return nil, fmt.Errorf("no result available for producer %s", producer_name)
-	}
 	resp := &vehiclepb.GetResultResponse{Result: res}
 	return resp, nil
 }
@@ -30,9 +26,6 @@ func (s *DataService) GetResult(ctx context.Context, req *vehiclepb.GetResultReq
 // returns the latest telemetry available for this vehicle.
 func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTelemetryRequest) (*vehiclepb.GetTelemetryResponse, error) {
 	tel := s.store.getLatestTelemetry()
-	if tel == nil {
-		return nil, fmt.Errorf("telemetry unavailable")
-	}
 	resp := &vehiclepb.GetTelemetryResponse{Telemetry: tel}
 	return resp, nil
 }
@@ -41,9 +34,6 @@ func (s *DataService) GetTelemetry(ctx context.Context, req *vehiclepb.GetTeleme
 // latest video frame available for this vehicle.
 func (s *DataService) GetFrame(ctx context.Context, req *vehiclepb.GetFrameRequest) (*vehiclepb.GetFrameResponse, error) {
 	frame := s.store.getLatestFrame()
-	if frame == nil {
-		return nil, fmt.Errorf("frame unavailable")
-	}
 	resp := &vehiclepb.GetFrameResponse{Frame: frame}
 	return resp, nil
 }

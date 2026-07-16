@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
@@ -36,8 +37,7 @@ type Vehicle struct {
 	store         *dataStore              // data store
 	pluginMonitor *pluginMonitor          // pluginMonitor
 	cancelFn      context.CancelFunc      // cancel function for vehicle context
-	errCh         chan error              // error channel shared by listeners
-	err           error                   // vehicle error
+	err           error                   // vehicle error, populated exactly once when a fatal error occurs
 	shutdown      chan struct{}           // shutdown channel
 }
 
@@ -219,18 +219,28 @@ func (v *Vehicle) Start(ctx context.Context) error {
 	v.pluginMonitor.start(ctx)
 
 	// Serve the gRPC server at all listeners
-	v.errCh = make(chan error, len(v.listeners))
 	for name, ln := range v.listeners {
 		go func() {
-			// serve in a loop to account for plugin restarts that might
-			// cause Serve() to fail
+			// Serve in a loop to account for plugin restarts that might cause
+			// Serve() to fail. Back off between retries so we don't busy-loop.
+			backoff := initialRestartBackoff
 			for {
 				if err := v.services.Serve(ln); err != nil {
 					v.log.Error().Err(err).Str("listener", name).
-						Msg("listener exited with error, restarting serve call")
+						Dur("retry_in", backoff).
+						Msg("listener exited with error, retrying")
 				}
 				if ctx.Err() != nil || v.err != nil {
 					break
+				}
+				select {
+				case <-time.After(backoff):
+				case <-ctx.Done():
+					return
+				}
+				backoff *= 2
+				if backoff > maxRestartBackoff {
+					backoff = maxRestartBackoff
 				}
 			}
 		}()
@@ -268,18 +278,16 @@ func (v *Vehicle) Start(ctx context.Context) error {
 			Msg("no Gabriel endpoints provided, starting vehicle without Gabriel")
 	}
 
-	// Stop goroutines when a fatal error is encountered
+	// Cleanup goroutine
 	go func() {
-		// wait for fatal error
+		// wait for fatal error or context to be canceled
 		select {
-		case v.err = <-v.errCh:
-			v.log.Err(v.err).Msg("vehicle encountered fatal error, initiating shutdown")
 		case <-ctx.Done():
 			v.log.Info().Msg("vehicle context closed, initiating shutdown")
 			v.err = ctx.Err()
 		}
-		// unblock all Vehicle.Wait() calls blocked on this channel
 		v.cleanup()
+		// unblock all Vehicle.Wait() calls blocked on this channel
 		close(v.shutdown)
 	}()
 

@@ -2,16 +2,21 @@ package vehicle
 
 import (
 	"bufio"
-	"container/ring"
 	"context"
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 
 	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// stderrTailLines is the number of trailing FFmpeg stderr lines kept in
+// memory.
+const stderrTailLines = 20
 
 // streamEncodedVideoFrames is a helper method that streams discrete encoded
 // frames from the driver.
@@ -35,14 +40,6 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 		}
 		v.store.addFrame(f.Frame)
 	}
-}
-
-func joinLines(lines []string) string {
-	out := ""
-	for _, l := range lines {
-		out += l + "\n"
-	}
-	return out
 }
 
 // streamRTSPVideo is a helper method that starts RTSP video streaming from the
@@ -71,15 +68,17 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("stderr pipe: %w", err)
 	}
-	// Keep only the last N lines of stderr in memory.
-	tail := ring.New(20)
+	// Keep only the last stderrTailLines lines of stderr in memory
+	var tail []string
 	stderrDone := make(chan struct{})
 	go func() {
 		defer close(stderrDone)
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
-			tail.Value = scanner.Text()
-			tail = tail.Next()
+			tail = append(tail, scanner.Text())
+			if len(tail) > stderrTailLines {
+				tail = tail[1:]
+			}
 		}
 	}()
 
@@ -88,26 +87,29 @@ func (v *Vehicle) streamRTSPVideo(ctx context.Context) error {
 	}
 	v.log.Info().Msg("FFmpeg streaming started")
 
-	errCh := make(chan error, 1)
-	go func() {
-		<-stderrDone
-		err = cmd.Wait()
-		var lines []string
-		tail.Do(func(v any) {
-			if v != nil {
-				lines = append(lines, v.(string))
-			}
-		})
-		v.log.Error().Msgf("FFmpeg command exited:\n%s", joinLines(lines))
-		errCh <- fmt.Errorf("FFmpeg exit status: %v", err)
-	}()
+	group, ctx := errgroup.WithContext(ctx)
 
+	// readFrames must fully drain stdout, and the stderr scanner must fully
+	// drain stderr, before cmd.Wait is called since exec.Cmd requires all
+	// pipes to be read to completion first
+	readersDone := make(chan struct{})
 	frameCh := make(chan []byte, 1)
 	height, width := v.videoCfg.Resolution.Ints()
-	go v.readFrames(ctx, stdout, frameCh, height*width*3, errCh)
-	go v.consumeFrames(ctx, frameCh)
-
-	return <-errCh
+	group.Go(func() error {
+		defer close(readersDone)
+		return v.readFrames(ctx, stdout, frameCh, height*width*3)
+	})
+	group.Go(func() error {
+		return v.consumeFrames(ctx, frameCh)
+	})
+	group.Go(func() error {
+		<-readersDone
+		<-stderrDone
+		waitErr := cmd.Wait()
+		v.log.Error().Msgf("FFmpeg command exited:\n%s", strings.Join(tail, "\n"))
+		return fmt.Errorf("FFmpeg exit status: %w", waitErr)
+	})
+	return group.Wait()
 }
 
 // getFFmpegArgs returns the arguments for the FFmpeg command corresponding
@@ -141,24 +143,20 @@ func (v *Vehicle) readFrames(
 	ctx context.Context,
 	r io.Reader,
 	out chan []byte,
-	frameSize int,
-	errCh chan error) {
+	frameSize int) error {
 	defer close(out)
 	for {
 		if err := ctx.Err(); err != nil {
-			errCh <- err
-			return
+			return err
 		}
 		frame := make([]byte, frameSize)
 		if _, err := io.ReadFull(r, frame); err != nil {
 			v.log.Err(err).Msg("error reading frame")
 			if err != io.EOF {
-				errCh <- fmt.Errorf("frame read error: %w", err)
-				return
+				return fmt.Errorf("frame read error: %w", err)
 			}
-			return
+			return err
 		}
-		v.log.Debug().Msg("got a frame!")
 		select {
 		case out <- frame:
 		default:
@@ -173,19 +171,19 @@ func (v *Vehicle) readFrames(
 }
 
 // Consume video frames from the given channel
-func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) {
-	count := 0
+func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) error {
+	count := 1
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		case frame, ok := <-frameCh:
 			if !ok {
-				v.log.Error().Msg("frame channel closed")
-				return
+				return fmt.Errorf("frame channel closed")
 			}
 			count++
 			f := &stream_msg_pb.EncodedFrame{
+				Id:          uint64(count),
 				Timestamp:   timestamppb.Now(),
 				EncodedData: frame,
 			}

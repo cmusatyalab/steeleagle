@@ -16,9 +16,12 @@ func newTestDataService(t *testing.T) *DataService {
 
 func TestGetResultUnavailable(t *testing.T) {
 	svc := newTestDataService(t)
-	_, err := svc.GetResult(t.Context(), &vehiclepb.GetResultRequest{Name: "producer"})
-	if err == nil {
-		t.Fatal("expected error for unavailable result")
+	resp, err := svc.GetResult(t.Context(), &vehiclepb.GetResultRequest{Name: "producer"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Result != nil {
+		t.Fatal("expected result to be nil")
 	}
 }
 
@@ -38,9 +41,12 @@ func TestGetResult(t *testing.T) {
 
 func TestGetTelemetryUnavailable(t *testing.T) {
 	svc := newTestDataService(t)
-	_, err := svc.GetTelemetry(t.Context(), &vehiclepb.GetTelemetryRequest{})
-	if err == nil {
-		t.Fatal("expected error for unavailable telemetry")
+	res, err := svc.GetTelemetry(t.Context(), &vehiclepb.GetTelemetryRequest{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Telemetry != nil {
+		t.Fatal("expected result to be nil")
 	}
 }
 
@@ -60,9 +66,12 @@ func TestGetTelemetry(t *testing.T) {
 
 func TestGetFrameUnavailable(t *testing.T) {
 	svc := newTestDataService(t)
-	_, err := svc.GetFrame(t.Context(), &vehiclepb.GetFrameRequest{})
-	if err == nil {
-		t.Fatal("expected error for unavailable frame")
+	res, err := svc.GetFrame(t.Context(), &vehiclepb.GetFrameRequest{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Frame != nil {
+		t.Fatal("expected result to be nil")
 	}
 }
 
