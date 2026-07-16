@@ -11,7 +11,7 @@ type VehicleOption func(*Vehicle)
 
 func WithName(name string) VehicleOption {
 	return func(v *Vehicle) {
-		v.name = name
+		v.Name = name
 	}
 }
 

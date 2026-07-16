@@ -20,7 +20,7 @@ import (
 )
 
 type Vehicle struct {
-	name          string                  // vehicle name
+	Name          string                  // vehicle name
 	RunDir        string                  // path to vehicle runtime directory
 	running       atomic.Bool             // whether or not the vehicle is currently running
 	pluginCfg     PluginConfig            // plugin configuration
@@ -45,9 +45,13 @@ type Vehicle struct {
 func NewVehicle(
 	pluginCfg PluginConfig,
 	options ...VehicleOption) (*Vehicle, error) {
+	if pluginCfg.Driver == nil {
+		return nil, fmt.Errorf("no driver provided, aborting")
+	}
+
 	// Set default input options and retrieve options
 	vehicle := &Vehicle{
-		name:      uuid.New().String(),
+		Name:      uuid.New().String(),
 		listeners: make(map[string]net.Listener),
 		pluginCfg: pluginCfg,
 		log:       zerolog.New(os.Stderr).With().Timestamp().Logger(),
@@ -59,7 +63,7 @@ func NewVehicle(
 
 	// Create the runtime directory
 	var err error
-	vehicle.RunDir, err = util.GetVehicleDirByName(vehicle.name)
+	vehicle.RunDir, err = util.GetVehicleDirByName(vehicle.Name)
 	if err != nil {
 		vehicle.log.Error().Err(err).Str("folder", vehicle.RunDir).
 			Msg("Unable to create vehicle directory")
@@ -140,11 +144,6 @@ func (v *Vehicle) Start(ctx context.Context) error {
 		)
 
 	// Start driver plugin
-	if v.pluginCfg.Driver == nil {
-		v.log.Error().Msg("no driver provided, aborting")
-		cancel()
-		return fmt.Errorf("no driver provided, aborting")
-	}
 	_, v.driver, err = v.pluginCfg.Driver.Start(ctx)
 	if err != nil {
 		v.log.Error().Err(err).Msg("could not start driver plugin, aborting")
@@ -301,10 +300,6 @@ func (v *Vehicle) Wait() error {
 	}
 	<-v.shutdown
 	return v.err
-}
-
-func (v *Vehicle) Name() string {
-	return v.name
 }
 
 func (v *Vehicle) ControlState() string {
