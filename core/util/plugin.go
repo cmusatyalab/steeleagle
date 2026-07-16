@@ -62,8 +62,8 @@ type BasePlugin struct {
 	running   atomic.Bool        // whether or not the plugin is currently running
 	parentDir string             // parent directory for plugin to live under (used to create runDir)
 	runDir    string             // runtime directory path
-	cSock     string             // client socket file path
-	lnSock    string             // listener socket file path
+	cSock     string             // path of the socket this process dials as a client, and the plugin listens on
+	lnSock    string             // path of the socket this process listens on, and the plugin dials as a client
 	client    bool               // whether or not to support a plugin server
 	listen    bool               // whether or not to support a plugin client
 	check     bool               // whether or not to check existence of files

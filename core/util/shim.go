@@ -12,11 +12,11 @@ type ShimPlugin struct {
 	*BasePlugin
 }
 
-// CreateShimPlugin creates a ShimPlugin that wraps over an already running plugin.
-// This shifts the plugin lifetime management to an external source, and can be
-// useful for integrating third-party architectures. The client and listen socket
-// paths are the paths where the already-running plugin expects the sockets to be;
-// they can optionally be left blank if they are not needed.
+// CreateShimPlugin creates a ShimPlugin that wraps over an already running
+// plugin.  This shifts the plugin lifetime management to an external source,
+// and can be useful for integrating third-party architectures. The client and
+// listen socket paths are the paths where the already-running plugin expects
+// the sockets to be; they can optionally be left blank if they are not needed.
 func CreateShimPlugin(clientSocketPath, listenSocketPath string, options ...PluginOption) (*ShimPlugin, error) {
 	// We don't want any script validation since we aren't running a script
 	options = append(options, WithoutCheck())
