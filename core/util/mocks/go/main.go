@@ -71,6 +71,7 @@ func run() error {
 // main parses the --error flag and delegates to run.
 func main() {
 	errPtr := flag.Bool("error", false, "produce an error")
+	errOncePtr := flag.Bool("erroronce", false, "produce an error once")
 	flag.Parse()
 
 	// Delay is necessary for several tests
@@ -81,8 +82,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *errOncePtr {
+		marker := os.Getenv("ERROR_ONCE_MARKER")
+		if marker == "" {
+			fmt.Println("go_test: ERROR_ONCE_MARKER must be set with --error-once")
+			os.Exit(1)
+		}
+		if _, err := os.Stat(marker); os.IsNotExist(err) {
+			fmt.Println("go_test: asked to exit with error once")
+			os.WriteFile(marker, []byte{}, 0644)
+			fmt.Println("go_test: error-once: failing on first invocation")
+			os.Exit(1)
+		}
+		fmt.Println("go_test: restarted")
+	}
+
 	if err := run(); err != nil {
-		fmt.Printf("go_test: got the following error %v\n", err)
+		fmt.Printf("go_test: %v\n", err)
 		os.Exit(1)
 	}
 }

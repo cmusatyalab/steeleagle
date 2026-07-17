@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-// pluginRPCCheck starts a gRPC health server on ln, issues a Check call via conn,
-// and verifies that the server interceptor sees the expected AuthCode.
+// pluginRPCCheck starts a gRPC health server on ln, issues a Check call via
+// conn, and verifies that the server interceptor sees the expected AuthCode.
 // It pairs the acknowledgement handshake in mocks/go_test/main.go.
 func pluginRPCCheck(t *testing.T, ln net.Listener, conn *grpc.ClientConn, code util.AuthCode) error {
 	t.Helper()

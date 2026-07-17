@@ -19,7 +19,7 @@ type ShimPlugin struct {
 // the sockets to be; they can optionally be left blank if they are not needed.
 func CreateShimPlugin(clientSocketPath, listenSocketPath string, options ...PluginOption) (*ShimPlugin, error) {
 	// We don't want any script validation since we aren't running a script
-	options = append(options, WithoutCheck())
+	options = append(options, WithoutScriptPathValidation())
 	internal, err := CreateBasePlugin(options...)
 	if err != nil {
 		return nil, err

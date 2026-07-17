@@ -45,38 +45,39 @@ type Plugin interface {
 // BasePlugin provides common attributes shared across all plugins. It is
 // intended to be embedded in concrete plugin structs to promote its fields.
 type BasePlugin struct {
-	name      string             // name for easier user identification
-	code      AuthCode           // authentication entity
-	pkg       bool               // determines whether the plugin is a package or not
-	path      string             // path to plugin
-	runner    string             // runner target (e.g. bwrap, podman)
-	final     []string           // final args for the subprocess
-	rargs     []string           // runner args, never modified during runtime
-	exec      string             // executable target (e.g. sh)
-	eargs     []string           // executable args
-	script    string             // script target (plugin script)
-	sargs     []string           // script args
-	files     map[string]int     // linked files (only applicable to sandboxes/containers)
-	start     int64              // plugin start time
-	timeout   int                // timeout in seconds waiting for the server to start
-	running   atomic.Bool        // whether or not the plugin is currently running
-	parentDir string             // parent directory for plugin to live under (used to create runDir)
-	runDir    string             // runtime directory path
-	cSock     string             // path of the socket this process dials as a client, and the plugin listens on
-	lnSock    string             // path of the socket this process listens on, and the plugin dials as a client
-	client    bool               // whether or not to support a plugin server
-	listen    bool               // whether or not to support a plugin client
-	check     bool               // whether or not to check existence of files
-	cmd       *exec.Cmd          // command to run
-	acl       *ACL               // ACL for listener connections
-	log       zerolog.Logger     // logger object
-	outStream io.Writer          // replacement out file for Stdout/err
-	environ   []string           // environment to run the plugin in
-	ctx       context.Context    // context
-	cancel    context.CancelFunc // cancellation function
-	waitOnce  sync.Once          // guards against calling cmd.Wait() more than once
-	waitErr   error              // result of cmd.Wait(), populated exactly once by waitOnce
-	waitDone  chan struct{}      // closed once cmd.Wait() returns; lets every Watch/Wait caller observe the same result
+	name        string             // name for easier user identification
+	code        AuthCode           // authentication entity
+	pkg         bool               // determines whether the plugin is a package or not
+	path        string             // path to plugin
+	runner      string             // runner target (e.g. bwrap, podman)
+	final       []string           // final args for the subprocess
+	rargs       []string           // runner args, never modified during runtime
+	exec        string             // executable target (e.g. sh)
+	eargs       []string           // executable args
+	script      string             // script target (plugin script)
+	sargs       []string           // script args
+	files       map[string]int     // linked files (only applicable to sandboxes/containers)
+	start       int64              // plugin start time
+	timeout     int                // timeout in seconds waiting for the server to start
+	running     atomic.Bool        // whether or not the plugin is currently running
+	parentDir   string             // parent directory for plugin to live under (used to create runDir)
+	runDir      string             // runtime directory path
+	cSock       string             // path of the socket this process dials as a client, and the plugin listens on
+	lnSock      string             // path of the socket this process listens on, and the plugin dials as a client
+	client      bool               // whether or not to support a plugin server
+	listen      bool               // whether or not to support a plugin client
+	check       bool               // whether or not to check existence of files
+	cmd         *exec.Cmd          // command to run
+	acl         *ACL               // ACL for listener connections
+	log         zerolog.Logger     // logger object
+	outStream   io.Writer          // replacement out file for Stdout/err
+	environ     []string           // environment to run the plugin in
+	ctx         context.Context    // context
+	cancel      context.CancelFunc // cancellation function
+	waitOnce    sync.Once          // guards against calling cmd.Wait() more than once
+	waitErr     error              // result of cmd.Wait(), populated exactly once by waitOnce
+	waitDone    chan struct{}      // closed once cmd exits, indicates waitErr is ready to read
+	cleanupDone chan struct{}      // closed once cleanup() finishes running for the current Start()
 }
 
 // CreateBasePlugin creates an instance of a BasePlugin.
@@ -93,7 +94,6 @@ func CreateBasePlugin(options ...PluginOption) (*BasePlugin, error) {
 		log:       zerolog.New(os.Stdout).With().Timestamp().Logger(),
 		outStream: os.Stdout,
 		environ:   os.Environ(),
-		waitDone:  make(chan struct{}, 1),
 	}
 	// Apply options
 	for _, option := range options {
@@ -129,16 +129,24 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	// Create a new context with a cancel function
 	p.ctx, p.cancel = context.WithCancel(ctx)
 
+	// Reset the per-run wait/cleanup state so a restarted plugin waits on its
+	// new process rather than replaying the previous run's result.
+	p.waitOnce = sync.Once{}
+	p.waitErr = nil
+	p.waitDone = make(chan struct{})
+	p.cleanupDone = make(chan struct{})
+
 	// Set up the run directory and the client/listen socket
 	err := p.setupRunDir()
 	if err != nil {
 		p.log.Err(err).Msg("error setting up plugin runtime directory")
+		p.cleanup()
 		return nil, nil, err
 	}
 
-	// Create the command if it hasn't already been created; check in
-	// sequence whether the script, executable, and then runner are set,
-	// and prepend the arguments for each into one executable string
+	// Create the command if it hasn't already been created; check in sequence
+	// whether the script, executable, and then runner are set, and prepend the
+	// arguments for each into one executable string
 	if p.final == nil {
 		if p.script != "" {
 			p.final = slices.Insert(p.sargs, 0, p.script)
@@ -161,6 +169,7 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	} else {
 		err := fmt.Errorf("no arguments provided to plugin")
 		p.log.Error().Err(err).Msg("insufficient arguments to start plugin")
+		p.cleanup()
 		return nil, nil, err
 	}
 	if p.script != "" {
@@ -183,18 +192,14 @@ func (p *BasePlugin) Start(ctx context.Context) (net.Listener, *grpc.ClientConn,
 	err = p.run()
 	if err != nil {
 		p.log.Error().Err(err).Msg("error running command")
+		p.cleanup()
 		return nil, nil, err
 	}
 	p.acl.AddPID(p.cmd.Process.Pid)
 
-	// Cleanup goroutine
+	// Cleanup goroutine.
 	go func() {
-		// BasePlugin.Watch() will unblock in two cases:
-		// 1. the context is canceled
-		// 2. the cmd exits
-		// instead of blocking on both conditions individually, which will
-		// race, we only wait on BasePlugin.Watch()
-		err := <-p.Watch()
+		err := p.waitProcess()
 		if ctx.Err() != nil {
 			p.log.Err(err).Msg("context canceled, initiating cleanup")
 		} else {
@@ -221,8 +226,24 @@ func (p *BasePlugin) Watch() <-chan error {
 	return ch
 }
 
-// Wait blocks until the plugin subprocess exits and returns its exit error.
+// Wait blocks until the plugin subprocess exits and its cleanup has finished,
+// then returns the subprocess's exit error. Callers can safely Start() the
+// plugin again once Wait() returns.
 func (p *BasePlugin) Wait() error {
+	if p.cmd == nil {
+		return nil
+	}
+	err := p.waitProcess()
+	if p.ctx.Err() != nil {
+		err = p.ctx.Err()
+	}
+	<-p.cleanupDone
+	return err
+}
+
+// waitProcess blocks until the plugin subprocess exits and returns its exit
+// error.
+func (p *BasePlugin) waitProcess() error {
 	if !p.running.Load() {
 		return fmt.Errorf("plugin not running")
 	}
@@ -361,6 +382,7 @@ func (p *BasePlugin) cleanup() {
 	if err != nil {
 		p.log.Error().Err(err).Msg("got error while trying to clean up")
 	}
+	close(p.cleanupDone)
 }
 
 // run starts the plugin command and records the start time.

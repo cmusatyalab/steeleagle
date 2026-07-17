@@ -131,10 +131,10 @@ func WithScriptArgs(args []string) PluginOption {
 	}
 }
 
-// WithoutCheck skips script path validation which is useful for dynamic
-// binding or for containers which may have all components pre-built within
-// them.
-func WithoutCheck() PluginOption {
+// WithoutScriptPathValidation skips script path validation which is useful for
+// dynamic binding or for containers which may have all components pre-built
+// within them.
+func WithoutScriptPathValidation() PluginOption {
 	return func(k *BasePlugin) {
 		k.check = false
 	}
@@ -155,7 +155,8 @@ func WithLogger(logger zerolog.Logger) PluginOption {
 	}
 }
 
-// WithProcessOutputStream sets the output file stream for the delegate process output.
+// WithProcessOutputStream sets the output file stream for the delegate process
+// output.
 func WithProcessOutputStream(out io.Writer) PluginOption {
 	return func(k *BasePlugin) {
 		k.outStream = out
