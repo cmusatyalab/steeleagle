@@ -2,9 +2,11 @@ package util_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -279,5 +281,48 @@ func TestPluginStartFailureUnblocksWait(t *testing.T) {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatal("Wait() hung after a failed Start()")
+	}
+}
+
+// TestPluginConcurrentWaiters makes sure that calling Wait() multiple times,
+// especially concurrently, returns the expected error.
+func TestPluginConcurrentWaiters(t *testing.T) {
+	path, err := filepath.Abs(goBinary)
+	if err != nil {
+		t.Fatalf("couldn't stat mock_plugin helper go_binary: %v", err)
+	}
+	plugin, err := CreateBasePlugin(t,
+		util.WithPath(path),
+		util.WithScriptArgs([]string{"--error"}),
+		util.WithoutClient(),
+		util.WithoutListener(),
+	)
+	if err != nil {
+		t.Fatalf("encountered error creating plugin: %v", err)
+	}
+	_, _, err = plugin.Start(t.Context())
+	if err != nil {
+		t.Fatalf("encountered error spawning plugin: %v", err)
+	}
+
+	const waiters = 8
+	results := make([]error, waiters)
+	var wg sync.WaitGroup
+	for i := range waiters {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			results[i] = plugin.Wait()
+		}(i)
+	}
+	wg.Wait()
+
+	for _, err := range results {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatal("expected an exit error")
+		} else if exitErr.ExitCode() != 1 {
+			t.Fatal("expected exit code 1")
+		}
 	}
 }

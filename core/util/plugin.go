@@ -234,9 +234,6 @@ func (p *BasePlugin) Wait() error {
 		return nil
 	}
 	err := p.waitProcess()
-	if p.ctx.Err() != nil {
-		err = p.ctx.Err()
-	}
 	<-p.cleanupDone
 	return err
 }
@@ -252,6 +249,9 @@ func (p *BasePlugin) waitProcess() error {
 	}
 	p.waitOnce.Do(func() {
 		p.waitErr = p.cmd.Wait()
+		if p.ctx.Err() != nil {
+			p.waitErr = p.ctx.Err()
+		}
 		close(p.waitDone)
 	})
 	<-p.waitDone
