@@ -58,15 +58,20 @@ message GetVideoStreamURLRequest {
 
 message GetVideoStreamURLResponse {
   string stream_url = 1; // URL of the video stream
+  optional uint32 target_fps = 2; // target fps to stream at, if 0 is provided will choose fps
 }
 
-message StreamVideoFramesRequest {}
+message StreamVideoFramesRequest {
+  optional uint32 target_fps = 1; // target fps to stream at, if 0 is provided will choose fps
+}
 
 message StreamVideoFramesResponse {
   steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // raw frame from the camera
 }
 
-message StreamTelemetryRequest {}
+message StreamTelemetryRequest {
+  optional uint32 target_fps = 1; // target fps to stream at, if 0 is provided will choose fps
+}
 
 message StreamTelemetryResponse {
   steeleagle_protocol.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver

@@ -8,11 +8,6 @@ package steeleagle_protocol.v1.messages.stream;
 import "steeleagle_protocol/v1/common.proto";
 import "google/protobuf/timestamp.proto";
 
-// Information about the vehicle.
-message VehicleInfo {
-  bool armed = 1; // whether or not the vehicle is armed
-}
-
 // Information about the vehicle battery.
 message BatteryInfo {
   uint32 percentage = 1; // battery level [0-100]%
@@ -132,20 +127,18 @@ message AlertInfo {
 message Telemetry {
   // timestamp of message
   google.protobuf.Timestamp timestamp = 1;
-  // vehicle info
-  VehicleInfo vehicle_info = 2;
   // battery info
-  BatteryInfo battery_info = 3;
+  BatteryInfo battery_info = 2;
   // GPS and satellite info
-  GPSInfo gps_info = 4;
+  GPSInfo gps_info = 3;
   // communication link info
-  CommsInfo comms_info = 5;
+  CommsInfo comms_info = 4;
   // positional info about the vehicle
-  PositionInfo position_info = 6;
+  PositionInfo position_info = 5;
   // status on attached gimbals and their orientations
-  GimbalInfo gimbal_info = 7;
+  GimbalInfo gimbal_info = 6;
   // enumeration of vehicle warnings
-  AlertInfo alert_info = 8;
+  AlertInfo alert_info = 7;
 }
 
 // Raw camera frames
