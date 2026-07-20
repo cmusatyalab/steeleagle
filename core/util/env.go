@@ -1,33 +1,25 @@
 package util
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 
 	"github.com/adrg/xdg"
 )
 
-// CreateRuntimeDirs creates the XDG runtime directories for plugins and vehicles.
-func CreateRuntimeDirs() error {
-	// Create plugin and vehicle paths
-	vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir)
-	err := os.MkdirAll(vehiclePath, 0755)
-	if err != nil {
-		return err
-	}
-	pluginPath := filepath.Join(xdg.RuntimeDir, runtimeDir, pluginDir)
-	err = os.MkdirAll(pluginPath, 0755)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // GetRuntimeDir returns the XDG runtime directory root.
 func GetRuntimeDir() string {
 	return xdg.RuntimeDir
+}
+
+// GetPluginDir returns the runtime directory for all plugins.
+func GetPluginDir() (string, error) {
+    pluginPath := filepath.Join(GetRuntimeDir(), runtimeDir, pluginDir)
+    err := os.MkdirAll(pluginPath, 0755)
+	if err != nil {
+		return "", err
+	}
+	return pluginPath, nil
 }
 
 // GetPluginDirByName returns the runtime directory for the plugin with the
@@ -41,45 +33,31 @@ func GetPluginDirByName(name, parent string) (string, error) {
 	} else { // if parent is set, place the plugin in that directory
 		pluginPath = filepath.Join(xdg.RuntimeDir, runtimeDir, parent, pluginDir, name)
 	}
-	_, err := os.Stat(pluginPath)
+    err := os.MkdirAll(pluginPath, 0755)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return pluginPath, os.MkdirAll(pluginPath, 0755)
-		} else {
-			return "", err
-		}
+		return "", err
 	}
-
 	return pluginPath, nil
 }
 
 // GetVehicleRuntimeDir returns the vehicle runtime directory, creating it if
 // it does not exist.
-func GetVehicleRuntimeDir() (string, error) {
+func GetVehicleDir() (string, error) {
 	vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir)
-	_, err := os.Stat(vehiclePath)
+    err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return vehiclePath, CreateRuntimeDirs()
-		} else {
-			return "", nil
-		}
+		return "", err
 	}
-
-	return vehiclePath, nil
+    return vehiclePath, nil
 }
 
 // GetVehicleDirByName returns the runtime directory for the vehicle with the
 // given ID, creating it if it does not exist.
 func GetVehicleDirByName(name string) (string, error) {
 	vehiclePath := filepath.Join(xdg.RuntimeDir, runtimeDir, vehicleDir, name)
-	_, err := os.Stat(vehiclePath)
+    err := os.MkdirAll(vehiclePath, 0755)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return vehiclePath, os.MkdirAll(vehiclePath, 0755)
-		} else {
-			return "", err
-		}
+		return "", err
 	}
-	return vehiclePath, nil
+    return vehiclePath, nil
 }

@@ -1,0 +1,13 @@
+[project]
+name = "testbench-cli"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "grpcio>=1.82.1",
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    "steeleagle-protocol",
+]
+
+[tool.uv.sources]
+steeleagle-protocol = { path = "../../api/python", editable = true }

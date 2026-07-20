@@ -160,7 +160,7 @@ message RawFrame {
   // positional info about the vehicle
   PositionInfo position_info = 8;
   // status on gimbal this frame is attached to, if applicable
-  GimbalStatus gimbal_info = 9;
+  GimbalStatus gimbal_status = 9;
   // ID of origin camera
   uint64 camera_id = 10;
 }
@@ -176,7 +176,7 @@ message EncodedFrame {
   // positional info about the vehicle
   PositionInfo position_info = 4;
   // status on gimbal this frame is attached to, if applicable
-  GimbalStatus gimbal_info = 5;
+  GimbalStatus gimbal_status = 5;
   // ID of origin camera
   uint64 camera_id = 6;
 }

@@ -127,7 +127,8 @@ func (x *GetVideoStreamURLRequest) GetResolution() GetVideoStreamURLRequest_Reso
 
 type GetVideoStreamURLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	StreamUrl     string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3" json:"stream_url,omitempty"` // URL of the video stream
+	StreamUrl     string                 `protobuf:"bytes,1,opt,name=stream_url,json=streamUrl,proto3" json:"stream_url,omitempty"`        // URL of the video stream
+	TargetFps     *uint32                `protobuf:"varint,2,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -169,8 +170,16 @@ func (x *GetVideoStreamURLResponse) GetStreamUrl() string {
 	return ""
 }
 
+func (x *GetVideoStreamURLResponse) GetTargetFps() uint32 {
+	if x != nil && x.TargetFps != nil {
+		return *x.TargetFps
+	}
+	return 0
+}
+
 type StreamVideoFramesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	TargetFps     *uint32                `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -203,6 +212,13 @@ func (x *StreamVideoFramesRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use StreamVideoFramesRequest.ProtoReflect.Descriptor instead.
 func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StreamVideoFramesRequest) GetTargetFps() uint32 {
+	if x != nil && x.TargetFps != nil {
+		return *x.TargetFps
+	}
+	return 0
 }
 
 type StreamVideoFramesResponse struct {
@@ -251,6 +267,7 @@ func (x *StreamVideoFramesResponse) GetFrame() *stream.EncodedFrame {
 
 type StreamTelemetryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	TargetFps     *uint32                `protobuf:"varint,1,opt,name=target_fps,json=targetFps,proto3,oneof" json:"target_fps,omitempty"` // target fps to stream at, if 0 is provided will choose fps
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -283,6 +300,13 @@ func (x *StreamTelemetryRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use StreamTelemetryRequest.ProtoReflect.Descriptor instead.
 func (*StreamTelemetryRequest) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_driver_stream_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StreamTelemetryRequest) GetTargetFps() uint32 {
+	if x != nil && x.TargetFps != nil {
+		return *x.TargetFps
+	}
+	return 0
 }
 
 type StreamTelemetryResponse struct {
@@ -344,14 +368,23 @@ const file_steeleagle_protocol_v1_services_driver_stream_proto_rawDesc = "" +
 	"\x0fRESOLUTION_480P\x10\x01\x12\x13\n" +
 	"\x0fRESOLUTION_720P\x10\x02\x12\x14\n" +
 	"\x10RESOLUTION_1080P\x10\x03\x12\x11\n" +
-	"\rRESOLUTION_4K\x10\x04\":\n" +
+	"\rRESOLUTION_4K\x10\x04\"m\n" +
 	"\x19GetVideoStreamURLResponse\x12\x1d\n" +
 	"\n" +
-	"stream_url\x18\x01 \x01(\tR\tstreamUrl\"\x1a\n" +
-	"\x18StreamVideoFramesRequest\"g\n" +
+	"stream_url\x18\x01 \x01(\tR\tstreamUrl\x12\"\n" +
+	"\n" +
+	"target_fps\x18\x02 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
+	"\v_target_fps\"M\n" +
+	"\x18StreamVideoFramesRequest\x12\"\n" +
+	"\n" +
+	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
+	"\v_target_fps\"g\n" +
 	"\x19StreamVideoFramesResponse\x12J\n" +
-	"\x05frame\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.stream.EncodedFrameR\x05frame\"\x18\n" +
-	"\x16StreamTelemetryRequest\"j\n" +
+	"\x05frame\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.stream.EncodedFrameR\x05frame\"K\n" +
+	"\x16StreamTelemetryRequest\x12\"\n" +
+	"\n" +
+	"target_fps\x18\x01 \x01(\rH\x00R\ttargetFps\x88\x01\x01B\r\n" +
+	"\v_target_fps\"j\n" +
 	"\x17StreamTelemetryResponse\x12O\n" +
 	"\ttelemetry\x18\x01 \x01(\v21.steeleagle_protocol.v1.messages.stream.TelemetryR\ttelemetry2\x88\x04\n" +
 	"\rStreamService\x12\xa6\x01\n" +
@@ -407,6 +440,9 @@ func file_steeleagle_protocol_v1_services_driver_stream_proto_init() {
 	if File_steeleagle_protocol_v1_services_driver_stream_proto != nil {
 		return
 	}
+	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[1].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[2].OneofWrappers = []any{}
+	file_steeleagle_protocol_v1_services_driver_stream_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
