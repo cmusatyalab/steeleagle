@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.vehicle.compute;
 
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle/compute;compute";
+
 /*
  * Used to configure compute engines for sensor streams.
  *

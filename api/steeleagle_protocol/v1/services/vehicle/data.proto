@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.vehicle.data;
 
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle/data;data";
+
 import "steeleagle_protocol/v1/messages/result/result.proto";
 import "steeleagle_protocol/v1/messages/stream/stream.proto";
 

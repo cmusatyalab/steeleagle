@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.swarm;
 
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/swarm;swarm";
+
 import "steeleagle_protocol/v1/common.proto";
 import "steeleagle_protocol/v1/services/driver/control.proto";
 import "steeleagle_protocol/v1/services/mission/mission.proto";

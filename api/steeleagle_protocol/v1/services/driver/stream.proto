@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.driver.stream;
 
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/stream;stream";
+
 import "steeleagle_protocol/v1/messages/stream/stream.proto";
 
 /*

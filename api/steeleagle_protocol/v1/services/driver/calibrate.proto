@@ -5,6 +5,8 @@
 syntax = "proto3";
 package steeleagle_protocol.v1.services.driver.calibration;
 
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/calibrate;calibration";
+
 /*
  * Used to calibrate sensors on the driver.
  *
