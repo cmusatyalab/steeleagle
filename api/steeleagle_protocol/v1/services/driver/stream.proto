@@ -66,7 +66,7 @@ message StreamVideoFramesRequest {
 }
 
 message StreamVideoFramesResponse {
-  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // raw frame from the camera
+  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // encoded frame from the camera
 }
 
 message StreamTelemetryRequest {

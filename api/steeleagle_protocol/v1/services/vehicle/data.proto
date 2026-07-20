@@ -36,6 +36,22 @@ service DataService {
    */
   rpc GetFrame (GetFrameRequest)
     returns (GetFrameResponse) {}
+
+  /*
+   * Stream individual video frames from the vehicle.
+   *
+   * Retrieves a stream of individual video frame from the vehicle.
+   */
+  rpc StreamVideoFrames (StreamVideoFramesRequest)
+    returns (stream StreamVideoFramesResponse);
+
+  /*
+   * Stream telemetry from the vehicle.
+   *
+   * Streams up-to-date telemetry from the vehicle.
+   */
+  rpc StreamTelemetry (StreamTelemetryRequest)
+    returns (stream StreamTelemetryResponse);
 }
 
 message GetResultRequest {
@@ -56,4 +72,16 @@ message GetFrameRequest {}
 
 message GetFrameResponse {
   steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // most recent frame
+}
+
+message StreamVideoFramesRequest {}
+
+message StreamVideoFramesResponse {
+  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // encoded frame from the camera
+}
+
+message StreamTelemetryRequest {}
+
+message StreamTelemetryResponse {
+  steeleagle_protocol.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver
 }

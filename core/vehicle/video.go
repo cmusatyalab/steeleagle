@@ -26,7 +26,9 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 	client := driverpb.NewStreamServiceClient(v.driver)
 	req := &driverpb.StreamVideoFramesRequest{}
 
+	v.log.Info().Msg("sending StreamVideoFrames request to driver")
 	stream, err := client.StreamVideoFrames(ctx, req)
+	v.log.Info().Msg("StreamVideoFrames reply received")
 	if err != nil {
 		return err
 	}
@@ -37,6 +39,9 @@ func (v *Vehicle) streamEncodedVideoFrames(ctx context.Context) error {
 		f, err := stream.Recv()
 		if err != nil {
 			return err
+		}
+		if f.Frame == nil {
+			v.log.Debug().Msgf("got nil frame from driver")
 		}
 		v.store.addFrame(f.Frame)
 	}

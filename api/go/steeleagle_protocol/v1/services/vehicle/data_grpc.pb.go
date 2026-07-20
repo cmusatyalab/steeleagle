@@ -23,9 +23,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DataService_GetResult_FullMethodName    = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetResult"
-	DataService_GetTelemetry_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetTelemetry"
-	DataService_GetFrame_FullMethodName     = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame"
+	DataService_GetResult_FullMethodName         = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetResult"
+	DataService_GetTelemetry_FullMethodName      = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetTelemetry"
+	DataService_GetFrame_FullMethodName          = "/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame"
+	DataService_StreamVideoFrames_FullMethodName = "/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames"
+	DataService_StreamTelemetry_FullMethodName   = "/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry"
 )
 
 // DataServiceClient is the client API for DataService service.
@@ -49,6 +51,14 @@ type DataServiceClient interface {
 	//
 	// Retrieves the most recent video frame from the driver.
 	GetFrame(ctx context.Context, in *GetFrameRequest, opts ...grpc.CallOption) (*GetFrameResponse, error)
+	// Stream individual video frames from the vehicle.
+	//
+	// Retrieves a stream of individual video frame from the vehicle.
+	StreamVideoFrames(ctx context.Context, in *StreamVideoFramesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamVideoFramesResponse], error)
+	// Stream telemetry from the vehicle.
+	//
+	// Streams up-to-date telemetry from the vehicle.
+	StreamTelemetry(ctx context.Context, in *StreamTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTelemetryResponse], error)
 }
 
 type dataServiceClient struct {
@@ -89,6 +99,44 @@ func (c *dataServiceClient) GetFrame(ctx context.Context, in *GetFrameRequest, o
 	return out, nil
 }
 
+func (c *dataServiceClient) StreamVideoFrames(ctx context.Context, in *StreamVideoFramesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamVideoFramesResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DataService_ServiceDesc.Streams[0], DataService_StreamVideoFrames_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamVideoFramesRequest, StreamVideoFramesResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DataService_StreamVideoFramesClient = grpc.ServerStreamingClient[StreamVideoFramesResponse]
+
+func (c *dataServiceClient) StreamTelemetry(ctx context.Context, in *StreamTelemetryRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTelemetryResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DataService_ServiceDesc.Streams[1], DataService_StreamTelemetry_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamTelemetryRequest, StreamTelemetryResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DataService_StreamTelemetryClient = grpc.ServerStreamingClient[StreamTelemetryResponse]
+
 // DataServiceServer is the server API for DataService service.
 // All implementations must embed UnimplementedDataServiceServer
 // for forward compatibility.
@@ -110,6 +158,14 @@ type DataServiceServer interface {
 	//
 	// Retrieves the most recent video frame from the driver.
 	GetFrame(context.Context, *GetFrameRequest) (*GetFrameResponse, error)
+	// Stream individual video frames from the vehicle.
+	//
+	// Retrieves a stream of individual video frame from the vehicle.
+	StreamVideoFrames(*StreamVideoFramesRequest, grpc.ServerStreamingServer[StreamVideoFramesResponse]) error
+	// Stream telemetry from the vehicle.
+	//
+	// Streams up-to-date telemetry from the vehicle.
+	StreamTelemetry(*StreamTelemetryRequest, grpc.ServerStreamingServer[StreamTelemetryResponse]) error
 	mustEmbedUnimplementedDataServiceServer()
 }
 
@@ -128,6 +184,12 @@ func (UnimplementedDataServiceServer) GetTelemetry(context.Context, *GetTelemetr
 }
 func (UnimplementedDataServiceServer) GetFrame(context.Context, *GetFrameRequest) (*GetFrameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFrame not implemented")
+}
+func (UnimplementedDataServiceServer) StreamVideoFrames(*StreamVideoFramesRequest, grpc.ServerStreamingServer[StreamVideoFramesResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamVideoFrames not implemented")
+}
+func (UnimplementedDataServiceServer) StreamTelemetry(*StreamTelemetryRequest, grpc.ServerStreamingServer[StreamTelemetryResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamTelemetry not implemented")
 }
 func (UnimplementedDataServiceServer) mustEmbedUnimplementedDataServiceServer() {}
 func (UnimplementedDataServiceServer) testEmbeddedByValue()                     {}
@@ -204,6 +266,28 @@ func _DataService_GetFrame_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DataService_StreamVideoFrames_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamVideoFramesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DataServiceServer).StreamVideoFrames(m, &grpc.GenericServerStream[StreamVideoFramesRequest, StreamVideoFramesResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DataService_StreamVideoFramesServer = grpc.ServerStreamingServer[StreamVideoFramesResponse]
+
+func _DataService_StreamTelemetry_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamTelemetryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DataServiceServer).StreamTelemetry(m, &grpc.GenericServerStream[StreamTelemetryRequest, StreamTelemetryResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DataService_StreamTelemetryServer = grpc.ServerStreamingServer[StreamTelemetryResponse]
+
 // DataService_ServiceDesc is the grpc.ServiceDesc for DataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -224,6 +308,17 @@ var DataService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DataService_GetFrame_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamVideoFrames",
+			Handler:       _DataService_StreamVideoFrames_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamTelemetry",
+			Handler:       _DataService_StreamTelemetry_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "steeleagle_protocol/v1/services/vehicle/data.proto",
 }

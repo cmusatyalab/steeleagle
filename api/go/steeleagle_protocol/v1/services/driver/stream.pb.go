@@ -223,7 +223,7 @@ func (x *StreamVideoFramesRequest) GetTargetFps() uint32 {
 
 type StreamVideoFramesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Frame         *stream.EncodedFrame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // raw frame from the camera
+	Frame         *stream.EncodedFrame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // encoded frame from the camera
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

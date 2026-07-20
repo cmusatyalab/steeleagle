@@ -34,6 +34,16 @@ class DataServiceStub:
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
                 _registered_method=True)
+        self.StreamVideoFrames = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
+                _registered_method=True)
+        self.StreamTelemetry = channel.unary_stream(
+                '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry',
+                request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
+                response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
+                _registered_method=True)
 
 
 class DataServiceServicer:
@@ -74,6 +84,26 @@ class DataServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StreamVideoFrames(self, request, context):
+        """
+        Stream individual video frames from the vehicle.
+
+        Retrieves a stream of individual video frame from the vehicle.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamTelemetry(self, request, context):
+        """
+        Stream telemetry from the vehicle.
+
+        Streams up-to-date telemetry from the vehicle.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_DataServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -91,6 +121,16 @@ def add_DataServiceServicer_to_server(servicer, server):
                     servicer.GetFrame,
                     request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.FromString,
                     response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.SerializeToString,
+            ),
+            'StreamVideoFrames': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamVideoFrames,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.SerializeToString,
+            ),
+            'StreamTelemetry': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamTelemetry,
+                    request_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.FromString,
+                    response_serializer=steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -179,6 +219,60 @@ class DataService:
             '/steeleagle_protocol.v1.services.vehicle.data.DataService/GetFrame',
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.GetFrameResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamVideoFrames(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamVideoFrames',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamVideoFramesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamTelemetry(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/steeleagle_protocol.v1.services.vehicle.data.DataService/StreamTelemetry',
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryRequest.SerializeToString,
+            steeleagle__protocol_dot_v1_dot_services_dot_vehicle_dot_data__pb2.StreamTelemetryResponse.FromString,
             options,
             channel_credentials,
             insecure,
