@@ -661,7 +661,7 @@ type ReturnToHomeRequest struct {
 	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
 	// altitude that the vehicle should move at while reurning home
 	ReturnAltitude uint32 `protobuf:"varint,2,opt,name=return_altitude,json=returnAltitude,proto3" json:"return_altitude,omitempty"`
-	// altitude that the vehicle should hover at, for hover end behavior
+	// altitude that the vehicle should hover AGL (above ground level), for hover end behavior
 	FinalAltitude uint32 `protobuf:"varint,3,opt,name=final_altitude,json=finalAltitude,proto3" json:"final_altitude,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
