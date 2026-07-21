@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 syntax = "proto3";
-package steeleagle_protocol.v1.messages.stream;
+package steeleagle_protocol.v1.messages.telemetry;
 
-option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream;stream";
+option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry;telemetry";
 
 import "steeleagle_protocol/v1/common.proto";
 import "google/protobuf/timestamp.proto";

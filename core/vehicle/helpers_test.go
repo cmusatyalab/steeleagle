@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	streampb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	missionpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/mission"
 	"github.com/cmusatyalab/steeleagle/core/util"
@@ -82,7 +82,7 @@ func (s *StreamService) StreamTelemetry(
 	stream driverpb.StreamService_StreamTelemetryServer) error {
 	for {
 		err := stream.Send(&driverpb.StreamTelemetryResponse{
-			Telemetry: &streampb.Telemetry{},
+			Telemetry: &telemetrypb.Telemetry{},
 		})
 		if err != nil {
 			return err
@@ -97,7 +97,7 @@ func (s *StreamService) StreamVideoFrames(
 	frameId := 1
 	for {
 		data := make([]byte, 10)
-		frame := &streampb.EncodedFrame{
+		frame := &telemetrypb.EncodedFrame{
 			Timestamp:   timestamppb.Now(),
 			Id:          uint64(frameId),
 			EncodedData: data,

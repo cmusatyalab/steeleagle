@@ -6,7 +6,7 @@ import (
 	gabrielclient "github.com/cmusatyalab/gabriel/go-client"
 	gabrielpb "github.com/cmusatyalab/gabriel/protocol/go"
 	"github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,7 +14,7 @@ import (
 
 // Sensor data for input producers.
 type Data interface {
-	*stream_msg_pb.EncodedFrame | *stream_msg_pb.Telemetry
+	*telemetrypb.EncodedFrame | *telemetrypb.Telemetry
 	proto.Message
 }
 

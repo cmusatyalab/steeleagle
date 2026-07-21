@@ -6,9 +6,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: steeleagle_protocol/v1/messages/stream/stream.proto
+// source: steeleagle_protocol/v1/messages/telemetry/telemetry.proto
 
-package stream
+package telemetry
 
 import (
 	v1 "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
@@ -64,11 +64,11 @@ func (x BatteryWarning) String() string {
 }
 
 func (BatteryWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[0].Descriptor()
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0].Descriptor()
 }
 
 func (BatteryWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[0]
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0]
 }
 
 func (x BatteryWarning) Number() protoreflect.EnumNumber {
@@ -77,7 +77,7 @@ func (x BatteryWarning) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use BatteryWarning.Descriptor instead.
 func (BatteryWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{0}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{0}
 }
 
 // GPS fix warnings and alerts.
@@ -117,11 +117,11 @@ func (x GPSWarning) String() string {
 }
 
 func (GPSWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[1].Descriptor()
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1].Descriptor()
 }
 
 func (GPSWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[1]
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1]
 }
 
 func (x GPSWarning) Number() protoreflect.EnumNumber {
@@ -130,7 +130,7 @@ func (x GPSWarning) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GPSWarning.Descriptor instead.
 func (GPSWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{1}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{1}
 }
 
 // Magnetometer warnings and alerts.
@@ -166,11 +166,11 @@ func (x MagnetometerWarning) String() string {
 }
 
 func (MagnetometerWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[2].Descriptor()
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2].Descriptor()
 }
 
 func (MagnetometerWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[2]
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2]
 }
 
 func (x MagnetometerWarning) Number() protoreflect.EnumNumber {
@@ -179,7 +179,7 @@ func (x MagnetometerWarning) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MagnetometerWarning.Descriptor instead.
 func (MagnetometerWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{2}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2}
 }
 
 // Connection warnings and alerts.
@@ -219,11 +219,11 @@ func (x ConnectionWarning) String() string {
 }
 
 func (ConnectionWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[3].Descriptor()
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3].Descriptor()
 }
 
 func (ConnectionWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[3]
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3]
 }
 
 func (x ConnectionWarning) Number() protoreflect.EnumNumber {
@@ -232,7 +232,7 @@ func (x ConnectionWarning) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConnectionWarning.Descriptor instead.
 func (ConnectionWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{3}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{3}
 }
 
 // Compass warnings and alerts.
@@ -272,11 +272,11 @@ func (x CompassWarning) String() string {
 }
 
 func (CompassWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[4].Descriptor()
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4].Descriptor()
 }
 
 func (CompassWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes[4]
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4]
 }
 
 func (x CompassWarning) Number() protoreflect.EnumNumber {
@@ -285,7 +285,7 @@ func (x CompassWarning) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CompassWarning.Descriptor instead.
 func (CompassWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{4}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{4}
 }
 
 // Information about the vehicle battery.
@@ -298,7 +298,7 @@ type BatteryInfo struct {
 
 func (x *BatteryInfo) Reset() {
 	*x = BatteryInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -310,7 +310,7 @@ func (x *BatteryInfo) String() string {
 func (*BatteryInfo) ProtoMessage() {}
 
 func (x *BatteryInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[0]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -323,7 +323,7 @@ func (x *BatteryInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryInfo.ProtoReflect.Descriptor instead.
 func (*BatteryInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{0}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *BatteryInfo) GetPercentage() uint32 {
@@ -343,7 +343,7 @@ type GPSInfo struct {
 
 func (x *GPSInfo) Reset() {
 	*x = GPSInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +355,7 @@ func (x *GPSInfo) String() string {
 func (*GPSInfo) ProtoMessage() {}
 
 func (x *GPSInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[1]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +368,7 @@ func (x *GPSInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GPSInfo.ProtoReflect.Descriptor instead.
 func (*GPSInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{1}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GPSInfo) GetSatellites() uint32 {
@@ -387,7 +387,7 @@ type CommsInfo struct {
 
 func (x *CommsInfo) Reset() {
 	*x = CommsInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -399,7 +399,7 @@ func (x *CommsInfo) String() string {
 func (*CommsInfo) ProtoMessage() {}
 
 func (x *CommsInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[2]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -412,7 +412,7 @@ func (x *CommsInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommsInfo.ProtoReflect.Descriptor instead.
 func (*CommsInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{2}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2}
 }
 
 // Information about the vehicle position.
@@ -435,7 +435,7 @@ type PositionInfo struct {
 
 func (x *PositionInfo) Reset() {
 	*x = PositionInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -447,7 +447,7 @@ func (x *PositionInfo) String() string {
 func (*PositionInfo) ProtoMessage() {}
 
 func (x *PositionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[3]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -460,7 +460,7 @@ func (x *PositionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PositionInfo.ProtoReflect.Descriptor instead.
 func (*PositionInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{3}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PositionInfo) GetHome() *v1.GlobalPosition {
@@ -506,7 +506,7 @@ type GimbalStatus struct {
 
 func (x *GimbalStatus) Reset() {
 	*x = GimbalStatus{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -518,7 +518,7 @@ func (x *GimbalStatus) String() string {
 func (*GimbalStatus) ProtoMessage() {}
 
 func (x *GimbalStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[4]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -531,7 +531,7 @@ func (x *GimbalStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GimbalStatus.ProtoReflect.Descriptor instead.
 func (*GimbalStatus) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{4}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GimbalStatus) GetId() uint32 {
@@ -566,7 +566,7 @@ type GimbalInfo struct {
 
 func (x *GimbalInfo) Reset() {
 	*x = GimbalInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -578,7 +578,7 @@ func (x *GimbalInfo) String() string {
 func (*GimbalInfo) ProtoMessage() {}
 
 func (x *GimbalInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[5]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +591,7 @@ func (x *GimbalInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GimbalInfo.ProtoReflect.Descriptor instead.
 func (*GimbalInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{5}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GimbalInfo) GetGimbals() []*GimbalStatus {
@@ -605,22 +605,22 @@ func (x *GimbalInfo) GetGimbals() []*GimbalStatus {
 type AlertInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// battery warnings
-	BatteryWarning BatteryWarning `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.stream.BatteryWarning" json:"battery_warning,omitempty"`
+	BatteryWarning BatteryWarning `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.BatteryWarning" json:"battery_warning,omitempty"`
 	// GPS warnings
-	GpsWarning GPSWarning `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.stream.GPSWarning" json:"gps_warning,omitempty"`
+	GpsWarning GPSWarning `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.GPSWarning" json:"gps_warning,omitempty"`
 	// magnetometer warnings
-	MagnetometerWarning MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.stream.MagnetometerWarning" json:"magnetometer_warning,omitempty"`
+	MagnetometerWarning MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning" json:"magnetometer_warning,omitempty"`
 	// connection warnings
-	ConnectionWarning ConnectionWarning `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.stream.ConnectionWarning" json:"connection_warning,omitempty"`
+	ConnectionWarning ConnectionWarning `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.ConnectionWarning" json:"connection_warning,omitempty"`
 	// compass warnings
-	CompassWarning CompassWarning `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.stream.CompassWarning" json:"compass_warning,omitempty"`
+	CompassWarning CompassWarning `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.CompassWarning" json:"compass_warning,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AlertInfo) Reset() {
 	*x = AlertInfo{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -632,7 +632,7 @@ func (x *AlertInfo) String() string {
 func (*AlertInfo) ProtoMessage() {}
 
 func (x *AlertInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[6]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -645,7 +645,7 @@ func (x *AlertInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlertInfo.ProtoReflect.Descriptor instead.
 func (*AlertInfo) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{6}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *AlertInfo) GetBatteryWarning() BatteryWarning {
@@ -709,7 +709,7 @@ type Telemetry struct {
 
 func (x *Telemetry) Reset() {
 	*x = Telemetry{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +721,7 @@ func (x *Telemetry) String() string {
 func (*Telemetry) ProtoMessage() {}
 
 func (x *Telemetry) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[7]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +734,7 @@ func (x *Telemetry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Telemetry.ProtoReflect.Descriptor instead.
 func (*Telemetry) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{7}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Telemetry) GetTimestamp() *timestamppb.Timestamp {
@@ -815,7 +815,7 @@ type RawFrame struct {
 
 func (x *RawFrame) Reset() {
 	*x = RawFrame{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[8]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -827,7 +827,7 @@ func (x *RawFrame) String() string {
 func (*RawFrame) ProtoMessage() {}
 
 func (x *RawFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[8]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -840,7 +840,7 @@ func (x *RawFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RawFrame.ProtoReflect.Descriptor instead.
 func (*RawFrame) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{8}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RawFrame) GetTimestamp() *timestamppb.Timestamp {
@@ -934,7 +934,7 @@ type EncodedFrame struct {
 
 func (x *EncodedFrame) Reset() {
 	*x = EncodedFrame{}
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[9]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +946,7 @@ func (x *EncodedFrame) String() string {
 func (*EncodedFrame) ProtoMessage() {}
 
 func (x *EncodedFrame) ProtoReflect() protoreflect.Message {
-	mi := &file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes[9]
+	mi := &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +959,7 @@ func (x *EncodedFrame) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EncodedFrame.ProtoReflect.Descriptor instead.
 func (*EncodedFrame) Descriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP(), []int{9}
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EncodedFrame) GetTimestamp() *timestamppb.Timestamp {
@@ -1004,11 +1004,11 @@ func (x *EncodedFrame) GetCameraId() uint64 {
 	return 0
 }
 
-var File_steeleagle_protocol_v1_messages_stream_stream_proto protoreflect.FileDescriptor
+var File_steeleagle_protocol_v1_messages_telemetry_telemetry_proto protoreflect.FileDescriptor
 
-const file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc = "" +
+const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "" +
 	"\n" +
-	"3steeleagle_protocol/v1/messages/stream/stream.proto\x12&steeleagle_protocol.v1.messages.stream\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"-\n" +
+	"9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\x12)steeleagle_protocol.v1.messages.telemetry\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"-\n" +
 	"\vBatteryInfo\x12\x1e\n" +
 	"\n" +
 	"percentage\x18\x01 \x01(\rR\n" +
@@ -1026,28 +1026,28 @@ const file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc = "" +
 	"\fGimbalStatus\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x129\n" +
 	"\tpose_body\x18\x02 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\bposeBody\x127\n" +
-	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\"\\\n" +
+	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\"_\n" +
 	"\n" +
-	"GimbalInfo\x12N\n" +
-	"\agimbals\x18\x01 \x03(\v24.steeleagle_protocol.v1.messages.stream.GimbalStatusR\agimbals\"\xfc\x03\n" +
-	"\tAlertInfo\x12_\n" +
-	"\x0fbattery_warning\x18\x01 \x01(\x0e26.steeleagle_protocol.v1.messages.stream.BatteryWarningR\x0ebatteryWarning\x12S\n" +
-	"\vgps_warning\x18\x02 \x01(\x0e22.steeleagle_protocol.v1.messages.stream.GPSWarningR\n" +
-	"gpsWarning\x12n\n" +
-	"\x14magnetometer_warning\x18\x03 \x01(\x0e2;.steeleagle_protocol.v1.messages.stream.MagnetometerWarningR\x13magnetometerWarning\x12h\n" +
-	"\x12connection_warning\x18\x04 \x01(\x0e29.steeleagle_protocol.v1.messages.stream.ConnectionWarningR\x11connectionWarning\x12_\n" +
-	"\x0fcompass_warning\x18\x05 \x01(\x0e26.steeleagle_protocol.v1.messages.stream.CompassWarningR\x0ecompassWarning\"\xbd\x04\n" +
+	"GimbalInfo\x12Q\n" +
+	"\agimbals\x18\x01 \x03(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\agimbals\"\x8b\x04\n" +
+	"\tAlertInfo\x12b\n" +
+	"\x0fbattery_warning\x18\x01 \x01(\x0e29.steeleagle_protocol.v1.messages.telemetry.BatteryWarningR\x0ebatteryWarning\x12V\n" +
+	"\vgps_warning\x18\x02 \x01(\x0e25.steeleagle_protocol.v1.messages.telemetry.GPSWarningR\n" +
+	"gpsWarning\x12q\n" +
+	"\x14magnetometer_warning\x18\x03 \x01(\x0e2>.steeleagle_protocol.v1.messages.telemetry.MagnetometerWarningR\x13magnetometerWarning\x12k\n" +
+	"\x12connection_warning\x18\x04 \x01(\x0e2<.steeleagle_protocol.v1.messages.telemetry.ConnectionWarningR\x11connectionWarning\x12b\n" +
+	"\x0fcompass_warning\x18\x05 \x01(\x0e29.steeleagle_protocol.v1.messages.telemetry.CompassWarningR\x0ecompassWarning\"\xcf\x04\n" +
 	"\tTelemetry\x128\n" +
-	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12V\n" +
-	"\fbattery_info\x18\x02 \x01(\v23.steeleagle_protocol.v1.messages.stream.BatteryInfoR\vbatteryInfo\x12J\n" +
-	"\bgps_info\x18\x03 \x01(\v2/.steeleagle_protocol.v1.messages.stream.GPSInfoR\agpsInfo\x12P\n" +
+	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12Y\n" +
+	"\fbattery_info\x18\x02 \x01(\v26.steeleagle_protocol.v1.messages.telemetry.BatteryInfoR\vbatteryInfo\x12M\n" +
+	"\bgps_info\x18\x03 \x01(\v22.steeleagle_protocol.v1.messages.telemetry.GPSInfoR\agpsInfo\x12S\n" +
 	"\n" +
-	"comms_info\x18\x04 \x01(\v21.steeleagle_protocol.v1.messages.stream.CommsInfoR\tcommsInfo\x12Y\n" +
-	"\rposition_info\x18\x05 \x01(\v24.steeleagle_protocol.v1.messages.stream.PositionInfoR\fpositionInfo\x12S\n" +
-	"\vgimbal_info\x18\x06 \x01(\v22.steeleagle_protocol.v1.messages.stream.GimbalInfoR\n" +
-	"gimbalInfo\x12P\n" +
+	"comms_info\x18\x04 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.CommsInfoR\tcommsInfo\x12\\\n" +
+	"\rposition_info\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12V\n" +
+	"\vgimbal_info\x18\x06 \x01(\v25.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\n" +
+	"gimbalInfo\x12S\n" +
 	"\n" +
-	"alert_info\x18\a \x01(\v21.steeleagle_protocol.v1.messages.stream.AlertInfoR\talertInfo\"\x96\x03\n" +
+	"alert_info\x18\a \x01(\v24.steeleagle_protocol.v1.messages.telemetry.AlertInfoR\talertInfo\"\x9c\x03\n" +
 	"\bRawFrame\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x13\n" +
@@ -1055,17 +1055,17 @@ const file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc = "" +
 	"\x05v_res\x18\x04 \x01(\x04R\x04vRes\x12\x13\n" +
 	"\x05d_res\x18\x05 \x01(\x04R\x04dRes\x12\x1a\n" +
 	"\bchannels\x18\x06 \x01(\x04R\bchannels\x12\x0e\n" +
-	"\x02id\x18\a \x01(\x04R\x02id\x12Y\n" +
-	"\rposition_info\x18\b \x01(\v24.steeleagle_protocol.v1.messages.stream.PositionInfoR\fpositionInfo\x12Y\n" +
-	"\rgimbal_status\x18\t \x01(\v24.steeleagle_protocol.v1.messages.stream.GimbalStatusR\fgimbalStatus\x12\x1b\n" +
+	"\x02id\x18\a \x01(\x04R\x02id\x12\\\n" +
+	"\rposition_info\x18\b \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\\\n" +
+	"\rgimbal_status\x18\t \x01(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\fgimbalStatus\x12\x1b\n" +
 	"\tcamera_id\x18\n" +
-	" \x01(\x04R\bcameraId\"\xce\x02\n" +
+	" \x01(\x04R\bcameraId\"\xd4\x02\n" +
 	"\fEncodedFrame\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
 	"\fencoded_data\x18\x02 \x01(\fR\vencodedData\x12\x0e\n" +
-	"\x02id\x18\x03 \x01(\x04R\x02id\x12Y\n" +
-	"\rposition_info\x18\x04 \x01(\v24.steeleagle_protocol.v1.messages.stream.PositionInfoR\fpositionInfo\x12Y\n" +
-	"\rgimbal_status\x18\x05 \x01(\v24.steeleagle_protocol.v1.messages.stream.GimbalStatusR\fgimbalStatus\x12\x1b\n" +
+	"\x02id\x18\x03 \x01(\x04R\x02id\x12\\\n" +
+	"\rposition_info\x18\x04 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\\\n" +
+	"\rgimbal_status\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\fgimbalStatus\x12\x1b\n" +
 	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*h\n" +
 	"\x0eBatteryWarning\x12\x1f\n" +
 	"\x1bBATTERY_WARNING_UNSPECIFIED\x10\x00\x12\x17\n" +
@@ -1086,71 +1086,71 @@ const file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc = "" +
 	"\x0eCompassWarning\x12\x1f\n" +
 	"\x1bCOMPASS_WARNING_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19COMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n" +
-	"\x17COMPASS_WARNING_NO_LOCK\x10\x02B\xc2\x02\n" +
-	"*com.steeleagle_protocol.v1.messages.streamB\vStreamProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream\xa2\x02\x04SVMS\xaa\x02%SteeleagleProtocol.V1.Messages.Stream\xca\x02%SteeleagleProtocol\\V1\\Messages\\Stream\xe2\x021SteeleagleProtocol\\V1\\Messages\\Stream\\GPBMetadata\xea\x02(SteeleagleProtocol::V1::Messages::Streamb\x06proto3"
+	"\x17COMPASS_WARNING_NO_LOCK\x10\x02B\xd7\x02\n" +
+	"-com.steeleagle_protocol.v1.messages.telemetryB\x0eTelemetryProtoP\x01ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\xa2\x02\x04SVMT\xaa\x02(SteeleagleProtocol.V1.Messages.Telemetry\xca\x02(SteeleagleProtocol\\V1\\Messages\\Telemetry\xe2\x024SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\xea\x02+SteeleagleProtocol::V1::Messages::Telemetryb\x06proto3"
 
 var (
-	file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescOnce sync.Once
-	file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescData []byte
+	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescOnce sync.Once
+	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData []byte
 )
 
-func file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescGZIP() []byte {
-	file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescOnce.Do(func() {
-		file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc)))
+func file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP() []byte {
+	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescOnce.Do(func() {
+		file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc)))
 	})
-	return file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDescData
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData
 }
 
-var file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_steeleagle_protocol_v1_messages_stream_stream_proto_goTypes = []any{
-	(BatteryWarning)(0),           // 0: steeleagle_protocol.v1.messages.stream.BatteryWarning
-	(GPSWarning)(0),               // 1: steeleagle_protocol.v1.messages.stream.GPSWarning
-	(MagnetometerWarning)(0),      // 2: steeleagle_protocol.v1.messages.stream.MagnetometerWarning
-	(ConnectionWarning)(0),        // 3: steeleagle_protocol.v1.messages.stream.ConnectionWarning
-	(CompassWarning)(0),           // 4: steeleagle_protocol.v1.messages.stream.CompassWarning
-	(*BatteryInfo)(nil),           // 5: steeleagle_protocol.v1.messages.stream.BatteryInfo
-	(*GPSInfo)(nil),               // 6: steeleagle_protocol.v1.messages.stream.GPSInfo
-	(*CommsInfo)(nil),             // 7: steeleagle_protocol.v1.messages.stream.CommsInfo
-	(*PositionInfo)(nil),          // 8: steeleagle_protocol.v1.messages.stream.PositionInfo
-	(*GimbalStatus)(nil),          // 9: steeleagle_protocol.v1.messages.stream.GimbalStatus
-	(*GimbalInfo)(nil),            // 10: steeleagle_protocol.v1.messages.stream.GimbalInfo
-	(*AlertInfo)(nil),             // 11: steeleagle_protocol.v1.messages.stream.AlertInfo
-	(*Telemetry)(nil),             // 12: steeleagle_protocol.v1.messages.stream.Telemetry
-	(*RawFrame)(nil),              // 13: steeleagle_protocol.v1.messages.stream.RawFrame
-	(*EncodedFrame)(nil),          // 14: steeleagle_protocol.v1.messages.stream.EncodedFrame
+var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_goTypes = []any{
+	(BatteryWarning)(0),           // 0: steeleagle_protocol.v1.messages.telemetry.BatteryWarning
+	(GPSWarning)(0),               // 1: steeleagle_protocol.v1.messages.telemetry.GPSWarning
+	(MagnetometerWarning)(0),      // 2: steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning
+	(ConnectionWarning)(0),        // 3: steeleagle_protocol.v1.messages.telemetry.ConnectionWarning
+	(CompassWarning)(0),           // 4: steeleagle_protocol.v1.messages.telemetry.CompassWarning
+	(*BatteryInfo)(nil),           // 5: steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	(*GPSInfo)(nil),               // 6: steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	(*CommsInfo)(nil),             // 7: steeleagle_protocol.v1.messages.telemetry.CommsInfo
+	(*PositionInfo)(nil),          // 8: steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	(*GimbalStatus)(nil),          // 9: steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	(*GimbalInfo)(nil),            // 10: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	(*AlertInfo)(nil),             // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	(*Telemetry)(nil),             // 12: steeleagle_protocol.v1.messages.telemetry.Telemetry
+	(*RawFrame)(nil),              // 13: steeleagle_protocol.v1.messages.telemetry.RawFrame
+	(*EncodedFrame)(nil),          // 14: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
 	(*v1.GlobalPosition)(nil),     // 15: steeleagle_protocol.v1.GlobalPosition
 	(*v1.RelativePosition)(nil),   // 16: steeleagle_protocol.v1.RelativePosition
 	(*v1.Velocity)(nil),           // 17: steeleagle_protocol.v1.Velocity
 	(*v1.Pose)(nil),               // 18: steeleagle_protocol.v1.Pose
 	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
 }
-var file_steeleagle_protocol_v1_messages_stream_stream_proto_depIdxs = []int32{
-	15, // 0: steeleagle_protocol.v1.messages.stream.PositionInfo.home:type_name -> steeleagle_protocol.v1.GlobalPosition
-	15, // 1: steeleagle_protocol.v1.messages.stream.PositionInfo.global_position:type_name -> steeleagle_protocol.v1.GlobalPosition
-	16, // 2: steeleagle_protocol.v1.messages.stream.PositionInfo.relative_position:type_name -> steeleagle_protocol.v1.RelativePosition
-	17, // 3: steeleagle_protocol.v1.messages.stream.PositionInfo.velocity_body:type_name -> steeleagle_protocol.v1.Velocity
-	18, // 4: steeleagle_protocol.v1.messages.stream.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
-	18, // 5: steeleagle_protocol.v1.messages.stream.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
-	9,  // 6: steeleagle_protocol.v1.messages.stream.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.stream.GimbalStatus
-	0,  // 7: steeleagle_protocol.v1.messages.stream.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.stream.BatteryWarning
-	1,  // 8: steeleagle_protocol.v1.messages.stream.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.stream.GPSWarning
-	2,  // 9: steeleagle_protocol.v1.messages.stream.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.stream.MagnetometerWarning
-	3,  // 10: steeleagle_protocol.v1.messages.stream.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.stream.ConnectionWarning
-	4,  // 11: steeleagle_protocol.v1.messages.stream.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.stream.CompassWarning
-	19, // 12: steeleagle_protocol.v1.messages.stream.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 13: steeleagle_protocol.v1.messages.stream.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.stream.BatteryInfo
-	6,  // 14: steeleagle_protocol.v1.messages.stream.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.stream.GPSInfo
-	7,  // 15: steeleagle_protocol.v1.messages.stream.Telemetry.comms_info:type_name -> steeleagle_protocol.v1.messages.stream.CommsInfo
-	8,  // 16: steeleagle_protocol.v1.messages.stream.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.stream.PositionInfo
-	10, // 17: steeleagle_protocol.v1.messages.stream.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.stream.GimbalInfo
-	11, // 18: steeleagle_protocol.v1.messages.stream.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.stream.AlertInfo
-	19, // 19: steeleagle_protocol.v1.messages.stream.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 20: steeleagle_protocol.v1.messages.stream.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.stream.PositionInfo
-	9,  // 21: steeleagle_protocol.v1.messages.stream.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.stream.GimbalStatus
-	19, // 22: steeleagle_protocol.v1.messages.stream.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 23: steeleagle_protocol.v1.messages.stream.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.stream.PositionInfo
-	9,  // 24: steeleagle_protocol.v1.messages.stream.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.stream.GimbalStatus
+var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs = []int32{
+	15, // 0: steeleagle_protocol.v1.messages.telemetry.PositionInfo.home:type_name -> steeleagle_protocol.v1.GlobalPosition
+	15, // 1: steeleagle_protocol.v1.messages.telemetry.PositionInfo.global_position:type_name -> steeleagle_protocol.v1.GlobalPosition
+	16, // 2: steeleagle_protocol.v1.messages.telemetry.PositionInfo.relative_position:type_name -> steeleagle_protocol.v1.RelativePosition
+	17, // 3: steeleagle_protocol.v1.messages.telemetry.PositionInfo.velocity_body:type_name -> steeleagle_protocol.v1.Velocity
+	18, // 4: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
+	18, // 5: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
+	9,  // 6: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	0,  // 7: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryWarning
+	1,  // 8: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSWarning
+	2,  // 9: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning
+	3,  // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.ConnectionWarning
+	4,  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.CompassWarning
+	19, // 12: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
+	5,  // 13: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	6,  // 14: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	7,  // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry.comms_info:type_name -> steeleagle_protocol.v1.messages.telemetry.CommsInfo
+	8,  // 16: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	10, // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	11, // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	19, // 19: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 20: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 21: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	19, // 22: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 23: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 24: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
 	25, // [25:25] is the sub-list for method output_type
 	25, // [25:25] is the sub-list for method input_type
 	25, // [25:25] is the sub-list for extension type_name
@@ -1158,27 +1158,27 @@ var file_steeleagle_protocol_v1_messages_stream_stream_proto_depIdxs = []int32{
 	0,  // [0:25] is the sub-list for field type_name
 }
 
-func init() { file_steeleagle_protocol_v1_messages_stream_stream_proto_init() }
-func file_steeleagle_protocol_v1_messages_stream_stream_proto_init() {
-	if File_steeleagle_protocol_v1_messages_stream_stream_proto != nil {
+func init() { file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() }
+func file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() {
+	if File_steeleagle_protocol_v1_messages_telemetry_telemetry_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_stream_stream_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc)),
 			NumEnums:      5,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_steeleagle_protocol_v1_messages_stream_stream_proto_goTypes,
-		DependencyIndexes: file_steeleagle_protocol_v1_messages_stream_stream_proto_depIdxs,
-		EnumInfos:         file_steeleagle_protocol_v1_messages_stream_stream_proto_enumTypes,
-		MessageInfos:      file_steeleagle_protocol_v1_messages_stream_stream_proto_msgTypes,
+		GoTypes:           file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_goTypes,
+		DependencyIndexes: file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs,
+		EnumInfos:         file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes,
+		MessageInfos:      file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes,
 	}.Build()
-	File_steeleagle_protocol_v1_messages_stream_stream_proto = out.File
-	file_steeleagle_protocol_v1_messages_stream_stream_proto_goTypes = nil
-	file_steeleagle_protocol_v1_messages_stream_stream_proto_depIdxs = nil
+	File_steeleagle_protocol_v1_messages_telemetry_telemetry_proto = out.File
+	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_goTypes = nil
+	file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs = nil
 }

@@ -5,7 +5,7 @@ import grpc
 from steeleagle_protocol.v1.services.driver import calibrate_pb2 as steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2
 
 
-class CalibrationServiceStub:
+class CalibrateServiceStub:
     """
     Used to calibrate sensors on the driver.
 
@@ -21,13 +21,13 @@ class CalibrationServiceStub:
             channel: A grpc.Channel.
         """
         self.Calibrate = channel.unary_stream(
-                '/steeleagle_protocol.v1.services.driver.calibration.CalibrationService/Calibrate',
+                '/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate',
                 request_serializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateRequest.SerializeToString,
                 response_deserializer=steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateResponse.FromString,
                 _registered_method=True)
 
 
-class CalibrationServiceServicer:
+class CalibrateServiceServicer:
     """
     Used to calibrate sensors on the driver.
 
@@ -50,7 +50,7 @@ class CalibrationServiceServicer:
         raise NotImplementedError('Method not implemented!')
 
 
-def add_CalibrationServiceServicer_to_server(servicer, server):
+def add_CalibrateServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Calibrate': grpc.unary_stream_rpc_method_handler(
                     servicer.Calibrate,
@@ -59,13 +59,13 @@ def add_CalibrationServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'steeleagle_protocol.v1.services.driver.calibration.CalibrationService', rpc_method_handlers)
+            'steeleagle_protocol.v1.services.driver.calibration.CalibrateService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.calibration.CalibrationService', rpc_method_handlers)
+    server.add_registered_method_handlers('steeleagle_protocol.v1.services.driver.calibration.CalibrateService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class CalibrationService:
+class CalibrateService:
     """
     Used to calibrate sensors on the driver.
 
@@ -88,7 +88,7 @@ class CalibrationService:
         return grpc.experimental.unary_stream(
             request,
             target,
-            '/steeleagle_protocol.v1.services.driver.calibration.CalibrationService/Calibrate',
+            '/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate',
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateRequest.SerializeToString,
             steeleagle__protocol_dot_v1_dot_services_dot_driver_dot_calibrate__pb2.CalibrateResponse.FromString,
             options,

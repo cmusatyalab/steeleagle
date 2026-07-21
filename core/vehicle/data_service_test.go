@@ -9,7 +9,7 @@ import (
 	"time"
 
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
-	steammsgpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	vehiclepb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -106,7 +106,7 @@ func TestGetTelemetryUnavailable(t *testing.T) {
 func TestGetTelemetry(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
-	tel := &steammsgpb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
 	svc.store.addTelemetry(tel)
 
 	resp, err := client.GetTelemetry(t.Context(), &vehiclepb.GetTelemetryRequest{})
@@ -134,7 +134,7 @@ func TestGetFrameUnavailable(t *testing.T) {
 func TestGetFrame(t *testing.T) {
 	svc := newTestDataService(t)
 	client := newTestDataServiceClient(t, svc)
-	frame := &steammsgpb.EncodedFrame{Id: 1}
+	frame := &telemetrypb.EncodedFrame{Id: 1}
 	svc.store.addFrame(frame)
 
 	resp, err := client.GetFrame(t.Context(), &vehiclepb.GetFrameRequest{})
@@ -172,7 +172,7 @@ func TestStreamVideoFrames(t *testing.T) {
 
 	// The server subscribes asynchronously after the RPC arrives, so retry
 	// adding a frame until it's received.
-	frame := &steammsgpb.EncodedFrame{Id: 1}
+	frame := &telemetrypb.EncodedFrame{Id: 1}
 	deadline := time.After(streamWaitTimeout)
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -235,7 +235,7 @@ func TestStreamTelemetry(t *testing.T) {
 
 	// The server subscribes asynchronously after the RPC arrives, so retry
 	// adding telemetry until it's received.
-	tel := &steammsgpb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
 	deadline := time.After(streamWaitTimeout)
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()

@@ -14,7 +14,7 @@ option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protoco
  * such as magnetometers and gimbals. These RPCs are only exposed to server
  * or admin clients.
  */
-service CalibrationService {
+service CalibrateService {
   /*
    * Calibrates a given sensor.
    *

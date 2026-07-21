@@ -8,7 +8,7 @@ package steeleagle_protocol.v1.services.vehicle.data;
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/vehicle/data;data";
 
 import "steeleagle_protocol/v1/messages/result/result.proto";
-import "steeleagle_protocol/v1/messages/stream/stream.proto";
+import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
 
 /*
  * Used to get up-to-date results, telemetry, and video frames.
@@ -67,23 +67,23 @@ message GetResultResponse {
 message GetTelemetryRequest {}
 
 message GetTelemetryResponse {
-  steeleagle_protocol.v1.messages.stream.Telemetry telemetry = 1; // most recent telemetry
+  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // most recent telemetry
 }
 
 message GetFrameRequest {}
 
 message GetFrameResponse {
-  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // most recent frame
+  steeleagle_protocol.v1.messages.telemetry.EncodedFrame frame = 1; // most recent frame
 }
 
 message StreamVideoFramesRequest {}
 
 message StreamVideoFramesResponse {
-  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // encoded frame from the camera
+  steeleagle_protocol.v1.messages.telemetry.EncodedFrame frame = 1; // encoded frame from the camera
 }
 
 message StreamTelemetryRequest {}
 
 message StreamTelemetryResponse {
-  steeleagle_protocol.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver
+  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry from the driver
 }

@@ -7,7 +7,7 @@ package steeleagle_protocol.v1.services.driver.stream;
 
 option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver/stream;stream";
 
-import "steeleagle_protocol/v1/messages/stream/stream.proto";
+import "steeleagle_protocol/v1/messages/telemetry/telemetry.proto";
 
 /*
  * Used to get streams from the driver.
@@ -68,7 +68,7 @@ message StreamVideoFramesRequest {
 }
 
 message StreamVideoFramesResponse {
-  steeleagle_protocol.v1.messages.stream.EncodedFrame frame = 1; // encoded frame from the camera
+  steeleagle_protocol.v1.messages.telemetry.EncodedFrame frame = 1; // encoded frame from the camera
 }
 
 message StreamTelemetryRequest {
@@ -76,5 +76,5 @@ message StreamTelemetryRequest {
 }
 
 message StreamTelemetryResponse {
-  steeleagle_protocol.v1.messages.stream.Telemetry telemetry = 1; // telemetry from the driver
+  steeleagle_protocol.v1.messages.telemetry.Telemetry telemetry = 1; // telemetry from the driver
 }

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	resultpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
-	steammsgpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -30,7 +30,7 @@ func TestGetLatestTelemetryEmpty(t *testing.T) {
 
 func TestAddAndGetLatestTelemetry(t *testing.T) {
 	store := newTestDataStore(t)
-	tel := &steammsgpb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
 	store.addTelemetry(tel)
 
 	if got := store.getLatestTelemetry(); got != tel {
@@ -47,7 +47,7 @@ func TestGetLatestFrameEmpty(t *testing.T) {
 
 func TestAddAndGetLatestFrame(t *testing.T) {
 	store := newTestDataStore(t)
-	frame := &steammsgpb.EncodedFrame{Id: 42}
+	frame := &telemetrypb.EncodedFrame{Id: 42}
 	store.addFrame(frame)
 
 	if got := store.getLatestFrame(); got != frame {
@@ -79,7 +79,7 @@ func TestSubscribeToTelemetry(t *testing.T) {
 	store := newTestDataStore(t)
 	ch := store.subscribeToTelemetry()
 
-	tel := &steammsgpb.Telemetry{Timestamp: timestamppb.Now()}
+	tel := &telemetrypb.Telemetry{Timestamp: timestamppb.Now()}
 	store.addTelemetry(tel)
 
 	select {
@@ -96,7 +96,7 @@ func TestSubscribeToFrames(t *testing.T) {
 	store := newTestDataStore(t)
 	ch := store.subscribeToFrames()
 
-	frame := &steammsgpb.EncodedFrame{Id: 7}
+	frame := &telemetrypb.EncodedFrame{Id: 7}
 	store.addFrame(frame)
 
 	select {

@@ -23,10 +23,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CalibrationService_Calibrate_FullMethodName = "/steeleagle_protocol.v1.services.driver.calibration.CalibrationService/Calibrate"
+	CalibrateService_Calibrate_FullMethodName = "/steeleagle_protocol.v1.services.driver.calibration.CalibrateService/Calibrate"
 )
 
-// CalibrationServiceClient is the client API for CalibrationService service.
+// CalibrateServiceClient is the client API for CalibrateService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
@@ -35,7 +35,7 @@ const (
 // This is an internal service used to retrieve calibrate onboard sensors
 // such as magnetometers and gimbals. These RPCs are only exposed to server
 // or admin clients.
-type CalibrationServiceClient interface {
+type CalibrateServiceClient interface {
 	// Calibrates a given sensor.
 	//
 	// Streams back instructions on how to calibrate a sensor. Keeps sending
@@ -45,17 +45,17 @@ type CalibrationServiceClient interface {
 	Calibrate(ctx context.Context, in *CalibrateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CalibrateResponse], error)
 }
 
-type calibrationServiceClient struct {
+type calibrateServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewCalibrationServiceClient(cc grpc.ClientConnInterface) CalibrationServiceClient {
-	return &calibrationServiceClient{cc}
+func NewCalibrateServiceClient(cc grpc.ClientConnInterface) CalibrateServiceClient {
+	return &calibrateServiceClient{cc}
 }
 
-func (c *calibrationServiceClient) Calibrate(ctx context.Context, in *CalibrateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CalibrateResponse], error) {
+func (c *calibrateServiceClient) Calibrate(ctx context.Context, in *CalibrateRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CalibrateResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &CalibrationService_ServiceDesc.Streams[0], CalibrationService_Calibrate_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &CalibrateService_ServiceDesc.Streams[0], CalibrateService_Calibrate_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +70,10 @@ func (c *calibrationServiceClient) Calibrate(ctx context.Context, in *CalibrateR
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type CalibrationService_CalibrateClient = grpc.ServerStreamingClient[CalibrateResponse]
+type CalibrateService_CalibrateClient = grpc.ServerStreamingClient[CalibrateResponse]
 
-// CalibrationServiceServer is the server API for CalibrationService service.
-// All implementations must embed UnimplementedCalibrationServiceServer
+// CalibrateServiceServer is the server API for CalibrateService service.
+// All implementations must embed UnimplementedCalibrateServiceServer
 // for forward compatibility.
 //
 // Used to calibrate sensors on the driver.
@@ -81,7 +81,7 @@ type CalibrationService_CalibrateClient = grpc.ServerStreamingClient[CalibrateRe
 // This is an internal service used to retrieve calibrate onboard sensors
 // such as magnetometers and gimbals. These RPCs are only exposed to server
 // or admin clients.
-type CalibrationServiceServer interface {
+type CalibrateServiceServer interface {
 	// Calibrates a given sensor.
 	//
 	// Streams back instructions on how to calibrate a sensor. Keeps sending
@@ -89,62 +89,62 @@ type CalibrationServiceServer interface {
 	// This function should only be called by the OS or a remote server,
 	// and not by any plugins.
 	Calibrate(*CalibrateRequest, grpc.ServerStreamingServer[CalibrateResponse]) error
-	mustEmbedUnimplementedCalibrationServiceServer()
+	mustEmbedUnimplementedCalibrateServiceServer()
 }
 
-// UnimplementedCalibrationServiceServer must be embedded to have
+// UnimplementedCalibrateServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedCalibrationServiceServer struct{}
+type UnimplementedCalibrateServiceServer struct{}
 
-func (UnimplementedCalibrationServiceServer) Calibrate(*CalibrateRequest, grpc.ServerStreamingServer[CalibrateResponse]) error {
+func (UnimplementedCalibrateServiceServer) Calibrate(*CalibrateRequest, grpc.ServerStreamingServer[CalibrateResponse]) error {
 	return status.Error(codes.Unimplemented, "method Calibrate not implemented")
 }
-func (UnimplementedCalibrationServiceServer) mustEmbedUnimplementedCalibrationServiceServer() {}
-func (UnimplementedCalibrationServiceServer) testEmbeddedByValue()                            {}
+func (UnimplementedCalibrateServiceServer) mustEmbedUnimplementedCalibrateServiceServer() {}
+func (UnimplementedCalibrateServiceServer) testEmbeddedByValue()                          {}
 
-// UnsafeCalibrationServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to CalibrationServiceServer will
+// UnsafeCalibrateServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CalibrateServiceServer will
 // result in compilation errors.
-type UnsafeCalibrationServiceServer interface {
-	mustEmbedUnimplementedCalibrationServiceServer()
+type UnsafeCalibrateServiceServer interface {
+	mustEmbedUnimplementedCalibrateServiceServer()
 }
 
-func RegisterCalibrationServiceServer(s grpc.ServiceRegistrar, srv CalibrationServiceServer) {
-	// If the following call panics, it indicates UnimplementedCalibrationServiceServer was
+func RegisterCalibrateServiceServer(s grpc.ServiceRegistrar, srv CalibrateServiceServer) {
+	// If the following call panics, it indicates UnimplementedCalibrateServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&CalibrationService_ServiceDesc, srv)
+	s.RegisterService(&CalibrateService_ServiceDesc, srv)
 }
 
-func _CalibrationService_Calibrate_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _CalibrateService_Calibrate_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(CalibrateRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(CalibrationServiceServer).Calibrate(m, &grpc.GenericServerStream[CalibrateRequest, CalibrateResponse]{ServerStream: stream})
+	return srv.(CalibrateServiceServer).Calibrate(m, &grpc.GenericServerStream[CalibrateRequest, CalibrateResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type CalibrationService_CalibrateServer = grpc.ServerStreamingServer[CalibrateResponse]
+type CalibrateService_CalibrateServer = grpc.ServerStreamingServer[CalibrateResponse]
 
-// CalibrationService_ServiceDesc is the grpc.ServiceDesc for CalibrationService service.
+// CalibrateService_ServiceDesc is the grpc.ServiceDesc for CalibrateService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var CalibrationService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "steeleagle_protocol.v1.services.driver.calibration.CalibrationService",
-	HandlerType: (*CalibrationServiceServer)(nil),
+var CalibrateService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "steeleagle_protocol.v1.services.driver.calibration.CalibrateService",
+	HandlerType: (*CalibrateServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Calibrate",
-			Handler:       _CalibrationService_Calibrate_Handler,
+			Handler:       _CalibrateService_Calibrate_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -205,8 +205,8 @@ const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
 	"\x11CalibrateResponse\x12)\n" +
 	"\x10next_instruction\x18\x01 \x01(\tR\x0fnextInstruction\x12\x12\n" +
 	"\x04step\x18\x02 \x01(\rR\x04step\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\rR\x05total2\xb1\x01\n" +
-	"\x12CalibrationService\x12\x9a\x01\n" +
+	"\x05total\x18\x03 \x01(\rR\x05total2\xaf\x01\n" +
+	"\x10CalibrateService\x12\x9a\x01\n" +
 	"\tCalibrate\x12D.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest\x1aE.steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse0\x01B\x83\x03\n" +
 	"6com.steeleagle_protocol.v1.services.driver.calibrationB\x0eCalibrateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x021SteeleagleProtocol.V1.Services.Driver.Calibration\xca\x021SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\xe2\x02=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\xea\x025SteeleagleProtocol::V1::Services::Driver::Calibrationb\x06proto3"
 
@@ -231,8 +231,8 @@ var file_steeleagle_protocol_v1_services_driver_calibrate_proto_goTypes = []any{
 }
 var file_steeleagle_protocol_v1_services_driver_calibrate_proto_depIdxs = []int32{
 	0, // 0: steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.sensor:type_name -> steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest.Sensor
-	1, // 1: steeleagle_protocol.v1.services.driver.calibration.CalibrationService.Calibrate:input_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest
-	2, // 2: steeleagle_protocol.v1.services.driver.calibration.CalibrationService.Calibrate:output_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse
+	1, // 1: steeleagle_protocol.v1.services.driver.calibration.CalibrateService.Calibrate:input_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest
+	2, // 2: steeleagle_protocol.v1.services.driver.calibration.CalibrateService.Calibrate:output_type -> steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

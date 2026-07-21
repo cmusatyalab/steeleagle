@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	stream_msg_pb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetrypb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	driverpb "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -187,7 +187,7 @@ func (v *Vehicle) consumeFrames(ctx context.Context, frameCh chan []byte) error 
 				return fmt.Errorf("frame channel closed")
 			}
 			count++
-			f := &stream_msg_pb.EncodedFrame{
+			f := &telemetrypb.EncodedFrame{
 				Id:          uint64(count),
 				Timestamp:   timestamppb.Now(),
 				EncodedData: frame,

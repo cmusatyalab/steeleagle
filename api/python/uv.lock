@@ -80,7 +80,7 @@ wheels = [
 
 [[package]]
 name = "steeleagle-protocol"
-version = "0.1.0"
+version = "0.1.5"
 source = { virtual = "." }
 dependencies = [
     { name = "grpcio" },
@@ -89,8 +89,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "grpcio", specifier = ">=1.82.1" },
-    { name = "protobuf", specifier = ">=7.35.1" },
+    { name = "grpcio", specifier = ">=1.43.0" },
+    { name = "protobuf", specifier = ">=3.19.4" },
 ]
 
 [[package]]

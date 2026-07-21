@@ -12,7 +12,7 @@ package vehicle
 
 import (
 	result "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/result"
-	stream "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/stream"
+	telemetry "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -153,7 +153,7 @@ func (*GetTelemetryRequest) Descriptor() ([]byte, []int) {
 
 type GetTelemetryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Telemetry     *stream.Telemetry      `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // most recent telemetry
+	Telemetry     *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // most recent telemetry
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -188,7 +188,7 @@ func (*GetTelemetryResponse) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetTelemetryResponse) GetTelemetry() *stream.Telemetry {
+func (x *GetTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
 		return x.Telemetry
 	}
@@ -232,8 +232,8 @@ func (*GetFrameRequest) Descriptor() ([]byte, []int) {
 }
 
 type GetFrameResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Frame         *stream.EncodedFrame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // most recent frame
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Frame         *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // most recent frame
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -268,7 +268,7 @@ func (*GetFrameResponse) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetFrameResponse) GetFrame() *stream.EncodedFrame {
+func (x *GetFrameResponse) GetFrame() *telemetry.EncodedFrame {
 	if x != nil {
 		return x.Frame
 	}
@@ -312,8 +312,8 @@ func (*StreamVideoFramesRequest) Descriptor() ([]byte, []int) {
 }
 
 type StreamVideoFramesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Frame         *stream.EncodedFrame   `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // encoded frame from the camera
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Frame         *telemetry.EncodedFrame `protobuf:"bytes,1,opt,name=frame,proto3" json:"frame,omitempty"` // encoded frame from the camera
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -348,7 +348,7 @@ func (*StreamVideoFramesResponse) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *StreamVideoFramesResponse) GetFrame() *stream.EncodedFrame {
+func (x *StreamVideoFramesResponse) GetFrame() *telemetry.EncodedFrame {
 	if x != nil {
 		return x.Frame
 	}
@@ -393,7 +393,7 @@ func (*StreamTelemetryRequest) Descriptor() ([]byte, []int) {
 
 type StreamTelemetryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Telemetry     *stream.Telemetry      `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // telemetry from the driver
+	Telemetry     *telemetry.Telemetry   `protobuf:"bytes,1,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // telemetry from the driver
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -428,7 +428,7 @@ func (*StreamTelemetryResponse) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *StreamTelemetryResponse) GetTelemetry() *stream.Telemetry {
+func (x *StreamTelemetryResponse) GetTelemetry() *telemetry.Telemetry {
 	if x != nil {
 		return x.Telemetry
 	}
@@ -439,23 +439,23 @@ var File_steeleagle_protocol_v1_services_vehicle_data_proto protoreflect.FileDes
 
 const file_steeleagle_protocol_v1_services_vehicle_data_proto_rawDesc = "" +
 	"\n" +
-	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12,steeleagle_protocol.v1.services.vehicle.data\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a3steeleagle_protocol/v1/messages/stream/stream.proto\"&\n" +
+	"2steeleagle_protocol/v1/services/vehicle/data.proto\x12,steeleagle_protocol.v1.services.vehicle.data\x1a3steeleagle_protocol/v1/messages/result/result.proto\x1a9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\"&\n" +
 	"\x10GetResultRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"b\n" +
 	"\x11GetResultResponse\x12M\n" +
 	"\x06result\x18\x01 \x01(\v25.steeleagle_protocol.v1.messages.result.ComputeResultR\x06result\"\x15\n" +
-	"\x13GetTelemetryRequest\"g\n" +
-	"\x14GetTelemetryResponse\x12O\n" +
-	"\ttelemetry\x18\x01 \x01(\v21.steeleagle_protocol.v1.messages.stream.TelemetryR\ttelemetry\"\x11\n" +
-	"\x0fGetFrameRequest\"^\n" +
-	"\x10GetFrameResponse\x12J\n" +
-	"\x05frame\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.stream.EncodedFrameR\x05frame\"\x1a\n" +
-	"\x18StreamVideoFramesRequest\"g\n" +
-	"\x19StreamVideoFramesResponse\x12J\n" +
-	"\x05frame\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.stream.EncodedFrameR\x05frame\"\x18\n" +
-	"\x16StreamTelemetryRequest\"j\n" +
-	"\x17StreamTelemetryResponse\x12O\n" +
-	"\ttelemetry\x18\x01 \x01(\v21.steeleagle_protocol.v1.messages.stream.TelemetryR\ttelemetry2\x92\x06\n" +
+	"\x13GetTelemetryRequest\"j\n" +
+	"\x14GetTelemetryResponse\x12R\n" +
+	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry\"\x11\n" +
+	"\x0fGetFrameRequest\"a\n" +
+	"\x10GetFrameResponse\x12M\n" +
+	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"\x1a\n" +
+	"\x18StreamVideoFramesRequest\"j\n" +
+	"\x19StreamVideoFramesResponse\x12M\n" +
+	"\x05frame\x18\x01 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.EncodedFrameR\x05frame\"\x18\n" +
+	"\x16StreamTelemetryRequest\"m\n" +
+	"\x17StreamTelemetryResponse\x12R\n" +
+	"\ttelemetry\x18\x01 \x01(\v24.steeleagle_protocol.v1.messages.telemetry.TelemetryR\ttelemetry2\x92\x06\n" +
 	"\vDataService\x12\x8e\x01\n" +
 	"\tGetResult\x12>.steeleagle_protocol.v1.services.vehicle.data.GetResultRequest\x1a?.steeleagle_protocol.v1.services.vehicle.data.GetResultResponse\"\x00\x12\x97\x01\n" +
 	"\fGetTelemetry\x12A.steeleagle_protocol.v1.services.vehicle.data.GetTelemetryRequest\x1aB.steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse\"\x00\x12\x8b\x01\n" +
@@ -489,15 +489,15 @@ var file_steeleagle_protocol_v1_services_vehicle_data_proto_goTypes = []any{
 	(*StreamTelemetryRequest)(nil),    // 8: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryRequest
 	(*StreamTelemetryResponse)(nil),   // 9: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse
 	(*result.ComputeResult)(nil),      // 10: steeleagle_protocol.v1.messages.result.ComputeResult
-	(*stream.Telemetry)(nil),          // 11: steeleagle_protocol.v1.messages.stream.Telemetry
-	(*stream.EncodedFrame)(nil),       // 12: steeleagle_protocol.v1.messages.stream.EncodedFrame
+	(*telemetry.Telemetry)(nil),       // 11: steeleagle_protocol.v1.messages.telemetry.Telemetry
+	(*telemetry.EncodedFrame)(nil),    // 12: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
 }
 var file_steeleagle_protocol_v1_services_vehicle_data_proto_depIdxs = []int32{
 	10, // 0: steeleagle_protocol.v1.services.vehicle.data.GetResultResponse.result:type_name -> steeleagle_protocol.v1.messages.result.ComputeResult
-	11, // 1: steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.stream.Telemetry
-	12, // 2: steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse.frame:type_name -> steeleagle_protocol.v1.messages.stream.EncodedFrame
-	12, // 3: steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.stream.EncodedFrame
-	11, // 4: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.stream.Telemetry
+	11, // 1: steeleagle_protocol.v1.services.vehicle.data.GetTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
+	12, // 2: steeleagle_protocol.v1.services.vehicle.data.GetFrameResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	12, // 3: steeleagle_protocol.v1.services.vehicle.data.StreamVideoFramesResponse.frame:type_name -> steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	11, // 4: steeleagle_protocol.v1.services.vehicle.data.StreamTelemetryResponse.telemetry:type_name -> steeleagle_protocol.v1.messages.telemetry.Telemetry
 	0,  // 5: steeleagle_protocol.v1.services.vehicle.data.DataService.GetResult:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetResultRequest
 	2,  // 6: steeleagle_protocol.v1.services.vehicle.data.DataService.GetTelemetry:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetTelemetryRequest
 	4,  // 7: steeleagle_protocol.v1.services.vehicle.data.DataService.GetFrame:input_type -> steeleagle_protocol.v1.services.vehicle.data.GetFrameRequest
