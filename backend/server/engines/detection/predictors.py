@@ -1,3 +1,6 @@
+import json
+import os
+
 import cv2
 import numpy as np
 import supervision as sv
@@ -58,3 +61,40 @@ class RfDetrPredictor(Predictor):
                 [self.classes[i] for i in detections.class_id], dtype=object
             )
         return detections
+
+
+class UnknownModelArchError(Exception):
+    pass
+
+
+def load_predictor(
+    model_name: str, threshold: float, model_dir: str = "model"
+) -> Predictor:
+    sidecar_path = os.path.join(model_dir, f"{model_name}.json")
+    meta = {"arch": "yolo"}
+    if os.path.exists(sidecar_path):
+        with open(sidecar_path) as f:
+            meta = json.load(f)
+
+    arch = meta.get("arch", "yolo")
+
+    if arch == "yolo":
+        weights_path = os.path.join(model_dir, f"{model_name}.pt")
+        if not os.path.exists(weights_path):
+            raise FileNotFoundError(weights_path)
+        return YoloPredictor(weights_path, threshold)
+
+    if arch == "rfdetr":
+        variant = meta.get("variant")
+        if variant not in _RFDETR_VARIANTS:
+            raise UnknownModelArchError(
+                f"Unknown or missing RF-DETR variant: {variant!r}"
+            )
+        weights_path = os.path.join(model_dir, f"{model_name}.pth")
+        if not os.path.exists(weights_path):
+            raise FileNotFoundError(weights_path)
+        return RfDetrPredictor(
+            weights_path, threshold, variant=variant, classes=meta.get("classes")
+        )
+
+    raise UnknownModelArchError(f"Unknown model arch: {arch!r}")

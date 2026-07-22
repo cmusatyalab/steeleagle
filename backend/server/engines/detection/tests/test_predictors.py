@@ -1,5 +1,8 @@
+import json
+
 import numpy as np
 import predictors
+import pytest
 import supervision as sv
 
 
@@ -113,3 +116,62 @@ def test_rfdetr_predictor_without_classes_keeps_model_provided_names(monkeypatch
     result = predictor.predict(np.zeros((2, 2, 3), dtype=np.uint8))
 
     assert result.data["class_name"].tolist() == ["person"]
+
+
+def test_load_predictor_defaults_to_yolo_without_sidecar(tmp_path, monkeypatch):
+    (tmp_path / "coco.pt").write_bytes(b"")
+    captured = {}
+    monkeypatch.setattr(
+        predictors,
+        "YOLO",
+        lambda path: captured.setdefault("path", path) or object(),
+    )
+
+    predictor = predictors.load_predictor("coco", 0.5, model_dir=str(tmp_path))
+
+    assert isinstance(predictor, predictors.YoloPredictor)
+    assert captured["path"] == str(tmp_path / "coco.pt")
+
+
+def test_load_predictor_missing_yolo_weights_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        predictors.load_predictor("coco", 0.5, model_dir=str(tmp_path))
+
+
+def test_load_predictor_rfdetr_with_sidecar(tmp_path, monkeypatch):
+    (tmp_path / "myrfdetr.pth").write_bytes(b"")
+    (tmp_path / "myrfdetr.json").write_text(
+        json.dumps({"arch": "rfdetr", "variant": "base", "classes": ["a", "b"]})
+    )
+    monkeypatch.setattr(
+        predictors, "_RFDETR_VARIANTS", {"base": lambda pretrain_weights: object()}
+    )
+
+    predictor = predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
+
+    assert isinstance(predictor, predictors.RfDetrPredictor)
+    assert predictor.classes == ["a", "b"]
+
+
+def test_load_predictor_rfdetr_missing_variant_raises(tmp_path):
+    (tmp_path / "myrfdetr.pth").write_bytes(b"")
+    (tmp_path / "myrfdetr.json").write_text(json.dumps({"arch": "rfdetr"}))
+
+    with pytest.raises(predictors.UnknownModelArchError):
+        predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
+
+
+def test_load_predictor_rfdetr_missing_weights_raises(tmp_path):
+    (tmp_path / "myrfdetr.json").write_text(
+        json.dumps({"arch": "rfdetr", "variant": "base"})
+    )
+
+    with pytest.raises(FileNotFoundError):
+        predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
+
+
+def test_load_predictor_unknown_arch_raises(tmp_path):
+    (tmp_path / "weird.json").write_text(json.dumps({"arch": "bogus"}))
+
+    with pytest.raises(predictors.UnknownModelArchError):
+        predictors.load_predictor("weird", 0.5, model_dir=str(tmp_path))
