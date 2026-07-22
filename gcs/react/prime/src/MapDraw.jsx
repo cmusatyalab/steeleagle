@@ -4,7 +4,6 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
-import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
@@ -93,7 +92,6 @@ function MapDraw({ features, setFeatures, toast }) {
     const isFirstStyleEffect = useRef(true);
 
     const [selectedFeatureId, setSelectedFeatureId] = useState(null);
-    const [nameInput, setNameInput] = useState('');
     const [mapStyle, setMapStyle] = useState('streets');
 
     const hasFeatures = useMemo(() => {
@@ -156,13 +154,9 @@ function MapDraw({ features, setFeatures, toast }) {
 
         function selectFeature(e) {
             if (e.features && e.features.length > 0) {
-                const fid = e.features[0].id;
-                setSelectedFeatureId(fid);
-                const feat = draw.current.get(fid);
-                setNameInput(feat?.properties?.name || '');
+                setSelectedFeatureId(e.features[0].id);
             } else {
                 setSelectedFeatureId(null);
-                setNameInput('');
             }
         }
 
@@ -184,11 +178,10 @@ function MapDraw({ features, setFeatures, toast }) {
         mapRef.current.setStyle(STYLE_URLS[mapStyle]);
     }, [mapStyle]);
 
-    function applyName() {
-        if (!selectedFeatureId) return;
-        const feat = draw.current.get(selectedFeatureId);
+    function handleRenameFeature(id, name) {
+        const feat = draw.current?.get(id);
         if (!feat) return;
-        feat.properties = { ...(feat.properties || {}), name: nameInput };
+        feat.properties = { ...(feat.properties || {}), name };
         draw.current.add(feat);
         setFeatures(JSON.stringify(draw.current.getAll()));
     }
@@ -198,7 +191,6 @@ function MapDraw({ features, setFeatures, toast }) {
         if (!feature) return;
         draw.current.changeMode('simple_select', { featureIds: [id] });
         setSelectedFeatureId(id);
-        setNameInput(feature.properties?.name || '');
         try {
             const bbox = bboxFromFeature(feature);
             mapRef.current?.fitBounds(bbox, { padding: 60, maxZoom: 18 });
@@ -210,7 +202,6 @@ function MapDraw({ features, setFeatures, toast }) {
         setFeatures(JSON.stringify(draw.current.getAll()));
         if (selectedFeatureId === id) {
             setSelectedFeatureId(null);
-            setNameInput('');
         }
     }
 
@@ -290,20 +281,6 @@ function MapDraw({ features, setFeatures, toast }) {
                     className="p-inputtext-sm"
                     style={{ width: 130 }}
                 />
-                {selectedFeatureId && (
-                    <div className="flex gap-2 align-items-center" style={{ marginLeft: 'auto' }}>
-                        <label className="text-sm">Area name:</label>
-                        <InputText
-                            value={nameInput}
-                            onChange={e => setNameInput(e.target.value)}
-                            placeholder="e.g. AreaB"
-                            className="p-inputtext-sm"
-                            style={{ width: 160 }}
-                            onKeyDown={e => { if (e.key === 'Enter') applyName(); }}
-                        />
-                        <Button label="Set" size="small" onClick={applyName} />
-                    </div>
-                )}
             </div>
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <FeatureList
@@ -311,6 +288,7 @@ function MapDraw({ features, setFeatures, toast }) {
                     selectedFeatureId={selectedFeatureId}
                     onSelect={handleSelectFeature}
                     onDelete={handleDeleteFeature}
+                    onRename={handleRenameFeature}
                 />
                 <div id="map-container" ref={mapContainerRef} style={{ flex: 1 }} />
             </div>
