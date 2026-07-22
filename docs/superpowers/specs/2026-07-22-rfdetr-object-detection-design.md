@@ -80,13 +80,27 @@ drop the polars `to_df()` usage entirely.
 - Found, `"arch": "rfdetr"` → weights = `model/<model_name>.pth`, and the
   sidecar must also provide:
   - `"variant"`: one of `base`/`large`/`nano`/`small`/`medium`, mapping to
-    the matching `RFDETR*` class (RF-DETR checkpoints are
+    the matching `RFDETR*` class (`RFDETRBase`/`RFDETRLarge`/`RFDETRNano`/
+    `RFDETRSmall`/`RFDETRMedium`). RF-DETR checkpoints are
     architecture-specific, unlike ultralytics' `YOLO()` which auto-detects
-    architecture from the checkpoint itself).
-  - `"classes"`: an ordered list of class names, index = `class_id`. RF-DETR
-    checkpoints don't embed label names the way ultralytics `.pt` files do
-    (`results[0].names`), so this is required for `rfdetr` and ignored for
-    `yolo`.
+    architecture from the checkpoint itself. (`RFDETRBase` is deprecated
+    upstream as of `rfdetr` 1.7.0 but still functional; note this in a code
+    comment where the variant map is defined.)
+  - `"classes"` (optional): an ordered list of class names, index =
+    `class_id`, used to **override** the class names RF-DETR resolves on its
+    own. The `rfdetr` package's `predict()` already populates
+    `detections.data["class_name"]` automatically — from the class names
+    embedded in the checkpoint at training time, or the standard 80 COCO
+    names as a fallback for checkpoints that don't embed any. `"classes"`
+    only needs to be set for a checkpoint whose embedded/fallback names are
+    wrong for this deployment. `num_classes` is also auto-resolved from the
+    checkpoint and never needs to be supplied.
+  - RF-DETR's `predict()` expects **RGB** input, while the engine currently
+    feeds YOLO raw **BGR** frames straight from `cv2.imdecode` (the
+    `cv2.cvtColor(..., COLOR_BGR2RGB)` call in `process_image()` is
+    commented out today). `RfDetrPredictor.predict()` must convert BGR to
+    RGB itself before calling the model — `YoloPredictor` keeps today's
+    behavior unchanged.
 
 Example sidecar for an RF-DETR model:
 
@@ -120,12 +134,14 @@ class YoloPredictor(Predictor):
 
 class RfDetrPredictor(Predictor):
     # self.model = {base: RFDETRBase, large: RFDETRLarge, ...}[variant](pretrain_weights=weights_path)
-    # self.classes = meta["classes"]
+    # self.classes = meta.get("classes")  # optional override, index = class_id
     def predict(self, image_np):
-        detections = self.model.predict(image_np, threshold=self.threshold)
-        detections.data["class_name"] = np.array(
-            [self.classes[i] for i in detections.class_id]
-        )
+        rgb = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+        detections = self.model.predict(rgb, threshold=self.threshold)
+        if self.classes is not None:
+            detections.data["class_name"] = np.array(
+                [self.classes[i] for i in detections.class_id]
+            )
         return detections
 
 
@@ -185,17 +201,25 @@ direct concern here).
 
 ## Implementation notes / risks
 
-Two library-API details should be confirmed against the installed package
-versions during implementation, since they were not verified against a live
-environment while writing this spec:
+Verified against `rfdetr` 1.8.3 and `supervision` 0.29.1 source directly
+(downloaded and inspected during planning — not from memory):
 
-- Exact `RFDETR*` class names/constructor kwargs (e.g. whether `num_classes`
-  must be passed explicitly alongside `pretrain_weights`, and the exact set
-  of variant names) for the installed `rfdetr` version.
-- Whether `sv.Detections.from_ultralytics()` populates `.data["class_name"]`
-  automatically from `results[0].names` on the installed `supervision`
-  version. If not, `YoloPredictor.predict()` needs one extra line to set it
-  manually.
+- `RFDETRBase`/`RFDETRNano`/`RFDETRSmall`/`RFDETRMedium`/`RFDETRLarge` all
+  subclass `RFDETR`, take `pretrain_weights=<path>` as a constructor kwarg,
+  and auto-resolve `num_classes` from the checkpoint.
+- `RFDETR.predict(image, threshold=...)` returns a single
+  `supervision.Detections` (not a list) for a single-image input, with
+  `.xyxy` already scaled back to the original (pre-resize) image's pixel
+  dimensions and `.data["class_name"]` already populated (from the
+  checkpoint's embedded class names, or standard COCO names as fallback).
+- `sv.Detections.from_ultralytics(results[0])` also populates
+  `.data["class_name"]` automatically, from `results[0].names[class_id]` —
+  confirmed in `supervision/detection/core.py`. No manual step needed in
+  `YoloPredictor`.
+- `sv.BoxAnnotator().annotate(scene, detections)` and
+  `sv.LabelAnnotator().annotate(scene, detections, labels=[...])` both take
+  a `numpy.ndarray` scene directly and return the annotated array — no
+  PIL conversion needed.
 
 ## Testing
 
