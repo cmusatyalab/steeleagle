@@ -323,14 +323,13 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         frame = telemetry.Frame()
         input_frame.any_payload.Unpack(frame)
         results, image_np = self.process_image(frame.data)
-        if len(results) > 0:
-            detections = self.process_results(
-                image_np,
-                results,
-                frame.vehicle_info,
-                frame.position_info,
-                frame.gimbal_info,
-            )
+        detections = self.process_results(
+            image_np,
+            results,
+            frame.vehicle_info,
+            frame.position_info,
+            frame.gimbal_info,
+        )
 
         compute_result = result_pb2.ComputeResult()
         compute_result.engine_name = self.ENGINE_NAME

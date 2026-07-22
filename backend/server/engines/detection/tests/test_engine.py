@@ -1,10 +1,14 @@
 import time
 from unittest.mock import MagicMock
 
+import cv2
 import numpy as np
 import openscout_object_engine as engine_module
 import pytest
 import supervision as sv
+from gabriel_protocol import gabriel_pb2
+from gabriel_server import cognitive_engine
+from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
 
 
@@ -94,3 +98,60 @@ def test_annotate_detections_returns_array_same_shape():
 
     assert annotated.shape == image_np.shape
     assert annotated.dtype == image_np.dtype
+
+
+def test_handle_does_not_raise_on_zero_detections():
+    """Regression test: handle() used to guard process_results() behind
+    `if len(results) > 0`, back when `results` was a length-1 ultralytics
+    list. Now that process_image()/inference() return sv.Detections (whose
+    len() is the detection count, 0 on a no-detections frame), that guard
+    skipped process_results() entirely, leaving `detections` unbound and
+    crashing with NameError on `if detections is not None`. This drives the
+    real handle() entry point end-to-end (not just process_results()) with a
+    frame that yields zero detections, to make sure it returns cleanly.
+    """
+    engine = _make_engine()
+
+    # Extra attributes handle() touches beyond what _make_engine() sets up.
+    empty_detections = sv.Detections.empty()
+    empty_detections.data["class_name"] = np.array([], dtype=object)
+    engine.detector = MagicMock()
+    engine.detector.predict.return_value = empty_detections
+    engine.count = 0
+    engine.lastcount = 0
+    now = time.time()
+    engine.t0 = now
+    engine.t1 = now
+    engine.lasttime = now
+    engine.lastprint = now  # keep (t1 - lastprint) small so stats aren't printed
+
+    # Build a real image the way a real caller would, so process_image()'s
+    # cv2.imdecode() has something valid to decode.
+    image_bytes = cv2.imencode(".jpg", np.zeros((10, 10, 3), dtype=np.uint8))[
+        1
+    ].tobytes()
+
+    frame = telemetry.Frame()
+    frame.data = image_bytes
+    frame.vehicle_info.name = "drone1"
+    frame.position_info.global_position.latitude = 40.0
+    frame.position_info.global_position.longitude = -79.0
+    # gimbal_info left at default (num_gimbals == 0)
+
+    input_frame = gabriel_pb2.InputFrame()
+    input_frame.payload_type = gabriel_pb2.PayloadType.IMAGE
+    input_frame.any_payload.Pack(frame)
+
+    result = engine.handle(input_frame)
+
+    assert isinstance(result, cognitive_engine.Result)
+    assert result.payload is not None
+
+    frame_result = result_pb2.FrameResult()
+    assert result.payload.Is(result_pb2.FrameResult.DESCRIPTOR)
+    result.payload.Unpack(frame_result)
+
+    assert frame_result.type == "object-detection"
+    assert len(frame_result.result) == 1
+    compute_result = frame_result.result[0]
+    assert len(compute_result.detection_result.detections) == 0
