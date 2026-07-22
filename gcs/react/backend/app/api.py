@@ -665,7 +665,7 @@ async def get_vehicles() -> list[Vehicle]:
                 name=fields["name"],
                 model=fields["model"],
                 battery=t["battery"],
-                sats=fields["sats"],
+                sats=t["sats"],
                 mag=fields["mag"],
                 last_updated=round(time.time() - float(fields["last_seen"]), 2),
                 home=home_loc,
