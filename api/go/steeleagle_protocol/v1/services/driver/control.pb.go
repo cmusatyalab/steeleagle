@@ -762,7 +762,9 @@ type GoToGlobalPositionRequest struct {
 	// determines how the vehicle will interpret altitude (default: `ABSOLUTE`)
 	AltitudeMode *AltitudeMode `protobuf:"varint,3,opt,name=altitude_mode,json=altitudeMode,proto3,enum=steeleagle_protocol.v1.services.driver.control.AltitudeMode,oneof" json:"altitude_mode,omitempty"`
 	// speed during transit
-	Speed         *float32 `protobuf:"fixed32,4,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
+	Speed *float32 `protobuf:"fixed32,4,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
+	// angular speed during transit
+	AngularSpeed  *float32 `protobuf:"fixed32,5,opt,name=angular_speed,json=angularSpeed,proto3,oneof" json:"angular_speed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -825,6 +827,13 @@ func (x *GoToGlobalPositionRequest) GetSpeed() float32 {
 	return 0
 }
 
+func (x *GoToGlobalPositionRequest) GetAngularSpeed() float32 {
+	if x != nil && x.AngularSpeed != nil {
+		return *x.AngularSpeed
+	}
+	return 0
+}
+
 type GoToGlobalPositionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -867,8 +876,10 @@ type GoToRelativePositionRequest struct {
 	Position *v1.RelativePosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
 	// speed during transit
 	Speed *float32 `protobuf:"fixed32,2,opt,name=speed,proto3,oneof" json:"speed,omitempty"`
+	// angular speed during transit
+	AngularSpeed *float32 `protobuf:"fixed32,3,opt,name=angular_speed,json=angularSpeed,proto3,oneof" json:"angular_speed,omitempty"`
 	// frame of reference
-	Frame         *ReferenceFrame `protobuf:"varint,3,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
+	Frame         *ReferenceFrame `protobuf:"varint,4,opt,name=frame,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReferenceFrame,oneof" json:"frame,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -913,6 +924,13 @@ func (x *GoToRelativePositionRequest) GetPosition() *v1.RelativePosition {
 func (x *GoToRelativePositionRequest) GetSpeed() float32 {
 	if x != nil && x.Speed != nil {
 		return *x.Speed
+	}
+	return 0
+}
+
+func (x *GoToRelativePositionRequest) GetAngularSpeed() float32 {
+	if x != nil && x.AngularSpeed != nil {
+		return *x.AngularSpeed
 	}
 	return 0
 }
@@ -1167,21 +1185,25 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\fend_behavior\x18\x01 \x01(\x0e2G.steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehaviorR\vendBehavior\x12'\n" +
 	"\x0freturn_altitude\x18\x02 \x01(\rR\x0ereturnAltitude\x12%\n" +
 	"\x0efinal_altitude\x18\x03 \x01(\rR\rfinalAltitude\"\x16\n" +
-	"\x14ReturnToHomeResponse\"\xf4\x02\n" +
+	"\x14ReturnToHomeResponse\"\xb0\x03\n" +
 	"\x19GoToGlobalPositionRequest\x12B\n" +
 	"\bposition\x18\x01 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\bposition\x12c\n" +
 	"\fheading_mode\x18\x02 \x01(\x0e2;.steeleagle_protocol.v1.services.driver.control.HeadingModeH\x00R\vheadingMode\x88\x01\x01\x12f\n" +
 	"\raltitude_mode\x18\x03 \x01(\x0e2<.steeleagle_protocol.v1.services.driver.control.AltitudeModeH\x01R\faltitudeMode\x88\x01\x01\x12\x19\n" +
-	"\x05speed\x18\x04 \x01(\x02H\x02R\x05speed\x88\x01\x01B\x0f\n" +
+	"\x05speed\x18\x04 \x01(\x02H\x02R\x05speed\x88\x01\x01\x12(\n" +
+	"\rangular_speed\x18\x05 \x01(\x02H\x03R\fangularSpeed\x88\x01\x01B\x0f\n" +
 	"\r_heading_modeB\x10\n" +
 	"\x0e_altitude_modeB\b\n" +
-	"\x06_speed\"\x1c\n" +
-	"\x1aGoToGlobalPositionResponse\"\xed\x01\n" +
+	"\x06_speedB\x10\n" +
+	"\x0e_angular_speed\"\x1c\n" +
+	"\x1aGoToGlobalPositionResponse\"\xa9\x02\n" +
 	"\x1bGoToRelativePositionRequest\x12D\n" +
 	"\bposition\x18\x01 \x01(\v2(.steeleagle_protocol.v1.RelativePositionR\bposition\x12\x19\n" +
-	"\x05speed\x18\x02 \x01(\x02H\x00R\x05speed\x88\x01\x01\x12Y\n" +
-	"\x05frame\x18\x03 \x01(\x0e2>.steeleagle_protocol.v1.services.driver.control.ReferenceFrameH\x01R\x05frame\x88\x01\x01B\b\n" +
-	"\x06_speedB\b\n" +
+	"\x05speed\x18\x02 \x01(\x02H\x00R\x05speed\x88\x01\x01\x12(\n" +
+	"\rangular_speed\x18\x03 \x01(\x02H\x01R\fangularSpeed\x88\x01\x01\x12Y\n" +
+	"\x05frame\x18\x04 \x01(\x0e2>.steeleagle_protocol.v1.services.driver.control.ReferenceFrameH\x02R\x05frame\x88\x01\x01B\b\n" +
+	"\x06_speedB\x10\n" +
+	"\x0e_angular_speedB\b\n" +
 	"\x06_frame\"\x1e\n" +
 	"\x1cGoToRelativePositionResponse\"\xb7\x01\n" +
 	"\x12SetVelocityRequest\x12<\n" +

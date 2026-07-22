@@ -214,6 +214,8 @@ message GoToGlobalPositionRequest {
   optional AltitudeMode altitude_mode = 3;
   // speed during transit
   optional float speed = 4;
+  // angular speed during transit
+  optional float angular_speed = 5;
 }
 
 message GoToGlobalPositionResponse {}
@@ -230,8 +232,10 @@ message GoToRelativePositionRequest {
   RelativePosition position = 1;
   // speed during transit
   optional float speed = 2;
+  // angular speed during transit
+  optional float angular_speed = 3;
   // frame of reference
-  optional ReferenceFrame frame = 3;
+  optional ReferenceFrame frame = 4;
 }
 
 message GoToRelativePositionResponse {}
