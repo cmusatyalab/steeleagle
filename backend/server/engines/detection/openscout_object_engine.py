@@ -28,16 +28,17 @@ import traceback
 import cv2
 import numpy as np
 import redis
+import supervision as sv
 from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine, local_engine
 from google.protobuf.any_pb2 import Any
 from PIL import Image
+from predictors import UnknownModelArchError, load_predictor
 from pygeodesy.sphericalNvector import LatLon
 from pykml import parser
 from scipy.spatial.transform import Rotation as R
 from steeleagle_sdk.protocol.messages import result_pb2
 from steeleagle_sdk.protocol.messages import telemetry_pb2 as telemetry
-from ultralytics import YOLO
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,28 +48,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class PytorchPredictor:
-    def __init__(self, model, threshold):
-        model_path = os.path.join("model", f"{model}.pt")
-        logger.info(f"Loading new model {model} at {model_path}...")
-        self.detection_model = self.load_model(model_path)
-        self.detection_model.conf = threshold
-        self.output_dict = None
-
-    def load_model(self, model_path):
-        # Load model
-        model = YOLO(model_path)
-        return model
-
-    def infer(self, image):
-        return self.model(image)
+def annotate_detections(image_bgr, detections):
+    labels = [
+        f"{name} {confidence:.2f}"
+        for name, confidence in zip(
+            detections.data["class_name"], detections.confidence
+        )
+    ]
+    annotated = sv.BoxAnnotator().annotate(image_bgr.copy(), detections)
+    return sv.LabelAnnotator().annotate(annotated, detections, labels=labels)
 
 
 class OpenScoutObjectEngine(cognitive_engine.Engine):
     ENGINE_NAME = "openscout-object"
 
     def __init__(self, args):
-        self.detector = PytorchPredictor(args.model, args.threshold)
+        self.detector = load_predictor(args.model, args.threshold)
         self.threshold = args.threshold
         self.store_detections = args.store
         self.model = args.model
@@ -247,9 +242,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
         pipe.execute()
 
-    def store_detection_db(
-        self, detection, link="", object_name=None
-    ):
+    def store_detection_db(self, detection, link="", object_name=None):
         if object_name is None:
             object_name = f"{detection['class']}-{os.urandom(2).hex()}"
         lon = detection["lon"]
@@ -260,19 +253,22 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         object_key = f"objects:{object_name}"
         y1, x1, y2, x2 = detection["box"]
 
-        self.r.hset(object_key, mapping={
-            "last_seen": time.time(),
-            "id": detection["id"],
-            "cls": detection["class"],
-            "confidence": detection["score"],
-            "link": link,
-            "longitude": lon,
-            "latitude": lat,
-            "x_min": x1,
-            "y_min": y1,
-            "x_max": x2,
-            "y_max": y2,
-        })
+        self.r.hset(
+            object_key,
+            mapping={
+                "last_seen": time.time(),
+                "id": detection["id"],
+                "cls": detection["class"],
+                "confidence": detection["score"],
+                "link": link,
+                "longitude": lon,
+                "latitude": lat,
+                "x_min": x1,
+                "y_min": y1,
+                "x_max": x2,
+                "y_max": y2,
+            },
+        )
         self.r.expire(object_key, self.ttl_secs)
         logger.debug(f"Updating {object_key} status: last_seen: {time.time()}")
 
@@ -299,12 +295,15 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return percent >= threshold
 
     def load_model(self, model_name):
-        path = "./model/" + model_name + ".pt"
-        if not os.path.exists(path):
-            logger.error(f"Model {path} not found. Sticking with previous model.")
-        else:
-            self.detector = PytorchPredictor(model_name, self.threshold)
-            self.model = model_name
+        try:
+            detector = load_predictor(model_name, self.threshold)
+        except (FileNotFoundError, UnknownModelArchError) as e:
+            logger.error(
+                f"Failed to load model {model_name}: {e}. Sticking with previous model."
+            )
+            return
+        self.detector = detector
+        self.model = model_name
 
     def handle(self, input_frame):
         if input_frame.payload_type == gabriel_pb2.PayloadType.TEXT:
@@ -374,15 +373,10 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
         return cognitive_engine.Result(status, any_payload)
 
     def process_results(
-        self, image_np, results, vehicle_info, position_info, gimbal_info
+        self, image_np, sv_detections, vehicle_info, position_info, gimbal_info
     ):
-        df = results[0].to_df(normalize=True)  # polars dataframe
-
         exclusions = self.exclusions or []
-        if not df.is_empty():
-            df = df.filter(
-                df["confidence"] > self.threshold, ~df["class"].is_in(exclusions)
-            )
+        sv_detections = sv_detections[~np.isin(sv_detections.class_id, exclusions)]
 
         detections = []
         timestamp_millis = int(time.time() * 1000)
@@ -399,12 +393,21 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             detection_url = ""
 
         run_hsv_filter = False
+        img_height, img_width = image_np.shape[:2]
 
-        for row in df.iter_rows(named=True):
-            logger.info(row)
-            logger.info(f"Detected : {row['name']} - Score: {row['confidence']:.3f}")
-            box = row["box"]
-            box = [box["y1"], box["x1"], box["y2"], box["x2"]]
+        for xyxy, confidence, class_name in zip(
+            sv_detections.xyxy,
+            sv_detections.confidence,
+            sv_detections.data["class_name"],
+        ):
+            x1, y1, x2, y2 = xyxy
+            logger.info(f"Detected : {class_name} - Score: {confidence:.3f}")
+            box = [
+                float(y1 / img_height),
+                float(x1 / img_width),
+                float(y2 / img_height),
+                float(x2 / img_width),
+            ]
             global_pos = position_info.global_position
             if gimbal_info.num_gimbals == 0:
                 logger.warning(
@@ -448,8 +451,8 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
             detection = {
                 "id": vehicle_info.name,
-                "class": row["name"],
-                "score": row["confidence"],
+                "class": class_name,
+                "score": float(confidence),
                 "lat": lat,
                 "lon": lon,
                 "box": box,
@@ -490,11 +493,14 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             # self.store_hsv_image(image_np, cpt_config, vehicle_info.name)
 
         # Store detection image
-        if self.store_detections and not df.is_empty() and not self.unittest:
+        if self.store_detections and len(sv_detections) > 0 and not self.unittest:
             try:
-                im_bgr = results[0].plot()
+                annotated = annotate_detections(image_np, sv_detections)
                 self.store_detections_disk(
-                    im_bgr, filename, vehicle_info.name, df["name"].unique().to_list()
+                    annotated,
+                    filename,
+                    vehicle_info.name,
+                    sorted(set(sv_detections.data["class_name"].tolist())),
                 )
             except IndexError:
                 logger.error(
@@ -506,7 +512,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
             self.geodb_garbage_collection()
             self.last_geodb_gc_time = now_secs
 
-        return detections if not df.is_empty() else None
+        return detections
 
     def store_detections_disk(self, im_bgr, filename, vehicle_id, uniq_classes):
         vehicle_dir = os.path.join(self.vehicle_storage_path, vehicle_id)
@@ -616,9 +622,7 @@ class OpenScoutObjectEngine(cognitive_engine.Engine):
 
     def inference(self, img):
         """Allow timing engine to override this"""
-        return self.detector.detection_model.predict(
-            img, conf=self.threshold, verbose=False
-        )
+        return self.detector.predict(img)
 
 
 def main():
