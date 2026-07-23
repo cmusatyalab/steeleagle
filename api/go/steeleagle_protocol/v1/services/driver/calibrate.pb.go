@@ -134,6 +134,7 @@ type CalibrateResponse struct {
 	NextInstruction string                 `protobuf:"bytes,1,opt,name=next_instruction,json=nextInstruction,proto3" json:"next_instruction,omitempty"` // the next instructions to follow
 	Step            uint32                 `protobuf:"varint,2,opt,name=step,proto3" json:"step,omitempty"`                                             // step in the calibration procedure
 	Total           uint32                 `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`                                           // total steps in the calibration procedure
+	Complete        bool                   `protobuf:"varint,4,opt,name=complete,proto3" json:"complete,omitempty"`                                     // whether or not the calibration is complete
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -189,6 +190,13 @@ func (x *CalibrateResponse) GetTotal() uint32 {
 	return 0
 }
 
+func (x *CalibrateResponse) GetComplete() bool {
+	if x != nil {
+		return x.Complete
+	}
+	return false
+}
+
 var File_steeleagle_protocol_v1_services_driver_calibrate_proto protoreflect.FileDescriptor
 
 const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
@@ -201,11 +209,12 @@ const file_steeleagle_protocol_v1_services_driver_calibrate_proto_rawDesc = "" +
 	"\x12SENSOR_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13SENSOR_MAGNETOMETER\x10\x01\x12\x11\n" +
 	"\rSENSOR_GIMBAL\x10\x02\x12\x0f\n" +
-	"\vSENSOR_GYRO\x10\x03\"h\n" +
+	"\vSENSOR_GYRO\x10\x03\"\x84\x01\n" +
 	"\x11CalibrateResponse\x12)\n" +
 	"\x10next_instruction\x18\x01 \x01(\tR\x0fnextInstruction\x12\x12\n" +
 	"\x04step\x18\x02 \x01(\rR\x04step\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\rR\x05total2\xaf\x01\n" +
+	"\x05total\x18\x03 \x01(\rR\x05total\x12\x1a\n" +
+	"\bcomplete\x18\x04 \x01(\bR\bcomplete2\xaf\x01\n" +
 	"\x10CalibrateService\x12\x9a\x01\n" +
 	"\tCalibrate\x12D.steeleagle_protocol.v1.services.driver.calibration.CalibrateRequest\x1aE.steeleagle_protocol.v1.services.driver.calibration.CalibrateResponse0\x01B\x83\x03\n" +
 	"6com.steeleagle_protocol.v1.services.driver.calibrationB\x0eCalibrateProtoP\x01ZOgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/services/driver\xa2\x02\x05SVSDC\xaa\x021SteeleagleProtocol.V1.Services.Driver.Calibration\xca\x021SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\xe2\x02=SteeleagleProtocol\\V1\\Services\\Driver\\Calibration\\GPBMetadata\xea\x025SteeleagleProtocol::V1::Services::Driver::Calibrationb\x06proto3"

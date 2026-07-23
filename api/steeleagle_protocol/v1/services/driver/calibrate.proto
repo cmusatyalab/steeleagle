@@ -42,4 +42,5 @@ message CalibrateResponse {
   string next_instruction = 1; // the next instructions to follow
   uint32 step = 2; // step in the calibration procedure
   uint32 total = 3; // total steps in the calibration procedure
+  bool complete = 4; // whether or not the calibration is complete
 }
