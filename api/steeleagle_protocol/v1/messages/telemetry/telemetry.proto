@@ -20,9 +20,6 @@ message GPSInfo {
   uint32 satellites = 1; // number of satellites used in GPS fix
 }
 
-// Future: information about the vehicle's communication links.
-message CommsInfo {}
-
 // Information about the vehicle position.
 message PositionInfo {
   // global position that will be used when returning home
@@ -40,6 +37,11 @@ message PositionInfo {
    * coordinate frame
    */
   Velocity velocity_body = 4;
+  /*
+   * current velocity of the vehicle in the global NEU (North, East, Up)
+   * coordinate frame
+   */
+  Velocity velocity_neu = 5;
 }
 
 // Status of a gimbal.
@@ -133,14 +135,12 @@ message Telemetry {
   BatteryInfo battery_info = 2;
   // GPS and satellite info
   GPSInfo gps_info = 3;
-  // communication link info
-  CommsInfo comms_info = 4;
   // positional info about the vehicle
-  PositionInfo position_info = 5;
+  PositionInfo position_info = 4;
   // status on attached gimbals and their orientations
-  GimbalInfo gimbal_info = 6;
+  GimbalInfo gimbal_info = 5;
   // enumeration of vehicle warnings
-  AlertInfo alert_info = 7;
+  AlertInfo alert_info = 6;
 }
 
 // Raw camera frames
