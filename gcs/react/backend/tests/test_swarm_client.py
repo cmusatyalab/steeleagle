@@ -76,6 +76,12 @@ class FakeSwarmServicer(swarm_pb2_grpc.SwarmServiceServicer):
         ):
             yield r
 
+    async def SwarmUploadMission(self, request, context):
+        async for r in self._run(
+            "SwarmUploadMission", swarm_pb2.SwarmUploadMissionResponse, request, context
+        ):
+            yield r
+
 
 @pytest.fixture
 async def swarm_client_factory():
@@ -207,3 +213,18 @@ async def test_set_gimbal_pose_sends_offset_pose_on_gimbal_zero(swarm_client_fac
     assert sent.request.pose_mode == control_pb2.POSE_MODE_OFFSET
     p = sent.request.pose
     assert (p.pitch, p.yaw, p.roll) == pytest.approx((5.0, -10.0, 0.0))
+
+
+async def test_upload_mission_sends_json_content_and_map(swarm_client_factory):
+    client, servicer = await swarm_client_factory(
+        {"SwarmUploadMission": [("drone1", 0, "")]}
+    )
+
+    await client.upload_mission(
+        ["drone1"], mission_json='{"actions": []}', kml_map=b"<kml></kml>"
+    )
+
+    sent = servicer.received["SwarmUploadMission"][0]
+    assert list(sent.vehicles) == ["drone1"]
+    assert sent.request.mission.json == '{"actions": []}'
+    assert sent.request.mission.map == b"<kml></kml>"

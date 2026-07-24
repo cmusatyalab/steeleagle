@@ -103,3 +103,14 @@ class SwarmClient:
             ),
         )
         return await _collect_stream(self._stub.SwarmSetGimbalPose(request))
+
+    async def upload_mission(
+        self, vehicles: list[str], mission_json: str, kml_map: bytes
+    ) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmUploadMissionRequest(
+            vehicles=vehicles,
+            request=mission_pb2.UploadMissionRequest(
+                mission=mission_pb2.MissionData(json=mission_json, map=kml_map)
+            ),
+        )
+        return await _collect_stream(self._stub.SwarmUploadMission(request))
