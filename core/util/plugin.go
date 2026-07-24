@@ -409,5 +409,8 @@ func (p *BasePlugin) setupRunDir() error {
 	p.runDir = dir
 	p.cSock = filepath.Join(p.runDir, clientSockName)
 	p.lnSock = filepath.Join(p.runDir, listenSockName)
+	// Remove socket paths in case they're left over from last run
+	os.Remove(p.cSock)
+	os.Remove(p.lnSock)
 	return nil
 }
