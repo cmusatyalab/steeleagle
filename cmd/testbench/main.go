@@ -54,7 +54,7 @@ func main() {
 			util.WithPath(*parrotAnafiPluginPath),
 		}
 		if *droneIP != "" {
-			options = append(options, util.WithScriptArgs([]string{"--", "--ip", *droneIP}))
+			options = append(options, util.WithScriptArgs([]string{"--ip", *droneIP}))
 		}
 		driverPlugin, err = util.CreateBasePlugin(options...)
 		if err != nil {
