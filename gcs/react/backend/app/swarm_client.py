@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 
 from google.protobuf.message import Message
 from pydantic import BaseModel
+from steeleagle_protocol.v1.services.driver import control_pb2
 from steeleagle_protocol.v1.services.mission import mission_pb2
 from steeleagle_protocol.v1.services.swarm import swarm_pb2, swarm_pb2_grpc
 
@@ -37,3 +38,36 @@ class SwarmClient:
             vehicles=vehicles, request=mission_pb2.StartMissionRequest()
         )
         return await _collect_stream(self._stub.SwarmStartMission(request))
+
+    async def take_off(
+        self, vehicles: list[str], altitude: float
+    ) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmTakeOffRequest(
+            vehicles=vehicles,
+            request=control_pb2.TakeOffRequest(take_off_altitude=altitude),
+        )
+        return await _collect_stream(self._stub.SwarmTakeOff(request))
+
+    async def land(self, vehicles: list[str]) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmLandRequest(
+            vehicles=vehicles, request=control_pb2.LandRequest()
+        )
+        return await _collect_stream(self._stub.SwarmLand(request))
+
+    async def hold(self, vehicles: list[str]) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmHoldRequest(
+            vehicles=vehicles, request=control_pb2.HoldRequest()
+        )
+        return await _collect_stream(self._stub.SwarmHold(request))
+
+    async def return_to_home(self, vehicles: list[str]) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmReturnToHomeRequest(
+            vehicles=vehicles, request=control_pb2.ReturnToHomeRequest()
+        )
+        return await _collect_stream(self._stub.SwarmReturnToHome(request))
+
+    async def stop_mission(self, vehicles: list[str]) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmStopMissionRequest(
+            vehicles=vehicles, request=mission_pb2.StopMissionResponse()
+        )
+        return await _collect_stream(self._stub.SwarmStopMission(request))

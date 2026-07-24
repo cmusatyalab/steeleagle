@@ -33,6 +33,36 @@ class FakeSwarmServicer(swarm_pb2_grpc.SwarmServiceServicer):
         ):
             yield r
 
+    async def SwarmTakeOff(self, request, context):
+        async for r in self._run(
+            "SwarmTakeOff", swarm_pb2.SwarmTakeOffResponse, request, context
+        ):
+            yield r
+
+    async def SwarmLand(self, request, context):
+        async for r in self._run(
+            "SwarmLand", swarm_pb2.SwarmLandResponse, request, context
+        ):
+            yield r
+
+    async def SwarmHold(self, request, context):
+        async for r in self._run(
+            "SwarmHold", swarm_pb2.SwarmHoldResponse, request, context
+        ):
+            yield r
+
+    async def SwarmReturnToHome(self, request, context):
+        async for r in self._run(
+            "SwarmReturnToHome", swarm_pb2.SwarmReturnToHomeResponse, request, context
+        ):
+            yield r
+
+    async def SwarmStopMission(self, request, context):
+        async for r in self._run(
+            "SwarmStopMission", swarm_pb2.SwarmStopMissionResponse, request, context
+        ):
+            yield r
+
 
 @pytest.fixture
 async def swarm_client_factory():
@@ -88,3 +118,45 @@ async def test_start_mission_channel_failure(swarm_client_factory):
 
     with pytest.raises(grpc.aio.AioRpcError):
         await client.start_mission(["drone1"])
+
+
+async def test_take_off_sends_altitude(swarm_client_factory):
+    client, servicer = await swarm_client_factory({"SwarmTakeOff": [("drone1", 0, "")]})
+
+    await client.take_off(["drone1"], altitude=12.5)
+
+    sent = servicer.received["SwarmTakeOff"][0]
+    assert list(sent.vehicles) == ["drone1"]
+    assert sent.request.take_off_altitude == pytest.approx(12.5)
+
+
+async def test_land(swarm_client_factory):
+    client, _ = await swarm_client_factory({"SwarmLand": [("drone1", 0, "")]})
+
+    results = await client.land(["drone1"])
+
+    assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
+
+
+async def test_hold(swarm_client_factory):
+    client, _ = await swarm_client_factory({"SwarmHold": [("drone1", 0, "")]})
+
+    results = await client.hold(["drone1"])
+
+    assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
+
+
+async def test_return_to_home(swarm_client_factory):
+    client, _ = await swarm_client_factory({"SwarmReturnToHome": [("drone1", 0, "")]})
+
+    results = await client.return_to_home(["drone1"])
+
+    assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
+
+
+async def test_stop_mission(swarm_client_factory):
+    client, _ = await swarm_client_factory({"SwarmStopMission": [("drone1", 0, "")]})
+
+    results = await client.stop_mission(["drone1"])
+
+    assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
