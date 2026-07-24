@@ -26,7 +26,7 @@ const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'c
 const chooseOptions = { label: 'Select...', icon: 'pi pi-fw pi-file', iconOnly: false, className: 'custom-choose-btn p-button-primary' };
 const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-info' };
 
-function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand, useLocalVehicle,
+function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, setTracking, toast, onCommand,
   manualControl, setManualControl, squadList, setSquadList, basePlanarVelocity, setBasePlanarVelocity,
   baseAngularVelocity, setBaseAngularVelocity, gamepadDeadzone, setGamepadDeadzone, takeOffAltitude, setTakeOffAltitude,
   showDetections, onToggleDetections, gimbalVelocity, setGimbalVelocity }) {
@@ -74,12 +74,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       };
-      let response = null;
-      if (useLocalVehicle) {
-        response = await fetch(getApiUrl('/api/upload'), requestOptions);
-      } else {
-        response = await fetch(getApiUrl('/api/upload?sandbox_mode=0'), requestOptions);
-      }
+      const response = await fetch(getApiUrl('/api/upload'), requestOptions);
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Upload Mission Error', detail: `HTTP error! status: ${result.detail}` });
@@ -110,12 +105,7 @@ function ControlPage({ vehicles, selectedVehicle, setSelectedVehicle, tracking, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       };
-      let response = null;
-      if (useLocalVehicle) {
-        response = await fetch(getApiUrl('/api/start'), requestOptions);
-      } else {
-        response = await fetch(getApiUrl('/api/start?sandbox_mode=0'), requestOptions);
-      }
+      const response = await fetch(getApiUrl('/api/start'), requestOptions);
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Mission Error', detail: `HTTP error! status: ${result.detail}` });
