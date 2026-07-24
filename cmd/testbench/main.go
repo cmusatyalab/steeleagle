@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net"
 	"os"
 	"path/filepath"
@@ -11,7 +12,19 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	driverAviary      = "aviary"
+	driverParrotAnafi = "parrot-anafi"
+
+	parrotAnafiPluginPathEnv = "PARROT_ANAFI_PLUGIN_PATH"
+)
+
 func main() {
+	driver := flag.String("driver", driverAviary, "driver plugin to run: aviary or parrot-anafi")
+	droneIP := flag.String("ip", "", "ip address of the drone, defaults to the driver's own default if unset (parrot-anafi driver only)")
+	parrotAnafiPluginPath := flag.String("parrot-anafi-plugin-path", os.Getenv(parrotAnafiPluginPathEnv), "path to the parrot-anafi driver plugin, can also be set via "+parrotAnafiPluginPathEnv+" (parrot-anafi driver only)")
+	flag.Parse()
+
 	name := "test-vehicle"
 	pluginPath, err := util.GetPluginDir()
 	if err != nil {
@@ -22,13 +35,35 @@ func main() {
 		log.Fatal().Err(err).Msg("couldn't get vehicle directory")
 	}
 
-	// Build shim plugin for aviary
-	sockPath := filepath.Join(pluginPath, "aviary", name, "services.sock")
-	driverPlugin, err := util.CreateShimPlugin(sockPath, "")
-	if err != nil {
-		log.Fatal().Err(err).Msg("couldn't create driver plugin")
+	var driverPlugin util.Plugin
+	switch *driver {
+	case driverAviary:
+		// Build shim plugin for aviary
+		sockPath := filepath.Join(pluginPath, "aviary", name, "services.sock")
+		driverPlugin, err = util.CreateShimPlugin(sockPath, "")
+		if err != nil {
+			log.Fatal().Err(err).Msg("couldn't create driver plugin")
+		}
+		log.Info().Msg("shim plugin configured")
+	case driverParrotAnafi:
+		if *parrotAnafiPluginPath == "" {
+			log.Fatal().Msgf("parrot-anafi plugin path not set, use -parrot-anafi-plugin-path or %s", parrotAnafiPluginPathEnv)
+		}
+		options := []util.PluginOption{
+			util.WithName(driverParrotAnafi),
+			util.WithPath(*parrotAnafiPluginPath),
+		}
+		if *droneIP != "" {
+			options = append(options, util.WithScriptArgs([]string{"--", "--ip", *droneIP}))
+		}
+		driverPlugin, err = util.CreateBasePlugin(options...)
+		if err != nil {
+			log.Fatal().Err(err).Msg("couldn't create driver plugin")
+		}
+		log.Info().Msg("parrot-anafi plugin configured")
+	default:
+		log.Fatal().Msgf("unknown driver %q, expected %q or %q", *driver, driverAviary, driverParrotAnafi)
 	}
-	log.Info().Msg("shim plugin configured")
 
 	// Create server listener
 	serverLnAddr := filepath.Join(vehiclePath, "server")
