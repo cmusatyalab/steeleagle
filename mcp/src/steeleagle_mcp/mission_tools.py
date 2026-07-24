@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: 0BSD
 """Mission file tools for the SteelEagle MCP server.
 
-These functions keep MCP concerns here while reusing the deterministic parts of
-the existing nl2dsl project: normalize, validate, compile, and examples. The
-LLM translation step is intentionally left to the MCP caller (Claude Desktop,
-Claude Code, etc.) so this server does not require an independent LLM API key.
+These functions keep MCP concerns here while reusing a vendored nl2dsl subset
+(normalize, validate, compile) and local few-shot examples. The LLM translation
+step is intentionally left to the MCP caller (Claude Desktop, Claude Code, etc.)
+so this server does not require an independent LLM API key.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from typing import Any
 
 logger = logging.getLogger("server")
 
+
 def _find_mcp_root() -> Path:
     """Find the mcp project root even when imported from an installed package."""
     here = Path(__file__).resolve()
@@ -39,10 +40,9 @@ def _find_mcp_root() -> Path:
 _MCP_ROOT = _find_mcp_root()
 _REPO_ROOT = _MCP_ROOT.parent
 _SDK_SRC = _REPO_ROOT / "sdk" / "src"
-_COPILOT_ROOT = _REPO_ROOT.parent / "steeleagle-copilot"
 _DEFAULT_MISSION_FILES_DIR = _MCP_ROOT / "mission_files"
 _GRAMMAR_PATH = _SDK_SRC / "steeleagle_sdk" / "dsl" / "grammar" / "dronedsl.lark"
-_COPILOT_EXAMPLES_DIR = _COPILOT_ROOT / "examples"
+_EXAMPLES_DIR = _MCP_ROOT / "examples"
 
 _VALID_FOCUS = {"all", "basic", "waypoints", "events", "actions"}
 _MAX_COMPILED_MISSION_CACHE = 32
@@ -146,30 +146,20 @@ def _ensure_sdk_path() -> None:
 
 
 def _load_nl2dsl_components() -> tuple[dict[str, Any] | None, str | None]:
-    """Import nl2dsl, falling back to the sibling steeleagle-copilot checkout."""
+    """Import the vendored nl2dsl pipeline used for normalize/validate/compile."""
 
     _ensure_sdk_path()
 
-    def import_components() -> dict[str, Any]:
-        from nl2dsl.pipeline import run_dsl_through_pipeline
-
-        return {
-            "run_dsl_through_pipeline": run_dsl_through_pipeline,
-        }
-
     try:
-        return import_components(), None
-    except ModuleNotFoundError as exc:
-        if exc.name != "nl2dsl":
-            return None, _err("INTEGRATION_ERROR", str(exc))
-        if _COPILOT_ROOT.is_dir() and str(_COPILOT_ROOT) not in sys.path:
-            sys.path.insert(0, str(_COPILOT_ROOT))
-        try:
-            return import_components(), None
-        except Exception as retry_exc:
-            return None, _err("INTEGRATION_ERROR", str(retry_exc))
+        from steeleagle_mcp.nl2dsl.pipeline import run_dsl_through_pipeline
+
+        return {"run_dsl_through_pipeline": run_dsl_through_pipeline}, None
     except Exception as exc:
-        return None, _err("INTEGRATION_ERROR", str(exc))
+        return None, _err(
+            "INTEGRATION_ERROR",
+            "Failed to import vendored steeleagle_mcp.nl2dsl pipeline: "
+            f"{exc}. Ensure steeleagle-mcp is installed (cd mcp && uv sync).",
+        )
 
 
 def _load_sdk_registry() -> tuple[dict[str, Any] | None, str | None]:
@@ -386,7 +376,7 @@ def _load_examples(include_examples: bool, focus: str, max_examples: int) -> lis
         return []
 
     examples: list[dict[str, str]] = []
-    if _COPILOT_EXAMPLES_DIR.is_dir():
+    if _EXAMPLES_DIR.is_dir():
         preference = {
             "basic": ["takeoff_land.dsl", "delivery.dsl", "patrol.dsl"],
             "waypoints": ["patrol.dsl", "search_and_rescue.dsl", "delivery.dsl"],
@@ -394,7 +384,7 @@ def _load_examples(include_examples: bool, focus: str, max_examples: int) -> lis
             "actions": ["takeoff_land.dsl", "delivery.dsl", "patrol.dsl"],
             "all": ["takeoff_land.dsl", "patrol.dsl", "search_and_rescue.dsl", "delivery.dsl"],
         }
-        paths = {path.name: path for path in _COPILOT_EXAMPLES_DIR.glob("*.dsl")}
+        paths = {path.name: path for path in _EXAMPLES_DIR.glob("*.dsl")}
         ordered_names = preference.get(focus, preference["all"])
         ordered = [paths[name] for name in ordered_names if name in paths]
         ordered += [path for name, path in sorted(paths.items()) if name not in ordered_names]

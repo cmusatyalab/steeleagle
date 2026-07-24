@@ -1,0 +1,2422 @@
+{
+  "actions": [
+    {
+      "name": "AvoidTask",
+      "kind": "action",
+      "description": "",
+      "params": [
+        {
+          "name": "pitch_speed",
+          "type": "float",
+          "required": false,
+          "description": "Max forward speed (m/s)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.5
+        },
+        {
+          "name": "roll_speed",
+          "type": "float",
+          "required": false,
+          "description": "Max horizontal speed (m/s)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "compute_stream",
+          "type": "str",
+          "required": false,
+          "description": "Name of compute stream to pull detections from",
+          "enum": null,
+          "ref_kind": null,
+          "default": "obstacle-engine"
+        }
+      ]
+    },
+    {
+      "name": "ElevateToAltitude",
+      "kind": "action",
+      "description": "Climb to a target altitude by setting vertical velocity until reached.",
+      "params": [
+        {
+          "name": "target_altitude",
+          "type": "float",
+          "required": true,
+          "description": "meters AGL/relative",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "tolerance",
+          "type": "float",
+          "required": false,
+          "description": "stop when within this of target",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.2
+        },
+        {
+          "name": "poll_period",
+          "type": "float",
+          "required": false,
+          "description": "seconds between telemetry polls",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.5
+        },
+        {
+          "name": "climb_speed",
+          "type": "float",
+          "required": false,
+          "description": "m/s (adjust sign for your FCU if needed)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "max_duration",
+          "type": "float",
+          "required": false,
+          "description": "seconds; None = no limit",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Hold",
+      "kind": "action",
+      "description": "Order the vehicle to hold/loiter. Causes the vehicle to hold at its current location and to cancel any ongoing movement commands (`ReturnToHome` e.g.).",
+      "params": []
+    },
+    {
+      "name": "Joystick",
+      "kind": "action",
+      "description": "Send a joystick command to the vehicle. Causes the vehicle to accelerate towards a provided velocity setpoint. This is useful for fine-grained control based on streamed datasink results or for tele-operating the vehicle from a remote commander. Attributes: velocity (common.Velocity): target velocity to move towards",
+      "params": [
+        {
+          "name": "velocity",
+          "type": "ref",
+          "required": true,
+          "description": "Target velocity to move towards (x_vel, y_vel, z_vel, angular_vel).",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Land",
+      "kind": "action",
+      "description": "Order the vehicle to land. Causes the vehicle to land at its current location. If the vehicle is not a UAV, this method will be unimplemented.",
+      "params": []
+    },
+    {
+      "name": "Patrol",
+      "kind": "action",
+      "description": "Fly through a sequence of waypoints generated from an area and slicing algorithm.",
+      "params": [
+        {
+          "name": "hover_time",
+          "type": "float",
+          "required": false,
+          "description": "seconds to hover after each move",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "waypoints",
+          "type": "ref",
+          "required": true,
+          "description": "Waypoints definition (area, alt, algo, spacing, angle_degrees, trigger_distance).",
+          "enum": null,
+          "ref_kind": "Waypoints",
+          "default": null
+        },
+        {
+          "name": "max_velocity",
+          "type": "ref",
+          "required": false,
+          "description": "Maximum velocity to use while transiting between waypoints.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "PrePatrolSequence",
+      "kind": "action",
+      "description": "Elevate to altitude and set gimbal pitch before starting a patrol.",
+      "params": [
+        {
+          "name": "altitude",
+          "type": "float",
+          "required": false,
+          "description": "meters AGL/relative",
+          "enum": null,
+          "ref_kind": null,
+          "default": 15.0
+        },
+        {
+          "name": "gimbal_pitch",
+          "type": "float",
+          "required": false,
+          "description": "degrees; 0=forward, positive=down",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.0
+        }
+      ]
+    },
+    {
+      "name": "PrecisionLand",
+      "kind": "action",
+      "description": "Land on an object using vision-based control.",
+      "params": [
+        {
+          "name": "image_width",
+          "type": "int",
+          "required": false,
+          "description": "Camera image width in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1280
+        },
+        {
+          "name": "image_height",
+          "type": "int",
+          "required": false,
+          "description": "Camera image height in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 720
+        },
+        {
+          "name": "hfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Horizontal FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 69.0
+        },
+        {
+          "name": "vfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Vertical FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 43.0
+        },
+        {
+          "name": "err_tol",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "compute_stream",
+          "type": "str",
+          "required": false,
+          "description": "Name of compute stream to pull detections from",
+          "enum": null,
+          "ref_kind": null,
+          "default": "object-engine"
+        },
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Detection to track (class_name to match, optional score threshold)",
+          "enum": null,
+          "ref_kind": "Detection",
+          "default": null
+        },
+        {
+          "name": "target_lost_duration",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "forward_speed",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "lateral_speed",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "descent_speed",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "altitude_ceil",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 10.0
+        },
+        {
+          "name": "target_altitude",
+          "type": "float",
+          "required": false,
+          "description": "",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.5
+        }
+      ]
+    },
+    {
+      "name": "ReturnToHome",
+      "kind": "action",
+      "description": "Order the vehicle to return to its home position. Causes the vehicle to return to its home position. If the home position has not been explicitly set, this will be its start position (defined as its takeoff position for UAVs). If the home position has been explicitly set, by `SetHome`, the vehicle will return to that position instead.",
+      "params": []
+    },
+    {
+      "name": "SetGimbalPose",
+      "kind": "action",
+      "description": "Order the vehicle to set the pose of a gimbal. Causes the vehicle to actuate a gimbal to a new pose. The vehicle will interpret the new pose type from `pose_mode` as follows: - `ABSOLUTE` -> absolute angle - `RELATIVE` -> angle relative to current position - `VELOCITY` -> angular velocities The vehicle will interpret the new pose angles according to `frame` as follows: - `BODY` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, body yaw) - `NEU` -> (`pitch`, `roll`, `yaw`) = (body pitch, body roll, global yaw) Attributes: gimbal_id (int): ID of the target gimbal pose (common.Pose): target pose pose_mode (Optional[params.PoseMode]): specifies how to interpret the target pose frame (Optional[params.ReferenceFrame]): frame of reference",
+      "params": [
+        {
+          "name": "gimbal_id",
+          "type": "int",
+          "required": true,
+          "description": "ID of the target gimbal.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "pose",
+          "type": "ref",
+          "required": true,
+          "description": "Target pose (pitch, roll, yaw) [degrees].",
+          "enum": null,
+          "ref_kind": "Pose",
+          "default": null
+        },
+        {
+          "name": "pose_mode",
+          "type": "any",
+          "required": false,
+          "description": "How to interpret the pose. Enum values: 0=ANGLE (absolute), 1=OFFSET (from current), 2=VELOCITY (rotational).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "frame",
+          "type": "any",
+          "required": false,
+          "description": "Reference frame. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetGimbalPoseTarget",
+      "kind": "action",
+      "description": "Set the target pose of a gimbal without streaming feedback.",
+      "params": [
+        {
+          "name": "gimbal_id",
+          "type": "int",
+          "required": true,
+          "description": "ID of the target gimbal.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "pose",
+          "type": "ref",
+          "required": true,
+          "description": "Target pose (pitch, roll, yaw) [degrees].",
+          "enum": null,
+          "ref_kind": "Pose",
+          "default": null
+        },
+        {
+          "name": "pose_mode",
+          "type": "any",
+          "required": false,
+          "description": "How to interpret the pose. Enum values: 0=ANGLE (absolute), 1=OFFSET (from current), 2=VELOCITY (rotational).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "frame",
+          "type": "any",
+          "required": false,
+          "description": "Reference frame. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetGlobalPosition",
+      "kind": "action",
+      "description": "Order the vehicle to move to a global position. Causes the vehicle to transit to the provided global position. The vehicle will interpret the heading of travel according to `heading_mode`: - `TO_TARGET` -> turn to face the target position bearing - `HEADING_START` -> turn to face the provided heading in the global position object. This will be the heading the vehicle maintains for the duration of transit. Generally only UAVs will support `HEADING_START`. The vehicle will move towards the target at the specified maximum velocity until the vehicle has reached its destination. Error tolerance is determined by the driver. Maximum velocity is interpreted from `max_velocity` as follows: - `x_vel` -> maximum _horizontal_ velocity - `y_vel` -> ignored - `z_vel` -> maximum _vertical_ velocity _(UAV only)_ If no maximum velocity is provided, the driver will use a preset speed usually determined by the manufacturer or hardware settings. _(UAV only)_ During motion, the vehicle will also ascend or descend towards the target altitude, linearly interpolating this movement over the duration of travel. The vehicle will interpret altitude from `altitude_mode` as follows: - `ABSOLUTE` -> altitude is relative to MSL (Mean Sea Level) - `RELATIVE` -> altitude is relative to take off position Attributes: location (common.Location): target global position heading_mode (Optional[params.HeadingMode]): determines how the vehicle will orient during transit (default: `TO_TARGET`) altitude_mode (Optional[params.AltitudeMode]): determines how the vehicle will interpret altitude (default: `ABSOLUTE`) max_velocity (Optional[common.Velocity]): maximum velocity during transit",
+      "params": [
+        {
+          "name": "location",
+          "type": "ref",
+          "required": true,
+          "description": "Target global position (latitude, longitude, altitude, heading).",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "heading_mode",
+          "type": "any",
+          "required": false,
+          "description": "How the vehicle orients during transit. Enum values: 0=TO_TARGET (face target bearing), 1=HEADING_START (face given heading).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "altitude_mode",
+          "type": "any",
+          "required": false,
+          "description": "How the vehicle interprets altitude. Enum values: 0=ABSOLUTE (meters above MSL), 1=RELATIVE (meters above takeoff).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "max_velocity",
+          "type": "ref",
+          "required": false,
+          "description": "Maximum velocity during transit. x_vel=max horizontal, z_vel=max vertical [m/s].",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetHeading",
+      "kind": "action",
+      "description": "Order the vehicle to set a new heading. Causes the vehicle to turn to face the provided global position. The vehicle will interpret the final heading according to `heading_mode`: - `TO_TARGET` -> turn to face the target position bearing - `HEADING_START` -> turn to face the provided heading in the global position object. Attributes: location (common.Location): target heading or global location to look at heading_mode (Optional[params.HeadingMode]): determines how the vehicle will orient",
+      "params": [
+        {
+          "name": "location",
+          "type": "ref",
+          "required": true,
+          "description": "Target heading or global location to orient towards.",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "heading_mode",
+          "type": "any",
+          "required": false,
+          "description": "How the vehicle orients. Enum values: 0=TO_TARGET (face target bearing), 1=HEADING_START (face given heading).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetHome",
+      "kind": "action",
+      "description": "Set the home location of the vehicle. Changes the home location of the vehicle. Future `ReturnToHome` commands will move the vehicle to the provided location instead of its starting position. Attributes: location (common.Location): new home location",
+      "params": [
+        {
+          "name": "location",
+          "type": "ref",
+          "required": true,
+          "description": "New home location (latitude, longitude, altitude, heading).",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetRelativePosition",
+      "kind": "action",
+      "description": "Order the vehicle to move to a relative position. Causes the vehicle to transit to the provided relative position. The vehicle will interpret the input position according to `frame` as follows: - `BODY` -> (`x`, `y`, `z`) = (forward offset, right offset, up offset) _from current position_ - `NEU` -> (`x`, `y`, `z`) = (north offset, east offset, up offset) _from start position_ The vehicle will move towards the target at the specified maximum velocity until the vehicle has reached its destination. Error tolerance is determined by the driver. Maximum velocity is interpreted from `max_velocity` as follows: - `x_vel` -> maximum _horizontal_ velocity - `y_vel` -> ignored - `z_vel` -> maximum _vertical_ velocity _(UAV only)_ If no maximum velocity is provided, the driver will use a preset speed usually determined by the manufacturer or hardware settings. Attributes: position (common.Position): target relative position max_velocity (Optional[common.Velocity]): maximum velocity during transit frame (Optional[params.ReferenceFrame]): frame of reference",
+      "params": [
+        {
+          "name": "position",
+          "type": "ref",
+          "required": true,
+          "description": "Target relative position (x, y, z offsets). Interpretation depends on frame.",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "max_velocity",
+          "type": "ref",
+          "required": false,
+          "description": "Maximum velocity during transit. x_vel=max horizontal, z_vel=max vertical [m/s].",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        },
+        {
+          "name": "frame",
+          "type": "any",
+          "required": false,
+          "description": "Reference frame. Enum values: 0=BODY (forward/right/up from current), 1=NEU (north/east/up from start).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "TakeOff",
+      "kind": "action",
+      "description": "Order the vehicle to take off. Causes the vehicle to take off to a specified take off altitude. If the vehicle is not a UAV, this method will be unimplemented. Attributes: take_off_altitude (float): take off height in relative altitude [meters]",
+      "params": [
+        {
+          "name": "take_off_altitude",
+          "type": "float",
+          "required": true,
+          "description": "Take off height in relative altitude [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Track",
+      "kind": "action",
+      "description": "Track a detected object using vision-based control, adjusting yaw and gimbal to follow the target.",
+      "params": [
+        {
+          "name": "image_width",
+          "type": "int",
+          "required": false,
+          "description": "Camera image width in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1280
+        },
+        {
+          "name": "image_height",
+          "type": "int",
+          "required": false,
+          "description": "Camera image height in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 720
+        },
+        {
+          "name": "hfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Horizontal FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 69.0
+        },
+        {
+          "name": "vfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Vertical FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 43.0
+        },
+        {
+          "name": "compute_stream",
+          "type": "str",
+          "required": false,
+          "description": "Name of compute stream to pull detections from",
+          "enum": null,
+          "ref_kind": null,
+          "default": "object-engine"
+        },
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Detection to track (class_name to match, optional score threshold)",
+          "enum": null,
+          "ref_kind": "Detection",
+          "default": null
+        },
+        {
+          "name": "leash_distance",
+          "type": "float",
+          "required": false,
+          "description": "leashing distance towards the tracked target",
+          "enum": null,
+          "ref_kind": null,
+          "default": 10
+        },
+        {
+          "name": "target_lost_duration",
+          "type": "float",
+          "required": false,
+          "description": "Seconds without detection before exiting",
+          "enum": null,
+          "ref_kind": null,
+          "default": 10.0
+        },
+        {
+          "name": "follow_speed",
+          "type": "float",
+          "required": false,
+          "description": "Max planar speed (m/s)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "yaw_speed",
+          "type": "float",
+          "required": false,
+          "description": "Max yaw rate (deg/s)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 10.0
+        },
+        {
+          "name": "descent_speed",
+          "type": "float",
+          "required": false,
+          "description": "Descent speed (m/s)",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.0
+        },
+        {
+          "name": "yaw_gain",
+          "type": "float",
+          "required": false,
+          "description": "Gain applied to yaw error before sending to FCU",
+          "enum": null,
+          "ref_kind": null,
+          "default": 2.0
+        },
+        {
+          "name": "follow_gain",
+          "type": "float",
+          "required": false,
+          "description": "Gain applied to follow error before sending to FCU",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "target_altitude",
+          "type": "float",
+          "required": false,
+          "description": "Target altitude to descend to while tracking",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.0
+        },
+        {
+          "name": "altitude_tolerance",
+          "type": "float",
+          "required": false,
+          "description": "Tolerance at which altitude will be checked for descending",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.0
+        },
+        {
+          "name": "strafe",
+          "type": "bool",
+          "required": false,
+          "description": "Whether or not to move left/right when following",
+          "enum": null,
+          "ref_kind": null,
+          "default": false
+        },
+        {
+          "name": "gimbal_lock",
+          "type": "bool",
+          "required": false,
+          "description": "Whether or not to lock the gimbal in position",
+          "enum": null,
+          "ref_kind": null,
+          "default": false
+        }
+      ]
+    },
+    {
+      "name": "Wait",
+      "kind": "action",
+      "description": "Wait for a specified duration.",
+      "params": [
+        {
+          "name": "duration",
+          "type": "float",
+          "required": true,
+          "description": "Seconds to wait",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AltitudeReached",
+      "kind": "event",
+      "description": "True if telemetry reports being within tolerance of altitude.",
+      "params": [
+        {
+          "name": "altitude",
+          "type": "float",
+          "required": true,
+          "description": "Target altitude.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "tol",
+          "type": "float",
+          "required": false,
+          "description": "Error tolerance around target altitude.",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.5
+        },
+        {
+          "name": "use_absolute",
+          "type": "bool",
+          "required": false,
+          "description": "Whether to use absolute altitude (MSL) instead of AGL altitude.",
+          "enum": null,
+          "ref_kind": null,
+          "default": false
+        }
+      ]
+    },
+    {
+      "name": "BatteryReached",
+      "kind": "event",
+      "description": "True when battery <= threshold.",
+      "params": [
+        {
+          "name": "threshold",
+          "type": "int",
+          "required": true,
+          "description": "Battery percentage [0-100] at or below which this event fires.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "BoundingBoxCentered",
+      "kind": "event",
+      "description": "True if the bounding box of the given class is centered in frame.",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Detection to check if centered",
+          "enum": null,
+          "ref_kind": "Detection",
+          "default": null
+        },
+        {
+          "name": "compute_stream",
+          "type": "str",
+          "required": false,
+          "description": "Name of compute stream to get results from",
+          "enum": null,
+          "ref_kind": null,
+          "default": "aruco_detector_engine"
+        },
+        {
+          "name": "v_tol",
+          "type": "float",
+          "required": false,
+          "description": "Vertical tolerance",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "h_tol",
+          "type": "float",
+          "required": false,
+          "description": "Horizontal tolerance",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1.0
+        },
+        {
+          "name": "image_width",
+          "type": "int",
+          "required": false,
+          "description": "Camera image width in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 1280
+        },
+        {
+          "name": "image_height",
+          "type": "int",
+          "required": false,
+          "description": "Camera image height in pixels",
+          "enum": null,
+          "ref_kind": null,
+          "default": 720
+        },
+        {
+          "name": "hfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Horizontal FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 69.0
+        },
+        {
+          "name": "vfov_deg",
+          "type": "float",
+          "required": false,
+          "description": "Vertical FOV in degrees",
+          "enum": null,
+          "ref_kind": null,
+          "default": 43.0
+        }
+      ]
+    },
+    {
+      "name": "DetectionFound",
+      "kind": "event",
+      "description": "True if any detection matches optional class_name and min score.",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Detection filter (class_name to match, optional minimum score threshold).",
+          "enum": null,
+          "ref_kind": "Detection",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "GimbalPoseReached",
+      "kind": "event",
+      "description": "Checks provided axes only; abs error <= tol_deg.",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Target gimbal pose (pitch, roll, yaw) [degrees]. Only provided axes are checked.",
+          "enum": null,
+          "ref_kind": "Pose",
+          "default": null
+        },
+        {
+          "name": "tol_deg",
+          "type": "float",
+          "required": false,
+          "description": "Allowed absolute error per axis [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 3.0
+        }
+      ]
+    },
+    {
+      "name": "GlobalPositionReached",
+      "kind": "event",
+      "description": "True when the current global_position matches the target within tolerance. Uses great-circle distance for lat/lon, and optional checks for altitude and heading. Compares only fields provided on `target`.",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": false,
+          "description": "Target global position (latitude, longitude, altitude, heading). Only provided fields are checked.",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "tol_m",
+          "type": "float",
+          "required": false,
+          "description": "Lat/lon great-circle distance tolerance [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.5
+        },
+        {
+          "name": "tol_alt_m",
+          "type": "float",
+          "required": false,
+          "description": "Altitude tolerance [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.5
+        },
+        {
+          "name": "tol_deg",
+          "type": "float",
+          "required": false,
+          "description": "Heading tolerance [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 3.0
+        }
+      ]
+    },
+    {
+      "name": "HSVReached",
+      "kind": "event",
+      "description": "True if any result reports HSV close to target, or 'hsv_pass': true. Looks only in ComputeResult.generic_result (JSON).",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Target HSV color values (h: 0-179, s: 0-255, v: 0-255). Only provided components are checked.",
+          "enum": null,
+          "ref_kind": "HSV",
+          "default": null
+        },
+        {
+          "name": "tol",
+          "type": "int",
+          "required": false,
+          "description": "Allowed absolute error per HSV component.",
+          "enum": null,
+          "ref_kind": null,
+          "default": 15
+        }
+      ]
+    },
+    {
+      "name": "RelativePositionReached",
+      "kind": "event",
+      "description": "True when the current relative_position matches the target within tolerance. Compares only fields provided on `target`.",
+      "params": [
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Target relative position (x, y, z, angle). Only provided fields are checked.",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "tol_m",
+          "type": "float",
+          "required": false,
+          "description": "Tolerance for x/y/z [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.2
+        },
+        {
+          "name": "tol_deg",
+          "type": "float",
+          "required": false,
+          "description": "Tolerance for angle [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0.0
+        }
+      ]
+    },
+    {
+      "name": "SatellitesReached",
+      "kind": "event",
+      "description": "True when satellites >= threshold.",
+      "params": [
+        {
+          "name": "threshold",
+          "type": "int",
+          "required": true,
+          "description": "Minimum number of GPS satellites required for this event to fire.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "TimeReached",
+      "kind": "event",
+      "description": "True after a specified duration has elapsed.",
+      "params": [
+        {
+          "name": "duration",
+          "type": "float",
+          "required": true,
+          "description": "Seconds to wait before returning true.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "VelocityReached",
+      "kind": "event",
+      "description": "True when the selected frame's velocity matches the target (per-component) within tolerance.",
+      "params": [
+        {
+          "name": "frame",
+          "type": "any",
+          "required": true,
+          "description": "Reference frame to check velocity in. Enum values: 0=BODY (vehicle frame), 1=NEU (North-East-Up).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "target",
+          "type": "ref",
+          "required": true,
+          "description": "Target velocity (x_vel, y_vel, z_vel, angular_vel). Only provided components are checked.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        },
+        {
+          "name": "tol",
+          "type": "float",
+          "required": false,
+          "description": "Allowed absolute error per component [m/s].",
+          "enum": null,
+          "ref_kind": null,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "datatypes": [
+    {
+      "name": "AlertInfo",
+      "kind": "data",
+      "description": "Vehicle warnings and alerts. Attributes: battery_warning (Optional[BatteryWarning]): Battery warning level (0-2). gps_warning (Optional[GPSWarning]): GPS fix warning (0-2). magnetometer_warning (Optional[MagnetometerWarning]): Magnetometer warning (0-1). connection_warning (Optional[ConnectionWarning]): Connection warning (0-2). compass_warning (Optional[CompassWarning]): Compass heading warning (0-2).",
+      "params": [
+        {
+          "name": "battery_warning",
+          "type": "any",
+          "required": false,
+          "description": "Battery warning level. Enum values: 0=NONE (above 30%), 1=LOW (below 30%), 2=CRITICAL (below 15%).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "gps_warning",
+          "type": "any",
+          "required": false,
+          "description": "GPS fix warning. Enum values: 0=nominal, 1=weak fix, 2=no fix.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "magnetometer_warning",
+          "type": "any",
+          "required": false,
+          "description": "Magnetometer warning. Enum values: 0=nominal, 1=magnetic perturbation.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "connection_warning",
+          "type": "any",
+          "required": false,
+          "description": "Connection warning. Enum values: 0=nominal, 1=disconnected, 2=weak connection.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "compass_warning",
+          "type": "any",
+          "required": false,
+          "description": "Compass heading warning. Enum values: 0=nominal, 1=weak heading lock, 2=no heading lock.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "AvoidanceResult",
+      "kind": "data",
+      "description": "Avoidance result from an avoidance model. Attributes: actuation_vector (Optional[float]): Actuation vector towards safe area.",
+      "params": [
+        {
+          "name": "actuation_vector",
+          "type": "float",
+          "required": false,
+          "description": "Actuation vector towards safe area.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "BatteryInfo",
+      "kind": "data",
+      "description": "Vehicle battery information. Attributes: percentage (Optional[int]): Battery level [0-100]%.",
+      "params": [
+        {
+          "name": "percentage",
+          "type": "int",
+          "required": false,
+          "description": "Battery level [0-100]%.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "BoundingBox",
+      "kind": "data",
+      "description": "Bounding box for an object detection. Origin (0,0) is top-left of image. Attributes: y_min (Optional[float]): Minimum y offset as percentage of image height [0.0-1.0]. x_min (Optional[float]): Minimum x offset as percentage of image width [0.0-1.0]. y_max (Optional[float]): Maximum y offset as percentage of image height [0.0-1.0]. x_max (Optional[float]): Maximum x offset as percentage of image width [0.0-1.0].",
+      "params": [
+        {
+          "name": "y_min",
+          "type": "float",
+          "required": false,
+          "description": "Minimum y offset as percentage of image height [0.0-1.0].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "x_min",
+          "type": "float",
+          "required": false,
+          "description": "Minimum x offset as percentage of image width [0.0-1.0].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "y_max",
+          "type": "float",
+          "required": false,
+          "description": "Maximum y offset as percentage of image height [0.0-1.0].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "x_max",
+          "type": "float",
+          "required": false,
+          "description": "Maximum x offset as percentage of image width [0.0-1.0].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "CommsInfo",
+      "kind": "data",
+      "description": "Vehicle communication link information (future).",
+      "params": []
+    },
+    {
+      "name": "ComputeResult",
+      "kind": "data",
+      "description": "Compute result from a compute server.",
+      "params": [
+        {
+          "name": "timestamp",
+          "type": "ref",
+          "required": false,
+          "description": "Inference timestamp.",
+          "enum": null,
+          "ref_kind": "Timestamp",
+          "default": null
+        },
+        {
+          "name": "engine_name",
+          "type": "str",
+          "required": false,
+          "description": "Engine that generated the result.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "detection_result",
+          "type": "ref",
+          "required": false,
+          "description": "Object detection result.",
+          "enum": null,
+          "ref_kind": "DetectionResult",
+          "default": null
+        },
+        {
+          "name": "avoidance_result",
+          "type": "ref",
+          "required": false,
+          "description": "Avoidance directive result.",
+          "enum": null,
+          "ref_kind": "AvoidanceResult",
+          "default": null
+        },
+        {
+          "name": "slam_result",
+          "type": "ref",
+          "required": false,
+          "description": "SLAM position estimate result.",
+          "enum": null,
+          "ref_kind": "SLAMResult",
+          "default": null
+        },
+        {
+          "name": "generic_result",
+          "type": "str",
+          "required": false,
+          "description": "Generic JSON result string.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "DatasinkInfo",
+      "kind": "data",
+      "description": "Information about a compute datasink.",
+      "params": [
+        {
+          "name": "id",
+          "type": "str",
+          "required": true,
+          "description": "Datasink ID.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "location",
+          "type": "any",
+          "required": true,
+          "description": "Datasink location. Enum values: 0=REMOTE (network hop required), 1=LOCAL (IPC).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Detection",
+      "kind": "data",
+      "description": "Single object detection from a model. Attributes: detection_id (Optional[int]): Detection ID (multiple objects per frame). class_name (Optional[str]): Class name of detection. score (Optional[float]): Confidence score. bbox (Optional[BoundingBox]): Bounding box of the detection.",
+      "params": [
+        {
+          "name": "detection_id",
+          "type": "int",
+          "required": false,
+          "description": "Detection ID (multiple objects per frame).",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "class_name",
+          "type": "str",
+          "required": false,
+          "description": "Class name of detection.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "score",
+          "type": "float",
+          "required": false,
+          "description": "Confidence score.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "bbox",
+          "type": "ref",
+          "required": false,
+          "description": "Bounding box of the detection.",
+          "enum": null,
+          "ref_kind": "BoundingBox",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "DetectionResult",
+      "kind": "data",
+      "description": "List of object detections for a frame. Attributes: detections (Optional[List[Detection]]): List of detections. frame_id (Optional[int]): Frame ID corresponding to these detections.",
+      "params": [
+        {
+          "name": "detections",
+          "type": "list",
+          "required": false,
+          "description": "List of detections.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "frame_id",
+          "type": "int",
+          "required": false,
+          "description": "Frame ID corresponding to these detections.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "DriverTelemetry",
+      "kind": "data",
+      "description": "Full vehicle telemetry message from the driver module. Attributes: timestamp (Optional[Timestamp]): Message timestamp. telemetry_stream_info (Optional[TelemetryStreamInfo]): Telemetry stream info. vehicle_info (Optional[VehicleInfo]): Vehicle identity and status. position_info (Optional[PositionInfo]): Position, velocity, and setpoint info. gimbal_info (Optional[GimbalInfo]): Gimbal statuses. imaging_sensor_info (Optional[ImagingSensorInfo]): Imaging sensor info. alert_info (Optional[AlertInfo]): Vehicle warnings.",
+      "params": [
+        {
+          "name": "timestamp",
+          "type": "ref",
+          "required": false,
+          "description": "Message timestamp.",
+          "enum": null,
+          "ref_kind": "Timestamp",
+          "default": null
+        },
+        {
+          "name": "telemetry_stream_info",
+          "type": "ref",
+          "required": false,
+          "description": "Telemetry stream info.",
+          "enum": null,
+          "ref_kind": "TelemetryStreamInfo",
+          "default": null
+        },
+        {
+          "name": "vehicle_info",
+          "type": "ref",
+          "required": false,
+          "description": "Vehicle identity and status.",
+          "enum": null,
+          "ref_kind": "VehicleInfo",
+          "default": null
+        },
+        {
+          "name": "position_info",
+          "type": "ref",
+          "required": false,
+          "description": "Position, velocity, and setpoint info.",
+          "enum": null,
+          "ref_kind": "PositionInfo",
+          "default": null
+        },
+        {
+          "name": "gimbal_info",
+          "type": "ref",
+          "required": false,
+          "description": "Gimbal statuses.",
+          "enum": null,
+          "ref_kind": "GimbalInfo",
+          "default": null
+        },
+        {
+          "name": "imaging_sensor_info",
+          "type": "ref",
+          "required": false,
+          "description": "Imaging sensor info.",
+          "enum": null,
+          "ref_kind": "ImagingSensorInfo",
+          "default": null
+        },
+        {
+          "name": "alert_info",
+          "type": "ref",
+          "required": false,
+          "description": "Vehicle warnings.",
+          "enum": null,
+          "ref_kind": "AlertInfo",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Frame",
+      "kind": "data",
+      "description": "Imaging sensor frame data from the driver module. Attributes: timestamp (Optional[Timestamp]): Frame capture timestamp. data (Optional[bytes]): Raw frame bytes. h_res (Optional[int]): Horizontal resolution [pixels]. v_res (Optional[int]): Vertical resolution [pixels]. d_res (Optional[int]): Depth resolution [pixels]. channels (Optional[int]): Number of image channels. id (Optional[int]): Frame ID for correlation.",
+      "params": [
+        {
+          "name": "timestamp",
+          "type": "ref",
+          "required": false,
+          "description": "Frame capture timestamp.",
+          "enum": null,
+          "ref_kind": "Timestamp",
+          "default": null
+        },
+        {
+          "name": "data",
+          "type": "any",
+          "required": false,
+          "description": "Raw frame bytes.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "h_res",
+          "type": "int",
+          "required": false,
+          "description": "Horizontal resolution [pixels].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "v_res",
+          "type": "int",
+          "required": false,
+          "description": "Vertical resolution [pixels].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "d_res",
+          "type": "int",
+          "required": false,
+          "description": "Depth resolution [pixels].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "channels",
+          "type": "int",
+          "required": false,
+          "description": "Number of image channels.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "required": false,
+          "description": "Frame ID for correlation.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "FrameResult",
+      "kind": "data",
+      "description": "Compute results generated by datasink modules for a frame.",
+      "params": [
+        {
+          "name": "type",
+          "type": "str",
+          "required": false,
+          "description": "Result type identifier.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "frame_id",
+          "type": "int",
+          "required": false,
+          "description": "Frame ID for correlation.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "result",
+          "type": "list",
+          "required": false,
+          "description": "List of compute results.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "GPSInfo",
+      "kind": "data",
+      "description": "Vehicle GPS fix information. Attributes: satellites (Optional[int]): Number of satellites in GPS fix.",
+      "params": [
+        {
+          "name": "satellites",
+          "type": "int",
+          "required": false,
+          "description": "Number of satellites in GPS fix.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "GimbalInfo",
+      "kind": "data",
+      "description": "Info on all attached gimbals. Attributes: num_gimbals (Optional[int]): Number of connected gimbals. gimbals (Optional[List[GimbalStatus]]): List of gimbal statuses.",
+      "params": [
+        {
+          "name": "num_gimbals",
+          "type": "int",
+          "required": false,
+          "description": "Number of connected gimbals.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "gimbals",
+          "type": "list",
+          "required": false,
+          "description": "List of gimbal statuses.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "GimbalStatus",
+      "kind": "data",
+      "description": "Status of a single gimbal. Attributes: id (Optional[int]): Gimbal ID. pose_body (Optional[Pose]): Current pose in body frame. pose_neu (Optional[Pose]): Current pose in NEU frame.",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "required": false,
+          "description": "Gimbal ID.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "pose_body",
+          "type": "ref",
+          "required": false,
+          "description": "Current pose in body frame.",
+          "enum": null,
+          "ref_kind": "Pose",
+          "default": null
+        },
+        {
+          "name": "pose_neu",
+          "type": "ref",
+          "required": false,
+          "description": "Current pose in NEU frame.",
+          "enum": null,
+          "ref_kind": "Pose",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "HSV",
+      "kind": "data",
+      "description": "HSV color filter values (OpenCV ranges). Attributes: h (Optional[int]): Hue [0-179]. s (Optional[int]): Saturation [0-255]. v (Optional[int]): Value [0-255].",
+      "params": [
+        {
+          "name": "h",
+          "type": "int",
+          "required": false,
+          "description": "Hue [0-179].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "s",
+          "type": "int",
+          "required": false,
+          "description": "Saturation [0-255].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "v",
+          "type": "int",
+          "required": false,
+          "description": "Value [0-255].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "ImagingSensorConfiguration",
+      "kind": "data",
+      "description": "Configuration for an imaging sensor stream.",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "required": true,
+          "description": "Target imaging sensor ID.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "set_primary",
+          "type": "bool",
+          "required": true,
+          "description": "Set this sensor as the primary stream.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "set_fps",
+          "type": "int",
+          "required": true,
+          "description": "Target FPS for the stream.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "ImagingSensorInfo",
+      "kind": "data",
+      "description": "Information about all attached imaging sensors. Attributes: stream_status (Optional[ImagingSensorStreamStatus]): Current stream status. sensors (Optional[List[ImagingSensorStatus]]): List of connected sensors.",
+      "params": [
+        {
+          "name": "stream_status",
+          "type": "ref",
+          "required": false,
+          "description": "Current stream status.",
+          "enum": null,
+          "ref_kind": "ImagingSensorStreamStatus",
+          "default": null
+        },
+        {
+          "name": "sensors",
+          "type": "list",
+          "required": false,
+          "description": "List of connected sensors.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "ImagingSensorStatus",
+      "kind": "data",
+      "description": "Status of a single imaging sensor. Attributes: id (Optional[int]): Imaging sensor ID. type (Optional[ImagingSensorType]): Sensor type (0-7). active (Optional[bool]): Whether the sensor is currently streaming. supports_secondary (Optional[bool]): Whether the sensor supports background streaming. current_fps (Optional[int]): Current streaming FPS. max_fps (Optional[int]): Maximum streaming FPS. h_res (Optional[int]): Horizontal resolution [pixels]. v_res (Optional[int]): Vertical resolution [pixels]. channels (Optional[int]): Number of image channels. h_fov (Optional[int]): Horizontal FOV [degrees]. v_fov (Optional[int]): Vertical FOV [degrees]. gimbal_mounted (Optional[bool]): Whether sensor is gimbal-mounted. gimbal_id (Optional[int]): ID of gimbal the sensor is mounted on.",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "required": false,
+          "description": "Imaging sensor ID.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "type",
+          "type": "any",
+          "required": false,
+          "description": "Sensor type. Enum values: 0=RGB, 1=STEREO, 2=THERMAL, 3=NIGHT, 4=LIDAR, 5=RGBD, 6=TOF, 7=RADAR.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the sensor is currently streaming.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "supports_secondary",
+          "type": "bool",
+          "required": false,
+          "description": "Whether the sensor supports background streaming.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "current_fps",
+          "type": "int",
+          "required": false,
+          "description": "Current streaming FPS.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "max_fps",
+          "type": "int",
+          "required": false,
+          "description": "Maximum streaming FPS.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "h_res",
+          "type": "int",
+          "required": false,
+          "description": "Horizontal resolution [pixels].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "v_res",
+          "type": "int",
+          "required": false,
+          "description": "Vertical resolution [pixels].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "channels",
+          "type": "int",
+          "required": false,
+          "description": "Number of image channels.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "h_fov",
+          "type": "int",
+          "required": false,
+          "description": "Horizontal FOV [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "v_fov",
+          "type": "int",
+          "required": false,
+          "description": "Vertical FOV [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "gimbal_mounted",
+          "type": "bool",
+          "required": false,
+          "description": "Whether sensor is gimbal-mounted.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "gimbal_id",
+          "type": "int",
+          "required": false,
+          "description": "ID of gimbal the sensor is mounted on.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "ImagingSensorStreamStatus",
+      "kind": "data",
+      "description": "Status of imaging sensor streams. Attributes: stream_capacity (Optional[int]): Max allowed simultaneous streams. num_streams (Optional[int]): Currently active stream count. primary_cam (Optional[int]): ID of the primary camera. secondary_cams (Optional[List[int]]): IDs of secondary active cameras.",
+      "params": [
+        {
+          "name": "stream_capacity",
+          "type": "int",
+          "required": false,
+          "description": "Max allowed simultaneous streams.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "num_streams",
+          "type": "int",
+          "required": false,
+          "description": "Currently active stream count.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "primary_cam",
+          "type": "int",
+          "required": false,
+          "description": "ID of the primary camera.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "secondary_cams",
+          "type": "list",
+          "required": false,
+          "description": "IDs of secondary active cameras.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "kind": "data",
+      "description": "Location in global (GPS) coordinates. Attributes: latitude (Optional[float]): Global latitude [degrees]. longitude (Optional[float]): Global longitude [degrees]. altitude (Optional[float]): Altitude above MSL or takeoff [meters]. heading (Optional[float]): Global heading [degrees].",
+      "params": [
+        {
+          "name": "latitude",
+          "type": "float",
+          "required": false,
+          "description": "Global latitude [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "longitude",
+          "type": "float",
+          "required": false,
+          "description": "Global longitude [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "altitude",
+          "type": "float",
+          "required": false,
+          "description": "Altitude above MSL or takeoff [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "heading",
+          "type": "float",
+          "required": false,
+          "description": "Global heading [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "MissionInfo",
+      "kind": "data",
+      "description": "Information about a single mission. Attributes: name (Optional[str]): Mission name. hash (Optional[int]): Mission hash. age (Optional[Timestamp]): Mission age timestamp. exec_state (Optional[MissionExecState]): Execution state (0-4). task_state (Optional[str]): Current task state.",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "required": false,
+          "description": "Mission name.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "hash",
+          "type": "int",
+          "required": false,
+          "description": "Mission hash.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "age",
+          "type": "ref",
+          "required": false,
+          "description": "Mission age timestamp.",
+          "enum": null,
+          "ref_kind": "Timestamp",
+          "default": null
+        },
+        {
+          "name": "exec_state",
+          "type": "any",
+          "required": false,
+          "description": "Execution state. Enum values: 0=READY, 1=IN_PROGRESS, 2=PAUSED, 3=COMPLETED, 4=CANCELED.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "task_state",
+          "type": "str",
+          "required": false,
+          "description": "Current task state.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "MissionTelemetry",
+      "kind": "data",
+      "description": "Mission telemetry message. Attributes: timestamp (Optional[Timestamp]): Message timestamp. telemetry_stream_info (Optional[TelemetryStreamInfo]): Telemetry stream info. mission_info (Optional[List[MissionInfo]]): List of mission statuses.",
+      "params": [
+        {
+          "name": "timestamp",
+          "type": "ref",
+          "required": false,
+          "description": "Message timestamp.",
+          "enum": null,
+          "ref_kind": "Timestamp",
+          "default": null
+        },
+        {
+          "name": "telemetry_stream_info",
+          "type": "ref",
+          "required": false,
+          "description": "Telemetry stream info.",
+          "enum": null,
+          "ref_kind": "TelemetryStreamInfo",
+          "default": null
+        },
+        {
+          "name": "mission_info",
+          "type": "list",
+          "required": false,
+          "description": "List of mission statuses.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Pose",
+      "kind": "data",
+      "description": "Angular offsets or poses in 3 dimensions. Attributes: pitch (Optional[float]): Pitch angle [degrees]. roll (Optional[float]): Roll angle [degrees]. yaw (Optional[float]): Yaw angle [degrees].",
+      "params": [
+        {
+          "name": "pitch",
+          "type": "float",
+          "required": false,
+          "description": "Pitch angle [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "roll",
+          "type": "float",
+          "required": false,
+          "description": "Roll angle [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "yaw",
+          "type": "float",
+          "required": false,
+          "description": "Yaw angle [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Position",
+      "kind": "data",
+      "description": "Position offset relative to home or current location. Attributes: x (Optional[float]): Forward/north offset [meters]. y (Optional[float]): Right/east offset [meters]. z (Optional[float]): Up offset [meters]. angle (Optional[float]): Angular offset [degrees].",
+      "params": [
+        {
+          "name": "x",
+          "type": "float",
+          "required": false,
+          "description": "Forward/north offset [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "y",
+          "type": "float",
+          "required": false,
+          "description": "Right/east offset [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "z",
+          "type": "float",
+          "required": false,
+          "description": "Up offset [meters].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "angle",
+          "type": "float",
+          "required": false,
+          "description": "Angular offset [degrees].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "PositionInfo",
+      "kind": "data",
+      "description": "Vehicle position information including home, global, relative positions and velocity. Attributes: home (Optional[Location]): Home position used for ReturnToHome. global_position (Optional[Location]): Current global position (requires GPS fix). relative_position (Optional[Position]): Local position in NEU frame, relative to start. velocity_neu (Optional[Velocity]): Current velocity in NEU frame. velocity_body (Optional[Velocity]): Current velocity in body frame. setpoint_info (Optional[SetpointInfo]): Current vehicle setpoint.",
+      "params": [
+        {
+          "name": "home",
+          "type": "ref",
+          "required": false,
+          "description": "Home position used for ReturnToHome.",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "global_position",
+          "type": "ref",
+          "required": false,
+          "description": "Current global position (requires GPS fix).",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "relative_position",
+          "type": "ref",
+          "required": false,
+          "description": "Local position in NEU frame, relative to start.",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "velocity_neu",
+          "type": "ref",
+          "required": false,
+          "description": "Current velocity in NEU frame.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        },
+        {
+          "name": "velocity_body",
+          "type": "ref",
+          "required": false,
+          "description": "Current velocity in body frame.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        },
+        {
+          "name": "setpoint_info",
+          "type": "ref",
+          "required": false,
+          "description": "Current vehicle setpoint.",
+          "enum": null,
+          "ref_kind": "SetpointInfo",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SLAMResult",
+      "kind": "data",
+      "description": "SLAM position estimate.",
+      "params": [
+        {
+          "name": "relative_position",
+          "type": "ref",
+          "required": false,
+          "description": "Relative position estimate from SLAM initialization.",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "global_position",
+          "type": "ref",
+          "required": false,
+          "description": "Global position estimate.",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "SetpointInfo",
+      "kind": "data",
+      "description": "Current vehicle setpoint (position/velocity target the vehicle is moving towards). Attributes: position_body_sp (Optional[Position]): Body frame position setpoint. position_neu_sp (Optional[Position]): NEU position setpoint. global_sp (Optional[Location]): Global position setpoint. velocity_body_sp (Optional[Velocity]): Body frame velocity setpoint. velocity_neu_sp (Optional[Velocity]): NEU velocity setpoint.",
+      "params": [
+        {
+          "name": "position_body_sp",
+          "type": "ref",
+          "required": false,
+          "description": "Body frame position setpoint (default idle: all zeros).",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "position_neu_sp",
+          "type": "ref",
+          "required": false,
+          "description": "NEU (North-East-Up) position setpoint.",
+          "enum": null,
+          "ref_kind": "Position",
+          "default": null
+        },
+        {
+          "name": "global_sp",
+          "type": "ref",
+          "required": false,
+          "description": "Global position setpoint.",
+          "enum": null,
+          "ref_kind": "Location",
+          "default": null
+        },
+        {
+          "name": "velocity_body_sp",
+          "type": "ref",
+          "required": false,
+          "description": "Body frame velocity setpoint.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        },
+        {
+          "name": "velocity_neu_sp",
+          "type": "ref",
+          "required": false,
+          "description": "NEU velocity setpoint.",
+          "enum": null,
+          "ref_kind": "Velocity",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "TelemetryStreamInfo",
+      "kind": "data",
+      "description": "Information about the telemetry stream. Attributes: current_frequency (Optional[int]): Current telemetry frequency [Hz]. max_frequency (Optional[int]): Maximum telemetry frequency [Hz].",
+      "params": [
+        {
+          "name": "current_frequency",
+          "type": "int",
+          "required": false,
+          "description": "Current telemetry frequency [Hz].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "max_frequency",
+          "type": "int",
+          "required": false,
+          "description": "Maximum telemetry frequency [Hz].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Timestamp",
+      "kind": "data",
+      "description": "Unix timestamp with nanosecond resolution (seconds since 1970-01-01T00:00:00Z).",
+      "params": [
+        {
+          "name": "seconds",
+          "type": "int",
+          "required": true,
+          "description": "Seconds of UTC time since Unix epoch 1970-01-01T00:00:00Z.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "nanos",
+          "type": "int",
+          "required": true,
+          "description": "Sub-second fractions at nanosecond resolution [0, 999999999].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "VehicleInfo",
+      "kind": "data",
+      "description": "Vehicle identity and status information. Attributes: name (Optional[str]): Vehicle name. model (Optional[str]): Vehicle model. manufacturer (Optional[str]): Vehicle manufacturer. motion_status (Optional[MotionStatus]): Current motion status (0-4). battery_info (Optional[BatteryInfo]): Battery info. gps_info (Optional[GPSInfo]): GPS sensor info. comms_info (Optional[CommsInfo]): Communications info.",
+      "params": [
+        {
+          "name": "name",
+          "type": "str",
+          "required": false,
+          "description": "Vehicle name.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "model",
+          "type": "str",
+          "required": false,
+          "description": "Vehicle model.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "manufacturer",
+          "type": "str",
+          "required": false,
+          "description": "Vehicle manufacturer.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "motion_status",
+          "type": "any",
+          "required": false,
+          "description": "Current motion status. Enum values: 0=MOTORS_OFF, 1=RAMPING_UP, 2=IDLE, 3=IN_TRANSIT, 4=RAMPING_DOWN.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "battery_info",
+          "type": "ref",
+          "required": false,
+          "description": "Battery info.",
+          "enum": null,
+          "ref_kind": "BatteryInfo",
+          "default": null
+        },
+        {
+          "name": "gps_info",
+          "type": "ref",
+          "required": false,
+          "description": "GPS sensor info.",
+          "enum": null,
+          "ref_kind": "GPSInfo",
+          "default": null
+        },
+        {
+          "name": "comms_info",
+          "type": "ref",
+          "required": false,
+          "description": "Communications info.",
+          "enum": null,
+          "ref_kind": "CommsInfo",
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Velocity",
+      "kind": "data",
+      "description": "Velocity in 3 dimensions. Attributes: x_vel (Optional[float]): Forward/north velocity [m/s]. y_vel (Optional[float]): Right/east velocity [m/s]. z_vel (Optional[float]): Up velocity [m/s]. angular_vel (Optional[float]): Angular velocity [deg/s].",
+      "params": [
+        {
+          "name": "x_vel",
+          "type": "float",
+          "required": false,
+          "description": "Forward/north velocity [m/s].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "y_vel",
+          "type": "float",
+          "required": false,
+          "description": "Right/east velocity [m/s].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "z_vel",
+          "type": "float",
+          "required": false,
+          "description": "Up velocity [m/s].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "angular_vel",
+          "type": "float",
+          "required": false,
+          "description": "Angular velocity [deg/s].",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    },
+    {
+      "name": "Waypoints",
+      "kind": "data",
+      "description": "A list of geolocation waypoints with a slicing algorithm for coverage patterns.",
+      "params": [
+        {
+          "name": "area",
+          "type": "str",
+          "required": true,
+          "description": "KML area name (string) or list of Location points defining the area.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "alt",
+          "type": "float",
+          "required": true,
+          "description": "Altitude at which waypoints are visited [meters]. Altitudes in Location objects are ignored.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "algo",
+          "type": "str",
+          "required": false,
+          "description": "Slicing algorithm: 'edge' follows points in order, 'survey'/'corridor' cover the enclosed area.",
+          "enum": [
+            "edge",
+            "corridor",
+            "survey"
+          ],
+          "ref_kind": null,
+          "default": "edge"
+        },
+        {
+          "name": "spacing",
+          "type": "float",
+          "required": false,
+          "description": "Spacing between survey/corridor columns [meters]. Required for survey/corridor.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "angle_degrees",
+          "type": "float",
+          "required": false,
+          "description": "Angle of survey/corridor columns [degrees]. Required for survey/corridor.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        },
+        {
+          "name": "trigger_distance",
+          "type": "float",
+          "required": false,
+          "description": "Distance before snapshot trigger [meters]. Required for survey only.",
+          "enum": null,
+          "ref_kind": null,
+          "default": null
+        }
+      ]
+    }
+  ],
+  "declarable_datatypes": [
+    "Detection",
+    "HSV",
+    "Location",
+    "Pose",
+    "Position",
+    "Velocity",
+    "Waypoints"
+  ]
+}

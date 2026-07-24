@@ -6,6 +6,11 @@ from steeleagle_mcp.mission_tools import (
     save_mission_files_payload,
     translate_with_dsl_reference_payload,
 )
+from steeleagle_mcp.nl2dsl.pipeline import run_dsl_through_pipeline
+
+
+def test_vendored_nl2dsl_pipeline_import_path():
+    assert run_dsl_through_pipeline.__module__ == "steeleagle_mcp.nl2dsl.pipeline"
 
 
 VALID_DSL = """Actions:
