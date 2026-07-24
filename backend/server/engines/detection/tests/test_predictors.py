@@ -188,13 +188,26 @@ def test_load_predictor_rfdetr_missing_variant_raises(tmp_path):
         predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
 
 
-def test_load_predictor_rfdetr_missing_weights_raises(tmp_path):
+def test_load_predictor_rfdetr_missing_weights_downloads_pretrained(
+    tmp_path, monkeypatch
+):
     (tmp_path / "myrfdetr.json").write_text(
         json.dumps({"arch": "rfdetr", "variant": "base"})
     )
+    captured = {}
 
-    with pytest.raises(FileNotFoundError):
-        predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
+    def fake_variant_cls(**kwargs):
+        captured["kwargs"] = kwargs
+        return object()
+
+    monkeypatch.setattr(predictors, "_RFDETR_VARIANTS", {"base": fake_variant_cls})
+
+    predictor = predictors.load_predictor("myrfdetr", 0.5, model_dir=str(tmp_path))
+
+    assert isinstance(predictor, predictors.RfDetrPredictor)
+    # No local .pth: pretrain_weights must be omitted (not passed as None)
+    # so the variant class falls through to its own default and downloads it.
+    assert captured["kwargs"] == {}
 
 
 def test_load_predictor_unknown_arch_raises(tmp_path):

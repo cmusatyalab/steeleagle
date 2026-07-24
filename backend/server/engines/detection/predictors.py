@@ -43,13 +43,23 @@ class YoloPredictor(Predictor):
 class RfDetrPredictor(Predictor):
     def __init__(
         self,
-        weights_path: str,
+        weights_path: str | None,
         threshold: float,
         variant: str,
         classes: list[str] | None = None,
     ):
         model_cls = _RFDETR_VARIANTS[variant]
-        self.model = model_cls(pretrain_weights=weights_path)
+        # Omit pretrain_weights entirely (rather than passing None) when no
+        # local checkpoint is given, so the variant class falls through to
+        # its own default pretrained weights filename and auto-downloads it
+        # to the rfdetr cache dir (~/.roboflow/models, or $RF_HOME). Passing
+        # pretrain_weights=None explicitly would instead skip the download
+        # and leave the model uninitialized.
+        self.model = (
+            model_cls(pretrain_weights=weights_path)
+            if weights_path is not None
+            else model_cls()
+        )
         self.threshold = threshold
         self.classes = classes
 
@@ -102,9 +112,12 @@ def load_predictor(
             raise UnknownModelArchError(
                 f"Unknown or missing RF-DETR variant: {variant!r}"
             )
+        # A local .pth is only required for a custom-trained model. If it's
+        # not there, assume the caller wants a stock pretrained variant and
+        # let RfDetrPredictor auto-download it.
         weights_path = os.path.join(model_dir, f"{model_name}.pth")
         if not os.path.exists(weights_path):
-            raise FileNotFoundError(weights_path)
+            weights_path = None
         return RfDetrPredictor(
             weights_path, threshold, variant=variant, classes=meta.get("classes")
         )
