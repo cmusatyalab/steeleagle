@@ -1,7 +1,7 @@
 [project]
 name = "gcs"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.4.0"
+description = "React/FastAPI Ground Control System for SteelEagle"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,7 +13,7 @@ dependencies = [
     "redis",
     "fastapi",
     "uvicorn",
-    "steeleagle_sdk",
+    "steeleagle-protocol>=0.1.11",
     "websockets",
     "rich",
     "opencv-python",
@@ -22,7 +22,6 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-steeleagle_sdk = { path = "../../../sdk", editable = true }
 
 [dependency-groups]
 dev = [

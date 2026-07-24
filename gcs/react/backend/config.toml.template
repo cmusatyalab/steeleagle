@@ -12,15 +12,3 @@ redis_port = 6379
 redis_username = "steeleagle"
 redis_password = ""
 webserver = "http://localhost:8080"
-
-[vehicle]
-[vehicle.test1]
-address = 'unix:///tmp/test1-kernel.sock'
-tel_endpoint = 'ipc:///tmp/test1-driver_telem.sock'
-img_endpoint = 'ipc:///tmp/test1-imagery.sock'
-res_endpoint = 'ipc:///tmp/test1-results.sock'
-[vehicle.test2]
-address = 'unix:///tmp/test2-kernel.sock'
-tel_endpoint = 'ipc:///tmp/test2-driver_telem.sock'
-img_endpoint = 'ipc:///tmp/test2-imagery.sock'
-res_endpoint = 'ipc:///tmp/test2-results.sock'
