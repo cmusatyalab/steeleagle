@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SteelEagle GCS</title>
+    <script>
+      (function () {
+        var t = 'dark';
+        try { t = localStorage.getItem('se-theme') || 'dark'; } catch (e) {}
+        document.write('<link id="theme-link" rel="stylesheet" href="/themes/lara-' + t + '-amber/theme.css">');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
