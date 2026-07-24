@@ -90,3 +90,16 @@ class SwarmClient:
             ),
         )
         return await _collect_stream(self._stub.SwarmSetVelocity(request))
+
+    async def set_gimbal_pose(
+        self, vehicles: list[str], pitch: float, yaw: float, roll: float
+    ) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmSetGimbalPoseRequest(
+            vehicles=vehicles,
+            request=control_pb2.SetGimbalPoseRequest(
+                gimbal_id=0,
+                pose=common_pb2.Pose(pitch=pitch, yaw=yaw, roll=roll),
+                pose_mode=control_pb2.POSE_MODE_OFFSET,
+            ),
+        )
+        return await _collect_stream(self._stub.SwarmSetGimbalPose(request))
