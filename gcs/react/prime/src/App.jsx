@@ -5,17 +5,13 @@ import React from 'react'
 import { Menubar } from 'primereact/menubar';
 import { Divider } from 'primereact/divider';
 import { Badge } from 'primereact/badge';
-import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
 import { Toast } from 'primereact/toast';
 import { Sidebar } from 'primereact/sidebar';
 import { Dropdown } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
-import { OverlayPanel } from 'primereact/overlaypanel';
-import { SelectButton } from 'primereact/selectbutton';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Knob } from 'primereact/knob';
-import { Chip } from 'primereact/chip';
 import 'primereact/resources/primereact.min.css';        // Core PrimeReact CSS
 import 'primeicons/primeicons.css';                     // Icons
 import 'primeflex/primeflex.css';                       // PrimeFlex utilities
@@ -26,11 +22,6 @@ import Cli from './Cli.jsx';
 import ControlPage from './ControlPage.jsx';
 import MonitorPage from './MonitorPage.jsx';
 import PlanPage from './PlanPage.jsx';
-
-const modeOptions = [
-  { value: true, icon: 'pi pi-desktop' },
-  { value: false, icon: 'pi pi-cloud' }
-];
 
 function getWebSocketUrl(path) {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -59,7 +50,6 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [error, setError] = useState(null);
   const [tracking, setTracking] = useState(true);
-  const [useLocalVehicle, setUseLocalVehicle] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('se-theme') || 'dark');
 
   useEffect(() => {
@@ -75,7 +65,6 @@ function App() {
   const [gamepadDeadzone, setGamepadDeadzone] = useState(10);
   const [squadList, setSquadList] = useState(null);
   const [socketUrl, setSocketUrl] = useState('');
-  const op = useRef(null);
   // Keep a ref to the last-known vehicles JSON so we can skip setVehicles when
   // the server returns identical data, preventing needless re-renders.
   const vehiclesJsonRef = useRef('');
@@ -85,12 +74,8 @@ function App() {
   }, [selectedMenu]);
 
   useEffect(() => {
-    if (useLocalVehicle) {
-      setSocketUrl(getWebSocketUrl(`/ws/imagery/${selectedVehicle}`));
-    } else {
-      setSocketUrl(getWebSocketUrl(`/ws/imagery/remote/${selectedVehicle}`));
-    }
-  }, [selectedVehicle, useLocalVehicle]);
+    setSocketUrl(getWebSocketUrl(`/ws/imagery/remote/${selectedVehicle}`));
+  }, [selectedVehicle]);
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     socketUrl,
@@ -118,13 +103,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let response = "";
-        if (!useLocalVehicle) {
-          response = await fetch(getApiUrl('/api/remote/objects'));
-        }
-        else {
-          return;
-        }
+        const response = await fetch(getApiUrl('/api/remote/objects'));
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -140,18 +119,12 @@ function App() {
 
     const intervalId = setInterval(fetchData, 500);
     return () => clearInterval(intervalId);
-  }, [useLocalVehicle]);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let response = "";
-        if (!useLocalVehicle) {
-          response = await fetch(getApiUrl('/api/remote/vehicles'));
-        }
-        else {
-          response = await fetch(getApiUrl('/api/local/vehicles'));
-        }
+        const response = await fetch(getApiUrl('/api/remote/vehicles'));
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -171,7 +144,7 @@ function App() {
 
     const intervalId = setInterval(fetchData, 500);
     return () => clearInterval(intervalId);
-  }, [useLocalVehicle]);
+  }, []);
 
   const onKeyDown = (e) => {
     if (e.code === 'Escape') {
@@ -332,12 +305,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       };
-      let response = null;
-      if (useLocalVehicle) {
-        response = await fetch(getApiUrl('/api/joystick'), requestOptions);
-      } else {
-        response = await fetch(getApiUrl('/api/joystick?sandbox_mode=0'), requestOptions);
-      }
+      const response = await fetch(getApiUrl('/api/joystick'), requestOptions);
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Joystick Error', detail: `HTTP error! status: ${result.detail}` });
@@ -348,7 +316,7 @@ function App() {
 
       }
     }
-  }, [squadList, useLocalVehicle, basePlanarVelocity, baseAngularVelocity]);
+  }, [squadList, basePlanarVelocity, baseAngularVelocity]);
 
   const onCommand = useCallback(async (body) => {
     body.vehicles = squadList;
@@ -367,12 +335,7 @@ function App() {
         body: JSON.stringify(body)
       };
 
-      let response = null;
-      if (useLocalVehicle) {
-        response = await fetch(getApiUrl('/api/command'), requestOptions);
-      } else {
-        response = await fetch(getApiUrl('/api/command?sandbox_mode=0'), requestOptions);
-      }
+      const response = await fetch(getApiUrl('/api/command'), requestOptions);
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
@@ -386,7 +349,7 @@ function App() {
       }
     }
 
-  }, [squadList, useLocalVehicle, takeOffAltitude]);
+  }, [squadList, takeOffAltitude]);
 
   const onGimbal = useCallback(async (body) => {
     body.vehicles = squadList;
@@ -400,12 +363,7 @@ function App() {
         body: JSON.stringify(body)
       };
 
-      let response = null;
-      if (useLocalVehicle) {
-        response = await fetch(getApiUrl('/api/gimbal'), requestOptions);
-      } else {
-        response = await fetch(getApiUrl('/api/gimbal?sandbox_mode=0'), requestOptions);
-      }
+      const response = await fetch(getApiUrl('/api/gimbal'), requestOptions);
       if (!response.ok) {
         const result = await response.json();
         toast.current.show({ severity: 'error', summary: 'Command Error', detail: `HTTP error! status: ${result.detail}` });
@@ -415,7 +373,7 @@ function App() {
       }
     }
 
-  }, [squadList, useLocalVehicle]);
+  }, [squadList]);
 
   const items = useMemo(() => [
     {
@@ -442,34 +400,6 @@ function App() {
 
   ], []);
 
-  const modeOptions = [
-    { icon: 'pi pi-server', label: 'Via Swarm Controller', value: false },
-    { icon: 'pi pi-car', label: 'Direct to Local Vehicles', value: true },
-  ];
-
-  const modeTemplate = (option) => {
-    return <><i className={option.icon}></i><div className="m-2"> {option.label}</div></>;
-  }
-  const overlayContent = useMemo(() => (
-    <>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <Chip className="flex align-items-center justify-content-center" label="Connection Mode" icon="pi pi-link" />
-        </div>
-        <div className="flex flex-column flex-wrap justify-content-center align-content-center m-2">
-        </div>
-      </div>
-      <div className="flex flex-row gap-2">
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-          <SelectButton value={useLocalVehicle} onChange={(e) => setUseLocalVehicle(e.value)} itemTemplate={modeTemplate} options={modeOptions} optionLabel="label" className="flex align-items-center justify-content-center" />
-        </div>
-        <div className="flex flex-column flex-wrap align-content-center m-2">
-        </div>
-      </div>
-    </>
-
-  ), [useLocalVehicle, setUseLocalVehicle]);
-
   const menuBarStart = useMemo(() => (
     <div className="flex align-items-center gap-2 mr-2">
       <img alt="SteelEagle" src="logo.svg" height="40" className="flex align-items-center justify-content-center mr-2"></img>
@@ -483,11 +413,8 @@ function App() {
       <i className="pi pi-moon" />
       <InputSwitch checked={theme === 'light'} onChange={(e) => setTheme(e.value ? 'light' : 'dark')} />
       <i className="pi pi-sun" />
-      <Button size="small" rounded text label="" icon="pi pi-cog" onClick={(e) => op.current.toggle(e)} />
-      <OverlayPanel ref={op}>{overlayContent}</OverlayPanel>
-
     </div>
-  ), [theme, useLocalVehicle, gamepadDeadzone, overlayContent]);
+  ), [theme, gamepadDeadzone]);
 
 
   const onToggleDetections = useCallback(async (value) => {
@@ -523,7 +450,7 @@ function App() {
     <>
       <Menubar model={items} start={menuBarStart} end={menuBarEnd} />
       <Divider />
-      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand} useLocalVehicle={useLocalVehicle}
+      {selectedMenu == "Control" && <ControlPage vehicles={vehicles} selectedVehicle={selectedVehicle} setSelectedVehicle={setSelectedVehicle} tracking={tracking} setTracking={setTracking} toast={toast} onCommand={onCommand}
         manualControl={manualControl} setManualControl={setManualControl} squadList={squadList} setSquadList={setSquadList} basePlanarVelocity={basePlanarVelocity} setBasePlanarVelocity={setBasePlanarVelocity}
         baseAngularVelocity={baseAngularVelocity} setBaseAngularVelocity={setBaseAngularVelocity} gamepadDeadzone={gamepadDeadzone} setGamepadDeadzone={setGamepadDeadzone}
         takeOffAltitude={takeOffAltitude} setTakeOffAltitude={setTakeOffAltitude} showDetections={showDetections} onToggleDetections={onToggleDetections} gimbalVelocity={gimbalVelocity} setGimbalVelocity={setGimbalVelocity} />}
