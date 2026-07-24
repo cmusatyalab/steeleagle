@@ -40,24 +40,8 @@ from steeleagle_sdk.dsl.compiler.registry import (
     get_action,
     get_event,
 )
-from steeleagle_sdk.protocol.services.control_service_pb2 import (
-    HoldRequest,
-    JoystickRequest,
-    LandRequest,
-    PoseMode,
-    ReturnToHomeRequest,
-    SetGimbalPoseTargetRequest,
-    TakeOffRequest,
-)
-from steeleagle_sdk.protocol.services.mission_service_pb2 import (
-    StartRequest,
-    StopRequest,
-    UploadRequest,
-)
-from steeleagle_sdk.protocol.services.remote_service_pb2 import (
-    CommandRequest,
-)
-from steeleagle_sdk.protocol.services.remote_service_pb2_grpc import RemoteStub
+from app.swarm_client import SwarmClient, VehicleResult
+from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
 
 IDENTITY_MD = (("identity", "server"),)
 FORMAT = "%(message)s"
@@ -152,6 +136,7 @@ class Detection(BaseModel):
 class BackendConnection(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     grpc_channel: grpc.aio.Channel
+    swarm_client: SwarmClient
     redis_connection: redis.Redis
     webserver: str
     show_detections: bool
@@ -241,9 +226,10 @@ async def lifespan(app: FastAPI):
         swarm_controller_channel = grpc.aio.insecure_channel(
             backend["swarm-controller"]
         )
-        remote_stub = RemoteStub(swarm_controller_channel)
+        swarm_stub = swarm_pb2_grpc.SwarmServiceStub(swarm_controller_channel)
+        swarm_client = SwarmClient(swarm_stub)
         logger.info(
-            f" **{b}** Opened remote stubs at GRPC endpoint: {backend['swarm-controller']}"
+            f" **{b}** Opened SwarmService stub at GRPC endpoint: {backend['swarm-controller']}"
         )
         red = redis.Redis(
             host=backend["redis_host"],
@@ -258,7 +244,7 @@ async def lifespan(app: FastAPI):
         webserver = backend["webserver"]
         bc = BackendConnection(
             grpc_channel=swarm_controller_channel,
-            remote_stub=remote_stub,
+            swarm_client=swarm_client,
             redis_connection=red,
             webserver=webserver,
             show_detections=True,
@@ -299,21 +285,10 @@ app.add_middleware(
 )
 
 
-async def _send_stream(call, vehicle: str, command: str):
-    try:
-        # For server-streaming RPCs
-        async for response in call:
-            logger.debug(f"[{vehicle}] Response for {command}: {response.status}")
-    except grpc.aio.AioRpcError as e:
-        logger.error(f"[{vehicle}] Error during {command}: {e}")
-
-
-async def _send_unary(call, vehicle: str, command: str):
-    try:
-        # assuming unary RPC that just acks
-        await call
-    except grpc.aio.AioRpcError as e:
-        logger.error(f"[{vehicle}] Error during {command}: {e}")
+def _current_connection() -> BackendConnection:
+    if backend_key is None:
+        return backend_connections[list(backend_connections)[0]]
+    return backend_connections[backend_key]
 
 
 async def _remote_imagery_broadcaster(vehicle: str):
@@ -574,231 +549,103 @@ async def remote_websocket_endpoint(websocket: WebSocket, vehicle: str):
 
 @app.post("/api/gimbal")
 async def set_gimbal_pose(req: GimbalPose) -> JSONResponse:
-    for v in req.vehicles:
-        if backend_key is None:
-            conn = backend_connections[list(backend_connections)[0]]
-        else:
-            conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
-        try:
-            g = SetGimbalPoseTargetRequest()
-            g.gimbal_id = 0
-            g.pose_mode = PoseMode.OFFSET
-            g.pose.pitch = req.pitch
-            g.pose.yaw = req.yaw
-            g.pose.roll = req.roll
-            cmd = CommandRequest()
-            cmd.method_name = "Control.SetGimbalPoseTarget"
-            cmd.vehicle_id = v
-            cmd.request.Pack(g)
-            call = backend_connections[
-                list(backend_connections)[0]
-            ].remote_stub.Command(cmd)
-            asyncio.create_task(
-                _send_stream(call, vehicle=v, command="SetGimbalPoseTarget")
-            )
-
-        except grpc.aio.AioRpcError as e:
-            raise HTTPException(
-                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-            ) from e
-        except json.JSONDecodeError as e:
-            logger.error(e)
-            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    return JSONResponse(status_code=200, content="Mission start sent!")
+    conn = _current_connection()
+    conn.grpc_channel.get_state(try_to_connect=True)
+    try:
+        results = await conn.swarm_client.set_gimbal_pose(
+            req.vehicles, pitch=req.pitch, yaw=req.yaw, roll=req.roll
+        )
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    return JSONResponse(
+        status_code=200, content={"results": [r.model_dump() for r in results]}
+    )
 
 
 @app.post("/api/start")
 async def start(req: Start) -> JSONResponse:
-    for v in req.vehicles:
-        if backend_key is None:
-            conn = backend_connections[list(backend_connections)[0]]
-        else:
-            conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
-        try:
-            start = StartRequest()
-            cmd = CommandRequest()
-            cmd.method_name = "Mission.Start"
-            cmd.vehicle_id = v
-            cmd.request.Pack(start)
-            call = backend_connections[
-                list(backend_connections)[0]
-            ].remote_stub.Command(cmd)
-            asyncio.create_task(
-                _send_stream(call, vehicle=v, command="remote mission start")
-            )
-
-        except grpc.aio.AioRpcError as e:
-            raise HTTPException(
-                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-            ) from e
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    return JSONResponse(status_code=200, content="Mission start sent!")
+    conn = _current_connection()
+    conn.grpc_channel.get_state(try_to_connect=True)
+    try:
+        results = await conn.swarm_client.start_mission(req.vehicles)
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    return JSONResponse(
+        status_code=200, content={"results": [r.model_dump() for r in results]}
+    )
 
 
 @app.post("/api/upload")
 async def upload(req: Upload) -> JSONResponse:
-    for v in req.vehicles:
-        try:
-            if backend_key is None:
-                conn = backend_connections[list(backend_connections)[0]]
-            else:
-                conn = backend_connections[backend_key]
-            _ = conn.grpc_channel.get_state(
-                try_to_connect=True
-            )  # attempt to reconnect to grpc endpoint
-            up = UploadRequest()
-            up.mission.map = base64.b64decode(req.kml)
-            up.mission.content = base64.b64decode(req.dsl)
-            cmd = CommandRequest()
-            cmd.method_name = "Mission.Upload"
-            cmd.vehicle_id = v
-            cmd.request.Pack(up)
-            call = backend_connections[
-                list(backend_connections)[0]
-            ].remote_stub.Command(cmd)
-            asyncio.create_task(
-                _send_stream(call, vehicle=v, command="remote mission upload")
-            )
-
-        except grpc.aio.AioRpcError as e:
-            raise HTTPException(
-                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-            ) from e
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    return JSONResponse(status_code=200, content="Mission upload complete!")
+    conn = _current_connection()
+    conn.grpc_channel.get_state(try_to_connect=True)
+    try:
+        results = await conn.swarm_client.upload_mission(
+            req.vehicles,
+            mission_json=base64.b64decode(req.dsl).decode("utf-8"),
+            kml_map=base64.b64decode(req.kml),
+        )
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    return JSONResponse(
+        status_code=200, content={"results": [r.model_dump() for r in results]}
+    )
 
 
 @app.post("/api/joystick")
 async def joystick(req: Joystick) -> JSONResponse:
-    for v in req.vehicles:
-        if backend_key is None:
-            conn = backend_connections[list(backend_connections)[0]]
-        else:
-            conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
-        try:
-            logger.info(f"Joystick: {req}")
-            joy = JoystickRequest()
-            joy.velocity.x_vel = req.xvel
-            joy.velocity.y_vel = req.yvel
-            joy.velocity.z_vel = req.zvel
-            joy.velocity.angular_vel = req.angularvel
-            joy.duration.seconds = req.duration
-            cmd = CommandRequest()
-            cmd.method_name = "Control.Joystick"
-            cmd.vehicle_id = v
-            cmd.request.Pack(joy)
-            call = backend_connections[
-                list(backend_connections)[0]
-            ].remote_stub.Command(cmd)
-            asyncio.create_task(
-                _send_stream(call, vehicle=v, command="remote joystick")
-            )
-
-        except grpc.aio.AioRpcError as e:
-            raise HTTPException(
-                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-            ) from e
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    return JSONResponse(status_code=200, content="Joystick movement complete!")
+    conn = _current_connection()
+    conn.grpc_channel.get_state(try_to_connect=True)
+    logger.info(f"Joystick: {req}")
+    try:
+        results = await conn.swarm_client.set_velocity(
+            req.vehicles,
+            x_vel=req.xvel,
+            y_vel=req.yvel,
+            z_vel=req.zvel,
+            angular_vel=req.angularvel,
+        )
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    return JSONResponse(
+        status_code=200, content={"results": [r.model_dump() for r in results]}
+    )
 
 
 @app.post("/api/command")
 async def command(req: Command) -> JSONResponse:
-    response = None
-    for v in req.vehicles:
-        logger.info(f"Sending command to {v}...")
-        if backend_key is None:
-            conn = backend_connections[list(backend_connections)[0]]
-        else:
-            conn = backend_connections[backend_key]
-        _ = conn.grpc_channel.get_state(
-            try_to_connect=True
-        )  # attempt to reconnect to grpc endpoint
-        try:
-            cmd = CommandRequest()
-            cmd.vehicle_id = v
-            if req.takeoff is not None:
-                takeoff = TakeOffRequest()
-                takeoff.take_off_altitude = req.takeoff
-                cmd.method_name = "Control.TakeOff"
-                cmd.request.Pack(takeoff)
-                call = conn.remote_stub.Command(cmd)
-                asyncio.create_task(
-                    _send_stream(call, vehicle=v, command="remote takeoff")
-                )
-                response = JSONResponse(status_code=200, content="Takeoff complete!")
-            elif req.land:
-                land = LandRequest()
-                cmd.method_name = "Control.Land"
-                cmd.request.Pack(land)
-                call = conn.remote_stub.Command(cmd)
-                asyncio.create_task(
-                    _send_stream(call, vehicle=v, command="remote land")
-                )
-                response = JSONResponse(status_code=200, content="Landing complete!")
-            elif req.rth:
-                rth = ReturnToHomeRequest()
-                cmd.method_name = "Control.ReturnToHome"
-                cmd.request.Pack(rth)
-                call = conn.remote_stub.Command(cmd)
-                asyncio.create_task(_send_stream(call, vehicle=v, command="remote rth"))
-                response = JSONResponse(
-                    status_code=200, content="Return to Home command sent."
-                )
-            elif req.hold:
-                hold = HoldRequest()
-                stop = StopRequest()
-                cmd.method_name = "Control.Hold"
-                cmd.request.Pack(hold)
-                call = conn.remote_stub.Command(cmd)
-                asyncio.create_task(
-                    _send_stream(call, vehicle=v, command="remote hold")
-                )
-                cmd.method_name = "Mission.Stop"
-                cmd.request.Pack(stop)
-                call = conn.remote_stub.Command(cmd)
-                asyncio.create_task(
-                    _send_stream(call, vehicle=v, command="remote stop")
-                )
-
-                response = JSONResponse(
-                    status_code=200,
-                    content="Mission canceled and vehicle instructed to hold.",
-                )
-        except grpc.aio.AioRpcError as e:
-            raise HTTPException(
-                status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
-            ) from e
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
-        except Exception as e:
-            logger.error(e)
-            raise HTTPException(status_code=500, detail=f"Error: {str(e)}") from e
-    return response
+    logger.info(f"Sending command to {req.vehicles}...")
+    conn = _current_connection()
+    conn.grpc_channel.get_state(try_to_connect=True)
+    results: list[VehicleResult] = []
+    try:
+        if req.takeoff is not None:
+            results = await conn.swarm_client.take_off(
+                req.vehicles, altitude=req.takeoff
+            )
+        elif req.land:
+            results = await conn.swarm_client.land(req.vehicles)
+        elif req.rth:
+            results = await conn.swarm_client.return_to_home(req.vehicles)
+        elif req.hold:
+            hold_results = await conn.swarm_client.hold(req.vehicles)
+            stop_results = await conn.swarm_client.stop_mission(req.vehicles)
+            results = hold_results + stop_results
+    except grpc.aio.AioRpcError as e:
+        raise HTTPException(
+            status_code=500, detail=f"gRPC call failed: {e.code()} - {e.details()}"
+        ) from e
+    return JSONResponse(
+        status_code=200, content={"results": [r.model_dump() for r in results]}
+    )
 
 
 def _resolve_ref(prop: dict, defs: dict) -> dict:
