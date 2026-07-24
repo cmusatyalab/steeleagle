@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 
 from google.protobuf.message import Message
 from pydantic import BaseModel
+from steeleagle_protocol.v1 import common_pb2
 from steeleagle_protocol.v1.services.driver import control_pb2
 from steeleagle_protocol.v1.services.mission import mission_pb2
 from steeleagle_protocol.v1.services.swarm import swarm_pb2, swarm_pb2_grpc
@@ -71,3 +72,21 @@ class SwarmClient:
             vehicles=vehicles, request=mission_pb2.StopMissionResponse()
         )
         return await _collect_stream(self._stub.SwarmStopMission(request))
+
+    async def set_velocity(
+        self,
+        vehicles: list[str],
+        x_vel: float,
+        y_vel: float,
+        z_vel: float,
+        angular_vel: float,
+    ) -> list[VehicleResult]:
+        request = swarm_pb2.SwarmSetVelocityRequest(
+            vehicles=vehicles,
+            request=control_pb2.SetVelocityRequest(
+                velocity=common_pb2.Velocity(
+                    x_vel=x_vel, y_vel=y_vel, z_vel=z_vel, angular_vel=angular_vel
+                )
+            ),
+        )
+        return await _collect_stream(self._stub.SwarmSetVelocity(request))

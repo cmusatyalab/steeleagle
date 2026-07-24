@@ -1,5 +1,6 @@
 import grpc
 import pytest
+from steeleagle_protocol.v1.services.driver import control_pb2
 from steeleagle_protocol.v1.services.swarm import swarm_pb2, swarm_pb2_grpc
 
 from app.swarm_client import SwarmClient, VehicleResult
@@ -60,6 +61,12 @@ class FakeSwarmServicer(swarm_pb2_grpc.SwarmServiceServicer):
     async def SwarmStopMission(self, request, context):
         async for r in self._run(
             "SwarmStopMission", swarm_pb2.SwarmStopMissionResponse, request, context
+        ):
+            yield r
+
+    async def SwarmSetVelocity(self, request, context):
+        async for r in self._run(
+            "SwarmSetVelocity", swarm_pb2.SwarmSetVelocityResponse, request, context
         ):
             yield r
 
@@ -160,3 +167,23 @@ async def test_stop_mission(swarm_client_factory):
     results = await client.stop_mission(["drone1"])
 
     assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
+
+
+async def test_set_velocity_sends_velocity_and_default_frame(swarm_client_factory):
+    client, servicer = await swarm_client_factory(
+        {"SwarmSetVelocity": [("drone1", 0, "")]}
+    )
+
+    await client.set_velocity(
+        ["drone1"], x_vel=1.0, y_vel=-2.0, z_vel=0.5, angular_vel=10.0
+    )
+
+    sent = servicer.received["SwarmSetVelocity"][0]
+    assert list(sent.vehicles) == ["drone1"]
+    v = sent.request.velocity
+    assert (v.x_vel, v.y_vel, v.z_vel, v.angular_vel) == pytest.approx(
+        (1.0, -2.0, 0.5, 10.0)
+    )
+    # frame is intentionally left unset -> REFERENCE_FRAME_UNSPECIFIED, which
+    # the driver defaults to BODY, matching the old Joystick's implicit frame.
+    assert sent.request.frame == control_pb2.REFERENCE_FRAME_UNSPECIFIED
