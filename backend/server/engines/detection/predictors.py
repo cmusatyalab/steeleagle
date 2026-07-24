@@ -57,8 +57,20 @@ class RfDetrPredictor(Predictor):
         rgb = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
         detections = self.model.predict(rgb, threshold=self.threshold)
         if self.classes is not None:
+            # class_id is not always a valid index into self.classes: rfdetr
+            # reserves a "no-object"/background logit slot at index
+            # len(model.class_names), and pretrained-COCO checkpoints use
+            # sparse COCO category IDs (1-90, with gaps) rather than 0-based
+            # indices. rfdetr's own predict() already resolves those cases
+            # correctly in detections.data["class_name"], so fall back to
+            # that name whenever class_id falls outside our override list.
+            model_names = detections.data["class_name"]
             detections.data["class_name"] = np.array(
-                [self.classes[i] for i in detections.class_id], dtype=object
+                [
+                    self.classes[i] if 0 <= i < len(self.classes) else name
+                    for i, name in zip(detections.class_id, model_names)
+                ],
+                dtype=object,
             )
         return detections
 

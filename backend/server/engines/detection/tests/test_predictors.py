@@ -100,6 +100,33 @@ def test_rfdetr_predictor_applies_classes_override(monkeypatch):
     assert result.data["class_name"].tolist() == ["dog"]  # class_id=1 -> classes[1]
 
 
+def test_rfdetr_predictor_applies_classes_override_ignores_background_sentinel(
+    monkeypatch,
+):
+    # rfdetr's own predict() can legitimately emit a detection whose class_id
+    # equals num_classes (the model's "no-object"/background logit slot),
+    # mapped internally to class_name "__background__". That id is one past
+    # the end of any classes list the caller provides and must not be used
+    # to index into it.
+    class FakeRfDetrModel:
+        def predict(self, image, threshold):
+            return _fake_rfdetr_detections(class_id=2, class_name="__background__")
+
+    monkeypatch.setattr(
+        predictors,
+        "_RFDETR_VARIANTS",
+        {"base": lambda pretrain_weights: FakeRfDetrModel()},
+    )
+
+    predictor = predictors.RfDetrPredictor(
+        "model/x.pth", threshold=0.5, variant="base", classes=["cat", "dog"]
+    )
+
+    result = predictor.predict(np.zeros((2, 2, 3), dtype=np.uint8))
+
+    assert result.data["class_name"].tolist() == ["__background__"]
+
+
 def test_rfdetr_predictor_without_classes_keeps_model_provided_names(monkeypatch):
     class FakeRfDetrModel:
         def predict(self, image, threshold):
