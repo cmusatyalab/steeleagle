@@ -119,3 +119,6 @@ gcs/react/backend/config.toml
 gcs/vscode-client/node_modules/*
 gcs/cli/mission.json
 gcs/cli/drones.toml
+
+# Claude Code superpowers scratch state (progress ledgers, etc.)
+.superpowers/
