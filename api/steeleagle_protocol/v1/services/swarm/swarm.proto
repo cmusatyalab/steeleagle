@@ -234,7 +234,7 @@ message SwarmStartMissionResponse {
 
 message SwarmStopMissionRequest {
   repeated string vehicles = 1; // target vehicles
-  steeleagle_protocol.v1.services.mission.StopMissionResponse request = 2; // proxied request object
+  steeleagle_protocol.v1.services.mission.StopMissionRequest request = 2; // proxied request object
 }
 
 message SwarmStopMissionResponse {
