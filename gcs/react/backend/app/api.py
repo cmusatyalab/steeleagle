@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import binascii
 import json
 import logging
 import os
@@ -40,8 +41,9 @@ from steeleagle_sdk.dsl.compiler.registry import (
     get_action,
     get_event,
 )
-from app.swarm_client import SwarmClient, VehicleResult
 from steeleagle_protocol.v1.services.swarm import swarm_pb2_grpc
+
+from app.swarm_client import SwarmClient, VehicleResult
 
 IDENTITY_MD = (("identity", "server"),)
 FORMAT = "%(message)s"
@@ -584,10 +586,13 @@ async def upload(req: Upload) -> JSONResponse:
     conn = _current_connection()
     conn.grpc_channel.get_state(try_to_connect=True)
     try:
+        mission_json = base64.b64decode(req.dsl).decode("utf-8")
+        kml_map = base64.b64decode(req.kml)
+    except (binascii.Error, UnicodeDecodeError) as e:
+        raise HTTPException(status_code=400, detail="Invalid base64 payload") from e
+    try:
         results = await conn.swarm_client.upload_mission(
-            req.vehicles,
-            mission_json=base64.b64decode(req.dsl).decode("utf-8"),
-            kml_map=base64.b64decode(req.kml),
+            req.vehicles, mission_json=mission_json, kml_map=kml_map
         )
     except grpc.aio.AioRpcError as e:
         raise HTTPException(

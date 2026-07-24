@@ -174,11 +174,18 @@ async def test_return_to_home(swarm_client_factory):
 
 
 async def test_stop_mission(swarm_client_factory):
-    client, _ = await swarm_client_factory({"SwarmStopMission": [("drone1", 0, "")]})
+    client, servicer = await swarm_client_factory(
+        {"SwarmStopMission": [("drone1", 0, "")]}
+    )
 
     results = await client.stop_mission(["drone1"])
 
     assert results == [VehicleResult(vehicle="drone1", success=True, details="")]
+    # SwarmStopMissionRequest.request is typed as StopMissionResponse (not
+    # StopMissionRequest) in the upstream swarm.proto -- an inconsistency
+    # confirmed via protobuf descriptor introspection, not a bug in this code.
+    sent = servicer.received["SwarmStopMission"][0]
+    assert list(sent.vehicles) == ["drone1"]
 
 
 async def test_set_velocity_sends_velocity_and_default_frame(swarm_client_factory):
