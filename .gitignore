@@ -55,6 +55,11 @@ mission/*.config.toml
 # But do NOT ignore __init__.py
 !sdk/api/actions/primitives/__init__.py
 
+# sdk/demo.dsl and its testdata copies are committed example/test fixtures
+# for the DSL validator, not user-generated mission scripts
+!sdk/demo.dsl
+!sdk/dsl/testdata/*.dsl
+
 # Generated
 _gen_*
 
