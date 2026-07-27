@@ -9,6 +9,7 @@ option go_package = "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protoco
 
 import "steeleagle_protocol/v1/common.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
 
 // Information about the vehicle battery.
 message BatteryInfo {
@@ -42,6 +43,21 @@ message PositionInfo {
    * coordinate frame
    */
   Velocity velocity_neu = 5;
+  // Motion status of the vehicle.
+  enum MotionStatus {
+      // the vehicle is not providing information on its motion status
+      MOTION_STATUS_UNSPECIFIED = 0;
+      // the vehicle is holding
+      MOTION_STATUS_HOLDING = 1;
+      // the vehicle is in transit
+      MOTION_STATUS_IN_TRANSIT = 2;
+      // the vehicle is stopped/disarmed
+      MOTION_STATUS_STOPPED = 3;
+  }
+  // current motion status of the vehicle
+  MotionStatus motion_status = 6;
+  // current setpoint of the vehicle
+  google.protobuf.Any setpoint = 7; 
 }
 
 // Status of a gimbal.
@@ -60,64 +76,59 @@ message GimbalInfo {
   repeated GimbalStatus gimbals = 1;
 }
 
-// Battery warnings and alerts.
-enum BatteryWarning {
-  // the vehicle is above 30% battery
-  BATTERY_WARNING_UNSPECIFIED = 0;
-  // the vehicle is below 30% battery
-  BATTERY_WARNING_LOW = 1;
-  // the vehicle is below 15% battery
-  BATTERY_WARNING_CRITICAL = 2;
-}
-
-// GPS fix warnings and alerts.
-enum GPSWarning {
-  // GPS readings are nominal and a fix has been achieved
-  GPS_WARNING_UNSPECIFIED = 0;
-  // weak GPS fix, expect errant global position data
-  GPS_WARNING_WEAK_SIGNAL = 1;
-  // no GPS fix
-  GPS_WARNING_NO_FIX = 2;
-}
-
-// Magnetometer warnings and alerts.
-enum MagnetometerWarning {
-  // magnetometer readings are nominal
-  MAGNETOMETER_WARNING_UNSPECIFIED = 0;
-  // the vehicle is experiencing magnetic perturbations
-  MAGNETOMETER_WARNING_PERTURBATIONS = 1;
-}
-
-// Connection warnings and alerts.
-enum ConnectionWarning {
-  // connection to remote server is nominal
-  CONNECTION_WARNING_UNSPECIFIED = 0;
-  // contact has been lost with the remote server
-  CONNECTION_WARNING_DISCONNECTED = 1;
-  // connection is experiencing interference or is weak
-  CONNECTION_WARNING_WEAK_CONNECTION = 2;
-}
-
-// Compass warnings and alerts.
-enum CompassWarning {
-  // absolute heading is nominal
-  COMPASS_WARNING_UNSPECIFIED = 0;
-  // absolute heading is available but may be incorrect
-  COMPASS_WARNING_WEAK_LOCK = 1;
-  // no absolute heading available from the vehicle
-  COMPASS_WARNING_NO_LOCK = 2;
-}
-
 // Information about all vehicle warning and alerts.
 message AlertInfo {
+  // Battery warnings and alerts.
+  enum BatteryWarning {
+    // the vehicle is above 30% battery
+    BATTERY_WARNING_UNSPECIFIED = 0;
+    // the vehicle is below 30% battery
+    BATTERY_WARNING_LOW = 1;
+    // the vehicle is below 15% battery
+    BATTERY_WARNING_CRITICAL = 2;
+  }
   // battery warnings
   BatteryWarning battery_warning = 1;
+  // GPS fix warnings and alerts.
+  enum GPSWarning {
+    // GPS readings are nominal and a fix has been achieved
+    GPS_WARNING_UNSPECIFIED = 0;
+    // weak GPS fix, expect errant global position data
+    GPS_WARNING_WEAK_SIGNAL = 1;
+    // no GPS fix
+    GPS_WARNING_NO_FIX = 2;
+  }
   // GPS warnings
   GPSWarning gps_warning = 2;
+  // Magnetometer warnings and alerts.
+  enum MagnetometerWarning {
+    // magnetometer readings are nominal
+    MAGNETOMETER_WARNING_UNSPECIFIED = 0;
+    // the vehicle is experiencing magnetic perturbations
+    MAGNETOMETER_WARNING_PERTURBATIONS = 1;
+  }
   // magnetometer warnings
   MagnetometerWarning magnetometer_warning = 3;
+  // Connection warnings and alerts.
+  enum ConnectionWarning {
+    // connection to remote server is nominal
+    CONNECTION_WARNING_UNSPECIFIED = 0;
+    // contact has been lost with the remote server
+    CONNECTION_WARNING_DISCONNECTED = 1;
+    // connection is experiencing interference or is weak
+    CONNECTION_WARNING_WEAK_CONNECTION = 2;
+  }
   // connection warnings
   ConnectionWarning connection_warning = 4;
+  // Compass warnings and alerts.
+  enum CompassWarning {
+    // absolute heading is nominal
+    COMPASS_WARNING_UNSPECIFIED = 0;
+    // absolute heading is available but may be incorrect
+    COMPASS_WARNING_WEAK_LOCK = 1;
+    // no absolute heading available from the vehicle
+    COMPASS_WARNING_NO_LOCK = 2;
+  }
   // compass warnings
   CompassWarning compass_warning = 5;
 }

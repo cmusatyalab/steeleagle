@@ -194,9 +194,9 @@ message ReturnToHomeResponse {}
 
 // Altitude mode switch.
 enum AltitudeMode {
-  ALTITUDE_MODE_UNSPECIFIED = 0; // defaults to `ABSOLUTE`
-  ALTITUDE_MODE_ABSOLUTE = 1; // meters above Mean Sea Level
-  ALTITUDE_MODE_RELATIVE = 2; // meters above takeoff position
+  ALTITUDE_MODE_UNSPECIFIED = 0; // defaults to `RELATIVE`
+  ALTITUDE_MODE_RELATIVE = 1; // meters above takeoff position
+  ALTITUDE_MODE_ABSOLUTE = 2; // meters above Mean Sea Level
 }
 
 // Heading mode switch.

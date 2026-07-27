@@ -24,9 +24,10 @@ _sym_db = _symbol_database.Default()
 
 from steeleagle_protocol.v1 import common_pb2 as steeleagle__protocol_dot_v1_dot_common__pb2
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
+from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\x12)steeleagle_protocol.v1.messages.telemetry\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"-\n\x0b\x42\x61tteryInfo\x12\x1e\n\npercentage\x18\x01 \x01(\rR\npercentage\")\n\x07GPSInfo\x12\x1e\n\nsatellites\x18\x01 \x01(\rR\nsatellites\"\xfe\x02\n\x0cPositionInfo\x12:\n\x04home\x18\x01 \x01(\x0b\x32&.steeleagle_protocol.v1.GlobalPositionR\x04home\x12O\n\x0fglobal_position\x18\x02 \x01(\x0b\x32&.steeleagle_protocol.v1.GlobalPositionR\x0eglobalPosition\x12U\n\x11relative_position\x18\x03 \x01(\x0b\x32(.steeleagle_protocol.v1.RelativePositionR\x10relativePosition\x12\x45\n\rvelocity_body\x18\x04 \x01(\x0b\x32 .steeleagle_protocol.v1.VelocityR\x0cvelocityBody\x12\x43\n\x0cvelocity_neu\x18\x05 \x01(\x0b\x32 .steeleagle_protocol.v1.VelocityR\x0bvelocityNeu\"\x92\x01\n\x0cGimbalStatus\x12\x0e\n\x02id\x18\x01 \x01(\rR\x02id\x12\x39\n\tpose_body\x18\x02 \x01(\x0b\x32\x1c.steeleagle_protocol.v1.PoseR\x08poseBody\x12\x37\n\x08pose_neu\x18\x03 \x01(\x0b\x32\x1c.steeleagle_protocol.v1.PoseR\x07poseNeu\"_\n\nGimbalInfo\x12Q\n\x07gimbals\x18\x01 \x03(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x07gimbals\"\x8b\x04\n\tAlertInfo\x12\x62\n\x0f\x62\x61ttery_warning\x18\x01 \x01(\x0e\x32\x39.steeleagle_protocol.v1.messages.telemetry.BatteryWarningR\x0e\x62\x61tteryWarning\x12V\n\x0bgps_warning\x18\x02 \x01(\x0e\x32\x35.steeleagle_protocol.v1.messages.telemetry.GPSWarningR\ngpsWarning\x12q\n\x14magnetometer_warning\x18\x03 \x01(\x0e\x32>.steeleagle_protocol.v1.messages.telemetry.MagnetometerWarningR\x13magnetometerWarning\x12k\n\x12\x63onnection_warning\x18\x04 \x01(\x0e\x32<.steeleagle_protocol.v1.messages.telemetry.ConnectionWarningR\x11\x63onnectionWarning\x12\x62\n\x0f\x63ompass_warning\x18\x05 \x01(\x0e\x32\x39.steeleagle_protocol.v1.messages.telemetry.CompassWarningR\x0e\x63ompassWarning\"\xfa\x03\n\tTelemetry\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12Y\n\x0c\x62\x61ttery_info\x18\x02 \x01(\x0b\x32\x36.steeleagle_protocol.v1.messages.telemetry.BatteryInfoR\x0b\x62\x61tteryInfo\x12M\n\x08gps_info\x18\x03 \x01(\x0b\x32\x32.steeleagle_protocol.v1.messages.telemetry.GPSInfoR\x07gpsInfo\x12\\\n\rposition_info\x18\x04 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12V\n\x0bgimbal_info\x18\x05 \x01(\x0b\x32\x35.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\ngimbalInfo\x12S\n\nalert_info\x18\x06 \x01(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.AlertInfoR\talertInfo\"\x9c\x03\n\x08RawFrame\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12\x12\n\x04\x64\x61ta\x18\x02 \x01(\x0cR\x04\x64\x61ta\x12\x13\n\x05h_res\x18\x03 \x01(\x04R\x04hRes\x12\x13\n\x05v_res\x18\x04 \x01(\x04R\x04vRes\x12\x13\n\x05\x64_res\x18\x05 \x01(\x04R\x04\x64Res\x12\x1a\n\x08\x63hannels\x18\x06 \x01(\x04R\x08\x63hannels\x12\x0e\n\x02id\x18\x07 \x01(\x04R\x02id\x12\\\n\rposition_info\x18\x08 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12\\\n\rgimbal_status\x18\t \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x0cgimbalStatus\x12\x1b\n\tcamera_id\x18\n \x01(\x04R\x08\x63\x61meraId\"\xd4\x02\n\x0c\x45ncodedFrame\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n\x0c\x65ncoded_data\x18\x02 \x01(\x0cR\x0b\x65ncodedData\x12\x0e\n\x02id\x18\x03 \x01(\x04R\x02id\x12\\\n\rposition_info\x18\x04 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12\\\n\rgimbal_status\x18\x05 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x0cgimbalStatus\x12\x1b\n\tcamera_id\x18\x06 \x01(\x04R\x08\x63\x61meraId*h\n\x0e\x42\x61tteryWarning\x12\x1f\n\x1b\x42\x41TTERY_WARNING_UNSPECIFIED\x10\x00\x12\x17\n\x13\x42\x41TTERY_WARNING_LOW\x10\x01\x12\x1c\n\x18\x42\x41TTERY_WARNING_CRITICAL\x10\x02*^\n\nGPSWarning\x12\x1b\n\x17GPS_WARNING_UNSPECIFIED\x10\x00\x12\x1b\n\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n\x12GPS_WARNING_NO_FIX\x10\x02*c\n\x13MagnetometerWarning\x12$\n MAGNETOMETER_WARNING_UNSPECIFIED\x10\x00\x12&\n\"MAGNETOMETER_WARNING_PERTURBATIONS\x10\x01*\x84\x01\n\x11\x43onnectionWarning\x12\"\n\x1e\x43ONNECTION_WARNING_UNSPECIFIED\x10\x00\x12#\n\x1f\x43ONNECTION_WARNING_DISCONNECTED\x10\x01\x12&\n\"CONNECTION_WARNING_WEAK_CONNECTION\x10\x02*m\n\x0e\x43ompassWarning\x12\x1f\n\x1b\x43OMPASS_WARNING_UNSPECIFIED\x10\x00\x12\x1d\n\x19\x43OMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n\x17\x43OMPASS_WARNING_NO_LOCK\x10\x02\x42\xd7\x02\n-com.steeleagle_protocol.v1.messages.telemetryB\x0eTelemetryProtoP\x01ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\xa2\x02\x04SVMT\xaa\x02(SteeleagleProtocol.V1.Messages.Telemetry\xca\x02(SteeleagleProtocol\\V1\\Messages\\Telemetry\xe2\x02\x34SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\xea\x02+SteeleagleProtocol::V1::Messages::Telemetryb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\x12)steeleagle_protocol.v1.messages.telemetry\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/protobuf/any.proto\"-\n\x0b\x42\x61tteryInfo\x12\x1e\n\npercentage\x18\x01 \x01(\rR\npercentage\")\n\x07GPSInfo\x12\x1e\n\nsatellites\x18\x01 \x01(\rR\nsatellites\"\x9f\x05\n\x0cPositionInfo\x12:\n\x04home\x18\x01 \x01(\x0b\x32&.steeleagle_protocol.v1.GlobalPositionR\x04home\x12O\n\x0fglobal_position\x18\x02 \x01(\x0b\x32&.steeleagle_protocol.v1.GlobalPositionR\x0eglobalPosition\x12U\n\x11relative_position\x18\x03 \x01(\x0b\x32(.steeleagle_protocol.v1.RelativePositionR\x10relativePosition\x12\x45\n\rvelocity_body\x18\x04 \x01(\x0b\x32 .steeleagle_protocol.v1.VelocityR\x0cvelocityBody\x12\x43\n\x0cvelocity_neu\x18\x05 \x01(\x0b\x32 .steeleagle_protocol.v1.VelocityR\x0bvelocityNeu\x12i\n\rmotion_status\x18\x06 \x01(\x0e\x32\x44.steeleagle_protocol.v1.messages.telemetry.PositionInfo.MotionStatusR\x0cmotionStatus\x12\x30\n\x08setpoint\x18\x07 \x01(\x0b\x32\x14.google.protobuf.AnyR\x08setpoint\"\x81\x01\n\x0cMotionStatus\x12\x1d\n\x19MOTION_STATUS_UNSPECIFIED\x10\x00\x12\x19\n\x15MOTION_STATUS_HOLDING\x10\x01\x12\x1c\n\x18MOTION_STATUS_IN_TRANSIT\x10\x02\x12\x19\n\x15MOTION_STATUS_STOPPED\x10\x03\"\x92\x01\n\x0cGimbalStatus\x12\x0e\n\x02id\x18\x01 \x01(\rR\x02id\x12\x39\n\tpose_body\x18\x02 \x01(\x0b\x32\x1c.steeleagle_protocol.v1.PoseR\x08poseBody\x12\x37\n\x08pose_neu\x18\x03 \x01(\x0b\x32\x1c.steeleagle_protocol.v1.PoseR\x07poseNeu\"_\n\nGimbalInfo\x12Q\n\x07gimbals\x18\x01 \x03(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x07gimbals\"\xe2\x08\n\tAlertInfo\x12l\n\x0f\x62\x61ttery_warning\x18\x01 \x01(\x0e\x32\x43.steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarningR\x0e\x62\x61tteryWarning\x12`\n\x0bgps_warning\x18\x02 \x01(\x0e\x32?.steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarningR\ngpsWarning\x12{\n\x14magnetometer_warning\x18\x03 \x01(\x0e\x32H.steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarningR\x13magnetometerWarning\x12u\n\x12\x63onnection_warning\x18\x04 \x01(\x0e\x32\x46.steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarningR\x11\x63onnectionWarning\x12l\n\x0f\x63ompass_warning\x18\x05 \x01(\x0e\x32\x43.steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarningR\x0e\x63ompassWarning\"h\n\x0e\x42\x61tteryWarning\x12\x1f\n\x1b\x42\x41TTERY_WARNING_UNSPECIFIED\x10\x00\x12\x17\n\x13\x42\x41TTERY_WARNING_LOW\x10\x01\x12\x1c\n\x18\x42\x41TTERY_WARNING_CRITICAL\x10\x02\"^\n\nGPSWarning\x12\x1b\n\x17GPS_WARNING_UNSPECIFIED\x10\x00\x12\x1b\n\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n\x12GPS_WARNING_NO_FIX\x10\x02\"c\n\x13MagnetometerWarning\x12$\n MAGNETOMETER_WARNING_UNSPECIFIED\x10\x00\x12&\n\"MAGNETOMETER_WARNING_PERTURBATIONS\x10\x01\"\x84\x01\n\x11\x43onnectionWarning\x12\"\n\x1e\x43ONNECTION_WARNING_UNSPECIFIED\x10\x00\x12#\n\x1f\x43ONNECTION_WARNING_DISCONNECTED\x10\x01\x12&\n\"CONNECTION_WARNING_WEAK_CONNECTION\x10\x02\"m\n\x0e\x43ompassWarning\x12\x1f\n\x1b\x43OMPASS_WARNING_UNSPECIFIED\x10\x00\x12\x1d\n\x19\x43OMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n\x17\x43OMPASS_WARNING_NO_LOCK\x10\x02\"\xfa\x03\n\tTelemetry\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12Y\n\x0c\x62\x61ttery_info\x18\x02 \x01(\x0b\x32\x36.steeleagle_protocol.v1.messages.telemetry.BatteryInfoR\x0b\x62\x61tteryInfo\x12M\n\x08gps_info\x18\x03 \x01(\x0b\x32\x32.steeleagle_protocol.v1.messages.telemetry.GPSInfoR\x07gpsInfo\x12\\\n\rposition_info\x18\x04 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12V\n\x0bgimbal_info\x18\x05 \x01(\x0b\x32\x35.steeleagle_protocol.v1.messages.telemetry.GimbalInfoR\ngimbalInfo\x12S\n\nalert_info\x18\x06 \x01(\x0b\x32\x34.steeleagle_protocol.v1.messages.telemetry.AlertInfoR\talertInfo\"\x9c\x03\n\x08RawFrame\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12\x12\n\x04\x64\x61ta\x18\x02 \x01(\x0cR\x04\x64\x61ta\x12\x13\n\x05h_res\x18\x03 \x01(\x04R\x04hRes\x12\x13\n\x05v_res\x18\x04 \x01(\x04R\x04vRes\x12\x13\n\x05\x64_res\x18\x05 \x01(\x04R\x04\x64Res\x12\x1a\n\x08\x63hannels\x18\x06 \x01(\x04R\x08\x63hannels\x12\x0e\n\x02id\x18\x07 \x01(\x04R\x02id\x12\\\n\rposition_info\x18\x08 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12\\\n\rgimbal_status\x18\t \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x0cgimbalStatus\x12\x1b\n\tcamera_id\x18\n \x01(\x04R\x08\x63\x61meraId\"\xd4\x02\n\x0c\x45ncodedFrame\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n\x0c\x65ncoded_data\x18\x02 \x01(\x0cR\x0b\x65ncodedData\x12\x0e\n\x02id\x18\x03 \x01(\x04R\x02id\x12\\\n\rposition_info\x18\x04 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\x0cpositionInfo\x12\\\n\rgimbal_status\x18\x05 \x01(\x0b\x32\x37.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\x0cgimbalStatus\x12\x1b\n\tcamera_id\x18\x06 \x01(\x04R\x08\x63\x61meraIdB\xd7\x02\n-com.steeleagle_protocol.v1.messages.telemetryB\x0eTelemetryProtoP\x01ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\xa2\x02\x04SVMT\xaa\x02(SteeleagleProtocol.V1.Messages.Telemetry\xca\x02(SteeleagleProtocol\\V1\\Messages\\Telemetry\xe2\x02\x34SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\xea\x02+SteeleagleProtocol::V1::Messages::Telemetryb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,32 +35,34 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'steeleagle_protocol.v1.mess
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n-com.steeleagle_protocol.v1.messages.telemetryB\016TelemetryProtoP\001ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\242\002\004SVMT\252\002(SteeleagleProtocol.V1.Messages.Telemetry\312\002(SteeleagleProtocol\\V1\\Messages\\Telemetry\342\0024SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\352\002+SteeleagleProtocol::V1::Messages::Telemetry'
-  _globals['_BATTERYWARNING']._serialized_start=2688
-  _globals['_BATTERYWARNING']._serialized_end=2792
-  _globals['_GPSWARNING']._serialized_start=2794
-  _globals['_GPSWARNING']._serialized_end=2888
-  _globals['_MAGNETOMETERWARNING']._serialized_start=2890
-  _globals['_MAGNETOMETERWARNING']._serialized_end=2989
-  _globals['_CONNECTIONWARNING']._serialized_start=2992
-  _globals['_CONNECTIONWARNING']._serialized_end=3124
-  _globals['_COMPASSWARNING']._serialized_start=3126
-  _globals['_COMPASSWARNING']._serialized_end=3235
-  _globals['_BATTERYINFO']._serialized_start=174
-  _globals['_BATTERYINFO']._serialized_end=219
-  _globals['_GPSINFO']._serialized_start=221
-  _globals['_GPSINFO']._serialized_end=262
-  _globals['_POSITIONINFO']._serialized_start=265
-  _globals['_POSITIONINFO']._serialized_end=647
-  _globals['_GIMBALSTATUS']._serialized_start=650
-  _globals['_GIMBALSTATUS']._serialized_end=796
-  _globals['_GIMBALINFO']._serialized_start=798
-  _globals['_GIMBALINFO']._serialized_end=893
-  _globals['_ALERTINFO']._serialized_start=896
-  _globals['_ALERTINFO']._serialized_end=1419
-  _globals['_TELEMETRY']._serialized_start=1422
-  _globals['_TELEMETRY']._serialized_end=1928
-  _globals['_RAWFRAME']._serialized_start=1931
-  _globals['_RAWFRAME']._serialized_end=2343
-  _globals['_ENCODEDFRAME']._serialized_start=2346
-  _globals['_ENCODEDFRAME']._serialized_end=2686
+  _globals['_BATTERYINFO']._serialized_start=201
+  _globals['_BATTERYINFO']._serialized_end=246
+  _globals['_GPSINFO']._serialized_start=248
+  _globals['_GPSINFO']._serialized_end=289
+  _globals['_POSITIONINFO']._serialized_start=292
+  _globals['_POSITIONINFO']._serialized_end=963
+  _globals['_POSITIONINFO_MOTIONSTATUS']._serialized_start=834
+  _globals['_POSITIONINFO_MOTIONSTATUS']._serialized_end=963
+  _globals['_GIMBALSTATUS']._serialized_start=966
+  _globals['_GIMBALSTATUS']._serialized_end=1112
+  _globals['_GIMBALINFO']._serialized_start=1114
+  _globals['_GIMBALINFO']._serialized_end=1209
+  _globals['_ALERTINFO']._serialized_start=1212
+  _globals['_ALERTINFO']._serialized_end=2334
+  _globals['_ALERTINFO_BATTERYWARNING']._serialized_start=1787
+  _globals['_ALERTINFO_BATTERYWARNING']._serialized_end=1891
+  _globals['_ALERTINFO_GPSWARNING']._serialized_start=1893
+  _globals['_ALERTINFO_GPSWARNING']._serialized_end=1987
+  _globals['_ALERTINFO_MAGNETOMETERWARNING']._serialized_start=1989
+  _globals['_ALERTINFO_MAGNETOMETERWARNING']._serialized_end=2088
+  _globals['_ALERTINFO_CONNECTIONWARNING']._serialized_start=2091
+  _globals['_ALERTINFO_CONNECTIONWARNING']._serialized_end=2223
+  _globals['_ALERTINFO_COMPASSWARNING']._serialized_start=2225
+  _globals['_ALERTINFO_COMPASSWARNING']._serialized_end=2334
+  _globals['_TELEMETRY']._serialized_start=2337
+  _globals['_TELEMETRY']._serialized_end=2843
+  _globals['_RAWFRAME']._serialized_start=2846
+  _globals['_RAWFRAME']._serialized_end=3258
+  _globals['_ENCODEDFRAME']._serialized_start=3261
+  _globals['_ENCODEDFRAME']._serialized_end=3601
 # @@protoc_insertion_point(module_scope)

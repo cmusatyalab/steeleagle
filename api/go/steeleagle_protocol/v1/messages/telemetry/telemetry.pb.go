@@ -14,6 +14,7 @@ import (
 	v1 "github.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -27,265 +28,322 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Motion status of the vehicle.
+type PositionInfo_MotionStatus int32
+
+const (
+	// the vehicle is not providing information on its motion status
+	PositionInfo_MOTION_STATUS_UNSPECIFIED PositionInfo_MotionStatus = 0
+	// the vehicle is holding
+	PositionInfo_MOTION_STATUS_HOLDING PositionInfo_MotionStatus = 1
+	// the vehicle is in transit
+	PositionInfo_MOTION_STATUS_IN_TRANSIT PositionInfo_MotionStatus = 2
+	// the vehicle is stopped/disarmed
+	PositionInfo_MOTION_STATUS_STOPPED PositionInfo_MotionStatus = 3
+)
+
+// Enum value maps for PositionInfo_MotionStatus.
+var (
+	PositionInfo_MotionStatus_name = map[int32]string{
+		0: "MOTION_STATUS_UNSPECIFIED",
+		1: "MOTION_STATUS_HOLDING",
+		2: "MOTION_STATUS_IN_TRANSIT",
+		3: "MOTION_STATUS_STOPPED",
+	}
+	PositionInfo_MotionStatus_value = map[string]int32{
+		"MOTION_STATUS_UNSPECIFIED": 0,
+		"MOTION_STATUS_HOLDING":     1,
+		"MOTION_STATUS_IN_TRANSIT":  2,
+		"MOTION_STATUS_STOPPED":     3,
+	}
+)
+
+func (x PositionInfo_MotionStatus) Enum() *PositionInfo_MotionStatus {
+	p := new(PositionInfo_MotionStatus)
+	*p = x
+	return p
+}
+
+func (x PositionInfo_MotionStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PositionInfo_MotionStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0].Descriptor()
+}
+
+func (PositionInfo_MotionStatus) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0]
+}
+
+func (x PositionInfo_MotionStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PositionInfo_MotionStatus.Descriptor instead.
+func (PositionInfo_MotionStatus) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2, 0}
+}
+
 // Battery warnings and alerts.
-type BatteryWarning int32
+type AlertInfo_BatteryWarning int32
 
 const (
 	// the vehicle is above 30% battery
-	BatteryWarning_BATTERY_WARNING_UNSPECIFIED BatteryWarning = 0
+	AlertInfo_BATTERY_WARNING_UNSPECIFIED AlertInfo_BatteryWarning = 0
 	// the vehicle is below 30% battery
-	BatteryWarning_BATTERY_WARNING_LOW BatteryWarning = 1
+	AlertInfo_BATTERY_WARNING_LOW AlertInfo_BatteryWarning = 1
 	// the vehicle is below 15% battery
-	BatteryWarning_BATTERY_WARNING_CRITICAL BatteryWarning = 2
+	AlertInfo_BATTERY_WARNING_CRITICAL AlertInfo_BatteryWarning = 2
 )
 
-// Enum value maps for BatteryWarning.
+// Enum value maps for AlertInfo_BatteryWarning.
 var (
-	BatteryWarning_name = map[int32]string{
+	AlertInfo_BatteryWarning_name = map[int32]string{
 		0: "BATTERY_WARNING_UNSPECIFIED",
 		1: "BATTERY_WARNING_LOW",
 		2: "BATTERY_WARNING_CRITICAL",
 	}
-	BatteryWarning_value = map[string]int32{
+	AlertInfo_BatteryWarning_value = map[string]int32{
 		"BATTERY_WARNING_UNSPECIFIED": 0,
 		"BATTERY_WARNING_LOW":         1,
 		"BATTERY_WARNING_CRITICAL":    2,
 	}
 )
 
-func (x BatteryWarning) Enum() *BatteryWarning {
-	p := new(BatteryWarning)
+func (x AlertInfo_BatteryWarning) Enum() *AlertInfo_BatteryWarning {
+	p := new(AlertInfo_BatteryWarning)
 	*p = x
 	return p
 }
 
-func (x BatteryWarning) String() string {
+func (x AlertInfo_BatteryWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (BatteryWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0].Descriptor()
+func (AlertInfo_BatteryWarning) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1].Descriptor()
 }
 
-func (BatteryWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[0]
+func (AlertInfo_BatteryWarning) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1]
 }
 
-func (x BatteryWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_BatteryWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use BatteryWarning.Descriptor instead.
-func (BatteryWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use AlertInfo_BatteryWarning.Descriptor instead.
+func (AlertInfo_BatteryWarning) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 0}
 }
 
 // GPS fix warnings and alerts.
-type GPSWarning int32
+type AlertInfo_GPSWarning int32
 
 const (
 	// GPS readings are nominal and a fix has been achieved
-	GPSWarning_GPS_WARNING_UNSPECIFIED GPSWarning = 0
+	AlertInfo_GPS_WARNING_UNSPECIFIED AlertInfo_GPSWarning = 0
 	// weak GPS fix, expect errant global position data
-	GPSWarning_GPS_WARNING_WEAK_SIGNAL GPSWarning = 1
+	AlertInfo_GPS_WARNING_WEAK_SIGNAL AlertInfo_GPSWarning = 1
 	// no GPS fix
-	GPSWarning_GPS_WARNING_NO_FIX GPSWarning = 2
+	AlertInfo_GPS_WARNING_NO_FIX AlertInfo_GPSWarning = 2
 )
 
-// Enum value maps for GPSWarning.
+// Enum value maps for AlertInfo_GPSWarning.
 var (
-	GPSWarning_name = map[int32]string{
+	AlertInfo_GPSWarning_name = map[int32]string{
 		0: "GPS_WARNING_UNSPECIFIED",
 		1: "GPS_WARNING_WEAK_SIGNAL",
 		2: "GPS_WARNING_NO_FIX",
 	}
-	GPSWarning_value = map[string]int32{
+	AlertInfo_GPSWarning_value = map[string]int32{
 		"GPS_WARNING_UNSPECIFIED": 0,
 		"GPS_WARNING_WEAK_SIGNAL": 1,
 		"GPS_WARNING_NO_FIX":      2,
 	}
 )
 
-func (x GPSWarning) Enum() *GPSWarning {
-	p := new(GPSWarning)
+func (x AlertInfo_GPSWarning) Enum() *AlertInfo_GPSWarning {
+	p := new(AlertInfo_GPSWarning)
 	*p = x
 	return p
 }
 
-func (x GPSWarning) String() string {
+func (x AlertInfo_GPSWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (GPSWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1].Descriptor()
+func (AlertInfo_GPSWarning) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2].Descriptor()
 }
 
-func (GPSWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[1]
+func (AlertInfo_GPSWarning) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2]
 }
 
-func (x GPSWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_GPSWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use GPSWarning.Descriptor instead.
-func (GPSWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use AlertInfo_GPSWarning.Descriptor instead.
+func (AlertInfo_GPSWarning) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 1}
 }
 
 // Magnetometer warnings and alerts.
-type MagnetometerWarning int32
+type AlertInfo_MagnetometerWarning int32
 
 const (
 	// magnetometer readings are nominal
-	MagnetometerWarning_MAGNETOMETER_WARNING_UNSPECIFIED MagnetometerWarning = 0
+	AlertInfo_MAGNETOMETER_WARNING_UNSPECIFIED AlertInfo_MagnetometerWarning = 0
 	// the vehicle is experiencing magnetic perturbations
-	MagnetometerWarning_MAGNETOMETER_WARNING_PERTURBATIONS MagnetometerWarning = 1
+	AlertInfo_MAGNETOMETER_WARNING_PERTURBATIONS AlertInfo_MagnetometerWarning = 1
 )
 
-// Enum value maps for MagnetometerWarning.
+// Enum value maps for AlertInfo_MagnetometerWarning.
 var (
-	MagnetometerWarning_name = map[int32]string{
+	AlertInfo_MagnetometerWarning_name = map[int32]string{
 		0: "MAGNETOMETER_WARNING_UNSPECIFIED",
 		1: "MAGNETOMETER_WARNING_PERTURBATIONS",
 	}
-	MagnetometerWarning_value = map[string]int32{
+	AlertInfo_MagnetometerWarning_value = map[string]int32{
 		"MAGNETOMETER_WARNING_UNSPECIFIED":   0,
 		"MAGNETOMETER_WARNING_PERTURBATIONS": 1,
 	}
 )
 
-func (x MagnetometerWarning) Enum() *MagnetometerWarning {
-	p := new(MagnetometerWarning)
+func (x AlertInfo_MagnetometerWarning) Enum() *AlertInfo_MagnetometerWarning {
+	p := new(AlertInfo_MagnetometerWarning)
 	*p = x
 	return p
 }
 
-func (x MagnetometerWarning) String() string {
+func (x AlertInfo_MagnetometerWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (MagnetometerWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2].Descriptor()
+func (AlertInfo_MagnetometerWarning) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3].Descriptor()
 }
 
-func (MagnetometerWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[2]
+func (AlertInfo_MagnetometerWarning) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3]
 }
 
-func (x MagnetometerWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_MagnetometerWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use MagnetometerWarning.Descriptor instead.
-func (MagnetometerWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use AlertInfo_MagnetometerWarning.Descriptor instead.
+func (AlertInfo_MagnetometerWarning) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 2}
 }
 
 // Connection warnings and alerts.
-type ConnectionWarning int32
+type AlertInfo_ConnectionWarning int32
 
 const (
 	// connection to remote server is nominal
-	ConnectionWarning_CONNECTION_WARNING_UNSPECIFIED ConnectionWarning = 0
+	AlertInfo_CONNECTION_WARNING_UNSPECIFIED AlertInfo_ConnectionWarning = 0
 	// contact has been lost with the remote server
-	ConnectionWarning_CONNECTION_WARNING_DISCONNECTED ConnectionWarning = 1
+	AlertInfo_CONNECTION_WARNING_DISCONNECTED AlertInfo_ConnectionWarning = 1
 	// connection is experiencing interference or is weak
-	ConnectionWarning_CONNECTION_WARNING_WEAK_CONNECTION ConnectionWarning = 2
+	AlertInfo_CONNECTION_WARNING_WEAK_CONNECTION AlertInfo_ConnectionWarning = 2
 )
 
-// Enum value maps for ConnectionWarning.
+// Enum value maps for AlertInfo_ConnectionWarning.
 var (
-	ConnectionWarning_name = map[int32]string{
+	AlertInfo_ConnectionWarning_name = map[int32]string{
 		0: "CONNECTION_WARNING_UNSPECIFIED",
 		1: "CONNECTION_WARNING_DISCONNECTED",
 		2: "CONNECTION_WARNING_WEAK_CONNECTION",
 	}
-	ConnectionWarning_value = map[string]int32{
+	AlertInfo_ConnectionWarning_value = map[string]int32{
 		"CONNECTION_WARNING_UNSPECIFIED":     0,
 		"CONNECTION_WARNING_DISCONNECTED":    1,
 		"CONNECTION_WARNING_WEAK_CONNECTION": 2,
 	}
 )
 
-func (x ConnectionWarning) Enum() *ConnectionWarning {
-	p := new(ConnectionWarning)
+func (x AlertInfo_ConnectionWarning) Enum() *AlertInfo_ConnectionWarning {
+	p := new(AlertInfo_ConnectionWarning)
 	*p = x
 	return p
 }
 
-func (x ConnectionWarning) String() string {
+func (x AlertInfo_ConnectionWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ConnectionWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3].Descriptor()
+func (AlertInfo_ConnectionWarning) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4].Descriptor()
 }
 
-func (ConnectionWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[3]
+func (AlertInfo_ConnectionWarning) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4]
 }
 
-func (x ConnectionWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_ConnectionWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ConnectionWarning.Descriptor instead.
-func (ConnectionWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use AlertInfo_ConnectionWarning.Descriptor instead.
+func (AlertInfo_ConnectionWarning) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 3}
 }
 
 // Compass warnings and alerts.
-type CompassWarning int32
+type AlertInfo_CompassWarning int32
 
 const (
 	// absolute heading is nominal
-	CompassWarning_COMPASS_WARNING_UNSPECIFIED CompassWarning = 0
+	AlertInfo_COMPASS_WARNING_UNSPECIFIED AlertInfo_CompassWarning = 0
 	// absolute heading is available but may be incorrect
-	CompassWarning_COMPASS_WARNING_WEAK_LOCK CompassWarning = 1
+	AlertInfo_COMPASS_WARNING_WEAK_LOCK AlertInfo_CompassWarning = 1
 	// no absolute heading available from the vehicle
-	CompassWarning_COMPASS_WARNING_NO_LOCK CompassWarning = 2
+	AlertInfo_COMPASS_WARNING_NO_LOCK AlertInfo_CompassWarning = 2
 )
 
-// Enum value maps for CompassWarning.
+// Enum value maps for AlertInfo_CompassWarning.
 var (
-	CompassWarning_name = map[int32]string{
+	AlertInfo_CompassWarning_name = map[int32]string{
 		0: "COMPASS_WARNING_UNSPECIFIED",
 		1: "COMPASS_WARNING_WEAK_LOCK",
 		2: "COMPASS_WARNING_NO_LOCK",
 	}
-	CompassWarning_value = map[string]int32{
+	AlertInfo_CompassWarning_value = map[string]int32{
 		"COMPASS_WARNING_UNSPECIFIED": 0,
 		"COMPASS_WARNING_WEAK_LOCK":   1,
 		"COMPASS_WARNING_NO_LOCK":     2,
 	}
 )
 
-func (x CompassWarning) Enum() *CompassWarning {
-	p := new(CompassWarning)
+func (x AlertInfo_CompassWarning) Enum() *AlertInfo_CompassWarning {
+	p := new(AlertInfo_CompassWarning)
 	*p = x
 	return p
 }
 
-func (x CompassWarning) String() string {
+func (x AlertInfo_CompassWarning) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (CompassWarning) Descriptor() protoreflect.EnumDescriptor {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4].Descriptor()
+func (AlertInfo_CompassWarning) Descriptor() protoreflect.EnumDescriptor {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[5].Descriptor()
 }
 
-func (CompassWarning) Type() protoreflect.EnumType {
-	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[4]
+func (AlertInfo_CompassWarning) Type() protoreflect.EnumType {
+	return &file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes[5]
 }
 
-func (x CompassWarning) Number() protoreflect.EnumNumber {
+func (x AlertInfo_CompassWarning) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use CompassWarning.Descriptor instead.
-func (CompassWarning) EnumDescriptor() ([]byte, []int) {
-	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use AlertInfo_CompassWarning.Descriptor instead.
+func (AlertInfo_CompassWarning) EnumDescriptor() ([]byte, []int) {
+	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5, 4}
 }
 
 // Information about the vehicle battery.
@@ -394,7 +452,11 @@ type PositionInfo struct {
 	VelocityBody *v1.Velocity `protobuf:"bytes,4,opt,name=velocity_body,json=velocityBody,proto3" json:"velocity_body,omitempty"`
 	// current velocity of the vehicle in the global NEU (North, East, Up)
 	// coordinate frame
-	VelocityNeu   *v1.Velocity `protobuf:"bytes,5,opt,name=velocity_neu,json=velocityNeu,proto3" json:"velocity_neu,omitempty"`
+	VelocityNeu *v1.Velocity `protobuf:"bytes,5,opt,name=velocity_neu,json=velocityNeu,proto3" json:"velocity_neu,omitempty"`
+	// current motion status of the vehicle
+	MotionStatus PositionInfo_MotionStatus `protobuf:"varint,6,opt,name=motion_status,json=motionStatus,proto3,enum=steeleagle_protocol.v1.messages.telemetry.PositionInfo_MotionStatus" json:"motion_status,omitempty"`
+	// current setpoint of the vehicle
+	Setpoint      *anypb.Any `protobuf:"bytes,7,opt,name=setpoint,proto3" json:"setpoint,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -460,6 +522,20 @@ func (x *PositionInfo) GetVelocityBody() *v1.Velocity {
 func (x *PositionInfo) GetVelocityNeu() *v1.Velocity {
 	if x != nil {
 		return x.VelocityNeu
+	}
+	return nil
+}
+
+func (x *PositionInfo) GetMotionStatus() PositionInfo_MotionStatus {
+	if x != nil {
+		return x.MotionStatus
+	}
+	return PositionInfo_MOTION_STATUS_UNSPECIFIED
+}
+
+func (x *PositionInfo) GetSetpoint() *anypb.Any {
+	if x != nil {
+		return x.Setpoint
 	}
 	return nil
 }
@@ -578,15 +654,15 @@ func (x *GimbalInfo) GetGimbals() []*GimbalStatus {
 type AlertInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// battery warnings
-	BatteryWarning BatteryWarning `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.BatteryWarning" json:"battery_warning,omitempty"`
+	BatteryWarning AlertInfo_BatteryWarning `protobuf:"varint,1,opt,name=battery_warning,json=batteryWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_BatteryWarning" json:"battery_warning,omitempty"`
 	// GPS warnings
-	GpsWarning GPSWarning `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.GPSWarning" json:"gps_warning,omitempty"`
+	GpsWarning AlertInfo_GPSWarning `protobuf:"varint,2,opt,name=gps_warning,json=gpsWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_GPSWarning" json:"gps_warning,omitempty"`
 	// magnetometer warnings
-	MagnetometerWarning MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning" json:"magnetometer_warning,omitempty"`
+	MagnetometerWarning AlertInfo_MagnetometerWarning `protobuf:"varint,3,opt,name=magnetometer_warning,json=magnetometerWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_MagnetometerWarning" json:"magnetometer_warning,omitempty"`
 	// connection warnings
-	ConnectionWarning ConnectionWarning `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.ConnectionWarning" json:"connection_warning,omitempty"`
+	ConnectionWarning AlertInfo_ConnectionWarning `protobuf:"varint,4,opt,name=connection_warning,json=connectionWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_ConnectionWarning" json:"connection_warning,omitempty"`
 	// compass warnings
-	CompassWarning CompassWarning `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.CompassWarning" json:"compass_warning,omitempty"`
+	CompassWarning AlertInfo_CompassWarning `protobuf:"varint,5,opt,name=compass_warning,json=compassWarning,proto3,enum=steeleagle_protocol.v1.messages.telemetry.AlertInfo_CompassWarning" json:"compass_warning,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -621,39 +697,39 @@ func (*AlertInfo) Descriptor() ([]byte, []int) {
 	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *AlertInfo) GetBatteryWarning() BatteryWarning {
+func (x *AlertInfo) GetBatteryWarning() AlertInfo_BatteryWarning {
 	if x != nil {
 		return x.BatteryWarning
 	}
-	return BatteryWarning_BATTERY_WARNING_UNSPECIFIED
+	return AlertInfo_BATTERY_WARNING_UNSPECIFIED
 }
 
-func (x *AlertInfo) GetGpsWarning() GPSWarning {
+func (x *AlertInfo) GetGpsWarning() AlertInfo_GPSWarning {
 	if x != nil {
 		return x.GpsWarning
 	}
-	return GPSWarning_GPS_WARNING_UNSPECIFIED
+	return AlertInfo_GPS_WARNING_UNSPECIFIED
 }
 
-func (x *AlertInfo) GetMagnetometerWarning() MagnetometerWarning {
+func (x *AlertInfo) GetMagnetometerWarning() AlertInfo_MagnetometerWarning {
 	if x != nil {
 		return x.MagnetometerWarning
 	}
-	return MagnetometerWarning_MAGNETOMETER_WARNING_UNSPECIFIED
+	return AlertInfo_MAGNETOMETER_WARNING_UNSPECIFIED
 }
 
-func (x *AlertInfo) GetConnectionWarning() ConnectionWarning {
+func (x *AlertInfo) GetConnectionWarning() AlertInfo_ConnectionWarning {
 	if x != nil {
 		return x.ConnectionWarning
 	}
-	return ConnectionWarning_CONNECTION_WARNING_UNSPECIFIED
+	return AlertInfo_CONNECTION_WARNING_UNSPECIFIED
 }
 
-func (x *AlertInfo) GetCompassWarning() CompassWarning {
+func (x *AlertInfo) GetCompassWarning() AlertInfo_CompassWarning {
 	if x != nil {
 		return x.CompassWarning
 	}
-	return CompassWarning_COMPASS_WARNING_UNSPECIFIED
+	return AlertInfo_COMPASS_WARNING_UNSPECIFIED
 }
 
 // Telemetry message for the vehicle, originating from the driver module.
@@ -972,7 +1048,7 @@ var File_steeleagle_protocol_v1_messages_telemetry_telemetry_proto protoreflect.
 
 const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "" +
 	"\n" +
-	"9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\x12)steeleagle_protocol.v1.messages.telemetry\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"-\n" +
+	"9steeleagle_protocol/v1/messages/telemetry/telemetry.proto\x12)steeleagle_protocol.v1.messages.telemetry\x1a#steeleagle_protocol/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/protobuf/any.proto\"-\n" +
 	"\vBatteryInfo\x12\x1e\n" +
 	"\n" +
 	"percentage\x18\x01 \x01(\rR\n" +
@@ -980,27 +1056,54 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\aGPSInfo\x12\x1e\n" +
 	"\n" +
 	"satellites\x18\x01 \x01(\rR\n" +
-	"satellites\"\xfe\x02\n" +
+	"satellites\"\x9f\x05\n" +
 	"\fPositionInfo\x12:\n" +
 	"\x04home\x18\x01 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\x04home\x12O\n" +
 	"\x0fglobal_position\x18\x02 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\x0eglobalPosition\x12U\n" +
 	"\x11relative_position\x18\x03 \x01(\v2(.steeleagle_protocol.v1.RelativePositionR\x10relativePosition\x12E\n" +
 	"\rvelocity_body\x18\x04 \x01(\v2 .steeleagle_protocol.v1.VelocityR\fvelocityBody\x12C\n" +
-	"\fvelocity_neu\x18\x05 \x01(\v2 .steeleagle_protocol.v1.VelocityR\vvelocityNeu\"\x92\x01\n" +
+	"\fvelocity_neu\x18\x05 \x01(\v2 .steeleagle_protocol.v1.VelocityR\vvelocityNeu\x12i\n" +
+	"\rmotion_status\x18\x06 \x01(\x0e2D.steeleagle_protocol.v1.messages.telemetry.PositionInfo.MotionStatusR\fmotionStatus\x120\n" +
+	"\bsetpoint\x18\a \x01(\v2\x14.google.protobuf.AnyR\bsetpoint\"\x81\x01\n" +
+	"\fMotionStatus\x12\x1d\n" +
+	"\x19MOTION_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15MOTION_STATUS_HOLDING\x10\x01\x12\x1c\n" +
+	"\x18MOTION_STATUS_IN_TRANSIT\x10\x02\x12\x19\n" +
+	"\x15MOTION_STATUS_STOPPED\x10\x03\"\x92\x01\n" +
 	"\fGimbalStatus\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x129\n" +
 	"\tpose_body\x18\x02 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\bposeBody\x127\n" +
 	"\bpose_neu\x18\x03 \x01(\v2\x1c.steeleagle_protocol.v1.PoseR\aposeNeu\"_\n" +
 	"\n" +
 	"GimbalInfo\x12Q\n" +
-	"\agimbals\x18\x01 \x03(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\agimbals\"\x8b\x04\n" +
-	"\tAlertInfo\x12b\n" +
-	"\x0fbattery_warning\x18\x01 \x01(\x0e29.steeleagle_protocol.v1.messages.telemetry.BatteryWarningR\x0ebatteryWarning\x12V\n" +
-	"\vgps_warning\x18\x02 \x01(\x0e25.steeleagle_protocol.v1.messages.telemetry.GPSWarningR\n" +
-	"gpsWarning\x12q\n" +
-	"\x14magnetometer_warning\x18\x03 \x01(\x0e2>.steeleagle_protocol.v1.messages.telemetry.MagnetometerWarningR\x13magnetometerWarning\x12k\n" +
-	"\x12connection_warning\x18\x04 \x01(\x0e2<.steeleagle_protocol.v1.messages.telemetry.ConnectionWarningR\x11connectionWarning\x12b\n" +
-	"\x0fcompass_warning\x18\x05 \x01(\x0e29.steeleagle_protocol.v1.messages.telemetry.CompassWarningR\x0ecompassWarning\"\xfa\x03\n" +
+	"\agimbals\x18\x01 \x03(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\agimbals\"\xe2\b\n" +
+	"\tAlertInfo\x12l\n" +
+	"\x0fbattery_warning\x18\x01 \x01(\x0e2C.steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarningR\x0ebatteryWarning\x12`\n" +
+	"\vgps_warning\x18\x02 \x01(\x0e2?.steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarningR\n" +
+	"gpsWarning\x12{\n" +
+	"\x14magnetometer_warning\x18\x03 \x01(\x0e2H.steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarningR\x13magnetometerWarning\x12u\n" +
+	"\x12connection_warning\x18\x04 \x01(\x0e2F.steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarningR\x11connectionWarning\x12l\n" +
+	"\x0fcompass_warning\x18\x05 \x01(\x0e2C.steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarningR\x0ecompassWarning\"h\n" +
+	"\x0eBatteryWarning\x12\x1f\n" +
+	"\x1bBATTERY_WARNING_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13BATTERY_WARNING_LOW\x10\x01\x12\x1c\n" +
+	"\x18BATTERY_WARNING_CRITICAL\x10\x02\"^\n" +
+	"\n" +
+	"GPSWarning\x12\x1b\n" +
+	"\x17GPS_WARNING_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n" +
+	"\x12GPS_WARNING_NO_FIX\x10\x02\"c\n" +
+	"\x13MagnetometerWarning\x12$\n" +
+	" MAGNETOMETER_WARNING_UNSPECIFIED\x10\x00\x12&\n" +
+	"\"MAGNETOMETER_WARNING_PERTURBATIONS\x10\x01\"\x84\x01\n" +
+	"\x11ConnectionWarning\x12\"\n" +
+	"\x1eCONNECTION_WARNING_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fCONNECTION_WARNING_DISCONNECTED\x10\x01\x12&\n" +
+	"\"CONNECTION_WARNING_WEAK_CONNECTION\x10\x02\"m\n" +
+	"\x0eCompassWarning\x12\x1f\n" +
+	"\x1bCOMPASS_WARNING_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19COMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n" +
+	"\x17COMPASS_WARNING_NO_LOCK\x10\x02\"\xfa\x03\n" +
 	"\tTelemetry\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12Y\n" +
 	"\fbattery_info\x18\x02 \x01(\v26.steeleagle_protocol.v1.messages.telemetry.BatteryInfoR\vbatteryInfo\x12M\n" +
@@ -1028,27 +1131,7 @@ const file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc = "
 	"\x02id\x18\x03 \x01(\x04R\x02id\x12\\\n" +
 	"\rposition_info\x18\x04 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.PositionInfoR\fpositionInfo\x12\\\n" +
 	"\rgimbal_status\x18\x05 \x01(\v27.steeleagle_protocol.v1.messages.telemetry.GimbalStatusR\fgimbalStatus\x12\x1b\n" +
-	"\tcamera_id\x18\x06 \x01(\x04R\bcameraId*h\n" +
-	"\x0eBatteryWarning\x12\x1f\n" +
-	"\x1bBATTERY_WARNING_UNSPECIFIED\x10\x00\x12\x17\n" +
-	"\x13BATTERY_WARNING_LOW\x10\x01\x12\x1c\n" +
-	"\x18BATTERY_WARNING_CRITICAL\x10\x02*^\n" +
-	"\n" +
-	"GPSWarning\x12\x1b\n" +
-	"\x17GPS_WARNING_UNSPECIFIED\x10\x00\x12\x1b\n" +
-	"\x17GPS_WARNING_WEAK_SIGNAL\x10\x01\x12\x16\n" +
-	"\x12GPS_WARNING_NO_FIX\x10\x02*c\n" +
-	"\x13MagnetometerWarning\x12$\n" +
-	" MAGNETOMETER_WARNING_UNSPECIFIED\x10\x00\x12&\n" +
-	"\"MAGNETOMETER_WARNING_PERTURBATIONS\x10\x01*\x84\x01\n" +
-	"\x11ConnectionWarning\x12\"\n" +
-	"\x1eCONNECTION_WARNING_UNSPECIFIED\x10\x00\x12#\n" +
-	"\x1fCONNECTION_WARNING_DISCONNECTED\x10\x01\x12&\n" +
-	"\"CONNECTION_WARNING_WEAK_CONNECTION\x10\x02*m\n" +
-	"\x0eCompassWarning\x12\x1f\n" +
-	"\x1bCOMPASS_WARNING_UNSPECIFIED\x10\x00\x12\x1d\n" +
-	"\x19COMPASS_WARNING_WEAK_LOCK\x10\x01\x12\x1b\n" +
-	"\x17COMPASS_WARNING_NO_LOCK\x10\x02B\xd7\x02\n" +
+	"\tcamera_id\x18\x06 \x01(\x04R\bcameraIdB\xd7\x02\n" +
 	"-com.steeleagle_protocol.v1.messages.telemetryB\x0eTelemetryProtoP\x01ZRgithub.com/cmusatyalab/steeleagle/api/go/steeleagle_protocol/v1/messages/telemetry\xa2\x02\x04SVMT\xaa\x02(SteeleagleProtocol.V1.Messages.Telemetry\xca\x02(SteeleagleProtocol\\V1\\Messages\\Telemetry\xe2\x024SteeleagleProtocol\\V1\\Messages\\Telemetry\\GPBMetadata\xea\x02+SteeleagleProtocol::V1::Messages::Telemetryb\x06proto3"
 
 var (
@@ -1063,60 +1146,64 @@ func file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescGZIP(
 	return file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDescData
 }
 
-var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_goTypes = []any{
-	(BatteryWarning)(0),           // 0: steeleagle_protocol.v1.messages.telemetry.BatteryWarning
-	(GPSWarning)(0),               // 1: steeleagle_protocol.v1.messages.telemetry.GPSWarning
-	(MagnetometerWarning)(0),      // 2: steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning
-	(ConnectionWarning)(0),        // 3: steeleagle_protocol.v1.messages.telemetry.ConnectionWarning
-	(CompassWarning)(0),           // 4: steeleagle_protocol.v1.messages.telemetry.CompassWarning
-	(*BatteryInfo)(nil),           // 5: steeleagle_protocol.v1.messages.telemetry.BatteryInfo
-	(*GPSInfo)(nil),               // 6: steeleagle_protocol.v1.messages.telemetry.GPSInfo
-	(*PositionInfo)(nil),          // 7: steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	(*GimbalStatus)(nil),          // 8: steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	(*GimbalInfo)(nil),            // 9: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	(*AlertInfo)(nil),             // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo
-	(*Telemetry)(nil),             // 11: steeleagle_protocol.v1.messages.telemetry.Telemetry
-	(*RawFrame)(nil),              // 12: steeleagle_protocol.v1.messages.telemetry.RawFrame
-	(*EncodedFrame)(nil),          // 13: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
-	(*v1.GlobalPosition)(nil),     // 14: steeleagle_protocol.v1.GlobalPosition
-	(*v1.RelativePosition)(nil),   // 15: steeleagle_protocol.v1.RelativePosition
-	(*v1.Velocity)(nil),           // 16: steeleagle_protocol.v1.Velocity
-	(*v1.Pose)(nil),               // 17: steeleagle_protocol.v1.Pose
-	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
+	(PositionInfo_MotionStatus)(0),     // 0: steeleagle_protocol.v1.messages.telemetry.PositionInfo.MotionStatus
+	(AlertInfo_BatteryWarning)(0),      // 1: steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
+	(AlertInfo_GPSWarning)(0),          // 2: steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
+	(AlertInfo_MagnetometerWarning)(0), // 3: steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
+	(AlertInfo_ConnectionWarning)(0),   // 4: steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
+	(AlertInfo_CompassWarning)(0),      // 5: steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
+	(*BatteryInfo)(nil),                // 6: steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	(*GPSInfo)(nil),                    // 7: steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	(*PositionInfo)(nil),               // 8: steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	(*GimbalStatus)(nil),               // 9: steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	(*GimbalInfo)(nil),                 // 10: steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	(*AlertInfo)(nil),                  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	(*Telemetry)(nil),                  // 12: steeleagle_protocol.v1.messages.telemetry.Telemetry
+	(*RawFrame)(nil),                   // 13: steeleagle_protocol.v1.messages.telemetry.RawFrame
+	(*EncodedFrame)(nil),               // 14: steeleagle_protocol.v1.messages.telemetry.EncodedFrame
+	(*v1.GlobalPosition)(nil),          // 15: steeleagle_protocol.v1.GlobalPosition
+	(*v1.RelativePosition)(nil),        // 16: steeleagle_protocol.v1.RelativePosition
+	(*v1.Velocity)(nil),                // 17: steeleagle_protocol.v1.Velocity
+	(*anypb.Any)(nil),                  // 18: google.protobuf.Any
+	(*v1.Pose)(nil),                    // 19: steeleagle_protocol.v1.Pose
+	(*timestamppb.Timestamp)(nil),      // 20: google.protobuf.Timestamp
 }
 var file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_depIdxs = []int32{
-	14, // 0: steeleagle_protocol.v1.messages.telemetry.PositionInfo.home:type_name -> steeleagle_protocol.v1.GlobalPosition
-	14, // 1: steeleagle_protocol.v1.messages.telemetry.PositionInfo.global_position:type_name -> steeleagle_protocol.v1.GlobalPosition
-	15, // 2: steeleagle_protocol.v1.messages.telemetry.PositionInfo.relative_position:type_name -> steeleagle_protocol.v1.RelativePosition
-	16, // 3: steeleagle_protocol.v1.messages.telemetry.PositionInfo.velocity_body:type_name -> steeleagle_protocol.v1.Velocity
-	16, // 4: steeleagle_protocol.v1.messages.telemetry.PositionInfo.velocity_neu:type_name -> steeleagle_protocol.v1.Velocity
-	17, // 5: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
-	17, // 6: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
-	8,  // 7: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	0,  // 8: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryWarning
-	1,  // 9: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSWarning
-	2,  // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.MagnetometerWarning
-	3,  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.ConnectionWarning
-	4,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.CompassWarning
-	18, // 13: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
-	5,  // 14: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
-	6,  // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
-	7,  // 16: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	9,  // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
-	10, // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
-	18, // 19: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
-	7,  // 20: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	8,  // 21: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	18, // 22: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
-	7,  // 23: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
-	8,  // 24: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	15, // 0: steeleagle_protocol.v1.messages.telemetry.PositionInfo.home:type_name -> steeleagle_protocol.v1.GlobalPosition
+	15, // 1: steeleagle_protocol.v1.messages.telemetry.PositionInfo.global_position:type_name -> steeleagle_protocol.v1.GlobalPosition
+	16, // 2: steeleagle_protocol.v1.messages.telemetry.PositionInfo.relative_position:type_name -> steeleagle_protocol.v1.RelativePosition
+	17, // 3: steeleagle_protocol.v1.messages.telemetry.PositionInfo.velocity_body:type_name -> steeleagle_protocol.v1.Velocity
+	17, // 4: steeleagle_protocol.v1.messages.telemetry.PositionInfo.velocity_neu:type_name -> steeleagle_protocol.v1.Velocity
+	0,  // 5: steeleagle_protocol.v1.messages.telemetry.PositionInfo.motion_status:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo.MotionStatus
+	18, // 6: steeleagle_protocol.v1.messages.telemetry.PositionInfo.setpoint:type_name -> google.protobuf.Any
+	19, // 7: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_body:type_name -> steeleagle_protocol.v1.Pose
+	19, // 8: steeleagle_protocol.v1.messages.telemetry.GimbalStatus.pose_neu:type_name -> steeleagle_protocol.v1.Pose
+	9,  // 9: steeleagle_protocol.v1.messages.telemetry.GimbalInfo.gimbals:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	1,  // 10: steeleagle_protocol.v1.messages.telemetry.AlertInfo.battery_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.BatteryWarning
+	2,  // 11: steeleagle_protocol.v1.messages.telemetry.AlertInfo.gps_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.GPSWarning
+	3,  // 12: steeleagle_protocol.v1.messages.telemetry.AlertInfo.magnetometer_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.MagnetometerWarning
+	4,  // 13: steeleagle_protocol.v1.messages.telemetry.AlertInfo.connection_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.ConnectionWarning
+	5,  // 14: steeleagle_protocol.v1.messages.telemetry.AlertInfo.compass_warning:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo.CompassWarning
+	20, // 15: steeleagle_protocol.v1.messages.telemetry.Telemetry.timestamp:type_name -> google.protobuf.Timestamp
+	6,  // 16: steeleagle_protocol.v1.messages.telemetry.Telemetry.battery_info:type_name -> steeleagle_protocol.v1.messages.telemetry.BatteryInfo
+	7,  // 17: steeleagle_protocol.v1.messages.telemetry.Telemetry.gps_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GPSInfo
+	8,  // 18: steeleagle_protocol.v1.messages.telemetry.Telemetry.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	10, // 19: steeleagle_protocol.v1.messages.telemetry.Telemetry.gimbal_info:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalInfo
+	11, // 20: steeleagle_protocol.v1.messages.telemetry.Telemetry.alert_info:type_name -> steeleagle_protocol.v1.messages.telemetry.AlertInfo
+	20, // 21: steeleagle_protocol.v1.messages.telemetry.RawFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 22: steeleagle_protocol.v1.messages.telemetry.RawFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 23: steeleagle_protocol.v1.messages.telemetry.RawFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	20, // 24: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.timestamp:type_name -> google.protobuf.Timestamp
+	8,  // 25: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.position_info:type_name -> steeleagle_protocol.v1.messages.telemetry.PositionInfo
+	9,  // 26: steeleagle_protocol.v1.messages.telemetry.EncodedFrame.gimbal_status:type_name -> steeleagle_protocol.v1.messages.telemetry.GimbalStatus
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() }
@@ -1129,7 +1216,7 @@ func file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc), len(file_steeleagle_protocol_v1_messages_telemetry_telemetry_proto_rawDesc)),
-			NumEnums:      5,
+			NumEnums:      6,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,

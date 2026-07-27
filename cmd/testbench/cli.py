@@ -209,9 +209,9 @@ async def consume_keys(
                 elif key == "s":
                     velocity.x_vel = -5.0
                 elif key == "j":
-                    velocity.angular_vel = -20.0
+                    velocity.angular_vel = -120.0
                 elif key == "l":
-                    velocity.angular_vel = 20.0
+                    velocity.angular_vel = 120.0
                 elif key == "i":
                     velocity.z_vel = 5.0
                 elif key == "k":

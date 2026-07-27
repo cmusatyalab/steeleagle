@@ -3,43 +3,68 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/cmusatyalab/steeleagle/core/util"
 	"github.com/cmusatyalab/steeleagle/core/vehicle"
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	driverAviary      = "aviary"
-	driverParrotAnafi = "parrot-anafi"
+// PluginConfig models a [vehicles.driver] or [vehicles.mission] table,
+// each of which points at a plugin and a list of CLI-style arguments
+// for that plugin.
+type PluginConfig struct {
+	Plugin string   `toml:"plugin"`
+	Args   []string `toml:"args"`
+}
 
-	parrotAnafiPluginPathEnv = "PARROT_ANAFI_PLUGIN_PATH"
-)
+// Vehicle models a single [[vehicles]] entry.
+type Vehicle struct {
+	Name     string        `toml:"name"`
+	Simulate bool          `toml:"simulate,omitempty"`
+	Plugin   string        `toml:"plugin,omitempty"`
+	Driver   *PluginConfig `toml:"driver"`
+	Mission  *PluginConfig `toml:"mission,omitempty"`
+}
+
+// Config models the top-level document: an array of vehicle tables.
+type Config struct {
+	Vehicles []Vehicle `toml:"vehicles"`
+}
 
 func main() {
-	driver := flag.String("driver", driverAviary, "driver plugin to run: aviary or parrot-anafi")
-	droneIP := flag.String("ip", "", "ip address of the drone, defaults to the driver's own default if unset (parrot-anafi driver only)")
-	parrotAnafiPluginPath := flag.String("parrot-anafi-plugin-path", os.Getenv(parrotAnafiPluginPathEnv), "path to the parrot-anafi driver plugin, can also be set via "+parrotAnafiPluginPathEnv+" (parrot-anafi driver only)")
+	path := flag.String("config", "config.toml", "path to the TOML config file")
 	flag.Parse()
 
-	name := "test-vehicle"
-	pluginPath, err := util.GetPluginDir()
+	data, err := os.ReadFile(*path)
 	if err != nil {
-		log.Fatal().Err(err).Msg("couldn't get plugin directory")
+		log.Fatalf("reading %s: %v", *path, err)
 	}
-	vehiclePath, err := util.GetVehicleDirByName(name)
+
+	var cfg Config
+	md, err := toml.Decode(string(data), &cfg)
 	if err != nil {
-		log.Fatal().Err(err).Msg("couldn't get vehicle directory")
+		log.Fatalf("parsing TOML: %v", err)
+	}
+
+	// Warn about any keys present in the file that weren't mapped onto
+	// the Config struct
+	if undecoded := md.Undecoded(); len(undecoded) > 0 {
+		fmt.Println("warning: unrecognized keys in config:")
+		for _, k := range undecoded {
+			fmt.Printf("  - %s\n", k)
+		}
 	}
 
 	var driverPlugin util.Plugin
 	switch *driver {
 	case driverAviary:
 		// Build shim plugin for aviary
-		sockPath := filepath.Join(pluginPath, "aviary", name, "services.sock")
+		sockPath := filepath.Join(pluginPath, "aviary", name, "services")
 		driverPlugin, err = util.CreateShimPlugin(sockPath, "")
 		if err != nil {
 			log.Fatal().Err(err).Msg("couldn't create driver plugin")

@@ -79,22 +79,22 @@ func (ReturnToHomeEndBehavior) EnumDescriptor() ([]byte, []int) {
 type AltitudeMode int32
 
 const (
-	AltitudeMode_ALTITUDE_MODE_UNSPECIFIED AltitudeMode = 0 // defaults to `ABSOLUTE`
-	AltitudeMode_ALTITUDE_MODE_ABSOLUTE    AltitudeMode = 1 // meters above Mean Sea Level
-	AltitudeMode_ALTITUDE_MODE_RELATIVE    AltitudeMode = 2 // meters above takeoff position
+	AltitudeMode_ALTITUDE_MODE_UNSPECIFIED AltitudeMode = 0 // defaults to `RELATIVE`
+	AltitudeMode_ALTITUDE_MODE_RELATIVE    AltitudeMode = 1 // meters above takeoff position
+	AltitudeMode_ALTITUDE_MODE_ABSOLUTE    AltitudeMode = 2 // meters above Mean Sea Level
 )
 
 // Enum value maps for AltitudeMode.
 var (
 	AltitudeMode_name = map[int32]string{
 		0: "ALTITUDE_MODE_UNSPECIFIED",
-		1: "ALTITUDE_MODE_ABSOLUTE",
-		2: "ALTITUDE_MODE_RELATIVE",
+		1: "ALTITUDE_MODE_RELATIVE",
+		2: "ALTITUDE_MODE_ABSOLUTE",
 	}
 	AltitudeMode_value = map[string]int32{
 		"ALTITUDE_MODE_UNSPECIFIED": 0,
-		"ALTITUDE_MODE_ABSOLUTE":    1,
-		"ALTITUDE_MODE_RELATIVE":    2,
+		"ALTITUDE_MODE_RELATIVE":    1,
+		"ALTITUDE_MODE_ABSOLUTE":    2,
 	}
 )
 
@@ -1224,8 +1224,8 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	" RETURN_TO_HOME_END_BEHAVIOR_LAND\x10\x02*e\n" +
 	"\fAltitudeMode\x12\x1d\n" +
 	"\x19ALTITUDE_MODE_UNSPECIFIED\x10\x00\x12\x1a\n" +
-	"\x16ALTITUDE_MODE_ABSOLUTE\x10\x01\x12\x1a\n" +
-	"\x16ALTITUDE_MODE_RELATIVE\x10\x02*_\n" +
+	"\x16ALTITUDE_MODE_RELATIVE\x10\x01\x12\x1a\n" +
+	"\x16ALTITUDE_MODE_ABSOLUTE\x10\x02*_\n" +
 	"\vHeadingMode\x12\x1c\n" +
 	"\x18HEADING_MODE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16HEADING_MODE_TO_TARGET\x10\x01\x12\x16\n" +

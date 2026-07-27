@@ -1109,9 +1109,9 @@ func (x *SwarmStartMissionResponse) GetDetails() string {
 }
 
 type SwarmStopMissionRequest struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Vehicles      []string                     `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
-	Request       *mission.StopMissionResponse `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Vehicles      []string                    `protobuf:"bytes,1,rep,name=vehicles,proto3" json:"vehicles,omitempty"` // target vehicles
+	Request       *mission.StopMissionRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`   // proxied request object
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1153,7 +1153,7 @@ func (x *SwarmStopMissionRequest) GetVehicles() []string {
 	return nil
 }
 
-func (x *SwarmStopMissionRequest) GetRequest() *mission.StopMissionResponse {
+func (x *SwarmStopMissionRequest) GetRequest() *mission.StopMissionRequest {
 	if x != nil {
 		return x.Request
 	}
@@ -1304,10 +1304,10 @@ const file_steeleagle_protocol_v1_services_swarm_swarm_proto_rawDesc = "" +
 	"\avehicle\x18\x01 \x01(\tR\avehicle\x12Y\n" +
 	"\bresponse\x18\x02 \x01(\v2=.steeleagle_protocol.v1.services.mission.StartMissionResponseR\bresponse\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\rR\x04code\x12\x18\n" +
-	"\adetails\x18\x04 \x01(\tR\adetails\"\x8d\x01\n" +
+	"\adetails\x18\x04 \x01(\tR\adetails\"\x8c\x01\n" +
 	"\x17SwarmStopMissionRequest\x12\x1a\n" +
-	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12V\n" +
-	"\arequest\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.mission.StopMissionResponseR\arequest\"\xbc\x01\n" +
+	"\bvehicles\x18\x01 \x03(\tR\bvehicles\x12U\n" +
+	"\arequest\x18\x02 \x01(\v2;.steeleagle_protocol.v1.services.mission.StopMissionRequestR\arequest\"\xbc\x01\n" +
 	"\x18SwarmStopMissionResponse\x12\x18\n" +
 	"\avehicle\x18\x01 \x01(\tR\avehicle\x12X\n" +
 	"\bresponse\x18\x02 \x01(\v2<.steeleagle_protocol.v1.services.mission.StopMissionResponseR\bresponse\x12\x12\n" +
@@ -1379,7 +1379,8 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_goTypes = []any{
 	(*mission.UploadMissionResponse)(nil), // 35: steeleagle_protocol.v1.services.mission.UploadMissionResponse
 	(*mission.StartMissionRequest)(nil),   // 36: steeleagle_protocol.v1.services.mission.StartMissionRequest
 	(*mission.StartMissionResponse)(nil),  // 37: steeleagle_protocol.v1.services.mission.StartMissionResponse
-	(*mission.StopMissionResponse)(nil),   // 38: steeleagle_protocol.v1.services.mission.StopMissionResponse
+	(*mission.StopMissionRequest)(nil),    // 38: steeleagle_protocol.v1.services.mission.StopMissionRequest
+	(*mission.StopMissionResponse)(nil),   // 39: steeleagle_protocol.v1.services.mission.StopMissionResponse
 }
 var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	20, // 0: steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest.request:type_name -> steeleagle_protocol.v1.services.driver.control.TakeOffRequest
@@ -1400,8 +1401,8 @@ var file_steeleagle_protocol_v1_services_swarm_swarm_proto_depIdxs = []int32{
 	35, // 15: steeleagle_protocol.v1.services.swarm.SwarmUploadMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.UploadMissionResponse
 	36, // 16: steeleagle_protocol.v1.services.swarm.SwarmStartMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.StartMissionRequest
 	37, // 17: steeleagle_protocol.v1.services.swarm.SwarmStartMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.StartMissionResponse
-	38, // 18: steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.StopMissionResponse
-	38, // 19: steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.StopMissionResponse
+	38, // 18: steeleagle_protocol.v1.services.swarm.SwarmStopMissionRequest.request:type_name -> steeleagle_protocol.v1.services.mission.StopMissionRequest
+	39, // 19: steeleagle_protocol.v1.services.swarm.SwarmStopMissionResponse.response:type_name -> steeleagle_protocol.v1.services.mission.StopMissionResponse
 	0,  // 20: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmTakeOff:input_type -> steeleagle_protocol.v1.services.swarm.SwarmTakeOffRequest
 	2,  // 21: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmLand:input_type -> steeleagle_protocol.v1.services.swarm.SwarmLandRequest
 	4,  // 22: steeleagle_protocol.v1.services.swarm.SwarmService.SwarmHold:input_type -> steeleagle_protocol.v1.services.swarm.SwarmHoldRequest
