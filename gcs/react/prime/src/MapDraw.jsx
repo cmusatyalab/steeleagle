@@ -6,7 +6,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel } from './mapUtils.js';
 import FeatureList from './FeatureList.jsx';
 
 const STYLE_URLS = {
@@ -81,6 +81,33 @@ const DRAW_STYLES = [
         filter: ['all', ['==', 'meta', 'midpoint']],
         paint: { 'circle-radius': 4, 'circle-color': '#fbb03b' },
     },
+    {
+        id: 'gl-draw-polygon-label',
+        type: 'symbol',
+        filter: ['==', '$type', 'Polygon'],
+        layout: { 'text-field': ['get', 'user__label'], 'text-size': 13 },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+    },
+    {
+        id: 'gl-draw-line-label',
+        type: 'symbol',
+        filter: ['==', '$type', 'LineString'],
+        layout: {
+            'text-field': ['get', 'user__label'], 'text-size': 13,
+            'symbol-placement': 'line-center', 'text-anchor': 'bottom', 'text-offset': [0, -0.3],
+        },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+    },
+    {
+        id: 'gl-draw-point-label',
+        type: 'symbol',
+        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+        layout: {
+            'text-field': ['get', 'user__label'], 'text-size': 13,
+            'text-anchor': 'bottom', 'text-offset': [0, -1.4],
+        },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+    },
 ];
 
 function MapDraw({ features, setFeatures, toast }) {
@@ -135,7 +162,7 @@ function MapDraw({ features, setFeatures, toast }) {
             mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
         });
 
-        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES });
+        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES, userProperties: true });
         mapRef.current.addControl(draw.current);
 
         function updateFeatures(e) {
@@ -177,6 +204,21 @@ function MapDraw({ features, setFeatures, toast }) {
         if (isFirstStyleEffect.current) { isFirstStyleEffect.current = false; return; }
         mapRef.current.setStyle(STYLE_URLS[mapStyle]);
     }, [mapStyle]);
+
+    useEffect(() => {
+        if (!draw.current) return;
+        const fc = draw.current.getAll();
+        let changed = false;
+        const labeled = fc.features.map((feature, index) => {
+            const label = featureLabel(feature, index);
+            if (feature.properties?._label === label) return feature;
+            changed = true;
+            return { ...feature, properties: { ...feature.properties, _label: label } };
+        });
+        if (!changed) return;
+        draw.current.set({ ...fc, features: labeled });
+        setFeatures(JSON.stringify(draw.current.getAll()));
+    }, [featureArray]);
 
     function handleRenameFeature(id, name) {
         const feat = draw.current?.get(id);
