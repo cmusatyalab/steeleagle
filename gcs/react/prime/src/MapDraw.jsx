@@ -85,7 +85,10 @@ const DRAW_STYLES = [
         id: 'gl-draw-polygon-label',
         type: 'symbol',
         filter: ['==', '$type', 'Polygon'],
-        layout: { 'text-field': ['get', 'user__label'], 'text-size': 13 },
+        layout: {
+            'text-field': ['get', 'user__label'], 'text-size': 13,
+            'text-allow-overlap': true, 'text-ignore-placement': true,
+        },
         paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
     },
     {
@@ -95,6 +98,7 @@ const DRAW_STYLES = [
         layout: {
             'text-field': ['get', 'user__label'], 'text-size': 13,
             'symbol-placement': 'line-center', 'text-anchor': 'bottom', 'text-offset': [0, -0.3],
+            'text-allow-overlap': true, 'text-ignore-placement': true,
         },
         paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
     },
@@ -105,6 +109,7 @@ const DRAW_STYLES = [
         layout: {
             'text-field': ['get', 'user__label'], 'text-size': 13,
             'text-anchor': 'bottom', 'text-offset': [0, -1.4],
+            'text-allow-overlap': true, 'text-ignore-placement': true,
         },
         paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
     },
