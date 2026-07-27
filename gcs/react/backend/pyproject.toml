@@ -19,9 +19,13 @@ dependencies = [
     "opencv-python",
     "numpy",
     "colorhash",
+    "requests",
+    "steeleagle_sdk",
 ]
 
 [tool.uv.sources]
+# this should point at the v3.x worktree that has the sdk until it can be ported
+steeleagle_sdk = { path =  "../../../../steeleagle/sdk", editable = true }
 
 [dependency-groups]
 dev = [
