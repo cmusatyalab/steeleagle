@@ -48,3 +48,8 @@ export function bboxFromFeature(feature) {
     }
     return [minLng, minLat, maxLng, maxLat];
 }
+
+export function featureLabel(feature, index) {
+    if (feature.properties?.name) return feature.properties.name;
+    return `${feature.geometry?.type ?? 'Feature'} ${index + 1}`;
+}

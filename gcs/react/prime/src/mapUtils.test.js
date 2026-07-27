@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel } from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -126,5 +126,27 @@ describe('bboxFromFeature', () => {
         expect(bbox[1]).toBeCloseTo(39.999);
         expect(bbox[2]).toBeCloseTo(-79.999);
         expect(bbox[3]).toBeCloseTo(40.001);
+    });
+});
+
+describe('featureLabel', () => {
+    it('returns the feature name when set', () => {
+        const feature = { properties: { name: 'AreaB' }, geometry: { type: 'Polygon' } };
+        expect(featureLabel(feature, 0)).toBe('AreaB');
+    });
+
+    it('falls back to geometry type and 1-based index when unnamed', () => {
+        const feature = { properties: {}, geometry: { type: 'Point' } };
+        expect(featureLabel(feature, 2)).toBe('Point 3');
+    });
+
+    it('falls back to "Feature" when geometry type is missing', () => {
+        const feature = { properties: {}, geometry: null };
+        expect(featureLabel(feature, 0)).toBe('Feature 1');
+    });
+
+    it('ignores an empty-string name and uses the fallback', () => {
+        const feature = { properties: { name: '' }, geometry: { type: 'LineString' } };
+        expect(featureLabel(feature, 1)).toBe('LineString 2');
     });
 });
