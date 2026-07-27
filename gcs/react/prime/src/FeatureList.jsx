@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
+import { featureLabel } from './mapUtils.js';
 
 const GEO_ICON = { Polygon: '⬡', LineString: '╱', Point: '●' };
-
-function displayName(feature, index) {
-    if (feature.properties?.name) return feature.properties.name;
-    return `${feature.geometry?.type ?? 'Feature'} ${index + 1}`;
-}
 
 function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename }) {
     const [editingId, setEditingId] = useState(null);
@@ -95,7 +91,7 @@ function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename
                             />
                         ) : (
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {displayName(feature, index)}
+                                {featureLabel(feature, index)}
                             </span>
                         )}
                         <Button
