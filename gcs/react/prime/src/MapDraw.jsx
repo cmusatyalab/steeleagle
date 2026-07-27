@@ -6,7 +6,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_TOKEN } from './config.js';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel } from './mapUtils.js';
+import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel, labelAnchor } from './mapUtils.js';
 import FeatureList from './FeatureList.jsx';
 
 const STYLE_URLS = {
@@ -81,38 +81,6 @@ const DRAW_STYLES = [
         filter: ['all', ['==', 'meta', 'midpoint']],
         paint: { 'circle-radius': 4, 'circle-color': '#fbb03b' },
     },
-    {
-        id: 'gl-draw-polygon-label',
-        type: 'symbol',
-        filter: ['==', '$type', 'Polygon'],
-        layout: {
-            'text-field': ['get', 'user__label'], 'text-size': 13,
-            'text-allow-overlap': true, 'text-ignore-placement': true,
-        },
-        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
-    },
-    {
-        id: 'gl-draw-line-label',
-        type: 'symbol',
-        filter: ['==', '$type', 'LineString'],
-        layout: {
-            'text-field': ['get', 'user__label'], 'text-size': 13,
-            'symbol-placement': 'line-center', 'text-anchor': 'bottom', 'text-offset': [0, -0.3],
-            'text-allow-overlap': true, 'text-ignore-placement': true,
-        },
-        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
-    },
-    {
-        id: 'gl-draw-point-label',
-        type: 'symbol',
-        filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
-        layout: {
-            'text-field': ['get', 'user__label'], 'text-size': 13,
-            'text-anchor': 'bottom', 'text-offset': [0, -1.4],
-            'text-allow-overlap': true, 'text-ignore-placement': true,
-        },
-        paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
-    },
 ];
 
 function MapDraw({ features, setFeatures, toast }) {
@@ -133,6 +101,24 @@ function MapDraw({ features, setFeatures, toast }) {
     const featureArray = useMemo(() => {
         try { return JSON.parse(features).features ?? []; } catch { return []; }
     }, [features]);
+
+    function syncLabelSource() {
+        if (!draw.current || !mapRef.current) return;
+        const source = mapRef.current.getSource('feature-labels');
+        if (!source) return;
+        const fc = draw.current.getAll();
+        const labelFeatures = fc.features.map((feature, index) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: labelAnchor(feature) },
+            properties: { label: featureLabel(feature, index), kind: feature.geometry.type },
+        }));
+        source.setData({ type: 'FeatureCollection', features: labelFeatures });
+    }
+
+    // Stable ref so the 'style.load' handler (registered once, in the mount effect below)
+    // can always call the latest closure over draw.current/mapRef.current.
+    const syncLabelSourceRef = useRef(syncLabelSource);
+    useEffect(() => { syncLabelSourceRef.current = syncLabelSource; });
 
     useEffect(() => {
         mapboxgl.accessToken = `${MAPBOX_TOKEN}`;
@@ -165,9 +151,58 @@ function MapDraw({ features, setFeatures, toast }) {
                 maxzoom: 14,
             });
             mapRef.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.0 });
+
+            // Synthetic single-point-per-feature source for labels: a plain tiled GeoJSON
+            // source (which is what MapboxDraw's own sources are) runs its label placement
+            // once per tile, so polygon/line label layers driven directly off draw features
+            // can duplicate across tile boundaries or fail to place at all for short/bent
+            // lines. A single Point per feature at a precomputed anchor sidesteps both
+            // failure modes categorically. setStyle() wipes this source along with
+            // everything else, which is why it's (re-)added here and repopulated
+            // immediately below.
+            mapRef.current.addSource('feature-labels', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] },
+            });
+            mapRef.current.addLayer({
+                id: 'feature-label-polygon',
+                type: 'symbol',
+                source: 'feature-labels',
+                filter: ['==', ['get', 'kind'], 'Polygon'],
+                layout: {
+                    'text-field': ['get', 'label'], 'text-size': 13,
+                    'text-allow-overlap': true, 'text-ignore-placement': true,
+                },
+                paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+            });
+            mapRef.current.addLayer({
+                id: 'feature-label-line',
+                type: 'symbol',
+                source: 'feature-labels',
+                filter: ['==', ['get', 'kind'], 'LineString'],
+                layout: {
+                    'text-field': ['get', 'label'], 'text-size': 13,
+                    'text-anchor': 'bottom', 'text-offset': [0, -0.3],
+                    'text-allow-overlap': true, 'text-ignore-placement': true,
+                },
+                paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+            });
+            mapRef.current.addLayer({
+                id: 'feature-label-point',
+                type: 'symbol',
+                source: 'feature-labels',
+                filter: ['==', ['get', 'kind'], 'Point'],
+                layout: {
+                    'text-field': ['get', 'label'], 'text-size': 13,
+                    'text-anchor': 'bottom', 'text-offset': [0, -1.4],
+                    'text-allow-overlap': true, 'text-ignore-placement': true,
+                },
+                paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2 },
+            });
+            syncLabelSourceRef.current(); // repopulate immediately — setStyle() just wiped the source's data too
         });
 
-        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES, userProperties: true });
+        draw.current = new MapboxDraw({ displayControlsDefault: true, defaultMode: 'draw_polygon', styles: DRAW_STYLES });
         mapRef.current.addControl(draw.current);
 
         function updateFeatures(e) {
@@ -211,18 +246,9 @@ function MapDraw({ features, setFeatures, toast }) {
     }, [mapStyle]);
 
     useEffect(() => {
-        if (!draw.current) return;
-        const fc = draw.current.getAll();
-        let changed = false;
-        const labeled = fc.features.map((feature, index) => {
-            const label = featureLabel(feature, index);
-            if (feature.properties?._label === label) return feature;
-            changed = true;
-            return { ...feature, properties: { ...feature.properties, _label: label } };
-        });
-        if (!changed) return;
-        draw.current.set({ ...fc, features: labeled });
-        setFeatures(JSON.stringify(draw.current.getAll()));
+        // featureArray is only a change-trigger — draw.current.getAll() is read fresh since
+        // the draw store, not React state, is authoritative.
+        syncLabelSourceRef.current();
     }, [featureArray]);
 
     function handleRenameFeature(id, name) {

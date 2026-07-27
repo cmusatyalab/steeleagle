@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel } from './mapUtils.js';
+import {
+    featuresToGeoJson, featuresToKml, parseImportFile, bboxFromFeature, featureLabel,
+    lineMidpoint, polygonCentroid, labelAnchor,
+} from './mapUtils.js';
 
 const SAMPLE_FC = {
     type: 'FeatureCollection',
@@ -148,5 +151,48 @@ describe('featureLabel', () => {
     it('ignores an empty-string name and uses the fallback', () => {
         const feature = { properties: { name: '' }, geometry: { type: 'LineString' } };
         expect(featureLabel(feature, 1)).toBe('LineString 2');
+    });
+
+    it('falls back correctly when properties is entirely absent', () => {
+        const feature = { geometry: { type: 'Point' } };
+        expect(featureLabel(feature, 0)).toBe('Point 1');
+    });
+});
+
+describe('lineMidpoint', () => {
+    it('returns the exact midpoint of a simple 2-point line', () => {
+        expect(lineMidpoint([[0, 0], [10, 0]])).toEqual([5, 0]);
+    });
+
+    it('returns the midpoint falling mid-segment on a multi-segment line', () => {
+        // seg1: (0,0)->(4,0) length 4; seg2: (4,0)->(4,10) length 10; total 14, half = 7.
+        // 7 - 4 = 3 into seg2 (length 10) => t = 0.3 => (4, 3), strictly inside seg2.
+        expect(lineMidpoint([[0, 0], [4, 0], [4, 10]])).toEqual([4, 3]);
+    });
+});
+
+describe('polygonCentroid', () => {
+    it('returns the exact centroid of a simple square', () => {
+        const ring = [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]];
+        expect(polygonCentroid([ring])).toEqual([2, 2]);
+    });
+});
+
+describe('labelAnchor', () => {
+    it('returns the coordinates directly for a Point', () => {
+        const feature = { geometry: { type: 'Point', coordinates: [-80, 40] } };
+        expect(labelAnchor(feature)).toEqual([-80, 40]);
+    });
+
+    it('returns the line midpoint for a LineString', () => {
+        const feature = { geometry: { type: 'LineString', coordinates: [[0, 0], [10, 0]] } };
+        expect(labelAnchor(feature)).toEqual([5, 0]);
+    });
+
+    it('returns the polygon centroid for a Polygon', () => {
+        const feature = {
+            geometry: { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]] },
+        };
+        expect(labelAnchor(feature)).toEqual([2, 2]);
     });
 });

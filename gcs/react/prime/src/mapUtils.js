@@ -53,3 +53,54 @@ export function featureLabel(feature, index) {
     if (feature.properties?.name) return feature.properties.name;
     return `${feature.geometry?.type ?? 'Feature'} ${index + 1}`;
 }
+
+export function lineMidpoint(coordinates) {
+    if (coordinates.length === 1) return coordinates[0];
+    const segLengths = [];
+    let total = 0;
+    for (let i = 0; i < coordinates.length - 1; i++) {
+        const [x1, y1] = coordinates[i];
+        const [x2, y2] = coordinates[i + 1];
+        const d = Math.hypot(x2 - x1, y2 - y1);
+        segLengths.push(d);
+        total += d;
+    }
+    let target = total / 2;
+    for (let i = 0; i < segLengths.length; i++) {
+        if (target <= segLengths[i]) {
+            const t = segLengths[i] === 0 ? 0 : target / segLengths[i];
+            const [x1, y1] = coordinates[i];
+            const [x2, y2] = coordinates[i + 1];
+            return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
+        }
+        target -= segLengths[i];
+    }
+    return coordinates[coordinates.length - 1];
+}
+
+export function polygonCentroid(coordinates) {
+    const ring = coordinates[0];
+    let area = 0, cx = 0, cy = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+        const [x0, y0] = ring[i];
+        const [x1, y1] = ring[i + 1];
+        const cross = x0 * y1 - x1 * y0;
+        area += cross;
+        cx += (x0 + x1) * cross;
+        cy += (y0 + y1) * cross;
+    }
+    area *= 0.5;
+    if (area === 0) {
+        const n = ring.length - 1;
+        return ring.slice(0, n).reduce((acc, [x, y]) => [acc[0] + x / n, acc[1] + y / n], [0, 0]);
+    }
+    return [cx / (6 * area), cy / (6 * area)];
+}
+
+export function labelAnchor(feature) {
+    const { type, coordinates } = feature.geometry;
+    if (type === 'Point') return coordinates;
+    if (type === 'LineString') return lineMidpoint(coordinates);
+    if (type === 'Polygon') return polygonCentroid(coordinates);
+    return null;
+}
