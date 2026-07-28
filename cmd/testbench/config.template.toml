@@ -1,10 +1,9 @@
+plugin_dir = ""
 [[vehicles]]
 # Name of the vehicle.
 name = "steppeeagle"
 # Whether or not to simulate the vehicle
 simulate = false
-# Path of the plugin to run for this device
-plugin = "steeleagle_aviary"
 [vehicles.driver]
 # Path of the plugin to run for this device
 plugin = "parrot_anafi"
