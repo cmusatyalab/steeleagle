@@ -69,13 +69,15 @@ class ValidationError:
 # -----------------------------------------------------------------------------
 # Parsing
 # -----------------------------------------------------------------------------
+_NAME_PATTERN = r"[A-Za-z_][A-Za-z0-9_]*"
+
 # Matches `ClassName instance(args)` with optional trailing whitespace.
 DECL_RE = re.compile(
-    r"""^
+    rf"""^
     \s*
-    (?P<cls>[A-Z][A-Za-z0-9]*)        # ClassName, starts uppercase
+    (?P<cls>{_NAME_PATTERN})
     \s+
-    (?P<inst>[a-z_][a-zA-Z0-9_]*)     # snake_case instance name
+    (?P<inst>{_NAME_PATTERN})
     \s*
     \(
     (?P<args>.*)
@@ -87,15 +89,20 @@ DECL_RE = re.compile(
 
 # Matches `event_name -> action_name` (event may be 'done')
 TRANSITION_RE = re.compile(
-    r"^\s*(?P<event>[a-z_][a-zA-Z0-9_]*)\s*->\s*(?P<action>[a-z_][a-zA-Z0-9_]*)\s*$"
+    rf"^\s*(?P<event>{_NAME_PATTERN})\s*->\s*"
+    rf"(?P<action>{_NAME_PATTERN})\s*$"
 )
 
 # Matches `During <name>:`
-DURING_RE = re.compile(r"^\s*During\s+(?P<action>[a-z_][a-zA-Z0-9_]*)\s*:\s*$")
+DURING_RE = re.compile(
+    rf"^\s*During\s+(?P<action>{_NAME_PATTERN})\s*:\s*$"
+)
 
 # Recognizes valid `Start <name>` declarations and the common invalid
 # `Start: <name>` form so the parser can return a targeted diagnostic.
-START_RE = re.compile(r"^\s*Start\s*(?P<colon>:)?\s*(?P<action>[a-z_][a-zA-Z0-9_]*)\s*$")
+START_RE = re.compile(
+    rf"^\s*Start(?P<colon>\s*:)?\s+(?P<action>{_NAME_PATTERN})\s*$"
+)
 
 
 def _strip_comment(line: str) -> str:
@@ -164,7 +171,7 @@ def _parse_args(arg_str: str) -> tuple[dict[str, Any], list[str]]:
         k, v = part.split("=", 1)
         k = k.strip()
         v = v.strip()
-        if not re.match(r"^[a-z_][a-zA-Z0-9_]*$", k):
+        if not re.fullmatch(_NAME_PATTERN, k):
             errors.append(f"invalid parameter name: {k!r}")
             continue
         try:
@@ -216,7 +223,7 @@ def _parse_value(v: str) -> Any:
     # This lightweight parser does not currently model inline data
     # constructors, although the SDK grammar accepts them. Return an explicit
     # limitation instead of a generic parse error.
-    m = re.match(r"^([A-Z][A-Za-z0-9_]*)\s*\(", v)
+    m = re.match(rf"^({_NAME_PATTERN})\s*\(", v)
     if m:
         cls = m.group(1)
         inst = cls.lower()
@@ -431,9 +438,9 @@ def parse(dsl_text: str) -> tuple[ParsedMission, list[ValidationError]]:
             # transition, e.g. `TimeReached hold_time(...) -> patrol`. Events
             # must be declared in the Events stanza and referenced by name.
             im = re.match(
-                r"^\s*(?P<cls>[A-Z][A-Za-z0-9]*)\s+"
-                r"(?P<inst>[a-z_][a-zA-Z0-9_]*)\s*\(.*\)\s*->\s*"
-                r"(?P<target>[a-z_][a-zA-Z0-9_]*)\s*$",
+                rf"^\s*(?P<cls>{_NAME_PATTERN})\s+"
+                rf"(?P<inst>{_NAME_PATTERN})\s*\(.*\)\s*->\s*"
+                rf"(?P<target>{_NAME_PATTERN})\s*$",
                 line)
             if im:
                 errors.append(ValidationError(
