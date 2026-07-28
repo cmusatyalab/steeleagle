@@ -659,8 +659,8 @@ type ReturnToHomeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// what the vehicle should do after returning home
 	EndBehavior ReturnToHomeEndBehavior `protobuf:"varint,1,opt,name=end_behavior,json=endBehavior,proto3,enum=steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehavior" json:"end_behavior,omitempty"`
-	// altitude that the vehicle should move at while reurning home
-	ReturnAltitude uint32 `protobuf:"varint,2,opt,name=return_altitude,json=returnAltitude,proto3" json:"return_altitude,omitempty"`
+	// minimum altitude that the vehicle should move at while reurning home
+	MinReturnAltitude uint32 `protobuf:"varint,2,opt,name=min_return_altitude,json=minReturnAltitude,proto3" json:"min_return_altitude,omitempty"`
 	// altitude that the vehicle should hover AGL (above ground level), for hover end behavior
 	FinalAltitude uint32 `protobuf:"varint,3,opt,name=final_altitude,json=finalAltitude,proto3" json:"final_altitude,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -704,9 +704,9 @@ func (x *ReturnToHomeRequest) GetEndBehavior() ReturnToHomeEndBehavior {
 	return ReturnToHomeEndBehavior_RETURN_TO_HOME_END_BEHAVIOR_UNSPECIFIED
 }
 
-func (x *ReturnToHomeRequest) GetReturnAltitude() uint32 {
+func (x *ReturnToHomeRequest) GetMinReturnAltitude() uint32 {
 	if x != nil {
-		return x.ReturnAltitude
+		return x.MinReturnAltitude
 	}
 	return 0
 }
@@ -1180,10 +1180,10 @@ const file_steeleagle_protocol_v1_services_driver_control_proto_rawDesc = "" +
 	"\fKillResponse\"S\n" +
 	"\x0eSetHomeRequest\x12A\n" +
 	"\bnew_home\x18\x01 \x01(\v2&.steeleagle_protocol.v1.GlobalPositionR\anewHome\"\x11\n" +
-	"\x0fSetHomeResponse\"\xd1\x01\n" +
+	"\x0fSetHomeResponse\"\xd8\x01\n" +
 	"\x13ReturnToHomeRequest\x12j\n" +
-	"\fend_behavior\x18\x01 \x01(\x0e2G.steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehaviorR\vendBehavior\x12'\n" +
-	"\x0freturn_altitude\x18\x02 \x01(\rR\x0ereturnAltitude\x12%\n" +
+	"\fend_behavior\x18\x01 \x01(\x0e2G.steeleagle_protocol.v1.services.driver.control.ReturnToHomeEndBehaviorR\vendBehavior\x12.\n" +
+	"\x13min_return_altitude\x18\x02 \x01(\rR\x11minReturnAltitude\x12%\n" +
 	"\x0efinal_altitude\x18\x03 \x01(\rR\rfinalAltitude\"\x16\n" +
 	"\x14ReturnToHomeResponse\"\xb0\x03\n" +
 	"\x19GoToGlobalPositionRequest\x12B\n" +

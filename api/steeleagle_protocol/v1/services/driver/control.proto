@@ -184,8 +184,8 @@ enum ReturnToHomeEndBehavior {
 message ReturnToHomeRequest {
   // what the vehicle should do after returning home
   ReturnToHomeEndBehavior end_behavior = 1;
-  // altitude that the vehicle should move at while reurning home
-  uint32 return_altitude = 2;
+  // minimum altitude that the vehicle should move at while reurning home
+  uint32 min_return_altitude = 2;
   // altitude that the vehicle should hover AGL (above ground level), for hover end behavior
   uint32 final_altitude = 3;
 }

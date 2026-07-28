@@ -35,6 +35,7 @@ def vehicle_socket_address(name: str) -> str:
     layout defined by core/util.GetVehicleDirByName (steeleagle/vehicles/<name>).
     """
     path = os.path.join(runtime_dir(), "steeleagle", "vehicles", name, "server")
+    print(f'using socket {path}')
     return f"unix://{path}"
 
 

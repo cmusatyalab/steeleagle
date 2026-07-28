@@ -18,6 +18,7 @@ import (
 // which points at a plugin and a list of CLI-style arguments for that plugin.
 type PluginConfig struct {
 	Plugin string   `toml:"plugin"`
+    Path   string   `toml:"path,omitempty"`
 	Args   []string `toml:"args"`
 }
 
@@ -68,10 +69,18 @@ func spawnVehicle(veh *Vehicle, pluginDir string) {
 	if veh.Driver == nil {
 		log.Fatal().Msgf("driver plugin not specified")
 	}
-	driverPlugin := createDriverPlugin(veh, pluginDir)
+    driverDir := pluginDir
+    if veh.Driver.Path != "" {
+        driverDir = veh.Driver.Path
+    }
+	driverPlugin := createDriverPlugin(veh, driverDir)
 	var missionPlugin util.Plugin
 	if veh.Mission != nil {
-		missionPlugin = createMissionPlugin(veh, pluginDir)
+        missionDir := pluginDir
+        if veh.Mission.Path != "" {
+            missionDir = veh.Mission.Path
+        }
+		missionPlugin = createMissionPlugin(veh, missionDir)
 	}
 
 	// Create server listener
@@ -99,9 +108,13 @@ func spawnVehicle(veh *Vehicle, pluginDir string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("couldn't create vehicle")
 	}
-	vehicle.Start(context.Background())
+	if err := vehicle.Start(context.Background()); err != nil {
+		log.Fatal().Err(err).Msgf("vehicle %s failed to start", veh.Name)
+	}
 	log.Info().Msgf("vehicle %s started!", veh.Name)
-	vehicle.Wait()
+	if err := vehicle.Wait(); err != nil {
+		log.Fatal().Err(err).Msgf("vehicle %s exited with error", veh.Name)
+	}
 }
 
 func createDriverPlugin(veh *Vehicle, pluginDir string) util.Plugin {
@@ -139,6 +152,7 @@ func createMissionPlugin(veh *Vehicle, pluginDir string) util.Plugin {
 	options := []util.PluginOption{
 		util.WithName(veh.Name + "-mission"),
 		util.WithPath(pluginPath),
+        util.WithAuthCode(util.MissionCode),
 	}
 	if len(veh.Mission.Args) > 0 {
 		options = append(options, util.WithScriptArgs(veh.Mission.Args))
