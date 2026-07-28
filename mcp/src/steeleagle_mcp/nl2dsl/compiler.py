@@ -2,12 +2,12 @@
 SteelEagle SDK compiler integration
 
 Wraps `steeleagle_sdk.dsl.build_mission()` 
-(equivalent to `uv run compile_dsl YOUR_DSL_FILE`)
+(equivalent to `uv run dsl-compile YOUR_DSL_FILE`)
 
 Design:
-- If steeleagle_sdk is importable, compile for real. Its Pydantic validation
-  is the final word; our static validator is just a fast pre-flight that
-  produces better batched error messages for the LLM retry loop.
+- If steeleagle_sdk is importable, use the authoritative SteelEagle SDK
+  compiler. The static validator runs first to provide clearer, batched error
+  messages for the MCP host model's retry loop before SDK compilation.
 - If the SDK is not installed (e.g. CI without the dependency), degrade
   gracefully: `available` is False and callers fall back to the placeholder
   IR from validator.to_mission_ir().
@@ -37,7 +37,7 @@ def sdk_available() -> bool:
 
 
 def compile_dsl(dsl_text: str) -> CompileResult:
-    """Compile DSL with the real SteelEagle compiler, if installed."""
+    """Compile DSL with the authoritative SteelEagle SDK compiler, if available."""
     try:
         from steeleagle_sdk.dsl import build_mission
         from dataclasses import asdict

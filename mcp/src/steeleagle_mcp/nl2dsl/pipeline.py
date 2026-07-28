@@ -1,7 +1,8 @@
-"""Deterministic DSL normalize / validate / compile pipeline.
+"""DSL normalization, validation, and compilation pipeline for MCP mission tools.
 
-Vendored slim subset of steeleagle-copilot's nl2dsl for MCP mission tools.
-Does not include LLM translation, prompts, or Copilot session logic.
+Natural-language interpretation is handled by the MCP host's language model.
+This module processes the resulting DSL through local validation and the
+authoritative SteelEagle SDK compiler.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ def run_dsl_through_pipeline(dsl_code: str) -> PipelineOutcome:
             False,
             dsl_code,
             auto_fixes,
-            [ValidationError(None, f"real compiler error: {comp.error}")],
+            [ValidationError(None, f"SDK compiler error: {comp.error}")],
             None,
         )
 

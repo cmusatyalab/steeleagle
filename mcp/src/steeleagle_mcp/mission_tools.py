@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: 0BSD
 """Mission file tools for the SteelEagle MCP server.
 
-These functions keep MCP concerns here while reusing a vendored nl2dsl subset
-(normalize, validate, compile) and local few-shot examples. The LLM translation
-step is intentionally left to the MCP caller (Claude Desktop, Claude Code, etc.)
-so this server does not require an independent LLM API key.
+This module provides DSL reference generation, deterministic validation and
+compilation, and mission artifact persistence. Natural-language interpretation
+is performed by the MCP caller's language model; the server supplies the
+SteelEagle schema, grammar, examples, and compiler integration without requiring
+a separate LLM provider or API key.
 """
 
 from __future__ import annotations
@@ -146,7 +147,7 @@ def _ensure_sdk_path() -> None:
 
 
 def _load_nl2dsl_components() -> tuple[dict[str, Any] | None, str | None]:
-    """Import the vendored nl2dsl pipeline used for normalize/validate/compile."""
+    """Import the internal DSL normalization, validation, and compilation pipeline."""
 
     _ensure_sdk_path()
 
@@ -157,7 +158,7 @@ def _load_nl2dsl_components() -> tuple[dict[str, Any] | None, str | None]:
     except Exception as exc:
         return None, _err(
             "INTEGRATION_ERROR",
-            "Failed to import vendored steeleagle_mcp.nl2dsl pipeline: "
+            "Failed to import the steeleagle_mcp.nl2dsl pipeline: "
             f"{exc}. Ensure steeleagle-mcp is installed (cd mcp && uv sync).",
         )
 

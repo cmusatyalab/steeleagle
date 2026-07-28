@@ -1,15 +1,16 @@
 """
 DSL validator
 
-This is a static validator: it parses DSL text into a small in-memory
-representation and runs a battery of checks. 
-It does NOT call the real SteelEagle compiler. 
-When the real SDK is wired in later, this validator should stay as a fast pre-flight check.
+Static normalization and validation utilities for SteelEagle DSL.
 
-The parser is intentionally small and forgiving in the spots where LLM output
-tends to wobble (eg. extra whitespace, trailing commas) but strict on semantics.
+This module parses DSL text into lightweight internal structures and performs
+batched structural, catalog-based, and semantic checks. It does not invoke the
+SDK compiler directly; the surrounding pipeline subsequently uses the SDK
+compiler as the authoritative validation step.
 
-Returns a list of `ValidationError` objects. Empty list == valid.
+The parser is intentionally lenient about common model-generated formatting
+errors so it can return targeted diagnostics. `validate()` returns a list of
+`ValidationError` objects; an empty list indicates successful validation.
 """
 
 from __future__ import annotations
@@ -92,8 +93,8 @@ TRANSITION_RE = re.compile(
 # Matches `During <name>:`
 DURING_RE = re.compile(r"^\s*During\s+(?P<action>[a-z_][a-zA-Z0-9_]*)\s*:\s*$")
 
-# Matches `Start: <name>` (also tolerates `Start <name>`, which the docs use
-# inconsistently between examples).
+# Recognizes valid `Start <name>` declarations and the common invalid
+# `Start: <name>` form so the parser can return a targeted diagnostic.
 START_RE = re.compile(r"^\s*Start\s*(?P<colon>:)?\s*(?P<action>[a-z_][a-zA-Z0-9_]*)\s*$")
 
 
@@ -212,17 +213,18 @@ def _parse_value(v: str) -> Any:
     except ValueError:
         pass
 
-    # Inline object call, e.g. `Location(latitude = 1.0, ...)`. The DSL does
-    # not support inline objects: declare the object in the Data: stanza and
-    # reference it by name. Give a targeted, fixable message.
+    # This lightweight parser does not currently model inline data
+    # constructors, although the SDK grammar accepts them. Return an explicit
+    # limitation instead of a generic parse error.
     m = re.match(r"^([A-Z][A-Za-z0-9_]*)\s*\(", v)
     if m:
         cls = m.group(1)
         inst = cls.lower()
         raise ValueError(
-            f"inline objects are not supported (`{cls}(...)`). Declare it in "
-            f"the Data: stanza, e.g. `{cls} {inst}(...)`, then reference it "
-            f"here by name: `{inst}`")
+            f"the static validator does not currently support inline data "
+            f"constructors (`{cls}(...)`). Declare the value in the Data "
+            f"stanza, e.g. `{cls} {inst}(...)`, then reference it here by "
+            f"name: `{inst}`")
 
     # Bare identifier => reference
     if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", v):
@@ -275,7 +277,7 @@ def normalize_dsl(dsl_text: str) -> tuple[str, list[str]]:
 
     These are corrections that carry NO semantic ambiguity — the user's intent
     is unchanged — so we fix them silently instead of bouncing the model
-    through a retry. See `docs/AUTO_FIXES.md` for the full rationale.
+    through a retry.
 
     1. Empty optional stanzas. A `Data:` or `Events:` header with nothing
        declared under it makes the real SteelEagle grammar misparse the *next*
@@ -285,9 +287,9 @@ def normalize_dsl(dsl_text: str) -> tuple[str, list[str]]:
        for the validator to flag as genuine errors if empty.
     2. Stanza order. The grammar mandates the fixed order Data, Actions,
        Events, Mission, but that order carries no semantic meaning — the four
-       blocks are independent declarative sections. LLMs routinely emit them
-       out of order (e.g. Actions before Data) and struggle to self-correct,
-       so we reorder the blocks into canonical order silently.
+       blocks are independent declarative sections. Generated DSL may place
+       them out of order (e.g. Actions before Data), so they are reordered
+       into canonical order.
     3. Missing trailing newline. The grammar requires the file to end with a
        newline; otherwise the final transition line hits end-of-input
        ("Unexpected token $END").
@@ -375,9 +377,8 @@ def parse(dsl_text: str) -> tuple[ParsedMission, list[ValidationError]]:
 
         stripped = line.strip()
 
-        # Stanza header? (Stanza ordering is guaranteed by `normalize_dsl`,
-        # which reorders blocks into canonical order before parsing, so we
-        # only need to guard against genuine duplicates here.)
+        # `validate()` normalizes stanza order before calling this parser.
+        # Duplicate stanza headers still need to be detected here.
         if stripped.rstrip(":") in catalog.STANZAS and stripped.endswith(":"):
             name = stripped.rstrip(":")
             if name in seen_stanzas:
@@ -404,7 +405,7 @@ def parse(dsl_text: str) -> tuple[ParsedMission, list[ValidationError]]:
                            "not `Start: <action>`"))
                 if mission.start is not None:
                     errors.append(ValidationError(
-                        i, "multiple `Start:` directives"))
+                        i, "multiple `Start` directives"))
                 mission.start = m.group("action")
                 current_during = None
                 continue
@@ -485,7 +486,7 @@ def parse(dsl_text: str) -> tuple[ParsedMission, list[ValidationError]]:
 # Semantic checks
 # -----------------------------------------------------------------------------
 def _instance_index(decls: list[Declaration]) -> dict[str, Declaration]:
-    """instance_name -> Declaration. Detects duplicates as a side effect."""
+    """Index declarations by instance name, preserving the first declaration."""
     out: dict[str, Declaration] = {}
     for d in decls:
         out.setdefault(d.instance_name, d)
@@ -678,11 +679,12 @@ def validate(dsl_text: str) -> list[ValidationError]:
             None, "the Actions stanza is required and must declare at least "
                   "one action"))
     if mission.start is None:
-        errors.append(ValidationError(None, "Mission stanza is missing `Start:`"))
+        errors.append(ValidationError(
+            None, "Mission stanza is missing `Start <action>`"))
     elif mission.start not in action_by_name:
         errors.append(ValidationError(
             None,
-            f"`Start: {mission.start}` references an action that is not "
+            f"`Start {mission.start}` references an action that is not "
             f"declared in the Actions stanza"))
 
     declared_during = {b.action_name for b in mission.during}
@@ -750,14 +752,11 @@ def validate(dsl_text: str) -> list[ValidationError]:
 
 
 def to_mission_ir(dsl_text: str) -> dict[str, Any]:
-    """
-    Convert a validated DSL into a JSON-serializable intermediate
-    representation. This is NOT the same as the real `mission.json` that
-    `steeleagle_sdk.build_mission()` produces, but it has the same shape:
-    a structured FSM ready to be consumed by the runtime.
+    """Build a lightweight fallback representation from validated DSL.
 
-    The intent is that, once `steeleagle_sdk` is available, we replace this
-    with the real `asdict(build_mission(dsl_text))` call.
+    This representation is used only when the SDK compiler is unavailable. It
+    is not equivalent to `steeleagle_sdk.dsl.compiler.ir.MissionIR` and must
+    not be treated as runtime-ready mission JSON.
     """
     dsl_text, _ = normalize_dsl(dsl_text)
     mission, _ = parse(dsl_text)
