@@ -83,7 +83,7 @@ const DRAW_STYLES = [
     },
 ];
 
-function MapDraw({ features, setFeatures, toast }) {
+function MapDraw({ features, setFeatures, toast, theme }) {
     const mapRef = useRef();
     const mapContainerRef = useRef();
     const draw = useRef();
@@ -315,8 +315,18 @@ function MapDraw({ features, setFeatures, toast }) {
     }
 
     return (
-        <div className="flex flex-column" style={{ height: '100%' }}>
-            <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid #2a3a4a' }}>
+        <div className="flex flex-column" style={{
+            height: '100%',
+            '--palette-bg':            theme === 'light' ? '#f8fafc' : '#1a2530',
+            '--palette-border':        theme === 'light' ? '#e2e8f0' : '#2a3a4a',
+            '--palette-header':        theme === 'light' ? '#1d4ed8' : '#7ecfff',
+            '--palette-item-text':     theme === 'light' ? '#1e293b' : '#ffffff',
+            '--palette-item-div':      theme === 'light' ? '#e2e8f0' : '#1e2a38',
+            '--palette-item-hover':    theme === 'light' ? '#dbeafe' : '#1e2a38',
+            '--palette-item-selected': theme === 'light' ? '#bfdbfe' : '#1e3040',
+            '--palette-muted-text':    theme === 'light' ? '#64748b' : '#666666',
+        }}>
+            <div className="flex gap-2 align-items-center p-2" style={{ borderBottom: '1px solid var(--palette-border)' }}>
                 <input
                     ref={importFileRef}
                     type="file"

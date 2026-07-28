@@ -28,8 +28,8 @@ function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename
         <div style={{
             width: 220,
             flexShrink: 0,
-            background: '#1a2530',
-            borderRight: '1px solid #2a3a4a',
+            background: 'var(--palette-bg)',
+            borderRight: '1px solid var(--palette-border)',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -39,15 +39,15 @@ function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: '0.05em',
-                color: '#7ecfff',
-                borderBottom: '1px solid #2a3a4a',
+                color: 'var(--palette-header)',
+                borderBottom: '1px solid var(--palette-border)',
                 textTransform: 'uppercase',
                 flexShrink: 0,
             }}>
                 Features ({features.length})
             </div>
             {features.length === 0 && (
-                <div style={{ padding: '12px', fontSize: 12, color: '#666' }}>
+                <div style={{ padding: '12px', fontSize: 12, color: 'var(--palette-muted-text)' }}>
                     No features drawn yet.
                 </div>
             )}
@@ -63,12 +63,12 @@ function FeatureList({ features, selectedFeatureId, onSelect, onDelete, onRename
                             gap: 8,
                             padding: '7px 10px',
                             cursor: 'pointer',
-                            background: isSelected ? '#1e3040' : 'transparent',
-                            borderBottom: '1px solid #1e2a38',
+                            background: isSelected ? 'var(--palette-item-selected)' : 'transparent',
+                            borderBottom: '1px solid var(--palette-item-div)',
                             fontSize: 12,
-                            color: isSelected ? '#fff' : '#ccc',
+                            color: 'var(--palette-item-text)',
                         }}
-                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#1e2a38'; }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--palette-item-hover)'; }}
                         onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                     >
                         <span style={{ fontSize: 14, color: '#3bb2d0', flexShrink: 0 }}>
