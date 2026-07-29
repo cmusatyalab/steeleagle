@@ -21,6 +21,9 @@ steeleagle-mcp-client = "steeleagle_mcp.client:cli"
 requires = ["uv_build>=0.9.5,<0.10.0"]
 build-backend = "uv_build"
 
+# catalog_data.json lives under src/steeleagle_mcp/nl2dsl/ and is included
+# automatically by uv_build (module-directory contents ship in the wheel).
+
 [tool.uv.sources]
 steeleagle-sdk = {path = "../sdk", editable = true}
 
